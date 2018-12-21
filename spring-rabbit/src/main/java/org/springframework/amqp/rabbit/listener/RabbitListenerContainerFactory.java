@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import org.springframework.amqp.core.MessageListener;
 import org.springframework.lang.Nullable;
 
 /**
@@ -39,8 +38,9 @@ public interface RabbitListenerContainerFactory<C extends MessageListenerContain
 	C createListenerContainer(@Nullable RabbitListenerEndpoint endpoint);
 
 	/**
-	 * Create a {@link MessageListenerContainer} with no {@link MessageListener}
-	 * or queues; the listener must be added later before the container is started.
+	 * Create a {@link MessageListenerContainer} with no
+	 * {@link org.springframework.amqp.core.MessageListener} or queues; the listener must
+	 * be added later before the container is started.
 	 * @return the created container.
 	 * @since 2.1.
 	 */

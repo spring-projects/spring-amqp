@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 
 import org.springframework.amqp.core.AmqpTemplate;
-import org.springframework.amqp.remoting.service.AmqpInvokerServiceExporter;
 import org.springframework.remoting.RemoteProxyFailureException;
 import org.springframework.remoting.support.DefaultRemoteInvocationFactory;
 import org.springframework.remoting.support.RemoteAccessor;
@@ -36,7 +35,7 @@ import org.springframework.remoting.support.RemoteInvocationResult;
  * @author David Bilge
  * @author Gary Russell
  * @since 1.2
- * @see AmqpInvokerServiceExporter
+ * @see org.springframework.amqp.remoting.service.AmqpInvokerServiceExporter
  * @see AmqpProxyFactoryBean
  * @see org.springframework.remoting.RemoteAccessException
  */

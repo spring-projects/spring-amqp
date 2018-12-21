@@ -30,7 +30,6 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.support.converter.MessageConverter;
-import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.util.Assert;
 import org.springframework.util.MethodInvoker;
 import org.springframework.util.ObjectUtils;
@@ -47,7 +46,8 @@ import com.rabbitmq.client.Channel;
  * By default, the content of incoming Rabbit messages gets extracted before being passed into the target listener
  * method, to let the target method operate on message content types such as String or byte array instead of the raw
  * {@link Message}. Message type conversion is delegated to a Spring AMQ {@link MessageConverter}. By default, a
- * {@link SimpleMessageConverter} will be used. (If you do not want such automatic message conversion taking place, then
+ * {@link org.springframework.amqp.support.converter.SimpleMessageConverter} will be used.
+ * (If you do not want such automatic message conversion taking place, then
  * be sure to set the {@link #setMessageConverter MessageConverter} to <code>null</code>.)
  *
  * <p>

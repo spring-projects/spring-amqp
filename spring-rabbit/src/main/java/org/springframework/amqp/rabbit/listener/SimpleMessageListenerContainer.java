@@ -39,7 +39,6 @@ import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
-import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -60,7 +59,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
-import org.springframework.util.backoff.BackOff;
 import org.springframework.util.backoff.BackOffExecution;
 
 import com.rabbitmq.client.Channel;
@@ -315,9 +313,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * Tells the container how many messages to process in a single transaction (if the channel is transactional). For
-	 * best results it should be less than or equal to {@link #setPrefetchCount(int) the prefetch count}. Also affects
-	 * how often acks are sent when using {@link AcknowledgeMode#AUTO} - one ack per txSize. Default is 1.
+	 * Tells the container how many messages to process in a single transaction (if the
+	 * channel is transactional). For best results it should be less than or equal to
+	 * {@link #setPrefetchCount(int) the prefetch count}. Also affects how often acks are
+	 * sent when using {@link org.springframework.amqp.core.AcknowledgeMode#AUTO} - one
+	 * ack per txSize. Default is 1.
 	 * @param txSize the transaction size
 	 */
 	public void setTxSize(int txSize) {
@@ -919,12 +919,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	}
 
-	/**
-	 * Wait for a period determined by the {@link #setRecoveryInterval(long) recoveryInterval}
-	 * or {@link #setRecoveryBackOff(BackOff)} to give the container a
-	 * chance to recover from consumer startup failure, e.g. if the broker is down.
-	 * @param backOffExecution the BackOffExecution to get the {@code recoveryInterval}
-	 */
 	protected void handleStartupFailure(BackOffExecution backOffExecution) {
 		long recoveryInterval = backOffExecution.nextBackOff();
 		if (BackOffExecution.STOP == recoveryInterval) {

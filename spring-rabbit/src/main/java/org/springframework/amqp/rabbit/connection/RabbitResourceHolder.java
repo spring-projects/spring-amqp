@@ -27,8 +27,6 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
 import org.springframework.lang.Nullable;
 import org.springframework.transaction.support.ResourceHolderSupport;
 import org.springframework.util.Assert;
@@ -49,8 +47,8 @@ import com.rabbitmq.client.Channel;
  * @author Dave Syer
  * @author Gary Russell
  *
- * @see RabbitTransactionManager
- * @see RabbitTemplate
+ * @see org.springframework.amqp.rabbit.transaction.RabbitTransactionManager
+ * @see org.springframework.amqp.rabbit.core.RabbitTemplate
  */
 public class RabbitResourceHolder extends ResourceHolderSupport {
 

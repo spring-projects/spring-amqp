@@ -32,7 +32,6 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
-import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.AbstractAdaptableMessageListener;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -161,7 +160,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 	/**
 	 * @param taskExecutor the {@link Executor} to use.
-	 * @see SimpleMessageListenerContainer#setTaskExecutor
+	 * @see AbstractMessageListenerContainer#setTaskExecutor
 	 */
 	public void setTaskExecutor(Executor taskExecutor) {
 		this.taskExecutor = taskExecutor;
@@ -169,7 +168,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 	/**
 	 * @param transactionManager the {@link PlatformTransactionManager} to use.
-	 * @see SimpleMessageListenerContainer#setTransactionManager
+	 * @see AbstractMessageListenerContainer#setTransactionManager
 	 */
 	public void setTransactionManager(PlatformTransactionManager transactionManager) {
 		this.transactionManager = transactionManager;
@@ -177,7 +176,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 	/**
 	 * @param prefetch the prefetch count
-	 * @see SimpleMessageListenerContainer#setPrefetchCount(int)
+	 * @see AbstractMessageListenerContainer#setPrefetchCount(int)
 	 */
 	public void setPrefetchCount(Integer prefetch) {
 		this.prefetchCount = prefetch;
@@ -185,7 +184,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 	/**
 	 * @param requeueRejected true to reject by default.
-	 * @see SimpleMessageListenerContainer#setDefaultRequeueRejected
+	 * @see AbstractMessageListenerContainer#setDefaultRequeueRejected
 	 */
 	public void setDefaultRequeueRejected(Boolean requeueRejected) {
 		this.defaultRequeueRejected = requeueRejected;
@@ -202,7 +201,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 	/**
 	 * @param adviceChain the advice chain to set.
-	 * @see SimpleMessageListenerContainer#setAdviceChain
+	 * @see AbstractMessageListenerContainer#setAdviceChain
 	 */
 	public void setAdviceChain(Advice... adviceChain) {
 		this.adviceChain = adviceChain == null ? null : Arrays.copyOf(adviceChain, adviceChain.length);
@@ -210,7 +209,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 	/**
 	 * @param recoveryInterval The recovery interval.
-	 * @see SimpleMessageListenerContainer#setRecoveryInterval
+	 * @see AbstractMessageListenerContainer#setRecoveryInterval
 	 */
 	public void setRecoveryInterval(Long recoveryInterval) {
 		this.recoveryBackOff = new FixedBackOff(recoveryInterval, FixedBackOff.UNLIMITED_ATTEMPTS);
@@ -219,7 +218,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	/**
 	 * @param recoveryBackOff The BackOff to recover.
 	 * @since 1.5
-	 * @see SimpleMessageListenerContainer#setRecoveryBackOff(BackOff)
+	 * @see AbstractMessageListenerContainer#setRecoveryBackOff(BackOff)
 	 */
 	public void setRecoveryBackOff(BackOff recoveryBackOff) {
 		this.recoveryBackOff = recoveryBackOff;
@@ -227,7 +226,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 	/**
 	 * @param missingQueuesFatal the missingQueuesFatal to set.
-	 * @see SimpleMessageListenerContainer#setMissingQueuesFatal
+	 * @see AbstractMessageListenerContainer#setMissingQueuesFatal
 	 */
 	public void setMissingQueuesFatal(Boolean missingQueuesFatal) {
 		this.missingQueuesFatal = missingQueuesFatal;
@@ -236,7 +235,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	/**
 	 * @param mismatchedQueuesFatal the mismatchedQueuesFatal to set.
 	 * @since 1.6
-	 * @see SimpleMessageListenerContainer#setMismatchedQueuesFatal(boolean)
+	 * @see AbstractMessageListenerContainer#setMismatchedQueuesFatal(boolean)
 	 */
 	public void setMismatchedQueuesFatal(Boolean mismatchedQueuesFatal) {
 		this.mismatchedQueuesFatal = mismatchedQueuesFatal;
@@ -244,7 +243,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 	/**
 	 * @param consumerTagStrategy the consumerTagStrategy to set
-	 * @see SimpleMessageListenerContainer#setConsumerTagStrategy(ConsumerTagStrategy)
+	 * @see AbstractMessageListenerContainer#setConsumerTagStrategy(ConsumerTagStrategy)
 	 */
 	public void setConsumerTagStrategy(ConsumerTagStrategy consumerTagStrategy) {
 		this.consumerTagStrategy = consumerTagStrategy;

@@ -131,7 +131,7 @@ public class Address {
 	@Override
 	public int hashCode() {
 		int result = this.exchangeName != null ? this.exchangeName.hashCode() : 0;
-		int prime = 31;
+		int prime = 31; // NOSONAR magic #
 		result = prime * result + (this.routingKey != null ? this.routingKey.hashCode() : 0);
 		return result;
 	}

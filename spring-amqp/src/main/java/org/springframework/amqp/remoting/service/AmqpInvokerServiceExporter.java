@@ -22,7 +22,6 @@ import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.remoting.client.AmqpProxyFactoryBean;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.remoting.support.RemoteInvocation;
@@ -31,7 +30,7 @@ import org.springframework.remoting.support.RemoteInvocationResult;
 
 /**
  * This message listener exposes a plain java service via AMQP. Such services can be accessed via plain AMQP or via
- * {@link AmqpProxyFactoryBean}.
+ * {@link org.springframework.amqp.remoting.client.AmqpProxyFactoryBean}.
  *
  * To configure this message listener so that it actually receives method calls via AMQP, it needs to be put into a
  * listener container. See {@link MessageListener}.

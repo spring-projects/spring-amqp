@@ -18,10 +18,8 @@ package org.springframework.amqp.rabbit.support;
 
 import java.util.Collection;
 
-import org.springframework.amqp.core.MessageListener;
-
 /**
- * {@link MessageListener}s that also implement this
+ * {@link org.springframework.amqp.core.MessageListener}s that also implement this
  * interface can have configuration verified during initialization.
  *
  * @author Gary Russell

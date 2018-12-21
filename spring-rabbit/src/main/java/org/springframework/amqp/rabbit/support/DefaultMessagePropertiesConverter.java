@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.rabbit.support;
 
-import java.io.DataInputStream;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -75,7 +74,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	 * Use this constructor with 'true' to restore pre-1.6 behavior.
 	 * @param longStringLimit the limit.
 	 * @param convertLongLongStrings {@link LongString} when false,
-	 * {@link DataInputStream} when true.
+	 * {@link java.io.DataInputStream} when true.
 	 * @since 1.6
 	 */
 	public DefaultMessagePropertiesConverter(int longStringLimit, boolean convertLongLongStrings) {

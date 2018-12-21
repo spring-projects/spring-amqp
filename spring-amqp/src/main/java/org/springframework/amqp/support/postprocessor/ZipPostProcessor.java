@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,9 @@ import java.io.OutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.springframework.amqp.core.MessageProperties;
-
 /**
- * A post processor that uses a {@link ZipOutputStream} to compress the
- * message body. Sets {@link MessageProperties#SPRING_AUTO_DECOMPRESS} to true
+ * A post processor that uses a {@link ZipOutputStream} to compress the message body. Sets
+ * {@link org.springframework.amqp.core.MessageProperties#SPRING_AUTO_DECOMPRESS} to true
  * by default.
  *
  * @author Gary Russell

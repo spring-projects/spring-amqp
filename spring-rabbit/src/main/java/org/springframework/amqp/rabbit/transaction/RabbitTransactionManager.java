@@ -17,11 +17,10 @@
 package org.springframework.amqp.rabbit.transaction;
 
 import org.springframework.amqp.AmqpException;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.transaction.InvalidIsolationLevelException;
@@ -32,8 +31,6 @@ import org.springframework.transaction.support.ResourceTransactionManager;
 import org.springframework.transaction.support.SmartTransactionObject;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
-
-import com.rabbitmq.client.Connection;
 
 /**
  * {@link org.springframework.transaction.PlatformTransactionManager} implementation for a single Rabbit
@@ -48,11 +45,13 @@ import com.rabbitmq.client.Connection;
  * <p>
  * Application code is required to retrieve the transactional Rabbit resources via
  * {@link ConnectionFactoryUtils#getTransactionalResourceHolder(ConnectionFactory, boolean)} instead of a standard
- * {@link Connection#createChannel()} call with subsequent Channel creation. Spring's {@link RabbitTemplate} will
+ * {@link Connection#createChannel(boolean)} call with subsequent Channel creation. Spring's
+ * {@link org.springframework.amqp.rabbit.core.RabbitTemplate} will
  * autodetect a thread-bound Channel and automatically participate in it.
  *
  * <p>
- * <b>The use of {@link CachingConnectionFactory} as a target for this transaction manager is strongly recommended.</b>
+ * <b>The use of {@link org.springframework.amqp.rabbit.connection.CachingConnectionFactory}
+ * as a target for this transaction manager is strongly recommended.</b>
  * CachingConnectionFactory uses a single Rabbit Connection for all Rabbit access in order to avoid the overhead of
  * repeated Connection creation, as well as maintaining a cache of Channels. Each transaction will then share the same
  * Rabbit Connection, while still using its own individual Rabbit Channel.

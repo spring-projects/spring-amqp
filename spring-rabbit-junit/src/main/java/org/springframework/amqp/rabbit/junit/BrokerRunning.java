@@ -33,7 +33,6 @@ import java.util.concurrent.TimeoutException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Assume;
-import org.junit.internal.AssumptionViolatedException;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -77,7 +76,7 @@ import com.rabbitmq.http.client.Client;
  *
  * @since 1.7
  * @see Assume
- * @see AssumptionViolatedException
+ * @see org.junit.internal.AssumptionViolatedException
  */
 public final class BrokerRunning extends TestWatcher {
 

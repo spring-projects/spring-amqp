@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@
 package org.springframework.amqp.rabbit.listener.exception;
 
 import org.springframework.amqp.AmqpException;
-import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 
 /**
- * Exception to be thrown when the execution of a listener method failed unrecoverably.
+ * Exception to be thrown when the execution of a listener method failed with an
+ * irrecoverable problem.
  *
  * @author Dave Syer
- * @see MessageListenerAdapter
+ * @see org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter
  */
 @SuppressWarnings("serial")
 public class FatalListenerExecutionException extends AmqpException {

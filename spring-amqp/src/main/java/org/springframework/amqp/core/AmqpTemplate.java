@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.springframework.amqp.core;
 
 import org.springframework.amqp.AmqpException;
-import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.lang.Nullable;
 
@@ -26,8 +25,9 @@ import org.springframework.lang.Nullable;
  *
  * Provides synchronous send and receive methods. The {@link #convertAndSend(Object)} and
  * {@link #receiveAndConvert()} methods allow let you send and receive POJO objects.
- * Implementations are expected to delegate to an instance of {@link MessageConverter} to
- * perform conversion to and from AMQP byte[] payload type.
+ * Implementations are expected to delegate to an instance of
+ * {@link org.springframework.amqp.support.converter.MessageConverter} to perform
+ * conversion to and from AMQP byte[] payload type.
  *
  * @author Mark Pollack
  * @author Mark Fisher
