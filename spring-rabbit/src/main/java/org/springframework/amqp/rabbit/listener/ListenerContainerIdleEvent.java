@@ -34,7 +34,7 @@ import org.springframework.lang.Nullable;
 @SuppressWarnings("serial")
 public class ListenerContainerIdleEvent extends AmqpEvent {
 
-	private final Duration idleTime;
+	private final long idleTime;
 
 	@Nullable
 	private final String listenerId;
@@ -43,7 +43,7 @@ public class ListenerContainerIdleEvent extends AmqpEvent {
 
 	public ListenerContainerIdleEvent(Object source, long idleTime, @Nullable String id, String... queueNames) {
 		super(source);
-		this.idleTime = Duration.ofMillis(idleTime);
+		this.idleTime = idleTime;
 		this.listenerId = id;
 		this.queueNames = Arrays.asList(queueNames);
 	}
@@ -53,7 +53,7 @@ public class ListenerContainerIdleEvent extends AmqpEvent {
 	 * @return the time in milliseconds.
 	 */
 	public long getIdleTime() {
-		return this.idleTime.toMillis();
+		return this.idleTime;
 	}
 
 	/**
@@ -76,7 +76,7 @@ public class ListenerContainerIdleEvent extends AmqpEvent {
 	@Override
 	public String toString() {
 		return "ListenerContainerIdleEvent [idleTime="
-				+ this.idleTime + ", listenerId=" + this.listenerId
+				+ Duration.ofMillis(this.idleTime) + ", listenerId=" + this.listenerId
 				+ ", container=" + getSource() + "]";
 	}
 
