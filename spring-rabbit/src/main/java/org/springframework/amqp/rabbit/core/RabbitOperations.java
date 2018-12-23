@@ -429,7 +429,7 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @since 2.0
 	 */
 	@FunctionalInterface
-	public interface OperationsCallback<T> {
+	interface OperationsCallback<T> {
 
 		/**
 		 * Execute any number of operations using a dedicated

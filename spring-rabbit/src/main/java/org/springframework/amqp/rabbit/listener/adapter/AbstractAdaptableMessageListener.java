@@ -27,7 +27,6 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
@@ -56,8 +55,8 @@ import com.rabbitmq.client.Channel;
 import reactor.core.publisher.Mono;
 
 /**
- * An abstract {@link MessageListener} adapter providing the necessary infrastructure
- * to extract the payload of a {@link Message}.
+ * An abstract {@link org.springframework.amqp.core.MessageListener} adapter providing the
+ * necessary infrastructure to extract the payload of a {@link Message}.
  *
  * @author Stephane Nicoll
  * @author Gary Russell
@@ -77,7 +76,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 
 	private static final ParserContext PARSER_CONTEXT = new TemplateParserContext("!{", "}");
 
-	private static final boolean monoPresent =
+	private static final boolean monoPresent = // NOSONAR - lower case
 			ClassUtils.isPresent("reactor.core.publisher.Mono", ChannelAwareMessageListener.class.getClassLoader());;
 
 	/** Logger available to subclasses. */

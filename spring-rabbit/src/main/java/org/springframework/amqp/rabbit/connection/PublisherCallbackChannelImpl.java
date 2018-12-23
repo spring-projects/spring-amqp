@@ -92,7 +92,8 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
 public class PublisherCallbackChannelImpl
 		implements PublisherCallbackChannel, ConfirmListener, ReturnListener, ShutdownListener {
 
-	private static final MessagePropertiesConverter converter = new DefaultMessagePropertiesConverter();
+	private static final MessagePropertiesConverter converter // NOSONAR - lower case
+		= new DefaultMessagePropertiesConverter();
 
 	private final Log logger = LogFactory.getLog(this.getClass());
 

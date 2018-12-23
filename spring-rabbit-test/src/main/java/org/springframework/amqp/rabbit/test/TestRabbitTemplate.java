@@ -141,8 +141,9 @@ public class TestRabbitTemplate extends RabbitTemplate implements ApplicationCon
 				AbstractAdaptableMessageListener adapter = (AbstractAdaptableMessageListener) listener;
 				willAnswer(i -> {
 					Envelope envelope = new Envelope(1, false, "", REPLY_QUEUE);
-					reply.set(MessageBuilder.withBody(i.getArgument(4))
-							.andProperties(getMessagePropertiesConverter().toMessageProperties(i.getArgument(3), envelope,
+					reply.set(MessageBuilder.withBody(i.getArgument(4)) // NOSONAR magic #
+							.andProperties(getMessagePropertiesConverter()
+								.toMessageProperties(i.getArgument(3), envelope, // NOSONAR magic #
 									adapter.getEncoding()))
 							.build());
 					return null;

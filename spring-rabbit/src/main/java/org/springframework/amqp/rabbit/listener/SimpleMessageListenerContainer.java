@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,6 @@ import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
-import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -60,7 +59,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
-import org.springframework.util.backoff.BackOff;
 import org.springframework.util.backoff.BackOffExecution;
 
 import com.rabbitmq.client.Channel;
@@ -78,6 +76,8 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @since 1.0
  */
 public class SimpleMessageListenerContainer extends AbstractMessageListenerContainer {
+
+	private static final int RECOVERY_LOOP_WAIT_TIME = 200;
 
 	private static final long DEFAULT_START_CONSUMER_MIN_INTERVAL = 10000;
 
@@ -313,9 +313,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * Tells the container how many messages to process in a single transaction (if the channel is transactional). For
-	 * best results it should be less than or equal to {@link #setPrefetchCount(int) the prefetch count}. Also affects
-	 * how often acks are sent when using {@link AcknowledgeMode#AUTO} - one ack per txSize. Default is 1.
+	 * Tells the container how many messages to process in a single transaction (if the
+	 * channel is transactional). For best results it should be less than or equal to
+	 * {@link #setPrefetchCount(int) the prefetch count}. Also affects how often acks are
+	 * sent when using {@link org.springframework.amqp.core.AcknowledgeMode#AUTO} - one
+	 * ack per txSize. Default is 1.
 	 * @param txSize the transaction size
 	 */
 	public void setTxSize(int txSize) {
@@ -917,12 +919,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	}
 
-	/**
-	 * Wait for a period determined by the {@link #setRecoveryInterval(long) recoveryInterval}
-	 * or {@link #setRecoveryBackOff(BackOff)} to give the container a
-	 * chance to recover from consumer startup failure, e.g. if the broker is down.
-	 * @param backOffExecution the BackOffExecution to get the {@code recoveryInterval}
-	 */
 	protected void handleStartupFailure(BackOffExecution backOffExecution) {
 		long recoveryInterval = backOffExecution.nextBackOff();
 		if (BackOffExecution.STOP == recoveryInterval) {
@@ -940,7 +936,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			long timeout = System.currentTimeMillis() + recoveryInterval;
 			while (isActive() && System.currentTimeMillis() < timeout) {
-				Thread.sleep(200);
+				Thread.sleep(RECOVERY_LOOP_WAIT_TIME);
 			}
 		}
 		catch (InterruptedException e) {
@@ -974,6 +970,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	private final class AsyncMessageProcessingConsumer implements Runnable {
+
+		private static final int ABORT_EVENT_WAIT_SECONDS = 5;
 
 		private final BlockingQueueConsumer consumer;
 
@@ -1261,7 +1259,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					ListenerContainerConsumerFailedEvent event = null;
 					do {
 						try {
-							event = SimpleMessageListenerContainer.this.abortEvents.poll(5, TimeUnit.SECONDS);
+							event = SimpleMessageListenerContainer.this.abortEvents.poll(ABORT_EVENT_WAIT_SECONDS,
+									TimeUnit.SECONDS);
 							if (event != null) {
 								SimpleMessageListenerContainer.this.publishConsumerFailedEvent(
 										event.getReason(), event.isFatal(), event.getThrowable());

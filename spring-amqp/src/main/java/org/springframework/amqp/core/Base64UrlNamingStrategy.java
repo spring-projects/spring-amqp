@@ -34,6 +34,8 @@ import org.springframework.util.Base64Utils;
  */
 public class Base64UrlNamingStrategy implements NamingStrategy {
 
+	private static final int SIXTEEN = 16;
+
 	/**
 	 * The default instance - using {@code spring.gen-} as the prefix.
 	 */
@@ -60,7 +62,7 @@ public class Base64UrlNamingStrategy implements NamingStrategy {
 	@Override
 	public String generateName() {
 		UUID uuid = UUID.randomUUID();
-		ByteBuffer bb = ByteBuffer.wrap(new byte[16]);
+		ByteBuffer bb = ByteBuffer.wrap(new byte[SIXTEEN]);
 		bb.putLong(uuid.getMostSignificantBits())
 		  .putLong(uuid.getLeastSignificantBits());
 		// Convert to base64 and remove trailing =

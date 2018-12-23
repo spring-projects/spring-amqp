@@ -25,8 +25,6 @@ import java.util.Map;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
@@ -49,7 +47,7 @@ import org.springframework.util.Assert;
  * @since 1.4
  *
  * @see MethodRabbitListenerEndpoint
- * @see SimpleRabbitListenerEndpoint
+ * @see org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint
  */
 public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEndpoint, BeanFactoryAware {
 
@@ -210,8 +208,8 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	}
 
 	/**
-	 * Set the {@link RabbitAdmin} instance to use.
-	 * @param admin the {@link RabbitAdmin} instance.
+	 * Set the {@link AmqpAdmin} instance to use.
+	 * @param admin the {@link AmqpAdmin} instance.
 	 */
 	public void setAdmin(AmqpAdmin admin) {
 		this.admin = admin;

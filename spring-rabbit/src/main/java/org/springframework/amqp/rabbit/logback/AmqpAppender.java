@@ -95,6 +95,8 @@ import com.rabbitmq.client.ConnectionFactory;
  */
 public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
+	private static final int DEFAULT_MAX_SENDER_RETRIES = 30;
+
 	/**
 	 * Key name for the application id (if there is one set via the appender config) in the message properties.
 	 */
@@ -165,7 +167,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	/**
 	 * How many times to retry sending a message if the broker is unavailable or there is some other error.
 	 */
-	private int maxSenderRetries = 30;
+	private int maxSenderRetries = DEFAULT_MAX_SENDER_RETRIES;
 
 	/**
 	 * Retries are delayed like: N ^ log(N), where N is the retry number.
@@ -891,7 +893,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 							AmqpAppender.this.events.add(event);
 						}
 
-					}, (long) (Math.pow(retries, Math.log(retries)) * 1000));
+					}, (long) (Math.pow(retries, Math.log(retries)) * 1000)); // NOSONAR magic #
 				}
 				else {
 					addError("Could not send log message " + logEvent.getMessage()

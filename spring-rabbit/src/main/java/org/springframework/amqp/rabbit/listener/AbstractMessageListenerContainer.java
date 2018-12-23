@@ -1169,12 +1169,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				this.taskExecutor = new SimpleAsyncTaskExecutor(this.getBeanName() + "-");
 				this.taskExecutorSet = true;
 			}
-			if (this.transactionManager != null) {
-				if (!isChannelTransacted()) {
-					logger.debug("The 'channelTransacted' is coerced to 'true', when 'transactionManager' is provided");
-					setChannelTransacted(true);
-				}
-
+			if (this.transactionManager != null && !isChannelTransacted()) {
+				logger.debug("The 'channelTransacted' is coerced to 'true', when 'transactionManager' is provided");
+				setChannelTransacted(true);
 			}
 			this.initialized = true;
 		}
@@ -1646,12 +1643,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				this.amqpAdmin = admins.values().iterator().next();
 			}
 			else {
-				if (isAutoDeclare() || isMismatchedQueuesFatal()) {
-					if (logger.isDebugEnabled()) {
-						logger.debug("For 'autoDeclare' and 'mismatchedQueuesFatal' to work, there must be exactly one "
-								+ "AmqpAdmin in the context or you must inject one into this container; found: "
-								+ admins.size() + " for container " + this.toString());
-					}
+				if ((isAutoDeclare() || isMismatchedQueuesFatal()) && this.logger.isDebugEnabled()) {
+					logger.debug("For 'autoDeclare' and 'mismatchedQueuesFatal' to work, there must be exactly one "
+							+ "AmqpAdmin in the context or you must inject one into this container; found: "
+							+ admins.size() + " for container " + this.toString());
 				}
 				if (isMismatchedQueuesFatal()) {
 					throw new IllegalStateException("When 'mismatchedQueuesFatal' is 'true', there must be exactly "

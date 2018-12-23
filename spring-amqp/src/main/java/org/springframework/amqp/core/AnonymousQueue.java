@@ -150,7 +150,7 @@ public class AnonymousQueue extends Queue {
 		@Override
 		public String generateName() {
 			UUID uuid = UUID.randomUUID();
-			ByteBuffer bb = ByteBuffer.wrap(new byte[16]);
+			ByteBuffer bb = ByteBuffer.wrap(new byte[16]); // NOSONAR - Magic # deprecated anyway
 			bb.putLong(uuid.getMostSignificantBits())
 			  .putLong(uuid.getLeastSignificantBits());
 			// Convert to base64 and remove trailing =

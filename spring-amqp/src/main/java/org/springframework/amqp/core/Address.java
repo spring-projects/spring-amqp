@@ -48,7 +48,7 @@ public class Address {
 	 */
 	public static final String AMQ_RABBITMQ_REPLY_TO = "amq.rabbitmq.reply-to";
 
-	private static final Pattern pattern = Pattern.compile("^(?:.*://)?([^/]*)/?(.*)$");
+	private static final Pattern ADDRESS_PATTERN = Pattern.compile("^(?:.*://)?([^/]*)/?(.*)$");
 
 	private final String exchangeName;
 
@@ -77,7 +77,7 @@ public class Address {
 			this.exchangeName = "";
 		}
 		else {
-			Matcher matcher = pattern.matcher(address);
+			Matcher matcher = ADDRESS_PATTERN.matcher(address);
 			boolean matchFound = matcher.find();
 			if (matchFound) {
 				this.exchangeName = matcher.group(1);
@@ -131,7 +131,8 @@ public class Address {
 	@Override
 	public int hashCode() {
 		int result = this.exchangeName != null ? this.exchangeName.hashCode() : 0;
-		result = 31 * result + (this.routingKey != null ? this.routingKey.hashCode() : 0);
+		int prime = 31; // NOSONAR magic #
+		result = prime * result + (this.routingKey != null ? this.routingKey.hashCode() : 0);
 		return result;
 	}
 

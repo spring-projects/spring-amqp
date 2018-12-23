@@ -39,11 +39,12 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
  */
 public final class ClosingRecoveryListener implements RecoveryListener {
 
-	private static final Log logger = LogFactory.getLog(ClosingRecoveryListener.class);
+	private static final Log logger = LogFactory.getLog(ClosingRecoveryListener.class); // NOSONAR - lower case
 
 	private static final RecoveryListener INSTANCE = new ClosingRecoveryListener();
 
-	private static final ConcurrentMap<AutorecoveringChannel, Boolean> hasListener = new ConcurrentHashMap<>();
+	private static final ConcurrentMap<AutorecoveringChannel, Boolean> hasListener // NOSONAR - lower case
+		= new ConcurrentHashMap<>();
 
 	private ClosingRecoveryListener() {
 		super();

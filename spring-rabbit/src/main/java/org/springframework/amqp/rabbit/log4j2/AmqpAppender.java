@@ -354,7 +354,7 @@ public class AmqpAppender extends AbstractAppender {
 						AmqpAppender.this.events.add(event);
 					}
 
-				}, (long) (Math.pow(retries, Math.log(retries)) * 1000));
+				}, (long) (Math.pow(retries, Math.log(retries)) * 1000)); // NOSONAR - magic #
 			}
 			else {
 				getHandler().error("Could not send log message " + logEvent.getMessage()
@@ -435,6 +435,8 @@ public class AmqpAppender extends AbstractAppender {
 	 */
 	protected static class AmqpManager extends AbstractManager {
 
+		private static final int DEFAULT_MAX_SENDER_RETRIES = 30;
+
 		/**
 		 * True to send events on separate threads.
 		 */
@@ -473,7 +475,7 @@ public class AmqpAppender extends AbstractAppender {
 		/**
 		 * How many times to retry sending a message if the broker is unavailable or there is some other error.
 		 */
-		private int maxSenderRetries = 30;
+		private int maxSenderRetries = DEFAULT_MAX_SENDER_RETRIES;
 
 		/**
 		 * RabbitMQ ConnectionFactory.

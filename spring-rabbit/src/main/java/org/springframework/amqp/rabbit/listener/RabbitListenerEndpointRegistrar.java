@@ -23,7 +23,6 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.lang.Nullable;
-import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
 import org.springframework.util.Assert;
 
@@ -75,10 +74,13 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	/**
 	 * Set the {@link MessageHandlerMethodFactory} to use to configure the message
 	 * listener responsible to serve an endpoint detected by this processor.
-	 * <p>By default, {@link DefaultMessageHandlerMethodFactory} is used and it
-	 * can be configured further to support additional method arguments
-	 * or to customize conversion and validation support. See
-	 * {@link DefaultMessageHandlerMethodFactory} javadoc for more details.
+	 * <p>
+	 * By default,
+	 * {@link org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory}
+	 * is used and it can be configured further to support additional method arguments or
+	 * to customize conversion and validation support. See
+	 * {@link org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory}
+	 * javadoc for more details.
 	 * @param rabbitHandlerMethodFactory the {@link MessageHandlerMethodFactory} instance.
 	 */
 	public void setMessageHandlerMethodFactory(MessageHandlerMethodFactory rabbitHandlerMethodFactory) {

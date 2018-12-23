@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
@@ -75,7 +76,7 @@ public class ListenerContainerIdleEvent extends AmqpEvent {
 	@Override
 	public String toString() {
 		return "ListenerContainerIdleEvent [idleTime="
-				+ ((float) this.idleTime / 1000) + "s, listenerId=" + this.listenerId
+				+ Duration.ofMillis(this.idleTime) + ", listenerId=" + this.listenerId
 				+ ", container=" + getSource() + "]";
 	}
 

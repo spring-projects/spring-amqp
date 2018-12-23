@@ -39,7 +39,6 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.Header;
-import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 import org.springframework.util.Assert;
@@ -47,8 +46,9 @@ import org.springframework.util.Assert;
 
 /**
  * Delegates to an {@link InvocableHandlerMethod} based on the message payload type.
- * Matches a single, non-annotated parameter or one that is annotated with {@link Payload}.
- * Matches must be unambiguous.
+ * Matches a single, non-annotated parameter or one that is annotated with
+ * {@link org.springframework.messaging.handler.annotation.Payload}. Matches must be
+ * unambiguous.
  *
  * @author Gary Russell
  * @author Artem Bilan
@@ -221,24 +221,22 @@ public class DelegatingInvocableHandler {
 		// Single param; no annotation or not @Header
 		if (parameterAnnotations.length == 1) {
 			MethodParameter methodParameter = new MethodParameter(method, 0);
-			if (methodParameter.getParameterAnnotations().length == 0
-					|| !methodParameter.hasParameterAnnotation(Header.class)) {
-				if (methodParameter.getParameterType().isAssignableFrom(payloadClass)) {
-					return true;
-				}
+			if ((methodParameter.getParameterAnnotations().length == 0
+					|| !methodParameter.hasParameterAnnotation(Header.class))
+						&& methodParameter.getParameterType().isAssignableFrom(payloadClass)) {
+				return true;
 			}
 		}
 		boolean foundCandidate = false;
 		for (int i = 0; i < parameterAnnotations.length; i++) {
 			MethodParameter methodParameter = new MethodParameter(method, i);
-			if (methodParameter.getParameterAnnotations().length == 0
-					|| !methodParameter.hasParameterAnnotation(Header.class)) {
-				if (methodParameter.getParameterType().isAssignableFrom(payloadClass)) {
-					if (foundCandidate) {
-						throw new AmqpException("Ambiguous payload parameter for " + method.toGenericString());
-					}
-					foundCandidate = true;
+			if ((methodParameter.getParameterAnnotations().length == 0
+					|| !methodParameter.hasParameterAnnotation(Header.class))
+						&& methodParameter.getParameterType().isAssignableFrom(payloadClass)) {
+				if (foundCandidate) {
+					throw new AmqpException("Ambiguous payload parameter for " + method.toGenericString());
 				}
+				foundCandidate = true;
 			}
 		}
 		return foundCandidate;

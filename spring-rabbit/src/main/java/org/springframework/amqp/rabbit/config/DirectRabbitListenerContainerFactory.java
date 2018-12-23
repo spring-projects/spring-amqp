@@ -17,13 +17,12 @@
 package org.springframework.amqp.rabbit.config;
 
 import org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer;
-import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.scheduling.TaskScheduler;
 
 /**
- * A {@link RabbitListenerContainerFactory} implementation to build a regular
- * {@link DirectMessageListenerContainer}.
+ * A {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory}
+ * implementation to build a regular {@link DirectMessageListenerContainer}.
  *
  * @author Gary Russell
  * @since 2.0

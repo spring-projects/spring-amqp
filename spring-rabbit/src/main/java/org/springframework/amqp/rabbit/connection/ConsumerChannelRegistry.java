@@ -36,9 +36,10 @@ import com.rabbitmq.client.Channel;
  */
 public final class ConsumerChannelRegistry {
 
-	private static final Log logger = LogFactory.getLog(ConsumerChannelRegistry.class);
+	private static final Log logger = LogFactory.getLog(ConsumerChannelRegistry.class); // NOSONAR - lower case
 
-	private static final ThreadLocal<ChannelHolder> consumerChannel = new ThreadLocal<ChannelHolder>();
+	private static final ThreadLocal<ChannelHolder> consumerChannel // NOSONAR - lower case
+		= new ThreadLocal<ChannelHolder>();
 
 	private ConsumerChannelRegistry() {
 		super();

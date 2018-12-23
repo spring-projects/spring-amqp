@@ -28,8 +28,6 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.messaging.MessagingException;
-import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
-import org.springframework.messaging.handler.annotation.support.MethodArgumentTypeMismatchException;
 import org.springframework.messaging.handler.invocation.MethodArgumentResolutionException;
 import org.springframework.util.ErrorHandler;
 
@@ -43,7 +41,8 @@ import org.springframework.util.ErrorHandler;
  * The default strategy will do this if the exception is a
  * {@link ListenerExecutionFailedException} with a cause of {@link MessageConversionException},
  * {@link org.springframework.messaging.converter.MessageConversionException},
- * {@link MethodArgumentNotValidException}, {@link MethodArgumentTypeMismatchException},
+ * {@link org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException},
+ * {@link org.springframework.messaging.handler.annotation.support.MethodArgumentTypeMismatchException},
  * {@link NoSuchMethodException} or {@link ClassCastException}.
  * <p>
  * The exception will not be wrapped if the {@code cause} chain already contains an

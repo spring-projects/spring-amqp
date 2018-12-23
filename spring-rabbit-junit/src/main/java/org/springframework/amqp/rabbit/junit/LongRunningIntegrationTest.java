@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ import org.junit.runners.model.Statement;
  */
 public class LongRunningIntegrationTest extends TestWatcher {
 
-	private final static Log logger = LogFactory.getLog(LongRunningIntegrationTest.class);
+	private static final Log logger = LogFactory.getLog(LongRunningIntegrationTest.class); // NOSONAR - lower case
 
 	public static final String RUN_LONG_INTEGRATION_TESTS = "RUN_LONG_INTEGRATION_TESTS";
 

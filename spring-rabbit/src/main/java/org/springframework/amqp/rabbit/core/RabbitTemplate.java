@@ -1947,10 +1947,10 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count/co
 						(RetryCallback<T, Exception>) context -> doExecute(action, connectionFactory),
 						(RecoveryCallback<T>) this.recoveryCallback);
 			}
+			catch (RuntimeException e) { // NOSONAR catch and rethrow needed to avoid next catch
+				throw e;
+			}
 			catch (Exception e) {
-				if (e instanceof RuntimeException) {
-					throw (RuntimeException) e;
-				}
 				throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 			}
 		}
@@ -2580,7 +2580,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count/co
 	 * Adds {@link #toString()} to the {@link DefaultConsumer}.
 	 * @since 2.0
 	 */
-	protected static abstract class TemplateConsumer extends DefaultConsumer {
+	protected abstract static class TemplateConsumer extends DefaultConsumer {
 
 		public TemplateConsumer(Channel channel) {
 			super(channel);

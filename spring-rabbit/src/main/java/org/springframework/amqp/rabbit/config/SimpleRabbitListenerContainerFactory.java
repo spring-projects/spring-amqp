@@ -16,16 +16,16 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 
 /**
- * A {@link RabbitListenerContainerFactory} implementation to build a regular
- * {@link SimpleMessageListenerContainer}.
+ * A {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory}
+ * implementation to build a regular {@link SimpleMessageListenerContainer}.
  *
- * <p>This should be the default for most users and a good transition paths
- * for those that are used to build such container definition manually.
+ * <p>
+ * This should be the default for most users and a good transition paths for those that
+ * are used to build such container definition manually.
  *
  * @author Stephane Nicoll
  * @author Gary Russell

@@ -50,7 +50,7 @@ public class RabbitAvailableCondition implements ExecutionCondition, AfterAllCal
 	private static final ConditionEvaluationResult ENABLED = ConditionEvaluationResult.enabled(
 			"@RabbitAvailable is not present");
 
-	private static final ThreadLocal<BrokerRunning> brokerRunningHolder = new ThreadLocal<>();
+	private static final ThreadLocal<BrokerRunning> brokerRunningHolder = new ThreadLocal<>(); // NOSONAR - lower case
 
 	@Override
 	public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
