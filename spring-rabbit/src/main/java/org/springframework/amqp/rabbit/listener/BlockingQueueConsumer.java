@@ -804,7 +804,7 @@ public class BlockingQueueConsumer {
 			}
 
 			if (isLocallyTransacted) {
-				// For manual acks we still need to commit``
+				// For manual acks we still need to commit
 				RabbitUtils.commitIfNecessary(this.channel);
 			}
 
