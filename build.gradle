@@ -104,7 +104,7 @@ subprojects { subproject ->
 		rabbitmqHttpClientVersion = '1.1.1.RELEASE'
 		slf4jVersion = "1.7.25"
 
-		springVersion = project.hasProperty('springVersion') ? project.springVersion : '4.3.20.RELEASE'
+		springVersion = project.hasProperty('springVersion') ? project.springVersion : '4.3.22.RELEASE'
 
 		springRetryVersion = '1.2.2.RELEASE'
 	}
