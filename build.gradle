@@ -88,7 +88,7 @@ subprojects { subproject ->
 
 		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.1.4.RELEASE'
 
-		springRetryVersion = '1.2.2.RELEASE'
+		springRetryVersion = '1.2.3.RELEASE'
 	}
 
 	eclipse {
