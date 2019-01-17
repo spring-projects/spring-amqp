@@ -2403,6 +2403,7 @@ Notice that the same method signatures apply as discussed in the method-level `@
 Starting with _version 2.0.3_, a `@RabbitHandler` method can be designated as the default method which is invoked if there is no match on other methods.
 At most one method can be so designated.
 
+IMPORTANT: `@RabbitHandler` is intended only for processing message payloads after conversion, if you wish to receive the unconverted raw `Message` object, you must use `@RabbitListener` on the method, not the class.
 
 [[repeatable-rabbit-listener]]
 ====== @Repeatable @RabbitListener
