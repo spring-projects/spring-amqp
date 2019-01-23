@@ -3,38 +3,44 @@
 
 ==== Introduction
 
-This is the 5 minute tour to get started with Spring AMQP.
+This is the five-minute tour to get started with Spring AMQP.
 
-Prerequisites: install and run the RabbitMQ broker (http://www.rabbitmq.com/download.html[http://www.rabbitmq.com/download.html]).
-Then grab the spring-rabbit JAR and all its dependencies - the easiest way to do that is to declare a dependency in your build tool, e.g.
-for Maven:
+Prerequisites: Install and run the RabbitMQ broker (http://www.rabbitmq.com/download.html[http://www.rabbitmq.com/download.html]).
+Then grab the spring-rabbit JAR and all its dependencies - the easiest way to do so is to declare a dependency in your build tool.
+For example, for Maven, you can do something resembling the following:
 
+====
 [source,xml,subs="+attributes"]
 ----
 <dependency>
   <groupId>org.springframework.amqp</groupId>
   <artifactId>spring-rabbit</artifactId>
-  <version>{spring-amqp-version}</version>
+  <version>{project-version}</version>
 </dependency>
 ----
+====
 
-And for gradle:
+For Gradle, you can do something resembling the following:
 
+====
 [source,groovy,subs="+attributes"]
 ----
-compile 'org.springframework.amqp:spring-rabbit:{spring-amqp-version}'
+compile 'org.springframework.amqp:spring-rabbit:{project-version}'
 ----
+====
 
 [[compatibility]]
 ===== Compatibility
 
 The minimum Spring Framework version dependency is 5.1.x.
 
-The minimum `amqp-client` java client library version is 5.4.0.
+The minimum `amqp-client` Java client library version is 5.4.0.
 
 ===== Very, Very Quick
 
-**Imports for the following Java examples**
+This section offers the fastest introduction.
+
+First, add the following `import` statements to make the examples later in this section work:
 
 ====
 [source, java]
@@ -49,7 +55,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 ----
 ====
 
-Using plain, imperative Java to send and receive a message:
+The following example uses plain, imperative Java to send and receive a message:
 
 ====
 [source,java]
@@ -63,14 +69,15 @@ String foo = (String) template.receiveAndConvert("myqueue");
 ----
 ====
 
-Note that there is a `ConnectionFactory` in the native Java Rabbit client as well.
-We are using the Spring abstraction in the code above; it caches channels (and optionally connections) for reuse.
-We are relying on the default exchange in the broker (since none is specified in the send), and the default binding of all queues to the default exchange by their name (hence we can use the queue name as a routing key in the send).
+Note that there is also a `ConnectionFactory` in the native Java Rabbit client.
+We use the Spring abstraction in the preceding code.
+It caches channels (and optionally connections) for reuse.
+We rely on the default exchange in the broker (since none is specified in the send), and the default binding of all queues to the default exchange by their name (thus, we can use the queue name as a routing key in the send).
 Those behaviors are defined in the AMQP specification.
 
 ===== With XML Configuration
 
-The same example as above, but externalizing the resource configuration to XML:
+The following example is the same as the preceding example but externalizes the resource configuration to XML:
 
 ====
 [source,java]
@@ -104,12 +111,14 @@ String foo = (String) template.receiveAndConvert("myqueue");
 ----
 ====
 
-The `<rabbit:admin/>` declaration by default automatically looks for beans of type `Queue`, `Exchange` and `Binding` and declares them to the broker on behalf of the user, hence there is no need to use that bean explicitly in the simple Java driver.
-There are plenty of options to configure the properties of the components in the XML schema - you can use auto-complete features of your XML editor to explore them and look at their documentation.
+By default, the `<rabbit:admin/>` declaration automatically looks for beans of type `Queue`, `Exchange`, and `Binding` and declares them to the broker on behalf of the user.
+As a result, you need not use that bean explicitly in the simple Java driver.
+There are plenty of options to configure the properties of the components in the XML schema.
+You can use auto-complete features of your XML editor to explore them and look at their documentation.
 
 ===== With Java Configuration
 
-The same example again with the external configuration in Java:
+The following example repeats the same example as the preceding example but with the external configuration defined in Java:
 
 ====
 [source,java]
@@ -150,7 +159,7 @@ public class RabbitConfiguration {
 
 ===== With Spring Boot Auto Configuration and an Async POJO Listener
 
-Spring Boot automatically configures the infrastructure beans:
+Spring Boot automatically configures the infrastructure beans, as the following example shows:
 
 ====
 [source, java]

@@ -1,31 +1,27 @@
 [[testing]]
 === Testing Support
 
-==== Introduction
-
 Writing integration for asynchronous applications is necessarily more complex than testing simpler applications.
 This is made more complex when abstractions such as the `@RabbitListener` annotations come into the picture.
-The question being how to verify that, after sending a message, the listener received the message as expected.
+The question is how to verify that, after sending a message, the listener received the message as expected.
 
-The framework itself has many unit and integration tests; some using mocks, others using integration testing with
-a live RabbitMQ broker.
+The framework itself has many unit and integration tests.
+Some using mocks while, others use integration testing with a live RabbitMQ broker.
 You can consult those tests for some ideas for testing scenarios.
 
-Spring AMQP _version 1.6_ introduced the `spring-rabbit-test` jar which provides support for testing some of these more
-complex scenarios.
-It is anticipated that this project will expand over time but we need community feedback to make suggestions for
-features needed to help with testing.
-Please use https://jira.spring.io/browse/AMQP[JIRA] or
-https://github.com/spring-projects/spring-amqp/issues[GitHub Issues] to provide such feedback.
+Spring AMQP version 1.6 introduced the `spring-rabbit-test` jar, which provides support for testing some of these more complex scenarios.
+It is anticipated that this project will expand over time, but we need community feedback to make suggestions for the features needed to help with testing.
+Please use https://jira.spring.io/browse/AMQP[JIRA] or https://github.com/spring-projects/spring-amqp/issues[GitHub Issues] to provide such feedback.
 
 [[mockito-answer]]
-==== Mockito Answer<?> Implementations
+==== Mockito `Answer<?>` Implementations
 
-There are currently two `Answer<?>` implementations to help with testing:
+There are currently two `Answer<?>` implementations to help with testing.
 
-The first, `LatchCountDownAndCallRealMethodAnswer` provides an `Answer<Void>` that returns `null` and counts down
-a latch.
+The first, `LatchCountDownAndCallRealMethodAnswer`, provides an `Answer<Void>` that returns `null` and counts down a latch.
+The following example shows how to use `LatchCountDownAndCallRealMethodAnswer`:
 
+====
 [source, java]
 ----
 LatchCountDownAndCallRealMethodAnswer answer = new LatchCountDownAndCallRealMethodAnswer(2);
@@ -36,40 +32,50 @@ doAnswer(answer)
 
 assertTrue(answer.getLatch().await(10, TimeUnit.SECONDS));
 ----
+====
 
 The second, `LambdaAnswer<T>` provides a mechanism to optionally call the real method and provides an opportunity
 to return a custom result, based on the `InvocationOnMock` and the result (if any).
 
+Consider the following POJO:
+
+====
 [source, java]
 ----
-public class Foo {
+public class Thing {
 
-    public String foo(String foo) {
-        return foo.toUpperCase();
+    public String thing(String thing) {
+        return thing.toUpperCase();
     }
 
 }
 ----
+====
 
+The following class tests the `Thing` POJO:
+
+====
 [source, java]
 ----
-Foo foo = spy(new Foo());
+Thing thing = spy(new Thing());
 
 doAnswer(new LambdaAnswer<String>(true, (i, r) -> r + r))
-    .when(foo).foo(anyString());
-assertEquals("FOOFOO", foo.foo("foo"));
+    .when(thing).thing(anyString());
+assertEquals("THINGTHING", thing.thing("thing"));
 
 doAnswer(new LambdaAnswer<String>(true, (i, r) -> r + i.getArguments()[0]))
-    .when(foo).foo(anyString());
-assertEquals("FOOfoo", foo.foo("foo"));
+    .when(thing).thing(anyString());
+assertEquals("THINGthing", thing.thing("thing"));
 
 doAnswer(new LambdaAnswer<String>(false, (i, r) ->
-    "" + i.getArguments()[0] + i.getArguments()[0])).when(foo).foo(anyString());
-assertEquals("foofoo", foo.foo("foo"));
+    "" + i.getArguments()[0] + i.getArguments()[0])).when(thing).thing(anyString());
+assertEquals("thingthing", thing.thing("thing"));
 ----
+====
 
-When using Java 7 or earlier:
+The following example shows how to test the `Thing` POJO with Java 7 or earlier:
 
+====
 [source, java]
 ----
 doAnswer(new LambdaAnswer<String>(true, new ValueToReturn<String>() {
@@ -77,30 +83,32 @@ doAnswer(new LambdaAnswer<String>(true, new ValueToReturn<String>() {
     public String apply(InvocationOnMock i, String r) {
         return r + r;
     }
-})).when(foo).foo(anyString());
+})).when(thing).thing(anyString());
 ----
+====
 
 [[test-harness]]
-==== @RabbitListenerTest and RabbitListenerTestHarness
+==== `@RabbitListenerTest` and `RabbitListenerTestHarness`
 
-Annotating one of your `@Configuration` classes with `@RabbitListenerTest` will cause the framework to replace the
-standard `RabbitListenerAnnotationBeanPostProcessor` with a subclass `RabbitListenerTestHarness` (it will also enable
-`@RabbitListener` detection via `@EnableRabbit`).
+Annotating one of your `@Configuration` classes with `@RabbitListenerTest` causes the framework to replace the
+standard `RabbitListenerAnnotationBeanPostProcessor` with a subclass called `RabbitListenerTestHarness` (it also enables
+`@RabbitListener` detection through `@EnableRabbit`).
 
-The `RabbitListenerTestHarness` enhances the listener in two ways - it wraps it in a `Mockito Spy`, enabling normal
-`Mockito` stubbing and verification operations.
-It can also add an `Advice` to the listener enabling access to the arguments, result and or exceptions thrown.
+The `RabbitListenerTestHarness` enhances the listener in two ways.
+First, it wraps the listener in a `Mockito Spy`, enabling normal `Mockito` stubbing and verification operations.
+It can also add an `Advice` to the listener, enabling access to the arguments, result, and any exceptions that are thrown.
 You can control which (or both) of these are enabled with attributes on the `@RabbitListenerTest`.
-The latter is provided for access to lower-level data about the invocation - it also supports blocking the test
-thread until the async listener is called.
+The latter is provided for access to lower-level data about the invocation.
+It also supports blocking the test thread until the async listener is called.
 
-IMPORTANT: `final` `@RabbitListener` methods cannot be spied or advised; also, only listeners with an `id` attribute can
-be spied or advised.
+IMPORTANT: `final` `@RabbitListener` methods cannot be spied or advised.
+Also, only listeners with an `id` attribute can be spied or advised.
 
-Let's take a look at some examples.
+Consider some examples.
 
-Using spy:
+The following example uses spy:
 
+====
 [source, java]
 ----
 @Configuration
@@ -174,11 +182,11 @@ on the container thread.
 We use one of the link:#mockito-answer[Answer<?>] implementations to help with that.
 
 <4> Configure the spy to invoke the `Answer`.
+====
 
-<<<
+The following example uses the capture advice:
 
-Using the capture advice:
-
+====
 [source, java]
 ----
 @Configuration
@@ -261,18 +269,20 @@ for the result.
 to suspend the test thread.
 
 <5> When the listener throws an exception, it is available in the `throwable` property of the invocation data.
+====
 
 [[test-template]]
-==== TestRabbitTemplate
+==== Using `TestRabbitTemplate`
 
 The `TestRabbitTemplate` is provided to perform some basic integration testing without the need for a broker.
-When adding it as `@Bean` in your test case, it discovers all the listener containers in the context, either declared as `@Bean`, `<bean/>`s or using the `@RabbitListener` annotation.
+When you add it as a `@Bean` in your test case, it discovers all the listener containers in the context, whether declared as `@Bean` or `<bean/>` or using the `@RabbitListener` annotation.
 It currently only supports routing by queue name.
-The template extracts the message listener from the container, and invokes it directly on the test thread.
-Request/Reply messaging (`sendAndReceive` methods) is supported for listeners that return replies.
+The template extracts the message listener from the container and invokes it directly on the test thread.
+Request-reply messaging (`sendAndReceive` methods) is supported for listeners that return replies.
 
-Here is a simple test case that uses the template:
+The following test case uses the template:
 
+====
 [source, java]
 ----
 @RunWith(SpringRunner.class)
@@ -310,6 +320,7 @@ public class TestRabbitTemplateTests {
         assertThat(this.template.convertSendAndReceive("baz", "hello"), equalTo("baz:hello"));
     }
 ----
+
 [source, java]
 ----
     @Configuration
@@ -379,21 +390,24 @@ public class TestRabbitTemplateTests {
 
 }
 ----
+====
 
 [[junit-rules]]
-==== JUnit4 @Rules
+==== JUnit4 `@Rules`
 
-Spring AMQP _version 1.7_ and later provide an additional jar `spring-rabbit-junit`; this jar contains a couple of utility `@Rule` s for use when running JUnit4 tests.
+Spring AMQP version 1.7 and later provide an additional jar called `spring-rabbit-junit`.
+This jar contains a couple of utility `@Rule` instances for use when running JUnit4 tests.
 See <<junit5-conditions>> for JUnit5 testing.
 
-===== BrokerRunning
+===== Using `BrokerRunning`
 
-`BrokerRunning` provides a mechanism to allow tests to succeed when a broker is not running (on `localhost`, by default).
+`BrokerRunning` provides a mechanism to let tests succeed when a broker is not running (on `localhost`, by default).
 
-It also has utility methods to initialize/empty queues, and delete queues and exchanges.
+It also has utility methods to initialize and empty queues and delete queues and exchanges.
 
-Usage:
+The following example shows its usage:
 
+====
 [source, java]
 ----
 
@@ -405,19 +419,21 @@ public static void tearDown() {
     brokerRunning.removeTestQueues("some.other.queue.too") // removes foo, bar as well
 }
 ----
+====
 
-There are several `isRunning...` static methods such as `isBrokerAndManagementRunning()` which verifies the broker has the management plugin enabled.
+There are several `isRunning...` static methods, such as `isBrokerAndManagementRunning()`, which verifies the broker has the management plugin enabled.
 
 [[brokerRunning-configure]]
 ====== Configuring the Rule
 
 There are times when you want tests to fail if there is no broker, such as a nightly CI build.
-To disable the rule at runtime, set an environment variable `RABBITMQ_SERVER_REQUIRED` to `true`.
+To disable the rule at runtime, set an environment variable called `RABBITMQ_SERVER_REQUIRED` to `true`.
 
-You can override the broker properties, such as hostname in several ways:
+You can override the broker properties, such as hostname with either setters or environment variables:
 
-- Setters
+The following example shows how to override properties with setters:
 
+====
 [source, java]
 ----
 
@@ -433,11 +449,11 @@ public static void tearDown() {
     brokerRunning.removeTestQueues("some.other.queue.too") // removes foo, bar as well
 }
 ----
+====
 
-- Environment Variables
+You can also override properties by setting the following environment variables:
 
-The following environment variables are provided:
-
+====
 [source, java]
 ----
 public static final String BROKER_ADMIN_URI = "RABBITMQ_TEST_ADMIN_URI";
@@ -448,19 +464,23 @@ public static final String BROKER_PW = "RABBITMQ_TEST_PASSWORD";
 public static final String BROKER_ADMIN_USER = "RABBITMQ_TEST_ADMIN_USER";
 public static final String BROKER_ADMIN_PW = "RABBITMQ_TEST_ADMIN_PASSWORD";
 ----
+====
 
-These will override the default settings (`localhost:5672` for amqp and `http://localhost:15672/api/` for the management REST API).
+These environment variables override the default settings (`localhost:5672` for amqp and `http://localhost:15672/api/` for the management REST API).
 
-Changing the host name affects both the amqp and management REST API connection (unless the admin uri is explicitly set).
+Changing the host name affects both the `amqp` and `management` REST API connection (unless the admin uri is explicitly set).
 
-`BrokerRunning` also provides a `static` method: `setEnvironmentVariableOverrides` where you can pass in a map containing these variables; they override system environment variables.
+`BrokerRunning` also provides a `static` method called `setEnvironmentVariableOverrides` that lets you can pass in a map containing these variables.
+They override system environment variables.
 This might be useful if you wish to use different configuration for tests in multiple test suites.
 IMPORTANT: The method must be called before invoking any of the `isRunning()` static methods that create the rule instance.
-Variable values will be applied to all instances created after this.
+Variable values are applied to all instances created after this invocation.
 Invoke `clearEnvironmentVariableOverrides()` to reset the rule to use defaults (including any actual environment variables).
 
-In your test cases, you can use those properties when creating the connection factory:
+In your test cases, you can use those properties when creating the connection factory.
+The following example shows how to do so:
 
+====
 [source, java]
 ----
 @Bean
@@ -473,44 +493,53 @@ public ConnectionFactory rabbitConnectionFactory() {
     return connectionFactory;
 }
 ----
+====
 
-===== LongRunningIntegrationTest
+===== Using `LongRunningIntegrationTest`
 
-`LongRunningIntegrationTest` is a rule that disables long running tests; you might want to use this on a developer system but ensure that the rule is disabled on, for example, nightly CI builds.
+`LongRunningIntegrationTest` is a rule that disables long running tests.
+You might want to use this on a developer system but ensure that the rule is disabled on, for example, nightly CI builds.
 
-Usage:
+The following example shows its usage:
 
+====
 [source, java]
 ----
 @Rule
 public LongRunningIntegrationTest longTests = new LongRunningIntegrationTest();
 ----
+====
 
-To disable the rule at runtime, set an environment variable `RUN_LONG_INTEGRATION_TESTS` to `true`.
+To disable the rule at runtime, set an environment variable called `RUN_LONG_INTEGRATION_TESTS` to `true`.
 
 [[junit5-conditions]]
 ==== JUnit5 Conditions
 
-Version _2.0.2_ introduced support for JUnit5.
+Version 2.0.2 introduced support for JUnit5.
 
-===== @RabbitAvailable Annotation
+===== Using the `@RabbitAvailable` Annotation
 
-This class-level annotation is similar to the `BrokerRunning` `@Rule` discussed in <<junit-rules>>; it is processed by the `RabbitAvailableCondition`.
+This class-level annotation is similar to the `BrokerRunning` `@Rule` discussed in <<junit-rules>>.
+It is processed by the `RabbitAvailableCondition`.
 
 The annotation has two properties:
 
-* `queues` - an array of queues that will be declared (and purged) before each test and deleted when all tests are complete.
-* `management` - set to `true` if your tests also require the management plugin installed on the broker.
+* `queues`: An array of queues that are declared (and purged) before each test and deleted when all tests are complete.
+* `management`: Set this to `true` if your tests also require the management plugin installed on the broker.
 
-It is used to check if the broker is available and skip the tests if not.
-As discussed in <<brokerRunning-configure>> the environment variable `RABBITMQ_SERVER_REQUIRED`, if `true` will cause the tests to fail fast if there is no broker.
-The condition can be configured using environment variables as discussed in <<brokerRunning-configure>>.
+It is used to check whether the broker is available and skip the tests if not.
+As discussed in <<brokerRunning-configure>>, the environment variable called `RABBITMQ_SERVER_REQUIRED`, if `true`, causes the tests to fail fast if there is no broker.
+You can configure the condition by using environment variables as discussed in <<brokerRunning-configure>>.
 
 In addition, the `RabbitAvailableCondition` supports argument resolution for parameterized test constructors and methods.
-Two argument types are supported `BrokerRunning` (the instance) and `ConnectionFactory` - the `BrokerRunning` 's RabbitMQ connection factory.
+Two argument types are supported:
 
-Here is an example of each:
+* `BrokerRunning`: The instance
+* `ConnectionFactory`: The `BrokerRunning` instance's RabbitMQ connection factory
 
+The following example shows both:
+
+====
 [source, java]
 ----
 @RabbitAvailable(queues = "rabbitAvailableTests.queue")
@@ -535,11 +564,13 @@ public class RabbitAvailableCTORInjectionTests {
 
 }
 ----
+====
 
-This test is in the framework itself and verifies the argument injection and that the condition created the queue properly.
+The preceding test is in the framework itself and verifies the argument injection and that the condition created the queue properly.
 
-A practical user test might be:
+A practical user test might be as follows:
 
+====
 [source, java]
 ----
 @RabbitAvailable(queues = "rabbitAvailableTests.queue")
@@ -559,10 +590,12 @@ public class RabbitAvailableCTORInjectionTests {
     }
 }
 ----
+====
 
-When using a Spring annotation application context within a test class, it is also possible to get a reference to the condition's connection factory via a static method `RabbitAvailableCondition.getBrokerRunning()`.
-Here is another test from the framework that demonstrates the usage:
+When you use a Spring annotation application context within a test class, you can get a reference to the condition's connection factory through a static method called `RabbitAvailableCondition.getBrokerRunning()`.
+The following test comes from the framework and demonstrates the usage:
 
+====
 [source, java]
 ----
 @RabbitAvailable(queues = {
@@ -624,11 +657,14 @@ public class RabbitTemplateMPPIntegrationTests {
 
 }
 ----
+====
 
-===== @LongRunning Annotation
+===== Using the `@LongRunning` Annotation
 
 Similar to the `LongRunningIntegrationTest` JUnit4 `@Rule`, this annotation causes tests to be skipped unless an environment variable (or system property) is set to `true`.
+The following example shows how to use it:
 
+====
 [source, java]
 ----
 @RabbitAvailable(queues = SimpleMessageListenerContainerLongTests.QUEUE)
@@ -641,5 +677,6 @@ public class SimpleMessageListenerContainerLongTests {
 
 }
 ----
+====
 
-By default, the variable is `RUN_LONG_INTEGRATION_TESTS` but the variable name can be specified in the annotation's `value` attribute.
+By default, the variable is `RUN_LONG_INTEGRATION_TESTS`, but you can specify the variable name in the annotation's `value` attribute.
