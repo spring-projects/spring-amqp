@@ -2,7 +2,12 @@
 
 = Spring AMQP
 
-:toc:
+:toc: left
+:toclevels: 4
+:numbered:
+:icons: font
+:hide-uri-scheme:
+
 
 == Preface
 
@@ -10,7 +15,7 @@ include::preface.adoc[]
 
 == Introduction
 
-This first part of the reference documentation is a high-level overview of Spring AMQP and the underlying concepts and some code snippets that will get you up and running as quickly as possible.
+This first part of the reference documentation is a high-level overview of Spring AMQP and the underlying concepts. It includes some code snippets to get you up and running as quickly as possible.
 
 include::quick-tour.adoc[]
 
@@ -37,7 +42,6 @@ This part of the reference documentation provides a quick introduction to the AM
 include::si-amqp.adoc[]
 
 [[resources]]
-
 == Other Resources
 
 In addition to this reference documentation, there exist a number of other resources that may help you learn about AMQP.
