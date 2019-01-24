@@ -4,8 +4,8 @@ buildscript {
 		maven { url 'https://repo.spring.io/plugins-release' }
 	}
 	dependencies {
-		classpath 'io.spring.gradle:docbook-reference-plugin:0.3.1'
-		classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.8'
+		classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.9.2'
+		classpath 'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.16'
 		classpath 'me.champeau.gradle:gradle-javadoc-hotfix-plugin:0.1'
 		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
 		classpath "org.jetbrains.kotlin:kotlin-allopen:$kotlinVersion"
@@ -22,8 +22,6 @@ apply plugin: 'base'
 apply plugin: 'project-report'
 apply plugin: 'idea'
 
-def docsDir = 'src/reference/asciidoc'
-
 ext {
 	isTravisBuild = System.getenv().get("TRAVIS") == 'true'
 	linkHomepage = 'https://projects.spring.io/spring-amqp'
@@ -32,6 +30,7 @@ ext {
 	linkScmUrl           = 'https://github.com/spring-projects/spring-amqp'
 	linkScmConnection    = 'git://github.com/spring-projects/spring-amqp.git'
 	linkScmDevConnection = 'git@github.com:spring-projects/spring-amqp.git'
+	docResourcesVersion = '0.1.0.RELEASE'
 }
 
 allprojects {
@@ -329,40 +328,64 @@ project('spring-rabbit-test') {
 
 }
 
-apply plugin: 'org.asciidoctor.convert'
-
-asciidoctor {
-	sourceDir = file("$docsDir")
-	sources {
-		include 'index.adoc'
-	}
-	backends = ['html5', 'docbook']
-	logDocuments = true
-	options = [
-		doctype: 'book',
-	]
-	attributes = [
-		docinfo: '',
-		toc2: '',
-		'compat-mode': '',
-		imagesdir: '',
-		stylesdir: "stylesheets/",
-		stylesheet: 'golo.css',
-		'spring-amqp-version': "$version",
-		'source-highlighter': 'highlightjs'
-	]
+configurations {
+	docs
 }
 
-apply plugin: DocbookReferencePlugin
+dependencies {
+	docs "io.spring.docresources:spring-doc-resources:${docResourcesVersion}@zip"
+}
 
-reference {
-	sourceFileName = 'index.xml'
-	sourceDir = file("$buildDir/asciidoc/docbook")
-	pdfFilename = 'spring-amqp-reference.pdf'
-	expandPlaceholders = ''
+task prepareAsciidocBuild(type: Sync) {
+	dependsOn configurations.docs
+	from {
+		configurations.docs.collect { zipTree(it) }
+	}
+	from 'src/reference/asciidoc/'
+	into "$buildDir/asciidoc"
+}
+
+apply plugin: 'org.asciidoctor.convert'
+
+task reference(type: org.asciidoctor.gradle.AsciidoctorTask) {
+	backends = ['pdf']
+	sourceDir "$buildDir/asciidoc"
+	sources {
+		include 'index.adoc'
+		}
+	options doctype: 'book', eruby: 'erubis'
+	attributes 'source-highlighter': 'coderay',
+		    'icons': 'font', 
+            "project-version=$project.version"
 }
 
 reference.dependsOn asciidoctor
+
+asciidoctor {
+	sourceDir "$buildDir/asciidoc"
+	sources {
+		include 'index.adoc'
+	}
+	resources {
+		from(sourceDir) {
+			include 'images/*', 'css/**', 'js/**'
+		}
+	}
+	logDocuments = true
+	backends = ['html5']
+	options doctype: 'book', eruby: 'erubis'
+	attributes 'docinfo': 'shared',
+		stylesdir: "css/",
+		stylesheet: 'spring.css',
+		'linkcss': true,
+		'icons': 'font',
+		'source-highlighter=highlight.js',
+		'highlightjsdir=js/highlight',
+		'highlightjs-theme=atom-one-dark-reasonable',
+		"project-version=$project.version"
+}
+
+asciidoctor.dependsOn prepareAsciidocBuild
 
 sonarqube {
 	properties {
@@ -426,7 +449,7 @@ task schemaZip(type: Zip) {
 	}
 }
 
-task docsZip(type: Zip) {
+task docsZip(type: Zip, dependsOn: [reference]) {
 		group = 'Distribution'
 		classifier = 'docs'
 		description = "Builds -${classifier} archive containing api and reference " +
@@ -440,7 +463,12 @@ task docsZip(type: Zip) {
 			into 'api'
 		}
 
-		from (reference) {
+		from ('build/asciidoc/html5') {
+			into 'reference'
+		}
+
+		from ('build/asciidoc/pdf') {
+			include 'index.pdf'
 			into 'reference'
 		}
 }

@@ -1,8 +1,18 @@
 [[spring-amqp-reference]]
-
 = Spring AMQP
+:toc: left
+:toclevels: 4
+:numbered:
+:icons: font
+:hide-uri-scheme:
+Mark Pollack; Mark Fisher; Oleg Zhurakousky; Dave Syer; Gary Russell; Gunnar Hillert; Artem Bilan; Stéphane Nicoll; Arnaud Cogoluègnes; Jay Bryant
 
-:toc:
+*{project-version}*
+
+(C) 2010 - 2019 by Pivotal Software, Inc.
+
+Copies of this document may be made for your own use and for distribution to others, provided that you do not charge any fee for such copies and further provided that each copy contains this Copyright Notice, whether distributed in print or electronically.
+
 
 == Preface
 
