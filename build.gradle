@@ -30,6 +30,7 @@ ext {
 	linkScmUrl           = 'https://github.com/spring-projects/spring-amqp'
 	linkScmConnection    = 'git://github.com/spring-projects/spring-amqp.git'
 	linkScmDevConnection = 'git@github.com:spring-projects/spring-amqp.git'
+	docResourcesVersion = '0.1.0.RELEASE'
 }
 
 allprojects {
@@ -331,8 +332,6 @@ configurations {
 	docs
 }
 
-def docResourcesVersion = '0.1.0.RELEASE'
-
 dependencies {
 	docs "io.spring.docresources:spring-doc-resources:${docResourcesVersion}@zip"
 }
@@ -346,14 +345,14 @@ task prepareAsciidocBuild(type: Sync) {
 	// and doc sources
 	from "src/reference/asciidoc/"
 	// to a build directory of your choice
-	into "$buildDir/asciidoc/build"
+	into "$buildDir/asciidoc"
 }
 
 apply plugin: 'org.asciidoctor.convert'
 
 task reference(type: org.asciidoctor.gradle.AsciidoctorTask) {
 	backends = ["pdf"]
-	sourceDir "$buildDir/asciidoc/build"
+	sourceDir "$buildDir/asciidoc"
 	sources {
 		include "index.adoc"
 		}
@@ -366,7 +365,7 @@ reference.dependsOn asciidoctor
 
 asciidoctor {
 	// run asciidoctor from that directory
-	sourceDir "$buildDir/asciidoc/build"
+	sourceDir "$buildDir/asciidoc"
 	sources {
 		include 'index.adoc'
 	}
