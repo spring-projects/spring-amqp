@@ -11,7 +11,7 @@ Mark Pollack; Mark Fisher; Oleg Zhurakousky; Dave Syer; Gary Russell; Gunnar Hil
 
 Copies of this document may be made for your own use and for distribution to others, provided that you do not charge any fee for such copies and further provided that each copy contains this Copyright Notice, whether distributed in print or electronically.
 
-Version {spring-amqp-version}
+Version {project-version}
 
 == Preface
 

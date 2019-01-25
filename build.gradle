@@ -358,9 +358,7 @@ task reference(type: org.asciidoctor.gradle.AsciidoctorTask) {
 		}
 	options doctype: 'book', eruby: 'erubis'
 	attributes 'source-highlighter': 'coderay',
-		'icons': 'font',
-		'build-gradle': file('build.gradle'),
-		'spring-amqp-version': "${project.version}"
+		'icons': 'font'
 }
 
 reference.dependsOn asciidoctor
@@ -385,8 +383,6 @@ asciidoctor {
 		stylesheet: 'spring.css',
 		'linkcss': true,
 		'icons': 'font',
-		'build-gradle': file('build.gradle'),
-		'spring-amqp-version': "${project.version}",
 		// use provided highlighter
 		'source-highlighter=highlight.js',
 		'highlightjsdir=js/highlight',
