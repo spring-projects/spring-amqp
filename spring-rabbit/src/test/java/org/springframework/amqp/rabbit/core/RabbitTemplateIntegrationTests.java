@@ -47,11 +47,11 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -1246,7 +1246,7 @@ public class RabbitTemplateIntegrationTests {
 
 		int count = 10;
 
-		final Map<Double, Object> results = new HashMap<Double, Object>();
+		final Map<Double, Object> results = new ConcurrentHashMap<Double, Object>();
 
 		ExecutorService executor = Executors.newFixedThreadPool(10);
 
