@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.springframework.scheduling.TaskScheduler;
  * implementation to build a regular {@link DirectMessageListenerContainer}.
  *
  * @author Gary Russell
+ * @author Sud Ramasamy
  * @since 2.0
  */
 public class DirectRabbitListenerContainerFactory
@@ -35,6 +36,10 @@ public class DirectRabbitListenerContainerFactory
 	private Long monitorInterval;
 
 	private Integer consumersPerQueue = 1;
+
+	private Integer messagesPerAck;
+
+	private Long ackTimeout;
 
 	/**
 	 * Set the task scheduler to use for the task that monitors idle containers and
@@ -67,6 +72,29 @@ public class DirectRabbitListenerContainerFactory
 		this.consumersPerQueue = consumersPerQueue;
 	}
 
+	/**
+	 * Set the number of messages to receive before acknowledging (success).
+	 * A failed message will short-circuit this counter.
+	 * @param messagesPerAck the number of messages.
+	 * @see #setAckTimeout(Long)
+	 */
+	public void setMessagesPerAck(Integer messagesPerAck) {
+		this.messagesPerAck = messagesPerAck;
+	}
+
+	/**
+	 * An approximate timeout; when {@link #setMessagesPerAck(Integer) messagesPerAck} is
+	 * greater than 1, and this time elapses since the last ack, the pending acks will be
+	 * sent either when the next message arrives, or a short time later if no additional
+	 * messages arrive. In that case, the actual time depends on the
+	 * {@link #setMonitorInterval(long) monitorInterval}.
+	 * @param ackTimeout the timeout in milliseconds (default 20000);
+	 * @see #setMessagesPerAck(Integer)
+	 */
+	public void setAckTimeout(Long ackTimeout) {
+		this.ackTimeout = ackTimeout;
+	}
+
 	@Override
 	protected DirectMessageListenerContainer createContainerInstance() {
 		return new DirectMessageListenerContainer();
@@ -92,6 +120,12 @@ public class DirectRabbitListenerContainerFactory
 		}
 		else if (this.consumersPerQueue != null) {
 			instance.setConsumersPerQueue(this.consumersPerQueue);
+		}
+		if (this.messagesPerAck != null) {
+			instance.setMessagesPerAck(this.messagesPerAck);
+		}
+		if (this.ackTimeout != null) {
+			instance.setAckTimeout(this.ackTimeout);
 		}
 	}
 
