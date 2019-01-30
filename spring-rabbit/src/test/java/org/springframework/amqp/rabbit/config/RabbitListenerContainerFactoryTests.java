@@ -167,6 +167,8 @@ public class RabbitListenerContainerFactoryTests {
 		this.direct.setTaskScheduler(scheduler);
 		this.direct.setMonitorInterval(1234L);
 		this.direct.setConsumersPerQueue(42);
+		this.direct.setMessagesPerAck(5);
+		this.direct.setAckTimeout(3L);
 		this.direct.setAfterReceivePostProcessors(afterReceivePostProcessor);
 
 		assertArrayEquals(new Advice[] {advice}, this.direct.getAdviceChain());
@@ -194,6 +196,8 @@ public class RabbitListenerContainerFactoryTests {
 		assertSame(scheduler, fieldAccessor.getPropertyValue("taskScheduler"));
 		assertEquals(1234L, fieldAccessor.getPropertyValue("monitorInterval"));
 		assertEquals(42, fieldAccessor.getPropertyValue("consumersPerQueue"));
+		assertEquals(5, fieldAccessor.getPropertyValue("messagesPerAck"));
+		assertEquals(3L, fieldAccessor.getPropertyValue("ackTimeout"));
 		List<?> actualAfterReceivePostProcessors = (List<?>) fieldAccessor.getPropertyValue("afterReceivePostProcessors");
 		assertEquals("Wrong number of afterReceivePostProcessors", 1, actualAfterReceivePostProcessors.size());
 		assertSame("Wrong afterReceivePostProcessor", afterReceivePostProcessor, actualAfterReceivePostProcessors.get(0));
