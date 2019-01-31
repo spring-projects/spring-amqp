@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.core;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -138,6 +139,7 @@ import com.rabbitmq.client.ShutdownListener;
  * @author Artem Bilan
  * @author Ernest Sadykov
  * @author Mark Norkin
+ * @author Mohammad Hewedy
  *
  * @since 1.0
  */
@@ -584,6 +586,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count/co
 	 * {@code Order} and finally unordered.
 	 * @param beforePublishPostProcessors the post processor.
 	 * @since 1.4.2
+	 * @see #addBeforePublishPostProcessor(MessagePostProcessor)
 	 */
 	public void setBeforePublishPostProcessors(MessagePostProcessor... beforePublishPostProcessors) {
 		Assert.notNull(beforePublishPostProcessors, "'beforePublishPostProcessors' cannot be null");
@@ -592,17 +595,115 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count/co
 	}
 
 	/**
+	 * Add {@link MessagePostProcessor} that will be invoked immediately before invoking
+	 * {@code Channel#basicPublish()}, after all other processing, except creating the
+	 * {@link BasicProperties} from {@link MessageProperties}. May be used for operations
+	 * such as compression. Processors are invoked in order, depending on {@code PriorityOrder},
+	 * {@code Order} and finally unordered.
+	 * <p>
+	 * In contrast to {@link #setBeforePublishPostProcessors(MessagePostProcessor...)}, this
+	 * method does not override the previously added beforePublishPostProcessors.
+	 * @param beforePublishPostProcessor the post processor.
+	 * @since 2.1.4
+	 */
+	public void addBeforePublishPostProcessor(MessagePostProcessor beforePublishPostProcessor) {
+		Assert.notNull(beforePublishPostProcessor, "'beforePublishPostProcessor' cannot be null");
+		if (this.beforePublishPostProcessors == null) {
+			this.beforePublishPostProcessors = new ArrayList<>();
+		}
+		this.beforePublishPostProcessors.add(beforePublishPostProcessor);
+		this.beforePublishPostProcessors = MessagePostProcessorUtils.sort(this.beforePublishPostProcessors);
+	}
+
+	/**
+	 * Remove the provided {@link MessagePostProcessor} from the {@link #beforePublishPostProcessors} list.
+	 * @param beforePublishPostProcessor the MessagePostProcessor to remove.
+	 * @since 2.1.4
+	 * @see #addBeforePublishPostProcessor(MessagePostProcessor)
+	 */
+	public void removeBeforePublishPostProcessor(MessagePostProcessor beforePublishPostProcessor) {
+		Assert.notNull(beforePublishPostProcessor, "'beforePublishPostProcessor' cannot be null");
+		if (this.beforePublishPostProcessors != null) {
+			this.beforePublishPostProcessors.remove(beforePublishPostProcessor);
+		}
+	}
+
+	/**
+	 * Remove a {@link MessagePostProcessor} from the {@link #beforePublishPostProcessors} list for specific index.
+	 * @param index the index for the MessagePostProcessor to remove.
+	 * @return the removed MessagePostProcessor
+	 * @since 2.1.4
+	 * @see #addBeforePublishPostProcessor(MessagePostProcessor)
+	 */
+	@Nullable
+	public MessagePostProcessor removeBeforePublishPostProcessor(int index) {
+		if (this.beforePublishPostProcessors != null) {
+			return new ArrayList<>(this.beforePublishPostProcessors).remove(index);
+		}
+		return null;
+	}
+
+	/**
 	 * Set a {@link MessagePostProcessor} that will be invoked immediately after a {@code Channel#basicGet()}
 	 * and before any message conversion is performed.
-	 * May be used for operations such as decompression  Processors are invoked in order,
+	 * May be used for operations such as decompression. Processors are invoked in order,
 	 * depending on {@code PriorityOrder}, {@code Order} and finally unordered.
 	 * @param afterReceivePostProcessors the post processor.
 	 * @since 1.5
+	 * @see #addAfterReceivePostProcessor(MessagePostProcessor)
 	 */
 	public void setAfterReceivePostProcessors(MessagePostProcessor... afterReceivePostProcessors) {
 		Assert.notNull(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot be null");
 		Assert.noNullElements(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot have null elements");
 		this.afterReceivePostProcessors = MessagePostProcessorUtils.sort(Arrays.asList(afterReceivePostProcessors));
+	}
+
+	/**
+	 * Add {@link MessagePostProcessor} that will be invoked immediately after a {@code Channel#basicGet()}
+	 * and before any message conversion is performed.
+	 * May be used for operations such as decompression. Processors are invoked in order,
+	 * depending on {@code PriorityOrder}, {@code Order} and finally unordered.
+	 * <p>
+	 * In contrast to {@link #setAfterReceivePostProcessors(MessagePostProcessor...)}, this
+	 * method does not override the previously added afterReceivePostProcessors.
+	 * @param afterReceivePostProcessor the post processor.
+	 * @since 2.1.4
+	 */
+	public void addAfterReceivePostProcessor(MessagePostProcessor afterReceivePostProcessor) {
+		Assert.notNull(afterReceivePostProcessor, "'afterReceivePostProcessor' cannot be null");
+		if (this.afterReceivePostProcessors == null) {
+			this.afterReceivePostProcessors = new ArrayList<>();
+		}
+		this.afterReceivePostProcessors.add(afterReceivePostProcessor);
+		this.afterReceivePostProcessors = MessagePostProcessorUtils.sort(this.afterReceivePostProcessors);
+	}
+
+	/**
+	 * Remove the provided {@link MessagePostProcessor} from the {@link #afterReceivePostProcessors} list.
+	 * @param afterReceivePostProcessor the MessagePostProcessor to remove.
+	 * @since 2.1.4
+	 * @see #addAfterReceivePostProcessor(MessagePostProcessor)
+	 */
+	public void removeAfterReceivePostProcessor(MessagePostProcessor afterReceivePostProcessor) {
+		Assert.notNull(afterReceivePostProcessor, "'afterReceivePostProcessor' cannot be null");
+		if (this.afterReceivePostProcessors != null) {
+			this.afterReceivePostProcessors.remove(afterReceivePostProcessor);
+		}
+	}
+
+	/**
+	 * Remove a {@link MessagePostProcessor} from the {@link #afterReceivePostProcessors} list for specific index.
+	 * @param index the index for the MessagePostProcessor to remove.
+	 * @return the removed MessagePostProcessor
+	 * @since 2.1.4
+	 * @see #addAfterReceivePostProcessor(MessagePostProcessor)
+	 */
+	@Nullable
+	public MessagePostProcessor removeAfterReceivePostProcessor(int index) {
+		if (this.afterReceivePostProcessors != null) {
+			return new ArrayList<>(this.afterReceivePostProcessors).remove(index);
+		}
+		return null;
 	}
 
 	/**
