@@ -98,6 +98,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Johno Crawford
  * @author Arnaud Cogoluègnes
  * @author Artem Bilan
+ * @author Mohammad Hewedy
  */
 public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		implements MessageListenerContainer, ApplicationContextAware, BeanNameAware, DisposableBean,
