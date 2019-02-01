@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,6 @@ import org.springframework.transaction.interceptor.DefaultTransactionAttribute;
 import org.springframework.transaction.interceptor.TransactionAttribute;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
-import org.springframework.util.ClassUtils;
 import org.springframework.util.ErrorHandler;
 import org.springframework.util.StringUtils;
 import org.springframework.util.backoff.BackOff;
@@ -221,10 +220,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private String errorHandlerLoggerName = getClass().getName();
 
-	/**
-	 * {@inheritDoc}
-	 * @since 1.5
-	 */
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
 		this.applicationEventPublisher = applicationEventPublisher;
@@ -1132,7 +1127,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		}
 		factory.addInterface(ContainerDelegate.class);
 		factory.setTarget(delegate);
-		this.proxy = (ContainerDelegate) factory.getProxy(ClassUtils.getDefaultClassLoader());
+		this.proxy = (ContainerDelegate) factory.getProxy(ContainerDelegate.class.getClassLoader());
 	}
 
 	/**
@@ -1253,9 +1248,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			}
 		}
 		try {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Starting Rabbit listener container.");
-			}
+			logger.debug("Starting Rabbit listener container.");
 			configureAdminIfNeeded();
 			checkMismatchedQueues();
 			doStart();
@@ -1345,7 +1338,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				throw e;
 			}
 		}
-		else if (logger.isWarnEnabled()) {
+		else {
 			logger.warn("Execution of Rabbit message listener failed, and no ErrorHandler has been set.", ex);
 		}
 	}
@@ -1646,12 +1639,12 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				if ((isAutoDeclare() || isMismatchedQueuesFatal()) && this.logger.isDebugEnabled()) {
 					logger.debug("For 'autoDeclare' and 'mismatchedQueuesFatal' to work, there must be exactly one "
 							+ "AmqpAdmin in the context or you must inject one into this container; found: "
-							+ admins.size() + " for container " + this.toString());
+							+ admins.size() + " for container " + toString());
 				}
 				if (isMismatchedQueuesFatal()) {
 					throw new IllegalStateException("When 'mismatchedQueuesFatal' is 'true', there must be exactly "
 							+ "one AmqpAdmin in the context or you must inject one into this container; found: "
-							+ admins.size() + " for container " + this.toString());
+							+ admins.size() + " for container " + toString());
 				}
 			}
 		}
@@ -1881,7 +1874,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			}
 			else {
 				if (logger.isErrorEnabled()) {
-					logger.error("Unexpected invocation of " + this.getClass() + ", with message: " + message, t);
+					logger.error("Unexpected invocation of " + getClass() + ", with message: " + message, t);
 				}
 			}
 		}
