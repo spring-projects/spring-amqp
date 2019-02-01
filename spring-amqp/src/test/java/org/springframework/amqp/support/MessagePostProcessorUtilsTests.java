@@ -16,15 +16,10 @@
 
 package org.springframework.amqp.support;
 
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -53,7 +48,7 @@ public class MessagePostProcessorUtilsTests {
 				new OMPP().order(1),
 				new POMPP().order(6),
 				new POMPP().order(2)
-			};
+		};
 		Collection<MessagePostProcessor> sorted = MessagePostProcessorUtils.sort(Arrays.<MessagePostProcessor>asList(pps));
 		Iterator<MessagePostProcessor> iterator = sorted.iterator();
 		MessagePostProcessor mpp = iterator.next();
@@ -70,32 +65,6 @@ public class MessagePostProcessorUtilsTests {
 		assertEquals(3, ((OMPP) mpp).getOrder());
 		mpp = iterator.next();
 		assertThat(mpp, instanceOf(MPP.class));
-	}
-
-	@Test
-	public void testRemoveWithValidIndex() {
-		MPP mpp1 = new MPP();
-		MPP mpp2 = new MPP();
-		MPP mpp3 = new MPP();
-
-		ArrayList<MessagePostProcessor> collection = new ArrayList<>(Arrays.asList(mpp1, mpp2, mpp3));
-		MessagePostProcessor postProcessor = MessagePostProcessorUtils.remove(collection, 1);
-
-		assertThat(mpp2, equalTo(postProcessor));
-		assertThat(collection, contains(mpp1, mpp3));
-	}
-
-	@Test
-	public void testRemoveWithInvalidIndexWillNotRemove() {
-		MPP mpp1 = new MPP();
-		MPP mpp2 = new MPP();
-		MPP mpp3 = new MPP();
-
-		ArrayList<MessagePostProcessor> collection = new ArrayList<>(Arrays.asList(mpp1, mpp2, mpp3));
-		MessagePostProcessor postProcessor = MessagePostProcessorUtils.remove(collection, 5);
-
-		assertThat(postProcessor, is(nullValue()));
-		assertThat(collection, contains(mpp1, mpp2, mpp3));
 	}
 
 	class MPP implements MessagePostProcessor {

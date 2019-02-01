@@ -24,14 +24,11 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.core.OrderComparator;
 import org.springframework.core.Ordered;
 import org.springframework.core.PriorityOrdered;
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
 
 /**
  * Utilities for message post processors.
  *
  * @author Gary Russell
- * @author Mohammad Hewedy
  * @since 1.4.2
  *
  */
@@ -59,25 +56,6 @@ public final class MessagePostProcessorUtils {
 		sorted.addAll(ordered);
 		sorted.addAll(unOrdered);
 		return sorted;
-	}
-
-	/**
-	 * @param collection non nullable collection.
-	 * @param index      the index of the element to be removed.
-	 * @return element that has been removed.
-	 */
-	@Nullable
-	public static MessagePostProcessor remove(Collection<MessagePostProcessor> collection, int index) {
-		Assert.notNull(collection, "'collection' must not be null");
-		List<MessagePostProcessor> copyList = new ArrayList<>(collection);
-		for (int i = 0; i < collection.size(); i++) {
-			if (index == i) {
-				MessagePostProcessor found = copyList.get(i);
-				collection.remove(found);
-				return found;
-			}
-		}
-		return null;
 	}
 
 	private MessagePostProcessorUtils() { }

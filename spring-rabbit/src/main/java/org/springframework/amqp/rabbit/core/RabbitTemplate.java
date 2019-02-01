@@ -631,21 +631,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count/co
 	}
 
 	/**
-	 * Remove a {@link MessagePostProcessor} from the {@link #beforePublishPostProcessors} list for specific index.
-	 * @param index the index for the MessagePostProcessor to remove.
-	 * @return the removed MessagePostProcessor
-	 * @since 2.1.4
-	 * @see #addBeforePublishPostProcessor(MessagePostProcessor)
-	 */
-	@Nullable
-	public MessagePostProcessor removeBeforePublishPostProcessor(int index) {
-		if (this.beforePublishPostProcessors != null) {
-			return MessagePostProcessorUtils.remove(this.beforePublishPostProcessors, index);
-		}
-		return null;
-	}
-
-	/**
 	 * Set a {@link MessagePostProcessor} that will be invoked immediately after a {@code Channel#basicGet()}
 	 * and before any message conversion is performed.
 	 * May be used for operations such as decompression. Processors are invoked in order,
@@ -693,21 +678,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count/co
 			return this.afterReceivePostProcessors.remove(afterReceivePostProcessor);
 		}
 		return false;
-	}
-
-	/**
-	 * Remove a {@link MessagePostProcessor} from the {@link #afterReceivePostProcessors} list for specific index.
-	 * @param index the index for the MessagePostProcessor to remove.
-	 * @return the removed MessagePostProcessor
-	 * @since 2.1.4
-	 * @see #addAfterReceivePostProcessor(MessagePostProcessor)
-	 */
-	@Nullable
-	public MessagePostProcessor removeAfterReceivePostProcessor(int index) {
-		if (this.afterReceivePostProcessors != null) {
-			return MessagePostProcessorUtils.remove(this.afterReceivePostProcessors, index);
-		}
-		return null;
 	}
 
 	/**
