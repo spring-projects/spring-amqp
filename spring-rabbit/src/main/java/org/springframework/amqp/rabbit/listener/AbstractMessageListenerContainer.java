@@ -177,7 +177,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private boolean exposeListenerChannel = true;
 
-	private volatile Object messageListener;
+	private volatile MessageListener messageListener;
 
 	private volatile AcknowledgeMode acknowledgeMode = AcknowledgeMode.AUTO;
 
@@ -409,7 +409,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	@Deprecated
 	public void setMessageListener(Object messageListener) {
 		checkMessageListener(messageListener);
-		this.messageListener = messageListener;
+		setMessageListener((MessageListener) messageListener);
 	}
 
 	/**
@@ -1167,6 +1167,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			if (this.transactionManager != null && !isChannelTransacted()) {
 				logger.debug("The 'channelTransacted' is coerced to 'true', when 'transactionManager' is provided");
 				setChannelTransacted(true);
+			}
+			if (this.messageListener != null) {
+				this.messageListener.containerAckMode(this.acknowledgeMode);
 			}
 			this.initialized = true;
 		}

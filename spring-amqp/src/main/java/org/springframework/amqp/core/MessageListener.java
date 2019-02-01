@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,5 +26,15 @@ package org.springframework.amqp.core;
 public interface MessageListener {
 
 	void onMessage(Message message);
+
+	/**
+	 * Called by the container to inform the listener of its acknowledgement
+	 * mode.
+	 * @param mode the {@link AcknowledgeMode}.
+	 * @since 2.1.4
+	 */
+	default void containerAckMode(AcknowledgeMode mode) {
+		// NOSONAR - empty
+	}
 
 }
