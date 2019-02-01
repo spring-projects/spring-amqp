@@ -3168,10 +3168,6 @@ For example, after your POJO has been converted, the `MessagePostProcessor` enab
 Starting with _version 1.4.2_, additional extension points have been added to the `RabbitTemplate` - `setBeforePublishPostProcessors()` and `setAfterReceivePostProcessors()`.
 The first enables a post processor to run immediately before sending to RabbitMQ. When using batching (see <<template-batching>>), this is invoked after the batch is assembled and before the batch is sent. The second is invoked immediately after a message is received.
 
-Starting with version 2.1.4, `addBeforePublishPostProcessors()` and `addAfterReceivePostProcessors()` have been added to the `RabbitTemplate` to allow appending new post processors to the list of before publish and after receive post processors respectively.
-Also there are methods provided to remove the post processors.
-See the Javadoc of `RabbitTemplate` for more detail.
-
 These extension points are used for such features as compression and, for this purpose, several `MessagePostProcessor` s are provided:
 
 - GZipPostProcessor
@@ -3185,6 +3181,11 @@ for compressing messages before sending, and
 for decompressing received messages.
 
 Similarly, the `SimpleMessageListenerContainer` also has a `setAfterReceivePostProcessors()` method, allowing the decompression to be performed after messages are received by the container.
+
+Starting with version 2.1.4, `addBeforePublishPostProcessors()` and `addAfterReceivePostProcessors()` have been added to the `RabbitTemplate` to allow appending new post processors to the list of before publish and after receive post processors respectively.
+Also there are methods provided to remove the post processors.
+Similarly, `AbstractMessageListenerContainer` also has `addAfterReceivePostProcessors()` and `removeAfterReceivePostProcessor()` methods added.
+See the Javadoc of `RabbitTemplate` and `AbstractMessageListenerContainer` for more detail.
 
 [[request-reply]]
 ==== Request/Reply Messaging

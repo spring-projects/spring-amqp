@@ -40,6 +40,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -53,18 +54,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpAuthenticationException;
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
@@ -557,6 +561,39 @@ public class SimpleMessageListenerContainerTests {
 			// NOSONAR
 		}
 		container.stop();
+	}
+
+	@Test
+	public void testAddAndRemoveAfterReceivePostProcessors() {
+		class Container extends SimpleMessageListenerContainer {
+
+			@Override
+			public void executeListener(Channel channel, Message messageIn) {
+				super.executeListener(channel, messageIn);
+			}
+
+		}
+		class DoNothingMPP implements MessagePostProcessor {
+
+			@Override
+			public Message postProcessMessage(Message message) throws AmqpException {
+				return message;
+			}
+		}
+		Container container = new Container();
+
+		DoNothingMPP mpp1 = new DoNothingMPP();
+		DoNothingMPP mpp2 = new DoNothingMPP();
+		DoNothingMPP mpp3 = new DoNothingMPP();
+
+		container.addAfterReceivePostProcessors(mpp1, mpp2);
+		container.addAfterReceivePostProcessors(mpp3);
+		boolean removed = container.removeAfterReceivePostProcessor(mpp1);
+		Collection<?> afterReceivePostProcessors =
+				(Collection<?>) ReflectionTestUtils.getField(container, "afterReceivePostProcessors");
+
+		assertThat(removed, Matchers.is(true));
+		assertThat(afterReceivePostProcessors, Matchers.contains(mpp2, mpp3));
 	}
 
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,
