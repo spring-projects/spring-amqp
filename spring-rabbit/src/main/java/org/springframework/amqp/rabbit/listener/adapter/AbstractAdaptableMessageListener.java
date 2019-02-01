@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -105,6 +106,8 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	private RetryTemplate retryTemplate;
 
 	private RecoveryCallback<?> recoveryCallback;
+
+	private boolean isManualAck;
 
 
 	/**
@@ -252,6 +255,11 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 		return this.messageConverter;
 	}
 
+	@Override
+	public void containerAckMode(AcknowledgeMode mode) {
+		this.isManualAck = AcknowledgeMode.MANUAL.equals(mode);
+	}
+
 	/**
 	 * Handle the given exception that arose during listener execution.
 	 * The default implementation logs the exception at error level.
@@ -308,11 +316,19 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	protected void handleResult(InvocationResult resultArg, Message request, Channel channel, Object source) {
 		if (channel != null) {
 			if (resultArg.getReturnValue() instanceof ListenableFuture) {
+				if (!this.isManualAck) {
+					this.logger.warn("Container AcknowledgeMode must be MANUAL for a Future<?> return type; "
+							+ "otherwise the container will ack the message immediately");
+				}
 				((ListenableFuture<?>) resultArg.getReturnValue()).addCallback(
 						r -> asyncSuccess(resultArg, request, channel, source, r),
 						t -> asyncFailure(request, channel, t));
 			}
 			else if (monoPresent && MonoHandler.isMono(resultArg.getReturnValue())) {
+				if (!this.isManualAck) {
+					this.logger.warn("Container AcknowledgeMode must be MANUAL for a Mono<?> return type; "
+							+ "otherwise the container will ack the message immediately");
+				}
 				MonoHandler.subscribe(resultArg.getReturnValue(),
 						r -> asyncSuccess(resultArg, request, channel, source, r),
 						t -> asyncFailure(request, channel, t));
@@ -334,12 +350,12 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 			channel.basicAck(request.getMessageProperties().getDeliveryTag(), false);
 		}
 		catch (IOException e) {
-			this.logger.error("Failed to nack message", e);
+			this.logger.error("Failed to ack message", e);
 		}
 	}
 
 	private void asyncFailure(Message request, Channel channel, Throwable t) {
-		this.logger.error("Future was completed with an exception for " + request, t);
+		this.logger.error("Future or Mono was completed with an exception for " + request, t);
 		try {
 			channel.basicNack(request.getMessageProperties().getDeliveryTag(), false, true);
 		}

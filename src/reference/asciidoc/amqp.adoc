@@ -2565,7 +2565,10 @@ IMPORTANT: Containers created this way are normal `@Bean` s and are not register
 
 Starting with version 2.1, `@RabbitListener` (and `@RabbitHandler`) methods can be specified with asynchronous return types `ListenableFuture<?>` and `Mono<?>`, allowing the reply to be sent asynchronously.
 
-IMPORTANT: The listener container factory must be configured with `AcknowledgeMode.MANUAL` so that the consumer thread will not ack the message; instead, the asynchronous completion will ack or nack (requeue) the message when the async operation completes.
+IMPORTANT: The listener container factory must be configured with `AcknowledgeMode.MANUAL` so that the consumer thread will not ack the message; instead, the asynchronous completion will ack or nack the message when the async operation completes.
+When the async result is completed with an error, whether the message is requeued or not depends on the exception type thrown, the container configuration, and the container error handler.
+By default, the message will be requeued, unless the container's `defaultRequeueRejected` property is set to `false`.
+If the async result is completed with an `AmqpRejectAndDontRequeueException`, the message will not be requeued.
 If some exception occurs within the listener method that prevents creation of the async result object, you MUST catch that exception and return an appropriate return object that will cause the message to be acknowledged or requeued.
 
 [[threading]]
@@ -2591,7 +2594,7 @@ definition, to aid with thread identification in log messages.
 The `Executor` configured in the `CachingConnectionFactory` is passed into the `RabbitMQ Client` when creating the connection, and its threads are used to deliver new messages to the listener container.
 At the time of writing, if this is not configured, the client uses an internal thread pool executor with a pool size of 5.
 
-IMPORTANT: With the `DirectMessageListenerContainer` you need to ensure that the connection factory is configured with a task executor that had sufficient threads to support your desired concurrency, across all listener containers that use that factory.
+IMPORTANT: With the `DirectMessageListenerContainer` you need to ensure that the connection factory is configured with a task executor that has sufficient threads to support your desired concurrency, across all listener containers that use that factory.
 At the time of writing, the default pool size is only 5.
 
 The `RabbitMQ client` uses a `ThreadFactory` to create threads for low-level I/O (socket) operations.
