@@ -3168,7 +3168,7 @@ For example, after your POJO has been converted, the `MessagePostProcessor` enab
 Starting with _version 1.4.2_, additional extension points have been added to the `RabbitTemplate` - `setBeforePublishPostProcessors()` and `setAfterReceivePostProcessors()`.
 The first enables a post processor to run immediately before sending to RabbitMQ. When using batching (see <<template-batching>>), this is invoked after the batch is assembled and before the batch is sent. The second is invoked immediately after a message is received.
 
-Starting with version 2.1.4, `addBeforePublishPostProcessor()` and `addAfterReceivePostProcessor()` have been added to the `RabbitTemplate` to allow appending new post processor to the list of before publish and after receive post processors respectively.
+Starting with version 2.1.4, `addBeforePublishPostProcessors()` and `addAfterReceivePostProcessors()` have been added to the `RabbitTemplate` to allow appending new post processors to the list of before publish and after receive post processors respectively.
 Also there are methods provided to remove the post processors.
 See the Javadoc of `RabbitTemplate` for more detail.
 

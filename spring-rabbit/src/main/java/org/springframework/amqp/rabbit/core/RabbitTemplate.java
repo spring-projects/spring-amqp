@@ -586,7 +586,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count/co
 	 * {@code Order} and finally unordered.
 	 * @param beforePublishPostProcessors the post processor.
 	 * @since 1.4.2
-	 * @see #addBeforePublishPostProcessor(MessagePostProcessor)
+	 * @see #addBeforePublishPostProcessors(MessagePostProcessor...)
 	 */
 	public void setBeforePublishPostProcessors(MessagePostProcessor... beforePublishPostProcessors) {
 		Assert.notNull(beforePublishPostProcessors, "'beforePublishPostProcessors' cannot be null");
@@ -603,15 +603,15 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count/co
 	 * <p>
 	 * In contrast to {@link #setBeforePublishPostProcessors(MessagePostProcessor...)}, this
 	 * method does not override the previously added beforePublishPostProcessors.
-	 * @param beforePublishPostProcessor the post processor.
+	 * @param beforePublishPostProcessors the post processor.
 	 * @since 2.1.4
 	 */
-	public void addBeforePublishPostProcessor(MessagePostProcessor beforePublishPostProcessor) {
-		Assert.notNull(beforePublishPostProcessor, "'beforePublishPostProcessor' cannot be null");
+	public void addBeforePublishPostProcessors(MessagePostProcessor... beforePublishPostProcessors) {
+		Assert.notNull(beforePublishPostProcessors, "'beforePublishPostProcessors' cannot be null");
 		if (this.beforePublishPostProcessors == null) {
 			this.beforePublishPostProcessors = new ArrayList<>();
 		}
-		this.beforePublishPostProcessors.add(beforePublishPostProcessor);
+		this.beforePublishPostProcessors.addAll(Arrays.asList(beforePublishPostProcessors));
 		this.beforePublishPostProcessors = MessagePostProcessorUtils.sort(this.beforePublishPostProcessors);
 	}
 
@@ -620,7 +620,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count/co
 	 * @param beforePublishPostProcessor the MessagePostProcessor to remove.
 	 * @return the boolean if the provided post processor has been removed.
 	 * @since 2.1.4
-	 * @see #addBeforePublishPostProcessor(MessagePostProcessor)
+	 * @see #addBeforePublishPostProcessors(MessagePostProcessor...)
 	 */
 	public boolean removeBeforePublishPostProcessor(MessagePostProcessor beforePublishPostProcessor) {
 		Assert.notNull(beforePublishPostProcessor, "'beforePublishPostProcessor' cannot be null");
@@ -637,7 +637,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count/co
 	 * depending on {@code PriorityOrder}, {@code Order} and finally unordered.
 	 * @param afterReceivePostProcessors the post processor.
 	 * @since 1.5
-	 * @see #addAfterReceivePostProcessor(MessagePostProcessor)
+	 * @see #addAfterReceivePostProcessors(MessagePostProcessor...)
 	 */
 	public void setAfterReceivePostProcessors(MessagePostProcessor... afterReceivePostProcessors) {
 		Assert.notNull(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot be null");
@@ -653,15 +653,15 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count/co
 	 * <p>
 	 * In contrast to {@link #setAfterReceivePostProcessors(MessagePostProcessor...)}, this
 	 * method does not override the previously added afterReceivePostProcessors.
-	 * @param afterReceivePostProcessor the post processor.
+	 * @param afterReceivePostProcessors the post processor.
 	 * @since 2.1.4
 	 */
-	public void addAfterReceivePostProcessor(MessagePostProcessor afterReceivePostProcessor) {
-		Assert.notNull(afterReceivePostProcessor, "'afterReceivePostProcessor' cannot be null");
+	public void addAfterReceivePostProcessors(MessagePostProcessor... afterReceivePostProcessors) {
+		Assert.notNull(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot be null");
 		if (this.afterReceivePostProcessors == null) {
 			this.afterReceivePostProcessors = new ArrayList<>();
 		}
-		this.afterReceivePostProcessors.add(afterReceivePostProcessor);
+		this.afterReceivePostProcessors.addAll(Arrays.asList(afterReceivePostProcessors));
 		this.afterReceivePostProcessors = MessagePostProcessorUtils.sort(this.afterReceivePostProcessors);
 	}
 
@@ -670,7 +670,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count/co
 	 * @param afterReceivePostProcessor the MessagePostProcessor to remove.
 	 * @return the boolean if the provided post processor has been removed.
 	 * @since 2.1.4
-	 * @see #addAfterReceivePostProcessor(MessagePostProcessor)
+	 * @see #addAfterReceivePostProcessors(MessagePostProcessor...)
 	 */
 	public boolean removeAfterReceivePostProcessor(MessagePostProcessor afterReceivePostProcessor) {
 		Assert.notNull(afterReceivePostProcessor, "'afterReceivePostProcessor' cannot be null");

@@ -358,7 +358,7 @@ public class BatchingRabbitTemplateTests {
 		template.setConnectionFactory(this.connectionFactory);
 		GZipPostProcessor gZipPostProcessor = new GZipPostProcessor();
 		assertEquals(Deflater.BEST_SPEED, getStreamLevel(gZipPostProcessor));
-		template.addBeforePublishPostProcessor(gZipPostProcessor);
+		template.addBeforePublishPostProcessors(gZipPostProcessor);
 		MessageProperties props = new MessageProperties();
 		Message message = new Message("foo".getBytes(), props);
 		template.send("", ROUTE, message);
@@ -378,9 +378,9 @@ public class BatchingRabbitTemplateTests {
 		template.setConnectionFactory(this.connectionFactory);
 		GZipPostProcessor gZipPostProcessor = new GZipPostProcessor();
 		assertEquals(Deflater.BEST_SPEED, getStreamLevel(gZipPostProcessor));
-		template.addBeforePublishPostProcessor(gZipPostProcessor);
+		template.addBeforePublishPostProcessors(gZipPostProcessor);
 		HeaderPostProcessor headerPostProcessor = new HeaderPostProcessor();
-		template.addBeforePublishPostProcessor(headerPostProcessor);
+		template.addBeforePublishPostProcessors(headerPostProcessor);
 		template.removeBeforePublishPostProcessor(headerPostProcessor);
 		MessageProperties props = new MessageProperties();
 		Message message = new Message("foo".getBytes(), props);
@@ -423,8 +423,8 @@ public class BatchingRabbitTemplateTests {
 		GZipPostProcessor gZipPostProcessor = new GZipPostProcessor();
 		gZipPostProcessor.setLevel(Deflater.BEST_COMPRESSION);
 		assertEquals(Deflater.BEST_COMPRESSION, getStreamLevel(gZipPostProcessor));
-		template.addBeforePublishPostProcessor(gZipPostProcessor);
-		template.addAfterReceivePostProcessor(new GUnzipPostProcessor());
+		template.addBeforePublishPostProcessors(gZipPostProcessor);
+		template.addAfterReceivePostProcessors(new GUnzipPostProcessor());
 		MessageProperties props = new MessageProperties();
 		Message message = new Message("foo".getBytes(), props);
 		template.send("", ROUTE, message);
