@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,6 +48,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -56,6 +58,7 @@ import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
@@ -71,6 +74,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
@@ -92,6 +96,7 @@ import com.rabbitmq.client.impl.AMQImpl.Queue.DeclareOk;
 /**
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Mohammad Hewedy
  * @since 1.0.1
  *
  */
@@ -416,6 +421,40 @@ public class RabbitTemplateTests {
 		exec.shutdownNow();
 	}
 
+	@Test
+	public void testAddAndRemoveBeforePublishPostProcessors() {
+		DoNothingMPP mpp1 = new DoNothingMPP();
+		DoNothingMPP mpp2 = new DoNothingMPP();
+		DoNothingMPP mpp3 = new DoNothingMPP();
+
+		RabbitTemplate rabbitTemplate = new RabbitTemplate();
+		rabbitTemplate.addBeforePublishPostProcessors(mpp1, mpp2);
+		rabbitTemplate.addBeforePublishPostProcessors(mpp3);
+		boolean removed = rabbitTemplate.removeBeforePublishPostProcessor(mpp1);
+		Collection<?> beforePublishPostProcessors =
+				(Collection<?>) ReflectionTestUtils.getField(rabbitTemplate, "beforePublishPostProcessors");
+
+		assertThat(removed, Matchers.is(true));
+		assertThat(beforePublishPostProcessors, Matchers.contains(mpp2, mpp3));
+	}
+
+	@Test
+	public void testAddAndRemoveAfterReceivePostProcessors() {
+		DoNothingMPP mpp1 = new DoNothingMPP();
+		DoNothingMPP mpp2 = new DoNothingMPP();
+		DoNothingMPP mpp3 = new DoNothingMPP();
+
+		RabbitTemplate rabbitTemplate = new RabbitTemplate();
+		rabbitTemplate.addAfterReceivePostProcessors(mpp1, mpp2);
+		rabbitTemplate.addAfterReceivePostProcessors(mpp3);
+		boolean removed = rabbitTemplate.removeAfterReceivePostProcessor(mpp1);
+		Collection<?> afterReceivePostProcessors =
+				(Collection<?>) ReflectionTestUtils.getField(rabbitTemplate, "afterReceivePostProcessors");
+
+		assertThat(removed, Matchers.is(true));
+		assertThat(afterReceivePostProcessors, Matchers.contains(mpp2, mpp3));
+	}
+
 	@SuppressWarnings("serial")
 	private class TestTransactionManager extends AbstractPlatformTransactionManager {
 
@@ -440,6 +479,14 @@ public class RabbitTemplateTests {
 		protected void doRollback(DefaultTransactionStatus status) throws TransactionException {
 		}
 
+	}
+
+	private class DoNothingMPP implements MessagePostProcessor {
+
+		@Override
+		public Message postProcessMessage(Message message) throws AmqpException {
+			return message;
+		}
 	}
 
 }

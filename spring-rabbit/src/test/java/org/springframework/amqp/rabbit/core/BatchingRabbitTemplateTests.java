@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,9 +46,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.support.BatchingStrategy;
@@ -72,6 +74,7 @@ import org.springframework.util.StopWatch;
 /**
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Mohammad Hewedy
  *
  * @since 1.4.1
  *
@@ -349,6 +352,50 @@ public class BatchingRabbitTemplateTests {
 	}
 
 	@Test
+	public void testSimpleBatchGZippedUsingAdd() throws Exception {
+		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
+		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
+		template.setConnectionFactory(this.connectionFactory);
+		GZipPostProcessor gZipPostProcessor = new GZipPostProcessor();
+		assertEquals(Deflater.BEST_SPEED, getStreamLevel(gZipPostProcessor));
+		template.addBeforePublishPostProcessors(gZipPostProcessor);
+		MessageProperties props = new MessageProperties();
+		Message message = new Message("foo".getBytes(), props);
+		template.send("", ROUTE, message);
+		message = new Message("bar".getBytes(), props);
+		template.send("", ROUTE, message);
+		message = receive(template);
+		assertEquals("gzip", message.getMessageProperties().getContentEncoding());
+		GUnzipPostProcessor unzipper = new GUnzipPostProcessor();
+		message = unzipper.postProcessMessage(message);
+		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar", new String(message.getBody()));
+	}
+
+	@Test
+	public void testSimpleBatchGZippedUsingAddAndRemove() throws Exception {
+		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
+		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
+		template.setConnectionFactory(this.connectionFactory);
+		GZipPostProcessor gZipPostProcessor = new GZipPostProcessor();
+		assertEquals(Deflater.BEST_SPEED, getStreamLevel(gZipPostProcessor));
+		template.addBeforePublishPostProcessors(gZipPostProcessor);
+		HeaderPostProcessor headerPostProcessor = new HeaderPostProcessor();
+		template.addBeforePublishPostProcessors(headerPostProcessor);
+		template.removeBeforePublishPostProcessor(headerPostProcessor);
+		MessageProperties props = new MessageProperties();
+		Message message = new Message("foo".getBytes(), props);
+		template.send("", ROUTE, message);
+		message = new Message("bar".getBytes(), props);
+		template.send("", ROUTE, message);
+		message = receive(template);
+		assertEquals("gzip", message.getMessageProperties().getContentEncoding());
+		GUnzipPostProcessor unzipper = new GUnzipPostProcessor();
+		message = unzipper.postProcessMessage(message);
+		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar", new String(message.getBody()));
+		assertNull(message.getMessageProperties().getHeaders().get("someHeader"));
+	}
+
+	@Test
 	public void testSimpleBatchGZippedConfiguredUnzipper() throws Exception {
 		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
 		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
@@ -358,6 +405,26 @@ public class BatchingRabbitTemplateTests {
 		assertEquals(Deflater.BEST_COMPRESSION, getStreamLevel(gZipPostProcessor));
 		template.setBeforePublishPostProcessors(gZipPostProcessor);
 		template.setAfterReceivePostProcessors(new GUnzipPostProcessor());
+		MessageProperties props = new MessageProperties();
+		Message message = new Message("foo".getBytes(), props);
+		template.send("", ROUTE, message);
+		message = new Message("bar".getBytes(), props);
+		template.send("", ROUTE, message);
+		message = receive(template);
+		assertNull(message.getMessageProperties().getContentEncoding());
+		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar", new String(message.getBody()));
+	}
+
+	@Test
+	public void testSimpleBatchGZippedConfiguredUnzipperUsingAdd() throws Exception {
+		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
+		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
+		template.setConnectionFactory(this.connectionFactory);
+		GZipPostProcessor gZipPostProcessor = new GZipPostProcessor();
+		gZipPostProcessor.setLevel(Deflater.BEST_COMPRESSION);
+		assertEquals(Deflater.BEST_COMPRESSION, getStreamLevel(gZipPostProcessor));
+		template.addBeforePublishPostProcessors(gZipPostProcessor);
+		template.addAfterReceivePostProcessors(new GUnzipPostProcessor());
 		MessageProperties props = new MessageProperties();
 		Message message = new Message("foo".getBytes(), props);
 		template.send("", ROUTE, message);
@@ -505,4 +572,11 @@ public class BatchingRabbitTemplateTests {
 		return TestUtils.getPropertyValue(zipStream, "def.level", Integer.class);
 	}
 
+	private static class HeaderPostProcessor implements MessagePostProcessor {
+		@Override
+		public Message postProcessMessage(Message message) throws AmqpException {
+			message.getMessageProperties().getHeaders().put("someHeader", "someValue");
+			return message;
+		}
+	}
 }

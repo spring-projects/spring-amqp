@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.listener;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -97,6 +98,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Johno Crawford
  * @author Arnaud Cogoluègnes
  * @author Artem Bilan
+ * @author Mohammad Hewedy
  */
 public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		implements MessageListenerContainer, ApplicationContextAware, BeanNameAware, DisposableBean,
@@ -519,11 +521,46 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * depending on {@code PriorityOrder}, {@code Order} and finally unordered.
 	 * @param afterReceivePostProcessors the post processor.
 	 * @since 1.4.2
+	 * @see #addAfterReceivePostProcessors(MessagePostProcessor...)
 	 */
 	public void setAfterReceivePostProcessors(MessagePostProcessor... afterReceivePostProcessors) {
 		Assert.notNull(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot be null");
 		Assert.noNullElements(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot have null elements");
 		this.afterReceivePostProcessors = MessagePostProcessorUtils.sort(Arrays.asList(afterReceivePostProcessors));
+	}
+
+	/**
+	 * Add {@link MessagePostProcessor}s that will be applied after message reception, before
+	 * invoking the {@link MessageListener}. Often used to decompress data.  Processors are invoked in order,
+	 * depending on {@code PriorityOrder}, {@code Order} and finally unordered.
+	 * <p>
+	 * In contrast to {@link #setAfterReceivePostProcessors(MessagePostProcessor...)}, this
+	 * method does not override the previously added afterReceivePostProcessors.
+	 * @param afterReceivePostProcessors the post processor.
+	 * @since 2.1.4
+	 */
+	public void addAfterReceivePostProcessors(MessagePostProcessor... afterReceivePostProcessors) {
+		Assert.notNull(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot be null");
+		if (this.afterReceivePostProcessors == null) {
+			this.afterReceivePostProcessors = new ArrayList<>();
+		}
+		this.afterReceivePostProcessors.addAll(Arrays.asList(afterReceivePostProcessors));
+		this.afterReceivePostProcessors = MessagePostProcessorUtils.sort(this.afterReceivePostProcessors);
+	}
+
+	/**
+	 * Remove the provided {@link MessagePostProcessor} from the {@link #afterReceivePostProcessors} list.
+	 * @param afterReceivePostProcessor the MessagePostProcessor to remove.
+	 * @return the boolean if the provided post processor has been removed.
+	 * @since 2.1.4
+	 * @see #addAfterReceivePostProcessors(MessagePostProcessor...)
+	 */
+	public boolean removeAfterReceivePostProcessor(MessagePostProcessor afterReceivePostProcessor) {
+		Assert.notNull(afterReceivePostProcessor, "'afterReceivePostProcessor' cannot be null");
+		if (this.afterReceivePostProcessors != null) {
+			return this.afterReceivePostProcessors.remove(afterReceivePostProcessor);
+		}
+		return false;
 	}
 
 	/**

@@ -48,7 +48,7 @@ public class MessagePostProcessorUtilsTests {
 				new OMPP().order(1),
 				new POMPP().order(6),
 				new POMPP().order(2)
-			};
+		};
 		Collection<MessagePostProcessor> sorted = MessagePostProcessorUtils.sort(Arrays.<MessagePostProcessor>asList(pps));
 		Iterator<MessagePostProcessor> iterator = sorted.iterator();
 		MessagePostProcessor mpp = iterator.next();
