@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.annotation;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
@@ -223,6 +224,9 @@ public class EnableRabbitIntegrationTests {
 	@Autowired
 	private CachingConnectionFactory connectionFactory;
 
+	@Autowired
+	private MyService myService;
+
 	@BeforeClass
 	public static void setUp() {
 		System.setProperty(RabbitListenerAnnotationBeanPostProcessor.RABBIT_EMPTY_STRING_ARGUMENTS_PROPERTY,
@@ -237,6 +241,7 @@ public class EnableRabbitIntegrationTests {
 	@Test
 	public void autoDeclare() {
 		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("auto.exch", "auto.rk", "foo"));
+		assertThat(this.myService.channelBoundOk).isTrue();
 	}
 
 	@Test
@@ -896,12 +901,23 @@ public class EnableRabbitIntegrationTests {
 
 	public static class MyService {
 
+		private final RabbitTemplate txRabbitTemplate;
+
+		private volatile boolean channelBoundOk;
+
+		public MyService(RabbitTemplate txRabbitTemplate) {
+			this.txRabbitTemplate = txRabbitTemplate;
+		}
+
 		@RabbitListener(bindings = @QueueBinding(
 				value = @Queue(value = "auto.declare", autoDelete = "true", admins = "rabbitAdmin"),
 				exchange = @Exchange(value = "auto.exch", autoDelete = "true"),
-				key = "auto.rk")
+				key = "auto.rk"), containerFactory = "txListenerContainerFactory"
 		)
-		public String handleWithDeclare(String foo) {
+		public String handleWithDeclare(String foo, Channel channel) {
+			this.channelBoundOk = this.txRabbitTemplate.execute(c -> {
+				return c.equals(channel);
+			});
 			return foo.toUpperCase();
 		}
 
@@ -1351,6 +1367,19 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@Bean
+		public SimpleRabbitListenerContainerFactory txListenerContainerFactory() {
+			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+			factory.setConnectionFactory(rabbitConnectionFactory());
+			factory.setErrorHandler(errorHandler());
+			factory.setConsumerTagStrategy(consumerTagStrategy());
+			factory.setReceiveTimeout(10L);
+			factory.setRetryTemplate(new RetryTemplate());
+			factory.setReplyRecoveryCallback(c -> null);
+			factory.setChannelTransacted(true);
+			return factory;
+		}
+
+		@Bean
 		public SimpleMessageListenerContainer factoryCreatedContainerSimpleListener(
 				SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory) {
 			SimpleRabbitListenerEndpoint listener = new SimpleRabbitListenerEndpoint();
@@ -1472,8 +1501,15 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@Bean
+		public RabbitTemplate txRabbitTemplate() {
+			RabbitTemplate template = new RabbitTemplate(rabbitConnectionFactory());
+			template.setChannelTransacted(true);
+			return template;
+		}
+
+		@Bean
 		public MyService myService() {
-			return new MyService();
+			return new MyService(txRabbitTemplate());
 		}
 
 		@Bean
