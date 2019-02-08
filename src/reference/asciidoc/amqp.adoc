@@ -151,7 +151,7 @@ You can bind a queue to a `DirectExchange` with a fixed routing key, as the foll
 ====
 [source,java]
 ----
-new Binding(someQueue, someDirectExchange, "foo.bar")
+new Binding(someQueue, someDirectExchange, "foo.bar");
 ----
 ====
 
@@ -160,7 +160,7 @@ You can bind a queue to a `TopicExchange` with a routing pattern, as the followi
 ====
 [source,java]
 ----
-new Binding(someQueue, someTopicExchange, "foo.*")
+new Binding(someQueue, someTopicExchange, "foo.*");
 ----
 ====
 
@@ -169,7 +169,7 @@ You can bind a queue to a `FanoutExchange` with no routing key, as the following
 ====
 [source,java]
 ----
-new Binding(someQueue, someFanoutExchange)
+new Binding(someQueue, someFanoutExchange);
 ----
 ====
 
@@ -843,6 +843,10 @@ Spring AMQP now uses the `4.0.x` version of `amqp-client`, which has auto recove
 Spring AMQP can still use its own recovery mechanisms if you wish, disabling it in the client, (by setting the `automaticRecoveryEnabled` property on the underlying `RabbitMQ connectionFactory` to `false`).
 However, the framework is completely compatible with auto-recovery being enabled.
 This means any consumers you create within your code (perhaps via `RabbitTemplate.execute()`) can be recovered automatically.
+
+IMPORTANT: Only elements (queues, exchanges, bindings) that are defined as beans will be re-declared after a connection failure.
+Elements declared by invoking `RabbitAdmin.declare*()` methods directly from user code are unknown to the framework and therefore cannot be recovered.
+If you have a need for a variable number of declarations, consider defining a bean, or beans, of type `Declarables`, as discussed in <<collection-declaration>>.
 
 [[custom-client-props]]
 ==== Adding Custom Client Connection Properties
@@ -4212,8 +4216,8 @@ The `durable()` method with no parameter is no longer provided.
 [[collection-declaration]]
 ===== Declaring Collections of Exchanges, Queues, and Bindings
 
-You can wrap collections of declarable objects (`Queue`, `Exchange`, and `Binding`) in `Declarables` objects.
-The `RabbitAdmin` detects such beans in the application context and declares the contained objects on the broker.
+You can wrap collections of `Declarable` objects (`Queue`, `Exchange`, and `Binding`) in `Declarables` objects.
+The `RabbitAdmin` detects such beans (as well as discrete `Declarable` beans) in the application context, and declares the contained objects on the broker whenever a connection is established (initially and after a connection failure).
 The following example shows how to do so:
 
 ====
