@@ -16,10 +16,9 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import java.util.function.Consumer;
-
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.utils.JavaUtils;
 
 /**
  * A {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory}
@@ -140,34 +139,24 @@ public class SimpleRabbitListenerContainerFactory
 	protected void initializeContainer(SimpleMessageListenerContainer instance, RabbitListenerEndpoint endpoint) {
 		super.initializeContainer(instance, endpoint);
 
-		setIfNotNull(this.txSize, instance::setTxSize);
+		JavaUtils javaUtils = JavaUtils.INSTANCE
+			.acceptIfNotNull(this.txSize, instance::setTxSize);
 		String concurrency = null;
 		if (endpoint != null) {
 			concurrency = endpoint.getConcurrency();
-			setIfNotNull(concurrency, instance::setConcurrency);
+			javaUtils.acceptIfNotNull(concurrency, instance::setConcurrency);
 		}
-		setIf(concurrency == null && this.concurrentConsumers != null, this.concurrentConsumers,
-				instance::setConcurrentConsumers);
-		setIf((concurrency == null || !(concurrency.contains("-"))) && this.maxConcurrentConsumers != null,
-				this.maxConcurrentConsumers, instance::setMaxConcurrentConsumers);
-		setIfNotNull(this.startConsumerMinInterval, instance::setStartConsumerMinInterval);
-		setIfNotNull(this.stopConsumerMinInterval, instance::setStopConsumerMinInterval);
-		setIfNotNull(this.consecutiveActiveTrigger, instance::setConsecutiveActiveTrigger);
-		setIfNotNull(this.consecutiveIdleTrigger, instance::setConsecutiveIdleTrigger);
-		setIfNotNull(this.receiveTimeout, instance::setReceiveTimeout);
-		setIfNotNull(this.deBatchingEnabled, instance::setDeBatchingEnabled);
-	}
-
-	private <T> void setIf(boolean predicate, T value, Consumer<T> instance) {
-		if (predicate) {
-			instance.accept(value);
-		}
-	}
-
-	private <T> void setIfNotNull(T value, Consumer<T> instance) {
-		if (value != null) {
-			instance.accept(value);
-		}
+		javaUtils
+			.acceptIfCondition(concurrency == null && this.concurrentConsumers != null, this.concurrentConsumers,
+				instance::setConcurrentConsumers)
+			.acceptIfCondition((concurrency == null || !(concurrency.contains("-"))) && this.maxConcurrentConsumers != null,
+				this.maxConcurrentConsumers, instance::setMaxConcurrentConsumers)
+			.acceptIfNotNull(this.startConsumerMinInterval, instance::setStartConsumerMinInterval)
+			.acceptIfNotNull(this.stopConsumerMinInterval, instance::setStopConsumerMinInterval)
+			.acceptIfNotNull(this.consecutiveActiveTrigger, instance::setConsecutiveActiveTrigger)
+			.acceptIfNotNull(this.consecutiveIdleTrigger, instance::setConsecutiveIdleTrigger)
+			.acceptIfNotNull(this.receiveTimeout, instance::setReceiveTimeout)
+			.acceptIfNotNull(this.deBatchingEnabled, instance::setDeBatchingEnabled);
 	}
 
 }
