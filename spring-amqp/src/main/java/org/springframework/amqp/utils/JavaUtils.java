@@ -43,13 +43,13 @@ public final class JavaUtils {
 	 * @param value the value.
 	 * @param consumer the consumer.
 	 * @param <T> the value type.
-	 * @return {@link #INSTANCE}.
+	 * @return this.
 	 */
 	public <T> JavaUtils acceptIfCondition(boolean condition, T value, Consumer<T> consumer) {
 		if (condition) {
 			consumer.accept(value);
 		}
-		return INSTANCE;
+		return this;
 	}
 
 	/**
@@ -57,13 +57,13 @@ public final class JavaUtils {
 	 * @param value the value.
 	 * @param consumer the consumer.
 	 * @param <T> the value type.
-	 * @return {@link #INSTANCE}
+	 * @return this.
 	 */
 	public <T> JavaUtils acceptIfNotNull(T value, Consumer<T> consumer) {
 		if (value != null) {
 			consumer.accept(value);
 		}
-		return INSTANCE;
+		return this;
 	}
 
 }
