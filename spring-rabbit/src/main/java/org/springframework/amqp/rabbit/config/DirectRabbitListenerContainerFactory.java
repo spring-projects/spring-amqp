@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.config;
 
 import org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
+import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.scheduling.TaskScheduler;
 
 /**
@@ -104,12 +105,10 @@ public class DirectRabbitListenerContainerFactory
 	protected void initializeContainer(DirectMessageListenerContainer instance, RabbitListenerEndpoint endpoint) {
 		super.initializeContainer(instance, endpoint);
 
-		if (this.taskScheduler != null) {
-			instance.setTaskScheduler(this.taskScheduler);
-		}
-		if (this.monitorInterval != null) {
-			instance.setMonitorInterval(this.monitorInterval);
-		}
+		JavaUtils javaUtils = JavaUtils.INSTANCE.acceptIfNotNull(this.taskScheduler, instance::setTaskScheduler)
+			.acceptIfNotNull(this.monitorInterval, instance::setMonitorInterval)
+			.acceptIfNotNull(this.messagesPerAck, instance::setMessagesPerAck)
+			.acceptIfNotNull(this.ackTimeout, instance::setAckTimeout);
 		if (endpoint != null && endpoint.getConcurrency() != null) {
 			try {
 				instance.setConsumersPerQueue(Integer.parseInt(endpoint.getConcurrency()));
@@ -118,14 +117,8 @@ public class DirectRabbitListenerContainerFactory
 				throw new IllegalStateException("Failed to parse concurrency: " + e.getMessage(), e);
 			}
 		}
-		else if (this.consumersPerQueue != null) {
-			instance.setConsumersPerQueue(this.consumersPerQueue);
-		}
-		if (this.messagesPerAck != null) {
-			instance.setMessagesPerAck(this.messagesPerAck);
-		}
-		if (this.ackTimeout != null) {
-			instance.setAckTimeout(this.ackTimeout);
+		else {
+			javaUtils.acceptIfNotNull(this.consumersPerQueue, instance::setConsumersPerQueue);
 		}
 	}
 
