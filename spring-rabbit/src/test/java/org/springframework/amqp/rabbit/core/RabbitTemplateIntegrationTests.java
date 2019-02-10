@@ -400,7 +400,12 @@ public class RabbitTemplateIntegrationTests {
 
 	@Test
 	public void testReceiveTimeoutRequeue() {
-		assertNull(this.template.receiveAndConvert(ROUTE, 1));
+		try {
+			assertNull(this.template.receiveAndConvert(ROUTE, 10));
+		}
+		catch (ConsumeOkNotReceivedException e) {
+			// empty - race for consumeOk
+		}
 		assertEquals(0,
 				TestUtils.getPropertyValue(this.connectionFactory, "cachedChannelsNonTransactional", List.class)
 						.size());

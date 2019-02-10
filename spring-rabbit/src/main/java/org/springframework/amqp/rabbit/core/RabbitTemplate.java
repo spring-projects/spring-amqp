@@ -1328,6 +1328,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	@Nullable // NOSONAR complexity
 	private Delivery consumeDelivery(Channel channel, String queueName, long timeoutMillis)
 			throws IOException, TimeoutException, InterruptedException {
+
 		Delivery delivery = null;
 		RuntimeException exception = null;
 		CompletableFuture<Delivery> future = new CompletableFuture<>();
@@ -1338,9 +1339,10 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		};
 		channel.addShutdownListener(shutdownListener);
 		ClosingRecoveryListener.addRecoveryListenerIfNecessary(channel);
-		DefaultConsumer consumer = createConsumer(queueName, channel, future,
-				timeoutMillis < 0 ? DEFAULT_CONSUME_TIMEOUT : timeoutMillis);
+		DefaultConsumer consumer = null;
 		try {
+			consumer = createConsumer(queueName, channel, future,
+						timeoutMillis < 0 ? DEFAULT_CONSUME_TIMEOUT : timeoutMillis);
 			if (timeoutMillis < 0) {
 				delivery = future.get();
 			}
@@ -1361,7 +1363,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			RabbitUtils.setPhysicalCloseRequired(channel, true);
 		}
 		finally {
-			if (!(exception instanceof ConsumerCancelledException) && channel.isOpen()) {
+			if (consumer != null && !(exception instanceof ConsumerCancelledException) && channel.isOpen()) {
 				cancelConsumerQuietly(channel, consumer);
 			}
 			try {
@@ -2582,7 +2584,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				((ChannelProxy) channel).getTargetChannel().close();
 			}
 			future.completeExceptionally(
-					new ConsumeOkNotReceivedException("Blocking receive, consumer failed to consume: " + consumer));
+					new ConsumeOkNotReceivedException("Blocking receive, consumer failed to consume within "
+							+ timeoutMillis + " ms: " + consumer));
 		}
 		return consumer;
 	}
