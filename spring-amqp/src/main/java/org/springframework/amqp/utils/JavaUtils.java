@@ -39,10 +39,10 @@ public final class JavaUtils {
 
 	/**
 	 * Invoke {@link Consumer#accept(Object)} with the value if the condition is true.
-	 *
 	 * @param condition the condition.
 	 * @param value the value.
 	 * @param consumer the consumer.
+	 * @param <T> the value type.
 	 * @return {@link #INSTANCE}.
 	 */
 	public <T> JavaUtils acceptIfCondition(boolean condition, T value, Consumer<T> consumer) {
@@ -56,6 +56,7 @@ public final class JavaUtils {
 	 * Invoke {@link Consumer#accept(Object)} with the value if it is not null.
 	 * @param value the value.
 	 * @param consumer the consumer.
+	 * @param <T> the value type.
 	 * @return {@link #INSTANCE}
 	 */
 	public <T> JavaUtils acceptIfNotNull(T value, Consumer<T> consumer) {
