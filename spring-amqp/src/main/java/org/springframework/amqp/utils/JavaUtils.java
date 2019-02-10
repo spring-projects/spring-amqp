@@ -28,6 +28,9 @@ import java.util.function.Consumer;
  */
 public final class JavaUtils {
 
+	/**
+	 * The singleton instance of this utility class.
+	 */
 	public static final JavaUtils INSTANCE = new JavaUtils();
 
 	private JavaUtils() {
