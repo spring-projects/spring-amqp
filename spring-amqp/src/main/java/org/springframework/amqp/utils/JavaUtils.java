@@ -16,7 +16,10 @@
 
 package org.springframework.amqp.utils;
 
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
+import org.springframework.util.StringUtils;
 
 /**
  * Chained utility methods to simplify some Java repetitive code. Obtain a reference to
@@ -62,6 +65,70 @@ public final class JavaUtils {
 	public <T> JavaUtils acceptIfNotNull(T value, Consumer<T> consumer) {
 		if (value != null) {
 			consumer.accept(value);
+		}
+		return this;
+	}
+
+	/**
+	 * Invoke {@link Consumer#accept(Object)} with the value if it is not null or empty.
+	 * @param value the value.
+	 * @param consumer the consumer.
+	 * @return this.
+	 */
+	public JavaUtils acceptIfHasText(String value, Consumer<String> consumer) {
+		if (StringUtils.hasText(value)) {
+			consumer.accept(value);
+		}
+		return this;
+	}
+
+	/**
+	 * Invoke {@link BiConsumer#accept(Object, Object)} with the arguments if the
+	 * condition is true.
+	 * @param condition the condition.
+	 * @param t1 the first consumer argument
+	 * @param t2 the second consumer argument
+	 * @param consumer the consumer.
+	 * @param <T1> the first argument type.
+	 * @param <T2> the second argument type.
+	 * @return this.
+	 */
+	public <T1, T2> JavaUtils acceptIfCondition(boolean condition, T1 t1, T2 t2, BiConsumer<T1, T2> consumer) {
+		if (condition) {
+			consumer.accept(t1, t2);
+		}
+		return this;
+	}
+
+	/**
+	 * Invoke {@link BiConsumer#accept(Object, Object)} with the arguments if the t2
+	 * argument is not null.
+	 * @param t1 the first argument
+	 * @param t2 the second consumer argument
+	 * @param consumer the consumer.
+	 * @param <T1> the first argument type.
+	 * @param <T2> the second argument type.
+	 * @return this.
+	 */
+	public <T1, T2> JavaUtils acceptIfNotNull(T1 t1, T2 t2, BiConsumer<T1, T2> consumer) {
+		if (t2 != null) {
+			consumer.accept(t1, t2);
+		}
+		return this;
+	}
+
+	/**
+	 * Invoke {@link BiConsumer#accept(Object, Object)} with the arguments if the value
+	 * argument is not null or empty.
+	 * @param t1 the first consumer argument.
+	 * @param value the second consumer argument
+	 * @param <T> the first argument type.
+	 * @param consumer the consumer.
+	 * @return this.
+	 */
+	public <T> JavaUtils acceptIfHasText(T t1, String value, BiConsumer<T, String> consumer) {
+		if (StringUtils.hasText(value)) {
+			consumer.accept(t1, value);
 		}
 		return this;
 	}
