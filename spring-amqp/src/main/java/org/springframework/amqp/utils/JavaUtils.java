@@ -86,49 +86,49 @@ public final class JavaUtils {
 	 * Invoke {@link BiConsumer#accept(Object, Object)} with the arguments if the
 	 * condition is true.
 	 * @param condition the condition.
-	 * @param value the second consumer argument
-	 * @param t the first consumer argument
+	 * @param t1 the first consumer argument
+	 * @param t2 the second consumer argument
 	 * @param consumer the consumer.
-	 * @param <T> the first argument type.
-	 * @param <U> the second argument type.
+	 * @param <T1> the first argument type.
+	 * @param <T2> the second argument type.
 	 * @return this.
 	 */
-	public <T, U> JavaUtils acceptIfCondition(boolean condition, U value, T t, BiConsumer<T, U> consumer) {
+	public <T1, T2> JavaUtils acceptIfCondition(boolean condition, T1 t1, T2 t2, BiConsumer<T1, T2> consumer) {
 		if (condition) {
-			consumer.accept(t, value);
+			consumer.accept(t1, t2);
+		}
+		return this;
+	}
+
+	/**
+	 * Invoke {@link BiConsumer#accept(Object, Object)} with the arguments if the t2
+	 * argument is not null.
+	 * @param t1 the first argument
+	 * @param t2 the second consumer argument
+	 * @param consumer the consumer.
+	 * @param <T1> the first argument type.
+	 * @param <T2> the second argument type.
+	 * @return this.
+	 */
+	public <T1, T2> JavaUtils acceptIfNotNull(T1 t1, T2 t2, BiConsumer<T1, T2> consumer) {
+		if (t2 != null) {
+			consumer.accept(t1, t2);
 		}
 		return this;
 	}
 
 	/**
 	 * Invoke {@link BiConsumer#accept(Object, Object)} with the arguments if the value
-	 * argument is not null.
+	 * argument is not null or empty.
+	 * @param t1 the first consumer argument.
 	 * @param value the second consumer argument
-	 * @param t the first argument
-	 * @param consumer the consumer.
-	 * @param <T> the first argument type.
-	 * @param <U> the second argument type.
-	 * @return this.
-	 */
-	public <T, U> JavaUtils acceptIfNotNull(U value, T t, BiConsumer<T, U> consumer) {
-		if (value != null) {
-			consumer.accept(t, value);
-		}
-		return this;
-	}
-
-	/**
-	 * Invoke {@link BiConsumer#accept(Object, Object)} with the value if it is not null
-	 * or empty.
-	 * @param value the second consumer argument
-	 * @param t the first consumer argument.
 	 * @param <T> the first argument type.
 	 * @param consumer the consumer.
 	 * @return this.
 	 */
-	public <T> JavaUtils acceptIfHasText(String value, T t, BiConsumer<T, String> consumer) {
+	public <T> JavaUtils acceptIfHasText(T t1, String value, BiConsumer<T, String> consumer) {
 		if (StringUtils.hasText(value)) {
-			consumer.accept(t, value);
+			consumer.accept(t1, value);
 		}
 		return this;
 	}

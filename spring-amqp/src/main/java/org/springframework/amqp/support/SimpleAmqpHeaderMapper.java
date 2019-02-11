@@ -129,40 +129,40 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 			BiConsumer<String, Object> putObject = headers::put;
 			BiConsumer<String, String> putString = headers::put;
 			JavaUtils javaUtils = JavaUtils.INSTANCE
-					.acceptIfNotNull(amqpMessageProperties.getAppId(), AmqpHeaders.APP_ID, putObject)
-					.acceptIfNotNull(amqpMessageProperties.getClusterId(), AmqpHeaders.CLUSTER_ID, putObject)
-					.acceptIfNotNull(amqpMessageProperties.getContentEncoding(), AmqpHeaders.CONTENT_ENCODING,
+					.acceptIfNotNull(AmqpHeaders.APP_ID, amqpMessageProperties.getAppId(), putObject)
+					.acceptIfNotNull(AmqpHeaders.CLUSTER_ID, amqpMessageProperties.getClusterId(), putObject)
+					.acceptIfNotNull(AmqpHeaders.CONTENT_ENCODING, amqpMessageProperties.getContentEncoding(),
 							putObject);
 			long contentLength = amqpMessageProperties.getContentLength();
 			javaUtils
-					.acceptIfCondition(contentLength > 0, contentLength, AmqpHeaders.CONTENT_LENGTH, putObject)
-					.acceptIfHasText(amqpMessageProperties.getContentType(), AmqpHeaders.CONTENT_TYPE, putString)
-					.acceptIfHasText(amqpMessageProperties.getCorrelationId(), AmqpHeaders.CORRELATION_ID, putString)
-					.acceptIfNotNull(amqpMessageProperties.getReceivedDeliveryMode(),
-							AmqpHeaders.RECEIVED_DELIVERY_MODE, putObject);
+					.acceptIfCondition(contentLength > 0, AmqpHeaders.CONTENT_LENGTH, contentLength, putObject)
+					.acceptIfHasText(AmqpHeaders.CONTENT_TYPE, amqpMessageProperties.getContentType(), putString)
+					.acceptIfHasText(AmqpHeaders.CORRELATION_ID, amqpMessageProperties.getCorrelationId(), putString)
+					.acceptIfNotNull(AmqpHeaders.RECEIVED_DELIVERY_MODE,
+							amqpMessageProperties.getReceivedDeliveryMode(), putObject);
 			long deliveryTag = amqpMessageProperties.getDeliveryTag();
 			javaUtils
-					.acceptIfCondition(deliveryTag > 0, deliveryTag, AmqpHeaders.DELIVERY_TAG, putObject)
-					.acceptIfHasText(amqpMessageProperties.getExpiration(), AmqpHeaders.EXPIRATION, putString)
-					.acceptIfNotNull(amqpMessageProperties.getMessageCount(), AmqpHeaders.MESSAGE_COUNT, putObject)
-					.acceptIfNotNull(amqpMessageProperties.getMessageId(), AmqpHeaders.MESSAGE_ID, putObject);
+					.acceptIfCondition(deliveryTag > 0, AmqpHeaders.DELIVERY_TAG, deliveryTag, putObject)
+					.acceptIfHasText(AmqpHeaders.EXPIRATION, amqpMessageProperties.getExpiration(), putString)
+					.acceptIfNotNull(AmqpHeaders.MESSAGE_COUNT, amqpMessageProperties.getMessageCount(), putObject)
+					.acceptIfNotNull(AmqpHeaders.MESSAGE_ID, amqpMessageProperties.getMessageId(), putObject);
 			Integer priority = amqpMessageProperties.getPriority();
 			javaUtils
-					.acceptIfCondition(priority != null && priority > 0, priority, AmqpMessageHeaderAccessor.PRIORITY,
+					.acceptIfCondition(priority != null && priority > 0, AmqpMessageHeaderAccessor.PRIORITY, priority,
 							putObject)
-					.acceptIfNotNull(amqpMessageProperties.getReceivedDelay(), AmqpHeaders.RECEIVED_DELAY, putObject)
-					.acceptIfHasText(amqpMessageProperties.getReceivedExchange(), AmqpHeaders.RECEIVED_EXCHANGE,
+					.acceptIfNotNull(AmqpHeaders.RECEIVED_DELAY, amqpMessageProperties.getReceivedDelay(), putObject)
+					.acceptIfHasText(AmqpHeaders.RECEIVED_EXCHANGE, amqpMessageProperties.getReceivedExchange(),
 							putString)
-					.acceptIfHasText(amqpMessageProperties.getReceivedRoutingKey(), AmqpHeaders.RECEIVED_ROUTING_KEY,
+					.acceptIfHasText(AmqpHeaders.RECEIVED_ROUTING_KEY, amqpMessageProperties.getReceivedRoutingKey(),
 							putString)
-					.acceptIfNotNull(amqpMessageProperties.isRedelivered(), AmqpHeaders.REDELIVERED, putObject)
-					.acceptIfNotNull(amqpMessageProperties.getReplyTo(), AmqpHeaders.REPLY_TO, putObject)
-					.acceptIfNotNull(amqpMessageProperties.getTimestamp(), AmqpHeaders.TIMESTAMP, putObject)
-					.acceptIfHasText(amqpMessageProperties.getType(), AmqpHeaders.TYPE, putString)
-					.acceptIfHasText(amqpMessageProperties.getReceivedUserId(), AmqpHeaders.RECEIVED_USER_ID,
+					.acceptIfNotNull(AmqpHeaders.REDELIVERED, amqpMessageProperties.isRedelivered(), putObject)
+					.acceptIfNotNull(AmqpHeaders.REPLY_TO, amqpMessageProperties.getReplyTo(), putObject)
+					.acceptIfNotNull(AmqpHeaders.TIMESTAMP, amqpMessageProperties.getTimestamp(), putObject)
+					.acceptIfHasText(AmqpHeaders.TYPE, amqpMessageProperties.getType(), putString)
+					.acceptIfHasText(AmqpHeaders.RECEIVED_USER_ID, amqpMessageProperties.getReceivedUserId(),
 							putString)
-					.acceptIfHasText(amqpMessageProperties.getConsumerTag(), AmqpHeaders.CONSUMER_TAG, putString)
-					.acceptIfHasText(amqpMessageProperties.getConsumerQueue(), AmqpHeaders.CONSUMER_QUEUE, putString);
+					.acceptIfHasText(AmqpHeaders.CONSUMER_TAG, amqpMessageProperties.getConsumerTag(), putString)
+					.acceptIfHasText(AmqpHeaders.CONSUMER_QUEUE, amqpMessageProperties.getConsumerQueue(), putString);
 
 			// Map custom headers
 			for (Map.Entry<String, Object> entry : amqpMessageProperties.getHeaders().entrySet()) {
