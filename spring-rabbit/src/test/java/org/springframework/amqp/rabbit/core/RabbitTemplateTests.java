@@ -369,13 +369,13 @@ public class RabbitTemplateTests {
 		AtomicReference<Channel> templateChannel = new AtomicReference<>();
 		new TransactionTemplate(new TestTransactionManager()).execute(s -> {
 			return rabbitTemplate.execute(c -> {
-				templateChannel.set(c);
+				templateChannel.set(((ChannelProxy) c).getTargetChannel());
 				return true;
 			});
 		});
 		verify(channel1).txSelect();
 		verify(channel1).queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), anyMap());
-		assertThat(((ChannelProxy) templateChannel.get()).getTargetChannel(), equalTo(channel1));
+		assertThat(templateChannel.get(), equalTo(channel1));
 		verify(channel1).txCommit();
 	}
 

@@ -35,6 +35,7 @@ import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.adapter.AbstractAdaptableMessageListener;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -343,17 +344,13 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		this.containerConfigurer = configurer;
 	}
 
-	@SuppressWarnings("deprecation") // NOSONAR complexity - mostly null checks
+	@SuppressWarnings("deprecation")
 	@Override
-	public C createListenerContainer(RabbitListenerEndpoint endpoint) { // NOSONAR complexity
+	public C createListenerContainer(RabbitListenerEndpoint endpoint) {
 		C instance = createContainerInstance();
 
-		if (this.connectionFactory != null) {
-			instance.setConnectionFactory(this.connectionFactory);
-		}
-		if (this.errorHandler != null) {
-			instance.setErrorHandler(this.errorHandler);
-		}
+		JavaUtils javaUtils = JavaUtils.INSTANCE.acceptIfNotNull(this.connectionFactory, instance::setConnectionFactory)
+			.acceptIfNotNull(this.errorHandler, instance::setErrorHandler);
 		if (this.messageConverter != null) {
 			if (endpoint != null) {
 				endpoint.setMessageConverter(this.messageConverter);
@@ -365,60 +362,25 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 				instance.setMessageConverter(this.messageConverter);
 			}
 		}
-		if (this.acknowledgeMode != null) {
-			instance.setAcknowledgeMode(this.acknowledgeMode);
-		}
-		if (this.channelTransacted != null) {
-			instance.setChannelTransacted(this.channelTransacted);
-		}
-		if (this.applicationContext != null) {
-			instance.setApplicationContext(this.applicationContext);
-		}
-		if (this.taskExecutor != null) {
-			instance.setTaskExecutor(this.taskExecutor);
-		}
-		if (this.transactionManager != null) {
-			instance.setTransactionManager(this.transactionManager);
-		}
-		if (this.prefetchCount != null) {
-			instance.setPrefetchCount(this.prefetchCount);
-		}
-		if (this.defaultRequeueRejected != null) {
-			instance.setDefaultRequeueRejected(this.defaultRequeueRejected);
-		}
-		if (this.adviceChain != null) {
-			instance.setAdviceChain(this.adviceChain);
-		}
-		if (this.recoveryBackOff != null) {
-			instance.setRecoveryBackOff(this.recoveryBackOff);
-		}
-		if (this.mismatchedQueuesFatal != null) {
-			instance.setMismatchedQueuesFatal(this.mismatchedQueuesFatal);
-		}
-		if (this.missingQueuesFatal != null) {
-			instance.setMissingQueuesFatal(this.missingQueuesFatal);
-		}
-		if (this.consumerTagStrategy != null) {
-			instance.setConsumerTagStrategy(this.consumerTagStrategy);
-		}
-		if (this.idleEventInterval != null) {
-			instance.setIdleEventInterval(this.idleEventInterval);
-		}
-		if (this.failedDeclarationRetryInterval != null) {
-			instance.setFailedDeclarationRetryInterval(this.failedDeclarationRetryInterval);
-		}
-		if (this.applicationEventPublisher != null) {
-			instance.setApplicationEventPublisher(this.applicationEventPublisher);
-		}
-		if (this.autoStartup != null) {
-			instance.setAutoStartup(this.autoStartup);
-		}
-		if (this.phase != null) {
-			instance.setPhase(this.phase);
-		}
-		if (this.afterReceivePostProcessors != null) {
-			instance.setAfterReceivePostProcessors(this.afterReceivePostProcessors);
-		}
+		javaUtils
+			.acceptIfNotNull(this.acknowledgeMode, instance::setAcknowledgeMode)
+			.acceptIfNotNull(this.channelTransacted, instance::setChannelTransacted)
+			.acceptIfNotNull(this.applicationContext, instance::setApplicationContext)
+			.acceptIfNotNull(this.taskExecutor, instance::setTaskExecutor)
+			.acceptIfNotNull(this.transactionManager, instance::setTransactionManager)
+			.acceptIfNotNull(this.prefetchCount, instance::setPrefetchCount)
+			.acceptIfNotNull(this.defaultRequeueRejected, instance::setDefaultRequeueRejected)
+			.acceptIfNotNull(this.adviceChain, instance::setAdviceChain)
+			.acceptIfNotNull(this.recoveryBackOff, instance::setRecoveryBackOff)
+			.acceptIfNotNull(this.mismatchedQueuesFatal, instance::setMismatchedQueuesFatal)
+			.acceptIfNotNull(this.missingQueuesFatal, instance::setMissingQueuesFatal)
+			.acceptIfNotNull(this.consumerTagStrategy, instance::setConsumerTagStrategy)
+			.acceptIfNotNull(this.idleEventInterval, instance::setIdleEventInterval)
+			.acceptIfNotNull(this.failedDeclarationRetryInterval, instance::setFailedDeclarationRetryInterval)
+			.acceptIfNotNull(this.applicationEventPublisher, instance::setApplicationEventPublisher)
+			.acceptIfNotNull(this.autoStartup, instance::setAutoStartup)
+			.acceptIfNotNull(this.phase, instance::setPhase)
+			.acceptIfNotNull(this.afterReceivePostProcessors, instance::setAfterReceivePostProcessors);
 		if (endpoint != null) {
 			if (endpoint.getAutoStartup() != null) {
 				instance.setAutoStartup(endpoint.getAutoStartup());
@@ -430,15 +392,11 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		if (instance.getMessageListener() instanceof AbstractAdaptableMessageListener) {
 			AbstractAdaptableMessageListener messageListener = (AbstractAdaptableMessageListener) instance
 					.getMessageListener();
-			if (this.beforeSendReplyPostProcessors != null) {
-				messageListener.setBeforeSendReplyPostProcessors(this.beforeSendReplyPostProcessors);
-			}
-			if (this.retryTemplate != null) {
-				messageListener.setRetryTemplate(this.retryTemplate);
-				if (this.recoveryCallback != null) {
-					messageListener.setRecoveryCallback(this.recoveryCallback);
-				}
-			}
+			javaUtils
+				.acceptIfNotNull(this.beforeSendReplyPostProcessors, messageListener::setBeforeSendReplyPostProcessors)
+				.acceptIfNotNull(this.retryTemplate, messageListener::setRetryTemplate)
+				.acceptIfCondition(this.retryTemplate != null && this.recoveryCallback != null, this.recoveryCallback,
+					messageListener::setRecoveryCallback);
 		}
 		initializeContainer(instance, endpoint);
 
