@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.annotation
 
-import assertk.assert
+import assertk.assertThat
 import assertk.assertions.isTrue
 import org.junit.jupiter.api.Test
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory
@@ -53,14 +53,14 @@ class EnableRabbitKotlinTests {
 	fun `send and wait for consume` () {
 		val template = RabbitTemplate(this.config.cf())
 		template.convertAndSend("kotlinQueue", "test")
-		assert(this.config.latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.config.latch.await(10, TimeUnit.SECONDS)).isTrue();
 	}
 
 	@Test
 	fun `send and wait for consume with EH` () {
 		val template = RabbitTemplate(this.config.cf())
 		template.convertAndSend("kotlinQueue1", "test")
-		assert(this.config.ehLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.config.ehLatch.await(10, TimeUnit.SECONDS)).isTrue();
 	}
 
 	@Configuration
