@@ -278,6 +278,7 @@ project('spring-rabbit') {
 
 		testRuntime "org.springframework:spring-web:$springVersion"
 		testRuntime "org.apache.httpcomponents:httpclient:$commonsHttpClientVersion"
+		testRuntime "com.fasterxml.jackson.module:jackson-module-kotlin:$jackson2Version"
 	}
 
 	compileTestKotlin {
