@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -381,10 +381,10 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 			.acceptIfNotNull(this.autoStartup, instance::setAutoStartup)
 			.acceptIfNotNull(this.phase, instance::setPhase)
 			.acceptIfNotNull(this.afterReceivePostProcessors, instance::setAfterReceivePostProcessors);
-		if (endpoint != null) {
-			if (endpoint.getAutoStartup() != null) {
-				instance.setAutoStartup(endpoint.getAutoStartup());
-			}
+		if (endpoint != null) { // endpoint settings overriding default factory settings
+			javaUtils
+				.acceptIfNotNull(endpoint.getAutoStartup(), instance::setAutoStartup)
+				.acceptIfNotNull(endpoint.getTaskExecutor(), instance::setTaskExecutor);
 			instance.setListenerId(endpoint.getId());
 
 			endpoint.setupListenerContainer(instance);

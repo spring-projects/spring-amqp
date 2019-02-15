@@ -2194,6 +2194,9 @@ Its meaning and allowed values depend on the container type, as follows:
 In either case, this setting overrides the settings on the factory.
 Previously you had to define different container factories if you had listeners that required different concurrency.
 
+The annotation also allows overriding the factory `autoStartup` and `taskExecutor` properties via the `autoStartup` and `executor` (since 2.2) annotation properties.
+Using a different executor for each might help with identifying threads associated with each listener in logs and thread dumps.
+
 [[async-annotation-conversion]]
 ====== Message Conversion for Annotated Methods
 

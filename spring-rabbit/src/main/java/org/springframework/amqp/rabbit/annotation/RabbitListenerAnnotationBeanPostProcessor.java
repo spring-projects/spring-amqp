@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,6 +69,7 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.env.Environment;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.lang.Nullable;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
@@ -342,6 +343,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	private void processMultiMethodListeners(RabbitListener[] classLevelListeners, Method[] multiMethods,
 			Object bean, String beanName) {
+
 		List<Method> checkedMethods = new ArrayList<Method>();
 		Method defaultMethod = null;
 		for (Method method : multiMethods) {
@@ -401,7 +403,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	}
 
 	protected void processListener(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener, Object bean,
-			Object adminTarget, String beanName) {
+			Object target, String beanName) {
+
 		endpoint.setBean(bean);
 		endpoint.setMessageHandlerMethodFactory(this.messageHandlerMethodFactory);
 		endpoint.setId(getEndpointId(rabbitListener));
@@ -447,8 +450,9 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			}
 		}
 
-		resolveAdmin(endpoint, rabbitListener, adminTarget);
-		RabbitListenerContainerFactory<?> factory = resolveContainerFactory(rabbitListener, adminTarget, beanName);
+		endpoint.setTaskExecutor(resolveExecutor(rabbitListener, target, beanName));
+		resolveAdmin(endpoint, rabbitListener, target);
+		RabbitListenerContainerFactory<?> factory = resolveContainerFactory(rabbitListener, target, beanName);
 
 		this.registrar.registerEndpoint(endpoint, factory);
 	}
@@ -469,8 +473,9 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	}
 
 	@Nullable
-	private RabbitListenerContainerFactory<?> resolveContainerFactory(RabbitListener rabbitListener, Object adminTarget,
-			String beanName) {
+	private RabbitListenerContainerFactory<?> resolveContainerFactory(RabbitListener rabbitListener,
+			Object factoryTarget, String beanName) {
+
 		RabbitListenerContainerFactory<?> factory = null;
 		String containerFactoryBeanName = resolve(rabbitListener.containerFactory());
 		if (StringUtils.hasText(containerFactoryBeanName)) {
@@ -479,12 +484,31 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				factory = this.beanFactory.getBean(containerFactoryBeanName, RabbitListenerContainerFactory.class);
 			}
 			catch (NoSuchBeanDefinitionException ex) {
-				throw new BeanInitializationException("Could not register rabbit listener endpoint on [" +
-						adminTarget + "] for bean " + beanName + ", no " + RabbitListenerContainerFactory.class.getSimpleName() + " with id '" +
-						containerFactoryBeanName + "' was found in the application context", ex);
+				throw new BeanInitializationException("Could not register rabbit listener endpoint on ["
+						+ factoryTarget + "] for bean " + beanName + ", no "
+						+ RabbitListenerContainerFactory.class.getSimpleName() + " with id '"
+						+ containerFactoryBeanName + "' was found in the application context", ex);
 			}
 		}
 		return factory;
+	}
+
+	@Nullable
+	private TaskExecutor resolveExecutor(RabbitListener rabbitListener, Object execTarget, String beanName) {
+		TaskExecutor exec = null;
+		String execBeanName = resolve(rabbitListener.executor());
+		if (StringUtils.hasText(execBeanName)) {
+			Assert.state(this.beanFactory != null, "BeanFactory must be set to obtain container factory by bean name");
+			try {
+				exec = this.beanFactory.getBean(execBeanName, TaskExecutor.class);
+			}
+			catch (NoSuchBeanDefinitionException ex) {
+				throw new BeanInitializationException("Could not register rabbit listener endpoint on ["
+						+ execTarget + "] for bean " + beanName + ", no " + TaskExecutor.class.getSimpleName()
+						+ " with id '" + execBeanName + "' was found in the application context", ex);
+			}
+		}
+		return exec;
 	}
 
 	private String getEndpointId(RabbitListener rabbitListener) {

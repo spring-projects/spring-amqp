@@ -5,3 +5,7 @@
 
 This section describes the changes between version 2.1 and version 2.2.
 
+===== @RabbitListener Changes
+
+You can now configure an `executor` on each listener, overriding the factory configuration, to more easily identify threads associated with the listener.
+See <<async-annotation-driven-enable>> for more information.

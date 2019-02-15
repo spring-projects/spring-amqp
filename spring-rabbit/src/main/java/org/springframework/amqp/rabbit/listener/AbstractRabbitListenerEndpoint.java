@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import org.springframework.beans.factory.config.BeanExpressionContext;
 import org.springframework.beans.factory.config.BeanExpressionResolver;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.expression.BeanFactoryResolver;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.expression.BeanResolver;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -78,6 +79,8 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	private Boolean autoStartup;
 
 	private MessageConverter messageConverter;
+
+	private TaskExecutor taskExecutor;
 
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
@@ -260,6 +263,20 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	@Override
 	public void setMessageConverter(MessageConverter messageConverter) {
 		this.messageConverter = messageConverter;
+	}
+
+	@Override
+	public TaskExecutor getTaskExecutor() {
+		return this.taskExecutor;
+	}
+
+	/**
+	 * Override the default task executor.
+	 * @param taskExecutor the executor.
+	 * @since 2.2
+	 */
+	public void setTaskExecutor(TaskExecutor taskExecutor) {
+		this.taskExecutor = taskExecutor;
 	}
 
 	@Override

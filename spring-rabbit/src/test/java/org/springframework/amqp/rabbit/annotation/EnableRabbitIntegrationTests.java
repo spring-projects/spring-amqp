@@ -120,6 +120,7 @@ import org.springframework.core.PriorityOrdered;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.lang.NonNull;
 import org.springframework.messaging.converter.GenericMessageConverter;
 import org.springframework.messaging.handler.annotation.Header;
@@ -246,7 +247,7 @@ public class EnableRabbitIntegrationTests {
 
 	@Test
 	public void autoSimpleDeclare() {
-		assertEquals("FOOX", rabbitTemplate.convertSendAndReceive("test.simple.declare", "foo"));
+		assertEquals("FOOexec1-1", rabbitTemplate.convertSendAndReceive("test.simple.declare", "foo"));
 	}
 
 	@Test
@@ -921,9 +922,10 @@ public class EnableRabbitIntegrationTests {
 			return foo.toUpperCase();
 		}
 
-		@RabbitListener(queuesToDeclare = @Queue(name = "${jjjj:test.simple.declare}", durable = "true"))
+		@RabbitListener(queuesToDeclare = @Queue(name = "${jjjj:test.simple.declare}", durable = "true"),
+				executor = "exec1")
 		public String handleWithSimpleDeclare(String foo) {
-			return foo.toUpperCase() + "X";
+			return foo.toUpperCase() + Thread.currentThread().getName();
 		}
 
 		@RabbitListener(queuesToDeclare = @Queue, id = "anonymousQueue575")
@@ -1537,6 +1539,11 @@ public class EnableRabbitIntegrationTests {
 		@Bean
 		public TxService txService() {
 			return new TxServiceImpl();
+		}
+
+		@Bean
+		public TaskExecutor exec1() {
+			return new ThreadPoolTaskExecutor();
 		}
 
 		// Rabbit infrastructure setup
