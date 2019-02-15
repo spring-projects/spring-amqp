@@ -240,7 +240,7 @@ public class EnableRabbitIntegrationTests {
 
 	@Test
 	public void autoDeclare() {
-		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("auto.exch", "auto.rk", "foo"));
+		assertEquals("FOOthreadNamer-1", rabbitTemplate.convertSendAndReceive("auto.exch", "auto.rk", "foo"));
 		assertThat(this.myService.channelBoundOk).isTrue();
 	}
 
@@ -909,7 +909,7 @@ public class EnableRabbitIntegrationTests {
 			this.txRabbitTemplate = txRabbitTemplate;
 		}
 
-		@RabbitListener(bindings = @QueueBinding(
+		@RabbitListener(id = "threadNamer", bindings = @QueueBinding(
 				value = @Queue(value = "auto.declare", autoDelete = "true", admins = "rabbitAdmin"),
 				exchange = @Exchange(value = "auto.exch", autoDelete = "true"),
 				key = "auto.rk"), containerFactory = "txListenerContainerFactory"
@@ -918,7 +918,7 @@ public class EnableRabbitIntegrationTests {
 			this.channelBoundOk = this.txRabbitTemplate.execute(c -> {
 				return c.equals(channel);
 			});
-			return foo.toUpperCase();
+			return foo.toUpperCase() + Thread.currentThread().getName();
 		}
 
 		@RabbitListener(queuesToDeclare = @Queue(name = "${jjjj:test.simple.declare}", durable = "true"))
