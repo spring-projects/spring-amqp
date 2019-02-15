@@ -6,7 +6,6 @@ buildscript {
 	dependencies {
 		classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.9.2'
 		classpath 'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.16'
-		classpath 'me.champeau.gradle:gradle-javadoc-hotfix-plugin:0.1'
 		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
 		classpath "org.jetbrains.kotlin:kotlin-allopen:$kotlinVersion"
 	}
@@ -14,6 +13,7 @@ buildscript {
 
 plugins {
 	id "org.sonarqube" version '2.6.2'
+	id 'org.ajoberstar.grgit' version '3.0.0'
 }
 
 description = 'Spring AMQP'
@@ -31,6 +31,9 @@ ext {
 	linkScmConnection    = 'git://github.com/spring-projects/spring-amqp.git'
 	linkScmDevConnection = 'git@github.com:spring-projects/spring-amqp.git'
 	docResourcesVersion = '0.1.0.RELEASE'
+
+	modifiedFiles =
+			files(grgit.status().unstaged.modified).filter{ f -> f.name.endsWith('.java') || f.name.endsWith('.kt') }
 }
 
 allprojects {
@@ -43,7 +46,6 @@ allprojects {
 		}
 //		maven { url 'https://repo.spring.io/libs-staging-local' }
 	}
-	apply plugin: 'javadocHotfix'
 }
 
 ext {
@@ -64,6 +66,8 @@ subprojects { subproject ->
 	apply plugin: 'project-report'
 	apply plugin: 'jacoco'
 	apply plugin: 'checkstyle'
+	apply plugin: 'kotlin'
+	apply plugin: 'kotlin-spring'
 
 	sourceCompatibility=1.8
 	targetCompatibility=1.8
@@ -125,6 +129,10 @@ subprojects { subproject ->
 		// To avoid compiler warnings about @API annotations in JUnit code
 		testCompileOnly 'org.apiguardian:apiguardian-api:1.0.0'
 
+		testCompile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+
+		testRuntime "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
+
 	}
 
 	// enable all compiler warnings; individual projects may customize further
@@ -150,6 +158,37 @@ subprojects { subproject ->
 			}
 		}
 	}
+
+	task updateCopyrights {
+		onlyIf { !System.getenv('TRAVIS') && !System.getenv('bamboo_buildKey') }
+		inputs.files(modifiedFiles.filter { f -> f.path.contains(subproject.name) })
+		outputs.dir('build')
+
+		doLast {
+			def now = Calendar.instance.get(Calendar.YEAR) as String
+			inputs.files.each { file ->
+				def line
+				file.withReader { reader ->
+					while (line = reader.readLine()) {
+						def matcher = line =~ /Copyright (20\d\d)-?(20\d\d)?/
+						if (matcher.count) {
+							def beginningYear = matcher[0][1]
+							if (now != beginningYear && now != matcher[0][2]) {
+								def years = "$beginningYear-$now"
+								def sourceCode = file.text
+								sourceCode = sourceCode.replaceFirst(/20\d\d(-20\d\d)?/, years)
+								file.write(sourceCode)
+								println "Copyright updated for file: $file"
+							}
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+
+    compileKotlin.dependsOn updateCopyrights
 
 	test {
 		jacoco {
@@ -250,9 +289,6 @@ project('spring-amqp') {
 project('spring-rabbit') {
 	description = 'Spring RabbitMQ Support'
 
-	apply plugin: 'kotlin'
-	apply plugin: 'kotlin-spring'
-
 	dependencies {
 
 		compile project(":spring-amqp")
@@ -272,10 +308,6 @@ project('spring-rabbit') {
 
 		testCompile project(":spring-rabbit-junit")
 		testCompile("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
-		testCompile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
-
-		testRuntime "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
-
 		testRuntime "org.springframework:spring-web:$springVersion"
 		testRuntime "org.apache.httpcomponents:httpclient:$commonsHttpClientVersion"
 		testRuntime "com.fasterxml.jackson.module:jackson-module-kotlin:$jackson2Version"
