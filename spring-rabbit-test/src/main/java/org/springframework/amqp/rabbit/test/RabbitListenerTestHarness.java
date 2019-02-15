@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,8 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 
 	@Override
 	protected void processListener(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener, Object bean,
-			Object adminTarget, String beanName) {
+			Object target, String beanName) {
+
 		Object proxy = bean;
 		String id = rabbitListener.id();
 		if (StringUtils.hasText(id)) {
@@ -95,7 +96,7 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 		else {
 			logger.info("The test harness can only proxy @RabbitListeners with an 'id' attribute");
 		}
-		super.processListener(endpoint, rabbitListener, proxy, adminTarget, beanName);
+		super.processListener(endpoint, rabbitListener, proxy, target, beanName);
 	}
 
 	public InvocationData getNextInvocationDataFor(String id, long wait, TimeUnit unit) throws InterruptedException {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.listener;
 
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.lang.Nullable;
 
 /**
@@ -90,6 +91,17 @@ public interface RabbitListenerEndpoint {
 	 */
 	@Nullable
 	default MessageConverter getMessageConverter() {
+		return null;
+	}
+
+	/**
+	 * Get the task executor to use for this endpoint's listener container.
+	 * Overrides any executor set on the container factory.
+	 * @return the executor.
+	 * @since 2.2
+	 */
+	@Nullable
+	default TaskExecutor getTaskExecutor() {
 		return null;
 	}
 
