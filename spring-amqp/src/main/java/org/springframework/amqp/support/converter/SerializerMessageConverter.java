@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -167,8 +167,7 @@ public class SerializerMessageConverter extends WhiteListDeserializingMessageCon
 	}
 
 	private Object deserialize(ByteArrayInputStream inputStream) throws IOException {
-		try {
-			ObjectInputStream objectInputStream = new ConfigurableObjectInputStream(inputStream,
+		try (ObjectInputStream objectInputStream = new ConfigurableObjectInputStream(inputStream,
 					this.defaultDeserializerClassLoader) {
 
 				@Override
@@ -179,7 +178,7 @@ public class SerializerMessageConverter extends WhiteListDeserializingMessageCon
 					return clazz;
 				}
 
-			};
+			}) {
 			return objectInputStream.readObject();
 		}
 		catch (ClassNotFoundException ex) {

@@ -108,7 +108,7 @@ public class RemotingTest {
 	}
 
 	@Test
-	public void testSimulatedTimeout() throws Exception {
+	public void testSimulatedTimeout() {
 		try {
 			this.riggedProxy.simulatedTimeoutMethod("timeout");
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,7 +105,7 @@ public class RabbitAdminIntegrationTests {
 	}
 
 	@Test
-	public void testStartupWithLazyDeclaration() throws Exception {
+	public void testStartupWithLazyDeclaration() {
 		Queue queue = new Queue("test.queue");
 		context.getBeanFactory().registerSingleton("foo", queue);
 		rabbitAdmin.afterPropertiesSet();
@@ -114,7 +114,7 @@ public class RabbitAdminIntegrationTests {
 	}
 
 	@Test(expected = AmqpIOException.class)
-	public void testDoubleDeclarationOfExclusiveQueue() throws Exception {
+	public void testDoubleDeclarationOfExclusiveQueue() {
 		// Expect exception because the queue is locked when it is declared a second time.
 		CachingConnectionFactory connectionFactory1 = new CachingConnectionFactory();
 		connectionFactory1.setHost("localhost");
@@ -136,7 +136,7 @@ public class RabbitAdminIntegrationTests {
 	}
 
 	@Test
-	public void testDoubleDeclarationOfAutodeleteQueue() throws Exception {
+	public void testDoubleDeclarationOfAutodeleteQueue() {
 		// No error expected here: the queue is autodeleted when the last consumer is cancelled, but this one never has
 		// any consumers.
 		CachingConnectionFactory connectionFactory1 = new CachingConnectionFactory();
@@ -229,7 +229,7 @@ public class RabbitAdminIntegrationTests {
 	}
 
 	@Test
-	public void testDeclareExchangeWithDefaultExchange() throws Exception {
+	public void testDeclareExchangeWithDefaultExchange() {
 		Exchange exchange = new DirectExchange(RabbitAdmin.DEFAULT_EXCHANGE_NAME);
 
 		rabbitAdmin.declareExchange(exchange);
@@ -238,7 +238,7 @@ public class RabbitAdminIntegrationTests {
 	}
 
 	@Test
-	public void testSpringWithDefaultExchange() throws Exception {
+	public void testSpringWithDefaultExchange() {
 		Exchange exchange = new DirectExchange(RabbitAdmin.DEFAULT_EXCHANGE_NAME);
 		context.getBeanFactory().registerSingleton("foo", exchange);
 		rabbitAdmin.afterPropertiesSet();
@@ -249,7 +249,7 @@ public class RabbitAdminIntegrationTests {
 	}
 
 	@Test
-	public void testDeleteExchangeWithDefaultExchange() throws Exception {
+	public void testDeleteExchangeWithDefaultExchange() {
 		boolean result = rabbitAdmin.deleteExchange(RabbitAdmin.DEFAULT_EXCHANGE_NAME);
 
 		assertTrue(result);
@@ -303,7 +303,7 @@ public class RabbitAdminIntegrationTests {
 	}
 
 	@Test
-	public void testRemoveBindingWithDefaultExchangeImplicitBinding() throws Exception {
+	public void testRemoveBindingWithDefaultExchangeImplicitBinding() {
 		String queueName = "test.queue";
 		final Queue queue = new Queue(queueName, false, false, false);
 		rabbitAdmin.declareQueue(queue);
@@ -315,7 +315,7 @@ public class RabbitAdminIntegrationTests {
 	}
 
 	@Test
-	public void testDeclareBindingWithDefaultExchangeNonImplicitBinding() throws Exception {
+	public void testDeclareBindingWithDefaultExchangeNonImplicitBinding() {
 		Exchange exchange = new DirectExchange(RabbitAdmin.DEFAULT_EXCHANGE_NAME);
 		String queueName = "test.queue";
 		final Queue queue = new Queue(queueName, false, false, false);
@@ -338,7 +338,7 @@ public class RabbitAdminIntegrationTests {
 	}
 
 	@Test
-	public void testSpringWithDefaultExchangeNonImplicitBinding() throws Exception {
+	public void testSpringWithDefaultExchangeNonImplicitBinding() {
 		Exchange exchange = new DirectExchange(RabbitAdmin.DEFAULT_EXCHANGE_NAME);
 		context.getBeanFactory().registerSingleton("foo", exchange);
 		String queueName = "test.queue";

@@ -172,7 +172,7 @@ public class RabbitTemplateTests {
 	}
 
 	@Test
-	public void testConvertSerializable() throws Exception {
+	public void testConvertSerializable() {
 		RabbitTemplate template = new RabbitTemplate();
 		Long payload = 43L;
 		Message message = template.convertMessageIfNecessary(payload);
@@ -180,7 +180,7 @@ public class RabbitTemplateTests {
 	}
 
 	@Test
-	public void testConvertMessage() throws Exception {
+	public void testConvertMessage() {
 		RabbitTemplate template = new RabbitTemplate();
 		Message input = new Message("Hello, world!".getBytes(), new MessageProperties());
 		Message message = template.convertMessageIfNecessary(input);

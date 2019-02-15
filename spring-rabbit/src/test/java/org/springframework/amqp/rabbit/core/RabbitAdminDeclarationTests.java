@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,11 +41,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
@@ -114,30 +113,22 @@ public class RabbitAdminDeclarationTests {
 
 		final List<Channel> mockChannels = new ArrayList<Channel>();
 
-		doAnswer(new Answer<com.rabbitmq.client.Connection>() {
-			private int connectionNumber;
-			@Override
-			public com.rabbitmq.client.Connection answer(InvocationOnMock invocation) throws Throwable {
-				com.rabbitmq.client.Connection connection = mock(com.rabbitmq.client.Connection.class);
-				doAnswer(new Answer<Channel>() {
-					private int channelNumber;
-
-					@Override
-					public Channel answer(InvocationOnMock invocation) throws Throwable {
-						Channel channel = mock(Channel.class);
-						when(channel.isOpen()).thenReturn(true);
-						int channelNumnber = ++this.channelNumber;
-						when(channel.toString()).thenReturn("mockChannel" + channelNumnber);
-						mockChannels.add(channel);
-						return channel;
-					}
-
-				}).when(connection).createChannel();
-				int connectionNumber = ++this.connectionNumber;
-				when(connection.toString()).thenReturn("mockConnection" + connectionNumber);
-				when(connection.isOpen()).thenReturn(true);
-				return connection;
-			}
+		AtomicInteger connectionNumber = new AtomicInteger();
+		doAnswer(invocation -> {
+			com.rabbitmq.client.Connection connection = mock(com.rabbitmq.client.Connection.class);
+			AtomicInteger channelNumber = new AtomicInteger();
+			doAnswer(invocation1 -> {
+				Channel channel = mock(Channel.class);
+				when(channel.isOpen()).thenReturn(true);
+				int channelNum = channelNumber.incrementAndGet();
+				when(channel.toString()).thenReturn("mockChannel" + channelNum);
+				mockChannels.add(channel);
+				return channel;
+			}).when(connection).createChannel();
+			int connectionNum = connectionNumber.incrementAndGet();
+			when(connection.toString()).thenReturn("mockConnection" + connectionNum);
+			when(connection.isOpen()).thenReturn(true);
+			return connection;
 		}).when(mockConnectionFactory).newConnection((ExecutorService) null);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);

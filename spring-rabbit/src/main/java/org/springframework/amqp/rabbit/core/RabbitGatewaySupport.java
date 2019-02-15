@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,9 +110,8 @@ public class RabbitGatewaySupport implements InitializingBean {
 	/**
 	 * Subclasses can override this for custom initialization behavior.
 	 * Gets called after population of this instance's bean properties.
-	 * @throws java.lang.Exception if initialization fails
 	 */
-	protected void initGateway() throws Exception { // NOSONAR TODO in 2.2 remove throws clause
+	protected void initGateway() {
 	}
 
 }
