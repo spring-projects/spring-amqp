@@ -1,2 +1,2 @@
-http\://www.springframework.org/schema/rabbit/spring-rabbit-2.1.xsd=org/springframework/amqp/rabbit/config/spring-rabbit-2.1.xsd
-http\://www.springframework.org/schema/rabbit/spring-rabbit.xsd=org/springframework/amqp/rabbit/config/spring-rabbit-2.1.xsd
+http\://www.springframework.org/schema/rabbit/spring-rabbit-2.2.xsd=org/springframework/amqp/rabbit/config/spring-rabbit-2.2.xsd
+http\://www.springframework.org/schema/rabbit/spring-rabbit.xsd=org/springframework/amqp/rabbit/config/spring-rabbit-2.2.xsd
