@@ -21,6 +21,7 @@
 		<!-- Annotations -->
 		<module name="AnnotationUseStyle">
 			<property name="elementStyle" value="compact" />
+			<property name="closingParens" value="ignore"/>
 		</module>
 		<module name="MissingOverride" />
 		<module name="PackageAnnotation" />

@@ -1,5 +1,8 @@
 [[spring-amqp-reference]]
 = Spring AMQP
+ifdef::backend-html5[]
+:revnumber: ''
+endif::[]
 :toc: left
 :toclevels: 4
 :numbered:
@@ -7,7 +10,9 @@
 :hide-uri-scheme:
 Mark Pollack; Mark Fisher; Oleg Zhurakousky; Dave Syer; Gary Russell; Gunnar Hillert; Artem Bilan; Stéphane Nicoll; Arnaud Cogoluègnes; Jay Bryant
 
+ifdef::backend-html5[]
 *{project-version}*
+endif::[]
 
 (C) 2010 - 2019 by Pivotal Software, Inc.
 
