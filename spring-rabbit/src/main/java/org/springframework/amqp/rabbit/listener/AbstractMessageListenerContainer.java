@@ -1087,8 +1087,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			if (!this.isExposeListenerChannel() && this.transactionManager != null) {
 				logger.warn("exposeListenerChannel=false is ignored when using a TransactionManager");
 			}
-			if (!this.taskExecutorSet && StringUtils.hasText(this.getBeanName())) {
-				this.taskExecutor = new SimpleAsyncTaskExecutor(this.getBeanName() + "-");
+			if (!this.taskExecutorSet && StringUtils.hasText(getListenerId())) {
+				this.taskExecutor = new SimpleAsyncTaskExecutor(getListenerId() + "-");
 				this.taskExecutorSet = true;
 			}
 			if (this.transactionManager != null) {

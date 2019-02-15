@@ -222,7 +222,7 @@ public class EnableRabbitIntegrationTests {
 
 	@Test
 	public void autoDeclare() {
-		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("auto.exch", "auto.rk", "foo"));
+		assertEquals("FOOthreadNamer-1", rabbitTemplate.convertSendAndReceive("auto.exch", "auto.rk", "foo"));
 	}
 
 	@Test
@@ -757,13 +757,13 @@ public class EnableRabbitIntegrationTests {
 
 	public static class MyService {
 
-		@RabbitListener(bindings = @QueueBinding(
+		@RabbitListener(id = "threadNamer", bindings = @QueueBinding(
 				value = @Queue(value = "auto.declare", autoDelete = "true"),
 				exchange = @Exchange(value = "auto.exch", autoDelete = "true"),
 				key = "auto.rk")
 		)
 		public String handleWithDeclare(String foo) {
-			return foo.toUpperCase();
+			return foo.toUpperCase() + Thread.currentThread().getName();
 		}
 
 		@RabbitListener(queuesToDeclare = @Queue(name = "${jjjj:test.simple.declare}", durable = "true"))
