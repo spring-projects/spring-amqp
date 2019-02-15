@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -426,7 +426,7 @@ public class EnableRabbitIntegrationTests {
 
 	@Test
 	@DirtiesContext
-	public void simpleEndpointWithSendTo() throws InterruptedException {
+	public void simpleEndpointWithSendTo() {
 		rabbitTemplate.convertAndSend("test.sendTo", "bar");
 		rabbitTemplate.setReceiveTimeout(10000);
 		Object result = rabbitTemplate.receiveAndConvert("test.sendTo.reply");
@@ -436,7 +436,7 @@ public class EnableRabbitIntegrationTests {
 
 	@Test
 	@DirtiesContext
-	public void simpleEndpointWithSendToSpel() throws InterruptedException {
+	public void simpleEndpointWithSendToSpel() {
 		rabbitTemplate.convertAndSend("test.sendTo.spel", "bar");
 		rabbitTemplate.setReceiveTimeout(10000);
 		Object result = rabbitTemplate.receiveAndConvert("test.sendTo.reply.spel");
@@ -445,7 +445,7 @@ public class EnableRabbitIntegrationTests {
 	}
 
 	@Test
-	public void simpleEndpointWithSendToSpelRuntime() throws InterruptedException {
+	public void simpleEndpointWithSendToSpelRuntime() {
 		rabbitTemplate.convertAndSend("test.sendTo.runtimespel", "spel");
 		rabbitTemplate.setReceiveTimeout(10000);
 		Object result = rabbitTemplate.receiveAndConvert("test.sendTo.reply.runtimespel");
@@ -454,7 +454,7 @@ public class EnableRabbitIntegrationTests {
 	}
 
 	@Test
-	public void simpleEndpointWithSendToSpelRuntimeMessagingMessage() throws InterruptedException {
+	public void simpleEndpointWithSendToSpelRuntimeMessagingMessage() {
 		rabbitTemplate.convertAndSend("test.sendTo.runtimespelsource", "spel");
 		rabbitTemplate.setReceiveTimeout(10000);
 		Object result = rabbitTemplate.receiveAndConvert("test.sendTo.runtimespelsource.reply");
@@ -927,7 +927,7 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@RabbitListener(queuesToDeclare = @Queue, id = "anonymousQueue575")
-		public String handleWithAnonymousQueueToDeclare(String data) throws Exception {
+		public String handleWithAnonymousQueueToDeclare(String data) {
 			return "viaAnonymous:" + data;
 		}
 
@@ -1271,7 +1271,7 @@ public class EnableRabbitIntegrationTests {
 
 	}
 
-	public static class ProxyListenerBPP implements BeanPostProcessor, BeanFactoryAware, Ordered, PriorityOrdered {
+	public static class ProxyListenerBPP implements BeanPostProcessor, BeanFactoryAware, PriorityOrdered {
 
 		private BeanFactory beanFactory;
 
@@ -1747,17 +1747,17 @@ public class EnableRabbitIntegrationTests {
 	}
 
 	@SuppressWarnings("serial")
-	static class Bar extends Foo implements Serializable {
+	static class Bar extends Foo {
 
 	}
 
 	@SuppressWarnings("serial")
-	static class Baz extends Foo implements Serializable {
+	static class Baz extends Foo {
 
 	}
 
 	@SuppressWarnings("serial")
-	static class Qux extends Foo implements Serializable {
+	static class Qux extends Foo {
 
 	}
 
@@ -2011,7 +2011,7 @@ public class EnableRabbitIntegrationTests {
 	public static class DeleteQueuesExecutionListener extends AbstractTestExecutionListener {
 
 		@Override
-		public void afterTestClass(TestContext testContext) throws Exception {
+		public void afterTestClass(TestContext testContext) {
 			brokerRunning.removeTestQueues("sendTo.replies", "sendTo.replies.spel");
 		}
 

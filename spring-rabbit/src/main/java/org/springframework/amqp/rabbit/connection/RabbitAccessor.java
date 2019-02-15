@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 
 package org.springframework.amqp.rabbit.connection;
-
-import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -79,10 +77,9 @@ public abstract class RabbitAccessor implements InitializingBean {
 	/**
 	 * Create a RabbitMQ Connection via this template's ConnectionFactory and its host and port values.
 	 * @return the new RabbitMQ Connection
-	 * @throws IOException if thrown by RabbitMQ API methods
 	 * @see ConnectionFactory#createConnection
 	 */
-	protected Connection createConnection() throws IOException {
+	protected Connection createConnection() {
 		return this.connectionFactory.createConnection();
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,8 +92,7 @@ public class LocalizedQueueConnectionFactoryTests {
 				adminUris, nodes, vhost, username, password, false, null) {
 
 			@Override
-			protected Client createClient(String adminUri, String username, String password)
-					throws MalformedURLException, URISyntaxException {
+			protected Client createClient(String adminUri, String username, String password) {
 				return firstServer.get() ? client1 : client2;
 			}
 

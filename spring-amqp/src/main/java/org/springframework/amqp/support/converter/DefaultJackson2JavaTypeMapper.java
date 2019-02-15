@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,7 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
  * @author Artem Bilan
  * @author Gary Russell
  */
-public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
-		implements Jackson2JavaTypeMapper, ClassMapper {
+public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implements Jackson2JavaTypeMapper {
 
 	private static final List<String> TRUSTED_PACKAGES =
 			Arrays.asList(

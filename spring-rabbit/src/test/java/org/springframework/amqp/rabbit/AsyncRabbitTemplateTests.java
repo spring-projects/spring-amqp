@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -207,7 +207,7 @@ public class AsyncRabbitTemplateTests {
 	}
 
 	@Test
-	public void testCancel() throws Exception {
+	public void testCancel() {
 		ListenableFuture<String> future = this.asyncTemplate.convertSendAndReceive("foo");
 		future.cancel(false);
 		assertEquals(0, TestUtils.getPropertyValue(asyncTemplate, "pending", Map.class).size());

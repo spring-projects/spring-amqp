@@ -1283,8 +1283,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Nullable
-	private Message receiveForReply(final String queueName, Channel channel) throws IOException,
-			TimeoutException, InterruptedException {
+	private Message receiveForReply(final String queueName, Channel channel) throws IOException {
 
 		boolean channelTransacted = isChannelTransacted();
 		boolean channelLocallyTransacted = isChannelLocallyTransacted(channel);
@@ -1327,7 +1326,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	@Nullable // NOSONAR complexity
 	private Delivery consumeDelivery(Channel channel, String queueName, long timeoutMillis)
-			throws IOException, TimeoutException, InterruptedException {
+			throws IOException {
 
 		Delivery delivery = null;
 		RuntimeException exception = null;
@@ -1388,7 +1387,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	@SuppressWarnings(UNCHECKED)
 	private <R, S> boolean sendReply(final ReceiveAndReplyCallback<R, S> callback,
 			final ReplyToAddressCallback<S> replyToAddressCallback, Channel channel, Message receiveMessage)
-					throws Exception { // NOSONAR TODO change to IOException in 2.2.
+					throws IOException {
 
 		Object receive = receiveMessage;
 		if (!(ReceiveAndReplyMessageCallback.class.isAssignableFrom(callback.getClass()))) {
@@ -1421,7 +1420,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	private <S> void doSendReply(final ReplyToAddressCallback<S> replyToAddressCallback, Channel channel,
-			Message receiveMessage, S reply) throws Exception { // NOSONAR TODO: change to IOException in 2.2.
+			Message receiveMessage, S reply) throws IOException {
 
 		Address replyTo = replyToAddressCallback.getReplyToAddress(receiveMessage, reply);
 
@@ -1782,7 +1781,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 				@Override
 				public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
-						byte[] body) throws IOException {
+						byte[] body) {
 					MessageProperties messageProperties = RabbitTemplate.this.messagePropertiesConverter
 							.toMessageProperties(properties, envelope, RabbitTemplate.this.encoding);
 					Message reply = new Message(body, messageProperties);
@@ -1971,7 +1970,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	@Nullable
 	private Message exchangeMessages(final String exchange, final String routingKey, final Message message,
 			final CorrelationData correlationData, Channel channel, final PendingReply pendingReply, String messageTag)
-			throws Exception { // NOSONAR TODO: change to IOException, InterruptedException in 2.2.
+			throws IOException, InterruptedException {
 
 		Message reply;
 		boolean mandatory = isMandatoryFor(message);
@@ -2247,11 +2246,11 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @param message The Message to send.
 	 * @param mandatory The mandatory flag.
 	 * @param correlationData The correlation data.
-	 * @throws Exception If thrown by RabbitMQ API methods
+	 * @throws IOException If thrown by RabbitMQ API methods.
 	 */
 	public void doSend(Channel channel, String exchangeArg, String routingKeyArg, Message message, // NOSONAR complexity
 			boolean mandatory, @Nullable CorrelationData correlationData)
-					throws Exception { // NOSONAR TODO: change to IOException in 2.2.
+					throws IOException {
 
 		String exch = exchangeArg;
 		String rKey = routingKeyArg;
@@ -2442,8 +2441,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			String exchange,
 			String routingKey,
 			BasicProperties properties,
-			byte[] body)
-			throws IOException {
+			byte[] body) {
 
 		ReturnCallback callback = this.returnCallback;
 		if (callback == null) {
@@ -2561,7 +2559,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		DefaultConsumer consumer = new TemplateConsumer(channel) {
 
 			@Override
-			public void handleCancel(String consumerTag) throws IOException {
+			public void handleCancel(String consumerTag) {
 				future.completeExceptionally(new ConsumerCancelledException());
 			}
 
@@ -2572,8 +2570,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			}
 
 			@Override
-			public void handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties, byte[] body)
-					throws IOException {
+			public void handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties, byte[] body) {
 				future.complete(new Delivery(consumerTag, envelope, properties, body, queueName));
 			}
 

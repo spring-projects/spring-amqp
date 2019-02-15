@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -190,7 +190,7 @@ public final class BindingBuilder {
 		}
 	}
 
-	private abstract static class AbstractRoutingKeyConfigurer<E extends Exchange> {
+	private abstract static class AbstractRoutingKeyConfigurer {
 
 		protected final DestinationConfigurer destination; // NOSONAR
 
@@ -205,7 +205,7 @@ public final class BindingBuilder {
 	/**
 	 * Topic exchange routing key configurer.
 	 */
-	public static final class TopicExchangeRoutingKeyConfigurer extends AbstractRoutingKeyConfigurer<TopicExchange> {
+	public static final class TopicExchangeRoutingKeyConfigurer extends AbstractRoutingKeyConfigurer {
 
 		TopicExchangeRoutingKeyConfigurer(DestinationConfigurer destination, TopicExchange exchange) {
 			super(destination, exchange.getName());
@@ -225,7 +225,7 @@ public final class BindingBuilder {
 	/**
 	 * Generic exchange routing key configurer.
 	 */
-	public static final class GenericExchangeRoutingKeyConfigurer extends AbstractRoutingKeyConfigurer<TopicExchange> {
+	public static final class GenericExchangeRoutingKeyConfigurer extends AbstractRoutingKeyConfigurer {
 
 		GenericExchangeRoutingKeyConfigurer(DestinationConfigurer destination, Exchange exchange) {
 			super(destination, exchange.getName());
@@ -270,7 +270,7 @@ public final class BindingBuilder {
 	/**
 	 * Direct exchange routing key configurer.
 	 */
-	public static final class DirectExchangeRoutingKeyConfigurer extends AbstractRoutingKeyConfigurer<DirectExchange> {
+	public static final class DirectExchangeRoutingKeyConfigurer extends AbstractRoutingKeyConfigurer {
 
 		DirectExchangeRoutingKeyConfigurer(DestinationConfigurer destination, DirectExchange exchange) {
 			super(destination, exchange.getName());

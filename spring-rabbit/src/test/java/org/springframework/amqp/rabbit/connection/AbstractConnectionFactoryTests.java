@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2018 the original author or authors.
+ * Copyright 2010-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -204,7 +204,7 @@ public abstract class AbstractConnectionFactoryTests {
 	}
 
 	@Test
-	public void testCreatesConnectionWithGivenFactory() throws Exception {
+	public void testCreatesConnectionWithGivenFactory() {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		doCallRealMethod().when(mockConnectionFactory).params(any(ExecutorService.class));
 		doCallRealMethod().when(mockConnectionFactory).setThreadFactory(any(ThreadFactory.class));

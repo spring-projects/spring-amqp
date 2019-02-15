@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
@@ -84,19 +85,15 @@ public abstract class LocallyTransactedTests {
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
 
-		willAnswer(new Answer<Channel>() {
-			boolean done;
-			@Override
-			public Channel answer(InvocationOnMock invocation) throws Throwable {
-				if (!done) {
-					done = true;
-					return onlyChannel;
-				}
-				tooManyChannels.set(new Exception("More than one channel requested"));
-				Channel channel = mock(Channel.class);
-				given(channel.isOpen()).willReturn(true);
-				return channel;
+		AtomicBoolean done = new AtomicBoolean();
+		willAnswer(invocation -> {
+			if (!done.getAndSet(true)) {
+				return onlyChannel;
 			}
+			tooManyChannels.set(new Exception("More than one channel requested"));
+			Channel channel = mock(Channel.class);
+			given(channel.isOpen()).willReturn(true);
+			return channel;
 		}).given(mockConnection).createChannel();
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
@@ -291,7 +288,7 @@ public abstract class LocallyTransactedTests {
 			int n;
 
 			@Override
-			public Channel answer(InvocationOnMock invocation) throws Throwable {
+			public Channel answer(InvocationOnMock invocation) {
 				n++;
 				if (n == 1) {
 					return channel1;
@@ -387,7 +384,7 @@ public abstract class LocallyTransactedTests {
 		willAnswer(new Answer<Channel>() {
 			boolean done;
 			@Override
-			public Channel answer(InvocationOnMock invocation) throws Throwable {
+			public Channel answer(InvocationOnMock invocation) {
 				if (!done) {
 					done = true;
 					return onlyChannel;
@@ -480,16 +477,12 @@ public abstract class LocallyTransactedTests {
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
 
-		willAnswer(new Answer<Channel>() {
-			boolean done;
-			@Override
-			public Channel answer(InvocationOnMock invocation) throws Throwable {
-				if (!done) {
-					done = true;
-					return firstChannel;
-				}
-				return secondChannel;
+		AtomicBoolean done = new AtomicBoolean();
+		willAnswer(invocation -> {
+			if (!done.getAndSet(true)) {
+				return firstChannel;
 			}
+			return secondChannel;
 		}).given(mockConnection).createChannel();
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();

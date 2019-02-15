@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -206,14 +206,14 @@ public class SSLConnectionTests {
 	}
 
 	@Test
-	public void testTypeDefault() throws Exception {
+	public void testTypeDefault() {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
 		assertEquals("PKCS12", fb.getKeyStoreType());
 		assertEquals("JKS", fb.getTrustStoreType());
 	}
 
 	@Test
-	public void testTypeProps() throws Exception {
+	public void testTypeProps() {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
 		fb.setSslPropertiesLocation(new ClassPathResource("ssl.properties"));
 		fb.afterPropertiesSet();
@@ -230,7 +230,7 @@ public class SSLConnectionTests {
 	}
 
 	@Test
-	public void testTypeSettersNoProps() throws Exception {
+	public void testTypeSettersNoProps() {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
 		fb.setKeyStoreType("alice");
 		fb.setTrustStoreType("bob");
@@ -239,7 +239,7 @@ public class SSLConnectionTests {
 	}
 
 	@Test
-	public void testTypeSettersOverrideProps() throws Exception {
+	public void testTypeSettersOverrideProps() {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
 		fb.setSslPropertiesLocation(new ClassPathResource("ssl.properties"));
 		fb.afterPropertiesSet();

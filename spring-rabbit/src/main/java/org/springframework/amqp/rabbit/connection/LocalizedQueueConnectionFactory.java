@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -197,8 +197,7 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 				"'addresses' and 'nodes' properties must have equal length");
 		return IntStream.range(0, addresses.length)
 			.mapToObj(i -> new SimpleImmutableEntry<>(nodes[i], addresses[i]))
-			.collect(Collectors.toMap(SimpleImmutableEntry::getKey, SimpleImmutableEntry::getValue,
-					(u, v) -> v)); // TODO in 2.2 use default throwingMerger() (to catch dups)
+			.collect(Collectors.toMap(SimpleImmutableEntry::getKey, SimpleImmutableEntry::getValue));
 	}
 
 	@Override

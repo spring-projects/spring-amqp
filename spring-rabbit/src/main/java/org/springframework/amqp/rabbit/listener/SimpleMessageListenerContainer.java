@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -542,9 +541,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			try {
 				startupException = processor.getStartupException();
 			}
-			catch (TimeoutException e) {
-				throw RabbitExceptionTranslator.convertRabbitAccessException(e);
-			}
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 				throw RabbitExceptionTranslator.convertRabbitAccessException(e);
@@ -995,10 +991,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		 * (but should always return promptly in normal circumstances).
 		 * No longer fatal if the processor does not start up in 60 seconds.
 		 * @return a startup exception if there was one
-		 * @throws TimeoutException if the consumer hasn't started
 		 * @throws InterruptedException if the consumer startup is interrupted
 		 */
-		private FatalListenerStartupException getStartupException() throws TimeoutException, InterruptedException {
+		private FatalListenerStartupException getStartupException() throws InterruptedException {
 			if (!this.start.await(
 					SimpleMessageListenerContainer.this.consumerStartTimeout, TimeUnit.MILLISECONDS)) {
 				logger.error("Consumer failed to start in "

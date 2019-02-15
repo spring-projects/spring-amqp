@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -553,12 +553,12 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		}
 
 		@Override
-		public void handleBlocked(String reason) throws IOException {
+		public void handleBlocked(String reason) {
 			this.applicationEventPublisher.publishEvent(new ConnectionBlockedEvent(this.connection, reason));
 		}
 
 		@Override
-		public void handleUnblocked() throws IOException {
+		public void handleUnblocked() {
 			this.applicationEventPublisher.publishEvent(new ConnectionUnblockedEvent(this.connection));
 		}
 

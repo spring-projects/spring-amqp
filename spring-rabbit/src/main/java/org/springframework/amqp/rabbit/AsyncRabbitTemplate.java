@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -757,7 +757,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	 * A {@link RabbitFuture} with a return type of {@link Message}.
 	 * @since 1.6
 	 */
-	public class RabbitMessageFuture extends RabbitFuture<Message> implements ListenableFuture<Message> {
+	public class RabbitMessageFuture extends RabbitFuture<Message> {
 
 		public RabbitMessageFuture(String correlationId, Message requestMessage) {
 			super(correlationId, requestMessage);
@@ -771,7 +771,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	 * @param <C> the type.
 	 * @since 1.6
 	 */
-	public class RabbitConverterFuture<C> extends RabbitFuture<C> implements ListenableFuture<C> {
+	public class RabbitConverterFuture<C> extends RabbitFuture<C> {
 
 		private volatile ParameterizedTypeReference<C> returnType;
 

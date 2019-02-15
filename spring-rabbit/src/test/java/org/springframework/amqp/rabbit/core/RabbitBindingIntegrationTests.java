@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ public class RabbitBindingIntegrationTests {
 	}
 
 	@Test
-	public void testSendAndReceiveWithTopicSingleCallback() throws Exception {
+	public void testSendAndReceiveWithTopicSingleCallback() {
 
 		final RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		final TopicExchange exchange = new TopicExchange("topic");
@@ -108,7 +108,7 @@ public class RabbitBindingIntegrationTests {
 	}
 
 	@Test
-	public void testSendAndReceiveWithNonDefaultExchange() throws Exception {
+	public void testSendAndReceiveWithNonDefaultExchange() {
 
 		final RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		final TopicExchange exchange = new TopicExchange("topic");
@@ -185,7 +185,7 @@ public class RabbitBindingIntegrationTests {
 	}
 
 	@Test
-	public void testSendAndReceiveWithTopicTwoCallbacks() throws Exception {
+	public void testSendAndReceiveWithTopicTwoCallbacks() {
 
 		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		TopicExchange exchange = new TopicExchange("topic");
@@ -235,7 +235,7 @@ public class RabbitBindingIntegrationTests {
 	}
 
 	@Test
-	public void testSendAndReceiveWithFanout() throws Exception {
+	public void testSendAndReceiveWithFanout() {
 
 		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		FanoutExchange exchange = new FanoutExchange("fanout");

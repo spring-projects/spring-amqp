@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -915,8 +915,7 @@ public class PublisherCallbackChannelImpl
 //	ConfirmListener
 
 	@Override
-	public void handleAck(long seq, boolean multiple)
-			throws IOException {
+	public void handleAck(long seq, boolean multiple) {
 		if (this.logger.isDebugEnabled()) {
 			this.logger.debug(this.toString() + " PC:Ack:" + seq + ":" + multiple);
 		}
@@ -924,8 +923,7 @@ public class PublisherCallbackChannelImpl
 	}
 
 	@Override
-	public void handleNack(long seq, boolean multiple)
-			throws IOException {
+	public void handleNack(long seq, boolean multiple) {
 		if (this.logger.isDebugEnabled()) {
 			this.logger.debug(this.toString() + " PC:Nack:" + seq + ":" + multiple);
 		}
@@ -1061,7 +1059,7 @@ public class PublisherCallbackChannelImpl
 			String exchange,
 			String routingKey,
 			AMQP.BasicProperties properties,
-			byte[] body) throws IOException {
+			byte[] body) {
 		LongString returnCorrelation = (LongString) properties.getHeaders().get(RETURNED_MESSAGE_CORRELATION_KEY);
 		if (returnCorrelation != null) {
 			PendingConfirm confirm = this.pendingReturns.remove(returnCorrelation.toString());
