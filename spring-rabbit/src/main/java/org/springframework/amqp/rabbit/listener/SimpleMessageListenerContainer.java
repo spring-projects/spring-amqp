@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -797,8 +797,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		if (!this.isExposeListenerChannel() && this.transactionManager != null) {
 			logger.warn("exposeListenerChannel=false is ignored when using a TransactionManager");
 		}
-		if (!this.taskExecutorSet && StringUtils.hasText(this.getBeanName())) {
-			this.taskExecutor = new SimpleAsyncTaskExecutor(this.getBeanName() + "-");
+		if (!this.taskExecutorSet && StringUtils.hasText(getListenerId())) {
+			this.taskExecutor = new SimpleAsyncTaskExecutor(getListenerId() + "-");
 			this.taskExecutorSet = true;
 		}
 		initializeProxy();
