@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.logging.log4j.Level;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -60,6 +61,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import com.rabbitmq.client.DnsRecordIpAddressResolver;
 
 /**
  * @author Dave Syer
@@ -188,26 +191,37 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 	@Test
 	public void testBadCredentials() throws Exception {
+		DnsRecordIpAddressResolver resolver = new DnsRecordIpAddressResolver("localhost");
+		if (resolver.getAddresses().size() > 1) {
+			/*
+			 * If localhost also resolves to an IPv6 address the client will try that
+			 * after a failure due to bad credentials and, if Rabbit is not listening there
+			 * we won't get a fatal startup exception because a connect exception is not
+			 * considered fatal.
+			 */
+			Assume.assumeNoException(
+					new RuntimeException("Resolver returned multiple addresses for localhost, ignoring test"));
+		}
 		RabbitTemplate template = createTemplate(1);
 		com.rabbitmq.client.ConnectionFactory cf = new com.rabbitmq.client.ConnectionFactory();
+		cf.setAutomaticRecoveryEnabled(false);
 		cf.setUsername("foo");
 		final CachingConnectionFactory connectionFactory = new CachingConnectionFactory(cf);
 		try {
-			this.doTest(MessageCount.LOW, Concurrency.LOW, TransactionMode.OFF, template, connectionFactory);
+			doTest(MessageCount.LOW, Concurrency.LOW, TransactionMode.OFF, template, connectionFactory);
 			fail("expected exception");
 		}
 		catch (AmqpIllegalStateException e) {
 			assertTrue("Expected FatalListenerStartupException", e.getCause() instanceof FatalListenerStartupException);
 		}
-		catch (Throwable t) {
-			fail("expected FatalListenerStartupException:" + t.getClass() + ":" + t.getMessage());
+		finally {
+			((DisposableBean) template.getConnectionFactory()).destroy();
 		}
-		((DisposableBean) template.getConnectionFactory()).destroy();
 	}
 
 	private void doTest(MessageCount level, Concurrency concurrency, TransactionMode transactionMode) throws Exception {
 		RabbitTemplate template = createTemplate(concurrency.value);
-		this.doTest(level, concurrency, transactionMode, template, template.getConnectionFactory());
+		doTest(level, concurrency, transactionMode, template, template.getConnectionFactory());
 	}
 
 	/**

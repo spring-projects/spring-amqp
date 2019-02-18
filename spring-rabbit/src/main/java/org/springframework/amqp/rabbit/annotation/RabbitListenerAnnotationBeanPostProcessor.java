@@ -450,7 +450,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			}
 		}
 
-		endpoint.setTaskExecutor(resolveExecutor(rabbitListener, target, beanName));
+		resolveExecutor(endpoint, rabbitListener, target, beanName);
 		resolveAdmin(endpoint, rabbitListener, target);
 		RabbitListenerContainerFactory<?> factory = resolveContainerFactory(rabbitListener, target, beanName);
 
@@ -493,14 +493,14 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		return factory;
 	}
 
-	@Nullable
-	private TaskExecutor resolveExecutor(RabbitListener rabbitListener, Object execTarget, String beanName) {
-		TaskExecutor exec = null;
+	private void resolveExecutor(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener,
+			Object execTarget, String beanName) {
+
 		String execBeanName = resolve(rabbitListener.executor());
 		if (StringUtils.hasText(execBeanName)) {
 			Assert.state(this.beanFactory != null, "BeanFactory must be set to obtain container factory by bean name");
 			try {
-				exec = this.beanFactory.getBean(execBeanName, TaskExecutor.class);
+				endpoint.setTaskExecutor(this.beanFactory.getBean(execBeanName, TaskExecutor.class));
 			}
 			catch (NoSuchBeanDefinitionException ex) {
 				throw new BeanInitializationException("Could not register rabbit listener endpoint on ["
@@ -508,7 +508,6 @@ public class RabbitListenerAnnotationBeanPostProcessor
 						+ " with id '" + execBeanName + "' was found in the application context", ex);
 			}
 		}
-		return exec;
 	}
 
 	private String getEndpointId(RabbitListener rabbitListener) {

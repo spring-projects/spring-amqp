@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,7 @@ import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.AmqpApplicationContextClosedException;
 import org.springframework.amqp.AmqpAuthenticationException;
+import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpResourceNotAvailableException;
 import org.springframework.amqp.AmqpTimeoutException;
@@ -280,7 +281,13 @@ public class CachingConnectionFactoryIntegrationTests {
 
 		// Wrong vhost is very unfriendly to client - the exception has no clue (just an EOF)
 		exception.expect(anyOf(instanceOf(AmqpIOException.class),
-				instanceOf(AmqpAuthenticationException.class)));
+				instanceOf(AmqpAuthenticationException.class),
+				/*
+				 * If localhost also resolves to an IPv6 address, the client will try that
+				 * after a failure due to invalid vHost and, if Rabbit is not listening there,
+				 * we'll get an...
+				 */
+				instanceOf(AmqpConnectException.class)));
 		template.receiveAndConvert("foo");
 	}
 
