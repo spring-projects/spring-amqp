@@ -284,7 +284,7 @@ public class CachingConnectionFactoryIntegrationTests {
 				instanceOf(AmqpAuthenticationException.class),
 				/*
 				 * If localhost also resolves to an IPv6 address, the client will try that
-				 * after a failure due to invalid vHost and, if Rabbit is not listening there,
+				 * after a failure due to an invalid vHost and, if Rabbit is not listening there,
 				 * we'll get an...
 				 */
 				instanceOf(AmqpConnectException.class)));
