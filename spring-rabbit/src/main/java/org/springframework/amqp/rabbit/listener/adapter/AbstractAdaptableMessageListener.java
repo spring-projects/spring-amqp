@@ -344,8 +344,8 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	}
 
 	private void asyncSuccess(InvocationResult resultArg, Message request, Channel channel, Object source, Object r) {
-		doHandleResult(new InvocationResult(r, resultArg.getSendTo(), resultArg.getReturnType()), request,
-				channel, source);
+		// Set the return type to null so the converter will use the actual returned object's class for type info
+		doHandleResult(new InvocationResult(r, resultArg.getSendTo(), null), request, channel, source);
 		try {
 			channel.basicAck(request.getMessageProperties().getDeliveryTag(), false);
 		}
