@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.listener.adapter;
 import java.lang.reflect.Type;
 
 import org.springframework.expression.Expression;
+import org.springframework.lang.Nullable;
 
 /**
  * The result of a listener method invocation.
@@ -33,9 +34,10 @@ public final class InvocationResult {
 
 	private final Expression sendTo;
 
+	@Nullable
 	private final Type returnType;
 
-	public InvocationResult(Object result, Expression sendTo, Type returnType) {
+	public InvocationResult(Object result, Expression sendTo, @Nullable Type returnType) {
 		this.returnValue = result;
 		this.sendTo = sendTo;
 		this.returnType = returnType;
@@ -49,7 +51,7 @@ public final class InvocationResult {
 		return this.sendTo;
 	}
 
-
+	@Nullable
 	public Type getReturnType() {
 		return this.returnType;
 	}
