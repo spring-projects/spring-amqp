@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.annotation;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -36,6 +36,8 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -62,6 +64,9 @@ public class AsyncListenerTests {
 	public BrokerRunning brokerRunning = BrokerRunning.isRunning();
 
 	@Autowired
+	private EnableRabbitConfig config;
+
+	@Autowired
 	private RabbitTemplate rabbitTemplate;
 
 	@Autowired
@@ -75,15 +80,23 @@ public class AsyncListenerTests {
 
 	@Test
 	public void testAsyncListener() throws Exception {
-		assertEquals("FOO", this.rabbitTemplate.convertSendAndReceive(this.queue1.getName(), "foo"));
+		assertThat(this.rabbitTemplate.convertSendAndReceive(this.queue1.getName(), "foo")).isEqualTo("FOO");
 		RabbitConverterFuture<Object> future = this.asyncTemplate.convertSendAndReceive(this.queue1.getName(), "foo");
-		assertEquals("FOO", future.get(10, TimeUnit.SECONDS));
-		assertEquals("FOO", this.rabbitTemplate.convertSendAndReceive(this.queue2.getName(), "foo"));
+		assertThat(future.get(10, TimeUnit.SECONDS)).isEqualTo("FOO");
+		assertThat(this.rabbitTemplate.convertSendAndReceive(this.queue2.getName(), "foo")).isEqualTo("FOO");
+		assertThat(this.config.typeId).isEqualTo("java.lang.String");
 	}
 
 	@Configuration
 	@EnableRabbit
 	public static class EnableRabbitConfig {
+
+		private volatile Object typeId;
+
+		@Bean
+		public MessageConverter converter() {
+			return new Jackson2JsonMessageConverter();
+		}
 
 		@Bean
 		public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
@@ -91,6 +104,7 @@ public class AsyncListenerTests {
 			factory.setConnectionFactory(rabbitConnectionFactory());
 			factory.setMismatchedQueuesFatal(true);
 			factory.setAcknowledgeMode(AcknowledgeMode.MANUAL);
+			factory.setMessageConverter(converter());
 			return factory;
 		}
 
@@ -103,7 +117,13 @@ public class AsyncListenerTests {
 
 		@Bean
 		public RabbitTemplate rabbitTemplate() {
-			return new RabbitTemplate(rabbitConnectionFactory());
+			RabbitTemplate template = new RabbitTemplate(rabbitConnectionFactory());
+			template.setMessageConverter(converter());
+			template.setAfterReceivePostProcessors(m -> {
+				this.typeId = m.getMessageProperties().getHeaders().get("__TypeId__");
+				return m;
+			});
+			return template;
 		}
 
 		@Bean
@@ -153,7 +173,7 @@ public class AsyncListenerTests {
 		}
 
 		@RabbitListener(id = "bar", queues = "#{queue2.name}")
-		public Mono<String> listen2(String foo) {
+		public Mono<?> listen2(String foo) {
 			if (barFirst.getAndSet(false)) {
 				return Mono.error(new RuntimeException("Mono.error()"));
 			}
