@@ -17,7 +17,9 @@
 package org.springframework.amqp.rabbit.listener.adapter;
 
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
@@ -344,8 +346,12 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	}
 
 	private void asyncSuccess(InvocationResult resultArg, Message request, Channel channel, Object source, Object r) {
-		// Set the return type to null so the converter will use the actual returned object's class for type info
-		doHandleResult(new InvocationResult(r, resultArg.getSendTo(), null), request, channel, source);
+		Type returnType = ((ParameterizedType) resultArg.getReturnType()).getActualTypeArguments()[0];
+		if (returnType instanceof WildcardType) {
+			// Set the return type to null so the converter will use the actual returned object's class for type info
+			returnType = null;
+		}
+		doHandleResult(new InvocationResult(r, resultArg.getSendTo(), returnType), request, channel, source);
 		try {
 			channel.basicAck(request.getMessageProperties().getDeliveryTag(), false);
 		}
