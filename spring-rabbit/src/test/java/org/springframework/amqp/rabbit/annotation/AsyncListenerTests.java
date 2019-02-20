@@ -18,6 +18,9 @@ package org.springframework.amqp.rabbit.annotation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -78,13 +81,22 @@ public class AsyncListenerTests {
 	@Autowired
 	private Queue queue2;
 
+	@Autowired
+	private Queue queue3;
+
 	@Test
 	public void testAsyncListener() throws Exception {
 		assertThat(this.rabbitTemplate.convertSendAndReceive(this.queue1.getName(), "foo")).isEqualTo("FOO");
 		RabbitConverterFuture<Object> future = this.asyncTemplate.convertSendAndReceive(this.queue1.getName(), "foo");
 		assertThat(future.get(10, TimeUnit.SECONDS)).isEqualTo("FOO");
+		assertThat(this.config.typeId).isEqualTo("java.lang.String");
 		assertThat(this.rabbitTemplate.convertSendAndReceive(this.queue2.getName(), "foo")).isEqualTo("FOO");
 		assertThat(this.config.typeId).isEqualTo("java.lang.String");
+		List<String> foos = new ArrayList<>();
+		foos.add("FOO");
+		assertThat(this.rabbitTemplate.convertSendAndReceive(this.queue3.getName(), "foo")).isEqualTo(foos);
+		assertThat(this.config.typeId).isEqualTo("java.util.List");
+		assertThat(this.config.contentTypeId).isEqualTo("java.lang.String");
 	}
 
 	@Configuration
@@ -92,6 +104,8 @@ public class AsyncListenerTests {
 	public static class EnableRabbitConfig {
 
 		private volatile Object typeId;
+
+		private volatile Object contentTypeId;
 
 		@Bean
 		public MessageConverter converter() {
@@ -121,6 +135,7 @@ public class AsyncListenerTests {
 			template.setMessageConverter(converter());
 			template.setAfterReceivePostProcessors(m -> {
 				this.typeId = m.getMessageProperties().getHeaders().get("__TypeId__");
+				this.contentTypeId = m.getMessageProperties().getHeaders().get("__ContentTypeId__");
 				return m;
 			});
 			return template;
@@ -143,6 +158,11 @@ public class AsyncListenerTests {
 
 		@Bean
 		public Queue queue2() {
+			return new AnonymousQueue();
+		}
+
+		@Bean
+		public Queue queue3() {
 			return new AnonymousQueue();
 		}
 
@@ -180,6 +200,11 @@ public class AsyncListenerTests {
 			else {
 				return Mono.just(foo.toUpperCase());
 			}
+		}
+
+		@RabbitListener(id = "baz", queues = "#{queue3.name}")
+		public Mono<List<String>> listen3(String foo) {
+			return Mono.just(Collections.singletonList(foo.toUpperCase()));
 		}
 
 	}
