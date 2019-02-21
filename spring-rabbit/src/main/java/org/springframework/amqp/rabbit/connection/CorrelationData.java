@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,12 @@ public class CorrelationData implements Correlation {
 		return this.returnedMessage;
 	}
 
-	void setReturnedMessage(Message returnedMessage) {
+	/**
+	 * Set a returned message for this correlation data.
+	 * @param returnedMessage the returned message.
+	 * @since 1.7.13
+	 */
+	public void setReturnedMessage(Message returnedMessage) {
 		this.returnedMessage = returnedMessage;
 	}
 
