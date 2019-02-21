@@ -55,7 +55,6 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.concurrent.ListenableFuture;
 
 import com.rabbitmq.client.Channel;
-
 import reactor.core.publisher.Mono;
 
 /**
