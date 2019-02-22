@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,13 @@ import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
@@ -41,10 +43,11 @@ import org.springframework.amqp.rabbit.listener.adapter.AbstractAdaptableMessage
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
@@ -56,11 +59,13 @@ import com.rabbitmq.client.Envelope;
  * It does not currently support publisher confirms/returns.
  *
  * @author Gary Russell
+ * @author Artem Bilan
  *
  * @since 2.0
  *
  */
-public class TestRabbitTemplate extends RabbitTemplate implements ApplicationContextAware, SmartInitializingSingleton {
+public class TestRabbitTemplate extends RabbitTemplate
+		implements ApplicationContextAware, ApplicationListener<ContextRefreshedEvent> {
 
 	private static final String REPLY_QUEUE = "testRabbitTemplateReplyTo";
 
@@ -82,22 +87,21 @@ public class TestRabbitTemplate extends RabbitTemplate implements ApplicationCon
 	}
 
 	@Override
-	public void afterSingletonsInstantiated() {
-		this.registry.getListenerContainers()
-			.stream()
-			.map(container -> (AbstractMessageListenerContainer) container)
-			.forEach(c -> {
-				for (String queue : c.getQueueNames()) {
-					setupListener(c, queue);
-				}
-			});
-		this.applicationContext.getBeansOfType(AbstractMessageListenerContainer.class).values()
-			.stream()
-			.forEach(container -> {
-				for (String queue : container.getQueueNames()) {
-					setupListener(container, queue);
-				}
-			});
+	public void onApplicationEvent(ContextRefreshedEvent event) {
+		if (event.getApplicationContext().equals(this.applicationContext)) {
+			Stream<AbstractMessageListenerContainer> registryListenerContainers =
+					this.registry.getListenerContainers()
+							.stream()
+							.map(AbstractMessageListenerContainer.class::cast);
+
+			Stream<AbstractMessageListenerContainer> listenerContainerBeans =
+					this.applicationContext.getBeansOfType(AbstractMessageListenerContainer.class).values().stream();
+
+			Stream.concat(registryListenerContainers, listenerContainerBeans)
+					.forEach(container ->
+							Arrays.stream(container.getQueueNames())
+									.forEach(queue -> setupListener(container, queue)));
+		}
 	}
 
 	private void setupListener(AbstractMessageListenerContainer container, String queue) {
@@ -143,8 +147,8 @@ public class TestRabbitTemplate extends RabbitTemplate implements ApplicationCon
 					Envelope envelope = new Envelope(1, false, "", REPLY_QUEUE);
 					reply.set(MessageBuilder.withBody(i.getArgument(4)) // NOSONAR magic #
 							.andProperties(getMessagePropertiesConverter()
-								.toMessageProperties(i.getArgument(3), envelope, // NOSONAR magic #
-									adapter.getEncoding()))
+									.toMessageProperties(i.getArgument(3), envelope, // NOSONAR magic #
+											adapter.getEncoding()))
 							.build());
 					return null;
 				}).given(channel).basicPublish(anyString(), anyString(), anyBoolean(), any(BasicProperties.class),
