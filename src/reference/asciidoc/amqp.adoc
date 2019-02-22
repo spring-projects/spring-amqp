@@ -231,7 +231,7 @@ If the time is exceeded, an `AmqpTimeoutException` is thrown.
 When the cache mode is `CONNECTION`, automatic declaration of queues and others
 (See <<automatic-declaration>>) is NOT supported.
 
-Also, at the time of this writing, the `rabbitmq-client` library by default creates a fixed thread pool for each connection (default size: 5 threads).
+Also, at the time of this writing, the `amqp-client` library by default creates a fixed thread pool for each connection (default size: `Runtime.getRuntime().availableProcessors() * 2` threads).
 When using a large number of connections, you should consider setting a custom `executor` on the `CachingConnectionFactory`.
 Then, the same executor can be used by all connections and its threads can be shared.
 The executor's thread pool should be unbounded or set appropriately for the expected use (usually, at least one thread per connection).
@@ -5392,7 +5392,8 @@ Starting with version 2.0, the `concurrentConsumers` and `maxConcurrentConsumers
 
 With this container, concurrency is based on the configured queues and `consumersPerQueue`.
 Each consumer for each queue uses a separate channel, and the concurrency is controlled by the rabbit client library.
-By default, it uses a pool of five threads.
+By default, at the time of writing, it uses a pool of `DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors() * 2` threads.
+
 You can configure a `taskExecutor` to provide the required maximum concurrency.
 
 [[exclusive-consumer]]
