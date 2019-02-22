@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,37 +18,44 @@ package org.springframework.amqp.rabbit.annotation;
 
 import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Role;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.RootBeanDefinition;
+import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
+import org.springframework.core.type.AnnotationMetadata;
 
 /**
- * {@code @Configuration} class that registers a {@link RabbitListenerAnnotationBeanPostProcessor}
- * bean capable of processing Spring's @{@link RabbitListener} annotation. Also register
- * a default {@link RabbitListenerEndpointRegistry}.
+ * An {@link ImportBeanDefinitionRegistrar} class that registers
+ * a {@link RabbitListenerAnnotationBeanPostProcessor} bean capable of processing
+ * Spring's @{@link RabbitListener} annotation.
+ * Also register a default {@link RabbitListenerEndpointRegistry}.
  *
  * <p>This configuration class is automatically imported when using the @{@link EnableRabbit}
- * annotation.  See {@link EnableRabbit} Javadoc for complete usage.
+ * annotation.
  *
  * @author Stephane Nicoll
+ * @author Artem Bilan
+ *
  * @since 1.4
+ *
  * @see RabbitListenerAnnotationBeanPostProcessor
  * @see RabbitListenerEndpointRegistry
  * @see EnableRabbit
  */
-@Configuration
-public class RabbitBootstrapConfiguration {
+public class RabbitBootstrapConfiguration implements ImportBeanDefinitionRegistrar {
 
-	@Bean(name = RabbitListenerConfigUtils.RABBIT_LISTENER_ANNOTATION_PROCESSOR_BEAN_NAME)
-	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
-	public RabbitListenerAnnotationBeanPostProcessor rabbitListenerAnnotationProcessor() {
-		return new RabbitListenerAnnotationBeanPostProcessor();
-	}
+	@Override
+	public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+		if (!registry.containsBeanDefinition(
+				RabbitListenerConfigUtils.RABBIT_LISTENER_ANNOTATION_PROCESSOR_BEAN_NAME)) {
 
-	@Bean(name = RabbitListenerConfigUtils.RABBIT_LISTENER_ENDPOINT_REGISTRY_BEAN_NAME)
-	public RabbitListenerEndpointRegistry defaultRabbitListenerEndpointRegistry() {
-		return new RabbitListenerEndpointRegistry();
+			registry.registerBeanDefinition(RabbitListenerConfigUtils.RABBIT_LISTENER_ANNOTATION_PROCESSOR_BEAN_NAME,
+					new RootBeanDefinition(RabbitListenerAnnotationBeanPostProcessor.class));
+		}
+
+		if (!registry.containsBeanDefinition(RabbitListenerConfigUtils.RABBIT_LISTENER_ENDPOINT_REGISTRY_BEAN_NAME)) {
+			registry.registerBeanDefinition(RabbitListenerConfigUtils.RABBIT_LISTENER_ENDPOINT_REGISTRY_BEAN_NAME,
+					new RootBeanDefinition(RabbitListenerEndpointRegistry.class));
+		}
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,21 +39,25 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.test.RabbitListenerTestHarness.InvocationData;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.6
  *
  */
-@ContextConfiguration
-@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(loader = ExampleRabbitListenerCaptureTest.NoBeansOverrideAnnotationConfigContextLoader.class)
+@RunWith(SpringRunner.class)
 @DirtiesContext
 public class ExampleRabbitListenerCaptureTest {
 
@@ -179,4 +183,15 @@ public class ExampleRabbitListenerCaptureTest {
 
 	}
 
+
+	public static class NoBeansOverrideAnnotationConfigContextLoader extends AnnotationConfigContextLoader {
+
+		@Override
+		protected void customizeBeanFactory(DefaultListableBeanFactory beanFactory) {
+			beanFactory.setAllowBeanDefinitionOverriding(false);
+		}
+
+	}
+
 }
+

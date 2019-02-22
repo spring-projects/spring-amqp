@@ -23,8 +23,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.mock;
 
-import java.io.IOException;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -45,6 +43,8 @@ import com.rabbitmq.client.Channel;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.0
  *
  */
@@ -87,12 +87,12 @@ public class TestRabbitTemplateTests {
 		public String smlc1In = "smlc1:";
 
 		@Bean
-		public TestRabbitTemplate template() throws IOException {
+		public TestRabbitTemplate template() {
 			return new TestRabbitTemplate(connectionFactory());
 		}
 
 		@Bean
-		public ConnectionFactory connectionFactory() throws IOException {
+		public ConnectionFactory connectionFactory() {
 			ConnectionFactory factory = mock(ConnectionFactory.class);
 			Connection connection = mock(Connection.class);
 			Channel channel = mock(Channel.class);
@@ -103,7 +103,7 @@ public class TestRabbitTemplateTests {
 		}
 
 		@Bean
-		public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() throws IOException {
+		public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
 			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 			factory.setConnectionFactory(connectionFactory());
 			return factory;
@@ -125,7 +125,7 @@ public class TestRabbitTemplateTests {
 		}
 
 		@Bean
-		public SimpleMessageListenerContainer smlc1() throws IOException {
+		public SimpleMessageListenerContainer smlc1() {
 			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
 			container.setQueueNames("foo", "bar");
 			container.setMessageListener(new MessageListenerAdapter(new Object() {
