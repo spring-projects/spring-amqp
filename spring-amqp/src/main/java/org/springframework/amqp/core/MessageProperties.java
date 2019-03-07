@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -542,7 +542,7 @@ public class MessageProperties implements Serializable {
 		result = prime * result + ((this.contentEncoding == null) ? 0 : this.contentEncoding.hashCode());
 		result = prime * result + (int) (this.contentLength ^ (this.contentLength >>> INT_MASK));
 		result = prime * result + ((this.contentType == null) ? 0 : this.contentType.hashCode());
-		result = prime * result + this.correlationId.hashCode();
+		result = prime * result + ((this.correlationId == null) ? 0 : this.correlationId.hashCode());
 		result = prime * result + ((this.deliveryMode == null) ? 0 : this.deliveryMode.hashCode());
 		result = prime * result + (int) (this.deliveryTag ^ (this.deliveryTag >>> INT_MASK));
 		result = prime * result + ((this.expiration == null) ? 0 : this.expiration.hashCode());
