@@ -32,6 +32,7 @@ import java.util.Map;
  * @author Gary Russell
  * @author Dmitry Chernyshov
  * @author Artem Bilan
+ * @author Csaba Soti
  */
 public class MessageProperties implements Serializable {
 
