@@ -20,6 +20,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.junit.Test;
 
 
@@ -28,6 +31,7 @@ import org.junit.Test;
  * @author Artem Yakshin
  * @author Artem Bilan
  * @author Gary Russell
+ * @author Csaba Soti
  *
  */
 public class MessagePropertiesTests {
@@ -71,5 +75,12 @@ public class MessagePropertiesTests {
 		MessageProperties mp2 = new MessageProperties();
 		assertTrue(mp.equals(mp2));
 	}
+
+	 @Test
+	  public void tesNoNullPointerInHashCode() {
+	    Set<MessageProperties> messageList = new HashSet<>();
+	    messageList.add(new MessageProperties());
+	    assertEquals(1, messageList.size());
+	  }
 
 }
