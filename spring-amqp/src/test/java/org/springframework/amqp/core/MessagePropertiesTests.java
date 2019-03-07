@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.junit.Test;
 
 
@@ -27,10 +30,10 @@ import org.junit.Test;
  * @author Dave Syer
  * @author Artem Yakshin
  * @author Artem Bilan
+ * @author Csaba Soti
  *
  */
 public class MessagePropertiesTests {
-
 
 
 	@Test
@@ -69,6 +72,13 @@ public class MessagePropertiesTests {
 		MessageProperties mp = new MessageProperties();
 		MessageProperties mp2 = new MessageProperties();
 		assertTrue(mp.equals(mp2));
+	}
+
+	@Test
+	public void tesNoNullPointerInHashCode() {
+		Set<MessageProperties> messageList = new HashSet<>();
+		messageList.add(new MessageProperties());
+		assertEquals(1, messageList.size());
 	}
 
 }
