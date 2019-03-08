@@ -348,6 +348,15 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 		return this.template.getMessageConverter();
 	}
 
+	/**
+	 * Return the underlying RabbitTemplate used for sending.
+	 * @return the template.
+	 * @since 2.2
+	 */
+	protected RabbitTemplate getRabbitTemplateTemplate() {
+		return this.template;
+	}
+
 	@Override
 	public RabbitMessageFuture sendAndReceive(Message message) {
 		return sendAndReceive(this.template.getExchange(), this.template.getRoutingKey(), message);
