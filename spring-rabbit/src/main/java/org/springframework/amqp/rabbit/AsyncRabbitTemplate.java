@@ -349,11 +349,11 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	}
 
 	/**
-	 * Return the underlying RabbitTemplate used for sending.
+	 * Return the underlying {@link RabbitTemplate} used for sending.
 	 * @return the template.
 	 * @since 2.2
 	 */
-	public RabbitTemplate getRabbitTemplateTemplate() {
+	public RabbitTemplate getRabbitTemplate() {
 		return this.template;
 	}
 
