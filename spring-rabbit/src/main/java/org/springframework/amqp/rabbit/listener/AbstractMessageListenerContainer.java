@@ -222,6 +222,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private String errorHandlerLoggerName = getClass().getName();
 
+	private volatile boolean lazyLoad;
+
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
 		this.applicationEventPublisher = applicationEventPublisher;
@@ -1296,6 +1298,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		catch (Exception ex) {
 			throw convertRabbitAccessException(ex);
 		}
+		finally {
+			this.lazyLoad = false;
+		}
 	}
 
 	/**
@@ -1715,9 +1720,28 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				}
 			}
 			catch (Exception e) {
-				logger.info("Broker not available; cannot force queue declarations during start");
+				logger.info("Broker not available; cannot force queue declarations during start: " + e.getMessage());
 			}
 		}
+	}
+
+	@Override
+	public void lazyLoad() {
+		if (this.mismatchedQueuesFatal) {
+			if (this.missingQueuesFatal) {
+				logger.warn("'mismatchedQueuesFatal' and 'missingQueuesFatal' are ignored during the initial start(), "
+						+ "for lazily loaded containers");
+			}
+			else {
+				logger.warn("'mismatchedQueuesFatal' is ignored during the initial start(), "
+						+ "for lazily loaded containers");
+			}
+		}
+		else if (this.missingQueuesFatal) {
+			logger.warn("'missingQueuesFatal' is ignored during the initial start(), "
+					+ "for lazily loaded containers");
+		}
+		this.lazyLoad = true;
 	}
 
 	/**
@@ -1739,7 +1763,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	protected synchronized void redeclareElementsIfNecessary() {
 		AmqpAdmin admin = getAmqpAdmin();
-		if (admin != null && isAutoDeclare()) {
+		if (!this.lazyLoad && admin != null && isAutoDeclare()) {
 			try {
 				attemptDeclarations(admin);
 			}
@@ -1752,7 +1776,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		}
 	}
 
-	private void attemptDeclarations(AmqpAdmin amqpAdmin) {
+	private void attemptDeclarations(AmqpAdmin admin) {
 		ApplicationContext context = this.getApplicationContext();
 		if (context != null) {
 			Set<String> queueNames = getQueueNamesAsSet();
@@ -1760,11 +1784,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			for (Entry<String, Queue> entry : queueBeans.entrySet()) {
 				Queue queue = entry.getValue();
 				if (isMismatchedQueuesFatal() || (queueNames.contains(queue.getName()) &&
-						amqpAdmin.getQueueProperties(queue.getName()) == null)) {
+						admin.getQueueProperties(queue.getName()) == null)) {
 					if (logger.isDebugEnabled()) {
 						logger.debug("Redeclaring context exchanges, queues, bindings.");
 					}
-					amqpAdmin.initialize();
+					admin.initialize();
 					break;
 				}
 			}

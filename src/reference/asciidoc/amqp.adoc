@@ -5164,6 +5164,10 @@ This global property is not applied to any containers that have an explicit `mis
 
 The default retry properties (three retries at five-second intervals) can be overridden by setting the properties below.
 
+IMPORTANT: Missing queue detection is disabled while starting a container for a `@RabbitListener` in a bean that is marked `@Lazy`.
+This is to avoid a potential deadlock which can delay the start of such containers for up to 60 seconds.
+Applications using lazy listener beans should check the queue(s) before getting a reference to the lazy bean.
+
 a| image::images/tickmark.png[]
 a| image::images/tickmark.png[]
 
@@ -5217,6 +5221,10 @@ NOTE: If the broker is not available during initial startup, the container start
 IMPORTANT: The check is done against all queues in the context, not just the queues that a particular listener is configured to use.
 If you wish to limit the checks to just those queues used by a container, you should configure a separate `RabbitAdmin` for the container, and provide a reference to it using the `rabbitAdmin` property.
 See <<conditional-declaration>> for more information.
+
+IMPORTANT: Mismatched queue argument detection is disabled while starting a container for a `@RabbitListener` in a bean that is marked `@Lazy`.
+This is to avoid a potential deadlock which can delay the start of such containers for up to 60 seconds.
+Applications using lazy listener beans should check the queue arguments before getting a reference to the lazy bean.
 
 a| image::images/tickmark.png[]
 a| image::images/tickmark.png[]
