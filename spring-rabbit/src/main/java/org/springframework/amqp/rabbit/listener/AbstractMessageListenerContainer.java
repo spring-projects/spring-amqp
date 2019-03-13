@@ -214,6 +214,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private String errorHandlerLoggerName = getClass().getName();
 
+	private volatile boolean lazyLoad;
+
 	/**
 	 * {@inheritDoc}
 	 * @since 1.5
@@ -1190,6 +1192,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		catch (Exception ex) {
 			throw convertRabbitAccessException(ex);
 		}
+		finally {
+			this.lazyLoad = false;
+		}
 	}
 
 	/**
@@ -1602,6 +1607,25 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		}
 	}
 
+	@Override
+	public void lazyLoad() {
+		if (this.mismatchedQueuesFatal) {
+			if (this.missingQueuesFatal) {
+				logger.warn("'mismatchedQueuesFatal' and 'missingQueuesFatal' are ignored during the initial start(), "
+						+ "for lazily loaded containers");
+			}
+			else {
+				logger.warn("'mismatchedQueuesFatal' is ignored during the initial start(), "
+						+ "for lazily loaded containers");
+			}
+		}
+		else if (this.missingQueuesFatal) {
+			logger.warn("'missingQueuesFatal' is ignored during the initial start(), "
+					+ "for lazily loaded containers");
+		}
+		this.lazyLoad = true;
+	}
+
 	/**
 	 * Use {@link RabbitAdmin#initialize()} to redeclare everything if necessary.
 	 * Since auto deletion of a queue can cause upstream elements
@@ -1621,7 +1645,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	protected synchronized void redeclareElementsIfNecessary() {
 		RabbitAdmin rabbitAdmin = getRabbitAdmin();
-		if (rabbitAdmin == null || !isAutoDeclare()) {
+		if (this.lazyLoad || rabbitAdmin == null || !isAutoDeclare()) {
 			return;
 		}
 		try {
