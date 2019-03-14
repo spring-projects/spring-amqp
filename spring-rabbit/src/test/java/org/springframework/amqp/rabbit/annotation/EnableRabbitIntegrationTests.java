@@ -181,7 +181,7 @@ public class EnableRabbitIntegrationTests {
 			"test.converted.foomessage", "test.notconverted.messagingmessagenotgeneric", "test.simple.direct",
 			"test.simple.direct2", "test.generic.list", "test.generic.map",
 			"amqp656dlq", "test.simple.declare", "test.return.exceptions", "test.pojo.errors", "test.pojo.errors2",
-			"test.messaging.message", "test.amqp.message");
+			"test.messaging.message", "test.amqp.message", "test.bytes.to.string");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -846,6 +846,14 @@ public class EnableRabbitIntegrationTests {
 		assertThat(message.getMessageProperties().getHeaders().get("foo"), equalTo("bar"));
 	}
 
+	@Test
+	public void bytesToString() {
+		Message message = new Message("bytes".getBytes(), new MessageProperties());
+		message = this.rabbitTemplate.sendAndReceive("test.bytes.to.string", message);
+		assertThat(message).isNotNull();
+		assertThat(message.getBody()).isEqualTo("BYTES".getBytes());
+	}
+
 	interface TxService {
 
 		@Transactional
@@ -1168,6 +1176,11 @@ public class EnableRabbitIntegrationTests {
 							.setHeader("foo", "bar")
 							.build())
 					.build();
+		}
+
+		@RabbitListener(queues = "test.bytes.to.string")
+		public String bytesToString(String in) {
+			return in.toUpperCase();
 		}
 
 	}
