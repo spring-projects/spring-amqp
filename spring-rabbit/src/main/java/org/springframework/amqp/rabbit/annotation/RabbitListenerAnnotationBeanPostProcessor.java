@@ -17,6 +17,8 @@
 package org.springframework.amqp.rabbit.annotation;
 
 import java.lang.reflect.Method;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -67,6 +69,7 @@ import org.springframework.context.expression.StandardBeanExpressionResolver;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.env.Environment;
 import org.springframework.core.task.TaskExecutor;
@@ -153,6 +156,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	private int increment;
 
+	private Charset charset = StandardCharsets.UTF_8;
+
 	@Override
 	public int getOrder() {
 		return LOWEST_PRECEDENCE;
@@ -219,6 +224,15 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		if (property != null) {
 			this.emptyStringArguments.addAll(StringUtils.commaDelimitedListToSet(property));
 		}
+	}
+
+	/**
+	 * Set a charset for byte[] to String method argument conversion.
+	 * @param charset the charset (default UTF-8).
+	 * @since 2.2
+	 */
+	public void setCharset(Charset charset) {
+		this.charset = charset;
 	}
 
 	@Override
@@ -824,31 +838,35 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	 */
 	private class RabbitHandlerMethodFactoryAdapter implements MessageHandlerMethodFactory {
 
-		private MessageHandlerMethodFactory messageHandlerMethodFactory;
+		private MessageHandlerMethodFactory factory;
 
 		RabbitHandlerMethodFactoryAdapter() {
 			super();
 		}
 
 		public void setMessageHandlerMethodFactory(MessageHandlerMethodFactory rabbitHandlerMethodFactory1) {
-			this.messageHandlerMethodFactory = rabbitHandlerMethodFactory1;
+			this.factory = rabbitHandlerMethodFactory1;
 		}
 
 		@Override
 		public InvocableHandlerMethod createInvocableHandlerMethod(Object bean, Method method) {
-			return getMessageHandlerMethodFactory().createInvocableHandlerMethod(bean, method);
+			return getFactory().createInvocableHandlerMethod(bean, method);
 		}
 
-		private MessageHandlerMethodFactory getMessageHandlerMethodFactory() {
-			if (this.messageHandlerMethodFactory == null) {
-				this.messageHandlerMethodFactory = createDefaultMessageHandlerMethodFactory();
+		private MessageHandlerMethodFactory getFactory() {
+			if (this.factory == null) {
+				this.factory = createDefaultMessageHandlerMethodFactory();
 			}
-			return this.messageHandlerMethodFactory;
+			return this.factory;
 		}
 
 		private MessageHandlerMethodFactory createDefaultMessageHandlerMethodFactory() {
 			DefaultMessageHandlerMethodFactory defaultFactory = new DefaultMessageHandlerMethodFactory();
 			defaultFactory.setBeanFactory(RabbitListenerAnnotationBeanPostProcessor.this.beanFactory);
+			DefaultConversionService conversionService = new DefaultConversionService();
+			conversionService.addConverter(
+					new BytesToStringConverter(RabbitListenerAnnotationBeanPostProcessor.this.charset));
+			defaultFactory.setConversionService(conversionService);
 			defaultFactory.afterPropertiesSet();
 			return defaultFactory;
 		}
@@ -904,6 +922,22 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		ListenerMethod(Method method, RabbitListener[] annotations) { // NOSONAR
 			this.method = method;
 			this.annotations = annotations;
+		}
+
+	}
+
+	private static class BytesToStringConverter implements Converter<byte[], String> {
+
+
+		private final Charset charset;
+
+		BytesToStringConverter(Charset charset) {
+			this.charset = charset;
+		}
+
+		@Override
+		public String convert(byte[] source) {
+			return new String(source, this.charset);
 		}
 
 	}
