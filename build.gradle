@@ -42,9 +42,9 @@ allprojects {
 ext {
 	expandPlaceholders = '**/quick-tour.xml'
 	javadocLinks = [
-		"http://docs.oracle.com/javase/6/docs/api/",
-		"http://docs.oracle.com/javaee/6/api/",
-		"http://docs.spring.io/spring/docs/current/javadoc-api/"
+		"https://docs.oracle.com/javase/6/docs/api/",
+		"https://docs.oracle.com/javaee/6/api/",
+		"https://docs.spring.io/spring/docs/current/javadoc-api/"
 	] as String[]
 }
 
@@ -425,5 +425,5 @@ task dist(dependsOn: assemble) {
 task wrapper(type: Wrapper) {
 	description = 'Generates gradlew[.bat] scripts'
 	gradleVersion = '2.5'
-	distributionUrl = "http://services.gradle.org/distributions/gradle-${gradleVersion}-all.zip"
+	distributionUrl = "https://services.gradle.org/distributions/gradle-${gradleVersion}-all.zip"
 }
