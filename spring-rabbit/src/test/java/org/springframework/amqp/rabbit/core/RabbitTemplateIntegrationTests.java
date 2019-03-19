@@ -197,7 +197,8 @@ public class RabbitTemplateIntegrationTests {
 		when(cf.getUsername()).thenReturn("guest");
 		when(bf.getBean("cf")).thenReturn(cf);
 		this.template.setBeanFactory(bf);
-		template.setBeanName(this.testName.getMethodName() + "RabbitTemplate");
+		this.template.setBeanName(this.testName.getMethodName() + "RabbitTemplate");
+		this.template.setReplyTimeout(10_000);
 	}
 
 	@After
