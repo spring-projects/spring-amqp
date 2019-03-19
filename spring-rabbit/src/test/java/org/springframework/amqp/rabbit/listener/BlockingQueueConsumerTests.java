@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -40,8 +41,10 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.logging.log4j.Level;
 import org.junit.Rule;
@@ -297,7 +300,7 @@ public class BlockingQueueConsumerTests {
 	}
 
 	@Test
-	public void testDrainAndReject() throws IOException {
+	public void testDrainAndReject() throws IOException, TimeoutException {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 		Connection connection = mock(Connection.class);
 		ChannelProxy channel = mock(ChannelProxy.class);
@@ -310,9 +313,18 @@ public class BlockingQueueConsumerTests {
 		doReturn(isOpen.get()).when(channel).isOpen();
 		when(channel.queueDeclarePassive(anyString()))
 				.then(invocation -> mock(AMQP.Queue.DeclareOk.class));
-		when(channel.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
-				anyMap(), any(Consumer.class))).thenReturn("consumerTag");
-
+		AtomicReference<Consumer> theConsumer = new AtomicReference<>();
+		doAnswer(inv -> {
+			Consumer consumer = inv.getArgument(6);
+			consumer.handleConsumeOk("consumerTag");
+			theConsumer.set(consumer);
+			return "consumerTag";
+		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+				anyMap(), any(Consumer.class));
+		doAnswer(inv -> {
+			theConsumer.get().handleCancelOk("consumerTag");
+			return null;
+		}).when(channel).basicCancel("consumerTag");
 		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
 				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
 				AcknowledgeMode.AUTO, true, 2, "test");
@@ -337,9 +349,7 @@ public class BlockingQueueConsumerTests {
 		envelope = new Envelope(3, false, "foo", "bar");
 		consumer.handleDelivery("consumerTag", envelope, props, new byte[0]);
 		assertThat(TestUtils.getPropertyValue(blockingQueueConsumer, "queue", BlockingQueue.class).size(), equalTo(0));
-		verify(channel).basicNack(3, true, true);
-		verify(channel, times(2)).basicCancel("consumerTag");
+		verify(channel, times(1)).basicCancel("consumerTag");
 	}
-
 
 }
