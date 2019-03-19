@@ -827,11 +827,13 @@ public class BlockingQueueConsumer {
 
 	private final class InternalConsumer extends DefaultConsumer {
 
-		private final String queue;
+		private final String queueName;
+
+		boolean canceled;
 
 		InternalConsumer(Channel channel, String queue) {
 			super(channel);
-			this.queue = queue;
+			this.queueName = queue;
 		}
 
 		@Override
@@ -842,7 +844,7 @@ public class BlockingQueueConsumer {
 			}
 			if (BlockingQueueConsumer.this.applicationEventPublisher != null) {
 				BlockingQueueConsumer.this.applicationEventPublisher
-						.publishEvent(new ConsumeOkEvent(this, this.queue, consumerTag));
+						.publishEvent(new ConsumeOkEvent(this, this.queueName, consumerTag));
 			}
 		}
 
@@ -866,10 +868,10 @@ public class BlockingQueueConsumer {
 		public void handleCancel(String consumerTag) {
 			if (logger.isWarnEnabled()) {
 				logger.warn("Cancel received for " + consumerTag + " ("
-						+ this.queue
+						+ this.queueName
 						+ "); " + BlockingQueueConsumer.this);
 			}
-			BlockingQueueConsumer.this.consumers.remove(this.queue);
+			BlockingQueueConsumer.this.consumers.remove(this.queueName);
 			if (!BlockingQueueConsumer.this.consumers.isEmpty()) {
 				basicCancel(false);
 			}
@@ -882,14 +884,15 @@ public class BlockingQueueConsumer {
 		public void handleCancelOk(String consumerTag) {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Received cancelOk for tag " + consumerTag + " ("
-						+ this.queue
+						+ this.queueName
 						+ "); " + BlockingQueueConsumer.this);
 			}
+			this.canceled = true;
 		}
 
 		@Override
-		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
-				throws IOException {
+		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
+				byte[] body) {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Storing delivery for consumerTag: '"
 						+ consumerTag + "' with deliveryTag: '" + envelope.getDeliveryTag() + "' in "
@@ -898,36 +901,40 @@ public class BlockingQueueConsumer {
 			try {
 				if (BlockingQueueConsumer.this.abortStarted > 0) {
 					if (!BlockingQueueConsumer.this.queue.offer(
-							new Delivery(consumerTag, envelope, properties, body, this.queue),
+							new Delivery(consumerTag, envelope, properties, body, this.queueName),
 							BlockingQueueConsumer.this.shutdownTimeout, TimeUnit.MILLISECONDS)) {
 
 						Channel channelToClose = super.getChannel();
 						RabbitUtils.setPhysicalCloseRequired(channelToClose, true);
 						// Defensive - should never happen
 						BlockingQueueConsumer.this.queue.clear();
-						channelToClose.basicNack(envelope.getDeliveryTag(), true, true);
-						channelToClose.basicCancel(consumerTag);
+						if (!this.canceled) {
+							getChannel().basicCancel(consumerTag);
+						}
 						try {
 							channelToClose.close();
 						}
-						catch (TimeoutException e) {
+						catch (@SuppressWarnings("unused") TimeoutException e) {
 							// no-op
 						}
 					}
 				}
 				else {
 					BlockingQueueConsumer.this.queue
-							.put(new Delivery(consumerTag, envelope, properties, body, this.queue));
+							.put(new Delivery(consumerTag, envelope, properties, body, this.queueName));
 				}
 			}
-			catch (InterruptedException e) {
+			catch (@SuppressWarnings("unused") InterruptedException e) {
 				Thread.currentThread().interrupt();
+			}
+			catch (Exception e) {
+				BlockingQueueConsumer.logger.warn("Unexpected exception during delivery", e);
 			}
 		}
 
 		@Override
 		public String toString() {
-			return "InternalConsumer{" + "queue='" + this.queue + '\'' +
+			return "InternalConsumer{" + "queue='" + this.queueName + '\'' +
 					", consumerTag='" + getConsumerTag() + '\'' +
 					'}';
 		}
