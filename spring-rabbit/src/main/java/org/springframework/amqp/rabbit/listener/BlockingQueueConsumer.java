@@ -843,7 +843,9 @@ public class BlockingQueueConsumer {
 
 	private final class InternalConsumer extends DefaultConsumer {
 
-		private InternalConsumer(Channel channel) {
+		boolean canceled;
+
+		InternalConsumer(Channel channel) {
 			super(channel);
 		}
 
@@ -890,11 +892,12 @@ public class BlockingQueueConsumer {
 						+ BlockingQueueConsumer.this.consumerTags.get(consumerTag)
 						+ "); " + BlockingQueueConsumer.this);
 			}
+			this.canceled = true;
 		}
 
 		@Override
-		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
-				throws IOException {
+		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
+				byte[] body) {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Storing delivery for consumerTag: '"
 						+ consumerTag + "' with deliveryTag: '" + envelope.getDeliveryTag() + "' in "
@@ -907,12 +910,13 @@ public class BlockingQueueConsumer {
 						RabbitUtils.setPhysicalCloseRequired(getChannel(), true);
 						// Defensive - should never happen
 						BlockingQueueConsumer.this.queue.clear();
-						getChannel().basicNack(envelope.getDeliveryTag(), true, true);
-						getChannel().basicCancel(consumerTag);
+						if (!this.canceled) {
+							getChannel().basicCancel(consumerTag);
+						}
 						try {
 							getChannel().close();
 						}
-						catch (TimeoutException e) {
+						catch (@SuppressWarnings("unused") TimeoutException e) {
 							// no-op
 						}
 					}
@@ -921,8 +925,11 @@ public class BlockingQueueConsumer {
 					BlockingQueueConsumer.this.queue.put(new Delivery(consumerTag, envelope, properties, body));
 				}
 			}
-			catch (InterruptedException e) {
+			catch (@SuppressWarnings("unused") InterruptedException e) {
 				Thread.currentThread().interrupt();
+			}
+			catch (Exception e) {
+				BlockingQueueConsumer.logger.warn("Unexpected exception during delivery", e);
 			}
 		}
 
