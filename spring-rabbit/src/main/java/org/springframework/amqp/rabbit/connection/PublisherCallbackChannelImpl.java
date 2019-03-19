@@ -125,9 +125,9 @@ public class PublisherCallbackChannelImpl
 
 	public PublisherCallbackChannelImpl(Channel delegate, ExecutorService executor) {
 		Assert.notNull(executor, "'executor' must not be null");
-		delegate.addShutdownListener(this);
 		this.delegate = delegate;
 		this.executor = executor;
+		delegate.addShutdownListener(this);
 	}
 
 	@Override
