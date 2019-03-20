@@ -829,7 +829,7 @@ public class BlockingQueueConsumer {
 
 		private final String queueName;
 
-		boolean canceled;
+		private boolean canceled;
 
 		InternalConsumer(Channel channel, String queue) {
 			super(channel);
@@ -909,7 +909,7 @@ public class BlockingQueueConsumer {
 						// Defensive - should never happen
 						BlockingQueueConsumer.this.queue.clear();
 						if (!this.canceled) {
-							getChannel().basicCancel(consumerTag);
+							channelToClose.basicCancel(consumerTag);
 						}
 						try {
 							channelToClose.close();
