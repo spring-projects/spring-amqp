@@ -5,7 +5,7 @@
 
 This is the five-minute tour to get started with Spring AMQP.
 
-Prerequisites: Install and run the RabbitMQ broker (http://www.rabbitmq.com/download.html[http://www.rabbitmq.com/download.html]).
+Prerequisites: Install and run the RabbitMQ broker (https://www.rabbitmq.com/download.html[https://www.rabbitmq.com/download.html]).
 Then grab the spring-rabbit JAR and all its dependencies - the easiest way to do so is to declare a dependency in your build tool.
 For example, for Maven, you can do something resembling the following:
 
@@ -95,9 +95,9 @@ String foo = (String) template.receiveAndConvert("myqueue");
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:rabbit="http://www.springframework.org/schema/rabbit"
        xsi:schemaLocation="http://www.springframework.org/schema/rabbit
-           http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
+           https://www.springframework.org/schema/rabbit/spring-rabbit.xsd
            http://www.springframework.org/schema/beans
-           http://www.springframework.org/schema/beans/spring-beans.xsd">
+           https://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <rabbit:connection-factory id="connectionFactory"/>
 
