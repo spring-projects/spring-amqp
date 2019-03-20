@@ -44,7 +44,7 @@ public class BrokerRunningTests {
 		brokerRunning.setPort(1234);
 		brokerRunning.setUser("fiz");
 
-		assertEquals("http://baz:15672/api/", brokerRunning.getAdminUri());
+		assertEquals("https://baz:15672/api/", brokerRunning.getAdminUri());
 		ConnectionFactory connectionFactory = brokerRunning.getConnectionFactory();
 		assertEquals("baz", connectionFactory.getHost());
 		assertEquals(1234, connectionFactory.getPort());
@@ -56,7 +56,7 @@ public class BrokerRunningTests {
 	public void testEnvironmentVars() {
 		Map<String, String> vars = new HashMap<>();
 		vars.put("RABBITMQ_TEST_ADMIN_PASSWORD", "FOO");
-		vars.put("RABBITMQ_TEST_ADMIN_URI", "http://foo/bar");
+		vars.put("RABBITMQ_TEST_ADMIN_URI", "https://foo/bar");
 		vars.put("RABBITMQ_TEST_ADMIN_USER", "BAR");
 		vars.put("RABBITMQ_TEST_HOSTNAME", "BAZ");
 		vars.put("RABBITMQ_TEST_PASSWORD", "QUX");
@@ -65,7 +65,7 @@ public class BrokerRunningTests {
 		BrokerRunning.setEnvironmentVariableOverrides(vars);
 		BrokerRunning brokerRunning = BrokerRunning.isBrokerAndManagementRunning();
 
-		assertEquals("http://foo/bar", brokerRunning.getAdminUri());
+		assertEquals("https://foo/bar", brokerRunning.getAdminUri());
 		ConnectionFactory connectionFactory = brokerRunning.getConnectionFactory();
 		assertEquals("BAZ", connectionFactory.getHost());
 		assertEquals(2345, connectionFactory.getPort());
