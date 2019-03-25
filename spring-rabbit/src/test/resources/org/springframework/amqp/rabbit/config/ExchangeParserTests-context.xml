@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:beans="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
-	xmlns:util="http://www.springframework.org/schema/util"
-	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
-		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+<beans xmlns="https://www.springframework.org/schema/beans"
+	xmlns:beans="https://www.springframework.org/schema/beans"
+	xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+	xmlns:rabbit="https://www.springframework.org/schema/rabbit"
+	xmlns:util="https://www.springframework.org/schema/util"
+	xsi:schemaLocation="https://www.springframework.org/schema/rabbit https://www.springframework.org/schema/rabbit/spring-rabbit.xsd
+		https://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+		https://www.springframework.org/schema/util https://www.springframework.org/schema/util/spring-util.xsd">
 
 
 	<rabbit:direct-exchange name="direct" auto-declare="false" declared-by="admin1, admin2">
@@ -25,7 +25,7 @@
 
 	<rabbit:direct-exchange name="direct-override" auto-delete="true" durable="false"/>
 
-	<direct-exchange name="direct-arguments" xmlns="http://www.springframework.org/schema/rabbit">
+	<direct-exchange name="direct-arguments" xmlns="https://www.springframework.org/schema/rabbit">
 		<exchange-arguments>
 			<beans:entry key="foo" value="bar" />
 		</exchange-arguments>
@@ -35,7 +35,7 @@
 		<beans:entry key="foo" value="bar" />
 	</util:map>
 
-	<direct-exchange name="direct-ref-arguments" xmlns="http://www.springframework.org/schema/rabbit">
+	<direct-exchange name="direct-ref-arguments" xmlns="https://www.springframework.org/schema/rabbit">
 		<rabbit:exchange-arguments ref="myRefArguments"/>
 	</direct-exchange>
 
@@ -43,7 +43,7 @@
 
 	<rabbit:fanout-exchange name="fanout" declared-by="admin2" />
 
-	<rabbit:headers-exchange name="headers" xmlns="http://www.springframework.org/schema/rabbit"
+	<rabbit:headers-exchange name="headers" xmlns="https://www.springframework.org/schema/rabbit"
 		declared-by="admin2" />
 
 	<rabbit:admin id="admin1" auto-startup="false" connection-factory="mockCF" />
