@@ -8,7 +8,7 @@ The first is a simple "Hello World" example that demonstrates both synchronous a
 It provides an excellent starting point for acquiring an understanding of the essential components.
 The second sample is based on a stock-trading use case to demonstrate the types of interaction that would be common in real world applications.
 In this chapter, we will provide a quick walk-through of each sample so that you can focus on the most important components.
-The samples are both Maven-based, so you should be able to import them directly into any Maven-aware IDE (such as http://www.springsource.org/sts[SpringSource Tool Suite]).
+The samples are both Maven-based, so you should be able to import them directly into any Maven-aware IDE (such as https://www.springsource.org/sts[SpringSource Tool Suite]).
 
 ==== Hello World
 
@@ -135,7 +135,7 @@ static class ScheduledProducer {
 ----
 
 You don't need to understand all of the details since the real focus should be on the receiving side (which we will cover momentarily).
-However, if you are not yet familiar with Spring task scheduling support, you can learn more http://docs.spring.io/spring/docs/current/spring-framework-reference/html/scheduling.html#scheduling-annotation-support[here].
+However, if you are not yet familiar with Spring task scheduling support, you can learn more https://docs.spring.io/spring/docs/current/spring-framework-reference/html/scheduling.html#scheduling-annotation-support[here].
 The short story is that the "postProcessor" bean in the ProducerConfiguration is registering the task with a scheduler.
 
 Now, let's turn to the receiving side.
@@ -332,4 +332,4 @@ Spring applications, when sending JSON, set the `__TypeId__` header to the fully
 
 The `spring-rabbit-json` sample explores several techniques to convert the JSON from a non-Spring application.
 
-See also <<json-message-converter>> as well as the http://docs.spring.io/spring-amqp/docs/current/api/index.html?org/springframework/amqp/support/converter/DefaultClassMapper.html[Javadoc for the `DefaultClassMapper`].
+See also <<json-message-converter>> as well as the https://docs.spring.io/spring-amqp/docs/current/api/index.html?org/springframework/amqp/support/converter/DefaultClassMapper.html[Javadoc for the `DefaultClassMapper`].
