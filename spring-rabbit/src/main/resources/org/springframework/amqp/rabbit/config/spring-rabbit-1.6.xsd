@@ -1153,7 +1153,7 @@
 					<xsd:documentation><![CDATA[
 	When 'true', instructs the template to use a temporary, exclusive, auto-delete queue for
 	each 'sendAndReceive'. By default, when there is no 'reply-address', the template will
-	use Direct reply-to ('http://www.rabbitmq.com/direct-reply-to.html') when the broker supports it.
+	use Direct reply-to ('https://www.rabbitmq.com/direct-reply-to.html') when the broker supports it.
 	This flag overrides that behavior; it is ignored if a 'reply-address' is provided.
 	Defaults to 'false'.
 					]]></xsd:documentation>
