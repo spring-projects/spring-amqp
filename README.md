@@ -2,11 +2,11 @@ Spring AMQP [![Build Status](https://travis-ci.org/spring-projects/spring-amqp.s
 
 ===========
 
-This project provides support for using Spring and Java with [AMQP](http://www.amqp.org/), and in particular [RabbitMQ](http://www.rabbitmq.com/).
+This project provides support for using Spring and Java with [AMQP](https://www.amqp.org/), and in particular [RabbitMQ](https://www.rabbitmq.com/).
 
 # Checking out and Building
 
-To check out the project from [GitHub](https://github.com/SpringSource/spring-amqp) and build from source using [Gradle](http://gradle.org/), do the following:
+To check out the project from [GitHub](https://github.com/SpringSource/spring-amqp) and build from source using [Gradle](https://gradle.org/), do the following:
 
 	git clone git://github.com/SpringSource/spring-amqp.git
 	cd spring-amqp
@@ -32,7 +32,7 @@ To build complete distribution including `-dist`, `-docs`, and `-schema` zip fil
 
 	./gradlew dist
 
-To analyze and gather metrics using [Sonar](http://www.sonarsource.org/):
+To analyze and gather metrics using [Sonar](https://www.sonarqube.org/):
 
 	./gradlew clean build sonar
 
@@ -53,7 +53,7 @@ Browse to the *'spring-amqp'* root directory. All projects should import free of
 
 # Using SpringSource Tool Suite™ (STS)
 
-Using the STS Gradle Support, you can directly import Gradle projects, without having to generate Eclipse metadata first (since STS 2.7.M1). Please make sure you have the Gradle STS Extension installed - Please see the [installation  instructions](http://static.springsource.org/sts/docs/latest/reference/html/gradle/installation.html) for details.
+Using the STS Gradle Support, you can directly import Gradle projects, without having to generate Eclipse metadata first (since STS 2.7.M1). 
 
 1. Select *File -> Import -> Gradle Project*
 2. Browse to the Spring AMQP Root Folder
@@ -90,20 +90,20 @@ Lists of issues addressed per release can be found in [JIRA](https://jira.spring
 
 ## Additional Resources
 
-* [Spring AMQP Homepage](http://www.springsource.org/spring-amqp)
-* [Spring AMQP Source](http://github.com/SpringSource/spring-amqp)
-* [Spring AMQP Samples](http://github.com/SpringSource/spring-amqp-samples)
-* [Spring AMQP Forum](http://forum.springsource.org/forumdisplay.php?f=74)
-* [StackOverflow](http://stackoverflow.com/questions/tagged/spring-amqp)
+* [Spring AMQP Homepage](https://www.springsource.org/spring-amqp)
+* [Spring AMQP Source](https://github.com/SpringSource/spring-amqp)
+* [Spring AMQP Samples](https://github.com/SpringSource/spring-amqp-samples)
+* [Spring AMQP Forum](https://forum.spring.io/forumdisplay.php?f=74)
+* [StackOverflow](https://stackoverflow.com/questions/tagged/spring-amqp)
 
 # Contributing to Spring AMQP
 
 Here are some ways for you to get involved in the community:
 
-* Get involved with the Spring community on the Spring Community Forums.  Please help out on the [forum](http://forum.springsource.org/forumdisplay.php?f=74) by responding to questions and joining the debate.
+* Get involved with the Spring community on the Spring Community Forums.  Please help out on the [forum](https://forum.spring.io/forumdisplay.php?f=74) by responding to questions and joining the debate.
 * Create [JIRA](https://jira.springsource.org/browse/AMQP) tickets for bugs and new features and comment and vote on the ones that you are interested in.  
-* Github is for social coding: if you want to write code, we encourage contributions through pull requests from [forks of this repository](http://help.github.com/forking/).  If you want to contribute code this way, please reference a JIRA ticket as well covering the specific issue you are addressing.
-* Watch for upcoming articles on Spring by [subscribing](http://www.springsource.org/node/feed) to springframework.org
+* Github is for social coding: if you want to write code, we encourage contributions through pull requests from [forks of this repository](https://help.github.com/forking/).  If you want to contribute code this way, please reference a JIRA ticket as well covering the specific issue you are addressing.
+* Watch for upcoming articles on Spring by [subscribing](https://www.springsource.org/node/feed) to springframework.org
 
 Before we accept a non-trivial patch or pull request we will need you to sign the [contributor's agreement](https://support.springsource.com/spring_committer_signup).  Signing the contributor's agreement does not grant anyone commit rights to the main repository, but it does mean that we can accept your contributions, and you will get an author credit if we do. Active contributors might be asked to join the core team, and given the ability to merge pull requests.
 
