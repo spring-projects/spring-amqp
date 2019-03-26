@@ -272,7 +272,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	/**
 	 * A queue for replies; if not provided, a temporary exclusive, auto-delete queue will
 	 * be used for each reply, unless RabbitMQ supports 'amq.rabbitmq.reply-to' - see
-	 * http://www.rabbitmq.com/direct-reply-to.html
+	 * https://www.rabbitmq.com/direct-reply-to.html
 	 * @deprecated - use #setReplyAddress(String replyAddress)
 	 * @param replyQueue the replyQueue to set
 	 */
@@ -284,7 +284,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	/**
 	 * An address for replies; if not provided, a temporary exclusive, auto-delete queue will
 	 * be used for each reply, unless RabbitMQ supports 'amq.rabbitmq.reply-to' - see
-	 * http://www.rabbitmq.com/direct-reply-to.html
+	 * https://www.rabbitmq.com/direct-reply-to.html
 	 * <p>The address can be a simple queue name (in which case the reply will be routed via the default
 	 * exchange), or with the form {@code exchange/routingKey} to route the reply using an explicit
 	 * exchange and routing key.
