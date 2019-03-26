@@ -85,7 +85,7 @@ public class AmqpClientInterceptor extends RemoteAccessor implements MethodInter
 	/**
 	 * The AMQP template to be used for sending messages and receiving results. This class is using "Request/Reply" for
 	 * sending messages as described <a href=
-	 * "http://static.springsource.org/spring-amqp/reference/html/amqp.html#request-reply" >in the Spring-AMQP
+	 * "https://docs.spring.io/spring-amqp/reference/html/amqp.html#request-reply" >in the Spring-AMQP
 	 * documentation</a>.
 	 *
 	 * @param amqpTemplate The amqp template.
