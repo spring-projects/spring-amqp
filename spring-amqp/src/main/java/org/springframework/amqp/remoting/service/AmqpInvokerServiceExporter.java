@@ -47,7 +47,7 @@ import org.springframework.remoting.support.RemoteInvocationResult;
  *
  * <p>
  * This listener responds to "Request/Reply"-style messages as described <a href=
- * "http://static.springsource.org/spring-amqp/reference/html/amqp.html#request-reply" >here</a>.
+ * "https://docs.spring.io/spring-amqp/reference/html/#request-reply" >here</a>.
  *
  * @author David Bilge
  * @author Gary Russell

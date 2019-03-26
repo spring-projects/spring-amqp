@@ -6,7 +6,7 @@ This brief chapter covers the relationship between the Spring Integration and th
 [[spring-integration-amqp-introduction]]
 ==== Introduction
 
-The http://www.springsource.org/spring-integration[Spring Integration] project includes AMQP Channel Adapters and Gateways that build upon the Spring AMQP project.
+The https://www.springsource.org/spring-integration[Spring Integration] project includes AMQP Channel Adapters and Gateways that build upon the Spring AMQP project.
 Those adapters are developed and released in the Spring Integration project.
 In Spring Integration, "`Channel Adapters`" are unidirectional (one-way), whereas "`Gateways`" are bidirectional (request-reply).
 We provide an inbound-channel-adapter, an outbound-channel-adapter, an inbound-gateway, and an outbound-gateway.
