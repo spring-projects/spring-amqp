@@ -20,7 +20,7 @@ package org.springframework.amqp.core;
  * Information about a queue, resulting from a passive declaration.
  *
  * @author Gary Russell
- * @since 2.1
+ * @since 2.2
  *
  */
 public class QueueInformation {
