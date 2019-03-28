@@ -39,6 +39,7 @@ import org.springframework.amqp.core.Declarable;
 import org.springframework.amqp.core.Declarables;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueInformation;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
@@ -249,7 +250,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			try {
 				channel.exchangeDelete(exchangeName);
 			}
-			catch (IOException e) {
+			catch (@SuppressWarnings("unused") IOException e) {
 				return false;
 			}
 			return true;
@@ -314,7 +315,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			try {
 				channel.queueDelete(queueName);
 			}
-			catch (IOException e) {
+			catch (@SuppressWarnings("unused") IOException e) {
 				return false;
 			}
 			return true;
@@ -397,17 +398,28 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 */
 	@Override
 	@ManagedOperation(description = "Get queue name, message count and consumer count")
-	@Nullable
 	public Properties getQueueProperties(final String queueName) {
+		QueueInformation queueInfo = getQueueInfo(queueName);
+		if (queueInfo != null) {
+			Properties props = new Properties();
+			props.put(QUEUE_NAME, queueInfo.getName());
+			props.put(QUEUE_MESSAGE_COUNT, queueInfo.getMessageCount());
+			props.put(QUEUE_CONSUMER_COUNT, queueInfo.getConsumerCount());
+			return props;
+		}
+		else {
+			return null;
+		}
+	}
+
+	@Override
+	public QueueInformation getQueueInfo(String queueName) {
 		Assert.hasText(queueName, "'queueName' cannot be null or empty");
 		return this.rabbitTemplate.execute(channel -> {
 			try {
 				DeclareOk declareOk = channel.queueDeclarePassive(queueName);
-				Properties props = new Properties();
-				props.put(QUEUE_NAME, declareOk.getQueue());
-				props.put(QUEUE_MESSAGE_COUNT, declareOk.getMessageCount());
-				props.put(QUEUE_CONSUMER_COUNT, declareOk.getConsumerCount());
-				return props;
+				return new QueueInformation(declareOk.getQueue(), declareOk.getMessageCount(),
+						declareOk.getConsumerCount());
 			}
 			catch (IllegalArgumentException e) {
 				if (RabbitAdmin.this.logger.isDebugEnabled()) {
@@ -419,11 +431,11 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 						((ChannelProxy) channel).getTargetChannel().close();
 					}
 				}
-				catch (TimeoutException e1) {
+				catch (@SuppressWarnings("unused") TimeoutException e1) {
 				}
 				return null;
 			}
-			catch (Exception e) {
+			catch (@SuppressWarnings("unused") Exception e) {
 				if (RabbitAdmin.this.logger.isDebugEnabled()) {
 					RabbitAdmin.this.logger.debug("Queue '" + queueName + "' does not exist");
 				}

@@ -119,6 +119,14 @@ public interface AmqpAdmin {
 	Properties getQueueProperties(String queueName);
 
 	/**
+	 * Returns information about the queue, if it exists.
+	 * @param queueName the name of the queue.
+	 * @return the information or null if the queue doesn't exist.
+	 */
+	@Nullable
+	QueueInformation getQueueInfo(String queueName);
+
+	/**
 	 * Initialize the admin.
 	 * @since 2.1
 	 */
