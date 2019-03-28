@@ -290,7 +290,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 *
 	 * @param exchange the exchange name to use for send operations
 	 */
-	public void setExchange(String exchange) {
+	public void setExchange(@Nullable String exchange) {
 		this.exchange = (exchange != null) ? exchange : DEFAULT_EXCHANGE;
 	}
 
@@ -643,6 +643,18 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		Assert.notNull(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot be null");
 		Assert.noNullElements(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot have null elements");
 		this.afterReceivePostProcessors = MessagePostProcessorUtils.sort(Arrays.asList(afterReceivePostProcessors));
+	}
+
+	/**
+	 * Return configured after receive {@link MessagePostProcessor}s or {@code null}.
+	 * @return configured after receive {@link MessagePostProcessor}s or {@code null}.
+	 * @since 2.1.5
+	 */
+	@Nullable
+	public Collection<MessagePostProcessor> getAfterReceivePostProcessors() {
+		return this.afterReceivePostProcessors != null
+				? Collections.unmodifiableCollection(this.afterReceivePostProcessors)
+				: null;
 	}
 
 	/**

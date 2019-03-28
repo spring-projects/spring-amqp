@@ -29,6 +29,7 @@ import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.core.MessagePropertiesBuilder;
 import org.springframework.core.Ordered;
 import org.springframework.util.FileCopyUtils;
 
@@ -38,15 +39,19 @@ import org.springframework.util.FileCopyUtils;
  * present.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.4.2
  */
 public abstract class AbstractCompressingPostProcessor implements MessagePostProcessor, Ordered {
 
-	private final Log logger = LogFactory.getLog(this.getClass());
+	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR final
 
 	private final boolean autoDecompress;
 
 	private int order;
+
+	private boolean copyProperties = false;
 
 	/**
 	 * Construct a post processor that will include the
@@ -68,23 +73,47 @@ public abstract class AbstractCompressingPostProcessor implements MessagePostPro
 		this.autoDecompress = autoDecompress;
 	}
 
+	/**
+	 * Flag to indicate if {@link MessageProperties} should be used as is or cloned for new message
+	 * after compression.
+	 * By default this flag is turned off for better performance since in most cases the original message
+	 * is not used any more.
+	 * @param copyProperties clone or reuse original message properties.
+	 * @since 2.1.5
+	 */
+	public void setCopyProperties(boolean copyProperties) {
+		this.copyProperties = copyProperties;
+	}
+
 	@Override
 	public Message postProcessMessage(Message message) throws AmqpException {
-		ByteArrayOutputStream zipped = new ByteArrayOutputStream();
 		try {
+			ByteArrayOutputStream zipped = new ByteArrayOutputStream();
 			OutputStream zipper = getCompressorStream(zipped);
 			FileCopyUtils.copy(new ByteArrayInputStream(message.getBody()), zipper);
-			MessageProperties messageProperties = message.getMessageProperties();
-			String currentEncoding = messageProperties.getContentEncoding();
-			messageProperties
-					.setContentEncoding(getEncoding() + (currentEncoding == null ? "" : ":" + currentEncoding));
-			if (this.autoDecompress) {
-				messageProperties.setHeader(MessageProperties.SPRING_AUTO_DECOMPRESS, true);
-			}
 			byte[] compressed = zipped.toByteArray();
 			if (this.logger.isTraceEnabled()) {
 				this.logger.trace("Compressed " + message.getBody().length + " to " + compressed.length);
 			}
+
+			MessageProperties originalProperties = message.getMessageProperties();
+
+			MessagePropertiesBuilder messagePropertiesBuilder =
+					this.copyProperties
+							? MessagePropertiesBuilder.fromClonedProperties(originalProperties)
+							: MessagePropertiesBuilder.fromProperties(originalProperties);
+
+			if (this.autoDecompress) {
+				messagePropertiesBuilder.setHeader(MessageProperties.SPRING_AUTO_DECOMPRESS, true);
+			}
+
+			MessageProperties messageProperties =
+					messagePropertiesBuilder.setContentEncoding(getEncoding() +
+							(originalProperties.getContentEncoding() == null
+									? ""
+									: ":" + originalProperties.getContentEncoding()))
+							.build();
+
 			return new Message(compressed, messageProperties);
 		}
 		catch (IOException e) {
