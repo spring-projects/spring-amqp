@@ -56,6 +56,8 @@ import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.amqp.support.postprocessor.GUnzipPostProcessor;
+import org.springframework.amqp.support.postprocessor.GZipPostProcessor;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -117,7 +119,8 @@ public class AsyncRabbitTemplateTests {
 		this.latch.set(null);
 		waitForZeroInUseConsumers();
 		assertThat(TestUtils
-						.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount", Integer.class),
+						.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount",
+								Integer.class),
 				equalTo(2));
 		final String missingQueue = UUID.randomUUID().toString();
 		this.asyncDirectTemplate.convertSendAndReceive("", missingQueue, "foo"); // send to nowhere
@@ -174,12 +177,14 @@ public class AsyncRabbitTemplateTests {
 		this.latch.set(null);
 		waitForZeroInUseConsumers();
 		assertThat(TestUtils
-					.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount", Integer.class),
+						.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount",
+								Integer.class),
 				equalTo(2));
 		this.asyncDirectTemplate.stop();
 		this.asyncDirectTemplate.start();
 		assertThat(TestUtils
-					.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount", Integer.class),
+						.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount",
+								Integer.class),
 				equalTo(0));
 	}
 
@@ -232,7 +237,8 @@ public class AsyncRabbitTemplateTests {
 	@DirtiesContext
 	public void testReturn() throws Exception {
 		this.asyncTemplate.setMandatory(true);
-		ListenableFuture<String> future = this.asyncTemplate.convertSendAndReceive(this.requests.getName() + "x", "foo");
+		ListenableFuture<String> future = this.asyncTemplate.convertSendAndReceive(this.requests.getName() + "x",
+				"foo");
 		try {
 			future.get(10, TimeUnit.SECONDS);
 			fail("Expected exception");
@@ -486,6 +492,8 @@ public class AsyncRabbitTemplateTests {
 		public RabbitTemplate template(ConnectionFactory connectionFactory) {
 			RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
 			rabbitTemplate.setRoutingKey(requests().getName());
+			rabbitTemplate.addBeforePublishPostProcessors(new GZipPostProcessor());
+			rabbitTemplate.addAfterReceivePostProcessors(new GUnzipPostProcessor());
 			return rabbitTemplate;
 		}
 
@@ -493,6 +501,8 @@ public class AsyncRabbitTemplateTests {
 		public RabbitTemplate templateForDirect(ConnectionFactory connectionFactory) {
 			RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
 			rabbitTemplate.setRoutingKey(requests().getName());
+			rabbitTemplate.addBeforePublishPostProcessors(new GZipPostProcessor());
+			rabbitTemplate.addAfterReceivePostProcessors(new GUnzipPostProcessor());
 			return rabbitTemplate;
 		}
 
@@ -500,6 +510,7 @@ public class AsyncRabbitTemplateTests {
 		@Primary
 		public SimpleMessageListenerContainer replyContainer(ConnectionFactory connectionFactory) {
 			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+			container.setAfterReceivePostProcessors(new GUnzipPostProcessor());
 			container.setQueueNames(replies().getName());
 			return container;
 		}
@@ -518,7 +529,8 @@ public class AsyncRabbitTemplateTests {
 		public SimpleMessageListenerContainer remoteContainer(ConnectionFactory connectionFactory) {
 			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 			container.setQueueNames(requests().getName());
-			container.setMessageListener(
+			container.setAfterReceivePostProcessors(new GUnzipPostProcessor());
+			MessageListenerAdapter messageListener =
 					new MessageListenerAdapter((ReplyingMessageListener<String, String>)
 							message -> {
 								CountDownLatch countDownLatch = latch().get();
@@ -542,7 +554,10 @@ public class AsyncRabbitTemplateTests {
 									return null;
 								}
 								return message.toUpperCase();
-							}));
+							});
+
+			messageListener.setBeforeSendReplyPostProcessors(new GZipPostProcessor());
+			container.setMessageListener(messageListener);
 			return container;
 		}
 

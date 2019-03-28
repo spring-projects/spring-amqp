@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -157,6 +158,11 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 		this.template.setExchange(exchange == null ? "" : exchange);
 		this.template.setRoutingKey(routingKey);
 		this.container = new SimpleMessageListenerContainer(connectionFactory);
+		Collection<MessagePostProcessor> afterReceivePostProcessors = this.template.getAfterReceivePostProcessors();
+		if (afterReceivePostProcessors != null) {
+			this.container.setAfterReceivePostProcessors(
+					afterReceivePostProcessors.toArray(new MessagePostProcessor[0]));
+		}
 		this.container.setQueueNames(replyQueue);
 		this.container.setMessageListener(this);
 		this.container.afterPropertiesSet();
@@ -216,15 +222,10 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	 * @since 2.0
 	 */
 	public AsyncRabbitTemplate(ConnectionFactory connectionFactory, String exchange, String routingKey) {
-		Assert.notNull(connectionFactory, "'connectionFactory' cannot be null");
+		this(new RabbitTemplate(connectionFactory));
 		Assert.notNull(routingKey, "'routingKey' cannot be null");
-		this.template = new RabbitTemplate(connectionFactory);
 		this.template.setExchange(exchange == null ? "" : exchange);
 		this.template.setRoutingKey(routingKey);
-		this.container = null;
-		this.replyAddress = null;
-		this.directReplyToContainer = new DirectReplyToMessageListenerContainer(this.template.getConnectionFactory());
-		this.directReplyToContainer.setMessageListener(this);
 	}
 
 	/**
@@ -239,6 +240,11 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 		this.container = null;
 		this.replyAddress = null;
 		this.directReplyToContainer = new DirectReplyToMessageListenerContainer(this.template.getConnectionFactory());
+		Collection<MessagePostProcessor> afterReceivePostProcessors = template.getAfterReceivePostProcessors();
+		if (afterReceivePostProcessors != null) {
+			this.directReplyToContainer.setAfterReceivePostProcessors(
+					afterReceivePostProcessors.toArray(new MessagePostProcessor[0]));
+		}
 		this.directReplyToContainer.setMessageListener(this);
 	}
 
@@ -582,9 +588,9 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 						RabbitConverterFuture<Object> rabbitFuture = (RabbitConverterFuture<Object>) future;
 						Object converted = rabbitFuture.getReturnType() != null
 								&& messageConverter instanceof SmartMessageConverter
-										? ((SmartMessageConverter) messageConverter).fromMessage(message,
-												rabbitFuture.getReturnType())
-										: messageConverter.fromMessage(message);
+								? ((SmartMessageConverter) messageConverter).fromMessage(message,
+								rabbitFuture.getReturnType())
+								: messageConverter.fromMessage(message);
 						rabbitFuture.set(converted);
 					}
 					else {
@@ -698,7 +704,8 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 			}
 			AsyncRabbitTemplate.this.pending.remove(this.correlationId);
 			if (this.channelHolder != null && AsyncRabbitTemplate.this.directReplyToContainer != null) {
-				AsyncRabbitTemplate.this.directReplyToContainer.releaseConsumerFor(this.channelHolder, false, null); // NOSONAR
+				AsyncRabbitTemplate.this.directReplyToContainer
+						.releaseConsumerFor(this.channelHolder, false, null); // NOSONAR
 			}
 			return super.cancel(mayInterruptIfRunning);
 		}

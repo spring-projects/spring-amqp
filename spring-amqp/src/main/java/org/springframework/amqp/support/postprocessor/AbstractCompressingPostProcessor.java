@@ -27,8 +27,10 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageBuilderSupport;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.core.MessagePropertiesBuilder;
 import org.springframework.core.Ordered;
 import org.springframework.util.FileCopyUtils;
 
@@ -38,11 +40,13 @@ import org.springframework.util.FileCopyUtils;
  * present.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.4.2
  */
 public abstract class AbstractCompressingPostProcessor implements MessagePostProcessor, Ordered {
 
-	private final Log logger = LogFactory.getLog(this.getClass());
+	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR final
 
 	private final boolean autoDecompress;
 
@@ -74,13 +78,19 @@ public abstract class AbstractCompressingPostProcessor implements MessagePostPro
 		try {
 			OutputStream zipper = getCompressorStream(zipped);
 			FileCopyUtils.copy(new ByteArrayInputStream(message.getBody()), zipper);
-			MessageProperties messageProperties = message.getMessageProperties();
-			String currentEncoding = messageProperties.getContentEncoding();
-			messageProperties
-					.setContentEncoding(getEncoding() + (currentEncoding == null ? "" : ":" + currentEncoding));
+			MessageProperties originalProperties = message.getMessageProperties();
+			MessageBuilderSupport<MessageProperties> messagePropertiesMessageBuilder =
+					MessagePropertiesBuilder.fromClonedProperties(originalProperties)
+							.setContentEncoding(getEncoding() +
+									(originalProperties.getContentEncoding() == null
+											? ""
+											: ":" + originalProperties.getContentEncoding()));
+
 			if (this.autoDecompress) {
-				messageProperties.setHeader(MessageProperties.SPRING_AUTO_DECOMPRESS, true);
+				messagePropertiesMessageBuilder.setHeader(MessageProperties.SPRING_AUTO_DECOMPRESS, true);
 			}
+
+			MessageProperties messageProperties = messagePropertiesMessageBuilder.build();
 			byte[] compressed = zipped.toByteArray();
 			if (this.logger.isTraceEnabled()) {
 				this.logger.trace("Compressed " + message.getBody().length + " to " + compressed.length);
