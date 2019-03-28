@@ -68,6 +68,7 @@ import org.springframework.amqp.core.Declarables;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueInformation;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -185,10 +186,9 @@ public class RabbitAdminTests {
 	}
 
 	private int messageCount(RabbitAdmin rabbitAdmin, String queueName) {
-		Properties props = rabbitAdmin.getQueueProperties(queueName);
-		assertNotNull(props);
-		assertNotNull(props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT));
-		return (Integer) props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT);
+		QueueInformation info = rabbitAdmin.getQueueInfo(queueName);
+		assertNotNull(info);
+		return info.getMessageCount();
 	}
 
 	@Test
