@@ -394,7 +394,7 @@ public class AsyncRabbitTemplateTests {
 
 	private void checkConverterResult(ListenableFuture<String> future, String expected) throws InterruptedException {
 		final CountDownLatch latch = new CountDownLatch(1);
-		final AtomicReference<String> resultRef = new AtomicReference<String>();
+		final AtomicReference<String> resultRef = new AtomicReference<>();
 		future.addCallback(new ListenableFutureCallback<String>() {
 
 			@Override
@@ -415,7 +415,7 @@ public class AsyncRabbitTemplateTests {
 
 	private Message checkMessageResult(ListenableFuture<Message> future, String expected) throws InterruptedException {
 		final CountDownLatch latch = new CountDownLatch(1);
-		final AtomicReference<Message> resultRef = new AtomicReference<Message>();
+		final AtomicReference<Message> resultRef = new AtomicReference<>();
 		future.addCallback(new ListenableFutureCallback<Message>() {
 
 			@Override
@@ -489,10 +489,17 @@ public class AsyncRabbitTemplateTests {
 		}
 
 		@Bean
+		public GZipPostProcessor gZipPostProcessor() {
+			GZipPostProcessor gZipPostProcessor = new GZipPostProcessor();
+			gZipPostProcessor.setCopyProperties(true);
+			return gZipPostProcessor;
+		}
+
+		@Bean
 		public RabbitTemplate template(ConnectionFactory connectionFactory) {
 			RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
 			rabbitTemplate.setRoutingKey(requests().getName());
-			rabbitTemplate.addBeforePublishPostProcessors(new GZipPostProcessor());
+			rabbitTemplate.addBeforePublishPostProcessors(gZipPostProcessor());
 			rabbitTemplate.addAfterReceivePostProcessors(new GUnzipPostProcessor());
 			return rabbitTemplate;
 		}
@@ -501,7 +508,7 @@ public class AsyncRabbitTemplateTests {
 		public RabbitTemplate templateForDirect(ConnectionFactory connectionFactory) {
 			RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
 			rabbitTemplate.setRoutingKey(requests().getName());
-			rabbitTemplate.addBeforePublishPostProcessors(new GZipPostProcessor());
+			rabbitTemplate.addBeforePublishPostProcessors(gZipPostProcessor());
 			rabbitTemplate.addAfterReceivePostProcessors(new GUnzipPostProcessor());
 			return rabbitTemplate;
 		}
@@ -556,7 +563,7 @@ public class AsyncRabbitTemplateTests {
 								return message.toUpperCase();
 							});
 
-			messageListener.setBeforeSendReplyPostProcessors(new GZipPostProcessor());
+			messageListener.setBeforeSendReplyPostProcessors(gZipPostProcessor());
 			container.setMessageListener(messageListener);
 			return container;
 		}

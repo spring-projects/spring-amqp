@@ -3435,6 +3435,11 @@ The second is invoked immediately after a message is received.
 These extension points are used for such features as compression and, for this purpose, several `MessagePostProcessor` implementations are provided.
 `GZipPostProcessor` and `ZipPostProcessor` compress messages before sending, and `GUnzipPostProcessor` and `UnzipPostProcessor` decompress received messages.
 
+NOTE: Starting with version 2.1.5, the `GZipPostProcessor` can be configured with the `copyProperties = true` option to make a fully fresh copy of an original message properties.
+By default these properties are re-used for performance reason and modified with compression content encoding and optional `MessageProperties.SPRING_AUTO_DECOMPRESS` header.
+This way an original message get modified properties as well.
+So, if your application produces messages by itself (e.g. direct usage of `RabbitTemplate.sendAndReceive()`), consider to turn ``copyProperties` option on.
+
 Similarly, the `SimpleMessageListenerContainer` also has a `setAfterReceivePostProcessors()` method, letting the decompression be performed after messages are received by the container.
 
 Starting with version 2.1.4, `addBeforePublishPostProcessors()` and `addAfterReceivePostProcessors()` have been added to the `RabbitTemplate` to allow appending new post processors to the list of before publish and after receive post processors respectively.

@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.rabbit;
 
-import java.util.Collection;
 import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,6 +48,7 @@ import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SmartMessageConverter;
+import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.core.ParameterizedTypeReference;
@@ -158,11 +158,10 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 		this.template.setExchange(exchange == null ? "" : exchange);
 		this.template.setRoutingKey(routingKey);
 		this.container = new SimpleMessageListenerContainer(connectionFactory);
-		Collection<MessagePostProcessor> afterReceivePostProcessors = this.template.getAfterReceivePostProcessors();
-		if (afterReceivePostProcessors != null) {
-			this.container.setAfterReceivePostProcessors(
-					afterReceivePostProcessors.toArray(new MessagePostProcessor[0]));
-		}
+		JavaUtils.INSTANCE
+				.acceptIfNotNull(this.template.getAfterReceivePostProcessors(),
+						(value) -> this.container.setAfterReceivePostProcessors(
+								value.toArray(new MessagePostProcessor[0])));
 		this.container.setQueueNames(replyQueue);
 		this.container.setMessageListener(this);
 		this.container.afterPropertiesSet();
@@ -240,11 +239,10 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 		this.container = null;
 		this.replyAddress = null;
 		this.directReplyToContainer = new DirectReplyToMessageListenerContainer(this.template.getConnectionFactory());
-		Collection<MessagePostProcessor> afterReceivePostProcessors = template.getAfterReceivePostProcessors();
-		if (afterReceivePostProcessors != null) {
-			this.directReplyToContainer.setAfterReceivePostProcessors(
-					afterReceivePostProcessors.toArray(new MessagePostProcessor[0]));
-		}
+		JavaUtils.INSTANCE
+				.acceptIfNotNull(template.getAfterReceivePostProcessors(),
+						(value) -> this.directReplyToContainer.setAfterReceivePostProcessors(
+								value.toArray(new MessagePostProcessor[0])));
 		this.directReplyToContainer.setMessageListener(this);
 	}
 
