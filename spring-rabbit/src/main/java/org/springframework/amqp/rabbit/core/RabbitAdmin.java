@@ -79,6 +79,8 @@ import com.rabbitmq.client.Channel;
 public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, ApplicationEventPublisherAware,
 		BeanNameAware, InitializingBean {
 
+	private static final String UNUSED = "unused";
+
 	private static final int DECLARE_MAX_ATTEMPTS = 5;
 
 	private static final int DECLARE_INITIAL_RETRY_INTERVAL = 1000;
@@ -250,7 +252,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			try {
 				channel.exchangeDelete(exchangeName);
 			}
-			catch (@SuppressWarnings("unused") IOException e) {
+			catch (@SuppressWarnings(UNUSED) IOException e) {
 				return false;
 			}
 			return true;
@@ -315,7 +317,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			try {
 				channel.queueDelete(queueName);
 			}
-			catch (@SuppressWarnings("unused") IOException e) {
+			catch (@SuppressWarnings(UNUSED) IOException e) {
 				return false;
 			}
 			return true;
@@ -431,11 +433,11 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 						((ChannelProxy) channel).getTargetChannel().close();
 					}
 				}
-				catch (@SuppressWarnings("unused") TimeoutException e1) {
+				catch (@SuppressWarnings(UNUSED) TimeoutException e1) {
 				}
 				return null;
 			}
-			catch (@SuppressWarnings("unused") Exception e) {
+			catch (@SuppressWarnings(UNUSED) Exception e) {
 				if (RabbitAdmin.this.logger.isDebugEnabled()) {
 					RabbitAdmin.this.logger.debug("Queue '" + queueName + "' does not exist");
 				}
