@@ -616,7 +616,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		else {
 			interfaces = new Class<?>[] { ChannelProxy.class };
 		}
-		return (ChannelProxy) Proxy.newProxyInstance(ClassUtils.getDefaultClassLoader(),
+		return (ChannelProxy) Proxy.newProxyInstance(ChannelProxy.class.getClassLoader(),
 				interfaces, new CachedChannelInvocationHandler(connection, targetChannel, channelList,
 						transactional));
 	}
