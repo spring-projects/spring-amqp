@@ -465,12 +465,12 @@ task docsZip(type: Zip, dependsOn: [reference]) {
 		}
 
 		from ('build/asciidoc/html5') {
-			into 'reference'
+			into 'reference/html'
 		}
 
 		from ('build/asciidoc/pdf') {
 			include 'index.pdf'
-			into 'reference'
+			into 'reference/pdf'
 		}
 }
 
