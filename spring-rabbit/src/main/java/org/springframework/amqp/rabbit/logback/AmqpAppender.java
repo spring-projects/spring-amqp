@@ -49,6 +49,7 @@ import org.springframework.amqp.rabbit.connection.RabbitConnectionFactoryBean;
 import org.springframework.amqp.rabbit.core.DeclareExchangeConnectionListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.util.StringUtils;
@@ -64,7 +65,7 @@ import ch.qos.logback.core.encoder.Encoder;
 import com.rabbitmq.client.ConnectionFactory;
 
 /**
- * A Lockback appender that publishes logging events to an AMQP Exchange.
+ * A Logback appender that publishes logging events to an AMQP Exchange.
  * <p>
  * A fully-configured AmqpAppender, with every option set to their defaults, would look like this:
  *
@@ -272,6 +273,8 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 */
 	private String trustStoreType = "JKS";
 
+	private boolean verifyHostname;
+
 	/**
 	 * Default content-type of log messages.
 	 */
@@ -379,6 +382,25 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 	public void setUseSsl(boolean ssl) {
 		this.useSsl = ssl;
+	}
+
+	/**
+	 * Enable server hostname verification for TLS connections.
+	 * @param enable false to disable.
+	 * @since 2.1.6
+	 * @see RabbitConnectionFactoryBean#setEnableHostnameVerification(boolean)
+	 */
+	public void setVerifyHostname(boolean enable) {
+		this.verifyHostname = enable;
+	}
+
+	/**
+	 * Return true (default) if TLS hostname verification is enabled.
+	 * @return true (default) if TLS hostname verification is enabled.
+	 * @since 2.1.6
+	 */
+	public boolean isVerifyHostname() {
+		return verifyHostname;
 	}
 
 	public String getSslAlgorithm() {
@@ -589,7 +611,6 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	/**
 	 * Set additional client connection properties to be added to the rabbit connection,
 	 * with the form {@code key:value[,key:value]...}.
-	 *
 	 * @param clientConnectionProperties the properties.
 	 * @since 1.5.6
 	 */
@@ -620,7 +641,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		if (rabbitConnectionFactory != null) {
 			super.start();
 			this.routingKeyLayout.setPattern(this.routingKeyLayout.getPattern()
-					.replaceAll("%property\\{applicationId\\}", this.applicationId));
+					.replaceAll("%property\\{applicationId}", this.applicationId));
 			this.routingKeyLayout.setContext(getContext());
 			this.routingKeyLayout.start();
 			this.locationLayout.setContext(getContext());
@@ -645,7 +666,6 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 	/**
 	 * Create the {@link ConnectionFactory}.
-	 *
 	 * @return a {@link ConnectionFactory}.
 	 */
 	protected ConnectionFactory createRabbitConnectionFactory() {
@@ -664,21 +684,21 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	/**
 	 * Configure the {@link RabbitConnectionFactoryBean}. Sub-classes may override to
 	 * customize the configuration of the bean.
-	 *
 	 * @param factoryBean the {@link RabbitConnectionFactoryBean}.
 	 */
 	protected void configureRabbitConnectionFactory(RabbitConnectionFactoryBean factoryBean) {
-
-		Optional.ofNullable(this.host).ifPresent(factoryBean::setHost);
-		Optional.ofNullable(this.port).ifPresent(factoryBean::setPort);
-		Optional.ofNullable(this.username).ifPresent(factoryBean::setUsername);
-		Optional.ofNullable(this.password).ifPresent(factoryBean::setPassword);
-		Optional.ofNullable(this.virtualHost).ifPresent(factoryBean::setVirtualHost);
-		// overrides all preceding items when set
-		Optional.ofNullable(this.uri).ifPresent(factoryBean::setUri);
+		JavaUtils.INSTANCE
+				.acceptIfNotNull(this.host, factoryBean::setHost)
+				.acceptIfNotNull(this.port, factoryBean::setPort)
+				.acceptIfNotNull(this.username, factoryBean::setUsername)
+				.acceptIfNotNull(this.password, factoryBean::setPassword)
+				.acceptIfNotNull(this.virtualHost, factoryBean::setVirtualHost)
+				// overrides all preceding items when set
+				.acceptIfNotNull(this.uri, factoryBean::setUri);
 
 		if (this.useSsl) {
 			factoryBean.setUseSSL(true);
+			factoryBean.setEnableHostnameVerification(this.verifyHostname);
 			if (this.sslAlgorithm != null) {
 				factoryBean.setSslAlgorithm(this.sslAlgorithm);
 			}
@@ -708,7 +728,6 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	/**
 	 * Subclasses can override this method to add properties to the connection client
 	 * properties.
-	 *
 	 * @param clientProperties the client properties.
 	 * @since 1.5.6
 	 */
@@ -717,7 +736,6 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 	/**
 	 * Subclasses can override this method to inject a custom queue implementation.
-	 *
 	 * @return the queue to use for queueing logging events before processing them.
 	 * @since 2.0.1
 	 */
@@ -773,7 +791,6 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 	/**
 	 * Subclasses may modify the final message before sending.
-	 *
 	 * @param message The message.
 	 * @param event The event.
 	 * @return The modified message.
