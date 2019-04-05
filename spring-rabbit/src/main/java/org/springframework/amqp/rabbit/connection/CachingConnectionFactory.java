@@ -57,7 +57,6 @@ import org.springframework.jmx.export.annotation.ManagedResource;
 import org.springframework.lang.Nullable;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.util.Assert;
-import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
@@ -78,7 +77,8 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
  * Consider raising the {@link #setChannelCacheSize(int) "channelCacheSize" value} in case of a high-concurrency
  * environment.
  * <p>
- * When the cache mode is {@link CacheMode#CONNECTION}, a new (or cached) connection is used for each {@link #createConnection()};
+ * When the cache mode is {@link CacheMode#CONNECTION}, a new (or cached) connection is used for each
+ * {@link #createConnection()};
  * connections are cached according to the {@link #setConnectionCacheSize(int) "connectionCacheSize" value}.
  * Both connections and channels are cached in this mode.
  * <p>
@@ -180,6 +180,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	private volatile boolean active = true;
 
 	private volatile boolean initialized;
+
 	/**
 	 * Executor used for channels if no explicit executor set.
 	 */
@@ -616,7 +617,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		else {
 			interfaces = new Class<?>[] { ChannelProxy.class };
 		}
-		return (ChannelProxy) Proxy.newProxyInstance(ClassUtils.getDefaultClassLoader(),
+		return (ChannelProxy) Proxy.newProxyInstance(ChannelProxy.class.getClassLoader(),
 				interfaces, new CachedChannelInvocationHandler(connection, targetChannel, channelList,
 						transactional));
 	}
@@ -717,7 +718,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					this.allocatedConnectionNonTransactionalChannels.get(cachedConnection)), new AtomicInteger());
 			this.allocatedConnectionTransactionalChannels.put(cachedConnection, new LinkedList<ChannelProxy>());
 			this.channelHighWaterMarks.put(
-					ObjectUtils.getIdentityHexString(this.allocatedConnectionTransactionalChannels.get(cachedConnection)),
+					ObjectUtils
+							.getIdentityHexString(this.allocatedConnectionTransactionalChannels.get(cachedConnection)),
 					new AtomicInteger());
 			this.checkoutPermits.put(cachedConnection, new Semaphore(this.channelCacheSize));
 			getConnectionListener().onCreate(cachedConnection);
