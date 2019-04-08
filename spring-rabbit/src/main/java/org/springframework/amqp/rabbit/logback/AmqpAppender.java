@@ -21,7 +21,6 @@ import java.net.URI;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -273,7 +272,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 */
 	private String trustStoreType = "JKS";
 
-	private boolean verifyHostname;
+	private boolean verifyHostname = true;
 
 	/**
 	 * Default content-type of log messages.
@@ -400,7 +399,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 * @since 2.1.6
 	 */
 	public boolean isVerifyHostname() {
-		return verifyHostname;
+		return this.verifyHostname;
 	}
 
 	public String getSslAlgorithm() {
@@ -937,6 +936,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 				return msgBody.getBytes(); //NOSONAR (default charset)
 			}
 		}
+
 	}
 
 	/**
