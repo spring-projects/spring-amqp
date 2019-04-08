@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -67,6 +68,7 @@ import org.springframework.amqp.rabbit.connection.RabbitConnectionFactoryBean;
 import org.springframework.amqp.rabbit.core.DeclareExchangeConnectionListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.retry.RetryPolicy;
@@ -154,6 +156,7 @@ public class AmqpAppender extends AbstractAppender {
 			@PluginAttribute("password") String password,
 			@PluginAttribute("virtualHost") String virtualHost,
 			@PluginAttribute("useSsl") boolean useSsl,
+			@PluginAttribute("verifyHostname") boolean verifyHostname,
 			@PluginAttribute("sslAlgorithm") String sslAlgorithm,
 			@PluginAttribute("sslPropertiesLocation") String sslPropertiesLocation,
 			@PluginAttribute("keyStore") String keyStore,
@@ -197,6 +200,7 @@ public class AmqpAppender extends AbstractAppender {
 		manager.password = password;
 		manager.virtualHost = virtualHost;
 		manager.useSsl = useSsl;
+		manager.verifyHostname = verifyHostname;
 		manager.sslAlgorithm = sslAlgorithm;
 		manager.sslPropertiesLocation = sslPropertiesLocation;
 		manager.keyStore = keyStore;
@@ -327,9 +331,8 @@ public class AmqpAppender extends AbstractAppender {
 		String routingKey;
 		try {
 			synchronized (this.layoutMutex) {
-				msgBody = new StringBuilder(new String(getLayout().toByteArray(logEvent), "UTF-8"));
-				routingKey = new String(this.manager.routingKeyLayout.toByteArray(logEvent),
-						"UTF-8");
+				msgBody = new StringBuilder(new String(getLayout().toByteArray(logEvent), StandardCharsets.UTF_8));
+				routingKey = new String(this.manager.routingKeyLayout.toByteArray(logEvent), StandardCharsets.UTF_8);
 			}
 			Message message = null;
 			if (this.manager.charset != null) {
@@ -400,6 +403,7 @@ public class AmqpAppender extends AbstractAppender {
 				Thread.currentThread().interrupt();
 			}
 		}
+
 	}
 
 	/**
@@ -524,6 +528,8 @@ public class AmqpAppender extends AbstractAppender {
 		 */
 		private boolean useSsl;
 
+		private boolean verifyHostname = true;
+
 		/**
 		 * The SSL algorithm to use.
 		 */
@@ -626,7 +632,7 @@ public class AmqpAppender extends AbstractAppender {
 			ConnectionFactory rabbitConnectionFactory = createRabbitConnectionFactory();
 			if (rabbitConnectionFactory != null) {
 				this.routingKeyLayout = PatternLayout.newBuilder()
-						.withPattern(this.routingKeyPattern.replaceAll("%X\\{applicationId\\}", this.applicationId))
+						.withPattern(this.routingKeyPattern.replaceAll("%X\\{applicationId}", this.applicationId))
 						.withCharset(Charset.forName(this.charset))
 						.withAlwaysWriteExceptions(false)
 						.withNoConsoleNoAnsi(true)
@@ -675,17 +681,18 @@ public class AmqpAppender extends AbstractAppender {
 		 * @param factoryBean the {@link RabbitConnectionFactoryBean}.
 		 */
 		protected void configureRabbitConnectionFactory(RabbitConnectionFactoryBean factoryBean) {
-
-			Optional.ofNullable(this.host).ifPresent(factoryBean::setHost);
-			Optional.ofNullable(this.port).ifPresent(factoryBean::setPort);
-			Optional.ofNullable(this.username).ifPresent(factoryBean::setUsername);
-			Optional.ofNullable(this.password).ifPresent(factoryBean::setPassword);
-			Optional.ofNullable(this.virtualHost).ifPresent(factoryBean::setVirtualHost);
-			// overrides all preceding items when set
-			Optional.ofNullable(this.uri).ifPresent(factoryBean::setUri);
+			JavaUtils.INSTANCE
+					.acceptIfNotNull(this.host, factoryBean::setHost)
+					.acceptIfNotNull(this.port, factoryBean::setPort)
+					.acceptIfNotNull(this.username, factoryBean::setUsername)
+					.acceptIfNotNull(this.password, factoryBean::setPassword)
+					.acceptIfNotNull(this.virtualHost, factoryBean::setVirtualHost)
+					// overrides all preceding items when set
+					.acceptIfNotNull(this.uri, factoryBean::setUri);
 
 			if (this.useSsl) {
 				factoryBean.setUseSSL(true);
+				factoryBean.setEnableHostnameVerification(this.verifyHostname);
 				if (this.sslAlgorithm != null) {
 					factoryBean.setSslAlgorithm(this.sslAlgorithm);
 				}

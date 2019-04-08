@@ -37,6 +37,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 /**
  *
  * @author Stephen Oakey
+ * @author Artem Bilan
  *
  * @since 2.0
  */
@@ -99,6 +100,7 @@ public class AmqpAppenderTests {
 	public void testSslConfigurationWithAlgorithm() {
 		AmqpAppender appender = new AmqpAppender();
 		appender.setUseSsl(true);
+		appender.setVerifyHostname(false);
 		String sslAlgorithm = "TLSv2";
 		appender.setSslAlgorithm(sslAlgorithm);
 
@@ -106,8 +108,9 @@ public class AmqpAppenderTests {
 		appender.configureRabbitConnectionFactory(bean);
 
 		verifyDefaultHostProperties(bean);
-		verify(bean).setUseSSL(eq(true));
-		verify(bean).setSslAlgorithm(eq(sslAlgorithm));
+		verify(bean).setUseSSL(true);
+		verify(bean).setSslAlgorithm(sslAlgorithm);
+		verify(bean).setEnableHostnameVerification(false);
 	}
 
 	@Test

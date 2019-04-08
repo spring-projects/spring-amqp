@@ -112,3 +112,8 @@ A new `ImmediateRequeueAmqpException` is introduced to notify a listener contain
 To use this feature, a new `ImmediateRequeueMessageRecoverer` implementation is added.
 
 See <<async-listeners>> for more information.
+
+===== AMQP Logging Appenders Changes
+
+The Log4J and Logback `AmqpAppender` s now support a `verifyHostname` SSL option.
+See <<logging>> for more information.
