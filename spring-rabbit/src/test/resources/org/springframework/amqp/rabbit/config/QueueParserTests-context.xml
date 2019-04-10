@@ -22,9 +22,9 @@
 
 	<rabbit:queue id="customAnon" naming-strategy="customNamer" />
 
-	<bean id="uuidNamer" class="org.springframework.amqp.core.AnonymousQueue.UUIDNamingStrategy" />
+	<bean id="uuidNamer" class="org.springframework.amqp.core.UUIDNamingStrategy" />
 
-	<bean id="customNamer" class="org.springframework.amqp.core.AnonymousQueue.Base64UrlNamingStrategy">
+	<bean id="customNamer" class="org.springframework.amqp.core.Base64UrlNamingStrategy">
 		<constructor-arg value="custom.gen-" />
 	</bean>
 

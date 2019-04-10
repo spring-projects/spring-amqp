@@ -221,25 +221,6 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 		this.errorHandler = errorHandler;
 	}
 
-	/*
-	 * Unlikely this FB is used for a RabbitListener (it's only used by the
-	 * XML parser and this property is never set). We could probably just
-	 * remove this, but deprecating, just in case.
-	 */
-	/**
-	 * Set the {@link MessageConverter} strategy for converting AMQP Messages.
-	 * @param messageConverter the message converter to use
-	 * @deprecated - this converter is not used by the container; it was only
-	 * used to configure the converter for a {@code @RabbitListener} adapter.
-	 * That is now handled differently. If you are manually creating a listener
-	 * container, the converter must be configured in a listener adapter (if
-	 * present).
-	 */
-	@Deprecated
-	public void setMessageConverter(MessageConverter messageConverter) {
-		this.messageConverter = messageConverter;
-	}
-
 	public void setDeBatchingEnabled(boolean deBatchingEnabled) {
 		this.deBatchingEnabled = deBatchingEnabled;
 	}
@@ -421,7 +402,6 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 				.acceptIfNotNull(this.exposeListenerChannel, container::setExposeListenerChannel)
 				.acceptIfNotNull(this.messageListener, container::setMessageListener)
 				.acceptIfNotNull(this.errorHandler, container::setErrorHandler)
-				.acceptIfNotNull(this.messageConverter, container::setMessageConverter)
 				.acceptIfNotNull(this.deBatchingEnabled, container::setDeBatchingEnabled)
 				.acceptIfNotNull(this.adviceChain, container::setAdviceChain)
 				.acceptIfNotNull(this.afterReceivePostProcessors, container::setAfterReceivePostProcessors)

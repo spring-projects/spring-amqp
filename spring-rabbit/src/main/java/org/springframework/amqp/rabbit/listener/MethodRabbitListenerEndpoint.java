@@ -125,10 +125,6 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 			messageListener.setResponseAddress(replyToAddress);
 		}
 		MessageConverter messageConverter = getMessageConverter();
-		if (messageConverter == null) {
-			// fall back to the legacy converter holder in the container
-			messageConverter = container.getMessageConverter();
-		}
 		if (messageConverter != null) {
 			messageListener.setMessageConverter(messageConverter);
 		}

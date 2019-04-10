@@ -137,7 +137,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 	/**
 	 * @param messageConverter the message converter to use
-	 * @see AbstractMessageListenerContainer#setMessageConverter(MessageConverter)
+	 * @see RabbitListenerEndpoint#setMessageConverter(MessageConverter)
 	 */
 	public void setMessageConverter(MessageConverter messageConverter) {
 		this.messageConverter = messageConverter;
@@ -344,7 +344,6 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		this.containerConfigurer = configurer;
 	}
 
-	@SuppressWarnings("deprecation")
 	@Override
 	public C createListenerContainer(RabbitListenerEndpoint endpoint) {
 		C instance = createContainerInstance();
@@ -354,12 +353,6 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		if (this.messageConverter != null) {
 			if (endpoint != null) {
 				endpoint.setMessageConverter(this.messageConverter);
-				if (endpoint.getMessageConverter() == null) {
-					instance.setMessageConverter(this.messageConverter);
-				}
-			}
-			else {
-				instance.setMessageConverter(this.messageConverter);
 			}
 		}
 		javaUtils

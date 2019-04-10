@@ -83,21 +83,6 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 	}
 
 	@Override
-	@SuppressWarnings("deprecation")
-	@Deprecated
-	public void setMessageListener(Object messageListener) {
-		throw new UnsupportedOperationException(
-				"'messageListener' must be a 'MessageListener' or 'ChannelAwareMessageListener'");
-	}
-
-	@Override
-	@SuppressWarnings("deprecation")
-	@Deprecated
-	public void setChannelAwareMessageListener(ChannelAwareMessageListener messageListener) {
-		setMessageListener(messageListener);
-	}
-
-	@Override
 	public void setMessageListener(MessageListener messageListener) {
 		if (messageListener instanceof ChannelAwareMessageListener) {
 			super.setMessageListener((ChannelAwareMessageListener) (message, channel) -> {
