@@ -21,6 +21,9 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.type.AnnotationMetadata;
 
 /**
+ * A {@link DeferredImportSelector} implementation with the lowest order to import a
+ * {@link RabbitBootstrapConfiguration} as late as possible.
+ *
  * @author Artem Bilan
  *
  * @since 2.1.6
