@@ -30,6 +30,8 @@ import org.springframework.context.annotation.Import;
  * {@code @RabbitListener} beans to capture arguments and result (if any).
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.6
  *
  */
@@ -37,7 +39,7 @@ import org.springframework.context.annotation.Import;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @EnableRabbit
-@Import(RabbitListenerTestBootstrap.class)
+@Import(RabbitListenerTestSelector.class)
 public @interface RabbitListenerTest {
 
 	/**
