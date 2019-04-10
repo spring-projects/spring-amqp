@@ -17,7 +17,6 @@
 package org.springframework.amqp.rabbit.listener;
 
 import org.springframework.amqp.core.MessageListener;
-import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.SmartLifecycle;
 
 /**
@@ -36,18 +35,6 @@ public interface MessageListenerContainer extends SmartLifecycle {
 	 * @param messageListener the {@code object} to wrapped to the {@code MessageListener}.
 	 */
 	void setupMessageListener(MessageListener messageListener);
-
-	/**
-	 * @return the {@link MessageConverter} that can be used to
-	 * convert {@link org.springframework.amqp.core.Message}, if any.
-	 * @deprecated - this converter is not used by the container; it was only
-	 * used to configure the converter for a {@code @RabbitListener} adapter.
-	 * That is now handled differently. If you are manually creating a listener
-	 * container, the converter must be configured in a listener adapter (if
-	 * present).
-	 */
-	@Deprecated
-	MessageConverter getMessageConverter();
 
 	/**
 	 * Do not check for missing or mismatched queues during startup. Used for lazily

@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbit.core;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -137,8 +136,6 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	private ApplicationEventPublisher applicationEventPublisher;
 
-	private boolean declareCollections = false;
-
 	private TaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();
 
 	private volatile boolean running = false;
@@ -186,20 +183,6 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	public void setIgnoreDeclarationExceptions(boolean ignoreDeclarationExceptions) {
 		this.ignoreDeclarationExceptions = ignoreDeclarationExceptions;
-	}
-
-	/**
-	 * Set to false to disable declaring collections of {@link Declarable}.
-	 * Since the admin has to iterate over all Collection beans, this may
-	 * cause undesirable side-effects in some cases. Default true.
-	 * @param declareCollections set to false to prevent declarations of collections.
-	 * @since 1.7.7
-	 * @deprecated - users should use {@link Declarables} beans instead of collections of
-	 * {@link Declarable}.
-	 */
-	@Deprecated
-	public void setDeclareCollections(boolean declareCollections) {
-		this.declareCollections = declareCollections;
 	}
 
 	/**
@@ -570,7 +553,6 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		Collection<Binding> contextBindings = new LinkedList<Binding>(
 				this.applicationContext.getBeansOfType(Binding.class).values());
 
-		processLegacyCollections(contextExchanges, contextQueues, contextBindings);
 		processDeclarables(contextExchanges, contextQueues, contextBindings);
 
 		final Collection<Exchange> exchanges = filterDeclarables(contextExchanges);
@@ -610,37 +592,6 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		});
 		this.logger.debug("Declarations finished");
 
-	}
-
-	// TODO: remove in 3.0
-	private void processLegacyCollections(Collection<Exchange> contextExchanges, // NOSONAR complexity
-			Collection<Queue> contextQueues, Collection<Binding> contextBindings) {
-
-		@SuppressWarnings("rawtypes")
-		Collection<Collection> collections = this.declareCollections
-			? this.applicationContext.getBeansOfType(Collection.class, false, false).values()
-			: Collections.emptyList();
-		boolean shouldWarn = false;
-		for (Collection<?> collection : collections) {
-			if (collection.size() > 0 && collection.iterator().next() instanceof Declarable) {
-				shouldWarn = true;
-				for (Object declarable : collection) {
-					if (declarable instanceof Exchange) {
-						contextExchanges.add((Exchange) declarable);
-					}
-					else if (declarable instanceof Queue) {
-						contextQueues.add((Queue) declarable);
-					}
-					else if (declarable instanceof Binding) {
-						contextBindings.add((Binding) declarable);
-					}
-				}
-			}
-		}
-		if (shouldWarn && this.logger.isWarnEnabled()) {
-			this.logger.warn("Beans of type Collection<Declarable> are discouraged, and deprecated, "
-					+ "use Declarables beans instead");
-		}
 	}
 
 	private void processDeclarables(Collection<Exchange> contextExchanges, Collection<Queue> contextQueues,

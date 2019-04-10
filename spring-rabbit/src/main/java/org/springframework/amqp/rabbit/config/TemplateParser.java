@@ -107,7 +107,7 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 		}
 
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, CHANNEL_TRANSACTED_ATTRIBUTE);
-		NamespaceUtils.setValueIfAttributeDefined(builder, element, QUEUE_ATTRIBUTE);
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, QUEUE_ATTRIBUTE, "defaultReceiveQueue");
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, EXCHANGE_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, ROUTING_KEY_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, RECEIVE_TIMEOUT_ATTRIBUTE);

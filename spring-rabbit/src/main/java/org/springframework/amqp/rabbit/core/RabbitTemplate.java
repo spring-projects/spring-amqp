@@ -326,16 +326,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	/**
 	 * The name of the default queue to receive messages from when none is specified explicitly.
 	 * @param queue the default queue name to use for receive
-	 * @deprecated in favor of {@link #setDefaultReceiveQueue(String)}.
-	 */
-	@Deprecated
-	public void setQueue(String queue) {
-		this.defaultReceiveQueue = queue;
-	}
-
-	/**
-	 * The name of the default queue to receive messages from when none is specified explicitly.
-	 * @param queue the default queue name to use for receive
 	 * @since 2.1.2
 	 */
 	public void setDefaultReceiveQueue(String queue) {
