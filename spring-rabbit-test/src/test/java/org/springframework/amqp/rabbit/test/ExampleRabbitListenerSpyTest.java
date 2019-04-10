@@ -31,6 +31,7 @@ import org.junit.runner.RunWith;
 
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -50,6 +51,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.6
  *
  */
@@ -74,7 +77,7 @@ public class ExampleRabbitListenerSpyTest {
 	private RabbitListenerTestHarness harness;
 
 	@Test
-	public void testTwoWay() throws Exception {
+	public void testTwoWay() {
 		assertEquals("FOO", this.rabbitTemplate.convertSendAndReceive(this.queue1.getName(), "foo"));
 
 		Listener listener = this.harness.getSpy("foo");
@@ -99,6 +102,7 @@ public class ExampleRabbitListenerSpyTest {
 	}
 
 	@Configuration
+	@EnableRabbit
 	@RabbitListenerTest
 	public static class Config {
 
