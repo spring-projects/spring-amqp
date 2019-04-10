@@ -18,10 +18,15 @@ package org.springframework.amqp.rabbit.test;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListenerAnnotationBeanPostProcessor;
 import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportAware;
+import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.context.annotation.Role;
 import org.springframework.core.type.AnnotationMetadata;
 
@@ -29,23 +34,20 @@ import org.springframework.core.type.AnnotationMetadata;
  * Overrides the default BPP with a {@link RabbitListenerTestHarness}.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.6
  *
  */
 @Configuration
-public class RabbitListenerTestBootstrap implements ImportAware {
-
-	private AnnotationMetadata importMetadata;
+public class RabbitListenerTestBootstrap implements ImportBeanDefinitionRegistrar {
 
 	@Override
-	public void setImportMetadata(AnnotationMetadata importMetadata) {
-		this.importMetadata = importMetadata;
-	}
-
-	@Bean(name = RabbitListenerConfigUtils.RABBIT_LISTENER_ANNOTATION_PROCESSOR_BEAN_NAME)
-	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
-	public RabbitListenerAnnotationBeanPostProcessor rabbitListenerAnnotationProcessor() {
-		return new RabbitListenerTestHarness(this.importMetadata);
+	public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+		registry.registerBeanDefinition(RabbitListenerConfigUtils.RABBIT_LISTENER_ANNOTATION_PROCESSOR_BEAN_NAME,
+				BeanDefinitionBuilder.rootBeanDefinition(RabbitListenerTestHarness.class)
+						.addConstructorArgValue(importingClassMetadata)
+						.getBeanDefinition());
 	}
 
 }

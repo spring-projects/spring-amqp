@@ -114,11 +114,6 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 		return (T) this.listeners.get(id);
 	}
 
-	@Override
-	public int getOrder() {
-		return super.getOrder() - 100;
-	}
-
 	private static final class CaptureAdvice implements MethodInterceptor {
 
 		private final BlockingQueue<InvocationData> invocationData = new LinkedBlockingQueue<>();
