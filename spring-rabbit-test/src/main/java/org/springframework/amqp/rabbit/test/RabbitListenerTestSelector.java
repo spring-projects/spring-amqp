@@ -31,7 +31,7 @@ import org.springframework.core.type.AnnotationMetadata;
  *
  * @since 2.1.6
  */
-@Order(Ordered.LOWEST_PRECEDENCE - 100)
+@Order(Ordered.LOWEST_PRECEDENCE - 100) // NOSONAR magic
 public class RabbitListenerTestSelector extends RabbitListenerConfigurationSelector {
 
 	@Override

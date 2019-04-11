@@ -62,7 +62,6 @@ import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.support.ConditionalExceptionLogger;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.MessageConversionException;
-import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.postprocessor.MessagePostProcessorUtils;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
@@ -174,8 +173,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private volatile List<Queue> queues = new CopyOnWriteArrayList<>();
 
 	private ErrorHandler errorHandler = new ConditionalRejectingErrorHandler();
-
-	private MessageConverter messageConverter;
 
 	private boolean exposeListenerChannel = true;
 
@@ -625,8 +622,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	protected String getRoutingLookupKey() {
 		return super.getConnectionFactory() instanceof RoutingConnectionFactory
 				? this.lookupKeyQualifier + "[" + this.queues.stream()
-								.map(Queue::getName)
-								.collect(Collectors.joining(",")) + "]"
+				.map(Queue::getName)
+				.collect(Collectors.joining(",")) + "]"
 				: null;
 	}
 
@@ -1057,11 +1054,13 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		Assert.state(
 				this.exposeListenerChannel || !getAcknowledgeMode().isManual(),
 				"You cannot acknowledge messages manually if the channel is not exposed to the listener "
-						+ "(please check your configuration and set exposeListenerChannel=true or acknowledgeMode!=MANUAL)");
+						+ "(please check your configuration and set exposeListenerChannel=true or " +
+						"acknowledgeMode!=MANUAL)");
 		Assert.state(
 				!(getAcknowledgeMode().isAutoAck() && isChannelTransacted()),
 				"The acknowledgeMode is NONE (autoack in Rabbit terms) which is not consistent with having a "
-						+ "transactional channel. Either use a different AcknowledgeMode or make sure channelTransacted=false");
+						+ "transactional channel. Either use a different AcknowledgeMode or make sure " +
+						"channelTransacted=false");
 		validateConfiguration();
 		initialize();
 	}
@@ -1821,6 +1820,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		protected SharedConnectionNotInitializedException(String msg) {
 			super(msg);
 		}
+
 	}
 
 	/**
