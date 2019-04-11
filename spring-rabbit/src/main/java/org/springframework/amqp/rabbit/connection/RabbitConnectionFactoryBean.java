@@ -39,9 +39,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.core.io.Resource;
@@ -57,15 +54,17 @@ import com.rabbitmq.client.SocketConfigurator;
 import com.rabbitmq.client.impl.nio.NioParams;
 
 /**
- * Factory bean to create a RabbitMQ ConnectionFactory, delegating most
- * setter methods and optionally enabling SSL, with or without
- * certificate validation. When {@link #setSslPropertiesLocation(Resource) sslPropertiesLocation}
- * is not null, the default implementation loads a {@code PKCS12} keystore and a
- * {@code JKS} truststore using the supplied properties and intializes {@code SunX509} key
- * and trust manager factories. These are then used to initialize an {@link SSLContext}
- * using the {@link #setSslAlgorithm(String) sslAlgorithm} (default TLSv1.1).
+ * Factory bean to create a RabbitMQ ConnectionFactory, delegating most setter methods and
+ * optionally enabling SSL, with or without certificate validation. When
+ * {@link #setSslPropertiesLocation(Resource) sslPropertiesLocation} is not null, the
+ * default implementation loads a {@code PKCS12} keystore and a {@code JKS} truststore
+ * using the supplied properties and intializes key and trust manager factories, using
+ * algorithm {@code SunX509} by default. These are then used to initialize an
+ * {@link SSLContext} using the {@link #setSslAlgorithm(String) sslAlgorithm} (default
+ * TLSv1.1).
  * <p>
- * Override {@link #createSSLContext()} to create and/or perform further modification of the context.
+ * Override {@link #createSSLContext()} to create and/or perform further modification of
+ * the context.
  * <p>
  * Override {@link #setUpSSL()} to take complete control over setting up SSL.
  *
@@ -80,7 +79,7 @@ import com.rabbitmq.client.impl.nio.NioParams;
  */
 public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionFactory> {
 
-	private final Log logger = LogFactory.getLog(getClass());
+	private static final String SUN_X509 = "SunX509";
 
 	private static final String KEY_STORE = "keyStore";
 
@@ -135,6 +134,10 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	private boolean skipServerCertificateValidation;
 
 	private boolean enableHostnameVerification = true;
+
+	private String keyStoreAlgorithm = SUN_X509;
+
+	private String trustStoreAlgorithm = SUN_X509;
 
 	public RabbitConnectionFactoryBean() {
 		this.connectionFactory.setAutomaticRecoveryEnabled(false);
@@ -629,6 +632,32 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		this.enableHostnameVerification = enable;
 	}
 
+	protected String getKeyStoreAlgorithm() {
+		return this.keyStoreAlgorithm;
+	}
+
+	/**
+	 * Set the algorithm used when creating the key store, default {@code SunX509}.
+	 * @param keyStoreAlgorithm the algorithm.
+	 * @since 2.1.6
+	 */
+	public void setKeyStoreAlgorithm(String keyStoreAlgorithm) {
+		this.keyStoreAlgorithm = keyStoreAlgorithm;
+	}
+
+	protected String getTrustStoreAlgorithm() {
+		return this.trustStoreAlgorithm;
+	}
+
+	/**
+	 * Set the algorithm used when creating the trust store, default {@code SunX509}.
+	 * @param trustStoreAlgorithm the algorithm.
+	 * @since 2.1.6
+	 */
+	public void setTrustStoreAlgorithm(String trustStoreAlgorithm) {
+		this.trustStoreAlgorithm = trustStoreAlgorithm;
+	}
+
 	@Override
 	public void afterPropertiesSet() {
 		try {
@@ -703,7 +732,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	}
 
 	@Nullable
-	private KeyManager[] configureKeyManagers() throws KeyStoreException, IOException, NoSuchAlgorithmException,
+	protected KeyManager[] configureKeyManagers() throws KeyStoreException, IOException, NoSuchAlgorithmException,
 			CertificateException, UnrecoverableKeyException {
 		String keyStoreName = getKeyStore();
 		String keyStorePassword = getKeyStorePassphrase();
@@ -718,7 +747,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 					: this.resolver.getResource(keyStoreName);
 			KeyStore ks = KeyStore.getInstance(storeType);
 			ks.load(resource.getInputStream(), keyPassphrase);
-			KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+			KeyManagerFactory kmf = KeyManagerFactory.getInstance(this.keyStoreAlgorithm);
 			kmf.init(ks, keyPassphrase);
 			keyManagers = kmf.getKeyManagers();
 		}
@@ -726,7 +755,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	}
 
 	@Nullable
-	private TrustManager[] configureTrustManagers()
+	protected TrustManager[] configureTrustManagers()
 			throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
 		String trustStoreName = getTrustStore();
 		String trustStorePassword = getTrustStorePassphrase();
@@ -741,7 +770,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 					: this.resolver.getResource(trustStoreName);
 			KeyStore tks = KeyStore.getInstance(storeType);
 			tks.load(resource.getInputStream(), trustPassphrase);
-			TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
+			TrustManagerFactory tmf = TrustManagerFactory.getInstance(this.trustStoreAlgorithm);
 			tmf.init(tks);
 			trustManagers = tmf.getTrustManagers();
 		}
