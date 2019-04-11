@@ -25,6 +25,7 @@ import java.util.Map;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.core.support.BatchingStrategy;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
@@ -81,6 +82,10 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	private MessageConverter messageConverter;
 
 	private TaskExecutor taskExecutor;
+
+	private boolean batchListener;
+
+	private BatchingStrategy batchingStrategy;
 
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
@@ -277,6 +282,31 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	 */
 	public void setTaskExecutor(TaskExecutor taskExecutor) {
 		this.taskExecutor = taskExecutor;
+	}
+
+	public boolean isBatchListener() {
+		return this.batchListener;
+	}
+
+	/**
+	 * Set to true if this endpoint should create a batch listener.
+	 * @param batchListener true for a batch listener.
+	 * @since 2.2
+	 * @see #setBatchingStrategy(BatchingStrategy)
+	 */
+	@Override
+	public void setBatchListener(boolean batchListener) {
+		this.batchListener = batchListener;
+	}
+
+	@Nullable
+	public BatchingStrategy getBatchingStrategy() {
+		return this.batchingStrategy;
+	}
+
+	@Override
+	public void setBatchingStrategy(BatchingStrategy batchingStrategy) {
+		this.batchingStrategy = batchingStrategy;
 	}
 
 	@Override

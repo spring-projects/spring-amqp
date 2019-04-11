@@ -88,6 +88,10 @@ public class MessagingMessageConverter implements MessageConverter, Initializing
 		this.headerMapper = headerMapper;
 	}
 
+	public AmqpHeaderMapper getHeaderMapper() {
+		return this.headerMapper;
+	}
+
 	@Override
 	public void afterPropertiesSet() {
 		Assert.notNull(this.payloadConverter, "Property 'payloadConverter' is required");

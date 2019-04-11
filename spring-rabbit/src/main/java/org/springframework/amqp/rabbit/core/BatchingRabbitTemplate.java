@@ -21,9 +21,11 @@ import java.util.concurrent.ScheduledFuture;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.support.BatchingStrategy;
 import org.springframework.amqp.rabbit.core.support.MessageBatch;
+import org.springframework.lang.Nullable;
 import org.springframework.scheduling.TaskScheduler;
 
 /**
@@ -48,10 +50,25 @@ public class BatchingRabbitTemplate extends RabbitTemplate {
 	private volatile ScheduledFuture<?> scheduledTask;
 
 	/**
+	 * Create an instance with the supplied parameters.
 	 * @param batchingStrategy the batching strategy.
 	 * @param scheduler the scheduler.
 	 */
 	public BatchingRabbitTemplate(BatchingStrategy batchingStrategy, TaskScheduler scheduler) {
+		this(null, batchingStrategy, scheduler);
+	}
+
+	/**
+	 * Create an instance with the supplied parameters.
+	 * @param connectionFactory the connection factory.
+	 * @param batchingStrategy the batching strategy.
+	 * @param scheduler the scheduler.
+	 * @since 2.2
+	 */
+	public BatchingRabbitTemplate(@Nullable ConnectionFactory connectionFactory, BatchingStrategy batchingStrategy,
+			TaskScheduler scheduler) {
+
+		super(connectionFactory);
 		this.batchingStrategy = batchingStrategy;
 		this.scheduler = scheduler;
 	}
