@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
+import java.util.List;
 
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
@@ -76,7 +77,13 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 	public MessagingMessageListenerAdapter(Object bean, Method method, boolean returnExceptions,
 			RabbitListenerErrorHandler errorHandler) {
-		this.messagingMessageConverter = new MessagingMessageConverterAdapter(bean, method);
+		this(bean, method, returnExceptions, errorHandler, false);
+	}
+
+	protected MessagingMessageListenerAdapter(Object bean, Method method, boolean returnExceptions,
+			RabbitListenerErrorHandler errorHandler, boolean batch) {
+
+		this.messagingMessageConverter = new MessagingMessageConverterAdapter(bean, method, batch);
 		this.returnExceptions = returnExceptions;
 		this.errorHandler = errorHandler;
 	}
@@ -242,7 +249,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	 * If the inbound message has no type information and the configured message converter
 	 * supports it, we attempt to infer the conversion type from the method signature.
 	 */
-	private final class MessagingMessageConverterAdapter extends MessagingMessageConverter {
+	protected final class MessagingMessageConverterAdapter extends MessagingMessageConverter {
 
 		private final Object bean;
 
@@ -250,13 +257,22 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 		private final Type inferredArgumentType;
 
-		MessagingMessageConverterAdapter(Object bean, Method method) {
+		private final boolean isBatch;
+
+		private boolean isMessageList;
+
+		MessagingMessageConverterAdapter(Object bean, Method method, boolean batch) {
 			this.bean = bean;
 			this.method = method;
+			this.isBatch = batch;
 			this.inferredArgumentType = determineInferredType();
 			if (logger.isDebugEnabled() && this.inferredArgumentType != null) {
 				logger.debug("Inferred argument type for " + method.toString() + " is " + this.inferredArgumentType);
 			}
+		}
+
+		protected boolean isMessageList() {
+			return this.isMessageList;
 		}
 
 		@Override
@@ -291,14 +307,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 						&& (methodParameter.getParameterAnnotations().length == 0
 						|| methodParameter.hasParameterAnnotation(Payload.class))) {
 					if (genericParameterType == null) {
-						genericParameterType = methodParameter.getGenericParameterType();
-						if (genericParameterType instanceof ParameterizedType) {
-							ParameterizedType parameterizedType = (ParameterizedType) genericParameterType;
-							if (parameterizedType.getRawType().equals(Message.class)) {
-								genericParameterType = ((ParameterizedType) genericParameterType)
-									.getActualTypeArguments()[0];
-							}
-						}
+						genericParameterType = extractGenericParameterTypFromMethodParameter(methodParameter);
 					}
 					else {
 						if (MessagingMessageListenerAdapter.this.logger.isDebugEnabled()) {
@@ -333,6 +342,31 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			return !parameterType.equals(Message.class); // could be Message without a generic type
 		}
 
+		private Type extractGenericParameterTypFromMethodParameter(MethodParameter methodParameter) {
+			Type genericParameterType = methodParameter.getGenericParameterType();
+			if (genericParameterType instanceof ParameterizedType) {
+				ParameterizedType parameterizedType = (ParameterizedType) genericParameterType;
+				if (parameterizedType.getRawType().equals(Message.class)) {
+					genericParameterType = ((ParameterizedType) genericParameterType).getActualTypeArguments()[0];
+				}
+				else if (parameterizedType.getRawType().equals(List.class)
+						&& parameterizedType.getActualTypeArguments().length == 1) {
+
+					Type paramType = parameterizedType.getActualTypeArguments()[0];
+					boolean messageHasGeneric = paramType instanceof ParameterizedType
+							&& ((ParameterizedType) paramType).getRawType().equals(Message.class);
+					this.isMessageList = paramType.equals(Message.class) || messageHasGeneric;
+					if (messageHasGeneric) {
+						genericParameterType = ((ParameterizedType) paramType).getActualTypeArguments()[0];
+					}
+					if (this.isBatch) {
+						// when decoding batch messages we convert to the List's generic type
+						genericParameterType = paramType;
+					}
+				}
+			}
+			return genericParameterType;
+		}
 	}
 
 }

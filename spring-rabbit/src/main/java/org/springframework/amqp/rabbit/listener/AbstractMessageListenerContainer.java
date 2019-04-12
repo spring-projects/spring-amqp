@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,7 +43,6 @@ import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
-import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -53,6 +51,8 @@ import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.RoutingConnectionFactory;
+import org.springframework.amqp.rabbit.core.support.BatchingStrategy;
+import org.springframework.amqp.rabbit.core.support.SimpleBatchingStrategy;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
@@ -61,7 +61,6 @@ import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.support.ConditionalExceptionLogger;
 import org.springframework.amqp.support.ConsumerTagStrategy;
-import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.postprocessor.MessagePostProcessorUtils;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
@@ -218,6 +217,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private boolean forceCloseChannel = true;
 
 	private String errorHandlerLoggerName = getClass().getName();
+
+	private BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(0, 0, 0L);
 
 	private volatile boolean lazyLoad;
 
@@ -440,6 +441,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * Determine whether or not the container should de-batch batched
 	 * messages (true) or call the listener with the batch (false). Default: true.
 	 * @param deBatchingEnabled the deBatchingEnabled to set.
+	 * @see #setBatchingStrategy(BatchingStrategy)
 	 */
 	public void setDeBatchingEnabled(boolean deBatchingEnabled) {
 		this.deBatchingEnabled = deBatchingEnabled;
@@ -1046,6 +1048,18 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
+	 * Set a batching strategy to use when de-batching messages.
+	 * Default is {@link SimpleBatchingStrategy}.
+	 * @param batchingStrategy the strategy.
+	 * @since 2.2
+	 * @see #setDeBatchingEnabled(boolean)
+	 */
+	public void setBatchingStrategy(BatchingStrategy batchingStrategy) {
+		Assert.notNull(batchingStrategy, "'batchingStrategy' cannot be null");
+		this.batchingStrategy = batchingStrategy;
+	}
+
+	/**
 	 * Delegates to {@link #validateConfiguration()} and {@link #initialize()}.
 	 */
 	@Override
@@ -1359,25 +1373,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				}
 			}
 		}
-		Object batchFormat = message.getMessageProperties().getHeaders().get(MessageProperties.SPRING_BATCH_FORMAT);
-		if (MessageProperties.BATCH_FORMAT_LENGTH_HEADER4.equals(batchFormat) && this.deBatchingEnabled) {
-			ByteBuffer byteBuffer = ByteBuffer.wrap(message.getBody());
-			MessageProperties messageProperties = message.getMessageProperties();
-			messageProperties.getHeaders().remove(MessageProperties.SPRING_BATCH_FORMAT);
-			while (byteBuffer.hasRemaining()) {
-				int length = byteBuffer.getInt();
-				if (length < 0 || length > byteBuffer.remaining()) {
-					throw new ListenerExecutionFailedException("Bad batched message received",
-							new MessageConversionException("Insufficient batch data at offset " + byteBuffer.position()),
-							message);
-				}
-				byte[] body = new byte[length];
-				byteBuffer.get(body);
-				messageProperties.setContentLength(length);
-				// Caveat - shared MessageProperties.
-				Message fragment = new Message(body, messageProperties);
-				invokeListener(channel, fragment);
-			}
+		if (this.deBatchingEnabled && this.batchingStrategy.canDebatch(message.getMessageProperties())) {
+			this.batchingStrategy.deBatch(message, fragment -> invokeListener(channel, fragment));
 		}
 		else {
 			invokeListener(channel, message);

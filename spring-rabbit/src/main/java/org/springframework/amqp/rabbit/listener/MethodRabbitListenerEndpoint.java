@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.listener;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
+import org.springframework.amqp.rabbit.listener.adapter.BatchMessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.HandlerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
@@ -150,7 +151,14 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 	 * @return the {@link MessagingMessageListenerAdapter} instance.
 	 */
 	protected MessagingMessageListenerAdapter createMessageListenerInstance() {
-		return new MessagingMessageListenerAdapter(this.bean, this.method, this.returnExceptions, this.errorHandler);
+		if (isBatchListener()) {
+			return new BatchMessagingMessageListenerAdapter(this.bean, this.method, this.returnExceptions,
+					this.errorHandler, getBatchingStrategy());
+		}
+		else {
+			return new MessagingMessageListenerAdapter(this.bean, this.method, this.returnExceptions,
+					this.errorHandler);
+		}
 	}
 
 	@Nullable
