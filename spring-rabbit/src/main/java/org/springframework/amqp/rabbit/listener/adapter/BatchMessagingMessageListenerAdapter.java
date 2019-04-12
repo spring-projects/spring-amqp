@@ -61,7 +61,7 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 				return new GenericMessage<>(messages);
 			}
 			else {
-				List<Object> list = new ArrayList<Object>();
+				List<Object> list = new ArrayList<>();
 				this.batchingStrategy.deBatch(amqpMessage, fragment -> {
 					list.add(this.converterAdapter.extractPayload(fragment));
 				});

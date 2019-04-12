@@ -370,7 +370,6 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		this.batchingStrategy = batchingStrategy;
 	}
 
-	@SuppressWarnings("deprecation")
 	@Override
 	public C createListenerContainer(RabbitListenerEndpoint endpoint) {
 		C instance = createContainerInstance();
