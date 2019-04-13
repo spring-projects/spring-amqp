@@ -25,7 +25,6 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.support.BatchingStrategy;
 import org.springframework.amqp.rabbit.core.support.MessageBatch;
-import org.springframework.lang.Nullable;
 import org.springframework.scheduling.TaskScheduler;
 
 /**
@@ -55,7 +54,8 @@ public class BatchingRabbitTemplate extends RabbitTemplate {
 	 * @param scheduler the scheduler.
 	 */
 	public BatchingRabbitTemplate(BatchingStrategy batchingStrategy, TaskScheduler scheduler) {
-		this(null, batchingStrategy, scheduler);
+		this.batchingStrategy = batchingStrategy;
+		this.scheduler = scheduler;
 	}
 
 	/**
@@ -65,7 +65,7 @@ public class BatchingRabbitTemplate extends RabbitTemplate {
 	 * @param scheduler the scheduler.
 	 * @since 2.2
 	 */
-	public BatchingRabbitTemplate(@Nullable ConnectionFactory connectionFactory, BatchingStrategy batchingStrategy,
+	public BatchingRabbitTemplate(ConnectionFactory connectionFactory, BatchingStrategy batchingStrategy,
 			TaskScheduler scheduler) {
 
 		super(connectionFactory);
