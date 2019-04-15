@@ -16,9 +16,11 @@
 
 package org.springframework.amqp.support.converter;
 
+import org.springframework.amqp.core.MessageProperties;
+
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import org.springframework.amqp.core.MessageProperties;
+
 
 /**
  * Strategy for setting metadata on messages such that one can create the class
