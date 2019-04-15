@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.support.converter;
 
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.springframework.amqp.core.MessageProperties;
 
 /**
@@ -31,4 +33,13 @@ public interface ClassMapper {
 	void fromClass(Class<?> clazz, MessageProperties properties);
 
 	Class<?> toClass(MessageProperties properties);
+
+
+	default JavaType constructJavaType(MessageProperties messageProperties) {
+		return TypeFactory.defaultInstance().constructType(toClass(messageProperties));
+	}
+	default void fromClass(Class<?> clazz, Object body, MessageProperties properties) {
+		fromClass(clazz, properties);
+	}
+
 }

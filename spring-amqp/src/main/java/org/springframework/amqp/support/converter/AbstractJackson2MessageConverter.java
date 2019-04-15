@@ -217,10 +217,10 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 								encoding, targetJavaType);
 					}
 					else {
-						Class<?> targetClass = getClassMapper().toClass(// NOSONAR never null
+						JavaType targetJavaType = getClassMapper().constructJavaType(// NOSONAR never null
 								message.getMessageProperties());
 						content = convertBytesToObject(message.getBody(),
-								encoding, targetClass);
+								encoding, targetJavaType);
 					}
 				}
 				catch (IOException e) {
@@ -281,7 +281,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 					genericType == null ? objectToConvert.getClass() : genericType), messageProperties);
 		}
 		else {
-			getClassMapper().fromClass(objectToConvert.getClass(), messageProperties); // NOSONAR never null
+			getClassMapper().fromClass(objectToConvert.getClass(), objectToConvert, messageProperties); // NOSONAR never null
 		}
 
 		return new Message(bytes, messageProperties);
