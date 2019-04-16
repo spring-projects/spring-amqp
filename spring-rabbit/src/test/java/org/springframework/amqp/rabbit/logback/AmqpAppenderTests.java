@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.logback;
 
-import static org.junit.Assert.assertFalse;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -189,7 +189,7 @@ public class AmqpAppenderTests {
 		appender.setKeyStore("foo");
 		appender.start();
 
-		assertFalse((boolean) ReflectionTestUtils.getField(appender, "started"));
+		assertThat((boolean) ReflectionTestUtils.getField(appender, "started")).isFalse();
 	}
 
 	private void verifyDefaultHostProperties(RabbitConnectionFactoryBean bean) {

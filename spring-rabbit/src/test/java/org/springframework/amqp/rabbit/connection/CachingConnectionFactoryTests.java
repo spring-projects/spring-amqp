@@ -763,10 +763,10 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 		@SuppressWarnings("unchecked")
 		List<Channel> notxlist = (List<Channel>) ReflectionTestUtils.getField(ccf, "cachedChannelsNonTransactional");
-		assertThat(notxlist.size()).isEqualTo(1);
+		assertThat(notxlist).hasSize(1);
 		@SuppressWarnings("unchecked")
 		List<Channel> txlist = (List<Channel>) ReflectionTestUtils.getField(ccf, "cachedChannelsTransactional");
-		assertThat(txlist.size()).isEqualTo(1);
+		assertThat(txlist).hasSize(1);
 
 	}
 
@@ -986,9 +986,9 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ccf.afterPropertiesSet();
 
 		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections", Set.class);
-		assertThat(allocatedConnections.size()).isEqualTo(0);
+		assertThat(allocatedConnections).hasSize(0);
 		BlockingQueue<?> idleConnections = TestUtils.getPropertyValue(ccf, "idleConnections", BlockingQueue.class);
-		assertThat(idleConnections.size()).isEqualTo(0);
+		assertThat(idleConnections).hasSize(0);
 
 		final AtomicReference<com.rabbitmq.client.Connection> createNotification =
 				new AtomicReference<com.rabbitmq.client.Connection>();
@@ -1011,8 +1011,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 		Connection con1 = ccf.createConnection();
 		verifyConnectionIs(mockConnections.get(0), con1);
-		assertThat(allocatedConnections.size()).isEqualTo(1);
-		assertThat(idleConnections.size()).isEqualTo(0);
+		assertThat(allocatedConnections).hasSize(1);
+		assertThat(idleConnections).hasSize(0);
 		assertThat(createNotification.get()).isNotNull();
 		assertThat(createNotification.getAndSet(null)).isSameAs(mockConnections.get(0));
 
@@ -1024,8 +1024,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 		con1.close(); // should be ignored, and placed into connection cache.
 		verify(mockConnections.get(0), never()).close();
-		assertThat(allocatedConnections.size()).isEqualTo(1);
-		assertThat(idleConnections.size()).isEqualTo(1);
+		assertThat(allocatedConnections).hasSize(1);
+		assertThat(idleConnections).hasSize(1);
 		assertThat(closedNotification.get()).isNull();
 
 		/*
@@ -1039,8 +1039,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verify(mockChannels.get(0), never()).close();
 		con2.close();
 		verify(mockConnections.get(0), never()).close();
-		assertThat(allocatedConnections.size()).isEqualTo(1);
-		assertThat(idleConnections.size()).isEqualTo(1);
+		assertThat(allocatedConnections).hasSize(1);
+		assertThat(idleConnections).hasSize(1);
 		assertThat(createNotification.get()).isNull();
 
 		/*
@@ -1054,8 +1054,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verifyChannelIs(mockChannels.get(0), channel1);
 		channel2 = con2.createChannel(false);
 		verifyChannelIs(mockChannels.get(1), channel2);
-		assertThat(allocatedConnections.size()).isEqualTo(2);
-		assertThat(idleConnections.size()).isEqualTo(0);
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(idleConnections).hasSize(0);
 		assertThat(createNotification.get()).isNotNull();
 		assertThat(createNotification.getAndSet(null)).isSameAs(mockConnections.get(1));
 
@@ -1064,8 +1064,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verify(mockChannels.get(1), never()).close();
 		con1.close();
 		verify(mockConnections.get(0), never()).close();
-		assertThat(allocatedConnections.size()).isEqualTo(2);
-		assertThat(idleConnections.size()).isEqualTo(1);
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(idleConnections).hasSize(1);
 		assertThat(closedNotification.get()).isNull();
 
 		Connection con3 = ccf.createConnection();
@@ -1074,17 +1074,17 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Channel channel3 = con3.createChannel(false);
 		verifyChannelIs(mockChannels.get(0), channel3);
 
-		assertThat(allocatedConnections.size()).isEqualTo(2);
-		assertThat(idleConnections.size()).isEqualTo(0);
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(idleConnections).hasSize(0);
 
 		channel2.close();
 		con2.close();
-		assertThat(allocatedConnections.size()).isEqualTo(2);
-		assertThat(idleConnections.size()).isEqualTo(1);
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(idleConnections).hasSize(1);
 		channel3.close();
 		con3.close();
-		assertThat(allocatedConnections.size()).isEqualTo(2);
-		assertThat(idleConnections.size()).isEqualTo(2);
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(idleConnections).hasSize(2);
 		assertThat(ccf.getCacheProperties().get("openConnections")).isEqualTo("1");
 		/*
 		 *  Cache size is 1; con3 (mock1) should have been a real close.
@@ -1108,16 +1108,16 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verifyConnectionIs(mockConnections.get(2), con3);
 		assertThat(createNotification.get()).isNotNull();
 		assertThat(createNotification.getAndSet(null)).isSameAs(mockConnections.get(2));
-		assertThat(allocatedConnections.size()).isEqualTo(2);
-		assertThat(idleConnections.size()).isEqualTo(1);
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(idleConnections).hasSize(1);
 		assertThat(ccf.getCacheProperties().get("openConnections")).isEqualTo("1");
 		channel3 = con3.createChannel(false);
 		verifyChannelIs(mockChannels.get(2), channel3);
 		channel3.close();
 		con3.close();
 		assertThat(closedNotification.get()).isNull();
-		assertThat(allocatedConnections.size()).isEqualTo(2);
-		assertThat(idleConnections.size()).isEqualTo(2);
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(idleConnections).hasSize(2);
 		assertThat(ccf.getCacheProperties().get("openConnections")).isEqualTo("1");
 
 		/*
@@ -1126,8 +1126,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		con3 = ccf.createConnection();
 		verifyConnectionIs(mockConnections.get(2), con3);
 		assertThat(createNotification.get()).isNull();
-		assertThat(allocatedConnections.size()).isEqualTo(2);
-		assertThat(idleConnections.size()).isEqualTo(1);
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(idleConnections).hasSize(1);
 		when(mockConnections.get(2).isOpen()).thenReturn(false);
 		channel3 = con3.createChannel(false);
 		assertThat(closedNotification.getAndSet(null)).isNotNull();
@@ -1137,8 +1137,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		channel3.close();
 		con3.close();
 		assertThat(closedNotification.get()).isNull();
-		assertThat(allocatedConnections.size()).isEqualTo(2);
-		assertThat(idleConnections.size()).isEqualTo(2);
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(idleConnections).hasSize(2);
 		assertThat(ccf.getCacheProperties().get("openConnections")).isEqualTo("1");
 
 		// destroy
@@ -1182,9 +1182,9 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ccf.afterPropertiesSet();
 
 		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections", Set.class);
-		assertThat(allocatedConnections.size()).isEqualTo(0);
+		assertThat(allocatedConnections).hasSize(0);
 		BlockingQueue<?> idleConnections = TestUtils.getPropertyValue(ccf, "idleConnections", BlockingQueue.class);
-		assertThat(idleConnections.size()).isEqualTo(0);
+		assertThat(idleConnections).hasSize(0);
 		@SuppressWarnings("unchecked")
 		Map<?, List<?>> cachedChannels = TestUtils.getPropertyValue(ccf, "allocatedConnectionNonTransactionalChannels",
 				Map.class);
@@ -1210,8 +1210,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 		Connection con1 = ccf.createConnection();
 		verifyConnectionIs(mockConnections.get(0), con1);
-		assertThat(allocatedConnections.size()).isEqualTo(1);
-		assertThat(idleConnections.size()).isEqualTo(0);
+		assertThat(allocatedConnections).hasSize(1);
+		assertThat(idleConnections).hasSize(0);
 		assertThat(createNotification.get()).isNotNull();
 		assertThat(createNotification.getAndSet(null)).isSameAs(mockConnections.get(0));
 
@@ -1223,9 +1223,9 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 		con1.close(); // should be ignored, and placed into connection cache.
 		verify(mockConnections.get(0), never()).close();
-		assertThat(allocatedConnections.size()).isEqualTo(1);
-		assertThat(idleConnections.size()).isEqualTo(1);
-		assertThat(cachedChannels.get(con1).size()).isEqualTo(1);
+		assertThat(allocatedConnections).hasSize(1);
+		assertThat(idleConnections).hasSize(1);
+		assertThat(cachedChannels.get(con1)).hasSize(1);
 		assertThat(closedNotification.get()).isNull();
 
 		/*
@@ -1239,8 +1239,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verify(mockChannels.get(0), never()).close();
 		con2.close();
 		verify(mockConnections.get(0), never()).close();
-		assertThat(allocatedConnections.size()).isEqualTo(1);
-		assertThat(idleConnections.size()).isEqualTo(1);
+		assertThat(allocatedConnections).hasSize(1);
+		assertThat(idleConnections).hasSize(1);
 		assertThat(createNotification.get()).isNull();
 
 		/*
@@ -1254,8 +1254,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verifyChannelIs(mockChannels.get(0), channel1);
 		channel2 = con2.createChannel(false);
 		verifyChannelIs(mockChannels.get(1), channel2);
-		assertThat(allocatedConnections.size()).isEqualTo(2);
-		assertThat(idleConnections.size()).isEqualTo(0);
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(idleConnections).hasSize(0);
 		assertThat(createNotification.get()).isNotNull();
 		assertThat(createNotification.getAndSet(null)).isSameAs(mockConnections.get(1));
 
@@ -1264,8 +1264,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verify(mockChannels.get(1), never()).close();
 		con1.close();
 		verify(mockConnections.get(0), never()).close();
-		assertThat(allocatedConnections.size()).isEqualTo(2);
-		assertThat(idleConnections.size()).isEqualTo(1);
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(idleConnections).hasSize(1);
 		assertThat(closedNotification.get()).isNull();
 
 		Connection con3 = ccf.createConnection();
@@ -1274,19 +1274,19 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Channel channel3 = con3.createChannel(false);
 		verifyChannelIs(mockChannels.get(0), channel3);
 
-		assertThat(allocatedConnections.size()).isEqualTo(2);
-		assertThat(idleConnections.size()).isEqualTo(0);
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(idleConnections).hasSize(0);
 
 		channel2.close();
 		con2.close();
-		assertThat(allocatedConnections.size()).isEqualTo(2);
-		assertThat(idleConnections.size()).isEqualTo(1);
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(idleConnections).hasSize(1);
 		channel3.close();
 		con3.close();
-		assertThat(allocatedConnections.size()).isEqualTo(2);
-		assertThat(idleConnections.size()).isEqualTo(2);
-		assertThat(cachedChannels.get(con1).size()).isEqualTo(1);
-		assertThat(cachedChannels.get(con2).size()).isEqualTo(1);
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(idleConnections).hasSize(2);
+		assertThat(cachedChannels.get(con1)).hasSize(1);
+		assertThat(cachedChannels.get(con2)).hasSize(1);
 		/*
 		 *  Cache size is 2; neither should have been a real close.
 		 *  con2 (mock2) and con1 should still be in the cache.
@@ -1296,7 +1296,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verify(mockChannels.get(1), never()).close();
 		verify(mockConnections.get(1), never()).close(30000);
 		verify(mockChannels.get(1), never()).close();
-		assertThat(idleConnections.size()).isEqualTo(2);
+		assertThat(idleConnections).hasSize(2);
 		Iterator<?> iterator = idleConnections.iterator();
 		verifyConnectionIs(mockConnections.get(1), iterator.next());
 		verifyConnectionIs(mockConnections.get(0), iterator.next());
@@ -1309,15 +1309,15 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertThat(closedNotification.getAndSet(null)).isSameAs(mockConnections.get(1));
 		verifyConnectionIs(mockConnections.get(0), con3);
 		assertThat(createNotification.get()).isNull();
-		assertThat(allocatedConnections.size()).isEqualTo(2);
-		assertThat(idleConnections.size()).isEqualTo(1);
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(idleConnections).hasSize(1);
 		channel3 = con3.createChannel(false);
 		verifyChannelIs(mockChannels.get(0), channel3);
 		channel3.close();
 		con3.close();
 		assertThat(closedNotification.get()).isNull();
-		assertThat(allocatedConnections.size()).isEqualTo(2);
-		assertThat(idleConnections.size()).isEqualTo(2);
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(idleConnections).hasSize(2);
 
 		/*
 		 * Now a closed cached connection when creating a channel
@@ -1325,8 +1325,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		con3 = ccf.createConnection();
 		verifyConnectionIs(mockConnections.get(0), con3);
 		assertThat(createNotification.get()).isNull();
-		assertThat(allocatedConnections.size()).isEqualTo(2);
-		assertThat(idleConnections.size()).isEqualTo(1);
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(idleConnections).hasSize(1);
 		when(mockConnections.get(0).isOpen()).thenReturn(false);
 		channel3 = con3.createChannel(false);
 		assertThat(closedNotification.getAndSet(null)).isNotNull();
@@ -1336,21 +1336,21 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		channel3.close();
 		con3.close();
 		assertThat(closedNotification.get()).isNull();
-		assertThat(allocatedConnections.size()).isEqualTo(2);
-		assertThat(idleConnections.size()).isEqualTo(2);
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(idleConnections).hasSize(2);
 
 		Connection con4 = ccf.createConnection();
 		assertThat(con4).isSameAs(con3);
-		assertThat(idleConnections.size()).isEqualTo(1);
+		assertThat(idleConnections).hasSize(1);
 		Channel channelA = con4.createChannel(false);
 		Channel channelB = con4.createChannel(false);
 		Channel channelC = con4.createChannel(false);
 		channelA.close();
-		assertThat(cachedChannels.get(con4).size()).isEqualTo(1);
+		assertThat(cachedChannels.get(con4)).hasSize(1);
 		channelB.close();
-		assertThat(cachedChannels.get(con4).size()).isEqualTo(2);
+		assertThat(cachedChannels.get(con4)).hasSize(2);
 		channelC.close();
-		assertThat(cachedChannels.get(con4).size()).isEqualTo(2);
+		assertThat(cachedChannels.get(con4)).hasSize(2);
 
 		// destroy
 		ccf.destroy();
@@ -1394,35 +1394,35 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ccf.afterPropertiesSet();
 
 		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections", Set.class);
-		assertThat(allocatedConnections.size()).isEqualTo(0);
+		assertThat(allocatedConnections).hasSize(0);
 		BlockingQueue<?> idleConnections = TestUtils.getPropertyValue(ccf, "idleConnections", BlockingQueue.class);
-		assertThat(idleConnections.size()).isEqualTo(0);
+		assertThat(idleConnections).hasSize(0);
 
 		Connection conn1 = ccf.createConnection();
 		Connection conn2 = ccf.createConnection();
 		Connection conn3 = ccf.createConnection();
-		assertThat(allocatedConnections.size()).isEqualTo(3);
-		assertThat(idleConnections.size()).isEqualTo(0);
+		assertThat(allocatedConnections).hasSize(3);
+		assertThat(idleConnections).hasSize(0);
 		conn1.close();
 		conn2.close();
 		conn3.close();
-		assertThat(allocatedConnections.size()).isEqualTo(3);
-		assertThat(idleConnections.size()).isEqualTo(3);
+		assertThat(allocatedConnections).hasSize(3);
+		assertThat(idleConnections).hasSize(3);
 
 		when(mockConnections.get(0).isOpen()).thenReturn(false);
 		when(mockConnections.get(1).isOpen()).thenReturn(false);
 		Connection conn4 = ccf.createConnection();
-		assertThat(allocatedConnections.size()).isEqualTo(3);
-		assertThat(idleConnections.size()).isEqualTo(2);
+		assertThat(allocatedConnections).hasSize(3);
+		assertThat(idleConnections).hasSize(2);
 		assertThat(conn4).isSameAs(conn3);
 		conn4.close();
-		assertThat(allocatedConnections.size()).isEqualTo(3);
-		assertThat(idleConnections.size()).isEqualTo(3);
+		assertThat(allocatedConnections).hasSize(3);
+		assertThat(idleConnections).hasSize(3);
 		assertThat(ccf.getCacheProperties().get("openConnections")).isEqualTo("1");
 
 		ccf.destroy();
-		assertThat(allocatedConnections.size()).isEqualTo(3);
-		assertThat(idleConnections.size()).isEqualTo(3);
+		assertThat(allocatedConnections).hasSize(3);
+		assertThat(idleConnections).hasSize(3);
 		assertThat(ccf.getCacheProperties().get("openConnections")).isEqualTo("0");
 	}
 

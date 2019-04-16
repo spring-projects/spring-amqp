@@ -17,7 +17,7 @@
 package org.springframework.amqp.rabbit.config;
 
 
-import static org.junit.Assert.assertSame;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import org.junit.Rule;
@@ -46,7 +46,7 @@ public class SimpleRabbitListenerEndpointTests {
 	public void createListener() {
 		SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
 		endpoint.setMessageListener(messageListener);
-		assertSame(messageListener, endpoint.createMessageListener(container));
+		assertThat(endpoint.createMessageListener(container)).isSameAs(messageListener);
 	}
 
 	@Test

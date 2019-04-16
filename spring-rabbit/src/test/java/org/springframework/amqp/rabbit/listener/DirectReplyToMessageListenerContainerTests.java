@@ -16,11 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -102,18 +98,18 @@ public class DirectReplyToMessageListenerContainerTests {
 			Thread.sleep(100);
 			request = replyChannel.basicGet(TEST_RELEASE_CONSUMER_Q, true);
 		}
-		assertNotNull(request);
+		assertThat(request).isNotNull();
 		replyChannel.basicPublish("", request.getProps().getReplyTo(), new BasicProperties(), "bar".getBytes());
 		replyChannel.close();
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 
 		ChannelHolder channel2 = container.getChannelHolder();
-		assertSame(channel1.getChannel(), channel2.getChannel());
+		assertThat(channel2.getChannel()).isSameAs(channel1.getChannel());
 		container.releaseConsumerFor(channel1, false, null); // simulate race for future timeout/cancel and onMessage()
 		Map<?, ?> inUse = TestUtils.getPropertyValue(container, "inUseConsumerChannels", Map.class);
-		assertThat(inUse.size(), equalTo(1));
+		assertThat(inUse.size()).isEqualTo(1);
 		container.releaseConsumerFor(channel2, false, null);
-		assertThat(inUse.size(), equalTo(0));
+		assertThat(inUse.size()).isEqualTo(0);
 		container.stop();
 		connectionFactory.destroy();
 	}

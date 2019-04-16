@@ -16,12 +16,8 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -73,9 +69,9 @@ public class ContainerInitializationTests {
 			fail("expected initialization failure");
 		}
 		catch (ApplicationContextException e) {
-			assertThat(e.getCause().getCause(), instanceOf(IllegalStateException.class));
-			assertThat(e.getMessage(), containsString("When 'mismatchedQueuesFatal' is 'true', there must be "
-					+ "exactly one AmqpAdmin in the context or you must inject one into this container; found: 0"));
+			assertThat(e.getCause().getCause()).isInstanceOf(IllegalStateException.class);
+			assertThat(e.getMessage()).contains("When 'mismatchedQueuesFatal' is 'true', there must be "
+					+ "exactly one AmqpAdmin in the context or you must inject one into this container; found: 0");
 		}
 	}
 
@@ -87,7 +83,7 @@ public class ContainerInitializationTests {
 			fail("expected initialization failure");
 		}
 		catch (ApplicationContextException e) {
-			assertThat(e.getCause(), instanceOf(FatalListenerStartupException.class));
+			assertThat(e.getCause()).isInstanceOf(FatalListenerStartupException.class);
 		}
 	}
 
@@ -97,16 +93,16 @@ public class ContainerInitializationTests {
 		CountDownLatch[] latches = setUpChannelLatches(context);
 		RabbitAdmin admin = context.getBean(RabbitAdmin.class);
 		admin.deleteQueue(TEST_MISMATCH);
-		assertTrue(latches[0].await(20, TimeUnit.SECONDS));
+		assertThat(latches[0].await(20, TimeUnit.SECONDS)).isTrue();
 		admin.declareQueue(new Queue(TEST_MISMATCH, false, false, true));
 		latches[2].countDown(); // let container thread continue to enable restart
-		assertTrue(latches[1].await(20, TimeUnit.SECONDS));
+		assertThat(latches[1].await(20, TimeUnit.SECONDS)).isTrue();
 		SimpleMessageListenerContainer container = context.getBean(SimpleMessageListenerContainer.class);
 		int n = 0;
 		while (n++ < 200 && container.isRunning()) {
 			Thread.sleep(100);
 		}
-		assertFalse(container.isRunning());
+		assertThat(container.isRunning()).isFalse();
 		context.close();
 	}
 
@@ -116,16 +112,16 @@ public class ContainerInitializationTests {
 		CountDownLatch[] latches = setUpChannelLatches(context);
 		RabbitAdmin admin = context.getBean(RabbitAdmin.class);
 		admin.deleteQueue(TEST_MISMATCH);
-		assertTrue(latches[0].await(20, TimeUnit.SECONDS));
+		assertThat(latches[0].await(20, TimeUnit.SECONDS)).isTrue();
 		admin.declareQueue(new Queue(TEST_MISMATCH, false, false, true));
 		latches[2].countDown(); // let container thread continue to enable restart
-		assertTrue(latches[1].await(20, TimeUnit.SECONDS));
+		assertThat(latches[1].await(20, TimeUnit.SECONDS)).isTrue();
 		SimpleMessageListenerContainer container = context.getBean(SimpleMessageListenerContainer.class);
 		int n = 0;
 		while (n++ < 200 && container.isRunning()) {
 			Thread.sleep(100);
 		}
-		assertFalse(container.isRunning());
+		assertThat(container.isRunning()).isFalse();
 		context.close();
 	}
 

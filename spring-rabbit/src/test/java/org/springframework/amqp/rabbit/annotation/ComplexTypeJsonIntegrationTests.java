@@ -16,9 +16,7 @@
 
 package org.springframework.amqp.rabbit.annotation;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.TimeUnit;
 
@@ -161,12 +159,12 @@ public class ComplexTypeJsonIntegrationTests {
 	}
 
 	private void verifyFooBarBazQux(Foo<?> foo) {
-		assertNotNull(foo);
+		assertThat(foo).isNotNull();
 		Bar<?, ?> bar;
-		assertThat(foo.getField(), instanceOf(Bar.class));
+		assertThat(foo.getField()).isInstanceOf(Bar.class);
 		bar = (Bar<?, ?>) foo.getField();
-		assertThat(bar.getaField(), instanceOf(Baz.class));
-		assertThat(bar.getbField(), instanceOf(Qux.class));
+		assertThat(bar.getaField()).isInstanceOf(Baz.class);
+		assertThat(bar.getbField()).isInstanceOf(Qux.class);
 	}
 
 	@Configuration

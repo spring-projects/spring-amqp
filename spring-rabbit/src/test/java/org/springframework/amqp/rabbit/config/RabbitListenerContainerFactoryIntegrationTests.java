@@ -16,9 +16,7 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import java.lang.reflect.Method;
@@ -88,7 +86,7 @@ public class RabbitListenerContainerFactoryIntegrationTests {
 	}
 
 	private void assertListenerMethodInvocation(String methodName) {
-		assertTrue("Method " + methodName + " should have been invoked", sample.invocations.get(methodName));
+		assertThat(sample.invocations.get(methodName)).as("Method " + methodName + " should have been invoked").isTrue();
 	}
 
 
@@ -107,7 +105,7 @@ public class RabbitListenerContainerFactoryIntegrationTests {
 
 	private Method getListenerMethod(String methodName, Class<?>... parameterTypes) {
 		Method method = ReflectionUtils.findMethod(RabbitEndpointSampleBean.class, methodName, parameterTypes);
-		assertNotNull("no method found with name " + methodName + " and parameters " + Arrays.toString(parameterTypes));
+		assertThat("no method found with name " + methodName + " and parameters " + Arrays.toString(parameterTypes)).isNotNull();
 		return method;
 	}
 
@@ -124,7 +122,7 @@ public class RabbitListenerContainerFactoryIntegrationTests {
 
 		public void expectFooBarUpperCase(@Payload String msg) {
 			invocations.put("expectFooBarUpperCase", true);
-			assertEquals("Unexpected payload message", "FOO-BAR", msg);
+			assertThat(msg).as("Unexpected payload message").isEqualTo("FOO-BAR");
 		}
 	}
 

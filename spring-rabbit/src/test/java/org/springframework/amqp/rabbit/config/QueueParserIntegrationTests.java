@@ -16,10 +16,7 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Properties;
 
@@ -61,7 +58,7 @@ public final class QueueParserIntegrationTests {
 	public void testArgumentsQueue() throws Exception {
 
 		Queue queue = beanFactory.getBean("arguments", Queue.class);
-		assertNotNull(queue);
+		assertThat(queue).isNotNull();
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory(
 				brokerIsRunning.getConnectionFactory());
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
@@ -69,7 +66,7 @@ public final class QueueParserIntegrationTests {
 		rabbitAdmin.deleteQueue(queue.getName());
 		rabbitAdmin.declareQueue(queue);
 
-		assertEquals(100L, queue.getArguments().get("x-message-ttl"));
+		assertThat(queue.getArguments().get("x-message-ttl")).isEqualTo(100L);
 		template.convertAndSend(queue.getName(), "message");
 		Properties props = rabbitAdmin.getQueueProperties("arguments");
 		if (props != null) {
@@ -78,7 +75,7 @@ public final class QueueParserIntegrationTests {
 				Thread.sleep(50);
 				props = rabbitAdmin.getQueueProperties("arguments");
 			}
-			assertThat((Integer) props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT), equalTo(0));
+			assertThat((Integer) props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT)).isEqualTo(0);
 		}
 
 		connectionFactory.destroy();

@@ -16,11 +16,7 @@
 
 package org.springframework.amqp.rabbit.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
@@ -105,17 +101,17 @@ public class RabbitTemplateHeaderTests {
 		}).when(mockChannel).basicPublish(any(String.class), any(String.class), Mockito.anyBoolean(),
 				any(BasicProperties.class), any(byte[].class));
 		Message reply = template.sendAndReceive(message);
-		assertNotNull(reply);
+		assertThat(reply).isNotNull();
 
-		assertNotNull(replyTo.get());
-		assertEquals(replyAddress, replyTo.get());
-		assertNotNull(correlationId.get());
-		assertNull(reply.getMessageProperties().getReplyTo());
+		assertThat(replyTo.get()).isNotNull();
+		assertThat(replyTo.get()).isEqualTo(replyAddress);
+		assertThat(correlationId.get()).isNotNull();
+		assertThat(reply.getMessageProperties().getReplyTo()).isNull();
 		if (standardHeader) {
-			assertNull(reply.getMessageProperties().getCorrelationId());
+			assertThat(reply.getMessageProperties().getCorrelationId()).isNull();
 		}
 		else {
-			assertNull(reply.getMessageProperties().getHeaders().get(CORRELATION_HEADER));
+			assertThat(reply.getMessageProperties().getHeaders().get(CORRELATION_HEADER)).isNull();
 		}
 	}
 
@@ -155,13 +151,13 @@ public class RabbitTemplateHeaderTests {
 		}).when(mockChannel).basicPublish(any(String.class), any(String.class), Mockito.anyBoolean(),
 				any(BasicProperties.class), any(byte[].class));
 		Message reply = template.sendAndReceive(message);
-		assertNotNull(reply);
+		assertThat(reply).isNotNull();
 
-		assertNotNull(replyTo.get());
-		assertEquals(replyAddress, replyTo.get());
-		assertNotNull(correlationId.get());
-		assertFalse("saveThis".equals(correlationId.get()));
-		assertEquals("replyTo1", reply.getMessageProperties().getReplyTo());
+		assertThat(replyTo.get()).isNotNull();
+		assertThat(replyTo.get()).isEqualTo(replyAddress);
+		assertThat(correlationId.get()).isNotNull();
+		assertThat("saveThis".equals(correlationId.get())).isFalse();
+		assertThat(reply.getMessageProperties().getReplyTo()).isEqualTo("replyTo1");
 
 	}
 
@@ -210,15 +206,15 @@ public class RabbitTemplateHeaderTests {
 		}).when(mockChannel).basicPublish(any(String.class), any(String.class), Mockito.anyBoolean(),
 				any(BasicProperties.class), any(byte[].class));
 		Message reply = template.sendAndReceive(message);
-		assertNotNull(reply);
+		assertThat(reply).isNotNull();
 
-		assertEquals(3, nestedReplyTo.size());
-		assertEquals(replyTo2, nestedReplyTo.get(0));
-		assertEquals(replyAddress3, nestedReplyTo.get(1));
-		assertEquals(replyTo2, nestedReplyTo.get(2)); // intermediate reply
+		assertThat(nestedReplyTo.size()).isEqualTo(3);
+		assertThat(nestedReplyTo.get(0)).isEqualTo(replyTo2);
+		assertThat(nestedReplyTo.get(1)).isEqualTo(replyAddress3);
+		assertThat(nestedReplyTo.get(2)).isEqualTo(replyTo2); // intermediate reply
 
-		assertEquals(replyTo1, reply.getMessageProperties().getReplyTo());
-		assertEquals("a", reply.getMessageProperties().getCorrelationId());
+		assertThat(reply.getMessageProperties().getReplyTo()).isEqualTo(replyTo1);
+		assertThat(reply.getMessageProperties().getCorrelationId()).isEqualTo("a");
 
 	}
 
@@ -260,14 +256,14 @@ public class RabbitTemplateHeaderTests {
 		}).when(mockChannel).basicPublish(any(String.class), any(String.class), Mockito.anyBoolean(),
 				any(BasicProperties.class), any(byte[].class));
 		Message reply = template.sendAndReceive(message);
-		assertNotNull(reply);
+		assertThat(reply).isNotNull();
 
-		assertNotNull(replyTo.get());
-		assertEquals(replyAddress, replyTo.get());
-		assertNotNull(correlationId.get());
-		assertEquals(replyTo1, reply.getMessageProperties().getReplyTo());
-		assertTrue(!"saveThis".equals(correlationId.get()));
-		assertEquals(replyTo1, reply.getMessageProperties().getReplyTo());
+		assertThat(replyTo.get()).isNotNull();
+		assertThat(replyTo.get()).isEqualTo(replyAddress);
+		assertThat(correlationId.get()).isNotNull();
+		assertThat(reply.getMessageProperties().getReplyTo()).isEqualTo(replyTo1);
+		assertThat(!"saveThis".equals(correlationId.get())).isTrue();
+		assertThat(reply.getMessageProperties().getReplyTo()).isEqualTo(replyTo1);
 
 	}
 
@@ -317,15 +313,15 @@ public class RabbitTemplateHeaderTests {
 		}).when(mockChannel).basicPublish(any(String.class), any(String.class), Mockito.anyBoolean(),
 				any(BasicProperties.class), any(byte[].class));
 		Message reply = template.sendAndReceive(message);
-		assertNotNull(reply);
+		assertThat(reply).isNotNull();
 
-		assertEquals(3, nestedReplyTo.size());
-		assertEquals(replyTo2, nestedReplyTo.get(0));
-		assertEquals(replyTo3, nestedReplyTo.get(1));
-		assertEquals(replyTo2, nestedReplyTo.get(2)); //intermediate reply
+		assertThat(nestedReplyTo.size()).isEqualTo(3);
+		assertThat(nestedReplyTo.get(0)).isEqualTo(replyTo2);
+		assertThat(nestedReplyTo.get(1)).isEqualTo(replyTo3);
+		assertThat(nestedReplyTo.get(2)).isEqualTo(replyTo2); //intermediate reply
 
-		assertEquals(replyTo1, reply.getMessageProperties().getReplyTo());
-		assertEquals("a", reply.getMessageProperties().getCorrelationId());
+		assertThat(reply.getMessageProperties().getReplyTo()).isEqualTo(replyTo1);
+		assertThat(reply.getMessageProperties().getCorrelationId()).isEqualTo("a");
 	}
 
 }

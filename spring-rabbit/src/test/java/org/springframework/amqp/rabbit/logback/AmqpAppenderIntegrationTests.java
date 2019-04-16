@@ -16,16 +16,7 @@
 
 package org.springframework.amqp.rabbit.logback;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -107,8 +98,8 @@ public class AmqpAppenderIntegrationTests {
 		log.warn("This is a WARN message");
 		log.error("This is an ERROR message", new RuntimeException("Test exception"));
 
-		assertTrue(testListener.getLatch().await(5, TimeUnit.SECONDS));
-		assertNotNull(testListener.getId());
+		assertThat(testListener.getLatch().await(5, TimeUnit.SECONDS)).isTrue();
+		assertThat(testListener.getId()).isNotNull();
 	}
 
 	@Test
@@ -126,21 +117,20 @@ public class AmqpAppenderIntegrationTests {
 		log.error("This is an ERROR message with properties", new RuntimeException("Test exception"));
 		MDC.remove(propertyName);
 
-		assertTrue(testListener.getLatch().await(5, TimeUnit.SECONDS));
+		assertThat(testListener.getLatch().await(5, TimeUnit.SECONDS)).isTrue();
 		MessageProperties messageProperties = testListener.getMessageProperties();
-		assertNotNull(messageProperties);
-		assertNotNull(messageProperties.getHeaders().get(propertyName));
-		assertEquals(propertyValue, messageProperties.getHeaders().get(propertyName));
+		assertThat(messageProperties).isNotNull();
+		assertThat(messageProperties.getHeaders().get(propertyName)).isNotNull();
+		assertThat(messageProperties.getHeaders().get(propertyName)).isEqualTo(propertyValue);
 		Object location = messageProperties.getHeaders().get("location");
-		assertNotNull(location);
-		assertThat(location, instanceOf(String.class));
-		assertThat((String) location,
-				startsWith("org.springframework.amqp.rabbit.logback.AmqpAppenderIntegrationTests.testAppenderWithProps()"));
+		assertThat(location).isNotNull();
+		assertThat(location).isInstanceOf(String.class);
+		assertThat((String) location).startsWith("org.springframework.amqp.rabbit.logback.AmqpAppenderIntegrationTests.testAppenderWithProps()");
 		Object threadName = messageProperties.getHeaders().get("thread");
-		assertNotNull(threadName);
-		assertThat(threadName, instanceOf(String.class));
-		assertThat(threadName, is(Thread.currentThread().getName()));
-		assertEquals("bar", messageProperties.getHeaders().get("foo"));
+		assertThat(threadName).isNotNull();
+		assertThat(threadName).isInstanceOf(String.class);
+		assertThat(threadName).isEqualTo(Thread.currentThread().getName());
+		assertThat(messageProperties.getHeaders().get("foo")).isEqualTo("bar");
 	}
 
 	@Test
@@ -151,12 +141,12 @@ public class AmqpAppenderIntegrationTests {
 
 		String foo = "\u0fff"; // UTF-8 -> 0xe0bfbf
 		log.info(foo);
-		assertTrue(testListener.getLatch().await(5, TimeUnit.SECONDS));
+		assertThat(testListener.getLatch().await(5, TimeUnit.SECONDS)).isTrue();
 		byte[] body = testListener.getMessage().getBody();
 		int lineSeparatorExtraBytes = System.getProperty("line.separator").getBytes().length - 1;
-		assertEquals(0xe0, body[body.length - 5 - lineSeparatorExtraBytes] & 0xff);
-		assertEquals(0xbf, body[body.length - 4 - lineSeparatorExtraBytes] & 0xff);
-		assertEquals(0xbf, body[body.length - 3 - lineSeparatorExtraBytes] & 0xff);
+		assertThat(body[body.length - 5 - lineSeparatorExtraBytes] & 0xff).isEqualTo(0xe0);
+		assertThat(body[body.length - 4 - lineSeparatorExtraBytes] & 0xff).isEqualTo(0xbf);
+		assertThat(body[body.length - 3 - lineSeparatorExtraBytes] & 0xff).isEqualTo(0xbf);
 	}
 
 	@Test
@@ -166,12 +156,12 @@ public class AmqpAppenderIntegrationTests {
 		log.info("foo");
 		log.info("bar");
 		Message received = this.template.receive(this.encodedQueue.getName());
-		assertNotNull(received);
-		assertThat(new String(received.getBody()), containsString("%d %p %t [%c] - <%m>%n"));
-		assertThat(received.getMessageProperties().getAppId(), equalTo("AmqpAppenderTest"));
-		assertNotNull(this.template.receive(this.encodedQueue.getName()));
-		assertThat(new String(this.template.receive(this.encodedQueue.getName()).getBody()),
-				not(containsString("%d %p %t [%c] - <%m>%n")));
+		assertThat(received).isNotNull();
+		assertThat(new String(received.getBody())).contains("%d %p %t [%c] - <%m>%n");
+		assertThat(received.getMessageProperties().getAppId()).isEqualTo("AmqpAppenderTest");
+		assertThat(this.template.receive(this.encodedQueue.getName())).isNotNull();
+		assertThat(new String(this.template.receive(this.encodedQueue.getName()).getBody()))
+			.doesNotContainPattern("%d %p %t [%c] - <%m>%n");
 	}
 
 	@Test
@@ -207,8 +197,8 @@ public class AmqpAppenderIntegrationTests {
 
 		@Override
 		protected void updateConnectionClientProperties(Map<String, Object> clientProperties) {
-			assertEquals("bar", clientProperties.get("foo"));
-			assertEquals("qux", clientProperties.get("baz"));
+			assertThat(clientProperties.get("foo")).isEqualTo("bar");
+			assertThat(clientProperties.get("baz")).isEqualTo("qux");
 			clientProperties.put("foo", this.foo.toUpperCase());
 		}
 

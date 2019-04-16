@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.annotation;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import java.io.Serializable;
@@ -63,8 +63,7 @@ public class EnableRabbitCglibProxyTests {
 		this.rabbitTemplate.setReplyTimeout(600000);
 		Foo foo = new Foo();
 		foo.field = "foo";
-		assertEquals("Reply: foo: AUTO.RK.TEST",
-				this.rabbitTemplate.convertSendAndReceive("auto.exch.test", "auto.rk.test", foo));
+		assertThat(this.rabbitTemplate.convertSendAndReceive("auto.exch.test", "auto.rk.test", foo)).isEqualTo("Reply: foo: AUTO.RK.TEST");
 	}
 
 	@Configuration

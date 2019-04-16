@@ -16,12 +16,8 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -93,11 +89,11 @@ public class BlockingQueueConsumerIntegrationTests {
 			}
 		});
 		blockingQueueConsumer.start();
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
-		assertThat(events.get(0).getConsumerTag(), equalTo(consumerTagPrefix + "#" + queue1.getName()));
-		assertThat(events.get(1).getConsumerTag(), equalTo(consumerTagPrefix + "#" + queue2.getName()));
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(events.get(0).getConsumerTag()).isEqualTo(consumerTagPrefix + "#" + queue1.getName());
+		assertThat(events.get(1).getConsumerTag()).isEqualTo(consumerTagPrefix + "#" + queue2.getName());
 		blockingQueueConsumer.stop();
-		assertNull(template.receiveAndConvert(queue1.getName()));
+		assertThat(template.receiveAndConvert(queue1.getName())).isNull();
 		connectionFactory.destroy();
 	}
 
@@ -113,7 +109,7 @@ public class BlockingQueueConsumerIntegrationTests {
 			fail("expected exception");
 		}
 		catch (FatalListenerStartupException e) {
-			assertThat(e.getCause(), instanceOf(IllegalArgumentException.class));
+			assertThat(e.getCause()).isInstanceOf(IllegalArgumentException.class);
 		}
 		connectionFactory.destroy();
 	}

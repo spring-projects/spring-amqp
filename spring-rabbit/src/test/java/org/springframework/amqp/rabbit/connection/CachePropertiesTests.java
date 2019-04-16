@@ -16,8 +16,7 @@
 
 package org.springframework.amqp.rabbit.connection;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -63,7 +62,7 @@ public class CachePropertiesTests {
 		this.channelCf.setConnectionNameStrategy(cf -> "testChannelCache");
 		Connection c1 = this.channelCf.createConnection();
 		Connection c2 = this.channelCf.createConnection();
-		assertSame(c1, c2);
+		assertThat(c2).isSameAs(c1);
 		Channel ch1 = c1.createChannel(false);
 		Channel ch2 = c1.createChannel(false);
 		Channel ch3 = c1.createChannel(true);
@@ -75,19 +74,19 @@ public class CachePropertiesTests {
 		ch4.close();
 		ch5.close();
 		Properties props = this.channelCf.getCacheProperties();
-		assertEquals("testChannelCache", props.getProperty("connectionName"));
-		assertEquals("4", props.getProperty("channelCacheSize"));
-		assertEquals("2", props.getProperty("idleChannelsNotTx"));
-		assertEquals("3", props.getProperty("idleChannelsTx"));
-		assertEquals("2", props.getProperty("idleChannelsNotTxHighWater"));
-		assertEquals("3", props.getProperty("idleChannelsTxHighWater"));
+		assertThat(props.getProperty("connectionName")).isEqualTo("testChannelCache");
+		assertThat(props.getProperty("channelCacheSize")).isEqualTo("4");
+		assertThat(props.getProperty("idleChannelsNotTx")).isEqualTo("2");
+		assertThat(props.getProperty("idleChannelsTx")).isEqualTo("3");
+		assertThat(props.getProperty("idleChannelsNotTxHighWater")).isEqualTo("2");
+		assertThat(props.getProperty("idleChannelsTxHighWater")).isEqualTo("3");
 		ch1 = c1.createChannel(false);
 		ch3 = c1.createChannel(true);
 		props = this.channelCf.getCacheProperties();
-		assertEquals("1", props.getProperty("idleChannelsNotTx"));
-		assertEquals("2", props.getProperty("idleChannelsTx"));
-		assertEquals("2", props.getProperty("idleChannelsNotTxHighWater"));
-		assertEquals("3", props.getProperty("idleChannelsTxHighWater"));
+		assertThat(props.getProperty("idleChannelsNotTx")).isEqualTo("1");
+		assertThat(props.getProperty("idleChannelsTx")).isEqualTo("2");
+		assertThat(props.getProperty("idleChannelsNotTxHighWater")).isEqualTo("2");
+		assertThat(props.getProperty("idleChannelsTxHighWater")).isEqualTo("3");
 		ch1 = c1.createChannel(false);
 		ch2 = c1.createChannel(false);
 		ch3 = c1.createChannel(true);
@@ -103,10 +102,10 @@ public class CachePropertiesTests {
 		ch6.close();
 		ch7.close();
 		props = this.channelCf.getCacheProperties();
-		assertEquals("2", props.getProperty("idleChannelsNotTx"));
-		assertEquals("4", props.getProperty("idleChannelsTx")); // not 5
-		assertEquals("2", props.getProperty("idleChannelsNotTxHighWater"));
-		assertEquals("4", props.getProperty("idleChannelsTxHighWater")); // not 5
+		assertThat(props.getProperty("idleChannelsNotTx")).isEqualTo("2");
+		assertThat(props.getProperty("idleChannelsTx")).isEqualTo("4"); // not 5
+		assertThat(props.getProperty("idleChannelsNotTxHighWater")).isEqualTo("2");
+		assertThat(props.getProperty("idleChannelsTxHighWater")).isEqualTo("4"); // not 5
 
 	}
 
@@ -127,26 +126,26 @@ public class CachePropertiesTests {
 		ch5.close();
 		c1.close();
 		Properties props = this.connectionCf.getCacheProperties();
-		assertEquals("10", props.getProperty("channelCacheSize"));
-		assertEquals("5", props.getProperty("connectionCacheSize"));
-		assertEquals("2", props.getProperty("openConnections"));
-		assertEquals("1", props.getProperty("idleConnections"));
+		assertThat(props.getProperty("channelCacheSize")).isEqualTo("10");
+		assertThat(props.getProperty("connectionCacheSize")).isEqualTo("5");
+		assertThat(props.getProperty("openConnections")).isEqualTo("2");
+		assertThat(props.getProperty("idleConnections")).isEqualTo("1");
 		c2.close();
 		props = this.connectionCf.getCacheProperties();
-		assertEquals("2", props.getProperty("idleConnections"));
-		assertEquals("2", props.getProperty("idleConnectionsHighWater"));
+		assertThat(props.getProperty("idleConnections")).isEqualTo("2");
+		assertThat(props.getProperty("idleConnectionsHighWater")).isEqualTo("2");
 		int c1Port = c1.getLocalPort();
 		int c2Port = c2.getLocalPort();
-		assertEquals("testConnectionCache0", props.getProperty("connectionName:" + c1Port));
-		assertEquals("testConnectionCache1", props.getProperty("connectionName:" + c2Port));
-		assertEquals("2", props.getProperty("idleChannelsNotTx:" + c1Port));
-		assertEquals("0", props.getProperty("idleChannelsTx:" + c1Port));
-		assertEquals("2", props.getProperty("idleChannelsNotTxHighWater:" + c1Port));
-		assertEquals("0", props.getProperty("idleChannelsTxHighWater:" + c1Port));
-		assertEquals("1", props.getProperty("idleChannelsNotTx:" + c2Port));
-		assertEquals("2", props.getProperty("idleChannelsTx:" + c2Port));
-		assertEquals("1", props.getProperty("idleChannelsNotTxHighWater:" + c2Port));
-		assertEquals("2", props.getProperty("idleChannelsTxHighWater:" + c2Port));
+		assertThat(props.getProperty("connectionName:" + c1Port)).isEqualTo("testConnectionCache0");
+		assertThat(props.getProperty("connectionName:" + c2Port)).isEqualTo("testConnectionCache1");
+		assertThat(props.getProperty("idleChannelsNotTx:" + c1Port)).isEqualTo("2");
+		assertThat(props.getProperty("idleChannelsTx:" + c1Port)).isEqualTo("0");
+		assertThat(props.getProperty("idleChannelsNotTxHighWater:" + c1Port)).isEqualTo("2");
+		assertThat(props.getProperty("idleChannelsTxHighWater:" + c1Port)).isEqualTo("0");
+		assertThat(props.getProperty("idleChannelsNotTx:" + c2Port)).isEqualTo("1");
+		assertThat(props.getProperty("idleChannelsTx:" + c2Port)).isEqualTo("2");
+		assertThat(props.getProperty("idleChannelsNotTxHighWater:" + c2Port)).isEqualTo("1");
+		assertThat(props.getProperty("idleChannelsTxHighWater:" + c2Port)).isEqualTo("2");
 	}
 
 	@Configuration

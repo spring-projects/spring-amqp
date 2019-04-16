@@ -51,7 +51,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	public void testRabbitListenerRepeatable(ApplicationContext context) {
 		RabbitListenerContainerTestFactory simpleFactory =
 				context.getBean("rabbitListenerContainerFactory", RabbitListenerContainerTestFactory.class);
-		assertThat(simpleFactory.getListenerContainers().size()).isEqualTo(4);
+		assertThat(simpleFactory.getListenerContainers()).hasSize(4);
 
 		MethodRabbitListenerEndpoint first = (MethodRabbitListenerEndpoint)
 				simpleFactory.getListenerContainer("first").getEndpoint();

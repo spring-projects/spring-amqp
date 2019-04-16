@@ -16,9 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -91,19 +89,19 @@ public class ContainerShutDownTests {
 				Map.class);
 		container.start();
 		try {
-			assertTrue(startLatch.await(30, TimeUnit.SECONDS));
+			assertThat(startLatch.await(30, TimeUnit.SECONDS)).isTrue();
 			RabbitTemplate template = new RabbitTemplate(cf);
 			template.execute(c -> {
 				c.basicPublish("", "test.shutdown", new BasicProperties(), "foo".getBytes());
 				RabbitUtils.setPhysicalCloseRequired(c, false);
 				return null;
 			});
-			assertTrue(latch.await(30, TimeUnit.SECONDS));
-			assertThat(channels.size(), equalTo(2));
+			assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
+			assertThat(channels.size()).isEqualTo(2);
 		}
 		finally {
 			container.stop();
-			assertThat(channels.size(), equalTo(1));
+			assertThat(channels.size()).isEqualTo(1);
 
 			cf.destroy();
 			testEnded.countDown();

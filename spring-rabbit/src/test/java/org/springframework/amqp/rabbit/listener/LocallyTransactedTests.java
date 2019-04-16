@@ -153,7 +153,7 @@ public abstract class LocallyTransactedTests {
 
 		DirectFieldAccessor dfa = new DirectFieldAccessor(cachingConnectionFactory);
 		List<?> channels = (List<?>) dfa.getPropertyValue("cachedChannelsTransactional");
-		assertThat(channels.size()).isEqualTo(0);
+		assertThat(channels).hasSize(0);
 
 		container.setMessageListener(m -> {
 			throw new RuntimeException();
@@ -354,7 +354,7 @@ public abstract class LocallyTransactedTests {
 		// verify close() was never called on the channel
 		DirectFieldAccessor dfa = new DirectFieldAccessor(cachingConnectionFactory);
 		List<?> channels = (List<?>) dfa.getPropertyValue("cachedChannelsNonTransactional");
-		assertThat(channels.size()).isEqualTo(1);
+		assertThat(channels).hasSize(1);
 
 		container.stop();
 

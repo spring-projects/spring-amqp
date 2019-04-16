@@ -16,13 +16,7 @@
 
 package org.springframework.amqp.rabbit.core;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -110,7 +104,7 @@ public class RabbitAdminIntegrationTests {
 		context.getBeanFactory().registerSingleton("foo", queue);
 		rabbitAdmin.afterPropertiesSet();
 		// A new connection is initialized so the queue is declared
-		assertTrue(rabbitAdmin.deleteQueue(queue.getName()));
+		assertThat(rabbitAdmin.deleteQueue(queue.getName())).isTrue();
 	}
 
 	@Test(expected = AmqpIOException.class)
@@ -161,19 +155,19 @@ public class RabbitAdminIntegrationTests {
 
 		// Queue created on spring startup
 		rabbitAdmin.initialize();
-		assertTrue(queueExists(queue));
+		assertThat(queueExists(queue)).isTrue();
 
 		// Stop and broker deletes queue (only verifiable in native API)
 		connectionFactory.destroy();
-		assertFalse(queueExists(queue));
+		assertThat(queueExists(queue)).isFalse();
 
 		// Start and queue re-created by the connection listener
 		connectionFactory.createConnection();
-		assertTrue(queueExists(queue));
+		assertThat(queueExists(queue)).isTrue();
 
 		// Queue manually deleted
-		assertTrue(rabbitAdmin.deleteQueue(queue.getName()));
-		assertFalse(queueExists(queue));
+		assertThat(rabbitAdmin.deleteQueue(queue.getName())).isTrue();
+		assertThat(queueExists(queue)).isFalse();
 
 	}
 
@@ -186,19 +180,19 @@ public class RabbitAdminIntegrationTests {
 
 		// Queue created on Spring startup
 		rabbitAdmin.initialize();
-		assertTrue(queueExists(queue));
+		assertThat(queueExists(queue)).isTrue();
 
 		// Stop and broker retains queue (only verifiable in native API)
 		connectionFactory.destroy();
-		assertTrue(queueExists(queue));
+		assertThat(queueExists(queue)).isTrue();
 
 		// Start and queue still exists
 		connectionFactory.createConnection();
-		assertTrue(queueExists(queue));
+		assertThat(queueExists(queue)).isTrue();
 
 		// Queue manually deleted
-		assertTrue(rabbitAdmin.deleteQueue(queue.getName()));
-		assertFalse(queueExists(queue));
+		assertThat(rabbitAdmin.deleteQueue(queue.getName())).isTrue();
+		assertThat(queueExists(queue)).isFalse();
 
 		connectionFactory.destroy();
 	}
@@ -209,21 +203,21 @@ public class RabbitAdminIntegrationTests {
 		final Queue queue = new Queue("", true, false, true);
 		String generatedName = rabbitAdmin.declareQueue(queue);
 
-		assertEquals("", queue.getName());
+		assertThat(queue.getName()).isEqualTo("");
 		Queue queueWithGeneratedName = new Queue(generatedName, true, false, true);
-		assertTrue(queueExists(queueWithGeneratedName));
+		assertThat(queueExists(queueWithGeneratedName)).isTrue();
 
 		// Stop and broker retains queue (only verifiable in native API)
 		connectionFactory.destroy();
-		assertTrue(queueExists(queueWithGeneratedName));
+		assertThat(queueExists(queueWithGeneratedName)).isTrue();
 
 		// Start and queue still exists
 		connectionFactory.createConnection();
-		assertTrue(queueExists(queueWithGeneratedName));
+		assertThat(queueExists(queueWithGeneratedName)).isTrue();
 
 		// Queue manually deleted
-		assertTrue(rabbitAdmin.deleteQueue(generatedName));
-		assertFalse(queueExists(queueWithGeneratedName));
+		assertThat(rabbitAdmin.deleteQueue(generatedName)).isTrue();
+		assertThat(queueExists(queueWithGeneratedName)).isFalse();
 
 		connectionFactory.destroy();
 	}
@@ -252,7 +246,7 @@ public class RabbitAdminIntegrationTests {
 	public void testDeleteExchangeWithDefaultExchange() {
 		boolean result = rabbitAdmin.deleteExchange(RabbitAdmin.DEFAULT_EXCHANGE_NAME);
 
-		assertTrue(result);
+		assertThat(result).isTrue();
 	}
 
 	@Test
@@ -263,12 +257,12 @@ public class RabbitAdminIntegrationTests {
 		rabbitAdmin.declareExchange(exchange);
 
 		ExchangeInfo exchange2 = getExchange(exchangeName);
-		assertEquals(ExchangeTypes.DIRECT, exchange2.getType());
-		assertTrue(exchange2.isInternal());
+		assertThat(exchange2.getType()).isEqualTo(ExchangeTypes.DIRECT);
+		assertThat(exchange2.isInternal()).isTrue();
 
 		boolean result = rabbitAdmin.deleteExchange(exchangeName);
 
-		assertTrue(result);
+		assertThat(result).isTrue();
 	}
 
 	@Test
@@ -282,7 +276,7 @@ public class RabbitAdminIntegrationTests {
 		rabbitAdmin.declareBinding(binding);
 
 		// Pass by virtue of RabbitMQ not firing a 403 reply code for both exchange and binding declaration
-		assertTrue(queueExists(queue));
+		assertThat(queueExists(queue)).isTrue();
 	}
 
 	@Test
@@ -299,7 +293,7 @@ public class RabbitAdminIntegrationTests {
 		rabbitAdmin.initialize();
 
 		// Pass by virtue of RabbitMQ not firing a 403 reply code for both exchange and binding declaration
-		assertTrue(queueExists(queue));
+		assertThat(queueExists(queue)).isTrue();
 	}
 
 	@Test
@@ -332,8 +326,8 @@ public class RabbitAdminIntegrationTests {
 				rootCause = cause;
 				cause = cause.getCause();
 			}
-			assertTrue(rootCause.getMessage().contains("reply-code=403"));
-			assertTrue(rootCause.getMessage().contains("operation not permitted on the default exchange"));
+			assertThat(rootCause.getMessage().contains("reply-code=403")).isTrue();
+			assertThat(rootCause.getMessage().contains("operation not permitted on the default exchange")).isTrue();
 		}
 	}
 
@@ -358,8 +352,8 @@ public class RabbitAdminIntegrationTests {
 				rootCause = cause;
 				cause = cause.getCause();
 			}
-			assertTrue(rootCause.getMessage().contains("reply-code=403"));
-			assertTrue(rootCause.getMessage().contains("operation not permitted on the default exchange"));
+			assertThat(rootCause.getMessage().contains("reply-code=403")).isTrue();
+			assertThat(rootCause.getMessage().contains("operation not permitted on the default exchange")).isTrue();
 		}
 	}
 
@@ -367,9 +361,9 @@ public class RabbitAdminIntegrationTests {
 	public void testQueueDeclareBad() {
 		this.rabbitAdmin.setIgnoreDeclarationExceptions(true);
 		Queue queue = new AnonymousQueue();
-		assertEquals(queue.getName(), this.rabbitAdmin.declareQueue(queue));
+		assertThat(this.rabbitAdmin.declareQueue(queue)).isEqualTo(queue.getName());
 		queue = new Queue(queue.getName());
-		assertNull(this.rabbitAdmin.declareQueue(queue));
+		assertThat(this.rabbitAdmin.declareQueue(queue)).isNull();
 		this.rabbitAdmin.deleteQueue(queue.getName());
 	}
 
@@ -411,17 +405,17 @@ public class RabbitAdminIntegrationTests {
 				MessageBuilder.withBody("foo".getBytes()).andProperties(properties).build());
 		long t1 = System.currentTimeMillis();
 		Message received = template.receive(queue.getName());
-		assertNotNull(received);
-		assertEquals(Integer.valueOf(500), received.getMessageProperties().getReceivedDelay());
+		assertThat(received).isNotNull();
+		assertThat(received.getMessageProperties().getReceivedDelay()).isEqualTo(Integer.valueOf(500));
 		received = template.receive(queue.getName());
-		assertNotNull(received);
-		assertEquals(Integer.valueOf(1000), received.getMessageProperties().getReceivedDelay());
-		assertThat(System.currentTimeMillis() - t1, greaterThan(950L));
+		assertThat(received).isNotNull();
+		assertThat(received.getMessageProperties().getReceivedDelay()).isEqualTo(Integer.valueOf(1000));
+		assertThat(System.currentTimeMillis() - t1).isGreaterThan(950L);
 
 		ExchangeInfo exchange2 = getExchange(exchangeName);
-		assertNotNull(exchange2);
-		assertEquals(ExchangeTypes.DIRECT, exchange2.getArguments().get("x-delayed-type"));
-		assertEquals("x-delayed-message", exchange2.getType());
+		assertThat(exchange2).isNotNull();
+		assertThat(exchange2.getArguments().get("x-delayed-type")).isEqualTo(ExchangeTypes.DIRECT);
+		assertThat(exchange2.getType()).isEqualTo("x-delayed-message");
 
 		this.rabbitAdmin.deleteQueue(queue.getName());
 		this.rabbitAdmin.deleteExchange(exchangeName);

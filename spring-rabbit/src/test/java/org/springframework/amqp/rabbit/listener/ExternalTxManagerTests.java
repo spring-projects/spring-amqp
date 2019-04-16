@@ -163,7 +163,7 @@ public abstract class ExternalTxManagerTests {
 		// verify close() was never called on the channel
 		DirectFieldAccessor dfa = new DirectFieldAccessor(cachingConnectionFactory);
 		List<?> channels = (List<?>) dfa.getPropertyValue("cachedChannelsTransactional");
-		assertThat(channels.size()).isEqualTo(0);
+		assertThat(channels).hasSize(0);
 
 		assertThat(transactionManager.committed).isTrue();
 		transactionManager.committed = false;
@@ -513,7 +513,7 @@ public abstract class ExternalTxManagerTests {
 		// verify close() was never called on the channel
 		DirectFieldAccessor dfa = new DirectFieldAccessor(cachingConnectionFactory);
 		List<?> channels = (List<?>) dfa.getPropertyValue("cachedChannelsTransactional");
-		assertThat(channels.size()).isEqualTo(0);
+		assertThat(channels).hasSize(0);
 
 		container.stop();
 
@@ -753,7 +753,7 @@ public abstract class ExternalTxManagerTests {
 		// verify close() was never called on the channel
 		DirectFieldAccessor dfa = new DirectFieldAccessor(cachingConnectionFactory);
 		List<?> channels = (List<?>) dfa.getPropertyValue("cachedChannelsTransactional");
-		assertThat(channels.size()).isEqualTo(0);
+		assertThat(channels).hasSize(0);
 
 		container.stop();
 	}

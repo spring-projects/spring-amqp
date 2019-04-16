@@ -17,10 +17,9 @@
 package org.springframework.amqp.support.converter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.messaging.Message;
@@ -33,15 +32,12 @@ import org.springframework.messaging.support.MessageBuilder;
  */
 public class MessagingMessageConverterTests {
 
-	@Rule
-	public final ExpectedException thrown = ExpectedException.none();
-
 	private final MessagingMessageConverter converter = new MessagingMessageConverter();
 
 	@Test
 	public void onlyHandlesMessage() {
-		thrown.expect(IllegalArgumentException.class);
-		converter.toMessage(new Object(), new MessageProperties());
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> converter.toMessage(new Object(), new MessageProperties()));
 	}
 
 	@Test

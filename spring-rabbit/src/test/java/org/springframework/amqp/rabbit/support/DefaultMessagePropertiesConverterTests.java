@@ -16,12 +16,7 @@
 
 package org.springframework.amqp.rabbit.support;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.DataInputStream;
 import java.io.UnsupportedEncodingException;
@@ -70,8 +65,7 @@ public class DefaultMessagePropertiesConverterTests {
 				.headers(headers)
 				.build();
 		MessageProperties messageProperties = messagePropertiesConverter.toMessageProperties(source, envelope, "UTF-8");
-		assertEquals("LongString not converted to String",
-				longStringString, messageProperties.getHeaders().get("longString"));
+		assertThat(messageProperties.getHeaders().get("longString")).as("LongString not converted to String").isEqualTo(longStringString);
 	}
 
 	@Test
@@ -82,8 +76,7 @@ public class DefaultMessagePropertiesConverterTests {
 				.headers(headers)
 				.build();
 		MessageProperties messageProperties = messagePropertiesConverter.toMessageProperties(source, envelope, "UTF-8");
-		assertEquals("LongString nested in List not converted to String",
-				longStringString, ((List<?>) messageProperties.getHeaders().get("list")).get(0));
+		assertThat(((List<?>) messageProperties.getHeaders().get("list")).get(0)).as("LongString nested in List not converted to String").isEqualTo(longStringString);
 	}
 
 	@Test
@@ -94,8 +87,7 @@ public class DefaultMessagePropertiesConverterTests {
 				.headers(headers)
 				.build();
 		MessageProperties messageProperties = messagePropertiesConverter.toMessageProperties(source, envelope, "UTF-8");
-		assertEquals("LongString deeply nested in List not converted to String",
-				longStringString, ((List<?>) ((List<?>) messageProperties.getHeaders().get("list")).get(0)).get(0));
+		assertThat(((List<?>) ((List<?>) messageProperties.getHeaders().get("list")).get(0)).get(0)).as("LongString deeply nested in List not converted to String").isEqualTo(longStringString);
 	}
 
 	@Test
@@ -109,8 +101,7 @@ public class DefaultMessagePropertiesConverterTests {
 				.headers(headers)
 				.build();
 		MessageProperties messageProperties = messagePropertiesConverter.toMessageProperties(source, envelope, "UTF-8");
-		assertEquals("LongString nested in Map not converted to String",
-				longStringString, ((Map<String, Object>) messageProperties.getHeaders().get("map")).get("longString"));
+		assertThat(((Map<String, Object>) messageProperties.getHeaders().get("map")).get("longString")).as("LongString nested in Map not converted to String").isEqualTo(longStringString);
 	}
 
 	@Test
@@ -128,23 +119,23 @@ public class DefaultMessagePropertiesConverterTests {
 				.build();
 		MessagePropertiesConverter converter = new DefaultMessagePropertiesConverter(1024, true);
 		MessageProperties messageProperties = converter.toMessageProperties(source, envelope, "UTF-8");
-		assertThat(messageProperties.getHeaders().get("longString"), instanceOf(String.class));
-		assertThat(messageProperties.getHeaders().get("string1025"), instanceOf(DataInputStream.class));
-		assertThat(messageProperties.getHeaders().get("string1026"), instanceOf(DataInputStream.class));
+		assertThat(messageProperties.getHeaders().get("longString")).isInstanceOf(String.class);
+		assertThat(messageProperties.getHeaders().get("string1025")).isInstanceOf(DataInputStream.class);
+		assertThat(messageProperties.getHeaders().get("string1026")).isInstanceOf(DataInputStream.class);
 		MessagePropertiesConverter longConverter = new DefaultMessagePropertiesConverter(1025, true);
 		messageProperties = longConverter.toMessageProperties(source, envelope, "UTF-8");
-		assertThat(messageProperties.getHeaders().get("longString"), instanceOf(String.class));
-		assertThat(messageProperties.getHeaders().get("string1025"), instanceOf(String.class));
-		assertThat(messageProperties.getHeaders().get("string1026"), instanceOf(DataInputStream.class));
+		assertThat(messageProperties.getHeaders().get("longString")).isInstanceOf(String.class);
+		assertThat(messageProperties.getHeaders().get("string1025")).isInstanceOf(String.class);
+		assertThat(messageProperties.getHeaders().get("string1026")).isInstanceOf(DataInputStream.class);
 
 		longConverter = new DefaultMessagePropertiesConverter(1025);
 		messageProperties = longConverter.toMessageProperties(source, envelope, "UTF-8");
-		assertThat(messageProperties.getHeaders().get("longString"), instanceOf(String.class));
-		assertThat(messageProperties.getHeaders().get("string1025"), instanceOf(String.class));
-		assertThat(messageProperties.getHeaders().get("string1026"), instanceOf(LongString.class));
+		assertThat(messageProperties.getHeaders().get("longString")).isInstanceOf(String.class);
+		assertThat(messageProperties.getHeaders().get("string1025")).isInstanceOf(String.class);
+		assertThat(messageProperties.getHeaders().get("string1026")).isInstanceOf(LongString.class);
 
 		BasicProperties basicProperties = longConverter.fromMessageProperties(messageProperties, "UTF-8");
-		assertEquals(longString1026.toString(), basicProperties.getHeaders().get("string1026").toString());
+		assertThat(basicProperties.getHeaders().get("string1026").toString()).isEqualTo(longString1026.toString());
 	}
 
 	@Test
@@ -152,8 +143,7 @@ public class DefaultMessagePropertiesConverterTests {
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setHeader("unsupported", new Object());
 		BasicProperties basicProps = messagePropertiesConverter.fromMessageProperties(messageProperties, "UTF-8");
-		assertTrue("Unsupported value not converted to String",
-				basicProps.getHeaders().get("unsupported") instanceof String);
+		assertThat(basicProps.getHeaders().get("unsupported") instanceof String).as("Unsupported value not converted to String").isTrue();
 	}
 
 	@Test
@@ -162,8 +152,7 @@ public class DefaultMessagePropertiesConverterTests {
 		List<Object> listWithUnsupportedValue = Arrays.asList(new Object());
 		messageProperties.setHeader("list", listWithUnsupportedValue);
 		BasicProperties basicProps = messagePropertiesConverter.fromMessageProperties(messageProperties, "UTF-8");
-		assertTrue("Unsupported value nested in List not converted to String",
-				((List<?>) basicProps.getHeaders().get("list")).get(0) instanceof String);
+		assertThat(((List<?>) basicProps.getHeaders().get("list")).get(0) instanceof String).as("Unsupported value nested in List not converted to String").isTrue();
 	}
 
 	@Test
@@ -173,8 +162,7 @@ public class DefaultMessagePropertiesConverterTests {
 		List<List<Object>> listWithUnsupportedValue = Arrays.asList(Arrays.asList(new Object()));
 		messageProperties.setHeader("list", listWithUnsupportedValue);
 		BasicProperties basicProps = messagePropertiesConverter.fromMessageProperties(messageProperties, "UTF-8");
-		assertTrue("Unsupported value deeply nested in List not converted to String",
-				((List<Object>) ((List<?>) basicProps.getHeaders().get("list")).get(0)).get(0) instanceof String);
+		assertThat(((List<Object>) ((List<?>) basicProps.getHeaders().get("list")).get(0)).get(0) instanceof String).as("Unsupported value deeply nested in List not converted to String").isTrue();
 	}
 
 	@Test
@@ -185,8 +173,7 @@ public class DefaultMessagePropertiesConverterTests {
 		mapWithUnsupportedValue.put("unsupported", new Object());
 		messageProperties.setHeader("map", mapWithUnsupportedValue);
 		BasicProperties basicProps = messagePropertiesConverter.fromMessageProperties(messageProperties, "UTF-8");
-		assertTrue("Unsupported value nested in Map not converted to String",
-				((Map<String, Object>) basicProps.getHeaders().get("map")).get("unsupported") instanceof String);
+		assertThat(((Map<String, Object>) basicProps.getHeaders().get("map")).get("unsupported") instanceof String).as("Unsupported value nested in Map not converted to String").isTrue();
 	}
 
 	@Test
@@ -198,12 +185,12 @@ public class DefaultMessagePropertiesConverterTests {
 		props.getHeaders().put("objects", new Object[] { new Foo() });
 		props.setDeliveryMode(MessageDeliveryMode.NON_PERSISTENT);
 		BasicProperties bProps = converter.fromMessageProperties(props, "UTF-8");
-		assertEquals(MessageDeliveryMode.toInt(MessageDeliveryMode.NON_PERSISTENT), bProps.getDeliveryMode().intValue());
+		assertThat(bProps.getDeliveryMode().intValue()).isEqualTo(MessageDeliveryMode.toInt(MessageDeliveryMode.NON_PERSISTENT));
 		props = converter.toMessageProperties(bProps, null, "UTF-8");
-		assertEquals(MessageDeliveryMode.NON_PERSISTENT, props.getReceivedDeliveryMode());
-		assertArrayEquals(strings, (Object[]) props.getHeaders().get("strings"));
-		assertEquals("[FooAsAString]", Arrays.asList((Object[]) props.getHeaders().get("objects")).toString());
-		assertNull(props.getDeliveryMode());
+		assertThat(props.getReceivedDeliveryMode()).isEqualTo(MessageDeliveryMode.NON_PERSISTENT);
+		assertThat((Object[]) props.getHeaders().get("strings")).isEqualTo(strings);
+		assertThat(Arrays.asList((Object[]) props.getHeaders().get("objects")).toString()).isEqualTo("[FooAsAString]");
+		assertThat(props.getDeliveryMode()).isNull();
 	}
 
 	private static class Foo {

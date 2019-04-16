@@ -78,7 +78,7 @@ public class MessagePropertiesTests {
 	  public void tesNoNullPointerInHashCode() {
 	    Set<MessageProperties> messageList = new HashSet<>();
 	    messageList.add(new MessageProperties());
-	    assertThat(messageList.size()).isEqualTo(1);
+	    assertThat(messageList).hasSize(1);
 	  }
 
 }

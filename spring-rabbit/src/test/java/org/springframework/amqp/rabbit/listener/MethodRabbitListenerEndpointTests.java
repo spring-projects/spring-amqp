@@ -16,10 +16,8 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -109,7 +107,7 @@ public class MethodRabbitListenerEndpointTests {
 		endpoint.setMethod(getTestMethod());
 		endpoint.setMessageHandlerMethodFactory(factory);
 
-		assertNotNull(endpoint.createMessageListener(container));
+		assertThat(endpoint.createMessageListener(container)).isNotNull();
 	}
 
 	@Test
@@ -268,9 +266,9 @@ public class MethodRabbitListenerEndpointTests {
 		}
 		catch (ReplyFailureException ex) {
 			Throwable cause = ex.getCause();
-			assertNotNull(cause);
-			assertEquals(MessageConversionException.class, cause.getClass());
-			assertTrue(ex.getMessage().contains("foo")); // exception holds the content of the reply
+			assertThat(cause).isNotNull();
+			assertThat(cause.getClass()).isEqualTo(MessageConversionException.class);
+			assertThat(ex.getMessage().contains("foo")).isTrue(); // exception holds the content of the reply
 		}
 		assertDefaultListenerMethodInvocation();
 	}
@@ -317,7 +315,7 @@ public class MethodRabbitListenerEndpointTests {
 		ArgumentCaptor<AMQP.BasicProperties> argument = ArgumentCaptor.forClass(AMQP.BasicProperties.class);
 		verify(channel).basicPublish(eq(expectedExchange), eq(routingKey), eq(mandatory),
 				argument.capture(), aryEq(message.getBody()));
-		assertEquals("Wrong correlationId in reply", expectedCorrelationId, argument.getValue().getCorrelationId());
+		assertThat(argument.getValue().getCorrelationId()).as("Wrong correlationId in reply").isEqualTo(expectedCorrelationId);
 	}
 
 	@Test
@@ -414,7 +412,7 @@ public class MethodRabbitListenerEndpointTests {
 
 	private Method getListenerMethod(String methodName, Class<?>... parameterTypes) {
 		Method method = ReflectionUtils.findMethod(RabbitEndpointSampleBean.class, methodName, parameterTypes);
-		assertNotNull("no method found with name " + methodName + " and parameters " + Arrays.toString(parameterTypes));
+		assertThat("no method found with name " + methodName + " and parameters " + Arrays.toString(parameterTypes)).isNotNull();
 		return method;
 	}
 
@@ -427,7 +425,7 @@ public class MethodRabbitListenerEndpointTests {
 	}
 
 	private void assertListenerMethodInvocation(RabbitEndpointSampleBean bean, String methodName) {
-		assertTrue("Method " + methodName + " should have been invoked", bean.invocations.get(methodName));
+		assertThat(bean.invocations.get(methodName)).as("Method " + methodName + " should have been invoked").isTrue();
 	}
 
 	private void initializeFactory(DefaultMessageHandlerMethodFactory factory) {
@@ -462,64 +460,64 @@ public class MethodRabbitListenerEndpointTests {
 
 		public void resolveMessageAndSession(org.springframework.amqp.core.Message message, Channel channel) {
 			invocations.put("resolveMessageAndSession", true);
-			assertNotNull("Message not injected", message);
-			assertNotNull("Channel not injected", channel);
+			assertThat(message).as("Message not injected").isNotNull();
+			assertThat(channel).as("Channel not injected").isNotNull();
 		}
 
 		public void resolveGenericMessage(Message<String> message) {
 			invocations.put("resolveGenericMessage", true);
-			assertNotNull("Generic message not injected", message);
-			assertEquals("Wrong message payload", "test", message.getPayload());
+			assertThat(message).as("Generic message not injected").isNotNull();
+			assertThat(message.getPayload()).as("Wrong message payload").isEqualTo("test");
 		}
 
 		public void resolveHeaderAndPayload(@Payload String content, @Header int myCounter,
 				@Header(AmqpHeaders.CONSUMER_TAG) String tag,
 				@Header(AmqpHeaders.CONSUMER_QUEUE) String queue) {
 			invocations.put("resolveHeaderAndPayload", true);
-			assertEquals("Wrong @Payload resolution", "my payload", content);
-			assertEquals("Wrong @Header resolution", 55, myCounter);
-			assertEquals("Wrong consumer tag header", "consumerTag", tag);
-			assertEquals("Wrong queue header", "queue", queue);
+			assertThat(content).as("Wrong @Payload resolution").isEqualTo("my payload");
+			assertThat(myCounter).as("Wrong @Header resolution").isEqualTo(55);
+			assertThat(tag).as("Wrong consumer tag header").isEqualTo("consumerTag");
+			assertThat(queue).as("Wrong queue header").isEqualTo("queue");
 		}
 
 		public void resolveCustomHeaderNameAndPayload(@Payload String content, @Header("myCounter") int counter) {
 			invocations.put("resolveCustomHeaderNameAndPayload", true);
-			assertEquals("Wrong @Payload resolution", "my payload", content);
-			assertEquals("Wrong @Header resolution", 24, counter);
+			assertThat(content).as("Wrong @Payload resolution").isEqualTo("my payload");
+			assertThat(counter).as("Wrong @Header resolution").isEqualTo(24);
 		}
 
 		public void resolveHeaders(String content, @Headers Map<String, Object> headers) {
 			invocations.put("resolveHeaders", true);
-			assertEquals("Wrong payload resolution", "my payload", content);
-			assertNotNull("headers not injected", headers);
-			assertEquals("Missing AMQP message id header", "abcd-1234", headers.get(AmqpHeaders.MESSAGE_ID));
-			assertEquals("Missing custom header", 1234, headers.get("customInt"));
+			assertThat(content).as("Wrong payload resolution").isEqualTo("my payload");
+			assertThat(headers).as("headers not injected").isNotNull();
+			assertThat(headers.get(AmqpHeaders.MESSAGE_ID)).as("Missing AMQP message id header").isEqualTo("abcd-1234");
+			assertThat(headers.get("customInt")).as("Missing custom header").isEqualTo(1234);
 		}
 
 		public void resolveMessageHeaders(MessageHeaders headers) {
 			invocations.put("resolveMessageHeaders", true);
-			assertNotNull("MessageHeaders not injected", headers);
-			assertEquals("Missing AMQP message type header", "myMessageType", headers.get(AmqpHeaders.TYPE));
-			assertEquals("Missing custom header", 4567L, (Long) headers.get("customLong"), 0.0);
+			assertThat(headers).as("MessageHeaders not injected").isNotNull();
+			assertThat(headers.get(AmqpHeaders.TYPE)).as("Missing AMQP message type header").isEqualTo("myMessageType");
+			assertThat(headers.get("customLong", Long.class)).as("Missing custom header").isEqualTo(4567L);
 		}
 
 		public void resolveRabbitMessageHeaderAccessor(AmqpMessageHeaderAccessor headers) {
 			invocations.put("resolveRabbitMessageHeaderAccessor", true);
-			assertNotNull("MessageHeader accessor not injected", headers);
-			assertEquals("Missing AMQP AppID header", "myAppId", headers.getAppId());
-			assertEquals("Missing custom header", true, headers.getHeader("customBoolean"));
+			assertThat(headers).as("MessageHeader accessor not injected").isNotNull();
+			assertThat(headers.getAppId()).as("Missing AMQP AppID header").isEqualTo("myAppId");
+			assertThat(headers.getHeader("customBoolean")).as("Missing custom header").isEqualTo(Boolean.TRUE);
 		}
 
 		public void resolveObjectPayload(MyBean bean) {
 			invocations.put("resolveObjectPayload", true);
-			assertNotNull("Object payload not injected", bean);
-			assertEquals("Wrong content for payload", "myBean name", bean.name);
+			assertThat(bean).as("Object payload not injected").isNotNull();
+			assertThat(bean.name).as("Wrong content for payload").isEqualTo("myBean name");
 		}
 
 		public void resolveConvertedPayload(Integer counter) {
 			invocations.put("resolveConvertedPayload", true);
-			assertNotNull("Payload not injected", counter);
-			assertEquals("Wrong content for payload", Integer.valueOf(33), counter);
+			assertThat(counter).as("Payload not injected").isNotNull();
+			assertThat(counter).as("Wrong content for payload").isEqualTo(33);
 		}
 
 		public String processAndReply(@Payload String content) {

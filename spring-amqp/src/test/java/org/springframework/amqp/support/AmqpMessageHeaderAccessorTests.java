@@ -17,13 +17,12 @@
 package org.springframework.amqp.support;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import java.util.Date;
 import java.util.Map;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
@@ -36,9 +35,6 @@ import org.springframework.util.MimeType;
  * @author Gary Russell
  */
 public class AmqpMessageHeaderAccessorTests {
-
-	@Rule
-	public final ExpectedException thrown = ExpectedException.none();
 
 	@Test
 	public void validateAmqpHeaders() {
@@ -107,9 +103,9 @@ public class AmqpMessageHeaderAccessorTests {
 	@Test
 	public void priorityMustBeInteger() {
 		AmqpMessageHeaderAccessor accessor = new AmqpMessageHeaderAccessor(MessageBuilder.withPayload("foo").build());
-		thrown.expect(IllegalArgumentException.class);
-		thrown.expectMessage("priority");
-		accessor.setHeader(AmqpMessageHeaderAccessor.PRIORITY, "Foo");
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> accessor.setHeader(AmqpMessageHeaderAccessor.PRIORITY, "Foo"))
+				.withFailMessage("priority");
 	}
 
 }

@@ -168,7 +168,7 @@ public class SimpleMessageListenerContainerLongTests {
 		waitForNConsumers(container, 5);
 		container.setConcurrentConsumers(4);
 		Set<?> consumers = (Set<?>) TestUtils.getPropertyValue(container, "consumers");
-		assertThat(consumers.size()).isEqualTo(5);
+		assertThat(consumers).hasSize(5);
 	}
 
 	@Test
@@ -196,7 +196,7 @@ public class SimpleMessageListenerContainerLongTests {
 		waitForNConsumers(container, 3);
 		container.setConcurrentConsumers(1);
 		Set<?> consumers = (Set<?>) TestUtils.getPropertyValue(container, "consumers");
-		assertThat(consumers.size()).isEqualTo(3);
+		assertThat(consumers).hasSize(3);
 	}
 
 	@Test
@@ -225,7 +225,7 @@ public class SimpleMessageListenerContainerLongTests {
 		container.setConcurrentConsumers(1);
 		container.setMaxConcurrentConsumers(1);
 		Set<?> consumers = (Set<?>) TestUtils.getPropertyValue(container, "consumers");
-		assertThat(consumers.size()).isEqualTo(1);
+		assertThat(consumers).hasSize(1);
 	}
 
 	public void handleMessage(String foo) {

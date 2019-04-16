@@ -16,13 +16,7 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.springframework.amqp.rabbit.test.RabbitMatchers.matchesRegex;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -58,107 +52,107 @@ public class QueueParserTests {
 	@Test
 	public void testQueue() throws Exception {
 		Queue queue = beanFactory.getBean("foo", Queue.class);
-		assertNotNull(queue);
-		assertEquals("foo", queue.getName());
-		assertTrue(queue.isDurable());
-		assertFalse(queue.isAutoDelete());
-		assertFalse(queue.isExclusive());
+		assertThat(queue).isNotNull();
+		assertThat(queue.getName()).isEqualTo("foo");
+		assertThat(queue.isDurable()).isTrue();
+		assertThat(queue.isAutoDelete()).isFalse();
+		assertThat(queue.isExclusive()).isFalse();
 	}
 
 	@Test
 	public void testAliasQueue() throws Exception {
 		Queue queue = beanFactory.getBean("alias", Queue.class);
-		assertNotNull(queue);
-		assertEquals("spam", queue.getName());
-		assertNotSame("alias", queue.getName());
+		assertThat(queue).isNotNull();
+		assertThat(queue.getName()).isEqualTo("spam");
+		assertThat(queue.getName()).isNotSameAs("alias");
 	}
 
 	@Test
 	public void testOverrideQueue() throws Exception {
 		Queue queue = beanFactory.getBean("override", Queue.class);
-		assertNotNull(queue);
-		assertEquals("override", queue.getName());
-		assertTrue(queue.isDurable());
-		assertTrue(queue.isExclusive());
-		assertTrue(queue.isAutoDelete());
+		assertThat(queue).isNotNull();
+		assertThat(queue.getName()).isEqualTo("override");
+		assertThat(queue.isDurable()).isTrue();
+		assertThat(queue.isExclusive()).isTrue();
+		assertThat(queue.isAutoDelete()).isTrue();
 	}
 
 	@Test
 	public void testOverrideAliasQueue() throws Exception {
 		Queue queue = beanFactory.getBean("overrideAlias", Queue.class);
-		assertNotNull(queue);
-		assertEquals("bar", queue.getName());
-		assertTrue(queue.isDurable());
-		assertTrue(queue.isExclusive());
-		assertTrue(queue.isAutoDelete());
+		assertThat(queue).isNotNull();
+		assertThat(queue.getName()).isEqualTo("bar");
+		assertThat(queue.isDurable()).isTrue();
+		assertThat(queue.isExclusive()).isTrue();
+		assertThat(queue.isAutoDelete()).isTrue();
 	}
 
 	@Test
 	public void testAnonymousQueue() throws Exception {
 		Queue queue = beanFactory.getBean("anonymous", Queue.class);
-		assertNotNull(queue);
-		assertNotSame("anonymous", queue.getName());
-		assertTrue(queue instanceof AnonymousQueue);
-		assertFalse(queue.isDurable());
-		assertTrue(queue.isExclusive());
-		assertTrue(queue.isAutoDelete());
-		assertThat(queue.getName(), matchesRegex("spring.gen-[0-9A-Za-z_\\-]{22}"));
+		assertThat(queue).isNotNull();
+		assertThat(queue.getName()).isNotSameAs("anonymous");
+		assertThat(queue instanceof AnonymousQueue).isTrue();
+		assertThat(queue.isDurable()).isFalse();
+		assertThat(queue.isExclusive()).isTrue();
+		assertThat(queue.isAutoDelete()).isTrue();
+		assertThat(queue.getName()).matches("spring.gen-[0-9A-Za-z_\\-]{22}");
 	}
 
 	@Test
 	public void testAnonymousQueueSpringName() throws Exception {
 		Queue queue = beanFactory.getBean("uuidAnon", Queue.class);
-		assertNotNull(queue);
-		assertNotSame("anonymous", queue.getName());
-		assertTrue(queue instanceof AnonymousQueue);
-		assertFalse(queue.isDurable());
-		assertTrue(queue.isExclusive());
-		assertTrue(queue.isAutoDelete());
-		assertThat(queue.getName(), matchesRegex("[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}"));
+		assertThat(queue).isNotNull();
+		assertThat(queue.getName()).isNotSameAs("anonymous");
+		assertThat(queue instanceof AnonymousQueue).isTrue();
+		assertThat(queue.isDurable()).isFalse();
+		assertThat(queue.isExclusive()).isTrue();
+		assertThat(queue.isAutoDelete()).isTrue();
+		assertThat(queue.getName()).matches("[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}");
 	}
 
 	@Test
 	public void testAnonymousQueueCustomName() throws Exception {
 		Queue queue = beanFactory.getBean("customAnon", Queue.class);
-		assertNotNull(queue);
-		assertNotSame("anonymous", queue.getName());
-		assertTrue(queue instanceof AnonymousQueue);
-		assertFalse(queue.isDurable());
-		assertTrue(queue.isExclusive());
-		assertTrue(queue.isAutoDelete());
-		assertThat(queue.getName(), matchesRegex("custom.gen-[0-9A-Za-z_\\-]{22}"));
+		assertThat(queue).isNotNull();
+		assertThat(queue.getName()).isNotSameAs("anonymous");
+		assertThat(queue instanceof AnonymousQueue).isTrue();
+		assertThat(queue.isDurable()).isFalse();
+		assertThat(queue.isExclusive()).isTrue();
+		assertThat(queue.isAutoDelete()).isTrue();
+		assertThat(queue.getName()).matches("custom.gen-[0-9A-Za-z_\\-]{22}");
 	}
 
 	@Test
 	public void testReferenceArgumentsQueue() throws Exception {
 		Queue queue = beanFactory.getBean("refArguments", Queue.class);
-		assertNotNull(queue);
-		assertEquals("bar", queue.getArguments().get("foo"));
-		assertEquals(200L, queue.getArguments().get("x-message-ttl"));
-		assertEquals("all", queue.getArguments().get("x-ha-policy"));
+		assertThat(queue).isNotNull();
+		assertThat(queue.getArguments().get("foo")).isEqualTo("bar");
+		assertThat(queue.getArguments().get("x-message-ttl")).isEqualTo(200L);
+		assertThat(queue.getArguments().get("x-ha-policy")).isEqualTo("all");
 	}
 
 	@Test
 	public void testArgumentsQueue() throws Exception {
 		Queue queue = beanFactory.getBean("arguments", Queue.class);
-		assertNotNull(queue);
-		assertEquals("bar", queue.getArguments().get("foo"));
-		assertEquals(100L, queue.getArguments().get("x-message-ttl"));
-		assertEquals("all", queue.getArguments().get("x-ha-policy"));
+		assertThat(queue).isNotNull();
+		assertThat(queue.getArguments().get("foo")).isEqualTo("bar");
+		assertThat(queue.getArguments().get("x-message-ttl")).isEqualTo(100L);
+		assertThat(queue.getArguments().get("x-ha-policy")).isEqualTo("all");
 	}
 
 	@Test
 	public void testAnonymousArgumentsQueue() throws Exception {
 		Queue queue = beanFactory.getBean("anonymousArguments", Queue.class);
-		assertNotNull(queue);
-		assertEquals("spam", queue.getArguments().get("foo"));
+		assertThat(queue).isNotNull();
+		assertThat(queue.getArguments().get("foo")).isEqualTo("spam");
 	}
 
 	@Test
 	public void testReferencedArgumentsQueue() throws Exception {
 		Queue queue = beanFactory.getBean("referencedArguments", Queue.class);
-		assertNotNull(queue);
-		assertEquals("qux", queue.getArguments().get("baz"));
+		assertThat(queue).isNotNull();
+		assertThat(queue.getArguments().get("baz")).isEqualTo("qux");
 	}
 
 	@Test
@@ -166,20 +160,20 @@ public class QueueParserTests {
 		Queue queue = beanFactory.getBean("autoDeclareTwoAdmins", Queue.class);
 		RabbitAdmin admin1 = beanFactory.getBean("admin1", RabbitAdmin.class);
 		RabbitAdmin admin2 = beanFactory.getBean("admin2", RabbitAdmin.class);
-		assertEquals(2, queue.getDeclaringAdmins().size());
-		assertTrue(queue.getDeclaringAdmins().contains(admin1));
-		assertTrue(queue.getDeclaringAdmins().contains(admin2));
-		assertTrue(queue.shouldDeclare());
+		assertThat(queue.getDeclaringAdmins().size()).isEqualTo(2);
+		assertThat(queue.getDeclaringAdmins().contains(admin1)).isTrue();
+		assertThat(queue.getDeclaringAdmins().contains(admin2)).isTrue();
+		assertThat(queue.shouldDeclare()).isTrue();
 
 		queue = beanFactory.getBean("autoDeclareOneAdmin", Queue.class);
-		assertEquals(1, queue.getDeclaringAdmins().size());
-		assertTrue(queue.getDeclaringAdmins().contains(admin1));
-		assertFalse(queue.getDeclaringAdmins().contains(admin2));
-		assertTrue(queue.shouldDeclare());
+		assertThat(queue.getDeclaringAdmins().size()).isEqualTo(1);
+		assertThat(queue.getDeclaringAdmins().contains(admin1)).isTrue();
+		assertThat(queue.getDeclaringAdmins().contains(admin2)).isFalse();
+		assertThat(queue.shouldDeclare()).isTrue();
 
 		queue = beanFactory.getBean("noAutoDeclare", Queue.class);
-		assertEquals(0, queue.getDeclaringAdmins().size());
-		assertFalse(queue.shouldDeclare());
+		assertThat(queue.getDeclaringAdmins().size()).isEqualTo(0);
+		assertThat(queue.shouldDeclare()).isFalse();
 	}
 
 	@Test(expected = BeanDefinitionStoreException.class)
@@ -189,9 +183,9 @@ public class QueueParserTests {
 		reader.loadBeanDefinitions(new ClassPathResource(getClass().getSimpleName()
 				+ "IllegalAnonymous-context.xml", getClass()));
 		Queue queue = beanFactory.getBean("anonymous", Queue.class);
-		assertNotNull(queue);
-		assertNotSame("bucket", queue.getName());
-		assertTrue(queue instanceof AnonymousQueue);
+		assertThat(queue).isNotNull();
+		assertThat(queue.getName()).isNotSameAs("bucket");
+		assertThat(queue instanceof AnonymousQueue).isTrue();
 	}
 
 }

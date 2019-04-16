@@ -16,14 +16,7 @@
 
 package org.springframework.amqp.rabbit.core;
 
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -81,37 +74,37 @@ public class RabbitRestApiTests {
 	@Test
 	public void testExchanges() {
 		List<ExchangeInfo> list = this.rabbitRestClient.getExchanges();
-		assertTrue(list.size() > 0);
+		assertThat(list.size() > 0).isTrue();
 	}
 
 	@Test
 	public void testExchangesVhost() {
 		List<ExchangeInfo> list = this.rabbitRestClient.getExchanges("/");
-		assertTrue(list.size() > 0);
+		assertThat(list.size() > 0).isTrue();
 	}
 
 	@Test
 	public void testBindings() {
 		List<BindingInfo> list = this.rabbitRestClient.getBindings();
-		assertTrue(list.size() > 0);
+		assertThat(list.size() > 0).isTrue();
 	}
 
 	@Test
 	public void testBindingsVhost() {
 		List<BindingInfo> list = this.rabbitRestClient.getBindings("/");
-		assertTrue(list.size() > 0);
+		assertThat(list.size() > 0).isTrue();
 	}
 
 	@Test
 	public void testQueues() {
 		List<QueueInfo> list = this.rabbitRestClient.getQueues();
-		assertTrue(list.size() > 0);
+		assertThat(list.size() > 0).isTrue();
 	}
 
 	@Test
 	public void testQueuesVhost() {
 		List<QueueInfo> list = this.rabbitRestClient.getQueues("/");
-		assertTrue(list.size() > 0);
+		assertThat(list.size() > 0).isTrue();
 	}
 
 	@Test
@@ -136,9 +129,9 @@ public class RabbitRestApiTests {
 		admin.declareBinding(binding2);
 
 		List<BindingInfo> bindings = this.rabbitRestClient.getBindingsBySource("/", exchange1.getName());
-		assertEquals(2, bindings.size());
-		assertEquals(exchange1.getName(), bindings.get(0).getSource());
-		assertThat("foo", anyOf(equalTo(bindings.get(0).getRoutingKey()), equalTo(bindings.get(1).getRoutingKey())));
+		assertThat(bindings.size()).isEqualTo(2);
+		assertThat(bindings.get(0).getSource()).isEqualTo(exchange1.getName());
+		assertThat("foo").isIn(bindings.get(0).getRoutingKey(), bindings.get(1).getRoutingKey());
 		BindingInfo qout = null;
 		BindingInfo eout = null;
 		if (bindings.get(0).getRoutingKey().equals("foo")) {
@@ -149,13 +142,13 @@ public class RabbitRestApiTests {
 			eout = bindings.get(0);
 			qout = bindings.get(1);
 		}
-		assertEquals("queue", qout.getDestinationType());
-		assertEquals(queue.getName(), qout.getDestination());
-		assertNotNull(qout.getArguments());
-		assertEquals("", qout.getArguments().get("alternate-exchange"));
+		assertThat(qout.getDestinationType()).isEqualTo("queue");
+		assertThat(qout.getDestination()).isEqualTo(queue.getName());
+		assertThat(qout.getArguments()).isNotNull();
+		assertThat(qout.getArguments().get("alternate-exchange")).isEqualTo("");
 
-		assertEquals("exchange", eout.getDestinationType());
-		assertEquals(exchange2.getName(), eout.getDestination());
+		assertThat(eout.getDestinationType()).isEqualTo("exchange");
+		assertThat(eout.getDestination()).isEqualTo(exchange2.getName());
 
 		admin.deleteExchange(exchange1.getName());
 		admin.deleteExchange(exchange2.getName());
@@ -168,10 +161,10 @@ public class RabbitRestApiTests {
 		Exchange exchange = new DirectExchange(UUID.randomUUID().toString(), true, true, args);
 		admin.declareExchange(exchange);
 		ExchangeInfo exchangeOut = this.rabbitRestClient.getExchange("/", exchange.getName());
-		assertTrue(exchangeOut.isDurable());
-		assertTrue(exchangeOut.isAutoDelete());
-		assertEquals(exchange.getName(), exchangeOut.getName());
-		assertEquals(args, exchangeOut.getArguments());
+		assertThat(exchangeOut.isDurable()).isTrue();
+		assertThat(exchangeOut.isAutoDelete()).isTrue();
+		assertThat(exchangeOut.getName()).isEqualTo(exchange.getName());
+		assertThat(exchangeOut.getArguments()).isEqualTo(args);
 		admin.deleteExchange(exchange.getName());
 	}
 
@@ -197,21 +190,21 @@ public class RabbitRestApiTests {
 			qi = this.rabbitRestClient.getQueue("/", queue1.getName());
 		}
 		QueueInfo queueOut = this.rabbitRestClient.getQueue("/", queue1.getName());
-		assertFalse(queueOut.isDurable());
-		assertFalse(queueOut.isExclusive());
-		assertTrue(queueOut.isAutoDelete());
-		assertEquals(queue1.getName(), queueOut.getName());
-		assertEquals(args, queueOut.getArguments());
-		assertEquals(consumer, qi.getExclusiveConsumerTag());
+		assertThat(queueOut.isDurable()).isFalse();
+		assertThat(queueOut.isExclusive()).isFalse();
+		assertThat(queueOut.isAutoDelete()).isTrue();
+		assertThat(queueOut.getName()).isEqualTo(queue1.getName());
+		assertThat(queueOut.getArguments()).isEqualTo(args);
+		assertThat(qi.getExclusiveConsumerTag()).isEqualTo(consumer);
 		channel.basicCancel(consumer);
 		channel.close();
 
 		queueOut = this.rabbitRestClient.getQueue("/", queue2.getName());
-		assertTrue(queueOut.isDurable());
-		assertFalse(queueOut.isExclusive());
-		assertFalse(queueOut.isAutoDelete());
-		assertEquals(queue2.getName(), queueOut.getName());
-		assertEquals(args, queueOut.getArguments());
+		assertThat(queueOut.isDurable()).isTrue();
+		assertThat(queueOut.isExclusive()).isFalse();
+		assertThat(queueOut.isAutoDelete()).isFalse();
+		assertThat(queueOut.getName()).isEqualTo(queue2.getName());
+		assertThat(queueOut.getArguments()).isEqualTo(args);
 
 		admin.deleteQueue(queue1.getName());
 		admin.deleteQueue(queue2.getName());
@@ -228,10 +221,10 @@ public class RabbitRestApiTests {
 		info.setType(testExchange.getType());
 		this.rabbitRestClient.declareExchange("/", testExchange.getName(), info);
 		ExchangeInfo exchangeToAssert = this.rabbitRestClient.getExchange("/", exchangeName);
-		assertEquals(testExchange.getName(), exchangeToAssert.getName());
-		assertEquals(testExchange.getType(), exchangeToAssert.getType());
+		assertThat(exchangeToAssert.getName()).isEqualTo(testExchange.getName());
+		assertThat(exchangeToAssert.getType()).isEqualTo(testExchange.getType());
 		this.rabbitRestClient.deleteExchange("/", testExchange.getName());
-		assertNull(this.rabbitRestClient.getExchange("/", exchangeName));
+		assertThat(this.rabbitRestClient.getExchange("/", exchangeName)).isNull();
 	}
 
 }

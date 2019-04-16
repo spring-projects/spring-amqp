@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.junit.Assert.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
@@ -103,12 +103,12 @@ public class UnackedRawIntegrationTests {
 		BlockingConsumer callback = new BlockingConsumer(txChannel);
 		txChannel.basicConsume("test.queue", callback);
 		Delivery next = callback.nextDelivery(10_000L);
-		assertNotNull(next);
+		assertThat(next).isNotNull();
 		txChannel.basicReject(next.getEnvelope().getDeliveryTag(), true);
 		txChannel.txRollback();
 
 		GetResponse get = noTxChannel.basicGet("test.queue", true);
-		assertNotNull(get);
+		assertThat(get).isNotNull();
 
 	}
 
@@ -123,12 +123,12 @@ public class UnackedRawIntegrationTests {
 		BlockingConsumer callback = new BlockingConsumer(txChannel);
 		txChannel.basicConsume("test.queue", callback);
 		Delivery next = callback.nextDelivery(10_000L);
-		assertNotNull(next);
+		assertThat(next).isNotNull();
 		txChannel.basicReject(next.getEnvelope().getDeliveryTag(), true);
 		txChannel.txRollback();
 
 		GetResponse get = noTxChannel.basicGet("test.queue", true);
-		assertNotNull(get);
+		assertThat(get).isNotNull();
 
 	}
 
