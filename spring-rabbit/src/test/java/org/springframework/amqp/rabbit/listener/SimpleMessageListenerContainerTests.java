@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.listener;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -54,9 +55,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.logging.Log;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpAuthenticationException;
@@ -101,9 +100,6 @@ import com.rabbitmq.client.PossibleAuthenticationFailureException;
  */
 public class SimpleMessageListenerContainerTests {
 
-	@Rule
-	public ExpectedException expectedException = ExpectedException.none();
-
 	@Test
 	public void testChannelTransactedOverriddenWhenTxManager() {
 		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory("localhost");
@@ -127,8 +123,8 @@ public class SimpleMessageListenerContainerTests {
 		container.setChannelTransacted(false);
 		container.setAcknowledgeMode(AcknowledgeMode.NONE);
 		container.setTransactionManager(new TestTransactionManager());
-		expectedException.expect(IllegalStateException.class);
-		container.afterPropertiesSet();
+		assertThatIllegalStateException()
+			.isThrownBy(() -> container.afterPropertiesSet());
 		container.stop();
 		singleConnectionFactory.destroy();
 	}
@@ -141,8 +137,8 @@ public class SimpleMessageListenerContainerTests {
 		container.setQueueNames("foo");
 		container.setChannelTransacted(true);
 		container.setAcknowledgeMode(AcknowledgeMode.NONE);
-		expectedException.expect(IllegalStateException.class);
-		container.afterPropertiesSet();
+		assertThatIllegalStateException()
+			.isThrownBy(() -> container.afterPropertiesSet());
 		container.stop();
 		singleConnectionFactory.destroy();
 	}

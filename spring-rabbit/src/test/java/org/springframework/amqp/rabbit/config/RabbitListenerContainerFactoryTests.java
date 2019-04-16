@@ -24,9 +24,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.aopalliance.aop.Advice;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -53,9 +51,6 @@ import org.springframework.util.backoff.ExponentialBackOff;
  *
  */
 public class RabbitListenerContainerFactoryTests {
-
-	@Rule
-	public final ExpectedException thrown = ExpectedException.none();
 
 	private final SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 

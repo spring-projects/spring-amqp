@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -31,9 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -57,9 +56,6 @@ import org.springframework.messaging.support.MessageBuilder;
  * @author Gary Russell
  */
 public class RabbitMessagingTemplateTests {
-
-	@Rule
-	public final ExpectedException thrown = ExpectedException.none();
 
 	@Captor
 	private ArgumentCaptor<org.springframework.amqp.core.Message> amqpMessage;
@@ -130,8 +126,8 @@ public class RabbitMessagingTemplateTests {
 	public void sendNoDefaultSet() {
 		Message<String> message = createTextMessage();
 
-		thrown.expect(IllegalStateException.class);
-		messagingTemplate.send(message);
+		assertThatIllegalStateException()
+			.isThrownBy(() -> messagingTemplate.send(message));
 	}
 
 	@Test
@@ -172,8 +168,8 @@ public class RabbitMessagingTemplateTests {
 
 	@Test
 	public void convertAndSendNoDefaultSet() {
-		thrown.expect(IllegalStateException.class);
-		messagingTemplate.convertAndSend("my Payload");
+		assertThatIllegalStateException()
+			.isThrownBy(() -> messagingTemplate.convertAndSend("my Payload"));
 	}
 
 	@Test
@@ -214,8 +210,8 @@ public class RabbitMessagingTemplateTests {
 
 	@Test
 	public void receive() {
-		org.springframework.amqp.core.Message amqpMessage = createAmqpTextMessage();
-		given(rabbitTemplate.receive("myQueue")).willReturn(amqpMessage);
+		org.springframework.amqp.core.Message amqpMsg = createAmqpTextMessage();
+		given(rabbitTemplate.receive("myQueue")).willReturn(amqpMsg);
 
 		Message<?> message = messagingTemplate.receive("myQueue");
 		verify(rabbitTemplate).receive("myQueue");
@@ -226,8 +222,8 @@ public class RabbitMessagingTemplateTests {
 	public void receiveDefaultDestination() {
 		messagingTemplate.setDefaultDestination("default");
 
-		org.springframework.amqp.core.Message amqpMessage = createAmqpTextMessage();
-		given(rabbitTemplate.receive("default")).willReturn(amqpMessage);
+		org.springframework.amqp.core.Message amqpMsg = createAmqpTextMessage();
+		given(rabbitTemplate.receive("default")).willReturn(amqpMsg);
 
 		Message<?> message = messagingTemplate.receive();
 		verify(rabbitTemplate).receive("default");
@@ -236,14 +232,14 @@ public class RabbitMessagingTemplateTests {
 
 	@Test
 	public void receiveNoDefaultSet() {
-		thrown.expect(IllegalStateException.class);
-		messagingTemplate.receive();
+		assertThatIllegalStateException()
+			.isThrownBy(() -> messagingTemplate.receive());
 	}
 
 	@Test
 	public void receiveAndConvert() {
-		org.springframework.amqp.core.Message amqpMessage = createAmqpTextMessage("my Payload");
-		given(rabbitTemplate.receive("myQueue")).willReturn(amqpMessage);
+		org.springframework.amqp.core.Message amqpMsg = createAmqpTextMessage("my Payload");
+		given(rabbitTemplate.receive("myQueue")).willReturn(amqpMsg);
 
 
 		String payload = messagingTemplate.receiveAndConvert("myQueue", String.class);
@@ -255,8 +251,8 @@ public class RabbitMessagingTemplateTests {
 	public void receiveAndConvertDefaultDestination() {
 		messagingTemplate.setDefaultDestination("default");
 
-		org.springframework.amqp.core.Message amqpMessage = createAmqpTextMessage("my Payload");
-		given(rabbitTemplate.receive("default")).willReturn(amqpMessage);
+		org.springframework.amqp.core.Message amqpMsg = createAmqpTextMessage("my Payload");
+		given(rabbitTemplate.receive("default")).willReturn(amqpMsg);
 
 
 		String payload = messagingTemplate.receiveAndConvert(String.class);
@@ -266,8 +262,8 @@ public class RabbitMessagingTemplateTests {
 
 	@Test
 	public void receiveAndConvertWithConversion() {
-		org.springframework.amqp.core.Message amqpMessage = createAmqpTextMessage("123");
-		given(rabbitTemplate.receive("myQueue")).willReturn(amqpMessage);
+		org.springframework.amqp.core.Message message = createAmqpTextMessage("123");
+		given(rabbitTemplate.receive("myQueue")).willReturn(message);
 
 		messagingTemplate.setMessageConverter(new GenericMessageConverter());
 
@@ -278,11 +274,11 @@ public class RabbitMessagingTemplateTests {
 
 	@Test
 	public void receiveAndConvertNoConverter() {
-		org.springframework.amqp.core.Message amqpMessage = createAmqpTextMessage("Hello");
-		given(rabbitTemplate.receive("myQueue")).willReturn(amqpMessage);
+		org.springframework.amqp.core.Message message = createAmqpTextMessage("Hello");
+		given(rabbitTemplate.receive("myQueue")).willReturn(message);
 
-		thrown.expect(org.springframework.messaging.converter.MessageConversionException.class);
-		messagingTemplate.receiveAndConvert("myQueue", Writer.class);
+		assertThatThrownBy(() -> messagingTemplate.receiveAndConvert("myQueue", Writer.class))
+			.isInstanceOf(org.springframework.messaging.converter.MessageConversionException.class);
 	}
 
 	@Test
@@ -334,8 +330,8 @@ public class RabbitMessagingTemplateTests {
 	public void sendAndReceiveNoDefaultSet() {
 		Message<String> message = createTextMessage();
 
-		thrown.expect(IllegalStateException.class);
-		messagingTemplate.sendAndReceive(message);
+		assertThatIllegalStateException()
+			.isThrownBy(() -> messagingTemplate.sendAndReceive(message));
 	}
 
 	@Test
@@ -372,8 +368,8 @@ public class RabbitMessagingTemplateTests {
 
 	@Test
 	public void convertSendAndReceiveNoDefaultSet() {
-		thrown.expect(IllegalStateException.class);
-		messagingTemplate.convertSendAndReceive("my Payload", String.class);
+		assertThatIllegalStateException()
+			.isThrownBy(() -> messagingTemplate.convertSendAndReceive("my Payload", String.class));
 	}
 
 	@Test
@@ -384,8 +380,8 @@ public class RabbitMessagingTemplateTests {
 				.given(messageConverter).toMessage(eq(message), anyMessageProperties());
 		messagingTemplate.setAmqpMessageConverter(messageConverter);
 
-		thrown.expect(org.springframework.messaging.converter.MessageConversionException.class);
-		messagingTemplate.send("myQueue", message);
+		assertThatThrownBy(() -> messagingTemplate.send("myQueue", message))
+			.isInstanceOf(org.springframework.messaging.converter.MessageConversionException.class);
 	}
 
 	@Test
@@ -397,8 +393,8 @@ public class RabbitMessagingTemplateTests {
 		messagingTemplate.setAmqpMessageConverter(messageConverter);
 		given(rabbitTemplate.receive("myQueue")).willReturn(message);
 
-		thrown.expect(org.springframework.messaging.converter.MessageConversionException.class);
-		messagingTemplate.receive("myQueue");
+		assertThatThrownBy(() -> messagingTemplate.receive("myQueue"))
+			.isInstanceOf(org.springframework.messaging.converter.MessageConversionException.class);
 	}
 
 	private Message<String> createTextMessage(String payload) {
@@ -422,9 +418,9 @@ public class RabbitMessagingTemplateTests {
 		return createAmqpTextMessage("Hello");
 	}
 
-	private void assertTextMessage(org.springframework.amqp.core.Message amqpMessage) {
-		assertThat(MessageTestUtils.extractText(amqpMessage)).as("Wrong body message").isEqualTo("Hello");
-		assertThat(amqpMessage.getMessageProperties().getHeaders().get("foo")).as("Invalid foo property").isEqualTo("bar");
+	private void assertTextMessage(org.springframework.amqp.core.Message amqpMsg) {
+		assertThat(MessageTestUtils.extractText(amqpMsg)).as("Wrong body message").isEqualTo("Hello");
+		assertThat(amqpMsg.getMessageProperties().getHeaders().get("foo")).as("Invalid foo property").isEqualTo("bar");
 	}
 
 	private void assertTextMessage(Message<?> message) {

@@ -31,7 +31,6 @@ import org.apache.logging.log4j.Level;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
@@ -78,9 +77,6 @@ public class MessageListenerContainerRetryIntegrationTests {
 	@Rule
 	public LogLevelAdjuster traceLevels = new LogLevelAdjuster(Level.ERROR,
 			StatefulRetryOperationsInterceptorFactoryBean.class, MessageListenerContainerRetryIntegrationTests.class);
-
-	@Rule
-	public ExpectedException exception = ExpectedException.none();
 
 	@Rule
 	public RepeatProcessor repeats = new RepeatProcessor();
@@ -135,7 +131,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 	}
 
 	@Test
-	public void testStatefulRetryWithNoMessageIds() throws Exception {
+	public void testStatefulRetryWithNoMessageIds() {
 
 		int messageCount = 2;
 		int txSize = 1;

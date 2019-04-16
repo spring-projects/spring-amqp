@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -42,9 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
 import org.springframework.amqp.AmqpAuthenticationException;
@@ -94,9 +93,6 @@ import com.rabbitmq.client.impl.AMQImpl.Queue.DeclareOk;
  *
  */
 public class RabbitTemplateTests {
-
-	@Rule
-	public ExpectedException exception = ExpectedException.none();
 
 	@Test
 	public void returnConnectionAfterCommit() throws Exception {
@@ -275,16 +271,16 @@ public class RabbitTemplateTests {
 	@Test
 	public void testNoListenerAllowed1() {
 		RabbitTemplate template = new RabbitTemplate();
-		this.exception.expect(IllegalStateException.class);
-		template.expectedQueueNames();
+		assertThatIllegalStateException()
+			.isThrownBy(() -> template.expectedQueueNames());
 	}
 
 	@Test
 	public void testNoListenerAllowed2() {
 		RabbitTemplate template = new RabbitTemplate();
 		template.setReplyAddress(Address.AMQ_RABBITMQ_REPLY_TO);
-		this.exception.expect(IllegalStateException.class);
-		template.expectedQueueNames();
+		assertThatIllegalStateException()
+			.isThrownBy(() -> template.expectedQueueNames());
 	}
 
 	public final static AtomicInteger LOOKUP_KEY_COUNT = new AtomicInteger();

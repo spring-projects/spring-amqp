@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -47,7 +48,6 @@ import org.apache.commons.logging.Log;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.UncategorizedAmqpException;
@@ -98,9 +98,6 @@ import com.rabbitmq.http.client.domain.QueueInfo;
 public class RabbitAdminTests {
 
 	@Rule
-	public ExpectedException exception = ExpectedException.none();
-
-	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isBrokerAndManagementRunning();
 
 	@Test
@@ -138,8 +135,7 @@ public class RabbitAdminTests {
 		rabbitAdmin.setApplicationContext(applicationContext);
 		rabbitAdmin.setAutoStartup(true);
 		rabbitAdmin.afterPropertiesSet();
-		exception.expect(IllegalArgumentException.class);
-		rabbitAdmin.declareQueue();
+		assertThatIllegalArgumentException().isThrownBy(() -> rabbitAdmin.declareQueue());
 		connectionFactory.destroy();
 	}
 

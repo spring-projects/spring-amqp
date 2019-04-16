@@ -28,7 +28,6 @@ import org.apache.logging.log4j.Level;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
@@ -59,9 +58,6 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 	@Rule
 	public LogLevelAdjuster logLevels = new LogLevelAdjuster(Level.INFO, RabbitTemplate.class,
 			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
-
-	@Rule
-	public ExpectedException exception = ExpectedException.none();
 
 	@After
 	public void tearDown() {
