@@ -546,6 +546,8 @@ public class EnableRabbitIntegrationTests {
 		MessagePostProcessor messagePostProcessor = message -> {
 			message.getMessageProperties().setContentType("application/json");
 			message.getMessageProperties().setUserId("guest");
+			message.getMessageProperties().setHeader("stringHeader", "string");
+			message.getMessageProperties().setHeader("intHeader", 42);
 			return message;
 		};
 		returned = template.convertSendAndReceive("", "test.converted", "{ \"bar\" : \"baz\" }", messagePostProcessor);
@@ -581,6 +583,9 @@ public class EnableRabbitIntegrationTests {
 				messagePostProcessor);
 		assertThat(returned, instanceOf(byte[].class));
 		assertEquals("\"fooMessage\"", new String((byte[]) returned));
+		Foo2Service foo2service = ctx.getBean(Foo2Service.class);
+		assertThat(foo2service.stringHeader, equalTo("string"));
+		assertThat(foo2service.intHeader, equalTo(42));
 
 		returned = template.convertSendAndReceive("", "test.notconverted.channel", "{ \"bar\" : \"baz\" }",
 				messagePostProcessor);
@@ -1953,6 +1958,10 @@ public class EnableRabbitIntegrationTests {
 
 	public static class Foo2Service {
 
+		String stringHeader;
+
+		Integer intHeader;
+
 		@RabbitListener(queues = "test.converted")
 		public Foo2 foo2(Foo2 foo2) {
 			return foo2;
@@ -1990,6 +1999,8 @@ public class EnableRabbitIntegrationTests {
 
 		@RabbitListener(queues = "test.notconverted.message")
 		public String justMessage(Message message) {
+			this.stringHeader = message.getMessageProperties().getHeader("stringHeader");
+			this.intHeader = message.getMessageProperties().getHeader("intHeader");
 			return "foo" + message.getClass().getSimpleName();
 		}
 
