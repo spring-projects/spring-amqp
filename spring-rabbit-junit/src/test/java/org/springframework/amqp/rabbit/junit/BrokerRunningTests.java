@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.junit;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -44,12 +44,12 @@ public class BrokerRunningTests {
 		brokerRunning.setPort(1234);
 		brokerRunning.setUser("fiz");
 
-		assertEquals("http://baz:15672/api/", brokerRunning.getAdminUri());
+		assertThat(brokerRunning.getAdminUri()).isEqualTo("http://baz:15672/api/");
 		ConnectionFactory connectionFactory = brokerRunning.getConnectionFactory();
-		assertEquals("baz", connectionFactory.getHost());
-		assertEquals(1234, connectionFactory.getPort());
-		assertEquals("fiz", connectionFactory.getUsername());
-		assertEquals("qux", connectionFactory.getPassword());
+		assertThat(connectionFactory.getHost()).isEqualTo("baz");
+		assertThat(connectionFactory.getPort()).isEqualTo(1234);
+		assertThat(connectionFactory.getUsername()).isEqualTo("fiz");
+		assertThat(connectionFactory.getPassword()).isEqualTo("qux");
 	}
 
 	@Test
@@ -65,15 +65,15 @@ public class BrokerRunningTests {
 		BrokerRunning.setEnvironmentVariableOverrides(vars);
 		BrokerRunning brokerRunning = BrokerRunning.isBrokerAndManagementRunning();
 
-		assertEquals("https://foo/bar", brokerRunning.getAdminUri());
+		assertThat(brokerRunning.getAdminUri()).isEqualTo("https://foo/bar");
 		ConnectionFactory connectionFactory = brokerRunning.getConnectionFactory();
-		assertEquals("BAZ", connectionFactory.getHost());
-		assertEquals(2345, connectionFactory.getPort());
-		assertEquals("FIZ", connectionFactory.getUsername());
-		assertEquals("QUX", connectionFactory.getPassword());
+		assertThat(connectionFactory.getHost()).isEqualTo("BAZ");
+		assertThat(connectionFactory.getPort()).isEqualTo(2345);
+		assertThat(connectionFactory.getUsername()).isEqualTo("FIZ");
+		assertThat(connectionFactory.getPassword()).isEqualTo("QUX");
 		DirectFieldAccessor dfa = new DirectFieldAccessor(brokerRunning);
-		assertEquals("BAR", dfa.getPropertyValue("adminUser"));
-		assertEquals("FOO", dfa.getPropertyValue("adminPassword"));
+		assertThat(dfa.getPropertyValue("adminUser")).isEqualTo("BAR");
+		assertThat(dfa.getPropertyValue("adminPassword")).isEqualTo("FOO");
 
 		BrokerRunning.clearEnvironmentVariableOverrides();
 	}

@@ -16,11 +16,8 @@
 
 package org.springframework.amqp.support.converter;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -30,9 +27,7 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
 import org.springframework.amqp.core.Message;
@@ -48,16 +43,13 @@ import org.springframework.core.serializer.Deserializer;
  */
 public class SerializerMessageConverterTests extends WhiteListDeserializingMessageConverterTests {
 
-	@Rule
-	public ExpectedException exception = ExpectedException.none();
-
 	@Test
 	public void bytesAsDefaultMessageBodyType() throws Exception {
 		SerializerMessageConverter converter = new SerializerMessageConverter();
 		Message message = new Message("test".getBytes(), new MessageProperties());
 		Object result = converter.fromMessage(message);
-		assertEquals(byte[].class, result.getClass());
-		assertEquals("test", new String((byte[]) result, "UTF-8"));
+		assertThat(result.getClass()).isEqualTo(byte[].class);
+		assertThat(new String((byte[]) result, "UTF-8")).isEqualTo("test");
 	}
 
 	@Test
@@ -66,8 +58,8 @@ public class SerializerMessageConverterTests extends WhiteListDeserializingMessa
 		Message message = new Message("test".getBytes(), new MessageProperties());
 		message.getMessageProperties().setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN);
 		Object result = converter.fromMessage(message);
-		assertEquals(String.class, result.getClass());
-		assertEquals("test", result);
+		assertThat(result.getClass()).isEqualTo(String.class);
+		assertThat(result).isEqualTo("test");
 	}
 
 	@Test
@@ -76,12 +68,12 @@ public class SerializerMessageConverterTests extends WhiteListDeserializingMessa
 		Message message = new Message(new byte[] { 1, 2, 3 }, new MessageProperties());
 		message.getMessageProperties().setContentType(MessageProperties.CONTENT_TYPE_BYTES);
 		Object result = converter.fromMessage(message);
-		assertEquals(byte[].class, result.getClass());
+		assertThat(result.getClass()).isEqualTo(byte[].class);
 		byte[] resultBytes = (byte[]) result;
-		assertEquals(3, resultBytes.length);
-		assertEquals(1, resultBytes[0]);
-		assertEquals(2, resultBytes[1]);
-		assertEquals(3, resultBytes[2]);
+		assertThat(resultBytes.length).isEqualTo(3);
+		assertThat(resultBytes[0]).isEqualTo((byte) 1);
+		assertThat(resultBytes[1]).isEqualTo((byte) 2);
+		assertThat(resultBytes[2]).isEqualTo((byte) 3);
 	}
 
 	@Test
@@ -98,8 +90,8 @@ public class SerializerMessageConverterTests extends WhiteListDeserializingMessa
 		byte[] bytes = byteStream.toByteArray();
 		Message message = new Message(bytes, properties);
 		Object result = converter.fromMessage(message);
-		assertEquals(TestBean.class, result.getClass());
-		assertEquals(testBean, result);
+		assertThat(result.getClass()).isEqualTo(TestBean.class);
+		assertThat(result).isEqualTo(testBean);
 	}
 
 	@Test
@@ -116,8 +108,8 @@ public class SerializerMessageConverterTests extends WhiteListDeserializingMessa
 		byte[] bytes = byteStream.toByteArray();
 		Message message = new Message(bytes, properties);
 		Object result = converter.fromMessage(message);
-		assertEquals(TestBean.class, result.getClass());
-		assertEquals(testBean, result);
+		assertThat(result.getClass()).isEqualTo(TestBean.class);
+		assertThat(result).isEqualTo(testBean);
 	}
 
 	@Test
@@ -127,8 +119,8 @@ public class SerializerMessageConverterTests extends WhiteListDeserializingMessa
 		String contentType = message.getMessageProperties().getContentType();
 		String content = new String(message.getBody(),
 				message.getMessageProperties().getContentEncoding());
-		assertEquals("text/plain", contentType);
-		assertEquals("test", content);
+		assertThat(contentType).isEqualTo("text/plain");
+		assertThat(content).isEqualTo("test");
 	}
 
 	@Test
@@ -137,11 +129,11 @@ public class SerializerMessageConverterTests extends WhiteListDeserializingMessa
 		Message message = converter.toMessage(new byte[] { 1, 2, 3 }, new MessageProperties());
 		String contentType = message.getMessageProperties().getContentType();
 		byte[] body = message.getBody();
-		assertEquals("application/octet-stream", contentType);
-		assertEquals(3, body.length);
-		assertEquals(1, body[0]);
-		assertEquals(2, body[1]);
-		assertEquals(3, body[2]);
+		assertThat(contentType).isEqualTo("application/octet-stream");
+		assertThat(body.length).isEqualTo(3);
+		assertThat(body[0]).isEqualTo((byte) 1);
+		assertThat(body[1]).isEqualTo((byte) 2);
+		assertThat(body[2]).isEqualTo((byte) 3);
 	}
 
 	@Test
@@ -151,10 +143,10 @@ public class SerializerMessageConverterTests extends WhiteListDeserializingMessa
 		Message message = converter.toMessage(testBean, new MessageProperties());
 		String contentType = message.getMessageProperties().getContentType();
 		byte[] body = message.getBody();
-		assertEquals("application/x-java-serialized-object", contentType);
+		assertThat(contentType).isEqualTo("application/x-java-serialized-object");
 		ByteArrayInputStream bais = new ByteArrayInputStream(body);
 		Object deserializedObject = new ObjectInputStream(bais).readObject();
-		assertEquals(testBean, deserializedObject);
+		assertThat(deserializedObject).isEqualTo(testBean);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -164,11 +156,11 @@ public class SerializerMessageConverterTests extends WhiteListDeserializingMessa
 		ClassLoader loader = mock(ClassLoader.class);
 		Deserializer<Object> deserializer = new DefaultDeserializer(loader);
 		converter.setDeserializer(deserializer);
-		assertSame(loader, TestUtils.getPropertyValue(converter, "defaultDeserializerClassLoader"));
-		assertTrue(TestUtils.getPropertyValue(converter, "usingDefaultDeserializer", Boolean.class));
+		assertThat(TestUtils.getPropertyValue(converter, "defaultDeserializerClassLoader")).isSameAs(loader);
+		assertThat(TestUtils.getPropertyValue(converter, "usingDefaultDeserializer", Boolean.class)).isTrue();
 		Deserializer<Object> mock = mock(Deserializer.class);
 		converter.setDeserializer(mock);
-		assertFalse(TestUtils.getPropertyValue(converter, "usingDefaultDeserializer", Boolean.class));
+		assertThat(TestUtils.getPropertyValue(converter, "usingDefaultDeserializer", Boolean.class)).isFalse();
 		TestBean testBean = new TestBean("foo");
 		Message message = converter.toMessage(testBean, new MessageProperties());
 		converter.fromMessage(message);
@@ -181,12 +173,12 @@ public class SerializerMessageConverterTests extends WhiteListDeserializingMessa
 		TestBean testBean = new TestBean("foo");
 		Message message = converter.toMessage(testBean, new MessageProperties());
 		String contentType = message.getMessageProperties().getContentType();
-		assertEquals("application/x-java-serialized-object", contentType);
+		assertThat(contentType).isEqualTo("application/x-java-serialized-object");
 		byte[] body = message.getBody();
 		body[10] = 'z';
-		this.exception.expect(MessageConversionException.class);
-		this.exception.expectCause(instanceOf(NestedIOException.class));
-		converter.fromMessage(message);
+		assertThatThrownBy(() -> converter.fromMessage(message))
+			.isExactlyInstanceOf(MessageConversionException.class)
+			.hasCauseExactlyInstanceOf(NestedIOException.class);
 	}
 
 }

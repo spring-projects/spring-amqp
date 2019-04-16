@@ -16,11 +16,8 @@
 
 package org.springframework.amqp.rabbit.remoting;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -73,15 +70,15 @@ public class RemotingTests {
 	@Test
 	public void testEcho() {
 		String reply = client.echo("foo");
-		assertEquals("echo:foo", reply);
+		assertThat(reply).isEqualTo("echo:foo");
 	}
 
 	@Test
 	public void testNoAnswer() throws Exception {
 		latch = new CountDownLatch(1);
 		client.noAnswer("foo");
-		assertTrue(latch.await(5, TimeUnit.SECONDS));
-		assertEquals("received:foo", receivedMessage);
+		assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+		assertThat(receivedMessage).isEqualTo("received:foo");
 	}
 
 	@Test
@@ -91,7 +88,7 @@ public class RemotingTests {
 			fail("Exception expected");
 		}
 		catch (RemoteProxyFailureException e) {
-			assertThat(e.getMessage(), containsString(" - perhaps a timeout in the template?"));
+			assertThat(e.getMessage()).contains(" - perhaps a timeout in the template?");
 		}
 	}
 

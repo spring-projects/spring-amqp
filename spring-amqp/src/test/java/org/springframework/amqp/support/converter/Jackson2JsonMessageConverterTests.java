@@ -16,12 +16,7 @@
 
 package org.springframework.amqp.support.converter;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
 import java.util.Hashtable;
@@ -83,7 +78,7 @@ public class Jackson2JsonMessageConverterTests {
 		Message message = converter.toMessage(trade, new MessageProperties());
 
 		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
-		assertEquals(trade, marshalledTrade);
+		assertThat(marshalledTrade).isEqualTo(trade);
 	}
 
 	@Test
@@ -98,7 +93,7 @@ public class Jackson2JsonMessageConverterTests {
 		Message message = converter.toMessage(trade, new MessageProperties());
 
 		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
-		assertEquals(trade, marshalledTrade);
+		assertThat(marshalledTrade).isEqualTo(trade);
 	}
 
 	@Test
@@ -109,7 +104,7 @@ public class Jackson2JsonMessageConverterTests {
 		Message message = converter.toMessage(bar, new MessageProperties());
 
 		Bar marshalled = (Bar) converter.fromMessage(message);
-		assertEquals(bar, marshalled);
+		assertThat(marshalled).isEqualTo(bar);
 	}
 
 	@Test
@@ -122,8 +117,8 @@ public class Jackson2JsonMessageConverterTests {
 		Message message = converter.toMessage(hashtable, new MessageProperties());
 		Hashtable<String, String> marhsalledHashtable = (Hashtable<String, String>) converter.fromMessage(message);
 
-		assertEquals("VMW", marhsalledHashtable.get("TICKER"));
-		assertEquals("103.2", marhsalledHashtable.get("PRICE"));
+		assertThat(marhsalledHashtable.get("TICKER")).isEqualTo("VMW");
+		assertThat(marhsalledHashtable.get("PRICE")).isEqualTo("103.2");
 	}
 
 	@Test
@@ -135,7 +130,7 @@ public class Jackson2JsonMessageConverterTests {
 		((DefaultClassMapper) this.converter.getClassMapper()).setTrustedPackages(TRUSTED_PACKAGE);
 
 		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
-		assertEquals(trade, marshalledTrade);
+		assertThat(marshalledTrade).isEqualTo(trade);
 	}
 
 	@Test
@@ -147,21 +142,21 @@ public class Jackson2JsonMessageConverterTests {
 		Message message = converter.toMessage(trade, new MessageProperties());
 
 		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
-		assertEquals(trade, marshalledTrade);
+		assertThat(marshalledTrade).isEqualTo(trade);
 	}
 
 	@Test
 	public void testAmqp330StringArray() {
 		String[] testData = { "test" };
 		Message message = converter.toMessage(testData, new MessageProperties());
-		assertArrayEquals(testData, (Object[]) converter.fromMessage(message));
+		assertThat((Object[]) converter.fromMessage(message)).isEqualTo(testData);
 	}
 
 	@Test
 	public void testAmqp330ObjectArray() {
 		SimpleTrade[] testData = { trade };
 		Message message = converter.toMessage(testData, new MessageProperties());
-		assertArrayEquals(testData, (Object[]) converter.fromMessage(message));
+		assertThat((Object[]) converter.fromMessage(message)).isEqualTo(testData);
 	}
 
 	@Test
@@ -175,7 +170,7 @@ public class Jackson2JsonMessageConverterTests {
 		classMapper.setDefaultType(Foo.class);
 		converter.setClassMapper(classMapper);
 		Object foo = converter.fromMessage(message);
-		assertTrue(foo instanceof Foo);
+		assertThat(foo instanceof Foo).isTrue();
 	}
 
 	@Test
@@ -185,7 +180,7 @@ public class Jackson2JsonMessageConverterTests {
 		messageProperties.setContentType("application/json");
 		Message message = new Message(bytes, messageProperties);
 		Object foo = jsonConverterWithDefaultType.fromMessage(message);
-		assertTrue(foo instanceof Foo);
+		assertThat(foo instanceof Foo).isTrue();
 	}
 
 	@Test
@@ -194,7 +189,7 @@ public class Jackson2JsonMessageConverterTests {
 		MessageProperties messageProperties = new MessageProperties();
 		Message message = new Message(bytes, messageProperties);
 		Object foo = jsonConverterWithDefaultType.fromMessage(message);
-		assertEquals(new String(bytes), new String((byte[]) foo));
+		assertThat(new String((byte[]) foo)).isEqualTo(new String(bytes));
 	}
 
 	@Test
@@ -204,10 +199,10 @@ public class Jackson2JsonMessageConverterTests {
 		messageProperties.setContentType("application/json");
 		Message message = new Message(bytes, messageProperties);
 		Object foo = this.converter.fromMessage(message);
-		assertThat(foo, instanceOf(LinkedHashMap.class));
+		assertThat(foo).isInstanceOf(LinkedHashMap.class);
 		@SuppressWarnings("unchecked")
 		Map<String, Object> map = (Map<String, Object>) foo;
-		assertThat(map.get("name"), instanceOf(LinkedHashMap.class));
+		assertThat(map.get("name")).isInstanceOf(LinkedHashMap.class);
 	}
 
 	@Test
@@ -218,7 +213,7 @@ public class Jackson2JsonMessageConverterTests {
 		messageProperties.setInferredArgumentType(Foo.class);
 		Message message = new Message(bytes, messageProperties);
 		Object foo = this.converter.fromMessage(message);
-		assertThat(foo, instanceOf(Foo.class));
+		assertThat(foo).isInstanceOf(Foo.class);
 	}
 
 	@Test
@@ -229,8 +224,8 @@ public class Jackson2JsonMessageConverterTests {
 		messageProperties.setInferredArgumentType((new ParameterizedTypeReference<List<Foo>>() { }).getType());
 		Message message = new Message(bytes, messageProperties);
 		Object foo = this.converter.fromMessage(message);
-		assertThat(foo, instanceOf(List.class));
-		assertThat(((List<?>) foo).get(0), instanceOf(Foo.class));
+		assertThat(foo).isInstanceOf(List.class);
+		assertThat(((List<?>) foo).get(0)).isInstanceOf(Foo.class);
 	}
 
 	@Test
@@ -242,13 +237,13 @@ public class Jackson2JsonMessageConverterTests {
 				(new ParameterizedTypeReference<Map<String, List<Bar>>>() {	}).getType());
 		Message message = new Message(bytes, messageProperties);
 		Object foo = this.converter.fromMessage(message);
-		assertThat(foo, instanceOf(LinkedHashMap.class));
+		assertThat(foo).isInstanceOf(LinkedHashMap.class);
 		@SuppressWarnings("unchecked")
 		Map<String, Object> map = (Map<String, Object>) foo;
-		assertThat(map.get("qux"), instanceOf(List.class));
+		assertThat(map.get("qux")).isInstanceOf(List.class);
 		Object row = ((List<?>) map.get("qux")).get(0);
-		assertThat(row, instanceOf(Bar.class));
-		assertThat(((Bar) row).getFoo(), equalTo(new Foo("bar")));
+		assertThat(row).isInstanceOf(Bar.class);
+		assertThat(((Bar) row).getFoo()).isEqualTo(new Foo("bar"));
 	}
 
 	@Test
@@ -260,13 +255,13 @@ public class Jackson2JsonMessageConverterTests {
 				(new ParameterizedTypeReference<Map<String, Map<String, Bar>>>() { }).getType());
 		Message message = new Message(bytes, messageProperties);
 		Object foo = this.converter.fromMessage(message);
-		assertThat(foo, instanceOf(LinkedHashMap.class));
+		assertThat(foo).isInstanceOf(LinkedHashMap.class);
 		@SuppressWarnings("unchecked")
 		Map<String, Object> map = (Map<String, Object>) foo;
-		assertThat(map.get("qux"), instanceOf(Map.class));
+		assertThat(map.get("qux")).isInstanceOf(Map.class);
 		Object value = ((Map<?, ?>) map.get("qux")).get("baz");
-		assertThat(value, instanceOf(Bar.class));
-		assertThat(((Bar) value).getFoo(), equalTo(new Foo("bar")));
+		assertThat(value).isInstanceOf(Bar.class);
+		assertThat(((Bar) value).getFoo()).isEqualTo(new Foo("bar"));
 	}
 
 	public static class Foo {

@@ -16,11 +16,7 @@
 
 package org.springframework.amqp.core.builder;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -54,28 +50,27 @@ public class MessageBuilderTests {
 		Message message1 = MessageBuilder.withBody(bytes)
 				.andProperties(properties)
 				.build();
-		assertSame(bytes, message1.getBody());
-		assertEquals("replyTo", message1.getMessageProperties().getReplyTo());
+		assertThat(message1.getBody()).isSameAs(bytes);
+		assertThat(message1.getMessageProperties().getReplyTo()).isEqualTo("replyTo");
 
 		Message message2 = MessageBuilder.fromMessage(message1)
 				.setReplyTo("foo")
 				.build();
-		assertSame(bytes, message2.getBody());
-		assertNotSame(message1.getMessageProperties(), message2.getMessageProperties());
-		assertEquals(message1.getMessageProperties(),
-				MessageBuilder.fromMessage(message2).setReplyTo("replyTo").build().getMessageProperties());
-		assertEquals("foo", message2.getMessageProperties().getReplyTo());
+		assertThat(message2.getBody()).isSameAs(bytes);
+		assertThat(message2.getMessageProperties()).isNotSameAs(message1.getMessageProperties());
+		assertThat(MessageBuilder.fromMessage(message2).setReplyTo("replyTo").build().getMessageProperties()).isEqualTo(message1.getMessageProperties());
+		assertThat(message2.getMessageProperties().getReplyTo()).isEqualTo("foo");
 
 		Message message3 = MessageBuilder.fromClonedMessage(message1)
 				.setReplyToIfAbsent("foo")
 				.build();
-		assertEquals("replyTo", message3.getMessageProperties().getReplyTo());
+		assertThat(message3.getMessageProperties().getReplyTo()).isEqualTo("replyTo");
 
 		Message message4 = MessageBuilder.fromClonedMessage(message1)
 				.setReplyTo(null)
 				.setReplyToIfAbsent("foo")
 				.build();
-		assertEquals("foo", message4.getMessageProperties().getReplyTo());
+		assertThat(message4.getMessageProperties().getReplyTo()).isEqualTo("foo");
 
 	}
 
@@ -90,30 +85,30 @@ public class MessageBuilderTests {
 						.setReplyToAddressIfAbsent(new Address("addressxxxx"))
 						.build())
 				.build();
-		assertNotSame(bytes, message1.getBody());
-		assertTrue(Arrays.equals(bytes, message1.getBody()));
-		assertEquals(replyTo.toString(), message1.getMessageProperties().getReplyToAddress().toString());
+		assertThat(message1.getBody()).isNotSameAs(bytes);
+		assertThat(Arrays.equals(bytes, message1.getBody())).isTrue();
+		assertThat(message1.getMessageProperties().getReplyToAddress().toString()).isEqualTo(replyTo.toString());
 
 		Address foo = new Address("foo");
 		Message message2 = MessageBuilder.fromClonedMessage(message1)
 				.setReplyToAddress(foo)
 				.build();
-		assertNotSame(message1.getBody(), message2.getBody());
-		assertTrue(Arrays.equals(bytes, message2.getBody()));
-		assertEquals(message1.getMessageProperties(), MessageBuilder.fromMessage(message2)
-				.setReplyToAddress(replyTo).build().getMessageProperties());
-		assertEquals(foo.toString(), message2.getMessageProperties().getReplyToAddress().toString());
+		assertThat(message2.getBody()).isNotSameAs(message1.getBody());
+		assertThat(Arrays.equals(bytes, message2.getBody())).isTrue();
+		assertThat(MessageBuilder.fromMessage(message2)
+				.setReplyToAddress(replyTo).build().getMessageProperties()).isEqualTo(message1.getMessageProperties());
+		assertThat(message2.getMessageProperties().getReplyToAddress().toString()).isEqualTo(foo.toString());
 
 		Message message3 = MessageBuilder.fromClonedMessage(message1)
 				.setReplyToAddressIfAbsent(foo)
 				.build();
-		assertEquals(replyTo.toString(), message3.getMessageProperties().getReplyToAddress().toString());
+		assertThat(message3.getMessageProperties().getReplyToAddress().toString()).isEqualTo(replyTo.toString());
 
 		Message message4 = MessageBuilder.fromClonedMessage(message1)
 				.setReplyToAddress(null)
 				.setReplyToAddressIfAbsent(foo)
 				.build();
-		assertEquals(foo.toString(), message4.getMessageProperties().getReplyToAddress().toString());
+		assertThat(message4.getMessageProperties().getReplyToAddress().toString()).isEqualTo(foo.toString());
 	}
 
 	@Test
@@ -123,12 +118,12 @@ public class MessageBuilderTests {
 				.andProperties(this.setAll(MessagePropertiesBuilder.newInstance())
 						.build())
 				.build();
-		assertTrue(Arrays.equals("oba".getBytes(), message1.getBody()));
+		assertThat(Arrays.equals("oba".getBytes(), message1.getBody())).isTrue();
 
 		Message message2 = MessageBuilder.fromClonedMessage(message1).build();
-		assertNotSame(message1.getBody(), message2.getBody());
-		assertTrue(Arrays.equals(message1.getBody(), message2.getBody()));
-		assertEquals(message1.getMessageProperties(), message2.getMessageProperties());
+		assertThat(message2.getBody()).isNotSameAs(message1.getBody());
+		assertThat(Arrays.equals(message1.getBody(), message2.getBody())).isTrue();
+		assertThat(message2.getMessageProperties()).isEqualTo(message1.getMessageProperties());
 	}
 
 	@Test
@@ -139,25 +134,25 @@ public class MessageBuilderTests {
 					.setReplyTo("replyTo")
 					.build())
 				.build();
-		assertSame(bytes, message1.getBody());
+		assertThat(message1.getBody()).isSameAs(bytes);
 
 		Message message2 = MessageBuilder.withBody("bar".getBytes())
 				.copyProperties(message1.getMessageProperties())
 				.build();
-		assertNotSame(message1.getMessageProperties(), message2.getMessageProperties());
-		assertEquals(message1.getMessageProperties(), message2.getMessageProperties());
+		assertThat(message2.getMessageProperties()).isNotSameAs(message1.getMessageProperties());
+		assertThat(message2.getMessageProperties()).isEqualTo(message1.getMessageProperties());
 
 		Message message3 = MessageBuilder.withBody("bar".getBytes())
 				.copyProperties(message1.getMessageProperties())
 				.removeHeader("foo")
 				.build();
-		assertEquals(2, message3.getMessageProperties().getHeaders().size());
+		assertThat(message3.getMessageProperties().getHeaders().size()).isEqualTo(2);
 
 		Message message4 = MessageBuilder.withBody("bar".getBytes())
 				.copyProperties(message1.getMessageProperties())
 				.removeHeaders()
 				.build();
-		assertEquals(0, message4.getMessageProperties().getHeaders().size());
+		assertThat(message4.getMessageProperties().getHeaders().size()).isEqualTo(0);
 	}
 
 	@Test
@@ -315,51 +310,51 @@ public class MessageBuilderTests {
 	}
 
 	private void assertLower(MessageProperties properties) {
-		assertEquals("appId", properties.getAppId());
-		assertEquals("clusterId", properties.getClusterId());
-		assertEquals("contentEncoding", properties.getContentEncoding());
-		assertEquals(MessageProperties.CONTENT_TYPE_TEXT_PLAIN, properties.getContentType());
-		assertEquals(1, properties.getContentLength());
-		assertEquals("correlationId", properties.getCorrelationId());
-		assertEquals(MessageDeliveryMode.NON_PERSISTENT, properties.getDeliveryMode());
-		assertEquals(2, properties.getDeliveryTag());
-		assertEquals("expiration", properties.getExpiration());
-		assertEquals("bar", properties.getHeaders().get("foo"));
-		assertEquals("fiz", properties.getHeaders().get("qux"));
-		assertEquals("fuz", properties.getHeaders().get("baz"));
-		assertEquals(Integer.valueOf(3), properties.getMessageCount());
-		assertEquals("messageId", properties.getMessageId());
-		assertEquals(Integer.valueOf(4), properties.getPriority());
-		assertEquals("receivedExchange", properties.getReceivedExchange());
-		assertEquals("receivedRoutingKey", properties.getReceivedRoutingKey());
-		assertTrue(properties.getRedelivered());
-		assertTrue(properties.getTimestamp().getTime() > 0);
-		assertEquals("type", properties.getType());
-		assertEquals("userId", properties.getUserId());
+		assertThat(properties.getAppId()).isEqualTo("appId");
+		assertThat(properties.getClusterId()).isEqualTo("clusterId");
+		assertThat(properties.getContentEncoding()).isEqualTo("contentEncoding");
+		assertThat(properties.getContentType()).isEqualTo(MessageProperties.CONTENT_TYPE_TEXT_PLAIN);
+		assertThat(properties.getContentLength()).isEqualTo(1);
+		assertThat(properties.getCorrelationId()).isEqualTo("correlationId");
+		assertThat(properties.getDeliveryMode()).isEqualTo(MessageDeliveryMode.NON_PERSISTENT);
+		assertThat(properties.getDeliveryTag()).isEqualTo(2);
+		assertThat(properties.getExpiration()).isEqualTo("expiration");
+		assertThat(properties.getHeaders().get("foo")).isEqualTo("bar");
+		assertThat(properties.getHeaders().get("qux")).isEqualTo("fiz");
+		assertThat(properties.getHeaders().get("baz")).isEqualTo("fuz");
+		assertThat(properties.getMessageCount()).isEqualTo(Integer.valueOf(3));
+		assertThat(properties.getMessageId()).isEqualTo("messageId");
+		assertThat(properties.getPriority()).isEqualTo(Integer.valueOf(4));
+		assertThat(properties.getReceivedExchange()).isEqualTo("receivedExchange");
+		assertThat(properties.getReceivedRoutingKey()).isEqualTo("receivedRoutingKey");
+		assertThat(properties.getRedelivered()).isTrue();
+		assertThat(properties.getTimestamp().getTime() > 0).isTrue();
+		assertThat(properties.getType()).isEqualTo("type");
+		assertThat(properties.getUserId()).isEqualTo("userId");
 	}
 
 	private void assertUpper(MessageProperties properties) {
-		assertEquals("APPID", properties.getAppId());
-		assertEquals("CLUSTERID", properties.getClusterId());
-		assertEquals("CONTENTENCODING", properties.getContentEncoding());
-		assertEquals(MessageProperties.CONTENT_TYPE_BYTES, properties.getContentType());
-		assertEquals(10, properties.getContentLength());
-		assertEquals("CORRELATIONID", properties.getCorrelationId());
-		assertEquals(MessageDeliveryMode.PERSISTENT, properties.getDeliveryMode());
-		assertEquals(20, properties.getDeliveryTag());
-		assertEquals("EXPIRATION", properties.getExpiration());
-		assertEquals("BAR", properties.getHeaders().get("foo"));
-		assertEquals("FIZ", properties.getHeaders().get("qux"));
-		assertEquals("FUZ", properties.getHeaders().get("baz"));
-		assertEquals(Integer.valueOf(30), properties.getMessageCount());
-		assertEquals("MESSAGEID", properties.getMessageId());
-		assertEquals(Integer.valueOf(40), properties.getPriority());
-		assertEquals("RECEIVEDEXCHANGE", properties.getReceivedExchange());
-		assertEquals("RECEIVEDROUTINGKEY", properties.getReceivedRoutingKey());
-		assertFalse(properties.getRedelivered());
-		assertTrue(properties.getTimestamp().getTime() == 0);
-		assertEquals("TYPE", properties.getType());
-		assertEquals("USERID", properties.getUserId());
+		assertThat(properties.getAppId()).isEqualTo("APPID");
+		assertThat(properties.getClusterId()).isEqualTo("CLUSTERID");
+		assertThat(properties.getContentEncoding()).isEqualTo("CONTENTENCODING");
+		assertThat(properties.getContentType()).isEqualTo(MessageProperties.CONTENT_TYPE_BYTES);
+		assertThat(properties.getContentLength()).isEqualTo(10);
+		assertThat(properties.getCorrelationId()).isEqualTo("CORRELATIONID");
+		assertThat(properties.getDeliveryMode()).isEqualTo(MessageDeliveryMode.PERSISTENT);
+		assertThat(properties.getDeliveryTag()).isEqualTo(20);
+		assertThat(properties.getExpiration()).isEqualTo("EXPIRATION");
+		assertThat(properties.getHeaders().get("foo")).isEqualTo("BAR");
+		assertThat(properties.getHeaders().get("qux")).isEqualTo("FIZ");
+		assertThat(properties.getHeaders().get("baz")).isEqualTo("FUZ");
+		assertThat(properties.getMessageCount()).isEqualTo(Integer.valueOf(30));
+		assertThat(properties.getMessageId()).isEqualTo("MESSAGEID");
+		assertThat(properties.getPriority()).isEqualTo(Integer.valueOf(40));
+		assertThat(properties.getReceivedExchange()).isEqualTo("RECEIVEDEXCHANGE");
+		assertThat(properties.getReceivedRoutingKey()).isEqualTo("RECEIVEDROUTINGKEY");
+		assertThat(properties.getRedelivered()).isFalse();
+		assertThat(properties.getTimestamp().getTime() == 0).isTrue();
+		assertThat(properties.getType()).isEqualTo("TYPE");
+		assertThat(properties.getUserId()).isEqualTo("USERID");
 	}
 
 }

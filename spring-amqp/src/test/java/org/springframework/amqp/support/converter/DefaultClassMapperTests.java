@@ -16,11 +16,7 @@
 
 package org.springframework.amqp.support.converter;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
 import java.util.HashMap;
@@ -54,8 +50,8 @@ public class DefaultClassMapperTests {
 		}
 		catch (MessageConversionException e) {
 			String classIdFieldName = classMapper.getClassIdFieldName();
-			assertThat(e.getMessage(), containsString("Could not resolve "
-					+ classIdFieldName + " in header"));
+			assertThat(e.getMessage()).contains("Could not resolve "
+					+ classIdFieldName + " in header");
 		}
 	}
 
@@ -67,7 +63,7 @@ public class DefaultClassMapperTests {
 
 		Class<String> clazz = (Class<String>) classMapper.toClass(props);
 
-		assertThat(clazz, equalTo(String.class));
+		assertThat(clazz).isEqualTo(String.class);
 	}
 
 	@Test
@@ -78,7 +74,7 @@ public class DefaultClassMapperTests {
 		@SuppressWarnings("rawtypes")
 		Class clazz = classMapper.toClass(props);
 
-		assertEquals(clazz, SimpleTrade.class);
+		assertThat(SimpleTrade.class).isEqualTo(clazz);
 
 	}
 
@@ -88,7 +84,7 @@ public class DefaultClassMapperTests {
 
 		Class<?> clazz = classMapper.toClass(props);
 
-		assertThat(clazz, equalTo(LinkedHashMap.class));
+		assertThat(clazz).isEqualTo(LinkedHashMap.class);
 	}
 
 	@Test
@@ -97,7 +93,7 @@ public class DefaultClassMapperTests {
 
 		String className = (String) props.getHeaders().get(
 				classMapper.getClassIdFieldName());
-		assertThat(className, equalTo(SimpleTrade.class.getName()));
+		assertThat(className).isEqualTo(SimpleTrade.class.getName());
 	}
 
 	@Test
@@ -109,7 +105,7 @@ public class DefaultClassMapperTests {
 
 		String className = (String) props.getHeaders().get(
 				classMapper.getClassIdFieldName());
-		assertThat(className, equalTo("daytrade"));
+		assertThat(className).isEqualTo("daytrade");
 	}
 
 	@Test
@@ -119,7 +115,7 @@ public class DefaultClassMapperTests {
 		String className = (String) props.getHeaders().get(
 				classMapper.getClassIdFieldName());
 
-		assertThat(className, equalTo("Hashtable"));
+		assertThat(className).isEqualTo("Hashtable");
 	}
 
 	@SuppressWarnings("unchecked")
@@ -129,7 +125,7 @@ public class DefaultClassMapperTests {
 		classMapper.setDefaultType(Foo.class);
 		Class<Foo> clazz = (Class<Foo>) classMapper.toClass(props);
 
-		assertSame(Foo.class, clazz);
+		assertThat(clazz).isSameAs(Foo.class);
 		classMapper.setDefaultType(LinkedHashMap.class);
 	}
 

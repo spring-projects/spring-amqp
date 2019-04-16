@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.support.converter;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 
@@ -45,7 +45,7 @@ public class MarshallingMessageConverterTests {
 		converter.afterPropertiesSet();
 		Message message = converter.toMessage("marshal test", new MessageProperties());
 		String response = new String(message.getBody(), "UTF-8");
-		assertEquals("MARSHAL TEST", response);
+		assertThat(response).isEqualTo("MARSHAL TEST");
 	}
 
 	@Test
@@ -57,7 +57,7 @@ public class MarshallingMessageConverterTests {
 
 		Message message = converter.toMessage("marshal test", new MessageProperties());
 
-		assertEquals("application/xml", message.getMessageProperties().getContentType());
+		assertThat(message.getMessageProperties().getContentType()).isEqualTo("application/xml");
 	}
 
 	@Test
@@ -69,7 +69,7 @@ public class MarshallingMessageConverterTests {
 
 		Message message = converter.toMessage("marshal test", new MessageProperties());
 
-		assertEquals(defaultContentType, message.getMessageProperties().getContentType());
+		assertThat(message.getMessageProperties().getContentType()).isEqualTo(defaultContentType);
 	}
 
 	@Test
@@ -79,7 +79,7 @@ public class MarshallingMessageConverterTests {
 		converter.afterPropertiesSet();
 		Message message = new Message("UNMARSHAL TEST".getBytes(), new MessageProperties());
 		Object result = converter.fromMessage(message);
-		assertEquals("unmarshal test", result);
+		assertThat(result).isEqualTo("unmarshal test");
 	}
 
 

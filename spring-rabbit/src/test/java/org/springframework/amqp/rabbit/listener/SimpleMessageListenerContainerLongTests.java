@@ -16,10 +16,8 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.util.Set;
 
@@ -92,7 +90,7 @@ public class SimpleMessageListenerContainerLongTests {
 			container.setConcurrentConsumers(2);
 			container.setChannelTransacted(transacted);
 			container.afterPropertiesSet();
-			assertEquals(2, ReflectionTestUtils.getField(container, "concurrentConsumers"));
+			assertThat(ReflectionTestUtils.getField(container, "concurrentConsumers")).isEqualTo(2);
 			container.start();
 			waitForNConsumers(container, 2);
 			container.setConcurrentConsumers(1);
@@ -137,7 +135,7 @@ public class SimpleMessageListenerContainerLongTests {
 		while (n++ < 100 && container.getActiveConsumerCount() != 2) {
 			Thread.sleep(100);
 		}
-		assertEquals(2, container.getActiveConsumerCount());
+		assertThat(container.getActiveConsumerCount()).isEqualTo(2);
 		container.stop();
 		for (int i = 0; i < 20; i++) {
 			admin.deleteQueue("testAddQueuesAndStartInCycle" + i);
@@ -170,7 +168,7 @@ public class SimpleMessageListenerContainerLongTests {
 		waitForNConsumers(container, 5);
 		container.setConcurrentConsumers(4);
 		Set<?> consumers = (Set<?>) TestUtils.getPropertyValue(container, "consumers");
-		assertThat(consumers.size(), equalTo(5));
+		assertThat(consumers.size()).isEqualTo(5);
 	}
 
 	@Test
@@ -198,7 +196,7 @@ public class SimpleMessageListenerContainerLongTests {
 		waitForNConsumers(container, 3);
 		container.setConcurrentConsumers(1);
 		Set<?> consumers = (Set<?>) TestUtils.getPropertyValue(container, "consumers");
-		assertThat(consumers.size(), equalTo(3));
+		assertThat(consumers.size()).isEqualTo(3);
 	}
 
 	@Test
@@ -227,7 +225,7 @@ public class SimpleMessageListenerContainerLongTests {
 		container.setConcurrentConsumers(1);
 		container.setMaxConcurrentConsumers(1);
 		Set<?> consumers = (Set<?>) TestUtils.getPropertyValue(container, "consumers");
-		assertThat(consumers.size(), equalTo(1));
+		assertThat(consumers.size()).isEqualTo(1);
 	}
 
 	public void handleMessage(String foo) {

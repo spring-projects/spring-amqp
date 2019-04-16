@@ -18,7 +18,6 @@ package org.springframework.amqp.rabbit.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.Assert.assertNotNull;
 
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -47,54 +46,54 @@ public class RabbitTemplateDirectReplyToContainerIntegrationTests extends Rabbit
 
 	@Override
 	protected RabbitTemplate createSendAndReceiveRabbitTemplate(ConnectionFactory connectionFactory) {
-		RabbitTemplate template = super.createSendAndReceiveRabbitTemplate(connectionFactory);
-		template.setUseDirectReplyToContainer(true);
-		template.setBeanName(this.testName.getMethodName() + "SendReceiveRabbitTemplate");
-		return template;
+		RabbitTemplate rabbitTemplate = super.createSendAndReceiveRabbitTemplate(connectionFactory);
+		rabbitTemplate.setUseDirectReplyToContainer(true);
+		rabbitTemplate.setBeanName(this.testName.getMethodName() + "SendReceiveRabbitTemplate");
+		return rabbitTemplate;
 	}
 
 	@SuppressWarnings("unchecked")
 	@Test
 	public void channelReleasedOnTimeout() throws Exception {
 		final CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
-		RabbitTemplate template = createSendAndReceiveRabbitTemplate(connectionFactory);
-		template.setReplyTimeout(1);
+		RabbitTemplate rabbitTemplate = createSendAndReceiveRabbitTemplate(connectionFactory);
+		rabbitTemplate.setReplyTimeout(1);
 		AtomicReference<Throwable> exception = new AtomicReference<>();
 		CountDownLatch latch = new CountDownLatch(1);
 		ErrorHandler replyErrorHandler = t -> {
 			exception.set(t);
 			latch.countDown();
 		};
-		template.setReplyErrorHandler(replyErrorHandler);
-		Object reply = template.convertSendAndReceive(ROUTE, "foo");
+		rabbitTemplate.setReplyErrorHandler(replyErrorHandler);
+		Object reply = rabbitTemplate.convertSendAndReceive(ROUTE, "foo");
 		assertThat(reply).isNull();
-		Object container = TestUtils.getPropertyValue(template, "directReplyToContainers", Map.class)
-				.get(template.isUsePublisherConnection()
+		Object container = TestUtils.getPropertyValue(rabbitTemplate, "directReplyToContainers", Map.class)
+				.get(rabbitTemplate.isUsePublisherConnection()
 						? connectionFactory.getPublisherConnectionFactory()
 						: connectionFactory);
 		assertThat(TestUtils.getPropertyValue(container, "inUseConsumerChannels", Map.class)).hasSize(0);
 		assertThat(TestUtils.getPropertyValue(container, "errorHandler")).isSameAs(replyErrorHandler);
 		Message replyMessage = new Message("foo".getBytes(), new MessageProperties());
-		assertThatThrownBy(() -> template.onMessage(replyMessage))
+		assertThatThrownBy(() -> rabbitTemplate.onMessage(replyMessage))
 			.isInstanceOf(AmqpRejectAndDontRequeueException.class)
 			.hasMessage("No correlation header in reply");
 		replyMessage.getMessageProperties().setCorrelationId("foo");
-		assertThatThrownBy(() -> template.onMessage(replyMessage))
+		assertThatThrownBy(() -> rabbitTemplate.onMessage(replyMessage))
 			.isInstanceOf(AmqpRejectAndDontRequeueException.class)
 			.hasMessage("Reply received after timeout");
 
 		ExecutorService executor = Executors.newFixedThreadPool(1);
 		// Set up a consumer to respond to our producer
 		executor.submit(() -> {
-			Message message = template.receive(ROUTE, 10_000);
-			assertNotNull("No message received", message);
-			template.send(message.getMessageProperties().getReplyTo(), replyMessage);
+			Message message = rabbitTemplate.receive(ROUTE, 10_000);
+			assertThat(message).as("No message received").isNotNull();
+			rabbitTemplate.send(message.getMessageProperties().getReplyTo(), replyMessage);
 			return message;
 		});
-		while (template.receive(ROUTE, 100) != null) {
+		while (rabbitTemplate.receive(ROUTE, 100) != null) {
 			// empty
 		}
-		reply = template.convertSendAndReceive(ROUTE, "foo");
+		reply = rabbitTemplate.convertSendAndReceive(ROUTE, "foo");
 		assertThat(reply).isNull();
 		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(exception.get()).isInstanceOf(ListenerExecutionFailedException.class);
@@ -103,7 +102,7 @@ public class RabbitTemplateDirectReplyToContainerIntegrationTests extends Rabbit
 			.isEqualTo(replyMessage.getBody());
 		assertThat(TestUtils.getPropertyValue(container, "inUseConsumerChannels", Map.class)).hasSize(0);
 		executor.shutdownNow();
-		template.stop();
+		rabbitTemplate.stop();
 		connectionFactory.destroy();
 	}
 

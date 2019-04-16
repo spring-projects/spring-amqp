@@ -16,9 +16,7 @@
 
 package org.springframework.amqp.support;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -52,19 +50,19 @@ public class MessagePostProcessorUtilsTests {
 		Collection<MessagePostProcessor> sorted = MessagePostProcessorUtils.sort(Arrays.<MessagePostProcessor>asList(pps));
 		Iterator<MessagePostProcessor> iterator = sorted.iterator();
 		MessagePostProcessor mpp = iterator.next();
-		assertThat(mpp, instanceOf(POMPP.class));
-		assertEquals(2, ((POMPP) mpp).getOrder());
+		assertThat(mpp).isInstanceOf(POMPP.class);
+		assertThat(((POMPP) mpp).getOrder()).isEqualTo(2);
 		mpp = iterator.next();
-		assertThat(mpp, instanceOf(POMPP.class));
-		assertEquals(6, ((POMPP) mpp).getOrder());
+		assertThat(mpp).isInstanceOf(POMPP.class);
+		assertThat(((POMPP) mpp).getOrder()).isEqualTo(6);
 		mpp = iterator.next();
-		assertThat(mpp, instanceOf(OMPP.class));
-		assertEquals(1, ((OMPP) mpp).getOrder());
+		assertThat(mpp).isInstanceOf(OMPP.class);
+		assertThat(((OMPP) mpp).getOrder()).isEqualTo(1);
 		mpp = iterator.next();
-		assertThat(mpp, instanceOf(OMPP.class));
-		assertEquals(3, ((OMPP) mpp).getOrder());
+		assertThat(mpp).isInstanceOf(OMPP.class);
+		assertThat(((OMPP) mpp).getOrder()).isEqualTo(3);
 		mpp = iterator.next();
-		assertThat(mpp, instanceOf(MPP.class));
+		assertThat(mpp).isInstanceOf(MPP.class);
 	}
 
 	class MPP implements MessagePostProcessor {

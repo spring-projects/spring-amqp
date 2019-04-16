@@ -16,8 +16,7 @@
 
 package org.springframework.amqp.rabbit.test;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willReturn;
@@ -60,20 +59,20 @@ public class TestRabbitTemplateTests {
 	@Test
 	public void testSimpleSends() {
 		this.template.convertAndSend("foo", "hello1");
-		assertThat(this.config.fooIn, equalTo("foo:hello1"));
+		assertThat(this.config.fooIn).isEqualTo("foo:hello1");
 		this.template.convertAndSend("bar", "hello2");
-		assertThat(this.config.barIn, equalTo("bar:hello2"));
-		assertThat(this.config.smlc1In, equalTo("smlc1:"));
+		assertThat(this.config.barIn).isEqualTo("bar:hello2");
+		assertThat(this.config.smlc1In).isEqualTo("smlc1:");
 		this.template.convertAndSend("foo", "hello3");
-		assertThat(this.config.fooIn, equalTo("foo:hello1"));
+		assertThat(this.config.fooIn).isEqualTo("foo:hello1");
 		this.template.convertAndSend("bar", "hello4");
-		assertThat(this.config.barIn, equalTo("bar:hello2"));
-		assertThat(this.config.smlc1In, equalTo("smlc1:hello3hello4"));
+		assertThat(this.config.barIn).isEqualTo("bar:hello2");
+		assertThat(this.config.smlc1In).isEqualTo("smlc1:hello3hello4");
 	}
 
 	@Test
 	public void testSendAndReceive() {
-		assertThat(this.template.convertSendAndReceive("baz", "hello"), equalTo("baz:hello"));
+		assertThat(this.template.convertSendAndReceive("baz", "hello")).isEqualTo("baz:hello");
 	}
 
 	@Configuration

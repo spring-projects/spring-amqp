@@ -16,8 +16,7 @@
 
 package org.springframework.amqp.rabbit.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -76,20 +75,22 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests2 {
 		this.templateWithConfirmsEnabled.convertAndSend(ROUTE, "foo");
 		this.templateWithConfirmsEnabled.convertAndSend(ROUTE, "foo");
 		assertMessageCountEquals(2L);
-		assertEquals(Long.valueOf(1), this.templateWithConfirmsEnabled.execute(channel -> {
+		Long result = this.templateWithConfirmsEnabled.execute(channel -> {
 			final CountDownLatch latch = new CountDownLatch(2);
 			String consumerTag = channel.basicConsume(ROUTE, new DefaultConsumer(channel) {
+
 				@Override
-				public void handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties,
-						byte[] body) {
+				public void handleDelivery(String ag, Envelope envelope, BasicProperties properties, byte[] body) {
 					latch.countDown();
 				}
+
 			});
 			long consumerCount = channel.consumerCount(ROUTE);
-			assertTrue(latch.await(10, TimeUnit.SECONDS));
+			assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 			channel.basicCancel(consumerTag);
 			return consumerCount;
-		}));
+		});
+		assertThat(result).isEqualTo(1L);
 		assertMessageCountEquals(0L);
 	}
 
@@ -100,7 +101,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests2 {
 			Thread.sleep(100);
 			messageCount = determineMessageCount();
 		}
-		assertEquals(wanted, messageCount);
+		assertThat(messageCount).isEqualTo(wanted);
 	}
 
 	private Long determineMessageCount() {
