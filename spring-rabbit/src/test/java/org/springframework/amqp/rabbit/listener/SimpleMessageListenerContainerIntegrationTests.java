@@ -16,9 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
 import java.util.List;
@@ -232,8 +230,8 @@ public class SimpleMessageListenerContainerIntegrationTests {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
 		boolean waited = latch.await(Math.max(10, messageCount / 20), TimeUnit.SECONDS);
-		assertTrue("Timed out waiting for message", waited);
-		assertNull(template.receiveAndConvert(queue.getName()));
+		assertThat(waited).as("Timed out waiting for message").isTrue();
+		assertThat(template.receiveAndConvert(queue.getName())).isNull();
 	}
 
 	private void doListenerWithExceptionTest(CountDownLatch latch, MessageListener listener) throws Exception {
@@ -251,16 +249,16 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		}
 		try {
 			boolean waited = latch.await(10 + Math.max(1, messageCount / 10), TimeUnit.SECONDS);
-			assertTrue("Timed out waiting for message", waited);
+			assertThat(waited).as("Timed out waiting for message").isTrue();
 		}
 		finally {
 			container.shutdown();
 		}
 		if (acknowledgeMode.isTransactionAllowed()) {
-			assertNotNull(template.receiveAndConvert(queue.getName()));
+			assertThat(template.receiveAndConvert(queue.getName())).isNotNull();
 		}
 		else {
-			assertNull(template.receiveAndConvert(queue.getName()));
+			assertThat(template.receiveAndConvert(queue.getName())).isNull();
 		}
 	}
 

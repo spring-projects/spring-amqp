@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
 
@@ -54,10 +54,10 @@ public class QueueArgumentsParserTests {
 	public void test() {
 		@SuppressWarnings("unchecked")
 		Map<String, Object> args = (Map<String, Object>) ctx.getBean("args");
-		assertEquals("bar", args.get("foo"));
+		assertThat(args.get("foo")).isEqualTo("bar");
 
-		assertEquals("qux", queue1.getArguments().get("baz"));
-		assertEquals("bar", queue2.getArguments().get("foo"));
+		assertThat(queue1.getArguments().get("baz")).isEqualTo("qux");
+		assertThat(queue2.getArguments().get("foo")).isEqualTo("bar");
 	}
 
 }

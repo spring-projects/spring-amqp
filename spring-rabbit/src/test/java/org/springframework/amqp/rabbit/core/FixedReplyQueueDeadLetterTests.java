@@ -16,8 +16,7 @@
 
 package org.springframework.amqp.rabbit.core;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -73,8 +72,8 @@ public class FixedReplyQueueDeadLetterTests {
 	 */
 	@Test
 	public void test() throws Exception {
-		assertNull(this.rabbitTemplate.convertSendAndReceive("foo"));
-		assertTrue(this.deadListener.latch.await(10, TimeUnit.SECONDS));
+		assertThat(this.rabbitTemplate.convertSendAndReceive("foo")).isNull();
+		assertThat(this.deadListener.latch.await(10, TimeUnit.SECONDS)).isTrue();
 	}
 
 	@Configuration

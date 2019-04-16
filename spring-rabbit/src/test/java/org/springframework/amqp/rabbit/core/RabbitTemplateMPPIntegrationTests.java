@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.core;
 
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
@@ -62,16 +62,16 @@ public class RabbitTemplateMPPIntegrationTests {
 	@Test // 2.0.x only
 	public void testMPPsAppliedDirectReplyToContainerTests() {
 		this.template.sendAndReceive(new Message("foo".getBytes(), new MessageProperties()));
-		assertTrue("before MPP not called", this.config.beforeMppCalled);
-		assertTrue("after MPP not called", this.config.afterMppCalled);
+		assertThat(this.config.beforeMppCalled).as("before MPP not called").isTrue();
+		assertThat(this.config.afterMppCalled).as("after MPP not called").isTrue();
 	}
 
 	@Test
 	public void testMPPsAppliedDirectReplyToTests() {
 		this.template.setUseDirectReplyToContainer(false);
 		this.template.sendAndReceive(new Message("foo".getBytes(), new MessageProperties()));
-		assertTrue("before MPP not called", this.config.beforeMppCalled);
-		assertTrue("after MPP not called", this.config.afterMppCalled);
+		assertThat(this.config.beforeMppCalled).as("before MPP not called").isTrue();
+		assertThat(this.config.afterMppCalled).as("after MPP not called").isTrue();
 	}
 
 	@Test
@@ -79,8 +79,8 @@ public class RabbitTemplateMPPIntegrationTests {
 		this.template.setUseDirectReplyToContainer(false);
 		this.template.setUseTemporaryReplyQueues(true);
 		this.template.sendAndReceive(new Message("foo".getBytes(), new MessageProperties()));
-		assertTrue("before MPP not called", this.config.beforeMppCalled);
-		assertTrue("after MPP not called", this.config.afterMppCalled);
+		assertThat(this.config.beforeMppCalled).as("before MPP not called").isTrue();
+		assertThat(this.config.afterMppCalled).as("after MPP not called").isTrue();
 	}
 
 	@Test
@@ -94,8 +94,8 @@ public class RabbitTemplateMPPIntegrationTests {
 			container.afterPropertiesSet();
 			container.start();
 			this.template.sendAndReceive(new Message("foo".getBytes(), new MessageProperties()));
-			assertTrue("before MPP not called", this.config.beforeMppCalled);
-			assertTrue("after MPP not called", this.config.afterMppCalled);
+			assertThat(this.config.beforeMppCalled).as("before MPP not called").isTrue();
+			assertThat(this.config.afterMppCalled).as("after MPP not called").isTrue();
 		}
 		finally {
 			container.stop();

@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import static org.junit.Assert.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -57,8 +57,8 @@ public class RabbitListenerContainerTestFactory implements RabbitListenerContain
 			((AbstractRabbitListenerEndpoint) endpoint).setId("endpoint#" + counter.getAndIncrement());
 		}
 		String id = endpoint.getId();
-		assertNotNull(this.getClass().getSimpleName() + " does not support " + endpoint.getClass().getSimpleName()
-				+ " without an id", id);
+		assertThat(id).as(this.getClass().getSimpleName() + " does not support " + endpoint.getClass().getSimpleName()
+				+ " without an id").isNotNull();
 		this.listenerContainers.put(id, container);
 		return container;
 	}

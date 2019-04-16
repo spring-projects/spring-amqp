@@ -16,8 +16,8 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -85,11 +85,11 @@ public final class AdminParserTests {
 		else {
 			admin = beanFactory.getBean(RabbitAdmin.class);
 		}
-		assertEquals(expectedAutoStartup, admin.isAutoStartup());
-		assertEquals(beanFactory.getBean(ConnectionFactory.class), admin.getRabbitTemplate().getConnectionFactory());
+		assertThat(admin.isAutoStartup()).isEqualTo(expectedAutoStartup);
+		assertThat(admin.getRabbitTemplate().getConnectionFactory()).isEqualTo(beanFactory.getBean(ConnectionFactory.class));
 
 		if (initialisedWithTemplate) {
-			assertEquals(beanFactory.getBean(RabbitTemplate.class), admin.getRabbitTemplate());
+			assertThat(admin.getRabbitTemplate()).isEqualTo(beanFactory.getBean(RabbitTemplate.class));
 		}
 
 	}

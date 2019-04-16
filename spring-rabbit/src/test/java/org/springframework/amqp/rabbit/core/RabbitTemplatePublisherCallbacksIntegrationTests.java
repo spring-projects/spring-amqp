@@ -16,14 +16,7 @@
 
 package org.springframework.amqp.rabbit.core;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -199,12 +192,12 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			});
 		}
 		exec.shutdown();
-		assertTrue(exec.awaitTermination(300, TimeUnit.SECONDS));
-		assertTrue("" + mppLatch.getCount(), mppLatch.await(300, TimeUnit.SECONDS));
-		assertTrue("" + latch.getCount(), latch.await(300, TimeUnit.SECONDS));
-		assertNotNull(confirmCorrelation.get());
-		assertEquals("abc", confirmCorrelation.get().getId());
-		assertNull(templateWithConfirmsEnabled.getUnconfirmed(-1));
+		assertThat(exec.awaitTermination(300, TimeUnit.SECONDS)).isTrue();
+		assertThat(mppLatch.await(300, TimeUnit.SECONDS)).as("" + mppLatch.getCount()).isTrue();
+		assertThat(latch.await(300, TimeUnit.SECONDS)).as("" + latch.getCount()).isTrue();
+		assertThat(confirmCorrelation.get()).isNotNull();
+		assertThat(confirmCorrelation.get().getId()).isEqualTo("abc");
+		assertThat(templateWithConfirmsEnabled.getUnconfirmed(-1)).isNull();
 		this.templateWithConfirmsEnabled.execute(channel -> {
 			Map<?, ?> listenerMap = TestUtils.getPropertyValue(((ChannelProxy) channel).getTargetChannel(), "listenerForSeq",
 					Map.class);
@@ -212,7 +205,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			while (n++ < 100 && listenerMap.size() > 0) {
 				Thread.sleep(100);
 			}
-			assertEquals(0, listenerMap.size());
+			assertThat(listenerMap.size()).isEqualTo(0);
 			return null;
 		});
 
@@ -239,9 +232,9 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		String result = (String) this.templateWithConfirmsEnabled.convertSendAndReceive(ROUTE, (Object) "message",
 				correlationData);
 		container.stop();
-		assertEquals("MESSAGE", result);
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
-		assertEquals(correlationData, confirmCD.get());
+		assertThat(result).isEqualTo("MESSAGE");
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(confirmCD.get()).isEqualTo(correlationData);
 	}
 
 	@Test
@@ -269,8 +262,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		// Thread 2
 		templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
 		threadLatch.countDown();
-		assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
-		assertNull(templateWithConfirmsEnabled.getUnconfirmed(-1));
+		assertThat(latch.await(5000, TimeUnit.MILLISECONDS)).isTrue();
+		assertThat(templateWithConfirmsEnabled.getUnconfirmed(-1)).isNull();
 	}
 
 	@Test
@@ -282,10 +275,10 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		RabbitTemplate secondTemplate = new RabbitTemplate(connectionFactoryWithConfirmsEnabled);
 		secondTemplate.setConfirmCallback((correlationData, ack, cause) -> latch2.countDown());
 		secondTemplate.convertAndSend(ROUTE, (Object) "message", new CorrelationData("def"));
-		assertTrue(latch1.await(10, TimeUnit.SECONDS));
-		assertTrue(latch2.await(10, TimeUnit.SECONDS));
-		assertNull(templateWithConfirmsEnabled.getUnconfirmed(-1));
-		assertNull(secondTemplate.getUnconfirmed(-1));
+		assertThat(latch1.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(templateWithConfirmsEnabled.getUnconfirmed(-1)).isNull();
+		assertThat(secondTemplate.getUnconfirmed(-1)).isNull();
 	}
 
 	@Test
@@ -298,10 +291,10 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		});
 		templateWithReturnsEnabled.setMandatory(true);
 		templateWithReturnsEnabled.convertAndSend(ROUTE + "junk", (Object) "message", new CorrelationData("abc"));
-		assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
-		assertEquals(1, returns.size());
+		assertThat(latch.await(1000, TimeUnit.MILLISECONDS)).isTrue();
+		assertThat(returns.size()).isEqualTo(1);
 		Message message = returns.get(0);
-		assertEquals("message", new String(message.getBody(), "utf-8"));
+		assertThat(new String(message.getBody(), "utf-8")).isEqualTo("message");
 	}
 
 	@Test
@@ -316,10 +309,10 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		templateWithReturnsEnabled.setMandatoryExpression(mandatoryExpression);
 		templateWithReturnsEnabled.convertAndSend(ROUTE + "junk", (Object) "message", new CorrelationData("abc"));
 		templateWithReturnsEnabled.convertAndSend(ROUTE + "junk", (Object) "foo", new CorrelationData("abc"));
-		assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
-		assertEquals(1, returns.size());
+		assertThat(latch.await(1000, TimeUnit.MILLISECONDS)).isTrue();
+		assertThat(returns.size()).isEqualTo(1);
 		Message message = returns.get(0);
-		assertEquals("message", new String(message.getBody(), "utf-8"));
+		assertThat(new String(message.getBody(), "utf-8")).isEqualTo("message");
 	}
 
 	@Test
@@ -345,12 +338,12 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		template.setConfirmCallback((correlationData, ack, cause) -> confirmed.set(true));
 		template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
 		Thread.sleep(5);
-		assertEquals(1, template.getUnconfirmedCount());
+		assertThat(template.getUnconfirmedCount()).isEqualTo(1);
 		Collection<CorrelationData> unconfirmed = template.getUnconfirmed(-1);
-		assertEquals(0, template.getUnconfirmedCount());
-		assertEquals(1, unconfirmed.size());
-		assertEquals("abc", unconfirmed.iterator().next().getId());
-		assertFalse(confirmed.get());
+		assertThat(template.getUnconfirmedCount()).isEqualTo(0);
+		assertThat(unconfirmed.size()).isEqualTo(1);
+		assertThat(unconfirmed.iterator().next().getId()).isEqualTo("abc");
+		assertThat(confirmed.get()).isFalse();
 	}
 
 	@Test
@@ -403,29 +396,29 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		// Thread 2
 		template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc")); // channel y
 		threadLatch.countDown();
-		assertTrue(threadSentLatch.await(5, TimeUnit.SECONDS));
-		assertEquals(2, template.getUnconfirmedCount());
+		assertThat(threadSentLatch.await(5, TimeUnit.SECONDS)).isTrue();
+		assertThat(template.getUnconfirmedCount()).isEqualTo(2);
 		Collection<CorrelationData> unconfirmed = template.getUnconfirmed(-1);
-		assertEquals(2, unconfirmed.size());
-		assertEquals(0, template.getUnconfirmedCount());
+		assertThat(unconfirmed.size()).isEqualTo(2);
+		assertThat(template.getUnconfirmedCount()).isEqualTo(0);
 		Set<String> ids = new HashSet<String>();
 		Iterator<CorrelationData> iterator = unconfirmed.iterator();
 		ids.add(iterator.next().getId());
 		ids.add(iterator.next().getId());
-		assertTrue(ids.remove("abc"));
-		assertTrue(ids.remove("def"));
-		assertFalse(confirmed.get());
+		assertThat(ids.remove("abc")).isTrue();
+		assertThat(ids.remove("def")).isTrue();
+		assertThat(confirmed.get()).isFalse();
 		DirectFieldAccessor dfa = new DirectFieldAccessor(template);
 		Map<?, ?> pendingConfirms = (Map<?, ?>) dfa.getPropertyValue("publisherConfirmChannels");
-		assertThat(pendingConfirms.size(), greaterThan(0)); // might use 2 or only 1 channel
+		assertThat(pendingConfirms.size()).isGreaterThan(0); // might use 2 or only 1 channel
 		exec.shutdown();
-		assertTrue(exec.awaitTermination(10, TimeUnit.SECONDS));
+		assertThat(exec.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
 		ccf.destroy();
 		int n = 0;
 		while (n++ < 100 && pendingConfirms.size() > 0) {
 			Thread.sleep(100);
 		}
-		assertEquals(0, pendingConfirms.size());
+		assertThat(pendingConfirms.size()).isEqualTo(0);
 	}
 
 	@Test
@@ -455,20 +448,20 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
 		Thread.sleep(100);
 		template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("def"));
-		assertEquals(2, template.getUnconfirmedCount());
+		assertThat(template.getUnconfirmedCount()).isEqualTo(2);
 		Collection<CorrelationData> unconfirmed = template.getUnconfirmed(50);
-		assertEquals(1, template.getUnconfirmedCount());
-		assertEquals(1, unconfirmed.size());
-		assertEquals("abc", unconfirmed.iterator().next().getId());
-		assertFalse(confirmed.get());
+		assertThat(template.getUnconfirmedCount()).isEqualTo(1);
+		assertThat(unconfirmed.size()).isEqualTo(1);
+		assertThat(unconfirmed.iterator().next().getId()).isEqualTo("abc");
+		assertThat(confirmed.get()).isFalse();
 		Thread.sleep(100);
-		assertEquals(1, template.getUnconfirmedCount());
-		assertEquals(1, unconfirmed.size());
+		assertThat(template.getUnconfirmedCount()).isEqualTo(1);
+		assertThat(unconfirmed.size()).isEqualTo(1);
 		unconfirmed = template.getUnconfirmed(50);
-		assertEquals(1, unconfirmed.size());
-		assertEquals(0, template.getUnconfirmedCount());
-		assertEquals("def", unconfirmed.iterator().next().getId());
-		assertFalse(confirmed.get());
+		assertThat(unconfirmed.size()).isEqualTo(1);
+		assertThat(template.getUnconfirmedCount()).isEqualTo(0);
+		assertThat(unconfirmed.iterator().next().getId()).isEqualTo("def");
+		assertThat(confirmed.get()).isFalse();
 	}
 
 	@Test
@@ -501,9 +494,9 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
 		template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("def"));
 		callbackChannel.handleAck(2, true);
-		assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+		assertThat(latch.await(1000, TimeUnit.MILLISECONDS)).isTrue();
 		Collection<CorrelationData> unconfirmed = template.getUnconfirmed(-1);
-		assertNull(unconfirmed);
+		assertThat(unconfirmed).isNull();
 	}
 
 	/**
@@ -553,16 +546,16 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		template2.convertAndSend(ROUTE, (Object) "message", new CorrelationData("def"));
 		template2.convertAndSend(ROUTE, (Object) "message", new CorrelationData("ghi"));
 		callbackChannel.handleAck(3, true);
-		assertTrue(latch1.await(1000, TimeUnit.MILLISECONDS));
-		assertTrue(latch2.await(1000, TimeUnit.MILLISECONDS));
+		assertThat(latch1.await(1000, TimeUnit.MILLISECONDS)).isTrue();
+		assertThat(latch2.await(1000, TimeUnit.MILLISECONDS)).isTrue();
 		Collection<CorrelationData> unconfirmed1 = template1.getUnconfirmed(-1);
-		assertNull(unconfirmed1);
+		assertThat(unconfirmed1).isNull();
 		Collection<CorrelationData> unconfirmed2 = template2.getUnconfirmed(-1);
-		assertNull(unconfirmed2);
-		assertTrue(confirms.contains("abc1"));
-		assertTrue(confirms.contains("def2"));
-		assertTrue(confirms.contains("ghi2"));
-		assertEquals(3, confirms.size());
+		assertThat(unconfirmed2).isNull();
+		assertThat(confirms.contains("abc1")).isTrue();
+		assertThat(confirms.contains("def2")).isTrue();
+		assertThat(confirms.contains("ghi2")).isTrue();
+		assertThat(confirms.size()).isEqualTo(3);
 	}
 
 	/**
@@ -627,13 +620,13 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 				e.printStackTrace();
 			}
 		});
-		assertTrue(first2SentOnThread1Latch.await(10, TimeUnit.SECONDS));
+		assertThat(first2SentOnThread1Latch.await(10, TimeUnit.SECONDS)).isTrue();
 		// there should be no concurrent execution exception here
 		channel.handleAck(2, true);
-		assertTrue(allSentLatch.await(10, TimeUnit.SECONDS));
+		assertThat(allSentLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		channel.handleAck(3, false);
-		assertTrue(waitForAll3AcksLatch.await(10, TimeUnit.SECONDS));
-		assertEquals(3, acks.get());
+		assertThat(waitForAll3AcksLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(acks.get()).isEqualTo(3);
 
 
 		channel.basicConsume("foo", false, (Map) null, null);
@@ -669,11 +662,11 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		CorrelationData correlationData = new CorrelationData("bar");
 		String exchange = UUID.randomUUID().toString();
 		this.templateWithConfirmsEnabled.convertAndSend(exchange, "key", "foo", correlationData);
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
-		assertFalse(nack.get());
-		assertEquals(correlationData.toString(), correlation.get().toString());
-		assertThat(reason.get(), containsString("NOT_FOUND - no exchange '" + exchange));
-		assertThat(log.get(), containsString("NOT_FOUND - no exchange '" + exchange));
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(nack.get()).isFalse();
+		assertThat(correlation.get().toString()).isEqualTo(correlationData.toString());
+		assertThat(reason.get()).contains("NOT_FOUND - no exchange '" + exchange);
+		assertThat(log.get()).contains("NOT_FOUND - no exchange '" + exchange);
 	}
 
 	@Test
@@ -689,8 +682,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			});
 		}
 
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
-		assertNull(templateWithConfirmsEnabled.getUnconfirmed(-1));
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(templateWithConfirmsEnabled.getUnconfirmed(-1)).isNull();
 	}
 
 	// AMQP-506 ConcurrentModificationException
@@ -726,8 +719,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		while (!sentAll.get() && System.currentTimeMillis() < t1 + 60_000) {
 			template.getUnconfirmed(-1);
 		}
-		assertTrue(sentAll.get());
-		assertFalse(confirmed.get());
+		assertThat(sentAll.get()).isTrue();
+		assertThat(confirmed.get()).isFalse();
 	}
 
 	@Test
@@ -791,8 +784,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			});
 			sentAll.countDown();
 		});
-		assertTrue(sentAll.await(10, TimeUnit.SECONDS));
-		assertTrue(confirmed.await(10, TimeUnit.SECONDS));
+		assertThat(sentAll.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(confirmed.await(10, TimeUnit.SECONDS)).isTrue();
 	}
 
 	@Test
@@ -824,13 +817,13 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		channel.close();
 
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 
 		int n = 0;
 		while (n++ < 100 && TestUtils.getPropertyValue(channel, "pendingConfirms", Map.class).size() > 0) {
 			Thread.sleep(100);
 		}
-		assertEquals(0, TestUtils.getPropertyValue(channel, "pendingConfirms", Map.class).size());
+		assertThat(TestUtils.getPropertyValue(channel, "pendingConfirms", Map.class).size()).isEqualTo(0);
 
 	}
 
@@ -845,15 +838,15 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		admin.declareQueue(queue);
 		CorrelationData cd1 = new CorrelationData();
 		this.templateWithConfirmsEnabled.convertAndSend("", queue.getName(), "foo", cd1);
-		assertTrue(cd1.getFuture().get(10, TimeUnit.SECONDS).isAck());
+		assertThat(cd1.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
 		CorrelationData cd2 = new CorrelationData();
 		this.templateWithConfirmsEnabled.convertAndSend("", queue.getName(), "bar", cd2);
 		// TODO: Uncomment when travis updates to rabbitmq 3.7
 //		assertFalse(cd2.getFuture().get(10, TimeUnit.SECONDS).isAck());
 		CorrelationData cd3 = new CorrelationData();
 		this.templateWithConfirmsEnabled.convertAndSend("NO_EXCHANGE_HERE", queue.getName(), "foo", cd3);
-		assertFalse(cd3.getFuture().get(10, TimeUnit.SECONDS).isAck());
-		assertThat(cd3.getFuture().get().getReason(), containsString("NOT_FOUND"));
+		assertThat(cd3.getFuture().get(10, TimeUnit.SECONDS).isAck()).isFalse();
+		assertThat(cd3.getFuture().get().getReason()).contains("NOT_FOUND");
 		CorrelationData cd4 = new CorrelationData("42");
 		AtomicBoolean resent = new AtomicBoolean();
 		this.templateWithConfirmsAndReturnsEnabled.setReturnCallback((m, r, rt, e, rk) -> {
@@ -861,9 +854,9 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			resent.set(true);
 		});
 		this.templateWithConfirmsAndReturnsEnabled.convertAndSend("", "NO_QUEUE_HERE", "foo", cd4);
-		assertTrue(cd4.getFuture().get(10, TimeUnit.SECONDS).isAck());
-		assertNotNull(cd4.getReturnedMessage());
-		assertTrue(resent.get());
+		assertThat(cd4.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
+		assertThat(cd4.getReturnedMessage()).isNotNull();
+		assertThat(resent.get()).isTrue();
 		admin.deleteQueue(queue.getName());
 	}
 

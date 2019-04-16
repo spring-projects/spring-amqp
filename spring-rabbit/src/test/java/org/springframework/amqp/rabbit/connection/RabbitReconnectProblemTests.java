@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.connection;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
 import java.util.concurrent.Semaphore;
@@ -77,10 +77,13 @@ public class RabbitReconnectProblemTests {
 			checkIt(i);
 		}
 
-		int availablePermits = ((Semaphore) TestUtils.getPropertyValue(this.connFactory, "checkoutPermits", Map.class).values()
-				.iterator().next()).availablePermits();
+		int availablePermits = ((Semaphore) TestUtils.getPropertyValue(this.connFactory, "checkoutPermits", Map.class)
+				.values()
+				.iterator()
+				.next())
+				.availablePermits();
 		System .out .println("Permits after test: " + availablePermits);
-		assertEquals(2, availablePermits);
+		assertThat(availablePermits).isEqualTo(2);
 	}
 
 	void checkIt(int counter) {

@@ -146,13 +146,13 @@ public class MessageBuilderTests {
 				.copyProperties(message1.getMessageProperties())
 				.removeHeader("foo")
 				.build();
-		assertThat(message3.getMessageProperties().getHeaders().size()).isEqualTo(2);
+		assertThat(message3.getMessageProperties().getHeaders()).hasSize(2);
 
 		Message message4 = MessageBuilder.withBody("bar".getBytes())
 				.copyProperties(message1.getMessageProperties())
 				.removeHeaders()
 				.build();
-		assertThat(message4.getMessageProperties().getHeaders().size()).isEqualTo(0);
+		assertThat(message4.getMessageProperties().getHeaders()).hasSize(0);
 	}
 
 	@Test

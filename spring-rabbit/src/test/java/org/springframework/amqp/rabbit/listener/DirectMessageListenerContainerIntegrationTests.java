@@ -16,13 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -142,13 +136,13 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.afterPropertiesSet();
 		container.start();
 		RabbitTemplate template = new RabbitTemplate(cf);
-		assertEquals("FOO", template.convertSendAndReceive(Q1, "foo"));
-		assertEquals("BAR", template.convertSendAndReceive(Q2, "bar"));
+		assertThat(template.convertSendAndReceive(Q1, "foo")).isEqualTo("FOO");
+		assertThat(template.convertSendAndReceive(Q2, "bar")).isEqualTo("BAR");
 		container.stop();
-		assertTrue(consumersOnQueue(Q1, 0));
-		assertTrue(consumersOnQueue(Q2, 0));
-		assertTrue(activeConsumerCount(container, 0));
-		assertEquals(0, TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size());
+		assertThat(consumersOnQueue(Q1, 0)).isTrue();
+		assertThat(consumersOnQueue(Q2, 0)).isTrue();
+		assertThat(activeConsumerCount(container, 0)).isTrue();
+		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size()).isEqualTo(0);
 		template.stop();
 		cf.destroy();
 	}
@@ -174,13 +168,13 @@ public class DirectMessageListenerContainerIntegrationTests {
 		RabbitTemplate template = new RabbitTemplate(cf);
 		template.convertAndSend(Q1, "foo");
 		template.convertAndSend(Q1, "bar");
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
-		assertTrue(adviceLatch.await(10, TimeUnit.SECONDS));
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(adviceLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		container.stop();
-		assertTrue(consumersOnQueue(Q1, 0));
-		assertTrue(consumersOnQueue(Q2, 0));
-		assertTrue(activeConsumerCount(container, 0));
-		assertEquals(0, TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size());
+		assertThat(consumersOnQueue(Q1, 0)).isTrue();
+		assertThat(consumersOnQueue(Q2, 0)).isTrue();
+		assertThat(activeConsumerCount(container, 0)).isTrue();
+		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size()).isEqualTo(0);
 		cf.destroy();
 	}
 
@@ -206,20 +200,20 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.afterPropertiesSet();
 		container.start();
 		container.addQueueNames(Q1, Q2);
-		assertTrue(consumersOnQueue(Q1, 2));
-		assertTrue(consumersOnQueue(Q2, 2));
+		assertThat(consumersOnQueue(Q1, 2)).isTrue();
+		assertThat(consumersOnQueue(Q2, 2)).isTrue();
 		RabbitTemplate template = new RabbitTemplate(cf);
-		assertEquals("FOO", template.convertSendAndReceive(Q1, "foo"));
-		assertEquals("BAR", template.convertSendAndReceive(Q2, "bar"));
+		assertThat(template.convertSendAndReceive(Q1, "foo")).isEqualTo("FOO");
+		assertThat(template.convertSendAndReceive(Q2, "bar")).isEqualTo("BAR");
 		container.removeQueueNames(Q1, Q2, "junk");
-		assertTrue(consumersOnQueue(Q1, 0));
-		assertTrue(consumersOnQueue(Q2, 0));
-		assertTrue(activeConsumerCount(container, 0));
+		assertThat(consumersOnQueue(Q1, 0)).isTrue();
+		assertThat(consumersOnQueue(Q2, 0)).isTrue();
+		assertThat(activeConsumerCount(container, 0)).isTrue();
 		container.stop();
-		assertTrue(consumersOnQueue(Q1, 0));
-		assertTrue(consumersOnQueue(Q2, 0));
-		assertTrue(activeConsumerCount(container, 0));
-		assertEquals(0, TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size());
+		assertThat(consumersOnQueue(Q1, 0)).isTrue();
+		assertThat(consumersOnQueue(Q2, 0)).isTrue();
+		assertThat(activeConsumerCount(container, 0)).isTrue();
+		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size()).isEqualTo(0);
 		template.stop();
 		cf.destroy();
 	}
@@ -245,23 +239,23 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.setConsumerTagStrategy(new Tag());
 		container.afterPropertiesSet();
 		container.setQueues(new Queue(Q1));
-		assertArrayEquals(new String[] { Q1 }, container.getQueueNames());
+		assertThat(container.getQueueNames()).isEqualTo(new String[]{Q1});
 		container.start();
 		container.addQueues(new Queue(Q2));
-		assertTrue(consumersOnQueue(Q1, 2));
-		assertTrue(consumersOnQueue(Q2, 2));
+		assertThat(consumersOnQueue(Q1, 2)).isTrue();
+		assertThat(consumersOnQueue(Q2, 2)).isTrue();
 		RabbitTemplate template = new RabbitTemplate(cf);
-		assertEquals("FOO", template.convertSendAndReceive(Q1, "foo"));
-		assertEquals("BAR", template.convertSendAndReceive(Q2, "bar"));
+		assertThat(template.convertSendAndReceive(Q1, "foo")).isEqualTo("FOO");
+		assertThat(template.convertSendAndReceive(Q2, "bar")).isEqualTo("BAR");
 		container.removeQueues(new Queue(Q1), new Queue(Q2), new Queue("junk"));
-		assertTrue(consumersOnQueue(Q1, 0));
-		assertTrue(consumersOnQueue(Q2, 0));
-		assertTrue(activeConsumerCount(container, 0));
+		assertThat(consumersOnQueue(Q1, 0)).isTrue();
+		assertThat(consumersOnQueue(Q2, 0)).isTrue();
+		assertThat(activeConsumerCount(container, 0)).isTrue();
 		container.stop();
-		assertTrue(consumersOnQueue(Q1, 0));
-		assertTrue(consumersOnQueue(Q2, 0));
-		assertTrue(activeConsumerCount(container, 0));
-		assertEquals(0, TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size());
+		assertThat(consumersOnQueue(Q1, 0)).isTrue();
+		assertThat(consumersOnQueue(Q2, 0)).isTrue();
+		assertThat(activeConsumerCount(container, 0)).isTrue();
+		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size()).isEqualTo(0);
 		template.stop();
 		cf.destroy();
 	}
@@ -289,21 +283,21 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.afterPropertiesSet();
 		container.start();
 		RabbitTemplate template = new RabbitTemplate(cf);
-		assertEquals("FOO", template.convertSendAndReceive(Q1, "foo"));
-		assertEquals("BAR", template.convertSendAndReceive(Q2, "bar"));
-		assertTrue(consumersOnQueue(Q1, 4));
-		assertTrue(consumersOnQueue(Q2, 4));
+		assertThat(template.convertSendAndReceive(Q1, "foo")).isEqualTo("FOO");
+		assertThat(template.convertSendAndReceive(Q2, "bar")).isEqualTo("BAR");
+		assertThat(consumersOnQueue(Q1, 4)).isTrue();
+		assertThat(consumersOnQueue(Q2, 4)).isTrue();
 		container.setConsumersPerQueue(1);
-		assertTrue(consumersOnQueue(Q1, 1));
-		assertTrue(consumersOnQueue(Q2, 1));
+		assertThat(consumersOnQueue(Q1, 1)).isTrue();
+		assertThat(consumersOnQueue(Q2, 1)).isTrue();
 		container.setConsumersPerQueue(2);
-		assertTrue(consumersOnQueue(Q1, 2));
-		assertTrue(consumersOnQueue(Q2, 2));
+		assertThat(consumersOnQueue(Q1, 2)).isTrue();
+		assertThat(consumersOnQueue(Q2, 2)).isTrue();
 		container.stop();
-		assertTrue(consumersOnQueue(Q1, 0));
-		assertTrue(consumersOnQueue(Q2, 0));
-		assertTrue(activeConsumerCount(container, 0));
-		assertEquals(0, TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size());
+		assertThat(consumersOnQueue(Q1, 0)).isTrue();
+		assertThat(consumersOnQueue(Q2, 0)).isTrue();
+		assertThat(activeConsumerCount(container, 0)).isTrue();
+		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size()).isEqualTo(0);
 		template.stop();
 		cf.destroy();
 	}
@@ -331,10 +325,10 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.setConsumerTagStrategy(new Tag());
 		container.afterPropertiesSet();
 		container.start();
-		assertTrue(latch1.await(10, TimeUnit.SECONDS));
-		assertThat(times.get(1) - times.get(0), greaterThanOrEqualTo(50L));
+		assertThat(latch1.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(times.get(1) - times.get(0)).isGreaterThanOrEqualTo(50L);
 		brokerRunning.deleteQueues(EQ1, EQ2);
-		assertTrue(latch2.await(10, TimeUnit.SECONDS));
+		assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
 		container.stop();
 		cf.destroy();
 	}
@@ -363,13 +357,13 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.start();
 		RabbitTemplate template = new RabbitTemplate(cf);
 		template.convertAndSend(Q1, "foo");
-		assertNotNull(template.receive(DLQ1, 10000));
+		assertThat(template.receive(DLQ1, 10000)).isNotNull();
 		container.stop();
-		assertTrue(consumersOnQueue(Q1, 0));
-		assertTrue(consumersOnQueue(Q2, 0));
-		assertTrue(activeConsumerCount(container, 0));
-		assertEquals(0, TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size());
-		assertFalse(channel.get().isOpen());
+		assertThat(consumersOnQueue(Q1, 0)).isTrue();
+		assertThat(consumersOnQueue(Q2, 0)).isTrue();
+		assertThat(activeConsumerCount(container, 0)).isTrue();
+		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size()).isEqualTo(0);
+		assertThat(channel.get().isOpen()).isFalse();
 		cf.destroy();
 	}
 
@@ -392,7 +386,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		while (container.isActive() && n++ < 100) {
 			Thread.sleep(100);
 		}
-		assertFalse(container.isActive());
+		assertThat(container.isActive()).isFalse();
 	}
 
 	@Test
@@ -423,9 +417,9 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.setFailedDeclarationRetryInterval(200);
 		container.afterPropertiesSet();
 		container.start();
-		assertTrue(latch1.await(10, TimeUnit.SECONDS));
+		assertThat(latch1.await(10, TimeUnit.SECONDS)).isTrue();
 		given(channel.isOpen()).willReturn(false);
-		assertTrue(latch2.await(10, TimeUnit.SECONDS));
+		assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
 		container.setShutdownTimeout(1);
 		container.stop();
 	}
@@ -455,13 +449,13 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.setShutdownTimeout(1);
 		container.afterPropertiesSet();
 		container.start();
-		assertTrue(latch1.await(10, TimeUnit.SECONDS));
+		assertThat(latch1.await(10, TimeUnit.SECONDS)).isTrue();
 		Consumer consumer = consumerCaptor.getValue();
 		Executors.newSingleThreadExecutor().execute(() -> {
 			container.stop();
 			latch2.countDown();
 		});
-		assertTrue(latch2.await(10, TimeUnit.SECONDS));
+		assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
 		verify(channel).basicCancel(tag); // canceled properly even without consumeOk
 		consumer.handleCancelOk(tag);
 	}
@@ -498,26 +492,26 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.setConsumerTagStrategy(new Tag());
 		container.afterPropertiesSet();
 		container.start();
-		assertTrue(consumersOnQueue(Q1, 2));
-		assertTrue(consumersOnQueue(Q2, 2));
-		assertTrue(activeConsumerCount(container, 4));
+		assertThat(consumersOnQueue(Q1, 2)).isTrue();
+		assertThat(consumersOnQueue(Q2, 2)).isTrue();
+		assertThat(activeConsumerCount(container, 4)).isTrue();
 		brokerRunning.deleteQueues(Q1);
-		assertTrue(consumersOnQueue(Q2, 2));
-		assertTrue(activeConsumerCount(container, 2));
-		assertTrue(restartConsumerCount(container, 2));
+		assertThat(consumersOnQueue(Q2, 2)).isTrue();
+		assertThat(activeConsumerCount(container, 2)).isTrue();
+		assertThat(restartConsumerCount(container, 2)).isTrue();
 		RabbitAdmin admin = new RabbitAdmin(cf);
 		if (!autoDeclare) {
 			Thread.sleep(2000);
 			admin.declareQueue(new Queue(Q1));
 		}
-		assertTrue(consumersOnQueue(Q1, 2));
-		assertTrue(consumersOnQueue(Q2, 2));
-		assertTrue(activeConsumerCount(container, 4));
+		assertThat(consumersOnQueue(Q1, 2)).isTrue();
+		assertThat(consumersOnQueue(Q2, 2)).isTrue();
+		assertThat(activeConsumerCount(container, 4)).isTrue();
 		container.stop();
-		assertTrue(consumersOnQueue(Q1, 0));
-		assertTrue(consumersOnQueue(Q2, 0));
-		assertTrue(activeConsumerCount(container, 0));
-		assertEquals(0, TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size());
+		assertThat(consumersOnQueue(Q1, 0)).isTrue();
+		assertThat(consumersOnQueue(Q2, 0)).isTrue();
+		assertThat(activeConsumerCount(container, 0)).isTrue();
+		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size()).isEqualTo(0);
 		cf.destroy();
 	}
 
@@ -539,9 +533,9 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.afterPropertiesSet();
 		container.start();
 		ChannelHolder channelHolder = container.getChannelHolder();
-		assertTrue(consumeLatch.await(10, TimeUnit.SECONDS));
+		assertThat(consumeLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		container.releaseConsumerFor(channelHolder, true, "foo");
-		assertTrue(releaseLatch.await(10, TimeUnit.SECONDS));
+		assertThat(releaseLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		container.stop();
 		cf.destroy();
 	}
@@ -562,12 +556,12 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.start();
 		ChannelHolder channelHolder1 = container.getChannelHolder();
 		ChannelHolder channelHolder2 = container.getChannelHolder();
-		assertTrue(activeConsumerCount(container, 2));
+		assertThat(activeConsumerCount(container, 2)).isTrue();
 		container.releaseConsumerFor(channelHolder2, false, null);
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
-		assertTrue(channelHolder1.getChannel().isOpen());
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(channelHolder1.getChannel().isOpen()).isTrue();
 		container.releaseConsumerFor(channelHolder1, false, null);
-		assertTrue(activeConsumerCount(container, 0));
+		assertThat(activeConsumerCount(container, 0)).isTrue();
 		container.stop();
 		cf.destroy();
 	}
@@ -594,7 +588,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		while (n++ < 100 && container.isRunning()) {
 			Thread.sleep(100);
 		}
-		assertFalse(container.isRunning());
+		assertThat(container.isRunning()).isFalse();
 	}
 
 	@Test
@@ -614,14 +608,14 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.afterPropertiesSet();
 		container.start();
 		new RabbitTemplate(cf).convertAndSend(Q1, "foo");
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 		cf.onApplicationEvent(new ContextClosedEvent(context));
 		cf.destroy();
 		int n = 0;
 		while (n++ < 100 && container.isRunning()) {
 			Thread.sleep(100);
 		}
-		assertFalse(container.isRunning());
+		assertThat(container.isRunning()).isFalse();
 	}
 
 	@Test
@@ -640,7 +634,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		RabbitTemplate rabbitTemplate = new RabbitTemplate(cf);
 		rabbitTemplate.convertAndSend(Q1, "foo");
 		rabbitTemplate.convertAndSend(Q1, "bar");
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 		container.stop();
 		cf.destroy();
 	}

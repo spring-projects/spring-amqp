@@ -16,17 +16,8 @@
 
 package org.springframework.amqp.rabbit.core;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -120,7 +111,7 @@ public class RabbitAdminTests {
 			fail("should have thrown IllegalArgumentException when ConnectionFactory is null.");
 		}
 		catch (IllegalArgumentException e) {
-			assertEquals("ConnectionFactory must not be null", e.getMessage());
+			assertThat(e.getMessage()).isEqualTo("ConnectionFactory must not be null");
 		}
 	}
 
@@ -165,7 +156,7 @@ public class RabbitAdminTests {
 			while (n++ < 100 && messageCount(rabbitAdmin, queueName) == 0) {
 				Thread.sleep(100);
 			}
-			assertTrue("Message count = 0", n < 100);
+			assertThat(n < 100).as("Message count = 0").isTrue();
 			Channel channel = connectionFactory.createConnection().createChannel(false);
 			DefaultConsumer consumer = new DefaultConsumer(channel);
 			channel.basicConsume(queueName, true, consumer);
@@ -173,10 +164,10 @@ public class RabbitAdminTests {
 			while (n++ < 100 && messageCount(rabbitAdmin, queueName) > 0) {
 				Thread.sleep(100);
 			}
-			assertTrue("Message count > 0", n < 100);
+			assertThat(n < 100).as("Message count > 0").isTrue();
 			Properties props = rabbitAdmin.getQueueProperties(queueName);
-			assertNotNull(props.get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
-			assertEquals(1, props.get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+			assertThat(props.get(RabbitAdmin.QUEUE_CONSUMER_COUNT)).isNotNull();
+			assertThat(props.get(RabbitAdmin.QUEUE_CONSUMER_COUNT)).isEqualTo(1);
 			channel.close();
 		}
 		finally {
@@ -187,7 +178,7 @@ public class RabbitAdminTests {
 
 	private int messageCount(RabbitAdmin rabbitAdmin, String queueName) {
 		QueueInformation info = rabbitAdmin.getQueueInfo(queueName);
-		assertNotNull(info);
+		assertThat(info).isNotNull();
 		return info.getMessageCount();
 	}
 
@@ -220,13 +211,13 @@ public class RabbitAdminTests {
 			verify(logger, times(7)).info(log.capture());
 			List<String> logs = log.getAllValues();
 			Collections.sort(logs);
-			assertThat(logs.get(0), containsString("(testex.ad) durable:true, auto-delete:true"));
-			assertThat(logs.get(1), containsString("(testex.all) durable:false, auto-delete:true"));
-			assertThat(logs.get(2), containsString("(testex.nonDur) durable:false, auto-delete:false"));
-			assertThat(logs.get(3), containsString("(testq.ad) durable:true, auto-delete:true, exclusive:false"));
-			assertThat(logs.get(4), containsString("(testq.all) durable:false, auto-delete:true, exclusive:true"));
-			assertThat(logs.get(5), containsString("(testq.excl) durable:true, auto-delete:false, exclusive:true"));
-			assertThat(logs.get(6), containsString("(testq.nonDur) durable:false, auto-delete:false, exclusive:false"));
+			assertThat(logs.get(0)).contains("(testex.ad) durable:true, auto-delete:true");
+			assertThat(logs.get(1)).contains("(testex.all) durable:false, auto-delete:true");
+			assertThat(logs.get(2)).contains("(testex.nonDur) durable:false, auto-delete:false");
+			assertThat(logs.get(3)).contains("(testq.ad) durable:true, auto-delete:true, exclusive:false");
+			assertThat(logs.get(4)).contains("(testq.all) durable:false, auto-delete:true, exclusive:true");
+			assertThat(logs.get(5)).contains("(testq.excl) durable:true, auto-delete:false, exclusive:true");
+			assertThat(logs.get(6)).contains("(testq.nonDur) durable:false, auto-delete:false, exclusive:false");
 		}
 		finally {
 			cleanQueuesAndExchanges(rabbitAdmin);
@@ -252,10 +243,10 @@ public class RabbitAdminTests {
 		template.convertAndSend("e2", "k2", "bar");
 		template.convertAndSend("e3", "k3", "baz");
 		template.convertAndSend("e4", "k4", "qux");
-		assertEquals("foo", template.receiveAndConvert("q1"));
-		assertEquals("bar", template.receiveAndConvert("q2"));
-		assertEquals("baz", template.receiveAndConvert("q3"));
-		assertEquals("qux", template.receiveAndConvert("q4"));
+		assertThat(template.receiveAndConvert("q1")).isEqualTo("foo");
+		assertThat(template.receiveAndConvert("q2")).isEqualTo("bar");
+		assertThat(template.receiveAndConvert("q3")).isEqualTo("baz");
+		assertThat(template.receiveAndConvert("q4")).isEqualTo("qux");
 		RabbitAdmin admin = ctx.getBean(RabbitAdmin.class);
 		admin.deleteQueue("q1");
 		admin.deleteQueue("q2");
@@ -265,7 +256,7 @@ public class RabbitAdminTests {
 		admin.deleteExchange("e2");
 		admin.deleteExchange("e3");
 		admin.deleteExchange("e4");
-		assertNull(admin.getQueueProperties(ctx.getBean(Config.class).prototypeQueueName));
+		assertThat(admin.getQueueProperties(ctx.getBean(Config.class).prototypeQueueName)).isNull();
 		ctx.close();
 	}
 
@@ -283,8 +274,8 @@ public class RabbitAdminTests {
 		}
 		String goodName = "foobar";
 		admin.declareQueue(new Queue(goodName));
-		assertNull(admin.getQueueProperties(longName));
-		assertNotNull(admin.getQueueProperties(goodName));
+		assertThat(admin.getQueueProperties(longName)).isNull();
+		assertThat(admin.getQueueProperties(goodName)).isNotNull();
 		admin.deleteQueue(goodName);
 		cf.destroy();
 	}
@@ -305,18 +296,18 @@ public class RabbitAdminTests {
 		admin.declareQueue();
 		admin.declareExchange(new DirectExchange("foo"));
 		admin.declareBinding(new Binding("foo", DestinationType.QUEUE, "bar", "baz", null));
-		assertThat(events.size(), equalTo(4));
-		assertThat(events.get(0).getSource(), sameInstance(admin));
-		assertThat(events.get(0).getDeclarable(), instanceOf(AnonymousQueue.class));
-		assertSame(toBeThrown, events.get(0).getThrowable().getCause());
-		assertNull(events.get(1).getDeclarable());
-		assertSame(toBeThrown, events.get(1).getThrowable().getCause());
-		assertThat(events.get(2).getDeclarable(), instanceOf(DirectExchange.class));
-		assertSame(toBeThrown, events.get(2).getThrowable().getCause());
-		assertThat(events.get(3).getDeclarable(), instanceOf(Binding.class));
-		assertSame(toBeThrown, events.get(3).getThrowable().getCause());
+		assertThat(events.size()).isEqualTo(4);
+		assertThat(events.get(0).getSource()).isSameAs(admin);
+		assertThat(events.get(0).getDeclarable()).isInstanceOf(AnonymousQueue.class);
+		assertThat(events.get(0).getThrowable().getCause()).isSameAs(toBeThrown);
+		assertThat(events.get(1).getDeclarable()).isNull();
+		assertThat(events.get(1).getThrowable().getCause()).isSameAs(toBeThrown);
+		assertThat(events.get(2).getDeclarable()).isInstanceOf(DirectExchange.class);
+		assertThat(events.get(2).getThrowable().getCause()).isSameAs(toBeThrown);
+		assertThat(events.get(3).getDeclarable()).isInstanceOf(Binding.class);
+		assertThat(events.get(3).getThrowable().getCause()).isSameAs(toBeThrown);
 
-		assertSame(events.get(3), admin.getLastDeclarationExceptionEvent());
+		assertThat(admin.getLastDeclarationExceptionEvent()).isSameAs(events.get(3));
 	}
 
 	@Test
@@ -387,8 +378,8 @@ public class RabbitAdminTests {
 			Thread.sleep(100);
 			info = client.getQueue("/", queue.getName());
 		}
-		assertNotNull(info);
-		assertThat(info.getArguments().get(Queue.X_QUEUE_MASTER_LOCATOR), equalTo("client-local"));
+		assertThat(info).isNotNull();
+		assertThat(info.getArguments().get(Queue.X_QUEUE_MASTER_LOCATOR)).isEqualTo("client-local");
 
 		queue = new AnonymousQueue();
 		queue.setMasterLocator(null);
@@ -399,8 +390,8 @@ public class RabbitAdminTests {
 			Thread.sleep(100);
 			info = client.getQueue("/", queue.getName());
 		}
-		assertNotNull(info);
-		assertNull(info.getArguments().get(Queue.X_QUEUE_MASTER_LOCATOR));
+		assertThat(info).isNotNull();
+		assertThat(info.getArguments().get(Queue.X_QUEUE_MASTER_LOCATOR)).isNull();
 		cf.destroy();
 	}
 

@@ -16,17 +16,7 @@
 
 package org.springframework.amqp.rabbit.annotation;
 
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -80,22 +70,22 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 				Config.class, SimpleMessageListenerTestBean.class);
 
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
-		assertEquals("One container should have been registered", 1, factory.getListenerContainers().size());
+		assertThat(factory.getListenerContainers().size()).as("One container should have been registered").isEqualTo(1);
 		MessageListenerTestContainer container = factory.getListenerContainers().get(0);
 
 		RabbitListenerEndpoint endpoint = container.getEndpoint();
-		assertEquals("Wrong endpoint type", MethodRabbitListenerEndpoint.class, endpoint.getClass());
+		assertThat(endpoint.getClass()).as("Wrong endpoint type").isEqualTo(MethodRabbitListenerEndpoint.class);
 		MethodRabbitListenerEndpoint methodEndpoint = (MethodRabbitListenerEndpoint) endpoint;
-		assertNotNull(methodEndpoint.getBean());
-		assertNotNull(methodEndpoint.getMethod());
+		assertThat(methodEndpoint.getBean()).isNotNull();
+		assertThat(methodEndpoint.getMethod()).isNotNull();
 
 		SimpleMessageListenerContainer listenerContainer = new SimpleMessageListenerContainer();
 		methodEndpoint.setupListenerContainer(listenerContainer);
-		assertNotNull(listenerContainer.getMessageListener());
+		assertThat(listenerContainer.getMessageListener()).isNotNull();
 
-		assertTrue("Should have been started " + container, container.isStarted());
+		assertThat(container.isStarted()).as("Should have been started " + container).isTrue();
 		context.close(); // Close and stop the listeners
-		assertTrue("Should have been stopped " + container, container.isStopped());
+		assertThat(container.isStopped()).as("Should have been stopped " + container).isTrue();
 	}
 
 	@Test
@@ -104,26 +94,26 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 				Config.class, SimpleMessageListenerWithMixedAnnotationsTestBean.class);
 
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
-		assertEquals("One container should have been registered", 1, factory.getListenerContainers().size());
+		assertThat(factory.getListenerContainers().size()).as("One container should have been registered").isEqualTo(1);
 		MessageListenerTestContainer container = factory.getListenerContainers().get(0);
 
 		RabbitListenerEndpoint endpoint = container.getEndpoint();
-		assertEquals("Wrong endpoint type", MethodRabbitListenerEndpoint.class, endpoint.getClass());
+		assertThat(endpoint.getClass()).as("Wrong endpoint type").isEqualTo(MethodRabbitListenerEndpoint.class);
 		MethodRabbitListenerEndpoint methodEndpoint = (MethodRabbitListenerEndpoint) endpoint;
-		assertNotNull(methodEndpoint.getBean());
-		assertNotNull(methodEndpoint.getMethod());
+		assertThat(methodEndpoint.getBean()).isNotNull();
+		assertThat(methodEndpoint.getMethod()).isNotNull();
 
 		Iterator<String> iterator = ((MethodRabbitListenerEndpoint) endpoint).getQueueNames().iterator();
-		assertEquals("testQueue", iterator.next());
-		assertEquals("secondQueue", iterator.next());
+		assertThat(iterator.next()).isEqualTo("testQueue");
+		assertThat(iterator.next()).isEqualTo("secondQueue");
 
 		SimpleMessageListenerContainer listenerContainer = new SimpleMessageListenerContainer();
 		methodEndpoint.setupListenerContainer(listenerContainer);
-		assertNotNull(listenerContainer.getMessageListener());
+		assertThat(listenerContainer.getMessageListener()).isNotNull();
 
-		assertTrue("Should have been started " + container, container.isStarted());
+		assertThat(container.isStarted()).as("Should have been started " + container).isTrue();
 		context.close(); // Close and stop the listeners
-		assertTrue("Should have been stopped " + container, container.isStopped());
+		assertThat(container.isStopped()).as("Should have been stopped " + container).isTrue();
 	}
 
 	@Test
@@ -132,9 +122,9 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 				Config.class, MetaAnnotationTestBean.class);
 
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
-		assertEquals("one container should have been registered", 1, factory.getListenerContainers().size());
+		assertThat(factory.getListenerContainers().size()).as("one container should have been registered").isEqualTo(1);
 		RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
-		assertEquals("metaTestQueue", ((AbstractRabbitListenerEndpoint) endpoint).getQueueNames().iterator().next());
+		assertThat(((AbstractRabbitListenerEndpoint) endpoint).getQueueNames().iterator().next()).isEqualTo("metaTestQueue");
 
 		context.close();
 	}
@@ -145,11 +135,11 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 				Config.class, MultipleQueueNamesTestBean.class);
 
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
-		assertEquals("one container should have been registered", 1, factory.getListenerContainers().size());
+		assertThat(factory.getListenerContainers().size()).as("one container should have been registered").isEqualTo(1);
 		RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
 		final Iterator<String> iterator = ((AbstractRabbitListenerEndpoint) endpoint).getQueueNames().iterator();
-		assertEquals("metaTestQueue", iterator.next());
-		assertEquals("testQueue", iterator.next());
+		assertThat(iterator.next()).isEqualTo("metaTestQueue");
+		assertThat(iterator.next()).isEqualTo("testQueue");
 
 		context.close();
 	}
@@ -160,11 +150,11 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 				Config.class, MultipleQueuesTestBean.class);
 
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
-		assertEquals("one container should have been registered", 1, factory.getListenerContainers().size());
+		assertThat(factory.getListenerContainers().size()).as("one container should have been registered").isEqualTo(1);
 		RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
 		final Iterator<String> iterator = ((AbstractRabbitListenerEndpoint) endpoint).getQueueNames().iterator();
-		assertEquals("testQueue", iterator.next());
-		assertEquals("secondQueue", iterator.next());
+		assertThat(iterator.next()).isEqualTo("testQueue");
+		assertThat(iterator.next()).isEqualTo("secondQueue");
 
 		context.close();
 	}
@@ -175,12 +165,12 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 				Config.class, MixedQueuesAndQueueNamesTestBean.class);
 
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
-		assertEquals("one container should have been registered", 1, factory.getListenerContainers().size());
+		assertThat(factory.getListenerContainers().size()).as("one container should have been registered").isEqualTo(1);
 		RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
 		final Iterator<String> iterator = ((AbstractRabbitListenerEndpoint) endpoint).getQueueNames().iterator();
-		assertEquals("metaTestQueue", iterator.next());
-		assertEquals("testQueue", iterator.next());
-		assertEquals("secondQueue", iterator.next());
+		assertThat(iterator.next()).isEqualTo("metaTestQueue");
+		assertThat(iterator.next()).isEqualTo("testQueue");
+		assertThat(iterator.next()).isEqualTo("secondQueue");
 
 		context.close();
 	}
@@ -191,11 +181,11 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 				Config.class, PropertyResolvingToExpressionTestBean.class);
 
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
-		assertEquals("one container should have been registered", 1, factory.getListenerContainers().size());
+		assertThat(factory.getListenerContainers().size()).as("one container should have been registered").isEqualTo(1);
 		RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
 		final Iterator<String> iterator = ((AbstractRabbitListenerEndpoint) endpoint).getQueueNames().iterator();
-		assertEquals("testQueue", iterator.next());
-		assertEquals("secondQueue", iterator.next());
+		assertThat(iterator.next()).isEqualTo("testQueue");
+		assertThat(iterator.next()).isEqualTo("secondQueue");
 
 		context.close();
 	}
@@ -206,11 +196,8 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 			new AnnotationConfigApplicationContext(Config.class, InvalidValueInAnnotationTestBean.class).close();
 		}
 		catch (BeanCreationException e) {
-			assertThat(e.getCause(), instanceOf(IllegalArgumentException.class));
-			assertThat(e.getMessage(), allOf(
-					containsString("@RabbitListener can't resolve"),
-					containsString("as either a String or a Queue")
-					));
+			assertThat(e.getCause()).isInstanceOf(IllegalArgumentException.class);
+			assertThat(e.getMessage()).contains("@RabbitListener can't resolve").contains("as either a String or a Queue");
 		}
 	}
 
@@ -220,23 +207,21 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 				MultipleRoutingKeysTestBean.class);
 
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
-		assertThat("one container should have been registered", factory.getListenerContainers(), hasSize(1));
+		assertThat(factory.getListenerContainers()).as("one container should have been registered").hasSize(1);
 		RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
-		assertEquals(Collections.singletonList("my_queue"),
-				((AbstractRabbitListenerEndpoint) endpoint).getQueueNames());
+		assertThat(((AbstractRabbitListenerEndpoint) endpoint).getQueueNames()).isEqualTo(Collections.singletonList("my_queue"));
 		final List<Queue> queues = new ArrayList<>(context.getBeansOfType(Queue.class).values());
 		queues.sort(Comparator.comparing(Queue::getName));
-		assertThat(queues.stream().map(Queue::getName).collect(Collectors.toList()),
-				contains("my_queue", "secondQueue", "testQueue"));
-		assertEquals(Collections.singletonMap("foo", "bar"), queues.get(0).getArguments());
+		assertThat(queues.stream().map(Queue::getName).collect(Collectors.toList())).containsExactly("my_queue", "secondQueue", "testQueue");
+		assertThat(queues.get(0).getArguments()).isEqualTo(Collections.singletonMap("foo", "bar"));
 
-		assertThat(context.getBeansOfType(org.springframework.amqp.core.Exchange.class).values(), hasSize(1));
+		assertThat(context.getBeansOfType(org.springframework.amqp.core.Exchange.class).values()).hasSize(1);
 
 		final List<Binding> bindings = new ArrayList<>(context.getBeansOfType(Binding.class).values());
-		assertThat(bindings, hasSize(2));
+		assertThat(bindings).hasSize(2);
 		bindings.sort(Comparator.comparing(Binding::getRoutingKey));
-		assertEquals("Binding [destination=my_queue, exchange=my_exchange, routingKey=red]", bindings.get(0).toString());
-		assertEquals("Binding [destination=my_queue, exchange=my_exchange, routingKey=yellow]", bindings.get(1).toString());
+		assertThat(bindings.get(0).toString()).isEqualTo("Binding [destination=my_queue, exchange=my_exchange, routingKey=red]");
+		assertThat(bindings.get(1).toString()).isEqualTo("Binding [destination=my_queue, exchange=my_exchange, routingKey=yellow]");
 
 		context.close();
 	}
@@ -247,10 +232,10 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 				CustomExchangeTestBean.class);
 
 		final Collection<CustomExchange> exchanges = context.getBeansOfType(CustomExchange.class).values();
-		assertThat(exchanges, hasSize(1));
+		assertThat(exchanges).hasSize(1);
 		final CustomExchange exchange = exchanges.iterator().next();
-		assertEquals("my_custom_exchange", exchange.getName());
-		assertEquals("custom_type", exchange.getType());
+		assertThat(exchange.getName()).isEqualTo("my_custom_exchange");
+		assertThat(exchange.getType()).isEqualTo("custom_type");
 
 		context.close();
 	}
@@ -261,20 +246,20 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 				QueuesToDeclareTestBean.class);
 
 		final List<Queue> queues = new ArrayList<>(context.getBeansOfType(Queue.class).values());
-		assertThat(queues, hasSize(4));
+		assertThat(queues).hasSize(4);
 		queues.sort(Comparator.comparing(Queue::getName));
 
 		final Queue queue0 = queues.get(0);
-		assertEquals("my_declared_queue", queue0.getName());
-		assertTrue(queue0.isDurable());
-		assertFalse(queue0.isAutoDelete());
-		assertFalse(queue0.isExclusive());
+		assertThat(queue0.getName()).isEqualTo("my_declared_queue");
+		assertThat(queue0.isDurable()).isTrue();
+		assertThat(queue0.isAutoDelete()).isFalse();
+		assertThat(queue0.isExclusive()).isFalse();
 
 		final Queue queue2 = queues.get(2);
-		assertThat(queue2.getName(), startsWith("spring.gen-"));
-		assertFalse(queue2.isDurable());
-		assertTrue(queue2.isAutoDelete());
-		assertTrue(queue2.isExclusive());
+		assertThat(queue2.getName()).startsWith("spring.gen-");
+		assertThat(queue2.isDurable()).isFalse();
+		assertThat(queue2.isAutoDelete()).isTrue();
+		assertThat(queue2.isExclusive()).isTrue();
 
 		context.close();
 	}

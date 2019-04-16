@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.connection;
 
-import static org.junit.Assert.assertSame;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import org.junit.Test;
@@ -37,7 +37,7 @@ public class ConnectionFactoryUtilsTests {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 		TransactionSynchronizationManager.setActualTransactionActive(true);
 		ConnectionFactoryUtils.bindResourceToTransaction(h1, connectionFactory, true);
-		assertSame(h1, ConnectionFactoryUtils.bindResourceToTransaction(h2, connectionFactory, true));
+		assertThat(ConnectionFactoryUtils.bindResourceToTransaction(h2, connectionFactory, true)).isSameAs(h1);
 		TransactionSynchronizationManager.clear();
 	}
 

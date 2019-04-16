@@ -17,7 +17,8 @@
 package org.springframework.amqp.rabbit.annotation;
 
 
-import org.hamcrest.core.Is;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import org.junit.Test;
 
 import org.springframework.amqp.core.MessageListener;
@@ -61,9 +62,11 @@ public class AnnotationDrivenNamespaceTests extends AbstractRabbitAnnotationDriv
 
 	@Override
 	public void noRabbitAdminConfiguration() {
-		thrown.expect(BeanCreationException.class);
-		thrown.expectMessage("'rabbitAdmin'");
-		new ClassPathXmlApplicationContext("annotation-driven-no-rabbit-admin-config.xml", getClass()).close();
+		assertThatThrownBy(
+				() -> new ClassPathXmlApplicationContext("annotation-driven-no-rabbit-admin-config.xml", getClass())
+					.close())
+			.isExactlyInstanceOf(BeanCreationException.class)
+			.withFailMessage("'rabbitAdmin'");
 	}
 
 	@Override
@@ -94,9 +97,10 @@ public class AnnotationDrivenNamespaceTests extends AbstractRabbitAnnotationDriv
 		ApplicationContext context = new ClassPathXmlApplicationContext(
 				"annotation-driven-custom-handler-method-factory.xml", getClass());
 
-		thrown.expect(ListenerExecutionFailedException.class);
-		thrown.expectCause(Is.<MethodArgumentNotValidException>isA(MethodArgumentNotValidException.class));
-		testRabbitHandlerMethodFactoryConfiguration(context);
+		assertThatThrownBy(() -> testRabbitHandlerMethodFactoryConfiguration(context))
+			.isExactlyInstanceOf(ListenerExecutionFailedException.class)
+			.hasCauseExactlyInstanceOf(MethodArgumentNotValidException.class);
+
 	}
 
 	@Override

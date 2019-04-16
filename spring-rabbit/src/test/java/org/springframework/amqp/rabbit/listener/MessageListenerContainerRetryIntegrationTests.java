@@ -16,8 +16,8 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -141,17 +141,20 @@ public class MessageListenerContainerRetryIntegrationTests {
 		int txSize = 1;
 		int failFrequency = 1;
 		int concurrentConsumers = 1;
-		SimpleMessageConverter messageConverter = new SimpleMessageConverter();
+		SimpleMessageConverter converter = new SimpleMessageConverter();
 		// There will be no key for these messages so they cannot be recovered...
-		messageConverter.setCreateMessageIds(false);
-		this.messageConverter = messageConverter;
+		converter.setCreateMessageIds(false);
+		this.messageConverter = converter;
 		// Beware of context cache busting if retry policy fails...
 		this.retryTemplate = new RetryTemplate();
 		this.retryTemplate.setRetryContextCache(new MapRetryContextCache(1));
 		// The container should have shutdown, so there are now no active consumers
-		exception.expectMessage("expected:<1> but was:<0>");
-		doTestStatefulRetry(messageCount, txSize, failFrequency, concurrentConsumers);
-
+		assertThatThrownBy(() -> doTestStatefulRetry(messageCount, txSize, failFrequency, concurrentConsumers))
+			.hasMessageContaining("Expecting:")
+			.hasMessageContaining(" <0>")
+			.hasMessageContaining("to be equal to")
+			.hasMessageContaining(" <1>")
+			.hasMessageContaining("but was not.");
 	}
 
 	@Test
@@ -257,21 +260,21 @@ public class MessageListenerContainerRetryIntegrationTests {
 			});
 			boolean waited = latch.await(timeout, TimeUnit.SECONDS);
 			logger.info("All messages recovered: " + waited);
-			assertEquals(concurrentConsumers, container.getActiveConsumerCount());
-			assertTrue("Timed out waiting for messages", waited);
+			assertThat(container.getActiveConsumerCount()).isEqualTo(concurrentConsumers);
+			assertThat(waited).as("Timed out waiting for messages").isTrue();
 
 			// Retried each failure 3 times (default retry policy)...
-			assertEquals(3 * failedMessageCount, listener.getCount());
+			assertThat(listener.getCount()).isEqualTo(3 * failedMessageCount);
 
 			// All failed messages recovered
-			assertEquals(null, template.receiveAndConvert(queue.getName()));
+			assertThat(template.receiveAndConvert(queue.getName())).isEqualTo(null);
 
 		}
 		finally {
 			container.shutdown();
 			((DisposableBean) template.getConnectionFactory()).destroy();
 
-			assertEquals(0, container.getActiveConsumerCount());
+			assertThat(container.getActiveConsumerCount()).isEqualTo(0);
 		}
 
 	}

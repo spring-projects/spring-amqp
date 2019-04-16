@@ -16,8 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -79,9 +78,9 @@ public class RabbitListenerEndpointRegistrarTests {
 		registrar.setContainerFactory(containerFactory);
 		registrar.registerEndpoint(endpoint, null);
 		registrar.afterPropertiesSet();
-		assertNotNull("Container not created", registry.getListenerContainer("some id"));
-		assertEquals("some id", registry.getListenerContainerIds().iterator().next());
-		assertEquals(1, registry.getListenerContainers().size());
+		assertThat(registry.getListenerContainer("some id")).as("Container not created").isNotNull();
+		assertThat(registry.getListenerContainerIds().iterator().next()).isEqualTo("some id");
+		assertThat(registry.getListenerContainers().size()).isEqualTo(1);
 	}
 
 	@Test
@@ -102,9 +101,9 @@ public class RabbitListenerEndpointRegistrarTests {
 		registrar.setContainerFactory(containerFactory);
 		registrar.registerEndpoint(endpoint);
 		registrar.afterPropertiesSet();
-		assertNotNull("Container not created", registry.getListenerContainer("myEndpoint"));
-		assertEquals("myEndpoint", registry.getListenerContainerIds().iterator().next());
-		assertEquals(1, registry.getListenerContainers().size());
+		assertThat(registry.getListenerContainer("myEndpoint")).as("Container not created").isNotNull();
+		assertThat(registry.getListenerContainerIds().iterator().next()).isEqualTo("myEndpoint");
+		assertThat(registry.getListenerContainers().size()).isEqualTo(1);
 	}
 
 }

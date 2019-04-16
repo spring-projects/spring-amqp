@@ -16,8 +16,7 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -85,9 +84,9 @@ public final class ExchangeParserIntegrationTests {
 		// The queue is anonymous so it will be deleted at the end of the test, but it should get the message as long as
 		// we use the same connection
 		String result = (String) template.receiveAndConvert(queue.getName());
-		assertEquals("message", result);
+		assertThat(result).isEqualTo("message");
 		result = (String) template.receiveAndConvert(queue.getName());
-		assertEquals("message", result);
+		assertThat(result).isEqualTo("message");
 	}
 
 	@Test
@@ -99,26 +98,26 @@ public final class ExchangeParserIntegrationTests {
 		Thread.sleep(200);
 
 		String result = (String) template.receiveAndConvert(queue.getName());
-		assertEquals("message", result);
+		assertThat(result).isEqualTo("message");
 
 		template.convertAndSend(directTest.getName(), "", "message2");
 		Thread.sleep(200);
 
-		assertNull(template.receiveAndConvert(queue.getName()));
+		assertThat(template.receiveAndConvert(queue.getName())).isNull();
 
 		result = (String) template.receiveAndConvert(queue2.getName());
-		assertEquals("message2", result);
+		assertThat(result).isEqualTo("message2");
 
 		template.convertAndSend(directTest.getName(), queue2.getName(), "message2");
 		Thread.sleep(200);
 
-		assertNull(template.receiveAndConvert(queue2.getName()));
+		assertThat(template.receiveAndConvert(queue2.getName())).isNull();
 
 		template.convertAndSend(directTest.getName(), queue3.getName(), "message2");
 		Thread.sleep(200);
 
 		result = (String) template.receiveAndConvert(queue3.getName());
-		assertEquals("message2", result);
+		assertThat(result).isEqualTo("message2");
 	}
 
 }

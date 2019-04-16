@@ -16,10 +16,7 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
 
@@ -60,43 +57,43 @@ public final class RabbitNamespaceHandlerTests {
 	@Test
 	public void testQueue() throws Exception {
 		Queue queue = beanFactory.getBean("foo", Queue.class);
-		assertNotNull(queue);
-		assertEquals("foo", queue.getName());
+		assertThat(queue).isNotNull();
+		assertThat(queue.getName()).isEqualTo("foo");
 	}
 
 	@Test
 	public void testAliasQueue() throws Exception {
 		Queue queue = beanFactory.getBean("bar", Queue.class);
-		assertNotNull(queue);
-		assertEquals("bar", queue.getName());
+		assertThat(queue).isNotNull();
+		assertThat(queue.getName()).isEqualTo("bar");
 	}
 
 	@Test
 	public void testAnonymousQueue() throws Exception {
 		Queue queue = beanFactory.getBean("bucket", Queue.class);
-		assertNotNull(queue);
-		assertNotSame("bucket", queue.getName());
-		assertTrue(queue instanceof AnonymousQueue);
+		assertThat(queue).isNotNull();
+		assertThat(queue.getName()).isNotSameAs("bucket");
+		assertThat(queue instanceof AnonymousQueue).isTrue();
 	}
 
 	@Test
 	public void testExchanges() throws Exception {
-		assertNotNull(beanFactory.getBean("direct-test", DirectExchange.class));
-		assertNotNull(beanFactory.getBean("topic-test", TopicExchange.class));
-		assertNotNull(beanFactory.getBean("fanout-test", FanoutExchange.class));
-		assertNotNull(beanFactory.getBean("headers-test", HeadersExchange.class));
+		assertThat(beanFactory.getBean("direct-test", DirectExchange.class)).isNotNull();
+		assertThat(beanFactory.getBean("topic-test", TopicExchange.class)).isNotNull();
+		assertThat(beanFactory.getBean("fanout-test", FanoutExchange.class)).isNotNull();
+		assertThat(beanFactory.getBean("headers-test", HeadersExchange.class)).isNotNull();
 	}
 
 	@Test
 	public void testBindings() throws Exception {
 		Map<String, Binding> bindings = beanFactory.getBeansOfType(Binding.class);
 		// 4 for each exchange type
-		assertEquals(13, bindings.size());
+		assertThat(bindings.size()).isEqualTo(13);
 		for (Map.Entry<String, Binding> bindingEntry : bindings.entrySet()) {
 			Binding binding = bindingEntry.getValue();
 			if ("headers-test".equals(binding.getExchange()) && "bucket".equals(binding.getDestination())) {
 				Map<String, Object> arguments = binding.getArguments();
-				assertEquals(3, arguments.size());
+				assertThat(arguments.size()).isEqualTo(3);
 				break;
 			}
 		}
@@ -104,7 +101,7 @@ public final class RabbitNamespaceHandlerTests {
 
 	@Test
 	public void testAdmin() throws Exception {
-		assertNotNull(beanFactory.getBean("admin-test", RabbitAdmin.class));
+		assertThat(beanFactory.getBean("admin-test", RabbitAdmin.class)).isNotNull();
 	}
 
 }
