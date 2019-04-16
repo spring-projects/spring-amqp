@@ -139,13 +139,12 @@ public class MessageProperties implements Serializable {
 	/**
 	 * Typed getter for a header.
 	 * @param headerName the header name.
-	 * @param clazz the type.
 	 * @param <T> the type.
 	 * @return the header value
 	 * @since 2.2
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> T getHeader(String headerName, @SuppressWarnings("unused") Class<T> clazz) {
+	public <T> T getHeader(String headerName) {
 		return (T) this.headers.get(headerName);
 	}
 

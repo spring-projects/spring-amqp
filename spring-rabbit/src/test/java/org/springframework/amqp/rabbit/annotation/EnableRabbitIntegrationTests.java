@@ -1999,8 +1999,8 @@ public class EnableRabbitIntegrationTests {
 
 		@RabbitListener(queues = "test.notconverted.message")
 		public String justMessage(Message message) {
-			this.stringHeader = message.getMessageProperties().getHeader("stringHeader", String.class);
-			this.intHeader = message.getMessageProperties().getHeader("intHeader", Integer.class);
+			this.stringHeader = message.getMessageProperties().getHeader("stringHeader");
+			this.intHeader = message.getMessageProperties().getHeader("intHeader");
 			return "foo" + message.getClass().getSimpleName();
 		}
 
