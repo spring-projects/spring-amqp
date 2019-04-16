@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.connection;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.UUID;
 
@@ -71,7 +71,7 @@ public class LocalizedQueueConnectionFactoryIntegrationTests {
 		ConnectionFactory targetConnectionFactory = this.lqcf.getTargetConnectionFactory("[" + queue.getName() + "]");
 		RabbitTemplate template = new RabbitTemplate(targetConnectionFactory);
 		template.convertAndSend("", queue.getName(), "foo");
-		assertEquals("foo", template.receiveAndConvert(queue.getName()));
+		assertThat(template.receiveAndConvert(queue.getName())).isEqualTo("foo");
 		admin.deleteQueue(queue.getName());
 	}
 

@@ -16,9 +16,7 @@
 
 package org.springframework.amqp.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -42,14 +40,14 @@ public class MessagePropertiesTests {
 	public void testReplyTo() {
 		MessageProperties properties = new MessageProperties();
 		properties.setReplyTo("foo/bar");
-		assertEquals("bar", properties.getReplyToAddress().getRoutingKey());
+		assertThat(properties.getReplyToAddress().getRoutingKey()).isEqualTo("bar");
 	}
 
 	@Test
 	public void testReplyToNullByDefault() {
 		MessageProperties properties = new MessageProperties();
-		assertEquals(null, properties.getReplyTo());
-		assertEquals(null, properties.getReplyToAddress());
+		assertThat(properties.getReplyTo()).isEqualTo(null);
+		assertThat(properties.getReplyToAddress()).isEqualTo(null);
 	}
 
 	@Test
@@ -57,30 +55,30 @@ public class MessagePropertiesTests {
 		MessageProperties properties = new MessageProperties();
 		Integer delay = 100;
 		properties.setDelay(delay);
-		assertEquals(delay, properties.getHeaders().get(MessageProperties.X_DELAY));
+		assertThat(properties.getHeaders().get(MessageProperties.X_DELAY)).isEqualTo(delay);
 		properties.setDelay(null);
-		assertFalse(properties.getHeaders().containsKey(MessageProperties.X_DELAY));
+		assertThat(properties.getHeaders().containsKey(MessageProperties.X_DELAY)).isFalse();
 	}
 
 	@Test
 	public void testContentLengthSet() {
 		MessageProperties properties = new MessageProperties();
 		properties.setContentLength(1L);
-		assertTrue(properties.isContentLengthSet());
+		assertThat(properties.isContentLengthSet()).isTrue();
 	}
 
 	@Test
 	public void tesNoNullPointerInEquals() {
 		MessageProperties mp = new MessageProperties();
 		MessageProperties mp2 = new MessageProperties();
-		assertTrue(mp.equals(mp2));
+		assertThat(mp.equals(mp2)).isTrue();
 	}
 
 	 @Test
 	  public void tesNoNullPointerInHashCode() {
 	    Set<MessageProperties> messageList = new HashSet<>();
 	    messageList.add(new MessageProperties());
-	    assertEquals(1, messageList.size());
+	    assertThat(messageList.size()).isEqualTo(1);
 	  }
 
 }

@@ -16,14 +16,12 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.util.Arrays;
 import java.util.UUID;
 
-import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -90,12 +88,12 @@ public class JavaConfigFixedReplyQueueTests {
 	 */
 	@Test
 	public void testReplyContainer() {
-		assertEquals("FOO", this.fixedReplyQRabbitTemplate.convertSendAndReceive("foo"));
+		assertThat(this.fixedReplyQRabbitTemplate.convertSendAndReceive("foo")).isEqualTo("FOO");
 		Message message = MessageBuilder.withBody("foo".getBytes())
 				.setContentType("text/plain")
 				.build();
 		Message reply = this.fixedReplyQRabbitTemplate.sendAndReceive(message);
-		assertEquals(this.replyExchange.getName(), reply.getMessageProperties().getReceivedExchange());
+		assertThat(reply.getMessageProperties().getReceivedExchange()).isEqualTo(this.replyExchange.getName());
 	}
 
 	@Test
@@ -105,9 +103,8 @@ public class JavaConfigFixedReplyQueueTests {
 			fail("expected exeption");
 		}
 		catch (IllegalStateException e) {
-			assertThat(e.getMessage(),
-					Matchers.containsString("RabbitTemplate is not configured as MessageListener - "
-							+ "cannot use a 'replyAddress'"));
+			assertThat(e.getMessage()).contains("RabbitTemplate is not configured as MessageListener - "
+					+ "cannot use a 'replyAddress'");
 		}
 	}
 
@@ -119,11 +116,10 @@ public class JavaConfigFixedReplyQueueTests {
 		}
 		catch (UncategorizedAmqpException e) {
 			Throwable t = e.getCause();
-			assertThat(t, Matchers.instanceOf(IllegalStateException.class));
-			assertThat(t.getMessage(),
-					Matchers.containsString("Listener expects us to be listening on '["
-							+ TestUtils.getPropertyValue(this.fixedReplyQRabbitTemplateWrongQueue, "replyAddress")
-							+ "]'; our queues: " + Arrays.asList(this.replyListenerContainerWrongQueue.getQueueNames())));
+			assertThat(t).isInstanceOf(IllegalStateException.class);
+			assertThat(t.getMessage()).contains("Listener expects us to be listening on '["
+					+ TestUtils.getPropertyValue(this.fixedReplyQRabbitTemplateWrongQueue, "replyAddress")
+					+ "]'; our queues: " + Arrays.asList(this.replyListenerContainerWrongQueue.getQueueNames()));
 		}
 	}
 

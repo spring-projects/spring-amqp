@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.repeatable;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,27 +51,27 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	public void testRabbitListenerRepeatable(ApplicationContext context) {
 		RabbitListenerContainerTestFactory simpleFactory =
 				context.getBean("rabbitListenerContainerFactory", RabbitListenerContainerTestFactory.class);
-		assertEquals(4, simpleFactory.getListenerContainers().size());
+		assertThat(simpleFactory.getListenerContainers().size()).isEqualTo(4);
 
 		MethodRabbitListenerEndpoint first = (MethodRabbitListenerEndpoint)
 				simpleFactory.getListenerContainer("first").getEndpoint();
-		assertEquals("first", first.getId());
-		assertEquals("myQueue", first.getQueueNames().iterator().next());
+		assertThat(first.getId()).isEqualTo("first");
+		assertThat(first.getQueueNames().iterator().next()).isEqualTo("myQueue");
 
 		MethodRabbitListenerEndpoint second = (MethodRabbitListenerEndpoint)
 				simpleFactory.getListenerContainer("second").getEndpoint();
-		assertEquals("second", second.getId());
-		assertEquals("anotherQueue", second.getQueueNames().iterator().next());
+		assertThat(second.getId()).isEqualTo("second");
+		assertThat(second.getQueueNames().iterator().next()).isEqualTo("anotherQueue");
 
 		MethodRabbitListenerEndpoint third = (MethodRabbitListenerEndpoint)
 				simpleFactory.getListenerContainer("third").getEndpoint();
-		assertEquals("third", third.getId());
-		assertEquals("class1", third.getQueueNames().iterator().next());
+		assertThat(third.getId()).isEqualTo("third");
+		assertThat(third.getQueueNames().iterator().next()).isEqualTo("class1");
 
 		MethodRabbitListenerEndpoint fourth = (MethodRabbitListenerEndpoint)
 				simpleFactory.getListenerContainer("fourth").getEndpoint();
-		assertEquals("fourth", fourth.getId());
-		assertEquals("class2", fourth.getQueueNames().iterator().next());
+		assertThat(fourth.getId()).isEqualTo("fourth");
+		assertThat(fourth.getQueueNames().iterator().next()).isEqualTo("class2");
 	}
 
 	@Component

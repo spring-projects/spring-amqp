@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.junit;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +38,7 @@ public class RabbitAvailableTests {
 		Connection conn = connectionFactory.newConnection();
 		Channel channel = conn.createChannel();
 		DeclareOk declareOk = channel.queueDeclarePassive("rabbitAvailableTests.queue");
-		assertEquals(0, declareOk.getConsumerCount());
+		assertThat(declareOk.getConsumerCount()).isEqualTo(0);
 		channel.close();
 		conn.close();
 	}

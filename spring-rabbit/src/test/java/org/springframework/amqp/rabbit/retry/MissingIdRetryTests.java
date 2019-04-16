@@ -16,8 +16,7 @@
 
 package org.springframework.amqp.rabbit.retry;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atMost;
@@ -117,7 +116,7 @@ public class MissingIdRetryTests {
 		template.convertAndSend("retry.test.exchange", "retry.test.binding", "Hello, world!");
 		template.convertAndSend("retry.test.exchange", "retry.test.binding", "Hello, world!");
 		try {
-			assertTrue(latch.await(30, TimeUnit.SECONDS));
+			assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
 			Map map = (Map) new DirectFieldAccessor(cache).getPropertyValue("map");
 			int n = 0;
 			while (n++ < 100 && map.size() != 0) {
@@ -125,7 +124,7 @@ public class MissingIdRetryTests {
 			}
 			verify(cache, never()).put(any(), any(RetryContext.class));
 			verify(cache, never()).remove(any());
-			assertEquals("Expected map.size() = 0, was: " + map.size(), 0, map.size());
+			assertThat(map.size()).as("Expected map.size() = 0, was: " + map.size()).isEqualTo(0);
 		}
 		finally {
 			container.stop();
@@ -166,7 +165,7 @@ public class MissingIdRetryTests {
 		template.send("retry.test.exchange", "retry.test.binding", message);
 		template.send("retry.test.exchange", "retry.test.binding", message);
 		try {
-			assertTrue(latch.await(30, TimeUnit.SECONDS));
+			assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
 			Map map = (Map) new DirectFieldAccessor(cache).getPropertyValue("map");
 			int n = 0;
 			while (n++ < 100 && map.size() != 0) {
@@ -182,7 +181,7 @@ public class MissingIdRetryTests {
 			logger.debug("puts:" + putCaptor.getAllValues());
 			logger.debug("gets:" + putCaptor.getAllValues());
 			logger.debug("removes:" + removeCaptor.getAllValues());
-			assertEquals("Expected map.size() = 0, was: " + map.size(), 0, map.size());
+			assertThat(map.size()).as("Expected map.size() = 0, was: " + map.size()).isEqualTo(0);
 		}
 		finally {
 			container.stop();
@@ -231,7 +230,7 @@ public class MissingIdRetryTests {
 		messageProperties.setMessageId("bar");
 		template.send("retry.test.exchange", "retry.test.binding", message);
 		try {
-			assertTrue(latch.await(30, TimeUnit.SECONDS));
+			assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
 			Map map = (Map) new DirectFieldAccessor(cache).getPropertyValue("map");
 			int n = 0;
 			while (n++ < 100 && map.size() != 0) {
@@ -247,7 +246,7 @@ public class MissingIdRetryTests {
 			logger.debug("puts:" + putCaptor.getAllValues());
 			logger.debug("gets:" + putCaptor.getAllValues());
 			logger.debug("removes:" + removeCaptor.getAllValues());
-			assertEquals("Expected map.size() = 0, was: " + map.size(), 0, map.size());
+			assertThat(map.size()).as("Expected map.size() = 0, was: " + map.size()).isEqualTo(0);
 		}
 		finally {
 			container.stop();

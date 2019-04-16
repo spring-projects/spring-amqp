@@ -16,8 +16,8 @@
 
 package org.springframework.amqp.support.converter;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -41,23 +41,23 @@ public class WhiteListDeserializingMessageConverterTests {
 		TestBean testBean = new TestBean("foo");
 		Message message = converter.toMessage(testBean, new MessageProperties());
 		Object fromMessage = converter.fromMessage(message);
-		assertEquals(testBean, fromMessage);
+		assertThat(fromMessage).isEqualTo(testBean);
 
 		converter.setWhiteListPatterns(Collections.singletonList("*"));
 		fromMessage = converter.fromMessage(message);
-		assertEquals(testBean, fromMessage);
+		assertThat(fromMessage).isEqualTo(testBean);
 
 		converter.setWhiteListPatterns(Collections.singletonList("org.springframework.amqp.*"));
 		fromMessage = converter.fromMessage(message);
-		assertEquals(testBean, fromMessage);
+		assertThat(fromMessage).isEqualTo(testBean);
 		converter.setWhiteListPatterns(Collections.singletonList("*$TestBean"));
 		fromMessage = converter.fromMessage(message);
-		assertEquals(testBean, fromMessage);
+		assertThat(fromMessage).isEqualTo(testBean);
 
 		try {
 			converter.setWhiteListPatterns(Collections.singletonList("foo.*"));
 			fromMessage = converter.fromMessage(message);
-			assertEquals(testBean, fromMessage);
+			assertThat(fromMessage).isEqualTo(testBean);
 			fail("Expected SecurityException");
 		}
 		catch (SecurityException e) {

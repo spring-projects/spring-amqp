@@ -16,9 +16,7 @@
 
 package org.springframework.amqp.rabbit.core;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -46,12 +44,13 @@ public class SimplePublisherConfirmsTests {
 		cf.setSimplePublisherConfirms(true);
 		RabbitTemplate template = new RabbitTemplate(cf);
 		template.setRoutingKey(QUEUE);
-		assertTrue(template.invoke(t -> {
+		Boolean invokeResult = template.invoke(t -> {
 			template.convertAndSend("foo");
 			template.convertAndSend("bar");
 			template.waitForConfirmsOrDie(10_000);
 			return true;
-		}));
+		});
+		assertThat(invokeResult).isTrue();
 		cf.destroy();
 	}
 
@@ -63,7 +62,7 @@ public class SimplePublisherConfirmsTests {
 		template.setRoutingKey(QUEUE);
 		AtomicReference<MessageProperties> finalProperties = new AtomicReference<>();
 		AtomicLong lastAck = new AtomicLong();
-		assertTrue(template.invoke(t -> {
+		Boolean invokeResult = template.invoke(t -> {
 			template.convertAndSend("foo");
 			template.convertAndSend("bar", m -> {
 				finalProperties.set(m.getMessageProperties());
@@ -73,8 +72,10 @@ public class SimplePublisherConfirmsTests {
 			return true;
 		}, (tag, multiple) -> {
 			lastAck.set(tag);
-		}, (tag, multiple) -> { }));
-		assertThat(lastAck.get(), equalTo(finalProperties.get().getPublishSequenceNumber()));
+		}, (tag, multiple) -> {
+		});
+		assertThat(invokeResult).isTrue();
+		assertThat(lastAck.get()).isEqualTo(finalProperties.get().getPublishSequenceNumber());
 		cf.destroy();
 	}
 
