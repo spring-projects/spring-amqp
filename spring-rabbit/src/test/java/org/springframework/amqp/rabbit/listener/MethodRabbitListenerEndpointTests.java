@@ -17,6 +17,8 @@
 package org.springframework.amqp.rabbit.listener;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.eq;
@@ -29,11 +31,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TestName;
 import org.mockito.ArgumentCaptor;
 
@@ -75,9 +75,6 @@ public class MethodRabbitListenerEndpointTests {
 	@Rule
 	public final TestName name = new TestName();
 
-	@Rule
-	public final ExpectedException thrown = ExpectedException.none();
-
 	private final DefaultMessageHandlerMethodFactory factory = new DefaultMessageHandlerMethodFactory();
 
 	private final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
@@ -96,8 +93,8 @@ public class MethodRabbitListenerEndpointTests {
 		endpoint.setBean(this);
 		endpoint.setMethod(getTestMethod());
 
-		thrown.expect(IllegalStateException.class);
-		endpoint.createMessageListener(container);
+		assertThatIllegalStateException()
+			.isThrownBy(() -> endpoint.createMessageListener(container));
 	}
 
 	@Test
@@ -333,10 +330,9 @@ public class MethodRabbitListenerEndpointTests {
 
 	@Test
 	public void invalidSendTo() {
-		thrown.expect(IllegalStateException.class);
-		thrown.expectMessage("firstDestination");
-		thrown.expectMessage("secondDestination");
-		createDefaultInstance(String.class);
+		assertThatIllegalStateException()
+			.isThrownBy(() -> createDefaultInstance(String.class))
+			.withMessageMatching(".*firstDestination, secondDestination.*");
 	}
 
 	@Test
@@ -355,7 +351,7 @@ public class MethodRabbitListenerEndpointTests {
 	}
 
 	@Test
-	public void validatePayloadInvalid() throws Exception {
+	public void validatePayloadInvalid() {
 		DefaultMessageHandlerMethodFactory customFactory = new DefaultMessageHandlerMethodFactory();
 		customFactory.setValidator(testValidator("invalid value"));
 
@@ -363,47 +359,52 @@ public class MethodRabbitListenerEndpointTests {
 		MessagingMessageListenerAdapter listener = createInstance(customFactory, method);
 		Channel channel = mock(Channel.class);
 
-		thrown.expect(ListenerExecutionFailedException.class);
-		listener.onMessage(MessageTestUtils.createTextMessage("invalid value"), channel); // test is an invalid value
+		assertThatThrownBy(() -> listener.onMessage(MessageTestUtils.createTextMessage("invalid value"), channel))
+			.isInstanceOf(ListenerExecutionFailedException.class);
 
 	}
 
 	// failure scenario
 
 	@Test
-	public void invalidPayloadType() throws Exception {
+	public void invalidPayloadType() {
 		MessagingMessageListenerAdapter listener = createDefaultInstance(Integer.class);
 		Channel channel = mock(Channel.class);
 
-		thrown.expect(ListenerExecutionFailedException.class);
-		thrown.expectCause(Matchers.isA(org.springframework.messaging.converter.MessageConversionException.class));
-		thrown.expectMessage(getDefaultListenerMethod(Integer.class).toGenericString()); // ref to method
-		listener.onMessage(MessageTestUtils.createTextMessage("test"), channel); // test is not a valid integer
+		// test is not a valid integer
+		assertThatThrownBy(() -> listener.onMessage(MessageTestUtils.createTextMessage("test"), channel))
+			.isInstanceOf(ListenerExecutionFailedException.class)
+			.hasCauseExactlyInstanceOf(org.springframework.messaging.converter.MessageConversionException.class)
+			.hasMessageContaining(getDefaultListenerMethod(Integer.class).toGenericString()); // ref to method
 	}
 
 	@Test
-	public void invalidMessagePayloadType() throws Exception {
+	public void invalidMessagePayloadType() {
 		MessagingMessageListenerAdapter listener = createDefaultInstance(Message.class);
 		Channel channel = mock(Channel.class);
 
-		thrown.expect(ListenerExecutionFailedException.class);
-		thrown.expectCause(Matchers.<Throwable>either(Matchers.instanceOf(MethodArgumentTypeMismatchException.class))
-				.or(Matchers.instanceOf(org.springframework.messaging.converter.MessageConversionException.class)));
-		listener.onMessage(MessageTestUtils.createTextMessage("test"), channel);  // Message<String> as Message<Integer>
+		// Message<String> as Message<Integer>
+		assertThatThrownBy(() -> listener.onMessage(MessageTestUtils.createTextMessage("test"), channel))
+			.extracting(t -> t.getCause())
+			.isInstanceOfAny(MethodArgumentTypeMismatchException.class,
+					org.springframework.messaging.converter.MessageConversionException.class);
 	}
 
 	private MessagingMessageListenerAdapter createInstance(
-			DefaultMessageHandlerMethodFactory factory, Method method, MessageListenerContainer container) {
+			DefaultMessageHandlerMethodFactory methodFactory, Method method,
+			MessageListenerContainer listenerContainer) {
+
 		MethodRabbitListenerEndpoint endpoint = new MethodRabbitListenerEndpoint();
 		endpoint.setBean(sample);
 		endpoint.setMethod(method);
-		endpoint.setMessageHandlerMethodFactory(factory);
-		return endpoint.createMessageListener(container);
+		endpoint.setMessageHandlerMethodFactory(methodFactory);
+		return endpoint.createMessageListener(listenerContainer);
 	}
 
 	private MessagingMessageListenerAdapter createInstance(
-			DefaultMessageHandlerMethodFactory factory, Method method) {
-		return createInstance(factory, method, new SimpleMessageListenerContainer());
+			DefaultMessageHandlerMethodFactory methodFactory, Method method) {
+
+		return createInstance(methodFactory, method, new SimpleMessageListenerContainer());
 	}
 
 	private MessagingMessageListenerAdapter createDefaultInstance(Class<?>... parameterTypes) {
@@ -428,9 +429,9 @@ public class MethodRabbitListenerEndpointTests {
 		assertThat(bean.invocations.get(methodName)).as("Method " + methodName + " should have been invoked").isTrue();
 	}
 
-	private void initializeFactory(DefaultMessageHandlerMethodFactory factory) {
-		factory.setBeanFactory(new StaticListableBeanFactory());
-		factory.afterPropertiesSet();
+	private void initializeFactory(DefaultMessageHandlerMethodFactory methodFactory) {
+		methodFactory.setBeanFactory(new StaticListableBeanFactory());
+		methodFactory.afterPropertiesSet();
 	}
 
 	private Validator testValidator(final String invalidValue) {

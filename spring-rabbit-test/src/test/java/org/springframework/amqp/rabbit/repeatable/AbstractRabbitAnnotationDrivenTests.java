@@ -18,9 +18,7 @@ package org.springframework.amqp.rabbit.repeatable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -37,9 +35,6 @@ import org.springframework.stereotype.Component;
  * @since 1.6
  */
 public abstract class AbstractRabbitAnnotationDrivenTests {
-
-	@Rule
-	public final ExpectedException thrown = ExpectedException.none();
 
 	@Test
 	public abstract void rabbitListenerIsRepeatable();

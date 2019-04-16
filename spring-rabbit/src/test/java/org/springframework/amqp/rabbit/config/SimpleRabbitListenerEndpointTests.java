@@ -18,11 +18,10 @@ package org.springframework.amqp.rabbit.config;
 
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.mockito.Mockito.mock;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
@@ -34,9 +33,6 @@ import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
  * @author Gary Russell
  */
 public class SimpleRabbitListenerEndpointTests {
-
-	@Rule
-	public final ExpectedException thrown = ExpectedException.none();
 
 	private final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
 
@@ -57,8 +53,8 @@ public class SimpleRabbitListenerEndpointTests {
 		endpoint.setQueueNames("foo", "bar");
 		endpoint.setQueues(mock(Queue.class));
 
-		thrown.expect(IllegalStateException.class);
-		endpoint.setupListenerContainer(container);
+		assertThatIllegalStateException()
+			.isThrownBy(() -> endpoint.setupListenerContainer(container));
 	}
 
 }

@@ -17,9 +17,8 @@
 package org.springframework.amqp.rabbit.connection;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -49,7 +48,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.AmqpApplicationContextClosedException;
 import org.springframework.amqp.AmqpAuthenticationException;
@@ -93,9 +91,6 @@ public class CachingConnectionFactoryIntegrationTests {
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(CF_INTEGRATION_TEST_QUEUE);
-
-	@Rule
-	public ExpectedException exception = ExpectedException.none();
 
 	@Rule
 	public LogLevelAdjuster adjuster = new LogLevelAdjuster(Level.DEBUG,
@@ -270,20 +265,21 @@ public class CachingConnectionFactoryIntegrationTests {
 	}
 
 	@Test
-	public void testReceiveFromNonExistentVirtualHost() throws Exception {
+	public void testReceiveFromNonExistentVirtualHost() {
 		connectionFactory.setVirtualHost("non-existent");
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 
-		// Wrong vhost is very unfriendly to client - the exception has no clue (just an EOF)
-		exception.expect(anyOf(instanceOf(AmqpIOException.class),
-				instanceOf(AmqpAuthenticationException.class),
-				/*
-				 * If localhost also resolves to an IPv6 address, the client will try that
-				 * after a failure due to an invalid vHost and, if Rabbit is not listening there,
-				 * we'll get an...
-				 */
-				instanceOf(AmqpConnectException.class)));
-		template.receiveAndConvert("foo");
+		assertThatThrownBy(() -> template.receiveAndConvert("foo"))
+			.isInstanceOfAny(
+					// Wrong vhost is very unfriendly to client - the exception has no clue (just an EOF)
+					AmqpIOException.class,
+					AmqpAuthenticationException.class,
+					/*
+					 * If localhost also resolves to an IPv6 address, the client will try that
+					 * after a failure due to an invalid vHost and, if Rabbit is not listening there,
+					 * we'll get an...
+					 */
+					AmqpConnectException.class);
 	}
 
 	@Test
@@ -296,13 +292,11 @@ public class CachingConnectionFactoryIntegrationTests {
 		template.convertAndSend(queue.getName(), "message");
 
 		// Force a physical close of the channel
-		connectionFactory.destroy();
+		this.connectionFactory.resetConnection();
 
 		// The queue was removed when the channel was closed
-		exception.expect(AmqpIOException.class);
-
-		String result = (String) template.receiveAndConvert(queue.getName());
-		assertThat(result).isEqualTo("message");
+		assertThatThrownBy(() -> template.receiveAndConvert(queue.getName()))
+			.isInstanceOf(AmqpIOException.class);
 		template.stop();
 	}
 
@@ -321,13 +315,12 @@ public class CachingConnectionFactoryIntegrationTests {
 		assertThat(result).isEqualTo("message");
 
 		// The channel is not transactional
-		exception.expect(AmqpIOException.class);
-
-		template2.execute(channel -> {
-			// Should be an exception because the channel is not transactional
-			channel.txRollback();
-			return null;
-		});
+		assertThatThrownBy(() ->
+			template2.execute(channel -> {
+				// Should be an exception because the channel is not transactional
+				channel.txRollback();
+				return null;
+			})).isInstanceOf(AmqpIOException.class);
 
 	}
 
@@ -370,12 +363,12 @@ public class CachingConnectionFactoryIntegrationTests {
 
 	@Test
 	public void testConnectionCloseLog() {
-		Log logger = spy(TestUtils.getPropertyValue(this.connectionFactory, "logger", Log.class));
-		new DirectFieldAccessor(this.connectionFactory).setPropertyValue("logger", logger);
+		Log log = spy(TestUtils.getPropertyValue(this.connectionFactory, "logger", Log.class));
+		new DirectFieldAccessor(this.connectionFactory).setPropertyValue("logger", log);
 		Connection conn = this.connectionFactory.createConnection();
 		conn.createChannel(false);
 		this.connectionFactory.destroy();
-		verify(logger, never()).error(anyString());
+		verify(log, never()).error(anyString());
 	}
 
 	@Test

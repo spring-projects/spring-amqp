@@ -147,7 +147,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 
 	private static class MyCD extends CorrelationData {
 
-		private final String payload;
+		final String payload;
 
 		MyCD(String payload) {
 			this.payload = payload;

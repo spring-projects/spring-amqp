@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.listener;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import java.util.Arrays;
 import java.util.List;
@@ -31,7 +32,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -90,9 +90,6 @@ public class SimpleMessageListenerContainerIntegrationTests {
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue.getName());
-
-	@Rule
-	public ExpectedException exception = ExpectedException.none();
 
 	private final int messageCount;
 
@@ -214,14 +211,14 @@ public class SimpleMessageListenerContainerIntegrationTests {
 
 	@Test
 	public void testNullQueue() {
-		exception.expect(IllegalArgumentException.class);
-		container = createContainer(m -> { }, (Queue) null);
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> container = createContainer(m -> { }, (Queue) null));
 	}
 
 	@Test
 	public void testNullQueueName() {
-		exception.expect(IllegalArgumentException.class);
-		container = createContainer(m -> { }, (String) null);
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> container = createContainer(m -> { }, (String) null));
 	}
 
 	private void doSunnyDayTest(CountDownLatch latch, MessageListener listener) throws Exception {

@@ -16,9 +16,10 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import org.junit.Rule;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
@@ -30,37 +31,34 @@ import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
  */
 public class RabbitListenerEndpointRegistryTests {
 
-	@Rule
-	public final ExpectedException thrown = ExpectedException.none();
-
 	private final RabbitListenerEndpointRegistry registry = new RabbitListenerEndpointRegistry();
 
 	private final RabbitListenerContainerTestFactory containerFactory = new RabbitListenerContainerTestFactory();
 
 	@Test
 	public void createWithNullEndpoint() {
-		thrown.expect(IllegalArgumentException.class);
-		registry.registerListenerContainer(null, containerFactory);
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> registry.registerListenerContainer(null, containerFactory));
 	}
 
 	@Test
 	public void createWithNullEndpointId() {
-		thrown.expect(IllegalArgumentException.class);
-		registry.registerListenerContainer(new SimpleRabbitListenerEndpoint(), containerFactory);
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> registry.registerListenerContainer(new SimpleRabbitListenerEndpoint(), containerFactory));
 	}
 
 	@Test
 	public void createWithNullContainerFactory() {
-		thrown.expect(IllegalArgumentException.class);
-		registry.registerListenerContainer(createEndpoint("foo", "myDestination"), null);
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> registry.registerListenerContainer(createEndpoint("foo", "myDestination"), null));
 	}
 
 	@Test
 	public void createWithDuplicateEndpointId() {
 		registry.registerListenerContainer(createEndpoint("test", "queue"), containerFactory);
 
-		thrown.expect(IllegalStateException.class);
-		registry.registerListenerContainer(createEndpoint("test", "queue"), containerFactory);
+		assertThatIllegalStateException()
+			.isThrownBy(() -> registry.registerListenerContainer(createEndpoint("test", "queue"), containerFactory));
 	}
 
 	private SimpleRabbitListenerEndpoint createEndpoint(String id, String queueName) {
