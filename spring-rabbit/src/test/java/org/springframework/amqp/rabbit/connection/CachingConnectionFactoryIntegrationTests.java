@@ -128,18 +128,18 @@ public class CachingConnectionFactoryIntegrationTests {
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
 		Set<?> allocatedConnections = TestUtils.getPropertyValue(connectionFactory, "allocatedConnections", Set.class);
-		assertThat(allocatedConnections.size()).isEqualTo(6);
+		assertThat(allocatedConnections).hasSize(6);
 		connections.forEach(Connection::close);
-		assertThat(allocatedConnections.size()).isEqualTo(6);
+		assertThat(allocatedConnections).hasSize(6);
 		assertThat(connectionFactory.getCacheProperties().get("openConnections")).isEqualTo("5");
 		BlockingQueue<?> idleConnections = TestUtils.getPropertyValue(connectionFactory, "idleConnections",
 				BlockingQueue.class);
-		assertThat(idleConnections.size()).isEqualTo(6);
+		assertThat(idleConnections).hasSize(6);
 		connections.clear();
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
-		assertThat(allocatedConnections.size()).isEqualTo(6);
-		assertThat(idleConnections.size()).isEqualTo(4);
+		assertThat(allocatedConnections).hasSize(6);
+		assertThat(idleConnections).hasSize(4);
 		connections.forEach(Connection::close);
 	}
 
@@ -188,7 +188,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
 		Set<?> allocatedConnections = TestUtils.getPropertyValue(connectionFactory, "allocatedConnections", Set.class);
-		assertThat(allocatedConnections.size()).isEqualTo(2);
+		assertThat(allocatedConnections).hasSize(2);
 		assertThat(connections.get(1)).isNotSameAs(connections.get(0));
 		List<Channel> channels = new ArrayList<Channel>();
 		for (int i = 0; i < 5; i++) {
@@ -200,53 +200,53 @@ public class CachingConnectionFactoryIntegrationTests {
 		@SuppressWarnings("unchecked")
 		Map<?, List<?>> cachedChannels = TestUtils.getPropertyValue(connectionFactory,
 				"allocatedConnectionNonTransactionalChannels", Map.class);
-		assertThat(cachedChannels.get(connections.get(0)).size()).isEqualTo(0);
-		assertThat(cachedChannels.get(connections.get(1)).size()).isEqualTo(0);
+		assertThat(cachedChannels.get(connections.get(0))).hasSize(0);
+		assertThat(cachedChannels.get(connections.get(1))).hasSize(0);
 		@SuppressWarnings("unchecked")
 		Map<?, List<?>> cachedTxChannels = TestUtils.getPropertyValue(connectionFactory,
 				"allocatedConnectionTransactionalChannels", Map.class);
-		assertThat(cachedTxChannels.get(connections.get(0)).size()).isEqualTo(0);
-		assertThat(cachedTxChannels.get(connections.get(1)).size()).isEqualTo(0);
+		assertThat(cachedTxChannels.get(connections.get(0))).hasSize(0);
+		assertThat(cachedTxChannels.get(connections.get(1))).hasSize(0);
 		for (Channel channel : channels) {
 			channel.close();
 		}
-		assertThat(cachedChannels.get(connections.get(0)).size()).isEqualTo(3);
-		assertThat(cachedChannels.get(connections.get(1)).size()).isEqualTo(3);
-		assertThat(cachedTxChannels.get(connections.get(0)).size()).isEqualTo(3);
-		assertThat(cachedTxChannels.get(connections.get(1)).size()).isEqualTo(3);
+		assertThat(cachedChannels.get(connections.get(0))).hasSize(3);
+		assertThat(cachedChannels.get(connections.get(1))).hasSize(3);
+		assertThat(cachedTxChannels.get(connections.get(0))).hasSize(3);
+		assertThat(cachedTxChannels.get(connections.get(1))).hasSize(3);
 		for (int i = 0; i < 3; i++) {
 			assertThat(connections.get(0).createChannel(false)).isEqualTo(channels.get(i * 4));
 			assertThat(connections.get(1).createChannel(false)).isEqualTo(channels.get(i * 4 + 1));
 			assertThat(connections.get(0).createChannel(true)).isEqualTo(channels.get(i * 4 + 2));
 			assertThat(connections.get(1).createChannel(true)).isEqualTo(channels.get(i * 4 + 3));
 		}
-		assertThat(cachedChannels.get(connections.get(0)).size()).isEqualTo(0);
-		assertThat(cachedChannels.get(connections.get(1)).size()).isEqualTo(0);
-		assertThat(cachedTxChannels.get(connections.get(0)).size()).isEqualTo(0);
-		assertThat(cachedTxChannels.get(connections.get(1)).size()).isEqualTo(0);
+		assertThat(cachedChannels.get(connections.get(0))).hasSize(0);
+		assertThat(cachedChannels.get(connections.get(1))).hasSize(0);
+		assertThat(cachedTxChannels.get(connections.get(0))).hasSize(0);
+		assertThat(cachedTxChannels.get(connections.get(1))).hasSize(0);
 		for (Channel channel : channels) {
 			channel.close();
 		}
 		for (Connection connection : connections) {
 			connection.close();
 		}
-		assertThat(cachedChannels.get(connections.get(0)).size()).isEqualTo(3);
-		assertThat(cachedChannels.get(connections.get(1)).size()).isEqualTo(0);
-		assertThat(cachedTxChannels.get(connections.get(0)).size()).isEqualTo(3);
-		assertThat(cachedTxChannels.get(connections.get(1)).size()).isEqualTo(0);
+		assertThat(cachedChannels.get(connections.get(0))).hasSize(3);
+		assertThat(cachedChannels.get(connections.get(1))).hasSize(0);
+		assertThat(cachedTxChannels.get(connections.get(0))).hasSize(3);
+		assertThat(cachedTxChannels.get(connections.get(1))).hasSize(0);
 
-		assertThat(allocatedConnections.size()).isEqualTo(2);
+		assertThat(allocatedConnections).hasSize(2);
 		assertThat(connectionFactory.getCacheProperties().get("openConnections")).isEqualTo("1");
 
 		Connection connection = connectionFactory.createConnection();
 		Connection rabbitConnection = TestUtils.getPropertyValue(connection, "target", Connection.class);
 		rabbitConnection.close();
 		Channel channel = connection.createChannel(false);
-		assertThat(allocatedConnections.size()).isEqualTo(2);
+		assertThat(allocatedConnections).hasSize(2);
 		assertThat(connectionFactory.getCacheProperties().get("openConnections")).isEqualTo("1");
 		channel.close();
 		connection.close();
-		assertThat(allocatedConnections.size()).isEqualTo(2);
+		assertThat(allocatedConnections).hasSize(2);
 		assertThat(connectionFactory.getCacheProperties().get("openConnections")).isEqualTo("1");
 	}
 

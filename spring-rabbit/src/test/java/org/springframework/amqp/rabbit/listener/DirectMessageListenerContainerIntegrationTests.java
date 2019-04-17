@@ -113,6 +113,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		adminCf.destroy();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testSimple() throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
@@ -142,11 +143,12 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size()).isEqualTo(0);
+		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class)).hasSize(0);
 		template.stop();
 		cf.destroy();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testAdvice() throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
@@ -174,10 +176,11 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size()).isEqualTo(0);
+		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class)).hasSize(0);
 		cf.destroy();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testQueueManagement() throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
@@ -213,11 +216,12 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size()).isEqualTo(0);
+		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class)).hasSize(0);
 		template.stop();
 		cf.destroy();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testQueueManagementQueueInstances() throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
@@ -255,11 +259,12 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size()).isEqualTo(0);
+		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class)).hasSize(0);
 		template.stop();
 		cf.destroy();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testAddRemoveConsumers() throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
@@ -297,7 +302,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size()).isEqualTo(0);
+		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class)).hasSize(0);
 		template.stop();
 		cf.destroy();
 	}
@@ -333,6 +338,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		cf.destroy();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testErrorHandler() throws Exception {
 		brokerRunning.deleteQueues(Q1);
@@ -362,7 +368,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size()).isEqualTo(0);
+		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class)).hasSize(0);
 		assertThat(channel.get().isOpen()).isFalse();
 		cf.destroy();
 	}
@@ -470,6 +476,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		testRecoverDeletedQueueGuts(false);
 	}
 
+	@SuppressWarnings("unchecked")
 	private void testRecoverDeletedQueueGuts(boolean autoDeclare) throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
@@ -511,7 +518,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size()).isEqualTo(0);
+		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class)).hasSize(0);
 		cf.destroy();
 	}
 

@@ -186,7 +186,7 @@ public class AsyncRabbitTemplateTests {
 		while (n++ < 100 && inUseConsumers.size() > 0) {
 			Thread.sleep(100);
 		}
-		assertThat(inUseConsumers.size()).isEqualTo(0);
+		assertThat(inUseConsumers).hasSize(0);
 	}
 
 	@Test
@@ -202,11 +202,12 @@ public class AsyncRabbitTemplateTests {
 		checkMessageResult(future, "FOO");
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testCancel() {
 		ListenableFuture<String> future = this.asyncTemplate.convertSendAndReceive("foo");
 		future.cancel(false);
-		assertThat(TestUtils.getPropertyValue(asyncTemplate, "pending", Map.class).size()).isEqualTo(0);
+		assertThat(TestUtils.getPropertyValue(asyncTemplate, "pending", Map.class)).hasSize(0);
 	}
 
 	@Test
@@ -302,6 +303,7 @@ public class AsyncRabbitTemplateTests {
 		checkMessageResult(future, "SLEEP");
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	@DirtiesContext
 	public void testReceiveTimeout() throws Exception {
@@ -309,7 +311,7 @@ public class AsyncRabbitTemplateTests {
 		ListenableFuture<String> future = this.asyncTemplate.convertSendAndReceive("noReply");
 		TheCallback callback = new TheCallback();
 		future.addCallback(callback);
-		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class).size()).isEqualTo(1);
+		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(1);
 		try {
 			future.get(10, TimeUnit.SECONDS);
 			fail("Expected ExecutionException");
@@ -317,11 +319,12 @@ public class AsyncRabbitTemplateTests {
 		catch (ExecutionException e) {
 			assertThat(e.getCause()).isInstanceOf(AmqpReplyTimeoutException.class);
 		}
-		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class).size()).isEqualTo(0);
+		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(0);
 		assertThat(callback.latch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(callback.ex).isInstanceOf(AmqpReplyTimeoutException.class);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	@DirtiesContext
 	public void testReplyAfterReceiveTimeout() throws Exception {
@@ -329,7 +332,7 @@ public class AsyncRabbitTemplateTests {
 		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("sleep");
 		TheCallback callback = new TheCallback();
 		future.addCallback(callback);
-		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class).size()).isEqualTo(1);
+		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(1);
 		try {
 			future.get(10, TimeUnit.SECONDS);
 			fail("Expected ExecutionException");
@@ -337,7 +340,7 @@ public class AsyncRabbitTemplateTests {
 		catch (ExecutionException e) {
 			assertThat(e.getCause()).isInstanceOf(AmqpReplyTimeoutException.class);
 		}
-		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class).size()).isEqualTo(0);
+		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(0);
 		assertThat(callback.latch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(callback.ex).isInstanceOf(AmqpReplyTimeoutException.class);
 
@@ -351,6 +354,7 @@ public class AsyncRabbitTemplateTests {
 		assertThat(callback.result).isNull();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	@DirtiesContext
 	public void testStopCancelled() throws Exception {
@@ -358,7 +362,7 @@ public class AsyncRabbitTemplateTests {
 		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("noReply");
 		TheCallback callback = new TheCallback();
 		future.addCallback(callback);
-		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class).size()).isEqualTo(1);
+		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(1);
 		this.asyncTemplate.stop();
 		// Second stop() to be sure that it is idempotent
 		this.asyncTemplate.stop();
@@ -369,7 +373,7 @@ public class AsyncRabbitTemplateTests {
 		catch (CancellationException e) {
 			assertThat(future.getNackCause()).isEqualTo("AsyncRabbitTemplate was stopped while waiting for reply");
 		}
-		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class).size()).isEqualTo(0);
+		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(0);
 		assertThat(callback.latch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(future.isCancelled()).isTrue();
 		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "taskScheduler")).isNull();
@@ -384,44 +388,44 @@ public class AsyncRabbitTemplateTests {
 	}
 
 	private void checkConverterResult(ListenableFuture<String> future, String expected) throws InterruptedException {
-		final CountDownLatch latch = new CountDownLatch(1);
+		final CountDownLatch cdl = new CountDownLatch(1);
 		final AtomicReference<String> resultRef = new AtomicReference<>();
 		future.addCallback(new ListenableFutureCallback<String>() {
 
 			@Override
 			public void onSuccess(String result) {
 				resultRef.set(result);
-				latch.countDown();
+				cdl.countDown();
 			}
 
 			@Override
 			public void onFailure(Throwable ex) {
-				latch.countDown();
+				cdl.countDown();
 			}
 
 		});
-		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(cdl.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(resultRef.get()).isEqualTo(expected);
 	}
 
 	private Message checkMessageResult(ListenableFuture<Message> future, String expected) throws InterruptedException {
-		final CountDownLatch latch = new CountDownLatch(1);
+		final CountDownLatch cdl = new CountDownLatch(1);
 		final AtomicReference<Message> resultRef = new AtomicReference<>();
 		future.addCallback(new ListenableFutureCallback<Message>() {
 
 			@Override
 			public void onSuccess(Message result) {
 				resultRef.set(result);
-				latch.countDown();
+				cdl.countDown();
 			}
 
 			@Override
 			public void onFailure(Throwable ex) {
-				latch.countDown();
+				cdl.countDown();
 			}
 
 		});
-		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(cdl.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(new String(resultRef.get().getBody())).isEqualTo(expected);
 		return resultRef.get();
 	}

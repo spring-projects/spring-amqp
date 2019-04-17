@@ -298,7 +298,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		assertThat(template.receiveAndConvert(queue.getName())).isNull();
 		container.stop();
 		assertThat(eventLatch.await(10, TimeUnit.SECONDS)).isTrue();
-		assertThat(events.size()).isEqualTo(8);
+		assertThat(events).hasSize(8);
 		assertThat(events.get(0)).isInstanceOf(AsyncConsumerStartedEvent.class);
 		assertThat(events.get(1)).isInstanceOf(ConsumeOkEvent.class);
 		ConsumeOkEvent consumeOkEvent = (ConsumeOkEvent) events.get(1);

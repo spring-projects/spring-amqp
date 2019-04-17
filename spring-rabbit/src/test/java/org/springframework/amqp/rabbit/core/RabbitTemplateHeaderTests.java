@@ -208,7 +208,7 @@ public class RabbitTemplateHeaderTests {
 		Message reply = template.sendAndReceive(message);
 		assertThat(reply).isNotNull();
 
-		assertThat(nestedReplyTo.size()).isEqualTo(3);
+		assertThat(nestedReplyTo).hasSize(3);
 		assertThat(nestedReplyTo.get(0)).isEqualTo(replyTo2);
 		assertThat(nestedReplyTo.get(1)).isEqualTo(replyAddress3);
 		assertThat(nestedReplyTo.get(2)).isEqualTo(replyTo2); // intermediate reply
@@ -315,7 +315,7 @@ public class RabbitTemplateHeaderTests {
 		Message reply = template.sendAndReceive(message);
 		assertThat(reply).isNotNull();
 
-		assertThat(nestedReplyTo.size()).isEqualTo(3);
+		assertThat(nestedReplyTo).hasSize(3);
 		assertThat(nestedReplyTo.get(0)).isEqualTo(replyTo2);
 		assertThat(nestedReplyTo.get(1)).isEqualTo(replyTo3);
 		assertThat(nestedReplyTo.get(2)).isEqualTo(replyTo2); //intermediate reply

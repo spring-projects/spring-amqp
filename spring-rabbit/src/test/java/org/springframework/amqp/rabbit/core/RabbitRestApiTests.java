@@ -129,7 +129,7 @@ public class RabbitRestApiTests {
 		admin.declareBinding(binding2);
 
 		List<BindingInfo> bindings = this.rabbitRestClient.getBindingsBySource("/", exchange1.getName());
-		assertThat(bindings.size()).isEqualTo(2);
+		assertThat(bindings).hasSize(2);
 		assertThat(bindings.get(0).getSource()).isEqualTo(exchange1.getName());
 		assertThat("foo").isIn(bindings.get(0).getRoutingKey(), bindings.get(1).getRoutingKey());
 		BindingInfo qout = null;

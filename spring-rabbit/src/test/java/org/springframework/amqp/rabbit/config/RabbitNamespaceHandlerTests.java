@@ -88,12 +88,12 @@ public final class RabbitNamespaceHandlerTests {
 	public void testBindings() throws Exception {
 		Map<String, Binding> bindings = beanFactory.getBeansOfType(Binding.class);
 		// 4 for each exchange type
-		assertThat(bindings.size()).isEqualTo(13);
+		assertThat(bindings).hasSize(13);
 		for (Map.Entry<String, Binding> bindingEntry : bindings.entrySet()) {
 			Binding binding = bindingEntry.getValue();
 			if ("headers-test".equals(binding.getExchange()) && "bucket".equals(binding.getDestination())) {
 				Map<String, Object> arguments = binding.getArguments();
-				assertThat(arguments.size()).isEqualTo(3);
+				assertThat(arguments).hasSize(3);
 				break;
 			}
 		}

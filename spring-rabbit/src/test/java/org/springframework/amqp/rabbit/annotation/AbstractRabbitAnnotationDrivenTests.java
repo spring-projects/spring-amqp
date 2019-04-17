@@ -87,8 +87,8 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 				context.getBean("rabbitListenerContainerFactory", RabbitListenerContainerTestFactory.class);
 		RabbitListenerContainerTestFactory simpleFactory =
 				context.getBean("simpleFactory", RabbitListenerContainerTestFactory.class);
-		assertThat(defaultFactory.getListenerContainers().size()).isEqualTo(expectedDefaultContainers);
-		assertThat(simpleFactory.getListenerContainers().size()).isEqualTo(1);
+		assertThat(defaultFactory.getListenerContainers()).hasSize(expectedDefaultContainers);
+		assertThat(simpleFactory.getListenerContainers()).hasSize(1);
 		Map<String, org.springframework.amqp.core.Queue> queues = context
 				.getBeansOfType(org.springframework.amqp.core.Queue.class);
 		for (org.springframework.amqp.core.Queue queue : queues.values()) {
@@ -116,7 +116,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	}
 
 	private void checkAdmin(Collection<?> admins) {
-		assertThat(admins.size()).isEqualTo(1);
+		assertThat(admins).hasSize(1);
 		Object admin = admins.iterator().next();
 		assertThat(admin instanceof RabbitAdmin ? ((RabbitAdmin) admin).getBeanName() : admin).isEqualTo("myAdmin");
 	}
@@ -129,7 +129,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	public void testFullConfiguration(ApplicationContext context) {
 		RabbitListenerContainerTestFactory simpleFactory =
 				context.getBean("simpleFactory", RabbitListenerContainerTestFactory.class);
-		assertThat(simpleFactory.getListenerContainers().size()).isEqualTo(1);
+		assertThat(simpleFactory.getListenerContainers()).hasSize(1);
 		MethodRabbitListenerEndpoint endpoint = (MethodRabbitListenerEndpoint)
 				simpleFactory.getListenerContainers().get(0).getEndpoint();
 		assertThat(endpoint.getId()).isEqualTo("listener1");
@@ -167,8 +167,8 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 				context.getBean("rabbitListenerContainerFactory", RabbitListenerContainerTestFactory.class);
 		RabbitListenerContainerTestFactory customFactory =
 				context.getBean("customFactory", RabbitListenerContainerTestFactory.class);
-		assertThat(defaultFactory.getListenerContainers().size()).isEqualTo(1);
-		assertThat(customFactory.getListenerContainers().size()).isEqualTo(1);
+		assertThat(defaultFactory.getListenerContainers()).hasSize(1);
+		assertThat(customFactory.getListenerContainers()).hasSize(1);
 		RabbitListenerEndpoint endpoint = defaultFactory.getListenerContainers().get(0).getEndpoint();
 		assertThat(endpoint.getClass()).as("Wrong endpoint type").isEqualTo(SimpleRabbitListenerEndpoint.class);
 		assertThat(((SimpleRabbitListenerEndpoint) endpoint).getMessageListener()).as("Wrong listener set in custom endpoint").isEqualTo(context.getBean("simpleMessageListener"));
@@ -189,7 +189,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	public void testExplicitContainerFactoryConfiguration(ApplicationContext context) {
 		RabbitListenerContainerTestFactory defaultFactory =
 				context.getBean("simpleFactory", RabbitListenerContainerTestFactory.class);
-		assertThat(defaultFactory.getListenerContainers().size()).isEqualTo(1);
+		assertThat(defaultFactory.getListenerContainers()).hasSize(1);
 	}
 
 	/**
@@ -199,7 +199,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	public void testDefaultContainerFactoryConfiguration(ApplicationContext context) {
 		RabbitListenerContainerTestFactory defaultFactory =
 				context.getBean("rabbitListenerContainerFactory", RabbitListenerContainerTestFactory.class);
-		assertThat(defaultFactory.getListenerContainers().size()).isEqualTo(1);
+		assertThat(defaultFactory.getListenerContainers()).hasSize(1);
 	}
 
 	/**
@@ -211,7 +211,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	public void testRabbitHandlerMethodFactoryConfiguration(ApplicationContext context) throws Exception {
 		RabbitListenerContainerTestFactory simpleFactory =
 				context.getBean("defaultFactory", RabbitListenerContainerTestFactory.class);
-		assertThat(simpleFactory.getListenerContainers().size()).isEqualTo(1);
+		assertThat(simpleFactory.getListenerContainers()).hasSize(1);
 		MethodRabbitListenerEndpoint endpoint = (MethodRabbitListenerEndpoint)
 				simpleFactory.getListenerContainers().get(0).getEndpoint();
 
@@ -233,7 +233,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	public void testRabbitListenerRepeatable(ApplicationContext context) {
 		RabbitListenerContainerTestFactory simpleFactory =
 				context.getBean("rabbitListenerContainerFactory", RabbitListenerContainerTestFactory.class);
-		assertThat(simpleFactory.getListenerContainers().size()).isEqualTo(4);
+		assertThat(simpleFactory.getListenerContainers()).hasSize(4);
 
 		MethodRabbitListenerEndpoint first = (MethodRabbitListenerEndpoint)
 				simpleFactory.getListenerContainer("first").getEndpoint();

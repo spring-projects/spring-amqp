@@ -483,6 +483,7 @@ public class RabbitTemplateIntegrationTests {
 		assertThat(result).isEqualTo(null);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testSendAndReceiveUndeliverable() throws Exception {
 		this.connectionFactory.setBeanName("testSendAndReceiveUndeliverable");
@@ -495,7 +496,7 @@ public class RabbitTemplateIntegrationTests {
 			assertThat(new String(e.getReturnedMessage().getBody())).isEqualTo("undeliverable");
 			assertThat(e.getReplyText()).isEqualTo("NO_ROUTE");
 		}
-		assertThat(TestUtils.getPropertyValue(template, "replyHolder", Map.class).size()).isEqualTo(0);
+		assertThat(TestUtils.getPropertyValue(template, "replyHolder", Map.class)).hasSize(0);
 	}
 
 	@Test
@@ -1286,7 +1287,7 @@ public class RabbitTemplateIntegrationTests {
 		assertThat(executor.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
 		container.stop();
 
-		assertThat(results.size()).isEqualTo(count * 2);
+		assertThat(results).hasSize(count * 2);
 
 		for (Map.Entry<Double, Object> entry : results.entrySet()) {
 			assertThat(entry.getValue()).isEqualTo(entry.getKey() * 3);

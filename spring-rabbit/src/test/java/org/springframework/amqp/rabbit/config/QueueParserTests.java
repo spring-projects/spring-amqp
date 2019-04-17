@@ -160,19 +160,19 @@ public class QueueParserTests {
 		Queue queue = beanFactory.getBean("autoDeclareTwoAdmins", Queue.class);
 		RabbitAdmin admin1 = beanFactory.getBean("admin1", RabbitAdmin.class);
 		RabbitAdmin admin2 = beanFactory.getBean("admin2", RabbitAdmin.class);
-		assertThat(queue.getDeclaringAdmins().size()).isEqualTo(2);
+		assertThat(queue.getDeclaringAdmins()).hasSize(2);
 		assertThat(queue.getDeclaringAdmins().contains(admin1)).isTrue();
 		assertThat(queue.getDeclaringAdmins().contains(admin2)).isTrue();
 		assertThat(queue.shouldDeclare()).isTrue();
 
 		queue = beanFactory.getBean("autoDeclareOneAdmin", Queue.class);
-		assertThat(queue.getDeclaringAdmins().size()).isEqualTo(1);
+		assertThat(queue.getDeclaringAdmins()).hasSize(1);
 		assertThat(queue.getDeclaringAdmins().contains(admin1)).isTrue();
 		assertThat(queue.getDeclaringAdmins().contains(admin2)).isFalse();
 		assertThat(queue.shouldDeclare()).isTrue();
 
 		queue = beanFactory.getBean("noAutoDeclare", Queue.class);
-		assertThat(queue.getDeclaringAdmins().size()).isEqualTo(0);
+		assertThat(queue.getDeclaringAdmins()).hasSize(0);
 		assertThat(queue.shouldDeclare()).isFalse();
 	}
 
