@@ -83,7 +83,7 @@ public class ListenerContainerParserTests {
 		assertThat(ReflectionTestUtils.getField(container, "consecutiveIdleTrigger")).isEqualTo(34);
 		assertThat(ReflectionTestUtils.getField(container, "receiveTimeout")).isEqualTo(9876L);
 		Map<?, ?> consumerArgs = TestUtils.getPropertyValue(container, "consumerArgs", Map.class);
-		assertThat(consumerArgs.size()).isEqualTo(1);
+		assertThat(consumerArgs).hasSize(1);
 		Object xPriority = consumerArgs.get("x-priority");
 		assertThat(xPriority).isNotNull();
 		assertThat(xPriority).isEqualTo(10);
@@ -98,7 +98,7 @@ public class ListenerContainerParserTests {
 		assertThat(TestUtils.getPropertyValue(container, "consumerTagStrategy")).isEqualTo(beanFactory.getBean("tagger"));
 		@SuppressWarnings("unchecked")
 		Collection<Object> group = beanFactory.getBean("containerGroup", Collection.class);
-		assertThat(group.size()).isEqualTo(4);
+		assertThat(group).hasSize(4);
 		assertThat(group).containsExactly(beanFactory.getBean("container1"), beanFactory.getBean("testListener1"),
 				beanFactory.getBean("testListener2"), beanFactory.getBean("direct1"));
 		assertThat(ReflectionTestUtils.getField(container, "idleEventInterval")).isEqualTo(1235L);
@@ -122,7 +122,7 @@ public class ListenerContainerParserTests {
 		assertThat(ReflectionTestUtils.getField(container, "taskScheduler")).isSameAs(this.beanFactory.getBean("sched"));
 		assertThat(ReflectionTestUtils.getField(container, "taskExecutor")).isSameAs(this.beanFactory.getBean("exec"));
 		Map<?, ?> consumerArgs = TestUtils.getPropertyValue(container, "consumerArgs", Map.class);
-		assertThat(consumerArgs.size()).isEqualTo(1);
+		assertThat(consumerArgs).hasSize(1);
 		Object xPriority = consumerArgs.get("x-priority");
 		assertThat(xPriority).isNotNull();
 		assertThat(xPriority).isEqualTo(10);
@@ -134,7 +134,7 @@ public class ListenerContainerParserTests {
 		assertThat(TestUtils.getPropertyValue(container, "consumerTagStrategy")).isEqualTo(beanFactory.getBean("tagger"));
 		@SuppressWarnings("unchecked")
 		Collection<Object> group = beanFactory.getBean("containerGroup", Collection.class);
-		assertThat(group.size()).isEqualTo(4);
+		assertThat(group).hasSize(4);
 		assertThat(group).containsExactly(beanFactory.getBean("container1"), beanFactory.getBean("testListener1"),
 				beanFactory.getBean("testListener2"), beanFactory.getBean("direct1"));
 		assertThat(ReflectionTestUtils.getField(container, "idleEventInterval")).isEqualTo(1235L);

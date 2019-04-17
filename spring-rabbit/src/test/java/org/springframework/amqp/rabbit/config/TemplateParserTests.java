@@ -120,7 +120,7 @@ public final class TemplateParserTests {
 				beanFactory.getBean(SimpleMessageListenerContainer.class);
 		dfa = new DirectFieldAccessor(messageListenerContainer);
 		Collection<?> queueNames = (Collection<?>) dfa.getPropertyValue("queues");
-		assertThat(queueNames.size()).isEqualTo(1);
+		assertThat(queueNames).hasSize(1);
 		assertThat(queueNames.iterator().next()).isEqualTo(queueBean);
 	}
 

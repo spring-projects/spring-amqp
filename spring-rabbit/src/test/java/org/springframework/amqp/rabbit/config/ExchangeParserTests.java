@@ -60,15 +60,15 @@ public final class ExchangeParserTests {
 		assertThat(exchange.isDurable()).isTrue();
 		assertThat(exchange.isAutoDelete()).isFalse();
 		assertThat(exchange.shouldDeclare()).isFalse();
-		assertThat(exchange.getDeclaringAdmins().size()).isEqualTo(2);
+		assertThat(exchange.getDeclaringAdmins()).hasSize(2);
 		Binding binding =
 				beanFactory.getBean("org.springframework.amqp.rabbit.config.BindingFactoryBean#0", Binding.class);
 		assertThat(binding.shouldDeclare()).isFalse();
-		assertThat(binding.getDeclaringAdmins().size()).isEqualTo(2);
+		assertThat(binding.getDeclaringAdmins()).hasSize(2);
 
 		Map<String, Object> arguments = binding.getArguments();
 		assertThat(arguments).isNotNull();
-		assertThat(arguments.size()).isEqualTo(1);
+		assertThat(arguments).hasSize(1);
 		assertThat(arguments.containsKey("x-match")).isTrue();
 		assertThat(arguments.get("x-match")).isEqualTo("any");
 
@@ -93,7 +93,7 @@ public final class ExchangeParserTests {
 		assertThat(exchange.shouldDeclare()).isTrue();
 		assertThat(exchange.isDelayed()).isTrue();
 		assertThat(exchange.isInternal()).isTrue();
-		assertThat(exchange.getDeclaringAdmins().size()).isEqualTo(1);
+		assertThat(exchange.getDeclaringAdmins()).hasSize(1);
 
 	}
 
@@ -106,7 +106,7 @@ public final class ExchangeParserTests {
 		assertThat(exchange.isAutoDelete()).isFalse();
 		assertThat(exchange.shouldDeclare()).isTrue();
 		assertThat(exchange.isDelayed()).isFalse();
-		assertThat(exchange.getDeclaringAdmins().size()).isEqualTo(1);
+		assertThat(exchange.getDeclaringAdmins()).hasSize(1);
 
 	}
 
@@ -118,7 +118,7 @@ public final class ExchangeParserTests {
 		assertThat(exchange.isDurable()).isTrue();
 		assertThat(exchange.isAutoDelete()).isFalse();
 		assertThat(exchange.shouldDeclare()).isTrue();
-		assertThat(exchange.getDeclaringAdmins().size()).isEqualTo(1);
+		assertThat(exchange.getDeclaringAdmins()).hasSize(1);
 
 	}
 

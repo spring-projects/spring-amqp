@@ -284,10 +284,11 @@ public class EnableRabbitIntegrationTests {
 		this.rabbitAdmin.declareQueue(anonQueueWithAttributes); // will fail if atts not correctly set
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void simpleEndpoint() {
 		assertThat(rabbitTemplate.convertSendAndReceive("test.simple", "foo")).isEqualTo("FOO");
-		assertThat(this.context.getBean("testGroup", List.class).size()).isEqualTo(2);
+		assertThat(this.context.getBean("testGroup", List.class)).hasSize(2);
 	}
 
 	@Test
@@ -324,7 +325,7 @@ public class EnableRabbitIntegrationTests {
 	public void commas() {
 		assertThat(rabbitTemplate.convertSendAndReceive("test,with,commas", "foo")).isEqualTo("FOOfoo");
 		List<?> commaContainers = this.context.getBean("commas", List.class);
-		assertThat(commaContainers.size()).isEqualTo(1);
+		assertThat(commaContainers).hasSize(1);
 		SimpleMessageListenerContainer container = (SimpleMessageListenerContainer) commaContainers.get(0);
 		List<String> queueNames = Arrays.asList(container.getQueueNames());
 		assertThat(queueNames).containsExactly("test.comma.1", "test.comma.2", "test,with,commas", "test.comma.3", "test.comma.4");

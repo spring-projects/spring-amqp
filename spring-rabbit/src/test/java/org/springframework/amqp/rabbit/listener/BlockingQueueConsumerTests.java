@@ -301,6 +301,7 @@ public class BlockingQueueConsumerTests {
 		verify(channel).basicCancel("consumerTag");
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testDrainAndReject() throws IOException, TimeoutException {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
@@ -348,10 +349,10 @@ public class BlockingQueueConsumerTests {
 		consumer.handleDelivery("consumerTag", envelope, props, new byte[0]);
 		envelope = new Envelope(2, false, "foo", "bar");
 		consumer.handleDelivery("consumerTag", envelope, props, new byte[0]);
-		assertThat(TestUtils.getPropertyValue(blockingQueueConsumer, "queue", BlockingQueue.class).size()).isEqualTo(2);
+		assertThat(TestUtils.getPropertyValue(blockingQueueConsumer, "queue", BlockingQueue.class)).hasSize(2);
 		envelope = new Envelope(3, false, "foo", "bar");
 		consumer.handleDelivery("consumerTag", envelope, props, new byte[0]);
-		assertThat(TestUtils.getPropertyValue(blockingQueueConsumer, "queue", BlockingQueue.class).size()).isEqualTo(0);
+		assertThat(TestUtils.getPropertyValue(blockingQueueConsumer, "queue", BlockingQueue.class)).hasSize(0);
 		verify(channel, times(1)).basicCancel("consumerTag");
 	}
 

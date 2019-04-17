@@ -205,7 +205,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			while (n++ < 100 && listenerMap.size() > 0) {
 				Thread.sleep(100);
 			}
-			assertThat(listenerMap.size()).isEqualTo(0);
+			assertThat(listenerMap).hasSize(0);
 			return null;
 		});
 
@@ -292,7 +292,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		templateWithReturnsEnabled.setMandatory(true);
 		templateWithReturnsEnabled.convertAndSend(ROUTE + "junk", (Object) "message", new CorrelationData("abc"));
 		assertThat(latch.await(1000, TimeUnit.MILLISECONDS)).isTrue();
-		assertThat(returns.size()).isEqualTo(1);
+		assertThat(returns).hasSize(1);
 		Message message = returns.get(0);
 		assertThat(new String(message.getBody(), "utf-8")).isEqualTo("message");
 	}
@@ -310,7 +310,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		templateWithReturnsEnabled.convertAndSend(ROUTE + "junk", (Object) "message", new CorrelationData("abc"));
 		templateWithReturnsEnabled.convertAndSend(ROUTE + "junk", (Object) "foo", new CorrelationData("abc"));
 		assertThat(latch.await(1000, TimeUnit.MILLISECONDS)).isTrue();
-		assertThat(returns.size()).isEqualTo(1);
+		assertThat(returns).hasSize(1);
 		Message message = returns.get(0);
 		assertThat(new String(message.getBody(), "utf-8")).isEqualTo("message");
 	}
@@ -341,7 +341,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertThat(template.getUnconfirmedCount()).isEqualTo(1);
 		Collection<CorrelationData> unconfirmed = template.getUnconfirmed(-1);
 		assertThat(template.getUnconfirmedCount()).isEqualTo(0);
-		assertThat(unconfirmed.size()).isEqualTo(1);
+		assertThat(unconfirmed).hasSize(1);
 		assertThat(unconfirmed.iterator().next().getId()).isEqualTo("abc");
 		assertThat(confirmed.get()).isFalse();
 	}
@@ -399,7 +399,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertThat(threadSentLatch.await(5, TimeUnit.SECONDS)).isTrue();
 		assertThat(template.getUnconfirmedCount()).isEqualTo(2);
 		Collection<CorrelationData> unconfirmed = template.getUnconfirmed(-1);
-		assertThat(unconfirmed.size()).isEqualTo(2);
+		assertThat(unconfirmed).hasSize(2);
 		assertThat(template.getUnconfirmedCount()).isEqualTo(0);
 		Set<String> ids = new HashSet<String>();
 		Iterator<CorrelationData> iterator = unconfirmed.iterator();
@@ -418,7 +418,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		while (n++ < 100 && pendingConfirms.size() > 0) {
 			Thread.sleep(100);
 		}
-		assertThat(pendingConfirms.size()).isEqualTo(0);
+		assertThat(pendingConfirms).hasSize(0);
 	}
 
 	@Test
@@ -451,14 +451,14 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertThat(template.getUnconfirmedCount()).isEqualTo(2);
 		Collection<CorrelationData> unconfirmed = template.getUnconfirmed(50);
 		assertThat(template.getUnconfirmedCount()).isEqualTo(1);
-		assertThat(unconfirmed.size()).isEqualTo(1);
+		assertThat(unconfirmed).hasSize(1);
 		assertThat(unconfirmed.iterator().next().getId()).isEqualTo("abc");
 		assertThat(confirmed.get()).isFalse();
 		Thread.sleep(100);
 		assertThat(template.getUnconfirmedCount()).isEqualTo(1);
-		assertThat(unconfirmed.size()).isEqualTo(1);
+		assertThat(unconfirmed).hasSize(1);
 		unconfirmed = template.getUnconfirmed(50);
-		assertThat(unconfirmed.size()).isEqualTo(1);
+		assertThat(unconfirmed).hasSize(1);
 		assertThat(template.getUnconfirmedCount()).isEqualTo(0);
 		assertThat(unconfirmed.iterator().next().getId()).isEqualTo("def");
 		assertThat(confirmed.get()).isFalse();
@@ -555,7 +555,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertThat(confirms.contains("abc1")).isTrue();
 		assertThat(confirms.contains("def2")).isTrue();
 		assertThat(confirms.contains("ghi2")).isTrue();
-		assertThat(confirms.size()).isEqualTo(3);
+		assertThat(confirms).hasSize(3);
 	}
 
 	/**
@@ -788,6 +788,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertThat(confirmed.await(10, TimeUnit.SECONDS)).isTrue();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testPublisherCallbackChannelImplCloseWithPending() throws Exception {
 
@@ -823,7 +824,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		while (n++ < 100 && TestUtils.getPropertyValue(channel, "pendingConfirms", Map.class).size() > 0) {
 			Thread.sleep(100);
 		}
-		assertThat(TestUtils.getPropertyValue(channel, "pendingConfirms", Map.class).size()).isEqualTo(0);
+		assertThat(TestUtils.getPropertyValue(channel, "pendingConfirms", Map.class)).hasSize(0);
 
 	}
 

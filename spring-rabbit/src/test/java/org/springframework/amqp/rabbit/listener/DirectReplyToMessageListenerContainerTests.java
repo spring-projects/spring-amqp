@@ -107,9 +107,9 @@ public class DirectReplyToMessageListenerContainerTests {
 		assertThat(channel2.getChannel()).isSameAs(channel1.getChannel());
 		container.releaseConsumerFor(channel1, false, null); // simulate race for future timeout/cancel and onMessage()
 		Map<?, ?> inUse = TestUtils.getPropertyValue(container, "inUseConsumerChannels", Map.class);
-		assertThat(inUse.size()).isEqualTo(1);
+		assertThat(inUse).hasSize(1);
 		container.releaseConsumerFor(channel2, false, null);
-		assertThat(inUse.size()).isEqualTo(0);
+		assertThat(inUse).hasSize(0);
 		container.stop();
 		connectionFactory.destroy();
 	}

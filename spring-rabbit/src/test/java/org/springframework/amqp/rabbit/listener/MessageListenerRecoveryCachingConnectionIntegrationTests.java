@@ -424,7 +424,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		}
 		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 		Set<?> consumers = TestUtils.getPropertyValue(container, "consumers", Set.class);
-		assertThat(consumers.size()).isEqualTo(1);
+		assertThat(consumers).hasSize(1);
 		Object consumer = consumers.iterator().next();
 
 		// delete the queue and verify we recover again when it is recreated.
@@ -438,7 +438,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 			template.convertAndSend("nonexistent", "foo" + i);
 		}
 		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
-		assertThat(consumers.size()).isEqualTo(1);
+		assertThat(consumers).hasSize(1);
 		assertThat(consumers.iterator().next()).isNotSameAs(consumer);
 	}
 

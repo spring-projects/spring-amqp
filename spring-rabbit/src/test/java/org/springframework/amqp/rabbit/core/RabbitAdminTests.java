@@ -292,7 +292,7 @@ public class RabbitAdminTests {
 		admin.declareQueue();
 		admin.declareExchange(new DirectExchange("foo"));
 		admin.declareBinding(new Binding("foo", DestinationType.QUEUE, "bar", "baz", null));
-		assertThat(events.size()).isEqualTo(4);
+		assertThat(events).hasSize(4);
 		assertThat(events.get(0).getSource()).isSameAs(admin);
 		assertThat(events.get(0).getDeclarable()).isInstanceOf(AnonymousQueue.class);
 		assertThat(events.get(0).getThrowable().getCause()).isSameAs(toBeThrown);

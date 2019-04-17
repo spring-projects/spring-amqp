@@ -153,10 +153,10 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 				EnableRabbitDefaultContainerFactoryConfig.class, LazyBean.class);
 		RabbitListenerContainerTestFactory defaultFactory =
 				context.getBean("rabbitListenerContainerFactory", RabbitListenerContainerTestFactory.class);
-		assertThat(defaultFactory.getListenerContainers().size()).isEqualTo(0);
+		assertThat(defaultFactory.getListenerContainers()).hasSize(0);
 
 		context.getBean(LazyBean.class); // trigger lazy resolution
-		assertThat(defaultFactory.getListenerContainers().size()).isEqualTo(1);
+		assertThat(defaultFactory.getListenerContainers()).hasSize(1);
 		MessageListenerTestContainer container = defaultFactory.getListenerContainers().get(0);
 		assertThat(container.isStarted()).as("Should have been started " + container).isTrue();
 		context.close(); // Close and stop the listeners

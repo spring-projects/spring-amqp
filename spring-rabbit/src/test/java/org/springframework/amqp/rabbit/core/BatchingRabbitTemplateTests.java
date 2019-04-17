@@ -244,7 +244,7 @@ public class BatchingRabbitTemplateTests {
 			message = new Message("bar".getBytes(), props);
 			template.send("", ROUTE, message);
 			assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
-			assertThat(received.size()).isEqualTo(2);
+			assertThat(received).hasSize(2);
 			assertThat(new String(received.get(0).getBody())).isEqualTo("foo");
 			assertThat(received.get(0).getMessageProperties().getContentLength()).isEqualTo(3);
 			assertThat(new String(received.get(1).getBody())).isEqualTo("bar");
@@ -287,7 +287,7 @@ public class BatchingRabbitTemplateTests {
 			assertThat(latch.await(60, TimeUnit.SECONDS)).isTrue();
 			watch.stop();
 			// System .out .println(watch.getTotalTimeMillis());
-			assertThat(received.size()).isEqualTo(count);
+			assertThat(received).hasSize(count);
 		}
 		finally {
 			container.stop();
@@ -546,7 +546,7 @@ public class BatchingRabbitTemplateTests {
 			message = new Message("bar".getBytes(), props);
 			template.send("", ROUTE, message);
 			assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
-			assertThat(received.size()).isEqualTo(2);
+			assertThat(received).hasSize(2);
 			assertThat(new String(received.get(0).getBody())).isEqualTo("foo");
 			assertThat(received.get(0).getMessageProperties().getContentLength()).isEqualTo(3);
 			assertThat(new String(received.get(1).getBody())).isEqualTo("bar");

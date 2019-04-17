@@ -77,7 +77,7 @@ public class RabbitListenerEndpointRegistrarTests {
 		registrar.afterPropertiesSet();
 		assertThat(registry.getListenerContainer("some id")).as("Container not created").isNotNull();
 		assertThat(registry.getListenerContainerIds().iterator().next()).isEqualTo("some id");
-		assertThat(registry.getListenerContainers().size()).isEqualTo(1);
+		assertThat(registry.getListenerContainers()).hasSize(1);
 	}
 
 	@Test
@@ -100,7 +100,7 @@ public class RabbitListenerEndpointRegistrarTests {
 		registrar.afterPropertiesSet();
 		assertThat(registry.getListenerContainer("myEndpoint")).as("Container not created").isNotNull();
 		assertThat(registry.getListenerContainerIds().iterator().next()).isEqualTo("myEndpoint");
-		assertThat(registry.getListenerContainers().size()).isEqualTo(1);
+		assertThat(registry.getListenerContainers()).hasSize(1);
 	}
 
 }

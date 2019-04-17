@@ -213,7 +213,7 @@ public class SimpleMessageListenerContainerTests {
 		envelope = new Envelope(4L, false, "foo", "bar");
 		consumer.get().handleDelivery("1", envelope, props, payload);
 		assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
-		assertThat(messages.size()).isEqualTo(4);
+		assertThat(messages).hasSize(4);
 		Executors.newSingleThreadExecutor().execute(container::stop);
 		consumer.get().handleCancelOk("1");
 		verify(channel, times(2)).basicAck(anyLong(), anyBoolean());
@@ -263,7 +263,7 @@ public class SimpleMessageListenerContainerTests {
 		envelope = new Envelope(3L, false, "foo", "bar");
 		consumer.get().handleDelivery(consumerTag, envelope, props, payload);
 		assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
-		assertThat(messages.size()).isEqualTo(3);
+		assertThat(messages).hasSize(3);
 		assertThat(messages.get(0).getMessageProperties().getConsumerTag()).isEqualTo(consumerTag);
 		assertThat(messages.get(0).getMessageProperties().getConsumerQueue()).isEqualTo("foobar");
 		Executors.newSingleThreadExecutor().execute(container::stop);
@@ -351,11 +351,11 @@ public class SimpleMessageListenerContainerTests {
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setQueueNames("foo");
 		List<?> queues = TestUtils.getPropertyValue(container, "queues", List.class);
-		assertThat(queues.size()).isEqualTo(1);
+		assertThat(queues).hasSize(1);
 		container.addQueueNames(new AnonymousQueue().getName(), new AnonymousQueue().getName());
-		assertThat(queues.size()).isEqualTo(3);
+		assertThat(queues).hasSize(3);
 		container.removeQueues(new Queue("foo"));
-		assertThat(queues.size()).isEqualTo(2);
+		assertThat(queues).hasSize(2);
 		container.stop();
 	}
 
@@ -462,7 +462,7 @@ public class SimpleMessageListenerContainerTests {
 
 		waitForConsumersToStop(consumers);
 		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections", Set.class);
-		assertThat(allocatedConnections.size()).isEqualTo(2);
+		assertThat(allocatedConnections).hasSize(2);
 		assertThat(ccf.getCacheProperties().get("openConnections")).isEqualTo("1");
 	}
 

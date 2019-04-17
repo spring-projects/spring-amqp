@@ -97,11 +97,11 @@ public class ContainerShutDownTests {
 				return null;
 			});
 			assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
-			assertThat(channels.size()).isEqualTo(2);
+			assertThat(channels).hasSize(2);
 		}
 		finally {
 			container.stop();
-			assertThat(channels.size()).isEqualTo(1);
+			assertThat(channels).hasSize(1);
 
 			cf.destroy();
 			testEnded.countDown();
