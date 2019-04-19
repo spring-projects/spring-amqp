@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.retry;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
 import java.io.ByteArrayOutputStream;
@@ -92,7 +92,7 @@ public class RepublishMessageRecovererTest {
 
 		recoverer.recover(message, cause);
 
-		assertEquals(expectedHeaderValue, message.getMessageProperties().getHeaders().get("x-exception-stacktrace"));
+		assertThat(message.getMessageProperties().getHeaders().get("x-exception-stacktrace")).isEqualTo(expectedHeaderValue);
 	}
 
 	@Test
@@ -100,8 +100,7 @@ public class RepublishMessageRecovererTest {
 		recoverer = new RepublishMessageRecoverer(amqpTemplate);
 		recoverer.recover(message, cause);
 
-		assertEquals(cause.getCause().getMessage(),
-				message.getMessageProperties().getHeaders().get("x-exception-message"));
+		assertThat(message.getMessageProperties().getHeaders().get("x-exception-message")).isEqualTo(cause.getCause().getMessage());
 	}
 
 	@Test
@@ -111,8 +110,7 @@ public class RepublishMessageRecovererTest {
 
 		recoverer.recover(message, cause);
 
-		assertEquals("the.original.exchange",
-				message.getMessageProperties().getHeaders().get("x-original-exchange"));
+		assertThat(message.getMessageProperties().getHeaders().get("x-original-exchange")).isEqualTo("the.original.exchange");
 	}
 
 	@Test
@@ -130,7 +128,7 @@ public class RepublishMessageRecovererTest {
 
 		recoverer.recover(message, cause);
 
-		assertEquals(MessageDeliveryMode.PERSISTENT, message.getMessageProperties().getDeliveryMode());
+		assertThat(message.getMessageProperties().getDeliveryMode()).isEqualTo(MessageDeliveryMode.PERSISTENT);
 	}
 
 	@Test
@@ -141,7 +139,7 @@ public class RepublishMessageRecovererTest {
 		this.recoverer.setDeliveryMode(MessageDeliveryMode.NON_PERSISTENT);
 		recoverer.recover(this.message, this.cause);
 
-		assertEquals(MessageDeliveryMode.NON_PERSISTENT, this.message.getMessageProperties().getDeliveryMode());
+		assertThat(this.message.getMessageProperties().getDeliveryMode()).isEqualTo(MessageDeliveryMode.NON_PERSISTENT);
 	}
 
 }

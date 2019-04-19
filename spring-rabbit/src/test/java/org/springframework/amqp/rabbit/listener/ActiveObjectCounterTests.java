@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -40,12 +40,12 @@ public class ActiveObjectCounterTests {
 		final Object object2 = new Object();
 		counter.add(object1);
 		counter.add(object2);
-		assertEquals(2, counter.getCount());
+		assertThat(counter.getCount()).isEqualTo(2);
 		counter.release(object2);
-		assertEquals(1, counter.getCount());
+		assertThat(counter.getCount()).isEqualTo(1);
 		counter.release(object1);
 		counter.release(object1);
-		assertEquals(0, counter.getCount());
+		assertThat(counter.getCount()).isEqualTo(0);
 	}
 
 	@Test
@@ -60,15 +60,15 @@ public class ActiveObjectCounterTests {
 			counter.release(object2);
 			return true;
 		});
-		assertEquals(true, counter.await(1000L, TimeUnit.MILLISECONDS));
-		assertEquals(true, future.get());
+		assertThat(counter.await(1000L, TimeUnit.MILLISECONDS)).isEqualTo(true);
+		assertThat(future.get()).isEqualTo(true);
 	}
 
 	@Test
 	public void testTimeoutWaitForLocks() throws Exception {
 		final Object object1 = new Object();
 		counter.add(object1);
-		assertEquals(false, counter.await(200L, TimeUnit.MILLISECONDS));
+		assertThat(counter.await(200L, TimeUnit.MILLISECONDS)).isEqualTo(false);
 	}
 
 }

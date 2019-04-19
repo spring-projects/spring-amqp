@@ -47,6 +47,8 @@ import org.springframework.util.StringUtils;
  * by autowiring the test harness into test cases.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.6
  *
  */
@@ -54,11 +56,11 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 
 	private final Log logger = LogFactory.getLog(this.getClass());
 
-	private final Map<String, CaptureAdvice> listenerCapture = new HashMap<String, CaptureAdvice>();
+	private final Map<String, CaptureAdvice> listenerCapture = new HashMap<>();
+
+	private final Map<String, Object> listeners = new HashMap<>();
 
 	private final AnnotationAttributes attributes;
-
-	private final Map<String, Object> listeners = new HashMap<String, Object>();
 
 	public RabbitListenerTestHarness(AnnotationMetadata importMetadata) {
 		Map<String, Object> map = importMetadata.getAnnotationAttributes(RabbitListenerTest.class.getName());
@@ -114,7 +116,7 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 
 	private static final class CaptureAdvice implements MethodInterceptor {
 
-		private final BlockingQueue<InvocationData> invocationData = new LinkedBlockingQueue<InvocationData>();
+		private final BlockingQueue<InvocationData> invocationData = new LinkedBlockingQueue<>();
 
 		CaptureAdvice() {
 			super();
@@ -122,15 +124,15 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 
 		@Override
 		public Object invoke(MethodInvocation invocation) throws Throwable {
-			Object result = null;
 			boolean isListenerMethod =
 					AnnotationUtils.findAnnotation(invocation.getMethod(), RabbitListener.class) != null
 					|| AnnotationUtils.findAnnotation(invocation.getMethod(), RabbitHandler.class) != null;
 			try {
-				result = invocation.proceed();
+				Object result = invocation.proceed();
 				if (isListenerMethod) {
 					this.invocationData.put(new InvocationData(invocation, result));
 				}
+				return result;
 			}
 			catch (Throwable t) { // NOSONAR - rethrown below
 				if (isListenerMethod) {
@@ -138,7 +140,6 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 				}
 				throw t;
 			}
-			return result;
 		}
 
 	}

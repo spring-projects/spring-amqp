@@ -16,20 +16,14 @@
 
 package org.springframework.amqp.rabbit.annotation;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 import java.util.Collection;
 import java.util.Map;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -56,9 +50,6 @@ import com.rabbitmq.client.Channel;
  * @author Gary Russell
  */
 public abstract class AbstractRabbitAnnotationDrivenTests {
-
-	@Rule
-	public final ExpectedException thrown = ExpectedException.none();
 
 	@Test
 	public abstract void sampleConfiguration();
@@ -96,38 +87,38 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 				context.getBean("rabbitListenerContainerFactory", RabbitListenerContainerTestFactory.class);
 		RabbitListenerContainerTestFactory simpleFactory =
 				context.getBean("simpleFactory", RabbitListenerContainerTestFactory.class);
-		assertEquals(expectedDefaultContainers, defaultFactory.getListenerContainers().size());
-		assertEquals(1, simpleFactory.getListenerContainers().size());
+		assertThat(defaultFactory.getListenerContainers()).hasSize(expectedDefaultContainers);
+		assertThat(simpleFactory.getListenerContainers()).hasSize(1);
 		Map<String, org.springframework.amqp.core.Queue> queues = context
 				.getBeansOfType(org.springframework.amqp.core.Queue.class);
 		for (org.springframework.amqp.core.Queue queue : queues.values()) {
-			assertTrue(queue.isIgnoreDeclarationExceptions());
-			assertFalse(queue.shouldDeclare());
+			assertThat(queue.isIgnoreDeclarationExceptions()).isTrue();
+			assertThat(queue.shouldDeclare()).isFalse();
 			Collection<?> admins = queue.getDeclaringAdmins();
 			checkAdmin(admins);
 		}
 		Map<String, org.springframework.amqp.core.Exchange> exchanges = context
 				.getBeansOfType(org.springframework.amqp.core.Exchange.class);
 		for (org.springframework.amqp.core.Exchange exchange : exchanges.values()) {
-			assertTrue(exchange.isIgnoreDeclarationExceptions());
-			assertFalse(exchange.shouldDeclare());
+			assertThat(exchange.isIgnoreDeclarationExceptions()).isTrue();
+			assertThat(exchange.shouldDeclare()).isFalse();
 			Collection<?> admins = exchange.getDeclaringAdmins();
 			checkAdmin(admins);
 		}
 		Map<String, org.springframework.amqp.core.Binding> bindings = context
 				.getBeansOfType(org.springframework.amqp.core.Binding.class);
 		for (org.springframework.amqp.core.Binding binding : bindings.values()) {
-			assertTrue(binding.isIgnoreDeclarationExceptions());
-			assertFalse(binding.shouldDeclare());
+			assertThat(binding.isIgnoreDeclarationExceptions()).isTrue();
+			assertThat(binding.shouldDeclare()).isFalse();
 			Collection<?> admins = binding.getDeclaringAdmins();
 			checkAdmin(admins);
 		}
 	}
 
 	private void checkAdmin(Collection<?> admins) {
-		assertEquals(1, admins.size());
+		assertThat(admins).hasSize(1);
 		Object admin = admins.iterator().next();
-		assertEquals("myAdmin", admin instanceof RabbitAdmin ? ((RabbitAdmin) admin).getBeanName() : admin);
+		assertThat(admin instanceof RabbitAdmin ? ((RabbitAdmin) admin).getBeanName() : admin).isEqualTo("myAdmin");
 	}
 
 	/**
@@ -138,15 +129,15 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	public void testFullConfiguration(ApplicationContext context) {
 		RabbitListenerContainerTestFactory simpleFactory =
 				context.getBean("simpleFactory", RabbitListenerContainerTestFactory.class);
-		assertEquals(1, simpleFactory.getListenerContainers().size());
+		assertThat(simpleFactory.getListenerContainers()).hasSize(1);
 		MethodRabbitListenerEndpoint endpoint = (MethodRabbitListenerEndpoint)
 				simpleFactory.getListenerContainers().get(0).getEndpoint();
-		assertEquals("listener1", endpoint.getId());
+		assertThat(endpoint.getId()).isEqualTo("listener1");
 		assertQueues(endpoint, "queue1", "queue2");
-		assertTrue("No queue instances should be set", endpoint.getQueues().isEmpty());
-		assertEquals(true, endpoint.isExclusive());
-		assertEquals(Integer.valueOf(34), endpoint.getPriority());
-		assertSame(context.getBean("rabbitAdmin"), endpoint.getAdmin());
+		assertThat(endpoint.getQueues().isEmpty()).as("No queue instances should be set").isTrue();
+		assertThat(endpoint.isExclusive()).isEqualTo(true);
+		assertThat(endpoint.getPriority()).isEqualTo(Integer.valueOf(34));
+		assertThat(endpoint.getAdmin()).isSameAs(context.getBean("rabbitAdmin"));
 
 		// Resolve the container and invoke a message on it
 
@@ -176,23 +167,18 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 				context.getBean("rabbitListenerContainerFactory", RabbitListenerContainerTestFactory.class);
 		RabbitListenerContainerTestFactory customFactory =
 				context.getBean("customFactory", RabbitListenerContainerTestFactory.class);
-		assertEquals(1, defaultFactory.getListenerContainers().size());
-		assertEquals(1, customFactory.getListenerContainers().size());
+		assertThat(defaultFactory.getListenerContainers()).hasSize(1);
+		assertThat(customFactory.getListenerContainers()).hasSize(1);
 		RabbitListenerEndpoint endpoint = defaultFactory.getListenerContainers().get(0).getEndpoint();
-		assertEquals("Wrong endpoint type", SimpleRabbitListenerEndpoint.class, endpoint.getClass());
-		assertEquals("Wrong listener set in custom endpoint", context.getBean("simpleMessageListener"),
-				((SimpleRabbitListenerEndpoint) endpoint).getMessageListener());
+		assertThat(endpoint.getClass()).as("Wrong endpoint type").isEqualTo(SimpleRabbitListenerEndpoint.class);
+		assertThat(((SimpleRabbitListenerEndpoint) endpoint).getMessageListener()).as("Wrong listener set in custom endpoint").isEqualTo(context.getBean("simpleMessageListener"));
 
 		RabbitListenerEndpointRegistry customRegistry =
 				context.getBean("customRegistry", RabbitListenerEndpointRegistry.class);
-		assertEquals("Wrong number of containers in the registry", 2,
-				customRegistry.getListenerContainerIds().size());
-		assertEquals("Wrong number of containers in the registry", 2,
-				customRegistry.getListenerContainers().size());
-		assertNotNull("Container with custom id on the annotation should be found",
-				customRegistry.getListenerContainer("listenerId"));
-		assertNotNull("Container created with custom id should be found",
-				customRegistry.getListenerContainer("myCustomEndpointId"));
+		assertThat(customRegistry.getListenerContainerIds().size()).as("Wrong number of containers in the registry").isEqualTo(2);
+		assertThat(customRegistry.getListenerContainers().size()).as("Wrong number of containers in the registry").isEqualTo(2);
+		assertThat(customRegistry.getListenerContainer("listenerId")).as("Container with custom id on the annotation should be found").isNotNull();
+		assertThat(customRegistry.getListenerContainer("myCustomEndpointId")).as("Container created with custom id should be found").isNotNull();
 	}
 
 	/**
@@ -203,7 +189,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	public void testExplicitContainerFactoryConfiguration(ApplicationContext context) {
 		RabbitListenerContainerTestFactory defaultFactory =
 				context.getBean("simpleFactory", RabbitListenerContainerTestFactory.class);
-		assertEquals(1, defaultFactory.getListenerContainers().size());
+		assertThat(defaultFactory.getListenerContainers()).hasSize(1);
 	}
 
 	/**
@@ -213,7 +199,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	public void testDefaultContainerFactoryConfiguration(ApplicationContext context) {
 		RabbitListenerContainerTestFactory defaultFactory =
 				context.getBean("rabbitListenerContainerFactory", RabbitListenerContainerTestFactory.class);
-		assertEquals(1, defaultFactory.getListenerContainers().size());
+		assertThat(defaultFactory.getListenerContainers()).hasSize(1);
 	}
 
 	/**
@@ -225,7 +211,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	public void testRabbitHandlerMethodFactoryConfiguration(ApplicationContext context) throws Exception {
 		RabbitListenerContainerTestFactory simpleFactory =
 				context.getBean("defaultFactory", RabbitListenerContainerTestFactory.class);
-		assertEquals(1, simpleFactory.getListenerContainers().size());
+		assertThat(simpleFactory.getListenerContainers()).hasSize(1);
 		MethodRabbitListenerEndpoint endpoint = (MethodRabbitListenerEndpoint)
 				simpleFactory.getListenerContainers().get(0).getEndpoint();
 
@@ -247,35 +233,35 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	public void testRabbitListenerRepeatable(ApplicationContext context) {
 		RabbitListenerContainerTestFactory simpleFactory =
 				context.getBean("rabbitListenerContainerFactory", RabbitListenerContainerTestFactory.class);
-		assertEquals(4, simpleFactory.getListenerContainers().size());
+		assertThat(simpleFactory.getListenerContainers()).hasSize(4);
 
 		MethodRabbitListenerEndpoint first = (MethodRabbitListenerEndpoint)
 				simpleFactory.getListenerContainer("first").getEndpoint();
-		assertEquals("first", first.getId());
-		assertEquals("myQueue", first.getQueueNames().iterator().next());
+		assertThat(first.getId()).isEqualTo("first");
+		assertThat(first.getQueueNames().iterator().next()).isEqualTo("myQueue");
 
 		MethodRabbitListenerEndpoint second = (MethodRabbitListenerEndpoint)
 				simpleFactory.getListenerContainer("second").getEndpoint();
-		assertEquals("second", second.getId());
-		assertEquals("anotherQueue", second.getQueueNames().iterator().next());
+		assertThat(second.getId()).isEqualTo("second");
+		assertThat(second.getQueueNames().iterator().next()).isEqualTo("anotherQueue");
 
 		MethodRabbitListenerEndpoint third = (MethodRabbitListenerEndpoint)
 				simpleFactory.getListenerContainer("third").getEndpoint();
-		assertEquals("third", third.getId());
-		assertEquals("class1", third.getQueueNames().iterator().next());
+		assertThat(third.getId()).isEqualTo("third");
+		assertThat(third.getQueueNames().iterator().next()).isEqualTo("class1");
 
 		MethodRabbitListenerEndpoint fourth = (MethodRabbitListenerEndpoint)
 				simpleFactory.getListenerContainer("fourth").getEndpoint();
-		assertEquals("fourth", fourth.getId());
-		assertEquals("class2", fourth.getQueueNames().iterator().next());
+		assertThat(fourth.getId()).isEqualTo("fourth");
+		assertThat(fourth.getQueueNames().iterator().next()).isEqualTo("class2");
 	}
 
 	private void assertQueues(AbstractRabbitListenerEndpoint actual, String... expectedQueues) {
 		Collection<String> actualQueues = actual.getQueueNames();
 		for (String expectedQueue : expectedQueues) {
-			assertTrue("Queue '" + expectedQueue + "' not found", actualQueues.contains(expectedQueue));
+			assertThat(actualQueues.contains(expectedQueue)).as("Queue '" + expectedQueue + "' not found").isTrue();
 		}
-		assertEquals("Wrong number of queues", expectedQueues.length, actualQueues.size());
+		assertThat(actualQueues.size()).as("Wrong number of queues").isEqualTo(expectedQueues.length);
 	}
 
 	@Component

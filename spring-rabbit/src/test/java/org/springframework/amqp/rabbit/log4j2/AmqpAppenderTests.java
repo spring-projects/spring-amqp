@@ -16,15 +16,7 @@
 
 package org.springframework.amqp.rabbit.log4j2;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -108,18 +100,18 @@ public class AmqpAppenderTests {
 		logger.info("bar");
 		template.setReceiveTimeout(10000);
 		Message received = template.receive(queue.getName());
-		assertNotNull(received);
-		assertEquals("testAppId.foo.INFO", received.getMessageProperties().getReceivedRoutingKey());
+		assertThat(received).isNotNull();
+		assertThat(received.getMessageProperties().getReceivedRoutingKey()).isEqualTo("testAppId.foo.INFO");
 		// Cross-platform string comparison. Windows expects \n\r in the end of line
-		assertThat(new String(received.getBody()), startsWith("foo"));
+		assertThat(new String(received.getBody())).startsWith("foo");
 		received = template.receive(queue.getName());
-		assertNotNull(received);
-		assertEquals("testAppId.foo.INFO", received.getMessageProperties().getReceivedRoutingKey());
-		assertThat(new String(received.getBody()), startsWith("bar"));
+		assertThat(received).isNotNull();
+		assertThat(received.getMessageProperties().getReceivedRoutingKey()).isEqualTo("testAppId.foo.INFO");
+		assertThat(new String(received.getBody())).startsWith("bar");
 		Object threadName = received.getMessageProperties().getHeaders().get("thread");
-		assertNotNull(threadName);
-		assertThat(threadName, instanceOf(String.class));
-		assertThat(threadName, is(Thread.currentThread().getName()));
+		assertThat(threadName).isNotNull();
+		assertThat(threadName).isInstanceOf(String.class);
+		assertThat(threadName).isEqualTo(Thread.currentThread().getName());
 	}
 
 	@Test
@@ -140,33 +132,33 @@ public class AmqpAppenderTests {
 		// async="false"
 		// senderPoolSize="3" maxSenderRetries="5">
 		// </RabbitMQ>
-		assertEquals("localhost:5672", TestUtils.getPropertyValue(manager, "addresses"));
-		assertEquals("localhost", TestUtils.getPropertyValue(manager, "host"));
-		assertEquals(5672, TestUtils.getPropertyValue(manager, "port"));
-		assertEquals("guest", TestUtils.getPropertyValue(manager, "username"));
-		assertEquals("guest", TestUtils.getPropertyValue(manager, "password"));
-		assertEquals("/", TestUtils.getPropertyValue(manager, "virtualHost"));
-		assertEquals("log4j2Test", TestUtils.getPropertyValue(manager, "exchangeName"));
-		assertEquals("fanout", TestUtils.getPropertyValue(manager, "exchangeType"));
-		assertTrue(TestUtils.getPropertyValue(manager, "declareExchange", Boolean.class));
-		assertTrue(TestUtils.getPropertyValue(manager, "durable", Boolean.class));
-		assertFalse(TestUtils.getPropertyValue(manager, "autoDelete", Boolean.class));
-		assertEquals("testAppId", TestUtils.getPropertyValue(manager, "applicationId"));
-		assertEquals("%X{applicationId}.%c.%p", TestUtils.getPropertyValue(manager, "routingKeyPattern"));
-		assertEquals("text/plain", TestUtils.getPropertyValue(manager, "contentType"));
-		assertEquals("UTF-8", TestUtils.getPropertyValue(manager, "contentEncoding"));
-		assertTrue(TestUtils.getPropertyValue(manager, "generateId", Boolean.class));
-		assertEquals(MessageDeliveryMode.NON_PERSISTENT, TestUtils.getPropertyValue(manager, "deliveryMode"));
-		assertEquals("UTF-8", TestUtils.getPropertyValue(manager, "contentEncoding"));
-		assertEquals(3, TestUtils.getPropertyValue(manager, "senderPoolSize"));
-		assertEquals(5, TestUtils.getPropertyValue(manager, "maxSenderRetries"));
+		assertThat(TestUtils.getPropertyValue(manager, "addresses")).isEqualTo("localhost:5672");
+		assertThat(TestUtils.getPropertyValue(manager, "host")).isEqualTo("localhost");
+		assertThat(TestUtils.getPropertyValue(manager, "port")).isEqualTo(5672);
+		assertThat(TestUtils.getPropertyValue(manager, "username")).isEqualTo("guest");
+		assertThat(TestUtils.getPropertyValue(manager, "password")).isEqualTo("guest");
+		assertThat(TestUtils.getPropertyValue(manager, "virtualHost")).isEqualTo("/");
+		assertThat(TestUtils.getPropertyValue(manager, "exchangeName")).isEqualTo("log4j2Test");
+		assertThat(TestUtils.getPropertyValue(manager, "exchangeType")).isEqualTo("fanout");
+		assertThat(TestUtils.getPropertyValue(manager, "declareExchange", Boolean.class)).isTrue();
+		assertThat(TestUtils.getPropertyValue(manager, "durable", Boolean.class)).isTrue();
+		assertThat(TestUtils.getPropertyValue(manager, "autoDelete", Boolean.class)).isFalse();
+		assertThat(TestUtils.getPropertyValue(manager, "applicationId")).isEqualTo("testAppId");
+		assertThat(TestUtils.getPropertyValue(manager, "routingKeyPattern")).isEqualTo("%X{applicationId}.%c.%p");
+		assertThat(TestUtils.getPropertyValue(manager, "contentType")).isEqualTo("text/plain");
+		assertThat(TestUtils.getPropertyValue(manager, "contentEncoding")).isEqualTo("UTF-8");
+		assertThat(TestUtils.getPropertyValue(manager, "generateId", Boolean.class)).isTrue();
+		assertThat(TestUtils.getPropertyValue(manager, "deliveryMode")).isEqualTo(MessageDeliveryMode.NON_PERSISTENT);
+		assertThat(TestUtils.getPropertyValue(manager, "contentEncoding")).isEqualTo("UTF-8");
+		assertThat(TestUtils.getPropertyValue(manager, "senderPoolSize")).isEqualTo(3);
+		assertThat(TestUtils.getPropertyValue(manager, "maxSenderRetries")).isEqualTo(5);
 		// change the property to true and this fails and test() randomly fails too.
-		assertFalse(TestUtils.getPropertyValue(manager, "async", Boolean.class));
+		assertThat(TestUtils.getPropertyValue(manager, "async", Boolean.class)).isFalse();
 
-		assertEquals(10, TestUtils.getPropertyValue(appender, "events.items", Object[].class).length);
+		assertThat(TestUtils.getPropertyValue(appender, "events.items", Object[].class).length).isEqualTo(10);
 
 		Object events = TestUtils.getPropertyValue(appender, "events");
-		assertEquals(ArrayBlockingQueue.class, events.getClass());
+		assertThat(events.getClass()).isEqualTo(ArrayBlockingQueue.class);
 	}
 
 	@Test
@@ -176,7 +168,7 @@ public class AmqpAppenderTests {
 				Map.class).get("rabbitmq_default_queue");
 
 		Object events = TestUtils.getPropertyValue(appender, "events");
-		assertEquals(LinkedBlockingQueue.class, events.getClass());
+		assertThat(events.getClass()).isEqualTo(LinkedBlockingQueue.class);
 	}
 
 	@Test
@@ -185,13 +177,13 @@ public class AmqpAppenderTests {
 		AmqpAppender appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
 				Map.class).get("rabbitmq_uri");
 		Object manager = TestUtils.getPropertyValue(appender, "manager");
-		assertEquals("amqp://guest:guest@localhost:5672/", TestUtils.getPropertyValue(manager, "uri").toString());
+		assertThat(TestUtils.getPropertyValue(manager, "uri").toString()).isEqualTo("amqp://guest:guest@localhost:5672/");
 
-		assertNull(TestUtils.getPropertyValue(manager, "host"));
-		assertNull(TestUtils.getPropertyValue(manager, "port"));
-		assertNull(TestUtils.getPropertyValue(manager, "username"));
-		assertNull(TestUtils.getPropertyValue(manager, "password"));
-		assertNull(TestUtils.getPropertyValue(manager, "virtualHost"));
+		assertThat(TestUtils.getPropertyValue(manager, "host")).isNull();
+		assertThat(TestUtils.getPropertyValue(manager, "port")).isNull();
+		assertThat(TestUtils.getPropertyValue(manager, "username")).isNull();
+		assertThat(TestUtils.getPropertyValue(manager, "password")).isNull();
+		assertThat(TestUtils.getPropertyValue(manager, "virtualHost")).isNull();
 	}
 
 	@Test

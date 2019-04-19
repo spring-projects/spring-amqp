@@ -16,11 +16,8 @@
 
 package org.springframework.amqp.rabbit.listener.adapter;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -79,11 +76,11 @@ public class MessagingMessageListenerAdapterTests {
 		MessagingMessageListenerAdapter listener = getSimpleInstance("echo", Message.class);
 		org.springframework.amqp.core.Message replyMessage = listener.buildMessage(session, result, null);
 
-		assertNotNull("reply should never be null", replyMessage);
-		assertEquals("Response", new String(replyMessage.getBody()));
-		assertEquals("type header not copied", "msg_type", replyMessage.getMessageProperties().getType());
-		assertEquals("replyTo header not copied", "reply", replyMessage.getMessageProperties().getReplyTo());
-		assertEquals("custom header not copied", "bar", replyMessage.getMessageProperties().getHeaders().get("foo"));
+		assertThat(replyMessage).as("reply should never be null").isNotNull();
+		assertThat(new String(replyMessage.getBody())).isEqualTo("Response");
+		assertThat(replyMessage.getMessageProperties().getType()).as("type header not copied").isEqualTo("msg_type");
+		assertThat(replyMessage.getMessageProperties().getReplyTo()).as("replyTo header not copied").isEqualTo("reply");
+		assertThat(replyMessage.getMessageProperties().getHeaders().get("foo")).as("custom header not copied").isEqualTo("bar");
 	}
 
 	@Test
@@ -97,8 +94,8 @@ public class MessagingMessageListenerAdapterTests {
 			fail("Should have thrown an exception");
 		}
 		catch (ListenerExecutionFailedException ex) {
-			assertEquals(IllegalArgumentException.class, ex.getCause().getClass());
-			assertEquals("Expected test exception", ex.getCause().getMessage());
+			assertThat(ex.getCause().getClass()).isEqualTo(IllegalArgumentException.class);
+			assertThat(ex.getCause().getMessage()).isEqualTo("Expected test exception");
 		}
 		catch (Exception ex) {
 			fail("Should not have thrown an " + ex.getClass().getSimpleName());
@@ -115,8 +112,8 @@ public class MessagingMessageListenerAdapterTests {
 			fail("Should have thrown an exception");
 		}
 		catch (ListenerExecutionFailedException ex) {
-			assertEquals(IllegalArgumentException.class, ex.getCause().getClass());
-			assertEquals("Expected test exception", ex.getCause().getMessage());
+			assertThat(ex.getCause().getClass()).isEqualTo(IllegalArgumentException.class);
+			assertThat(ex.getCause().getMessage()).isEqualTo("Expected test exception");
 		}
 		catch (Exception ex) {
 			fail("Should not have thrown an " + ex.getClass().getSimpleName());
@@ -134,8 +131,8 @@ public class MessagingMessageListenerAdapterTests {
 			fail("Should have thrown an exception");
 		}
 		catch (ListenerExecutionFailedException ex) {
-			assertEquals(IllegalArgumentException.class, ex.getCause().getClass());
-			assertEquals("Expected test exception", ex.getCause().getMessage());
+			assertThat(ex.getCause().getClass()).isEqualTo(IllegalArgumentException.class);
+			assertThat(ex.getCause().getMessage()).isEqualTo("Expected test exception");
 		}
 		catch (Exception ex) {
 			ex.printStackTrace();
@@ -147,7 +144,7 @@ public class MessagingMessageListenerAdapterTests {
 			fail("Should have thrown an exception");
 		}
 		catch (ReplyFailureException ex) {
-			assertThat(ex.getMessage(), containsString("Failed to send reply"));
+			assertThat(ex.getMessage()).contains("Failed to send reply");
 		}
 		catch (Exception ex) {
 			fail("Should not have thrown an " + ex.getClass().getSimpleName());
@@ -168,8 +165,7 @@ public class MessagingMessageListenerAdapterTests {
 			fail("Should have thrown an exception");
 		}
 		catch (ListenerExecutionFailedException ex) {
-			assertEquals(org.springframework.messaging.converter.MessageConversionException.class,
-					ex.getCause().getClass());
+			assertThat(ex.getCause().getClass()).isEqualTo(org.springframework.messaging.converter.MessageConversionException.class);
 		}
 		catch (Exception ex) {
 			fail("Should not have thrown an " + ex.getClass().getSimpleName());
@@ -184,13 +180,13 @@ public class MessagingMessageListenerAdapterTests {
 		listener.setMessageConverter(new Jackson2JsonMessageConverter());
 		message.getMessageProperties().setContentType("application/json");
 		listener.onMessage(message, channel);
-		assertEquals(String.class, this.sample.payload.getClass());
+		assertThat(this.sample.payload.getClass()).isEqualTo(String.class);
 		message = org.springframework.amqp.core.MessageBuilder
 				.withBody("{ \"foo\" : \"bar\" }".getBytes())
 				.andProperties(message.getMessageProperties())
 				.build();
 		listener.onMessage(message, channel);
-		assertEquals(LinkedHashMap.class, this.sample.payload.getClass());
+		assertThat(this.sample.payload.getClass()).isEqualTo(LinkedHashMap.class);
 	}
 
 	@Test
@@ -201,7 +197,7 @@ public class MessagingMessageListenerAdapterTests {
 		listener.setMessageConverter(new Jackson2JsonMessageConverter());
 		message.getMessageProperties().setContentType("application/json");
 		listener.onMessage(message, channel);
-		assertEquals(Foo.class, this.sample.payload.getClass());
+		assertThat(this.sample.payload.getClass()).isEqualTo(Foo.class);
 	}
 
 
@@ -213,7 +209,7 @@ public class MessagingMessageListenerAdapterTests {
 		listener.setMessageConverter(new Jackson2JsonMessageConverter());
 		message.getMessageProperties().setContentType("application/json");
 		listener.onMessage(message, channel);
-		assertEquals(LinkedHashMap.class, this.sample.payload.getClass());
+		assertThat(this.sample.payload.getClass()).isEqualTo(LinkedHashMap.class);
 	}
 
 	protected MessagingMessageListenerAdapter getSimpleInstance(String methodName, Class<?>... parameterTypes) {

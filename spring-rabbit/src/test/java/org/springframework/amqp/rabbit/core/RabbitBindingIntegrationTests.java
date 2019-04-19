@@ -16,8 +16,7 @@
 
 package org.springframework.amqp.rabbit.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.After;
 import org.junit.Before;
@@ -83,18 +82,18 @@ public class RabbitBindingIntegrationTests {
 
 			BlockingQueueConsumer consumer = createConsumer(template);
 			String tag = consumer.getConsumerTags().iterator().next();
-			assertNotNull(tag);
+			assertThat(tag).isNotNull();
 
 			template.convertAndSend("foo", "message");
 
 			try {
 
 				String result = getResult(consumer);
-				assertEquals(null, result);
+				assertThat(result).isEqualTo(null);
 
 				template.convertAndSend("foo.end", "message");
 				result = getResult(consumer);
-				assertEquals("message", result);
+				assertThat(result).isEqualTo("message");
 
 			}
 			finally {
@@ -120,18 +119,18 @@ public class RabbitBindingIntegrationTests {
 
 			BlockingQueueConsumer consumer = createConsumer(template);
 			String tag = consumer.getConsumerTags().iterator().next();
-			assertNotNull(tag);
+			assertThat(tag).isNotNull();
 
 			template.convertAndSend("topic", "foo", "message");
 
 			try {
 
 				String result = getResult(consumer);
-				assertEquals(null, result);
+				assertThat(result).isEqualTo(null);
 
 				template.convertAndSend("topic", "foo.end", "message");
 				result = getResult(consumer);
-				assertEquals("message", result);
+				assertThat(result).isEqualTo("message");
 
 			}
 			finally {
@@ -164,7 +163,7 @@ public class RabbitBindingIntegrationTests {
 
 			BlockingQueueConsumer consumer1 = createConsumer(template);
 			String tag = consumer1.getConsumerTags().iterator().next();
-			assertNotNull(tag);
+			assertThat(tag).isNotNull();
 
 			return consumer1;
 
@@ -172,11 +171,11 @@ public class RabbitBindingIntegrationTests {
 
 		template.convertAndSend("foo", "message");
 		String result = getResult(consumer);
-		assertEquals(null, result);
+		assertThat(result).isEqualTo(null);
 
 		template.convertAndSend("foo.end", "message");
 		result = getResult(consumer);
-		assertEquals("message", result);
+		assertThat(result).isEqualTo("message");
 
 		consumer.stop();
 		admin.deleteExchange("topic");
@@ -198,12 +197,12 @@ public class RabbitBindingIntegrationTests {
 
 			BlockingQueueConsumer consumer = createConsumer(template);
 			String tag = consumer.getConsumerTags().iterator().next();
-			assertNotNull(tag);
+			assertThat(tag).isNotNull();
 
 			try {
 				template.convertAndSend("foo", "message");
 				String result = getResult(consumer);
-				assertEquals(null, result);
+				assertThat(result).isEqualTo(null);
 			}
 			finally {
 				consumer.stop();
@@ -217,12 +216,12 @@ public class RabbitBindingIntegrationTests {
 
 			BlockingQueueConsumer consumer = createConsumer(template);
 			String tag = consumer.getConsumerTags().iterator().next();
-			assertNotNull(tag);
+			assertThat(tag).isNotNull();
 
 			try {
 				template.convertAndSend("foo.end", "message");
 				String result = getResult(consumer);
-				assertEquals("message", result);
+				assertThat(result).isEqualTo("message");
 			}
 			finally {
 				consumer.stop();
@@ -248,12 +247,12 @@ public class RabbitBindingIntegrationTests {
 
 			BlockingQueueConsumer consumer = createConsumer(template);
 			String tag = consumer.getConsumerTags().iterator().next();
-			assertNotNull(tag);
+			assertThat(tag).isNotNull();
 
 			try {
 				template.convertAndSend("message");
 				String result = getResult(consumer);
-				assertEquals("message", result);
+				assertThat(result).isEqualTo("message");
 			}
 			finally {
 				consumer.stop();

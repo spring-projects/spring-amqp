@@ -16,12 +16,7 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -63,7 +58,7 @@ public class RetryInterceptorBuilderSupportTests {
 	@Test
 	public void testBasic() {
 		StatefulRetryOperationsInterceptor interceptor = RetryInterceptorBuilder.stateful().build();
-		assertEquals(3, TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts"));
+		assertThat(TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts")).isEqualTo(3);
 	}
 
 	@Test
@@ -72,8 +67,8 @@ public class RetryInterceptorBuilderSupportTests {
 		StatefulRetryOperationsInterceptor interceptor = RetryInterceptorBuilder.stateful()
 				.retryOperations(retryOperations)
 				.build();
-		assertEquals(3, TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts"));
-		assertSame(retryOperations, TestUtils.getPropertyValue(interceptor, "retryOperations"));
+		assertThat(TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts")).isEqualTo(3);
+		assertThat(TestUtils.getPropertyValue(interceptor, "retryOperations")).isSameAs(retryOperations);
 	}
 
 	@Test
@@ -82,7 +77,7 @@ public class RetryInterceptorBuilderSupportTests {
 				RetryInterceptorBuilder.stateful()
 						.maxAttempts(5)
 						.build();
-		assertEquals(5, TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts"));
+		assertThat(TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts")).isEqualTo(5);
 	}
 
 	@Test
@@ -93,10 +88,10 @@ public class RetryInterceptorBuilderSupportTests {
 						.backOffOptions(1, 2, 10)
 						.build();
 
-		assertEquals(5, TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts"));
-		assertEquals(1L, TestUtils.getPropertyValue(interceptor, "retryOperations.backOffPolicy.initialInterval"));
-		assertEquals(2.0, TestUtils.getPropertyValue(interceptor, "retryOperations.backOffPolicy.multiplier"));
-		assertEquals(10L, TestUtils.getPropertyValue(interceptor, "retryOperations.backOffPolicy.maxInterval"));
+		assertThat(TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts")).isEqualTo(5);
+		assertThat(TestUtils.getPropertyValue(interceptor, "retryOperations.backOffPolicy.initialInterval")).isEqualTo(1L);
+		assertThat(TestUtils.getPropertyValue(interceptor, "retryOperations.backOffPolicy.multiplier")).isEqualTo(2.0);
+		assertThat(TestUtils.getPropertyValue(interceptor, "retryOperations.backOffPolicy.maxInterval")).isEqualTo(10L);
 	}
 
 	@Test
@@ -107,8 +102,8 @@ public class RetryInterceptorBuilderSupportTests {
 						.backOffPolicy(new FixedBackOffPolicy())
 						.build();
 
-		assertEquals(5, TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts"));
-		assertEquals(1000L, TestUtils.getPropertyValue(interceptor, "retryOperations.backOffPolicy.backOffPeriod"));
+		assertThat(TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts")).isEqualTo(5);
+		assertThat(TestUtils.getPropertyValue(interceptor, "retryOperations.backOffPolicy.backOffPeriod")).isEqualTo(1000L);
 	}
 
 	@Test
@@ -124,8 +119,8 @@ public class RetryInterceptorBuilderSupportTests {
 						.backOffPolicy(new FixedBackOffPolicy())
 						.build();
 
-		assertEquals(5, TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts"));
-		assertEquals(1000L, TestUtils.getPropertyValue(interceptor, "retryOperations.backOffPolicy.backOffPeriod"));
+		assertThat(TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts")).isEqualTo(5);
+		assertThat(TestUtils.getPropertyValue(interceptor, "retryOperations.backOffPolicy.backOffPeriod")).isEqualTo(1000L);
 		final AtomicInteger count = new AtomicInteger();
 		Foo delegate = createDelegate(interceptor, count);
 		Message message = MessageBuilder.withBody("".getBytes()).setMessageId("foo").setRedelivered(false).build();
@@ -133,10 +128,10 @@ public class RetryInterceptorBuilderSupportTests {
 			delegate.onMessage("", message);
 		}
 		catch (RuntimeException e) {
-			assertEquals("foo", e.getMessage());
+			assertThat(e.getMessage()).isEqualTo("foo");
 		}
-		assertEquals(1, count.get());
-		assertTrue(latch.await(0, TimeUnit.SECONDS));
+		assertThat(count.get()).isEqualTo(1);
+		assertThat(latch.await(0, TimeUnit.SECONDS)).isTrue();
 	}
 
 	@Test
@@ -145,7 +140,7 @@ public class RetryInterceptorBuilderSupportTests {
 				.retryPolicy(new SimpleRetryPolicy(15, Collections
 						.<Class<? extends Throwable>, Boolean>singletonMap(Exception.class, true), true))
 				.build();
-		assertEquals(15, TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts"));
+		assertThat(TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts")).isEqualTo(15);
 	}
 
 	@Test
@@ -158,7 +153,7 @@ public class RetryInterceptorBuilderSupportTests {
 				})
 				.build();
 
-		assertEquals(3, TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts"));
+		assertThat(TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts")).isEqualTo(3);
 		final AtomicInteger count = new AtomicInteger();
 		Foo delegate = createDelegate(interceptor, count);
 		Message message = MessageBuilder.withBody("".getBytes()).setRedelivered(false).build();
@@ -166,10 +161,10 @@ public class RetryInterceptorBuilderSupportTests {
 			delegate.onMessage("", message);
 		}
 		catch (RuntimeException e) {
-			assertEquals("foo", e.getMessage());
+			assertThat(e.getMessage()).isEqualTo("foo");
 		}
-		assertEquals(1, count.get());
-		assertTrue(latch.await(0, TimeUnit.SECONDS));
+		assertThat(count.get()).isEqualTo(1);
+		assertThat(latch.await(0, TimeUnit.SECONDS)).isTrue();
 	}
 
 	@Test
@@ -184,7 +179,7 @@ public class RetryInterceptorBuilderSupportTests {
 		Foo delegate = createDelegate(interceptor, count);
 		Message message = MessageBuilder.withBody("".getBytes()).build();
 		delegate.onMessage("", message);
-		assertEquals(3, count.get());
+		assertThat(count.get()).isEqualTo(3);
 		verify(amqpTemplate).send("bar", "baz", message);
 	}
 
@@ -211,15 +206,15 @@ public class RetryInterceptorBuilderSupportTests {
 				.setReceivedRoutingKey("foo")
 				.build();
 		delegate.onMessage("", message);
-		assertEquals(3, count.get());
+		assertThat(count.get()).isEqualTo(3);
 		verify(amqpTemplate).send("error.foo", message);
-		assertNotNull(message.getMessageProperties().getHeaders()
-				.get(RepublishMessageRecoverer.X_EXCEPTION_STACKTRACE));
-		assertNotNull(message.getMessageProperties().getHeaders().get(RepublishMessageRecoverer.X_EXCEPTION_MESSAGE));
-		assertNotNull(message.getMessageProperties().getHeaders().get(RepublishMessageRecoverer.X_ORIGINAL_EXCHANGE));
-		assertNotNull(message.getMessageProperties().getHeaders()
-				.get(RepublishMessageRecoverer.X_ORIGINAL_ROUTING_KEY));
-		assertEquals("barValue", message.getMessageProperties().getHeaders().get("fooHeader"));
+		assertThat(message.getMessageProperties().getHeaders()
+				.get(RepublishMessageRecoverer.X_EXCEPTION_STACKTRACE)).isNotNull();
+		assertThat(message.getMessageProperties().getHeaders().get(RepublishMessageRecoverer.X_EXCEPTION_MESSAGE)).isNotNull();
+		assertThat(message.getMessageProperties().getHeaders().get(RepublishMessageRecoverer.X_ORIGINAL_EXCHANGE)).isNotNull();
+		assertThat(message.getMessageProperties().getHeaders()
+				.get(RepublishMessageRecoverer.X_ORIGINAL_ROUTING_KEY)).isNotNull();
+		assertThat(message.getMessageProperties().getHeaders().get("fooHeader")).isEqualTo("barValue");
 	}
 
 	@Test
@@ -234,7 +229,7 @@ public class RetryInterceptorBuilderSupportTests {
 		Foo delegate = createDelegate(interceptor, count);
 		Message message = MessageBuilder.withBody("".getBytes()).setReceivedRoutingKey("foo").build();
 		delegate.onMessage("", message);
-		assertEquals(3, count.get());
+		assertThat(count.get()).isEqualTo(3);
 		verify(amqpTemplate).send("bar.foo", message);
 	}
 
@@ -250,7 +245,7 @@ public class RetryInterceptorBuilderSupportTests {
 		Foo delegate = createDelegate(interceptor, count);
 		Message message = MessageBuilder.withBody("".getBytes()).setReceivedRoutingKey("foo").build();
 		delegate.onMessage("", message);
-		assertEquals(3, count.get());
+		assertThat(count.get()).isEqualTo(3);
 		verify(amqpTemplate).send("baz", "bar.foo", message);
 	}
 
@@ -267,10 +262,10 @@ public class RetryInterceptorBuilderSupportTests {
 			delegate.onMessage("", message);
 		}
 		catch (Exception e) {
-			assertThat(e, instanceOf(ImmediateRequeueAmqpException.class));
+			assertThat(e).isInstanceOf(ImmediateRequeueAmqpException.class);
 		}
 
-		assertEquals(3, count.get());
+		assertThat(count.get()).isEqualTo(3);
 	}
 
 	private Foo createDelegate(MethodInterceptor interceptor, final AtomicInteger count) {

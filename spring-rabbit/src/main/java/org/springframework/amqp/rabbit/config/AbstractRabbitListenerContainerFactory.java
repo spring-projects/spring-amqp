@@ -29,6 +29,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.support.BatchingStrategy;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
@@ -119,6 +120,10 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 	private Consumer<C> containerConfigurer;
 
+	private boolean batchListener;
+
+	private BatchingStrategy batchingStrategy;
+
 	/**
 	 * @param connectionFactory The connection factory.
 	 * @see AbstractMessageListenerContainer#setConnectionFactory(ConnectionFactory)
@@ -137,7 +142,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 	/**
 	 * @param messageConverter the message converter to use
-	 * @see AbstractMessageListenerContainer#setMessageConverter(MessageConverter)
+	 * @see RabbitListenerEndpoint#setMessageConverter(MessageConverter)
 	 */
 	public void setMessageConverter(MessageConverter messageConverter) {
 		this.messageConverter = messageConverter;
@@ -344,23 +349,37 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		this.containerConfigurer = configurer;
 	}
 
-	@SuppressWarnings("deprecation")
+	/**
+	 * Set to true to receive a list of debatched messages that were created by a
+	 * {@link org.springframework.amqp.rabbit.core.BatchingRabbitTemplate}.
+	 * @param isBatch true for a batch listener.
+	 * @since 2.2
+	 * @see #setBatchingStrategy(BatchingStrategy)
+	 */
+	public void setBatchListener(boolean isBatch) {
+		this.batchListener = isBatch;
+	}
+
+	/**
+	 * Set a {@link BatchingStrategy} to use when debatching messages.
+	 * @param batchingStrategy the batching strategy.
+	 * @since 2.2
+	 * @see #setBatchListener(boolean)
+	 */
+	public void setBatchingStrategy(BatchingStrategy batchingStrategy) {
+		this.batchingStrategy = batchingStrategy;
+	}
+
 	@Override
 	public C createListenerContainer(RabbitListenerEndpoint endpoint) {
 		C instance = createContainerInstance();
 
-		JavaUtils javaUtils = JavaUtils.INSTANCE.acceptIfNotNull(this.connectionFactory, instance::setConnectionFactory)
-			.acceptIfNotNull(this.errorHandler, instance::setErrorHandler);
-		if (this.messageConverter != null) {
-			if (endpoint != null) {
-				endpoint.setMessageConverter(this.messageConverter);
-				if (endpoint.getMessageConverter() == null) {
-					instance.setMessageConverter(this.messageConverter);
-				}
-			}
-			else {
-				instance.setMessageConverter(this.messageConverter);
-			}
+		JavaUtils javaUtils =
+				JavaUtils.INSTANCE
+						.acceptIfNotNull(this.connectionFactory, instance::setConnectionFactory)
+						.acceptIfNotNull(this.errorHandler, instance::setErrorHandler);
+		if (this.messageConverter != null && endpoint != null) {
+			endpoint.setMessageConverter(this.messageConverter);
 		}
 		javaUtils
 			.acceptIfNotNull(this.acknowledgeMode, instance::setAcknowledgeMode)
@@ -381,22 +400,27 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 			.acceptIfNotNull(this.autoStartup, instance::setAutoStartup)
 			.acceptIfNotNull(this.phase, instance::setPhase)
 			.acceptIfNotNull(this.afterReceivePostProcessors, instance::setAfterReceivePostProcessors);
+		instance.setDeBatchingEnabled(!this.batchListener);
 		if (endpoint != null) { // endpoint settings overriding default factory settings
 			javaUtils
 				.acceptIfNotNull(endpoint.getAutoStartup(), instance::setAutoStartup)
 				.acceptIfNotNull(endpoint.getTaskExecutor(), instance::setTaskExecutor);
+			javaUtils
+				.acceptIfNotNull(this.batchingStrategy, endpoint::setBatchingStrategy);
 			instance.setListenerId(endpoint.getId());
-
+			endpoint.setBatchListener(this.batchListener);
 			endpoint.setupListenerContainer(instance);
 		}
 		if (instance.getMessageListener() instanceof AbstractAdaptableMessageListener) {
 			AbstractAdaptableMessageListener messageListener = (AbstractAdaptableMessageListener) instance
 					.getMessageListener();
 			javaUtils
-				.acceptIfNotNull(this.beforeSendReplyPostProcessors, messageListener::setBeforeSendReplyPostProcessors)
-				.acceptIfNotNull(this.retryTemplate, messageListener::setRetryTemplate)
-				.acceptIfCondition(this.retryTemplate != null && this.recoveryCallback != null, this.recoveryCallback,
-					messageListener::setRecoveryCallback);
+					.acceptIfNotNull(this.beforeSendReplyPostProcessors,
+							messageListener::setBeforeSendReplyPostProcessors)
+					.acceptIfNotNull(this.retryTemplate, messageListener::setRetryTemplate)
+					.acceptIfCondition(this.retryTemplate != null && this.recoveryCallback != null,
+							this.recoveryCallback,
+							messageListener::setRecoveryCallback);
 		}
 		initializeContainer(instance, endpoint);
 

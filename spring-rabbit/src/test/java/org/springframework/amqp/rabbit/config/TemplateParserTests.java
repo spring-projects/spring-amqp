@@ -16,12 +16,7 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Collection;
 
@@ -61,75 +56,72 @@ public final class TemplateParserTests {
 	@Test
 	public void testTemplate() throws Exception {
 		AmqpTemplate template = beanFactory.getBean("template", AmqpTemplate.class);
-		assertNotNull(template);
-		assertEquals(Boolean.FALSE, TestUtils.getPropertyValue(template, "mandatoryExpression.value"));
-		assertNull(TestUtils.getPropertyValue(template, "returnCallback"));
-		assertNull(TestUtils.getPropertyValue(template, "confirmCallback"));
-		assertTrue(TestUtils.getPropertyValue(template, "useDirectReplyToContainer", Boolean.class));
+		assertThat(template).isNotNull();
+		assertThat(TestUtils.getPropertyValue(template, "mandatoryExpression.value")).isEqualTo(Boolean.FALSE);
+		assertThat(TestUtils.getPropertyValue(template, "returnCallback")).isNull();
+		assertThat(TestUtils.getPropertyValue(template, "confirmCallback")).isNull();
+		assertThat(TestUtils.getPropertyValue(template, "useDirectReplyToContainer", Boolean.class)).isTrue();
 	}
 
 	@Test
 	public void testTemplateWithCallbacks() throws Exception {
 		AmqpTemplate template = beanFactory.getBean("withCallbacks", AmqpTemplate.class);
-		assertNotNull(template);
-		assertEquals("true", TestUtils.getPropertyValue(template, "mandatoryExpression.literalValue"));
-		assertNotNull(TestUtils.getPropertyValue(template, "returnCallback"));
-		assertNotNull(TestUtils.getPropertyValue(template, "confirmCallback"));
-		assertFalse(TestUtils.getPropertyValue(template, "useDirectReplyToContainer", Boolean.class));
+		assertThat(template).isNotNull();
+		assertThat(TestUtils.getPropertyValue(template, "mandatoryExpression.literalValue")).isEqualTo("true");
+		assertThat(TestUtils.getPropertyValue(template, "returnCallback")).isNotNull();
+		assertThat(TestUtils.getPropertyValue(template, "confirmCallback")).isNotNull();
+		assertThat(TestUtils.getPropertyValue(template, "useDirectReplyToContainer", Boolean.class)).isFalse();
 	}
 
 	@Test
 	public void testTemplateWithMandatoryExpression() throws Exception {
 		AmqpTemplate template = beanFactory.getBean("withMandatoryExpression", AmqpTemplate.class);
-		assertNotNull(template);
-		assertEquals("'true'", TestUtils.getPropertyValue(template, "mandatoryExpression.expression"));
-		assertEquals("'foo'",
-				TestUtils.getPropertyValue(template, "sendConnectionFactorySelectorExpression.expression"));
-		assertEquals("'foo'",
-				TestUtils.getPropertyValue(template, "receiveConnectionFactorySelectorExpression.expression"));
-		assertFalse(TestUtils.getPropertyValue(template, "useTemporaryReplyQueues", Boolean.class));
+		assertThat(template).isNotNull();
+		assertThat(TestUtils.getPropertyValue(template, "mandatoryExpression.expression")).isEqualTo("'true'");
+		assertThat(TestUtils.getPropertyValue(template, "sendConnectionFactorySelectorExpression.expression")).isEqualTo("'foo'");
+		assertThat(TestUtils.getPropertyValue(template, "receiveConnectionFactorySelectorExpression.expression")).isEqualTo("'foo'");
+		assertThat(TestUtils.getPropertyValue(template, "useTemporaryReplyQueues", Boolean.class)).isFalse();
 	}
 
 	@Test
 	public void testKitchenSink() throws Exception {
 		RabbitTemplate template = beanFactory.getBean("kitchenSink", RabbitTemplate.class);
-		assertNotNull(template);
-		assertTrue(template.getMessageConverter() instanceof SerializerMessageConverter);
+		assertThat(template).isNotNull();
+		assertThat(template.getMessageConverter() instanceof SerializerMessageConverter).isTrue();
 		DirectFieldAccessor accessor = new DirectFieldAccessor(template);
-		assertEquals("foo", accessor.getPropertyValue("correlationKey"));
-		assertSame(beanFactory.getBean(RetryTemplate.class), accessor.getPropertyValue("retryTemplate"));
-		assertSame(beanFactory.getBean(RecoveryCallback.class), accessor.getPropertyValue("recoveryCallback"));
-		assertEquals(123L, accessor.getPropertyValue("receiveTimeout"));
-		assertEquals(1000L, accessor.getPropertyValue("replyTimeout"));
-		assertEquals("foo", accessor.getPropertyValue("exchange"));
-		assertEquals("bar", accessor.getPropertyValue("defaultReceiveQueue"));
-		assertEquals("spam", accessor.getPropertyValue("routingKey"));
-		assertTrue(TestUtils.getPropertyValue(template, "useTemporaryReplyQueues", Boolean.class));
-		assertEquals("@connectionFactory.username",
-				TestUtils.getPropertyValue(template, "userIdExpression.expression"));
+		assertThat(accessor.getPropertyValue("correlationKey")).isEqualTo("foo");
+		assertThat(accessor.getPropertyValue("retryTemplate")).isSameAs(beanFactory.getBean(RetryTemplate.class));
+		assertThat(accessor.getPropertyValue("recoveryCallback")).isSameAs(beanFactory.getBean(RecoveryCallback.class));
+		assertThat(accessor.getPropertyValue("receiveTimeout")).isEqualTo(123L);
+		assertThat(accessor.getPropertyValue("replyTimeout")).isEqualTo(1000L);
+		assertThat(accessor.getPropertyValue("exchange")).isEqualTo("foo");
+		assertThat(accessor.getPropertyValue("defaultReceiveQueue")).isEqualTo("bar");
+		assertThat(accessor.getPropertyValue("routingKey")).isEqualTo("spam");
+		assertThat(TestUtils.getPropertyValue(template, "useTemporaryReplyQueues", Boolean.class)).isTrue();
+		assertThat(TestUtils.getPropertyValue(template, "userIdExpression.expression")).isEqualTo("@connectionFactory.username");
 	}
 
 	@Test
 	public void testWithReplyQ() throws Exception {
 		RabbitTemplate template = beanFactory.getBean("withReplyQ", RabbitTemplate.class);
-		assertNotNull(template);
+		assertThat(template).isNotNull();
 		DirectFieldAccessor dfa = new DirectFieldAccessor(template);
-		assertNull(dfa.getPropertyValue("correlationKey"));
+		assertThat(dfa.getPropertyValue("correlationKey")).isNull();
 		String replyQueue = (String) dfa.getPropertyValue("replyAddress");
-		assertNotNull(replyQueue);
+		assertThat(replyQueue).isNotNull();
 		Queue queueBean = beanFactory.getBean("replyQId", Queue.class);
-		assertEquals(queueBean.getName(), replyQueue);
+		assertThat(replyQueue).isEqualTo(queueBean.getName());
 		SimpleMessageListenerContainer container =
 				beanFactory.getBean("withReplyQ.replyListener", SimpleMessageListenerContainer.class);
-		assertNotNull(container);
+		assertThat(container).isNotNull();
 		dfa = new DirectFieldAccessor(container);
-		assertSame(template, dfa.getPropertyValue("messageListener"));
+		assertThat(dfa.getPropertyValue("messageListener")).isSameAs(template);
 		SimpleMessageListenerContainer messageListenerContainer =
 				beanFactory.getBean(SimpleMessageListenerContainer.class);
 		dfa = new DirectFieldAccessor(messageListenerContainer);
 		Collection<?> queueNames = (Collection<?>) dfa.getPropertyValue("queues");
-		assertEquals(1, queueNames.size());
-		assertEquals(queueBean, queueNames.iterator().next());
+		assertThat(queueNames).hasSize(1);
+		assertThat(queueNames.iterator().next()).isEqualTo(queueBean);
 	}
 
 }

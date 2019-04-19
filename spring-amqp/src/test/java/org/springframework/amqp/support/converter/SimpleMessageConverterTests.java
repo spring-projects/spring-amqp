@@ -16,22 +16,16 @@
 
 package org.springframework.amqp.support.converter;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -42,23 +36,20 @@ import org.springframework.amqp.core.MessageProperties;
  */
 public class SimpleMessageConverterTests extends WhiteListDeserializingMessageConverterTests {
 
-	@Rule
-	public ExpectedException exception = ExpectedException.none();
-
 	@Test
 	public void bytesAsDefaultMessageBodyType() throws Exception {
 		SimpleMessageConverter converter = new SimpleMessageConverter();
 		Message message = new Message("test".getBytes(), new MessageProperties());
 		Object result = converter.fromMessage(message);
-		assertEquals(byte[].class, result.getClass());
-		assertEquals("test", new String((byte[]) result, "UTF-8"));
+		assertThat(result.getClass()).isEqualTo(byte[].class);
+		assertThat(new String((byte[]) result, "UTF-8")).isEqualTo("test");
 	}
 
 	@Test
 	public void noMessageIdByDefault() throws Exception {
 		SimpleMessageConverter converter = new SimpleMessageConverter();
 		Message message = converter.toMessage("foo", null);
-		assertNull(message.getMessageProperties().getMessageId());
+		assertThat(message.getMessageProperties().getMessageId()).isNull();
 	}
 
 	@Test
@@ -66,7 +57,7 @@ public class SimpleMessageConverterTests extends WhiteListDeserializingMessageCo
 		SimpleMessageConverter converter = new SimpleMessageConverter();
 		converter.setCreateMessageIds(true);
 		Message message = converter.toMessage("foo", null);
-		assertNotNull(message.getMessageProperties().getMessageId());
+		assertThat(message.getMessageProperties().getMessageId()).isNotNull();
 	}
 
 	@Test
@@ -75,8 +66,8 @@ public class SimpleMessageConverterTests extends WhiteListDeserializingMessageCo
 		Message message = new Message("test".getBytes(), new MessageProperties());
 		message.getMessageProperties().setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN);
 		Object result = converter.fromMessage(message);
-		assertEquals(String.class, result.getClass());
-		assertEquals("test", result);
+		assertThat(result.getClass()).isEqualTo(String.class);
+		assertThat(result).isEqualTo("test");
 	}
 
 	@Test
@@ -85,12 +76,12 @@ public class SimpleMessageConverterTests extends WhiteListDeserializingMessageCo
 		Message message = new Message(new byte[] { 1, 2, 3 }, new MessageProperties());
 		message.getMessageProperties().setContentType(MessageProperties.CONTENT_TYPE_BYTES);
 		Object result = converter.fromMessage(message);
-		assertEquals(byte[].class, result.getClass());
+		assertThat(result.getClass()).isEqualTo(byte[].class);
 		byte[] resultBytes = (byte[]) result;
-		assertEquals(3, resultBytes.length);
-		assertEquals(1, resultBytes[0]);
-		assertEquals(2, resultBytes[1]);
-		assertEquals(3, resultBytes[2]);
+		assertThat(resultBytes.length).isEqualTo(3);
+		assertThat(resultBytes[0]).isEqualTo((byte) 1);
+		assertThat(resultBytes[1]).isEqualTo((byte) 2);
+		assertThat(resultBytes[2]).isEqualTo((byte) 3);
 	}
 
 	@Test
@@ -107,8 +98,8 @@ public class SimpleMessageConverterTests extends WhiteListDeserializingMessageCo
 		byte[] bytes = byteStream.toByteArray();
 		Message message = new Message(bytes, properties);
 		Object result = converter.fromMessage(message);
-		assertEquals(TestBean.class, result.getClass());
-		assertEquals(testBean, result);
+		assertThat(result.getClass()).isEqualTo(TestBean.class);
+		assertThat(result).isEqualTo(testBean);
 	}
 
 	@Test
@@ -118,8 +109,8 @@ public class SimpleMessageConverterTests extends WhiteListDeserializingMessageCo
 		String contentType = message.getMessageProperties().getContentType();
 		String content = new String(message.getBody(),
 				message.getMessageProperties().getContentEncoding());
-		assertEquals("text/plain", contentType);
-		assertEquals("test", content);
+		assertThat(contentType).isEqualTo("text/plain");
+		assertThat(content).isEqualTo("test");
 	}
 
 	@Test
@@ -128,11 +119,11 @@ public class SimpleMessageConverterTests extends WhiteListDeserializingMessageCo
 		Message message = converter.toMessage(new byte[] { 1, 2, 3 }, new MessageProperties());
 		String contentType = message.getMessageProperties().getContentType();
 		byte[] body = message.getBody();
-		assertEquals("application/octet-stream", contentType);
-		assertEquals(3, body.length);
-		assertEquals(1, body[0]);
-		assertEquals(2, body[1]);
-		assertEquals(3, body[2]);
+		assertThat(contentType).isEqualTo("application/octet-stream");
+		assertThat(body.length).isEqualTo(3);
+		assertThat(body[0]).isEqualTo((byte) 1);
+		assertThat(body[1]).isEqualTo((byte) 2);
+		assertThat(body[2]).isEqualTo((byte) 3);
 	}
 
 	@Test
@@ -142,10 +133,10 @@ public class SimpleMessageConverterTests extends WhiteListDeserializingMessageCo
 		Message message = converter.toMessage(testBean, new MessageProperties());
 		String contentType = message.getMessageProperties().getContentType();
 		byte[] body = message.getBody();
-		assertEquals("application/x-java-serialized-object", contentType);
+		assertThat(contentType).isEqualTo("application/x-java-serialized-object");
 		ByteArrayInputStream bais = new ByteArrayInputStream(body);
 		Object deserializedObject = new ObjectInputStream(bais).readObject();
-		assertEquals(testBean, deserializedObject);
+		assertThat(deserializedObject).isEqualTo(testBean);
 	}
 
 	@Test
@@ -154,12 +145,12 @@ public class SimpleMessageConverterTests extends WhiteListDeserializingMessageCo
 		TestBean testBean = new TestBean("foo");
 		Message message = converter.toMessage(testBean, new MessageProperties());
 		String contentType = message.getMessageProperties().getContentType();
-		assertEquals("application/x-java-serialized-object", contentType);
+		assertThat(contentType).isEqualTo("application/x-java-serialized-object");
 		byte[] body = message.getBody();
 		body[10] = 'z';
-		this.exception.expect(MessageConversionException.class);
-		this.exception.expectCause(instanceOf(IllegalStateException.class));
-		converter.fromMessage(message);
+		assertThatThrownBy(() -> converter.fromMessage(message))
+				.isExactlyInstanceOf(MessageConversionException.class)
+				.hasCauseExactlyInstanceOf(IllegalStateException.class);
 	}
 
 	@Test
@@ -172,8 +163,7 @@ public class SimpleMessageConverterTests extends WhiteListDeserializingMessageCo
 			fail("Expected exception");
 		}
 		catch (IllegalArgumentException e) {
-			assertThat(e.getMessage(), containsString(
-					"SimpleMessageConverter only supports String, byte[] and Serializable payloads, received:"));
+			assertThat(e.getMessage()).contains("SimpleMessageConverter only supports String, byte[] and Serializable payloads, received:");
 		}
 	}
 

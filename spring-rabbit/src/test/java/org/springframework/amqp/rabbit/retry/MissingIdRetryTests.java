@@ -16,8 +16,7 @@
 
 package org.springframework.amqp.rabbit.retry;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atMost;
@@ -89,7 +88,7 @@ public class MissingIdRetryTests {
 		brokerIsRunning.deleteExchanges("retry.test.exchange");
 	}
 
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Test
 	public void testWithNoId() throws Exception {
 		// 2 messages; each retried once by missing id interceptor
@@ -117,7 +116,7 @@ public class MissingIdRetryTests {
 		template.convertAndSend("retry.test.exchange", "retry.test.binding", "Hello, world!");
 		template.convertAndSend("retry.test.exchange", "retry.test.binding", "Hello, world!");
 		try {
-			assertTrue(latch.await(30, TimeUnit.SECONDS));
+			assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
 			Map map = (Map) new DirectFieldAccessor(cache).getPropertyValue("map");
 			int n = 0;
 			while (n++ < 100 && map.size() != 0) {
@@ -125,7 +124,7 @@ public class MissingIdRetryTests {
 			}
 			verify(cache, never()).put(any(), any(RetryContext.class));
 			verify(cache, never()).remove(any());
-			assertEquals("Expected map.size() = 0, was: " + map.size(), 0, map.size());
+			assertThat(map).as("Expected map.size() = 0, was: " + map.size()).hasSize(0);
 		}
 		finally {
 			container.stop();
@@ -133,7 +132,7 @@ public class MissingIdRetryTests {
 		}
 	}
 
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Test
 	public void testWithId() throws Exception {
 		// 2 messages; each retried twice by retry interceptor
@@ -166,7 +165,7 @@ public class MissingIdRetryTests {
 		template.send("retry.test.exchange", "retry.test.binding", message);
 		template.send("retry.test.exchange", "retry.test.binding", message);
 		try {
-			assertTrue(latch.await(30, TimeUnit.SECONDS));
+			assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
 			Map map = (Map) new DirectFieldAccessor(cache).getPropertyValue("map");
 			int n = 0;
 			while (n++ < 100 && map.size() != 0) {
@@ -182,7 +181,7 @@ public class MissingIdRetryTests {
 			logger.debug("puts:" + putCaptor.getAllValues());
 			logger.debug("gets:" + putCaptor.getAllValues());
 			logger.debug("removes:" + removeCaptor.getAllValues());
-			assertEquals("Expected map.size() = 0, was: " + map.size(), 0, map.size());
+			assertThat(map).as("Expected map.size() = 0, was: " + map.size()).hasSize(0);
 		}
 		finally {
 			container.stop();
@@ -190,7 +189,7 @@ public class MissingIdRetryTests {
 		}
 	}
 
-	@SuppressWarnings({ "rawtypes", "resource" })
+	@SuppressWarnings({ "rawtypes", "resource", "unchecked" })
 	@Test
 	public void testWithIdAndSuccess() throws Exception {
 		// 2 messages; each retried twice by retry interceptor
@@ -200,9 +199,9 @@ public class MissingIdRetryTests {
 		ConnectionFactory connectionFactory = ctx.getBean(ConnectionFactory.class);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		final Set<String> processed = new HashSet<>();
-		final CountDownLatch latch = new CountDownLatch(4);
+		final CountDownLatch cdl = new CountDownLatch(4);
 		container.setMessageListener(m -> {
-			latch.countDown();
+			cdl.countDown();
 			if (!processed.contains(m.getMessageProperties().getMessageId())) {
 				processed.add(m.getMessageProperties().getMessageId());
 				throw new RuntimeException("fail");
@@ -231,7 +230,7 @@ public class MissingIdRetryTests {
 		messageProperties.setMessageId("bar");
 		template.send("retry.test.exchange", "retry.test.binding", message);
 		try {
-			assertTrue(latch.await(30, TimeUnit.SECONDS));
+			assertThat(cdl.await(30, TimeUnit.SECONDS)).isTrue();
 			Map map = (Map) new DirectFieldAccessor(cache).getPropertyValue("map");
 			int n = 0;
 			while (n++ < 100 && map.size() != 0) {
@@ -247,7 +246,7 @@ public class MissingIdRetryTests {
 			logger.debug("puts:" + putCaptor.getAllValues());
 			logger.debug("gets:" + putCaptor.getAllValues());
 			logger.debug("removes:" + removeCaptor.getAllValues());
-			assertEquals("Expected map.size() = 0, was: " + map.size(), 0, map.size());
+			assertThat(map).as("Expected map.size() = 0, was: " + map.size()).hasSize(0);
 		}
 		finally {
 			container.stop();

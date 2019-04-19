@@ -16,11 +16,7 @@
 
 package org.springframework.amqp.core;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -45,19 +41,19 @@ public class MessageTests {
 	@Test
 	public void toStringForEmptyMessageBody() {
 		Message message = new Message(new byte[0], new MessageProperties());
-		assertNotNull(message.toString());
+		assertThat(message.toString()).isNotNull();
 	}
 
 	@Test
 	public void toStringForNullMessageProperties() {
 		Message message = new Message(new byte[0], null);
-		assertNotNull(message.toString());
+		assertThat(message.toString()).isNotNull();
 	}
 
 	@Test
 	public void toStringForNonStringMessageBody() {
 		Message message = new Message(SerializationUtils.serialize(new Date()), null);
-		assertNotNull(message.toString());
+		assertThat(message.toString()).isNotNull();
 	}
 
 	@Test
@@ -65,7 +61,7 @@ public class MessageTests {
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setContentType(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT);
 		Message message = new Message(SerializationUtils.serialize(new Date()), messageProperties);
-		assertNotNull(message.toString());
+		assertThat(message.toString()).isNotNull();
 	}
 
 	@Test
@@ -73,7 +69,7 @@ public class MessageTests {
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setContentType(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT);
 		Message message = new Message("foo".getBytes(), messageProperties);
-		assertNotNull(message.toString());
+		assertThat(message.toString()).isNotNull();
 	}
 
 	@Test
@@ -89,20 +85,20 @@ public class MessageTests {
 		os.close();
 		ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
 		Message out = (Message) is.readObject();
-		assertEquals(new String(message.getBody()), new String(out.getBody()));
-		assertEquals(message.toString(), out.toString());
+		assertThat(new String(out.getBody())).isEqualTo(new String(message.getBody()));
+		assertThat(out.toString()).isEqualTo(message.toString());
 	}
 
 	@Test
 	public void fooNotDeserialized() {
 		Message message = new SimpleMessageConverter().toMessage(new Foo(), new MessageProperties());
-		assertThat(message.toString(), not(containsString("aFoo")));
+		assertThat(message.toString()).doesNotContainPattern("aFoo");
 		Message listMessage = new SimpleMessageConverter().toMessage(Collections.singletonList(new Foo()),
 				new MessageProperties());
-		assertThat(listMessage.toString(), not(containsString("aFoo")));
+		assertThat(listMessage.toString()).doesNotContainPattern("aFoo");
 		Message.addWhiteListPatterns(Foo.class.getName());
-		assertThat(message.toString(), containsString("aFoo"));
-		assertThat(listMessage.toString(), containsString("aFoo"));
+		assertThat(message.toString()).contains("aFoo");
+		assertThat(listMessage.toString()).contains("aFoo");
 	}
 
 	@SuppressWarnings("serial")

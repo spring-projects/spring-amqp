@@ -17,18 +17,14 @@
 package org.springframework.amqp.rabbit.config;
 
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.aopalliance.aop.Advice;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -56,9 +52,6 @@ import org.springframework.util.backoff.ExponentialBackOff;
  */
 public class RabbitListenerContainerFactoryTests {
 
-	@Rule
-	public final ExpectedException thrown = ExpectedException.none();
-
 	private final SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 
 	private final DirectRabbitListenerContainerFactory direct = new DirectRabbitListenerContainerFactory();
@@ -81,8 +74,8 @@ public class RabbitListenerContainerFactoryTests {
 		SimpleMessageListenerContainer container = this.factory.createListenerContainer(endpoint);
 
 		assertBasicConfig(container);
-		assertEquals(messageListener, container.getMessageListener());
-		assertEquals("myQueue", container.getQueueNames()[0]);
+		assertThat(container.getMessageListener()).isEqualTo(messageListener);
+		assertThat(container.getQueueNames()[0]).isEqualTo("myQueue");
 	}
 
 	@Test
@@ -112,7 +105,7 @@ public class RabbitListenerContainerFactoryTests {
 		this.factory.setAfterReceivePostProcessors(afterReceivePostProcessor);
 		this.factory.setContainerConfigurer(c -> c.setShutdownTimeout(10_000));
 
-		assertArrayEquals(new Advice[] {advice}, this.factory.getAdviceChain());
+		assertThat(this.factory.getAdviceChain()).isEqualTo(new Advice[]{advice});
 
 		SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
 
@@ -122,29 +115,29 @@ public class RabbitListenerContainerFactoryTests {
 
 		assertBasicConfig(container);
 		DirectFieldAccessor fieldAccessor = new DirectFieldAccessor(container);
-		assertSame(executor, fieldAccessor.getPropertyValue("taskExecutor"));
-		assertSame(transactionManager, fieldAccessor.getPropertyValue("transactionManager"));
-		assertEquals(10, fieldAccessor.getPropertyValue("txSize"));
-		assertEquals(2, fieldAccessor.getPropertyValue("concurrentConsumers"));
-		assertEquals(5, fieldAccessor.getPropertyValue("maxConcurrentConsumers"));
-		assertEquals(2000L, fieldAccessor.getPropertyValue("startConsumerMinInterval"));
-		assertEquals(2500L, fieldAccessor.getPropertyValue("stopConsumerMinInterval"));
-		assertEquals(8, fieldAccessor.getPropertyValue("consecutiveActiveTrigger"));
-		assertEquals(6, fieldAccessor.getPropertyValue("consecutiveIdleTrigger"));
-		assertEquals(3, fieldAccessor.getPropertyValue("prefetchCount"));
-		assertEquals(1500L, fieldAccessor.getPropertyValue("receiveTimeout"));
-		assertEquals(10_000L, fieldAccessor.getPropertyValue("shutdownTimeout"));
-		assertEquals(false, fieldAccessor.getPropertyValue("defaultRequeueRejected"));
+		assertThat(fieldAccessor.getPropertyValue("taskExecutor")).isSameAs(executor);
+		assertThat(fieldAccessor.getPropertyValue("transactionManager")).isSameAs(transactionManager);
+		assertThat(fieldAccessor.getPropertyValue("txSize")).isEqualTo(10);
+		assertThat(fieldAccessor.getPropertyValue("concurrentConsumers")).isEqualTo(2);
+		assertThat(fieldAccessor.getPropertyValue("maxConcurrentConsumers")).isEqualTo(5);
+		assertThat(fieldAccessor.getPropertyValue("startConsumerMinInterval")).isEqualTo(2000L);
+		assertThat(fieldAccessor.getPropertyValue("stopConsumerMinInterval")).isEqualTo(2500L);
+		assertThat(fieldAccessor.getPropertyValue("consecutiveActiveTrigger")).isEqualTo(8);
+		assertThat(fieldAccessor.getPropertyValue("consecutiveIdleTrigger")).isEqualTo(6);
+		assertThat(fieldAccessor.getPropertyValue("prefetchCount")).isEqualTo(3);
+		assertThat(fieldAccessor.getPropertyValue("receiveTimeout")).isEqualTo(1500L);
+		assertThat(fieldAccessor.getPropertyValue("shutdownTimeout")).isEqualTo(10_000L);
+		assertThat(fieldAccessor.getPropertyValue("defaultRequeueRejected")).isEqualTo(false);
 		Advice[] actualAdviceChain = (Advice[]) fieldAccessor.getPropertyValue("adviceChain");
-		assertEquals("Wrong number of advice", 1, actualAdviceChain.length);
-		assertSame("Wrong advice", advice, actualAdviceChain[0]);
-		assertSame(recoveryBackOff, fieldAccessor.getPropertyValue("recoveryBackOff"));
-		assertEquals(true, fieldAccessor.getPropertyValue("missingQueuesFatal"));
-		assertEquals(messageListener, container.getMessageListener());
-		assertEquals("myQueue", container.getQueueNames()[0]);
+		assertThat(actualAdviceChain.length).as("Wrong number of advice").isEqualTo(1);
+		assertThat(actualAdviceChain[0]).as("Wrong advice").isSameAs(advice);
+		assertThat(fieldAccessor.getPropertyValue("recoveryBackOff")).isSameAs(recoveryBackOff);
+		assertThat(fieldAccessor.getPropertyValue("missingQueuesFatal")).isEqualTo(true);
+		assertThat(container.getMessageListener()).isEqualTo(messageListener);
+		assertThat(container.getQueueNames()[0]).isEqualTo("myQueue");
 		List<?> actualAfterReceivePostProcessors = (List<?>) fieldAccessor.getPropertyValue("afterReceivePostProcessors");
-		assertEquals("Wrong number of afterReceivePostProcessors", 1, actualAfterReceivePostProcessors.size());
-		assertSame("Wrong advice", afterReceivePostProcessor, actualAfterReceivePostProcessors.get(0));
+		assertThat(actualAfterReceivePostProcessors.size()).as("Wrong number of afterReceivePostProcessors").isEqualTo(1);
+		assertThat(actualAfterReceivePostProcessors.get(0)).as("Wrong advice").isSameAs(afterReceivePostProcessor);
 	}
 
 	@Test
@@ -172,7 +165,7 @@ public class RabbitListenerContainerFactoryTests {
 		this.direct.setAckTimeout(3L);
 		this.direct.setAfterReceivePostProcessors(afterReceivePostProcessor);
 
-		assertArrayEquals(new Advice[] {advice}, this.direct.getAdviceChain());
+		assertThat(this.direct.getAdviceChain()).isEqualTo(new Advice[]{advice});
 
 		SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
 
@@ -182,26 +175,26 @@ public class RabbitListenerContainerFactoryTests {
 
 		assertBasicConfig(container);
 		DirectFieldAccessor fieldAccessor = new DirectFieldAccessor(container);
-		assertSame(executor, fieldAccessor.getPropertyValue("taskExecutor"));
-		assertSame(transactionManager, fieldAccessor.getPropertyValue("transactionManager"));
-		assertEquals(3, fieldAccessor.getPropertyValue("prefetchCount"));
-		assertEquals(false, fieldAccessor.getPropertyValue("defaultRequeueRejected"));
+		assertThat(fieldAccessor.getPropertyValue("taskExecutor")).isSameAs(executor);
+		assertThat(fieldAccessor.getPropertyValue("transactionManager")).isSameAs(transactionManager);
+		assertThat(fieldAccessor.getPropertyValue("prefetchCount")).isEqualTo(3);
+		assertThat(fieldAccessor.getPropertyValue("defaultRequeueRejected")).isEqualTo(false);
 		Advice[] actualAdviceChain = (Advice[]) fieldAccessor.getPropertyValue("adviceChain");
-		assertEquals("Wrong number of advice", 1, actualAdviceChain.length);
-		assertSame("Wrong advice", advice, actualAdviceChain[0]);
-		assertSame(recoveryBackOff, fieldAccessor.getPropertyValue("recoveryBackOff"));
-		assertEquals(true, fieldAccessor.getPropertyValue("missingQueuesFatal"));
-		assertEquals(false, fieldAccessor.getPropertyValue("mismatchedQueuesFatal"));
-		assertEquals(messageListener, container.getMessageListener());
-		assertEquals("myQueue", container.getQueueNames()[0]);
-		assertSame(scheduler, fieldAccessor.getPropertyValue("taskScheduler"));
-		assertEquals(1234L, fieldAccessor.getPropertyValue("monitorInterval"));
-		assertEquals(42, fieldAccessor.getPropertyValue("consumersPerQueue"));
-		assertEquals(5, fieldAccessor.getPropertyValue("messagesPerAck"));
-		assertEquals(3L, fieldAccessor.getPropertyValue("ackTimeout"));
+		assertThat(actualAdviceChain.length).as("Wrong number of advice").isEqualTo(1);
+		assertThat(actualAdviceChain[0]).as("Wrong advice").isSameAs(advice);
+		assertThat(fieldAccessor.getPropertyValue("recoveryBackOff")).isSameAs(recoveryBackOff);
+		assertThat(fieldAccessor.getPropertyValue("missingQueuesFatal")).isEqualTo(true);
+		assertThat(fieldAccessor.getPropertyValue("mismatchedQueuesFatal")).isEqualTo(false);
+		assertThat(container.getMessageListener()).isEqualTo(messageListener);
+		assertThat(container.getQueueNames()[0]).isEqualTo("myQueue");
+		assertThat(fieldAccessor.getPropertyValue("taskScheduler")).isSameAs(scheduler);
+		assertThat(fieldAccessor.getPropertyValue("monitorInterval")).isEqualTo(1234L);
+		assertThat(fieldAccessor.getPropertyValue("consumersPerQueue")).isEqualTo(42);
+		assertThat(fieldAccessor.getPropertyValue("messagesPerAck")).isEqualTo(5);
+		assertThat(fieldAccessor.getPropertyValue("ackTimeout")).isEqualTo(3L);
 		List<?> actualAfterReceivePostProcessors = (List<?>) fieldAccessor.getPropertyValue("afterReceivePostProcessors");
-		assertEquals("Wrong number of afterReceivePostProcessors", 1, actualAfterReceivePostProcessors.size());
-		assertSame("Wrong afterReceivePostProcessor", afterReceivePostProcessor, actualAfterReceivePostProcessors.get(0));
+		assertThat(actualAfterReceivePostProcessors.size()).as("Wrong number of afterReceivePostProcessors").isEqualTo(1);
+		assertThat(actualAfterReceivePostProcessors.get(0)).as("Wrong afterReceivePostProcessor").isSameAs(afterReceivePostProcessor);
 	}
 
 	private void setBasicConfig(AbstractRabbitListenerContainerFactory<?> factory) {
@@ -216,13 +209,13 @@ public class RabbitListenerContainerFactoryTests {
 
 	private void assertBasicConfig(AbstractMessageListenerContainer container) {
 		DirectFieldAccessor fieldAccessor = new DirectFieldAccessor(container);
-		assertSame(connectionFactory, container.getConnectionFactory());
-		assertSame(errorHandler, fieldAccessor.getPropertyValue("errorHandler"));
-		assertSame(messageConverter, fieldAccessor.getPropertyValue("messageListener.messageConverter"));
-		assertEquals(AcknowledgeMode.MANUAL, container.getAcknowledgeMode());
-		assertEquals(true, container.isChannelTransacted());
-		assertEquals(false, container.isAutoStartup());
-		assertEquals(99, container.getPhase());
+		assertThat(container.getConnectionFactory()).isSameAs(connectionFactory);
+		assertThat(fieldAccessor.getPropertyValue("errorHandler")).isSameAs(errorHandler);
+		assertThat(fieldAccessor.getPropertyValue("messageListener.messageConverter")).isSameAs(messageConverter);
+		assertThat(container.getAcknowledgeMode()).isEqualTo(AcknowledgeMode.MANUAL);
+		assertThat(container.isChannelTransacted()).isEqualTo(true);
+		assertThat(container.isAutoStartup()).isEqualTo(false);
+		assertThat(container.getPhase()).isEqualTo(99);
 	}
 
 }

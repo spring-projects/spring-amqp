@@ -85,11 +85,11 @@ subprojects { subproject ->
 		log4jVersion = '2.11.2'
 		logbackVersion = '1.2.3'
 		mockitoVersion = '2.24.0'
-		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.5.2'
-		rabbitmqHttpClientVersion = '3.1.1.RELEASE'
+		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.7.0'
+		rabbitmqHttpClientVersion = '3.2.0.RELEASE'
 		reactorVersion = '3.2.6.RELEASE'
 
-		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.2.0.BUILD-SNAPSHOT'
+		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.2.0.M1'
 
 		springRetryVersion = '1.2.4.RELEASE'
 	}
@@ -147,7 +147,7 @@ subprojects { subproject ->
 							.exclude('**/log4j2-test.xml')
 				})
 		outputs.dir('build/resources')
-		
+
 		doLast {
 			def wrongConfigs = inputs.files.filter {
 				new XmlParser(false, false)

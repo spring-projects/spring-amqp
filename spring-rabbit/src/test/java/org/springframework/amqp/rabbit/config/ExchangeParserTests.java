@@ -16,10 +16,7 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
 
@@ -58,96 +55,96 @@ public final class ExchangeParserTests {
 	@Test
 	public void testDirectExchange() throws Exception {
 		DirectExchange exchange = beanFactory.getBean("direct", DirectExchange.class);
-		assertNotNull(exchange);
-		assertEquals("direct", exchange.getName());
-		assertTrue(exchange.isDurable());
-		assertFalse(exchange.isAutoDelete());
-		assertFalse(exchange.shouldDeclare());
-		assertEquals(2, exchange.getDeclaringAdmins().size());
+		assertThat(exchange).isNotNull();
+		assertThat(exchange.getName()).isEqualTo("direct");
+		assertThat(exchange.isDurable()).isTrue();
+		assertThat(exchange.isAutoDelete()).isFalse();
+		assertThat(exchange.shouldDeclare()).isFalse();
+		assertThat(exchange.getDeclaringAdmins()).hasSize(2);
 		Binding binding =
 				beanFactory.getBean("org.springframework.amqp.rabbit.config.BindingFactoryBean#0", Binding.class);
-		assertFalse(binding.shouldDeclare());
-		assertEquals(2, binding.getDeclaringAdmins().size());
+		assertThat(binding.shouldDeclare()).isFalse();
+		assertThat(binding.getDeclaringAdmins()).hasSize(2);
 
 		Map<String, Object> arguments = binding.getArguments();
-		assertNotNull(arguments);
-		assertEquals(1, arguments.size());
-		assertTrue(arguments.containsKey("x-match"));
-		assertEquals("any", arguments.get("x-match"));
+		assertThat(arguments).isNotNull();
+		assertThat(arguments).hasSize(1);
+		assertThat(arguments.containsKey("x-match")).isTrue();
+		assertThat(arguments.get("x-match")).isEqualTo("any");
 
 	}
 
 	@Test
 	public void testAliasDirectExchange() throws Exception {
 		DirectExchange exchange = beanFactory.getBean("alias", DirectExchange.class);
-		assertNotNull(exchange);
-		assertEquals("direct-alias", exchange.getName());
-		assertTrue(exchange.isDurable());
-		assertFalse(exchange.isAutoDelete());
+		assertThat(exchange).isNotNull();
+		assertThat(exchange.getName()).isEqualTo("direct-alias");
+		assertThat(exchange.isDurable()).isTrue();
+		assertThat(exchange.isAutoDelete()).isFalse();
 	}
 
 	@Test
 	public void testTopicExchange() throws Exception {
 		TopicExchange exchange = beanFactory.getBean("topic", TopicExchange.class);
-		assertNotNull(exchange);
-		assertEquals("topic", exchange.getName());
-		assertTrue(exchange.isDurable());
-		assertFalse(exchange.isAutoDelete());
-		assertTrue(exchange.shouldDeclare());
-		assertTrue(exchange.isDelayed());
-		assertTrue(exchange.isInternal());
-		assertEquals(1, exchange.getDeclaringAdmins().size());
+		assertThat(exchange).isNotNull();
+		assertThat(exchange.getName()).isEqualTo("topic");
+		assertThat(exchange.isDurable()).isTrue();
+		assertThat(exchange.isAutoDelete()).isFalse();
+		assertThat(exchange.shouldDeclare()).isTrue();
+		assertThat(exchange.isDelayed()).isTrue();
+		assertThat(exchange.isInternal()).isTrue();
+		assertThat(exchange.getDeclaringAdmins()).hasSize(1);
 
 	}
 
 	@Test
 	public void testFanoutExchange() throws Exception {
 		FanoutExchange exchange = beanFactory.getBean("fanout", FanoutExchange.class);
-		assertNotNull(exchange);
-		assertEquals("fanout", exchange.getName());
-		assertTrue(exchange.isDurable());
-		assertFalse(exchange.isAutoDelete());
-		assertTrue(exchange.shouldDeclare());
-		assertFalse(exchange.isDelayed());
-		assertEquals(1, exchange.getDeclaringAdmins().size());
+		assertThat(exchange).isNotNull();
+		assertThat(exchange.getName()).isEqualTo("fanout");
+		assertThat(exchange.isDurable()).isTrue();
+		assertThat(exchange.isAutoDelete()).isFalse();
+		assertThat(exchange.shouldDeclare()).isTrue();
+		assertThat(exchange.isDelayed()).isFalse();
+		assertThat(exchange.getDeclaringAdmins()).hasSize(1);
 
 	}
 
 	@Test
 	public void testHeadersExchange() throws Exception {
 		HeadersExchange exchange = beanFactory.getBean("headers", HeadersExchange.class);
-		assertNotNull(exchange);
-		assertEquals("headers", exchange.getName());
-		assertTrue(exchange.isDurable());
-		assertFalse(exchange.isAutoDelete());
-		assertTrue(exchange.shouldDeclare());
-		assertEquals(1, exchange.getDeclaringAdmins().size());
+		assertThat(exchange).isNotNull();
+		assertThat(exchange.getName()).isEqualTo("headers");
+		assertThat(exchange.isDurable()).isTrue();
+		assertThat(exchange.isAutoDelete()).isFalse();
+		assertThat(exchange.shouldDeclare()).isTrue();
+		assertThat(exchange.getDeclaringAdmins()).hasSize(1);
 
 	}
 
 	@Test
 	public void testDirectExchangeOverride() throws Exception {
 		DirectExchange exchange = beanFactory.getBean("direct-override", DirectExchange.class);
-		assertNotNull(exchange);
-		assertEquals("direct-override", exchange.getName());
-		assertFalse(exchange.isDurable());
-		assertTrue(exchange.isAutoDelete());
+		assertThat(exchange).isNotNull();
+		assertThat(exchange.getName()).isEqualTo("direct-override");
+		assertThat(exchange.isDurable()).isFalse();
+		assertThat(exchange.isAutoDelete()).isTrue();
 	}
 
 	@Test
 	public void testDirectExchangeWithArguments() throws Exception {
 		DirectExchange exchange = beanFactory.getBean("direct-arguments", DirectExchange.class);
-		assertNotNull(exchange);
-		assertEquals("direct-arguments", exchange.getName());
-		assertEquals("bar", exchange.getArguments().get("foo"));
+		assertThat(exchange).isNotNull();
+		assertThat(exchange.getName()).isEqualTo("direct-arguments");
+		assertThat(exchange.getArguments().get("foo")).isEqualTo("bar");
 	}
 
 	@Test
 	public void testDirectExchangeWithReferencedArguments() throws Exception {
 		DirectExchange exchange = beanFactory.getBean("direct-ref-arguments", DirectExchange.class);
-		assertNotNull(exchange);
-		assertEquals("direct-ref-arguments", exchange.getName());
-		assertEquals("bar", exchange.getArguments().get("foo"));
+		assertThat(exchange).isNotNull();
+		assertThat(exchange.getName()).isEqualTo("direct-ref-arguments");
+		assertThat(exchange.getArguments().get("foo")).isEqualTo("bar");
 	}
 
 }

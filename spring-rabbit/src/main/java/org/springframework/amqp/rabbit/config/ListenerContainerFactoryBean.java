@@ -33,7 +33,6 @@ import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.support.ConditionalExceptionLogger;
 import org.springframework.amqp.support.ConsumerTagStrategy;
-import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanNameAware;
@@ -87,8 +86,6 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 	private MessageListener messageListener;
 
 	private ErrorHandler errorHandler;
-
-	private MessageConverter messageConverter;
 
 	private Boolean deBatchingEnabled;
 
@@ -219,25 +216,6 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 
 	public void setErrorHandler(ErrorHandler errorHandler) {
 		this.errorHandler = errorHandler;
-	}
-
-	/*
-	 * Unlikely this FB is used for a RabbitListener (it's only used by the
-	 * XML parser and this property is never set). We could probably just
-	 * remove this, but deprecating, just in case.
-	 */
-	/**
-	 * Set the {@link MessageConverter} strategy for converting AMQP Messages.
-	 * @param messageConverter the message converter to use
-	 * @deprecated - this converter is not used by the container; it was only
-	 * used to configure the converter for a {@code @RabbitListener} adapter.
-	 * That is now handled differently. If you are manually creating a listener
-	 * container, the converter must be configured in a listener adapter (if
-	 * present).
-	 */
-	@Deprecated
-	public void setMessageConverter(MessageConverter messageConverter) {
-		this.messageConverter = messageConverter;
 	}
 
 	public void setDeBatchingEnabled(boolean deBatchingEnabled) {
@@ -402,7 +380,8 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 
 	@Override
 	public Class<?> getObjectType() {
-		return this.listenerContainer == null ? AbstractMessageListenerContainer.class : this.listenerContainer.getClass();
+		return this.listenerContainer == null ? AbstractMessageListenerContainer.class : this.listenerContainer
+				.getClass();
 	}
 
 	@SuppressWarnings("deprecation")
@@ -411,44 +390,45 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 		if (this.listenerContainer == null) {
 			AbstractMessageListenerContainer container = createContainer();
 			JavaUtils.INSTANCE
-				.acceptIfNotNull(this.applicationContext, container::setApplicationContext)
-				.acceptIfNotNull(this.beanName, container::setBeanName)
-				.acceptIfNotNull(this.applicationEventPublisher, container::setApplicationEventPublisher)
-				.acceptIfNotNull(this.channelTransacted, container::setChannelTransacted)
-				.acceptIfNotNull(this.acknowledgeMode, container::setAcknowledgeMode)
-				.acceptIfNotNull(this.queueNames, container::setQueueNames)
-				.acceptIfNotNull(this.queues, container::setQueues)
-				.acceptIfNotNull(this.exposeListenerChannel, container::setExposeListenerChannel)
-				.acceptIfNotNull(this.messageListener, container::setMessageListener)
-				.acceptIfNotNull(this.errorHandler, container::setErrorHandler)
-				.acceptIfNotNull(this.messageConverter, container::setMessageConverter)
-				.acceptIfNotNull(this.deBatchingEnabled, container::setDeBatchingEnabled)
-				.acceptIfNotNull(this.adviceChain, container::setAdviceChain)
-				.acceptIfNotNull(this.afterReceivePostProcessors, container::setAfterReceivePostProcessors)
-				.acceptIfNotNull(this.autoStartup, container::setAutoStartup)
-				.acceptIfNotNull(this.phase, container::setPhase)
-				.acceptIfNotNull(this.listenerId, container::setListenerId)
-				.acceptIfNotNull(this.consumerTagStrategy, container::setConsumerTagStrategy)
-				.acceptIfNotNull(this.consumerArgs, container::setConsumerArguments)
-				.acceptIfNotNull(this.noLocal, container::setNoLocal)
-				.acceptIfNotNull(this.exclusive, container::setExclusive)
-				.acceptIfNotNull(this.defaultRequeueRejected, container::setDefaultRequeueRejected)
-				.acceptIfNotNull(this.prefetchCount, container::setPrefetchCount)
-				.acceptIfNotNull(this.shutdownTimeout, container::setShutdownTimeout)
-				.acceptIfNotNull(this.idleEventInterval, container::setIdleEventInterval)
-				.acceptIfNotNull(this.transactionManager, container::setTransactionManager)
-				.acceptIfNotNull(this.transactionAttribute, container::setTransactionAttribute)
-				.acceptIfNotNull(this.taskExecutor, container::setTaskExecutor)
-				.acceptIfNotNull(this.recoveryInterval, container::setRecoveryInterval)
-				.acceptIfNotNull(this.recoveryBackOff, container::setRecoveryBackOff)
-				.acceptIfNotNull(this.messagePropertiesConverter, container::setMessagePropertiesConverter)
-				.acceptIfNotNull(this.rabbitAdmin, container::setAmqpAdmin)
-				.acceptIfNotNull(this.missingQueuesFatal, container::setMissingQueuesFatal)
-				.acceptIfNotNull(this.possibleAuthenticationFailureFatal, container::setPossibleAuthenticationFailureFatal)
-				.acceptIfNotNull(this.mismatchedQueuesFatal, container::setMismatchedQueuesFatal)
-				.acceptIfNotNull(this.autoDeclare, container::setAutoDeclare)
-				.acceptIfNotNull(this.failedDeclarationRetryInterval, container::setFailedDeclarationRetryInterval)
-				.acceptIfNotNull(this.exclusiveConsumerExceptionLogger, container::setExclusiveConsumerExceptionLogger);
+					.acceptIfNotNull(this.applicationContext, container::setApplicationContext)
+					.acceptIfNotNull(this.beanName, container::setBeanName)
+					.acceptIfNotNull(this.applicationEventPublisher, container::setApplicationEventPublisher)
+					.acceptIfNotNull(this.channelTransacted, container::setChannelTransacted)
+					.acceptIfNotNull(this.acknowledgeMode, container::setAcknowledgeMode)
+					.acceptIfNotNull(this.queueNames, container::setQueueNames)
+					.acceptIfNotNull(this.queues, container::setQueues)
+					.acceptIfNotNull(this.exposeListenerChannel, container::setExposeListenerChannel)
+					.acceptIfNotNull(this.messageListener, container::setMessageListener)
+					.acceptIfNotNull(this.errorHandler, container::setErrorHandler)
+					.acceptIfNotNull(this.deBatchingEnabled, container::setDeBatchingEnabled)
+					.acceptIfNotNull(this.adviceChain, container::setAdviceChain)
+					.acceptIfNotNull(this.afterReceivePostProcessors, container::setAfterReceivePostProcessors)
+					.acceptIfNotNull(this.autoStartup, container::setAutoStartup)
+					.acceptIfNotNull(this.phase, container::setPhase)
+					.acceptIfNotNull(this.listenerId, container::setListenerId)
+					.acceptIfNotNull(this.consumerTagStrategy, container::setConsumerTagStrategy)
+					.acceptIfNotNull(this.consumerArgs, container::setConsumerArguments)
+					.acceptIfNotNull(this.noLocal, container::setNoLocal)
+					.acceptIfNotNull(this.exclusive, container::setExclusive)
+					.acceptIfNotNull(this.defaultRequeueRejected, container::setDefaultRequeueRejected)
+					.acceptIfNotNull(this.prefetchCount, container::setPrefetchCount)
+					.acceptIfNotNull(this.shutdownTimeout, container::setShutdownTimeout)
+					.acceptIfNotNull(this.idleEventInterval, container::setIdleEventInterval)
+					.acceptIfNotNull(this.transactionManager, container::setTransactionManager)
+					.acceptIfNotNull(this.transactionAttribute, container::setTransactionAttribute)
+					.acceptIfNotNull(this.taskExecutor, container::setTaskExecutor)
+					.acceptIfNotNull(this.recoveryInterval, container::setRecoveryInterval)
+					.acceptIfNotNull(this.recoveryBackOff, container::setRecoveryBackOff)
+					.acceptIfNotNull(this.messagePropertiesConverter, container::setMessagePropertiesConverter)
+					.acceptIfNotNull(this.rabbitAdmin, container::setAmqpAdmin)
+					.acceptIfNotNull(this.missingQueuesFatal, container::setMissingQueuesFatal)
+					.acceptIfNotNull(this.possibleAuthenticationFailureFatal,
+							container::setPossibleAuthenticationFailureFatal)
+					.acceptIfNotNull(this.mismatchedQueuesFatal, container::setMismatchedQueuesFatal)
+					.acceptIfNotNull(this.autoDeclare, container::setAutoDeclare)
+					.acceptIfNotNull(this.failedDeclarationRetryInterval, container::setFailedDeclarationRetryInterval)
+					.acceptIfNotNull(this.exclusiveConsumerExceptionLogger,
+							container::setExclusiveConsumerExceptionLogger);
 			container.afterPropertiesSet();
 			this.listenerContainer = container;
 		}
@@ -459,24 +439,24 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 		if (this.type.equals(Type.simple)) {
 			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactory);
 			JavaUtils.INSTANCE
-				.acceptIfNotNull(this.concurrentConsumers, container::setConcurrentConsumers)
-				.acceptIfNotNull(this.maxConcurrentConsumers, container::setMaxConcurrentConsumers)
-				.acceptIfNotNull(this.startConsumerMinInterval, container::setStartConsumerMinInterval)
-				.acceptIfNotNull(this.stopConsumerMinInterval, container::setStopConsumerMinInterval)
-				.acceptIfNotNull(this.consecutiveActiveTrigger, container::setConsecutiveActiveTrigger)
-				.acceptIfNotNull(this.consecutiveIdleTrigger, container::setConsecutiveIdleTrigger)
-				.acceptIfNotNull(this.receiveTimeout, container::setReceiveTimeout)
-				.acceptIfNotNull(this.txSize, container::setTxSize)
-				.acceptIfNotNull(this.declarationRetries, container::setDeclarationRetries)
-				.acceptIfNotNull(this.retryDeclarationInterval, container::setRetryDeclarationInterval);
+					.acceptIfNotNull(this.concurrentConsumers, container::setConcurrentConsumers)
+					.acceptIfNotNull(this.maxConcurrentConsumers, container::setMaxConcurrentConsumers)
+					.acceptIfNotNull(this.startConsumerMinInterval, container::setStartConsumerMinInterval)
+					.acceptIfNotNull(this.stopConsumerMinInterval, container::setStopConsumerMinInterval)
+					.acceptIfNotNull(this.consecutiveActiveTrigger, container::setConsecutiveActiveTrigger)
+					.acceptIfNotNull(this.consecutiveIdleTrigger, container::setConsecutiveIdleTrigger)
+					.acceptIfNotNull(this.receiveTimeout, container::setReceiveTimeout)
+					.acceptIfNotNull(this.txSize, container::setTxSize)
+					.acceptIfNotNull(this.declarationRetries, container::setDeclarationRetries)
+					.acceptIfNotNull(this.retryDeclarationInterval, container::setRetryDeclarationInterval);
 			return container;
 		}
 		else {
 			DirectMessageListenerContainer container = new DirectMessageListenerContainer(this.connectionFactory);
 			JavaUtils.INSTANCE
-				.acceptIfNotNull(this.consumersPerQueue, container::setConsumersPerQueue)
-				.acceptIfNotNull(this.taskScheduler, container::setTaskScheduler)
-				.acceptIfNotNull(this.monitorInterval, container::setMonitorInterval);
+					.acceptIfNotNull(this.consumersPerQueue, container::setConsumersPerQueue)
+					.acceptIfNotNull(this.taskScheduler, container::setTaskScheduler)
+					.acceptIfNotNull(this.monitorInterval, container::setMonitorInterval);
 			return container;
 		}
 	}

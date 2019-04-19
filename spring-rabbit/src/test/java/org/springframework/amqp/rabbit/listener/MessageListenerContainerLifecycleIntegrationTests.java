@@ -16,11 +16,8 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -212,7 +209,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 			fail("expected exception");
 		}
 		catch (AmqpIllegalStateException e) {
-			assertTrue("Expected FatalListenerStartupException", e.getCause() instanceof FatalListenerStartupException);
+			assertThat(e.getCause() instanceof FatalListenerStartupException).as("Expected FatalListenerStartupException").isTrue();
 		}
 		finally {
 			((DisposableBean) template.getConnectionFactory()).destroy();
@@ -262,16 +259,16 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 			boolean waited = latch.await(50, TimeUnit.MILLISECONDS);
 			logger.info("All messages received before stop: " + waited);
 			if (messageCount > 1) {
-				assertFalse("Expected not to receive all messages before stop", waited);
+				assertThat(waited).as("Expected not to receive all messages before stop").isFalse();
 			}
 
-			assertEquals(concurrentConsumers, container.getActiveConsumerCount());
+			assertThat(container.getActiveConsumerCount()).isEqualTo(concurrentConsumers);
 			container.stop();
 			int n = 0;
 			while (n++ < 100 && container.getActiveConsumerCount() > 0) {
 				Thread.sleep(100);
 			}
-			assertEquals(0, container.getActiveConsumerCount());
+			assertThat(container.getActiveConsumerCount()).isEqualTo(0);
 			if (!transactional) {
 
 				int messagesReceivedAfterStop = listener.getCount();
@@ -281,13 +278,12 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 				logger.info("All messages received after stop: " + waited + " (" + messagesReceivedAfterStop + ")");
 
 				if (prefetchNoTx) {
-					assertFalse("Didn't expect to receive all messages after stop", waited);
+					assertThat(waited).as("Didn't expect to receive all messages after stop").isFalse();
 				}
 				else {
-					assertTrue("Expect to receive all messages after stop", waited);
+					assertThat(waited).as("Expect to receive all messages after stop").isTrue();
 				}
-				assertEquals("Unexpected additional messages received after stop", messagesReceivedAfterStop,
-						listener.getCount());
+				assertThat(listener.getCount()).as("Unexpected additional messages received after stop").isEqualTo(messagesReceivedAfterStop);
 
 				for (int i = 0; i < messageCount; i++) {
 					template.convertAndSend(queue.getName(), i + "bar");
@@ -307,18 +303,18 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 			logger.debug("Waiting for messages with timeout = " + timeout + " (s)");
 			waited = latch.await(timeout, TimeUnit.SECONDS);
 			logger.info("All messages received after start: " + waited);
-			assertEquals(concurrentConsumers, container.getActiveConsumerCount());
+			assertThat(container.getActiveConsumerCount()).isEqualTo(concurrentConsumers);
 			if (transactional) {
-				assertTrue("Timed out waiting for message", waited);
+				assertThat(waited).as("Timed out waiting for message").isTrue();
 			}
 			else {
 				int count = listener.getCount();
-				assertTrue("Expected additional messages received after start: " + messagesReceivedBeforeStart + ">="
-						+ count, messagesReceivedBeforeStart < count);
-				assertNull("Messages still available", template.receive(queue.getName()));
+				assertThat(messagesReceivedBeforeStart < count).as("Expected additional messages received after start: " + messagesReceivedBeforeStart + ">="
+						+ count).isTrue();
+				assertThat(template.receive(queue.getName())).as("Messages still available").isNull();
 			}
 
-			assertEquals(concurrentConsumers, container.getActiveConsumerCount());
+			assertThat(container.getActiveConsumerCount()).isEqualTo(concurrentConsumers);
 
 		}
 		finally {
@@ -329,8 +325,8 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		while (n++ < 100 && container.getActiveConsumerCount() > 0) {
 			Thread.sleep(100);
 		}
-		assertEquals(0, container.getActiveConsumerCount());
-		assertNull(template.receiveAndConvert(queue.getName()));
+		assertThat(container.getActiveConsumerCount()).isEqualTo(0);
+		assertThat(template.receiveAndConvert(queue.getName())).isNull();
 
 		((DisposableBean) template.getConnectionFactory()).destroy();
 	}
@@ -381,7 +377,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		container.start();
 
 		// wait until the listener has the first message...
-		assertTrue(awaitStart1.await(10, TimeUnit.SECONDS));
+		assertThat(awaitStart1.await(10, TimeUnit.SECONDS)).isTrue();
 		// ... and the remaining 4 are queued...
 		@SuppressWarnings("unchecked")
 		Set<BlockingQueueConsumer> consumers = (Set<BlockingQueueConsumer>) TestUtils
@@ -402,26 +398,24 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		while (container.isActive() && n++ < 100) {
 			Thread.sleep(100);
 		}
-		assertTrue(n < 100);
+		assertThat(n < 100).isTrue();
 
 		awaitStop.countDown();
 
-		assertTrue("awaitConsumeFirst.count=" + awaitConsumeFirst.getCount(),
-				awaitConsumeFirst.await(10, TimeUnit.SECONDS));
+		assertThat(awaitConsumeFirst.await(10, TimeUnit.SECONDS)).as("awaitConsumeFirst.count=" + awaitConsumeFirst.getCount()).isTrue();
 		n = 0;
 		DirectFieldAccessor dfa = new DirectFieldAccessor(container);
 		while (dfa.getPropertyValue("consumers") != null && n++ < 100) {
 			Thread.sleep(100);
 		}
-		assertTrue(n < 100);
+		assertThat(n < 100).isTrue();
 		// make sure we stopped receiving after the prefetch was consumed
-		assertEquals(5, received.get());
-		assertEquals(1, awaitStart2.getCount());
+		assertThat(received.get()).isEqualTo(5);
+		assertThat(awaitStart2.getCount()).isEqualTo(1);
 
 		container.start();
-		assertTrue(awaitStart2.await(10, TimeUnit.SECONDS));
-		assertTrue("awaitConsumeSecond.count=" + awaitConsumeSecond.getCount(),
-				awaitConsumeSecond.await(10, TimeUnit.SECONDS));
+		assertThat(awaitStart2.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(awaitConsumeSecond.await(10, TimeUnit.SECONDS)).as("awaitConsumeSecond.count=" + awaitConsumeSecond.getCount()).isTrue();
 		container.stop();
 		((DisposableBean) template.getConnectionFactory()).destroy();
 	}
@@ -452,7 +446,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		try {
 			connectionFactory.destroy();
 
-			assertTrue(latch.await(10, TimeUnit.SECONDS));
+			assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 			Mockito.verify(log).debug(
 					Mockito.contains("Consumer received Shutdown Signal, processing stopped"));
 			Mockito.verify(log, Mockito.never()).warn(Mockito.anyString(), Mockito.any(Throwable.class));
@@ -475,19 +469,19 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		CountDownLatch consumerLatch = applicationContext.getBean("consumerLatch", CountDownLatch.class);
 		SimpleMessageListenerContainer container = applicationContext.getBean(SimpleMessageListenerContainer.class);
 
-		assertTrue(consumerLatch.await(10, TimeUnit.SECONDS));
+		assertThat(consumerLatch.await(10, TimeUnit.SECONDS)).isTrue();
 
 		applicationContext.close();
 
 		@SuppressWarnings("rawtypes")
 		ActiveObjectCounter counter = TestUtils.getPropertyValue(container, "cancellationLock", ActiveObjectCounter.class);
-		assertTrue(counter.getCount() > 0);
+		assertThat(counter.getCount() > 0).isTrue();
 
 		int n = 0;
 		while (counter.getCount() > 0 && n++ < 10) {
 			Thread.sleep(500);
 		}
-		assertTrue(n < 10);
+		assertThat(n < 10).isTrue();
 		((DisposableBean) template.getConnectionFactory()).destroy();
 	}
 

@@ -16,14 +16,9 @@
 
 package org.springframework.amqp.rabbit.core;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -48,10 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.hamcrest.Matchers;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
 import org.springframework.amqp.AmqpAuthenticationException;
@@ -101,9 +93,6 @@ import com.rabbitmq.client.impl.AMQImpl.Queue.DeclareOk;
  *
  */
 public class RabbitTemplateTests {
-
-	@Rule
-	public ExpectedException exception = ExpectedException.none();
 
 	@Test
 	public void returnConnectionAfterCommit() throws Exception {
@@ -160,7 +149,7 @@ public class RabbitTemplateTests {
 		RabbitTemplate template = new RabbitTemplate();
 		byte[] payload = "Hello, world!".getBytes();
 		Message message = template.convertMessageIfNecessary(payload);
-		assertSame(payload, message.getBody());
+		assertThat(message.getBody()).isSameAs(payload);
 	}
 
 	@Test
@@ -168,7 +157,7 @@ public class RabbitTemplateTests {
 		RabbitTemplate template = new RabbitTemplate();
 		String payload = "Hello, world!";
 		Message message = template.convertMessageIfNecessary(payload);
-		assertEquals(payload, new String(message.getBody(), SimpleMessageConverter.DEFAULT_CHARSET));
+		assertThat(new String(message.getBody(), SimpleMessageConverter.DEFAULT_CHARSET)).isEqualTo(payload);
 	}
 
 	@Test
@@ -176,7 +165,7 @@ public class RabbitTemplateTests {
 		RabbitTemplate template = new RabbitTemplate();
 		Long payload = 43L;
 		Message message = template.convertMessageIfNecessary(payload);
-		assertEquals(payload, SerializationUtils.deserialize(message.getBody()));
+		assertThat(SerializationUtils.deserialize(message.getBody())).isEqualTo(payload);
 	}
 
 	@Test
@@ -184,7 +173,7 @@ public class RabbitTemplateTests {
 		RabbitTemplate template = new RabbitTemplate();
 		Message input = new Message("Hello, world!".getBytes(), new MessageProperties());
 		Message message = template.convertMessageIfNecessary(input);
-		assertSame(input, message);
+		assertThat(message).isSameAs(input);
 	}
 
 	@Test // AMQP-249
@@ -233,9 +222,9 @@ public class RabbitTemplateTests {
 			template.convertAndSend("foo", "bar", "baz");
 		}
 		catch (AmqpAuthenticationException e) {
-			assertThat(e.getMessage(), containsString("foo"));
+			assertThat(e.getMessage()).contains("foo");
 		}
-		assertEquals(3, count.get());
+		assertThat(count.get()).isEqualTo(3);
 	}
 
 	@Test
@@ -259,8 +248,8 @@ public class RabbitTemplateTests {
 			return null;
 		});
 		template.convertAndSend("foo", "bar", "baz");
-		assertEquals(3, count.get());
-		assertTrue(recoverInvoked.get());
+		assertThat(count.get()).isEqualTo(3);
+		assertThat(recoverInvoked.get()).isTrue();
 	}
 
 	@Test
@@ -282,16 +271,16 @@ public class RabbitTemplateTests {
 	@Test
 	public void testNoListenerAllowed1() {
 		RabbitTemplate template = new RabbitTemplate();
-		this.exception.expect(IllegalStateException.class);
-		template.expectedQueueNames();
+		assertThatIllegalStateException()
+			.isThrownBy(() -> template.expectedQueueNames());
 	}
 
 	@Test
 	public void testNoListenerAllowed2() {
 		RabbitTemplate template = new RabbitTemplate();
 		template.setReplyAddress(Address.AMQ_RABBITMQ_REPLY_TO);
-		this.exception.expect(IllegalStateException.class);
-		template.expectedQueueNames();
+		assertThatIllegalStateException()
+			.isThrownBy(() -> template.expectedQueueNames());
 	}
 
 	public final static AtomicInteger LOOKUP_KEY_COUNT = new AtomicInteger();
@@ -375,7 +364,7 @@ public class RabbitTemplateTests {
 		});
 		verify(channel1).txSelect();
 		verify(channel1).queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), anyMap());
-		assertThat(templateChannel.get(), equalTo(channel1));
+		assertThat(templateChannel.get()).isEqualTo(channel1);
 		verify(channel1).txCommit();
 	}
 
@@ -416,7 +405,7 @@ public class RabbitTemplateTests {
 			fail("Expected exception");
 		}
 		catch (AmqpException e) {
-			assertThat(e.getCause(), instanceOf(ShutdownSignalException.class));
+			assertThat(e.getCause()).isInstanceOf(ShutdownSignalException.class);
 		}
 		exec.shutdownNow();
 	}
@@ -431,11 +420,12 @@ public class RabbitTemplateTests {
 		rabbitTemplate.addBeforePublishPostProcessors(mpp1, mpp2);
 		rabbitTemplate.addBeforePublishPostProcessors(mpp3);
 		boolean removed = rabbitTemplate.removeBeforePublishPostProcessor(mpp1);
-		Collection<?> beforePublishPostProcessors =
-				(Collection<?>) ReflectionTestUtils.getField(rabbitTemplate, "beforePublishPostProcessors");
+		@SuppressWarnings("unchecked")
+		Collection<Object> beforePublishPostProcessors =
+				(Collection<Object>) ReflectionTestUtils.getField(rabbitTemplate, "beforePublishPostProcessors");
 
-		assertThat(removed, Matchers.is(true));
-		assertThat(beforePublishPostProcessors, Matchers.contains(mpp2, mpp3));
+		assertThat(removed).isEqualTo(true);
+		assertThat(beforePublishPostProcessors).containsExactly(mpp2, mpp3);
 	}
 
 	@Test
@@ -448,11 +438,12 @@ public class RabbitTemplateTests {
 		rabbitTemplate.addAfterReceivePostProcessors(mpp1, mpp2);
 		rabbitTemplate.addAfterReceivePostProcessors(mpp3);
 		boolean removed = rabbitTemplate.removeAfterReceivePostProcessor(mpp1);
-		Collection<?> afterReceivePostProcessors =
-				(Collection<?>) ReflectionTestUtils.getField(rabbitTemplate, "afterReceivePostProcessors");
+		@SuppressWarnings("unchecked")
+		Collection<Object> afterReceivePostProcessors =
+				(Collection<Object>) ReflectionTestUtils.getField(rabbitTemplate, "afterReceivePostProcessors");
 
-		assertThat(removed, Matchers.is(true));
-		assertThat(afterReceivePostProcessors, Matchers.contains(mpp2, mpp3));
+		assertThat(removed).isEqualTo(true);
+		assertThat(afterReceivePostProcessors).containsExactly(mpp2, mpp3);
 	}
 
 	@SuppressWarnings("serial")

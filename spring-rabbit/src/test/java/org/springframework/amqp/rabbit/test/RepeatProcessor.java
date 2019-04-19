@@ -16,7 +16,8 @@
 
 package org.springframework.amqp.rabbit.test;
 
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,9 +30,7 @@ import java.util.concurrent.Future;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.hamcrest.CoreMatchers;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.internal.runners.statements.RunAfters;
 import org.junit.internal.runners.statements.RunBefores;
@@ -69,6 +68,7 @@ public class RepeatProcessor implements MethodRule {
 		this.concurrency = concurrency < 0 ? 0 : concurrency;
 	}
 
+	@Override
 	public Statement apply(final Statement base, FrameworkMethod method, final Object target) {
 
 		Repeat repeat = AnnotationUtils.findAnnotation(method.getMethod(), Repeat.class);
@@ -113,6 +113,7 @@ public class RepeatProcessor implements MethodRule {
 					for (int i = 0; i < repeats; i++) {
 						final int count = i;
 						results.add(completionService.submit(new Callable<Boolean>() {
+							@Override
 							public Boolean call() {
 								try {
 									base.evaluate();
@@ -126,7 +127,7 @@ public class RepeatProcessor implements MethodRule {
 					}
 					for (int i = 0; i < repeats; i++) {
 						Future<Boolean> future = completionService.take();
-						assertTrue("Null result from completer", future.get());
+						assertThat(future.get()).as("Null result from completer").isTrue();
 					}
 				}
 				finally {
@@ -151,7 +152,7 @@ public class RepeatProcessor implements MethodRule {
 					}, afters, target).evaluate();
 				}
 				catch (Throwable e) {
-					Assert.assertThat(e, CoreMatchers.not(CoreMatchers.anything()));
+					fail("Unexpected throwable " + e);
 				}
 			}
 		}
@@ -173,7 +174,7 @@ public class RepeatProcessor implements MethodRule {
 				}, befores, target).evaluate();
 			}
 			catch (Throwable e) {
-				Assert.assertThat(e, CoreMatchers.not(CoreMatchers.anything()));
+				fail("Unexpected throwable " + e);
 			}
 			initialized = true;
 		}

@@ -16,9 +16,8 @@
 
 package org.springframework.amqp.core;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -33,55 +32,55 @@ public class AddressTests {
 	public void toStringCheck() {
 		Address address = new Address("my-exchange", "routing-key");
 		String replyToUri = "my-exchange/routing-key";
-		Assert.assertEquals(replyToUri, address.toString());
+		assertThat(address.toString()).isEqualTo(replyToUri);
 	}
 
 	@Test
 	public void parse() {
 		String replyToUri = "direct://my-exchange/routing-key";
 		Address address = new Address(replyToUri);
-		assertEquals("my-exchange", address.getExchangeName());
-		assertEquals("routing-key", address.getRoutingKey());
+		assertThat(address.getExchangeName()).isEqualTo("my-exchange");
+		assertThat(address.getRoutingKey()).isEqualTo("routing-key");
 	}
 
 	@Test
 	public void parseUnstructuredWithRoutingKeyOnly() {
 		Address address = new Address("my-routing-key");
-		assertEquals("my-routing-key", address.getRoutingKey());
-		assertEquals("/my-routing-key", address.toString());
+		assertThat(address.getRoutingKey()).isEqualTo("my-routing-key");
+		assertThat(address.toString()).isEqualTo("/my-routing-key");
 
 		address = new Address("/foo");
-		assertEquals("foo", address.getRoutingKey());
-		assertEquals("/foo", address.toString());
+		assertThat(address.getRoutingKey()).isEqualTo("foo");
+		assertThat(address.toString()).isEqualTo("/foo");
 
 		address = new Address("bar/baz");
-		assertEquals("bar", address.getExchangeName());
-		assertEquals("baz", address.getRoutingKey());
-		assertEquals("bar/baz", address.toString());
+		assertThat(address.getExchangeName()).isEqualTo("bar");
+		assertThat(address.getRoutingKey()).isEqualTo("baz");
+		assertThat(address.toString()).isEqualTo("bar/baz");
 	}
 
 	@Test
 	public void parseWithoutRoutingKey() {
 		Address address = new Address("fanout://my-exchange");
-		assertEquals("my-exchange", address.getExchangeName());
-		assertEquals("", address.getRoutingKey());
-		assertEquals("my-exchange/", address.toString());
+		assertThat(address.getExchangeName()).isEqualTo("my-exchange");
+		assertThat(address.getRoutingKey()).isEqualTo("");
+		assertThat(address.toString()).isEqualTo("my-exchange/");
 	}
 
 	@Test
 	public void parseWithDefaultExchangeAndRoutingKey() {
 		Address address = new Address("direct:///routing-key");
-		assertEquals("", address.getExchangeName());
-		assertEquals("routing-key", address.getRoutingKey());
-		assertEquals("/routing-key", address.toString());
+		assertThat(address.getExchangeName()).isEqualTo("");
+		assertThat(address.getRoutingKey()).isEqualTo("routing-key");
+		assertThat(address.toString()).isEqualTo("/routing-key");
 	}
 
 	@Test
 	public void testEmpty() {
 		Address address = new Address("/");
-		assertEquals("", address.getExchangeName());
-		assertEquals("", address.getRoutingKey());
-		assertEquals("/", address.toString());
+		assertThat(address.getExchangeName()).isEqualTo("");
+		assertThat(address.getRoutingKey()).isEqualTo("");
+		assertThat(address.toString()).isEqualTo("/");
 	}
 
 	@Test
@@ -91,16 +90,16 @@ public class AddressTests {
 		props.setReplyTo(replyTo);
 		Message message = new Message("foo".getBytes(), props);
 		Address address = message.getMessageProperties().getReplyToAddress();
-		assertEquals("", address.getExchangeName());
-		assertEquals(replyTo, address.getRoutingKey());
+		assertThat(address.getExchangeName()).isEqualTo("");
+		assertThat(address.getRoutingKey()).isEqualTo(replyTo);
 		address = props.getReplyToAddress();
-		assertEquals("", address.getExchangeName());
-		assertEquals(replyTo, address.getRoutingKey());
+		assertThat(address.getExchangeName()).isEqualTo("");
+		assertThat(address.getRoutingKey()).isEqualTo(replyTo);
 	}
 
 	@Test
 	public void testEquals() {
-		assertEquals(new Address("foo/bar"), new Address("foo/bar"));
+		assertThat(new Address("foo/bar")).isEqualTo(new Address("foo/bar"));
 	}
 
 }

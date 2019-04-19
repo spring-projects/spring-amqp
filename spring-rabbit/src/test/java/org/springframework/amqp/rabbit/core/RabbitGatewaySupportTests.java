@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.core;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import java.util.ArrayList;
@@ -45,10 +45,9 @@ public class RabbitGatewaySupportTests {
 		};
 		gateway.setConnectionFactory(mockConnectionFactory);
 		gateway.afterPropertiesSet();
-		assertEquals("Correct ConnectionFactory", mockConnectionFactory, gateway.getConnectionFactory());
-		assertEquals("Correct RabbitTemplate", mockConnectionFactory,
-				gateway.getRabbitOperations().getConnectionFactory());
-		assertEquals("initGatway called", test.size(), 1);
+		assertThat(gateway.getConnectionFactory()).as("Correct ConnectionFactory").isEqualTo(mockConnectionFactory);
+		assertThat(gateway.getRabbitOperations().getConnectionFactory()).as("Correct RabbitTemplate").isEqualTo(mockConnectionFactory);
+		assertThat(1).as("initGatway called").isEqualTo(test.size());
 	}
 
 	@Test
@@ -63,8 +62,8 @@ public class RabbitGatewaySupportTests {
 		};
 		gateway.setRabbitOperations(template);
 		gateway.afterPropertiesSet();
-		assertEquals("Correct RabbitTemplate", template, gateway.getRabbitOperations());
-		assertEquals("initGateway called", test.size(), 1);
+		assertThat(gateway.getRabbitOperations()).as("Correct RabbitTemplate").isEqualTo(template);
+		assertThat(1).as("initGateway called").isEqualTo(test.size());
 	}
 
 }

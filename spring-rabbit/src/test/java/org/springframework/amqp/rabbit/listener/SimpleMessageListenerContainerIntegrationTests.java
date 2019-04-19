@@ -16,9 +16,8 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import java.util.Arrays;
 import java.util.List;
@@ -33,7 +32,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -92,9 +90,6 @@ public class SimpleMessageListenerContainerIntegrationTests {
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue.getName());
-
-	@Rule
-	public ExpectedException exception = ExpectedException.none();
 
 	private final int messageCount;
 
@@ -216,14 +211,14 @@ public class SimpleMessageListenerContainerIntegrationTests {
 
 	@Test
 	public void testNullQueue() {
-		exception.expect(IllegalArgumentException.class);
-		container = createContainer(m -> { }, (Queue) null);
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> container = createContainer(m -> { }, (Queue) null));
 	}
 
 	@Test
 	public void testNullQueueName() {
-		exception.expect(IllegalArgumentException.class);
-		container = createContainer(m -> { }, (String) null);
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> container = createContainer(m -> { }, (String) null));
 	}
 
 	private void doSunnyDayTest(CountDownLatch latch, MessageListener listener) throws Exception {
@@ -232,8 +227,8 @@ public class SimpleMessageListenerContainerIntegrationTests {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
 		boolean waited = latch.await(Math.max(10, messageCount / 20), TimeUnit.SECONDS);
-		assertTrue("Timed out waiting for message", waited);
-		assertNull(template.receiveAndConvert(queue.getName()));
+		assertThat(waited).as("Timed out waiting for message").isTrue();
+		assertThat(template.receiveAndConvert(queue.getName())).isNull();
 	}
 
 	private void doListenerWithExceptionTest(CountDownLatch latch, MessageListener listener) throws Exception {
@@ -251,16 +246,16 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		}
 		try {
 			boolean waited = latch.await(10 + Math.max(1, messageCount / 10), TimeUnit.SECONDS);
-			assertTrue("Timed out waiting for message", waited);
+			assertThat(waited).as("Timed out waiting for message").isTrue();
 		}
 		finally {
 			container.shutdown();
 		}
 		if (acknowledgeMode.isTransactionAllowed()) {
-			assertNotNull(template.receiveAndConvert(queue.getName()));
+			assertThat(template.receiveAndConvert(queue.getName())).isNotNull();
 		}
 		else {
-			assertNull(template.receiveAndConvert(queue.getName()));
+			assertThat(template.receiveAndConvert(queue.getName())).isNull();
 		}
 	}
 

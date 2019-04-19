@@ -16,8 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -87,13 +86,13 @@ public class ListenFromAutoDeleteQueueTests {
 	public void testStopStart() throws Exception {
 		RabbitTemplate template = context.getBean(RabbitTemplate.class);
 		template.convertAndSend("testContainerWithAutoDeleteQueues", "anon", "foo");
-		assertNotNull(queue.poll(10, TimeUnit.SECONDS));
+		assertThat(queue.poll(10, TimeUnit.SECONDS)).isNotNull();
 		this.listenerContainer1.stop();
 		RabbitAdmin admin = spy(TestUtils.getPropertyValue(this.listenerContainer1, "amqpAdmin", RabbitAdmin.class));
 		new DirectFieldAccessor(this.listenerContainer1).setPropertyValue("amqpAdmin", admin);
 		this.listenerContainer1.start();
 		template.convertAndSend("testContainerWithAutoDeleteQueues", "anon", "foo");
-		assertNotNull(queue.poll(10, TimeUnit.SECONDS));
+		assertThat(queue.poll(10, TimeUnit.SECONDS)).isNotNull();
 		verify(admin, times(1)).initialize(); // should only be called by one of the consumers
 	}
 
@@ -102,18 +101,18 @@ public class ListenFromAutoDeleteQueueTests {
 		RabbitTemplate template = context.getBean(RabbitTemplate.class);
 		this.listenerContainer2.start();
 		template.convertAndSend("otherExchange", "otherAnon", "foo");
-		assertNotNull(queue.poll(10, TimeUnit.SECONDS));
+		assertThat(queue.poll(10, TimeUnit.SECONDS)).isNotNull();
 		this.listenerContainer2.stop();
 		this.listenerContainer2.start();
 		template.convertAndSend("otherExchange", "otherAnon", "foo");
-		assertNotNull(queue.poll(10, TimeUnit.SECONDS));
+		assertThat(queue.poll(10, TimeUnit.SECONDS)).isNotNull();
 	}
 
 	@Test
 	public void testRedeclareXExpiresQueue() throws Exception {
 		RabbitTemplate template = context.getBean(RabbitTemplate.class);
 		template.convertAndSend(this.expiringQueue.getName(), "foo");
-		assertNotNull(queue.poll(10, TimeUnit.SECONDS));
+		assertThat(queue.poll(10, TimeUnit.SECONDS)).isNotNull();
 		SimpleMessageListenerContainer listenerContainer = context.getBean("container3",
 				SimpleMessageListenerContainer.class);
 		listenerContainer.stop();
@@ -124,10 +123,10 @@ public class ListenFromAutoDeleteQueueTests {
 			Thread.sleep(100);
 			n++;
 		}
-		assertTrue(n < 100);
+		assertThat(n < 100).isTrue();
 		listenerContainer.start();
 		template.convertAndSend(this.expiringQueue.getName(), "foo");
-		assertNotNull(queue.poll(10, TimeUnit.SECONDS));
+		assertThat(queue.poll(10, TimeUnit.SECONDS)).isNotNull();
 		verify(admin, atLeastOnce()).initialize(); // with short x-expires, both consumers might redeclare
 	}
 
@@ -135,7 +134,7 @@ public class ListenFromAutoDeleteQueueTests {
 	public void testAutoDeclareFalse() throws Exception {
 		RabbitTemplate template = context.getBean(RabbitTemplate.class);
 		template.convertAndSend("testContainerWithAutoDeleteQueues", "anon2", "foo");
-		assertNotNull(queue.poll(10, TimeUnit.SECONDS));
+		assertThat(queue.poll(10, TimeUnit.SECONDS)).isNotNull();
 		SimpleMessageListenerContainer listenerContainer = context.getBean("container4",
 				SimpleMessageListenerContainer.class);
 		listenerContainer.stop();

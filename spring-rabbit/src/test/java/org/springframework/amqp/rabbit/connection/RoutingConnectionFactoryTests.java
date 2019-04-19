@@ -16,11 +16,7 @@
 
 package org.springframework.amqp.rabbit.connection;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
@@ -114,7 +110,7 @@ public class RoutingConnectionFactoryTests {
 		}
 
 		executorService.shutdown();
-		assertTrue(executorService.awaitTermination(10, TimeUnit.SECONDS));
+		assertThat(executorService.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
 
 		verify(connectionFactory1, times(2)).createConnection();
 		verify(connectionFactory2).createConnection();
@@ -132,17 +128,17 @@ public class RoutingConnectionFactoryTests {
 		};
 
 		//Make sure map is initialized and doesn't contain lookup key "1"
-		assertNull(routingFactory.getTargetConnectionFactory("1"));
+		assertThat(routingFactory.getTargetConnectionFactory("1")).isNull();
 
 		//Add one and make sure it's there
 		routingFactory.addTargetConnectionFactory("1", targetConnectionFactory);
-		assertEquals(targetConnectionFactory, routingFactory.getTargetConnectionFactory("1"));
-		assertNull(routingFactory.getTargetConnectionFactory("2"));
+		assertThat(routingFactory.getTargetConnectionFactory("1")).isEqualTo(targetConnectionFactory);
+		assertThat(routingFactory.getTargetConnectionFactory("2")).isNull();
 
 		//Remove it and make sure it's gone
 		ConnectionFactory removedConnectionFactory = routingFactory.removeTargetConnectionFactory("1");
-		assertEquals(targetConnectionFactory, removedConnectionFactory);
-		assertNull(routingFactory.getTargetConnectionFactory("1"));
+		assertThat(removedConnectionFactory).isEqualTo(targetConnectionFactory);
+		assertThat(routingFactory.getTargetConnectionFactory("1")).isNull();
 	}
 
 	@Test
@@ -234,10 +230,10 @@ public class RoutingConnectionFactoryTests {
 		container.setLookupKeyQualifier("xxx");
 		container.afterPropertiesSet();
 		container.start();
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 		container.stop();
-		assertThat(connectionMakerKey1.get(), equalTo("xxx[foo]"));
-		assertThat(connectionMakerKey2.get(), equalTo("xxx[foo]"));
+		assertThat(connectionMakerKey1.get()).isEqualTo("xxx[foo]");
+		assertThat(connectionMakerKey2.get()).isEqualTo("xxx[foo]");
 	}
 
 	@Test
@@ -274,10 +270,10 @@ public class RoutingConnectionFactoryTests {
 		container.setShutdownTimeout(10);
 		container.afterPropertiesSet();
 		container.start();
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 		container.stop();
-		assertThat(connectionMakerKey.get(), equalTo("xxx[foo]"));
-		assertThat(connectionMakerKey2.get(), equalTo("xxx[foo]"));
+		assertThat(connectionMakerKey.get()).isEqualTo("xxx[foo]");
+		assertThat(connectionMakerKey2.get()).isEqualTo("xxx[foo]");
 	}
 
 }

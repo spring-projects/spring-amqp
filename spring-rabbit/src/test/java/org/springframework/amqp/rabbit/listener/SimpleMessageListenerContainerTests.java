@@ -16,12 +16,9 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -58,10 +55,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.logging.Log;
-import org.hamcrest.Matchers;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpAuthenticationException;
@@ -106,9 +100,6 @@ import com.rabbitmq.client.PossibleAuthenticationFailureException;
  */
 public class SimpleMessageListenerContainerTests {
 
-	@Rule
-	public ExpectedException expectedException = ExpectedException.none();
-
 	@Test
 	public void testChannelTransactedOverriddenWhenTxManager() {
 		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory("localhost");
@@ -118,7 +109,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setChannelTransacted(false);
 		container.setTransactionManager(new TestTransactionManager());
 		container.afterPropertiesSet();
-		assertTrue(TestUtils.getPropertyValue(container, "transactional", Boolean.class));
+		assertThat(TestUtils.getPropertyValue(container, "transactional", Boolean.class)).isTrue();
 		container.stop();
 		singleConnectionFactory.destroy();
 	}
@@ -132,8 +123,8 @@ public class SimpleMessageListenerContainerTests {
 		container.setChannelTransacted(false);
 		container.setAcknowledgeMode(AcknowledgeMode.NONE);
 		container.setTransactionManager(new TestTransactionManager());
-		expectedException.expect(IllegalStateException.class);
-		container.afterPropertiesSet();
+		assertThatIllegalStateException()
+			.isThrownBy(() -> container.afterPropertiesSet());
 		container.stop();
 		singleConnectionFactory.destroy();
 	}
@@ -146,8 +137,8 @@ public class SimpleMessageListenerContainerTests {
 		container.setQueueNames("foo");
 		container.setChannelTransacted(true);
 		container.setAcknowledgeMode(AcknowledgeMode.NONE);
-		expectedException.expect(IllegalStateException.class);
-		container.afterPropertiesSet();
+		assertThatIllegalStateException()
+			.isThrownBy(() -> container.afterPropertiesSet());
 		container.stop();
 		singleConnectionFactory.destroy();
 	}
@@ -160,7 +151,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setQueueNames("foo");
 		container.setAutoStartup(false);
 		container.afterPropertiesSet();
-		assertEquals(1, ReflectionTestUtils.getField(container, "concurrentConsumers"));
+		assertThat(ReflectionTestUtils.getField(container, "concurrentConsumers")).isEqualTo(1);
 		container.stop();
 		singleConnectionFactory.destroy();
 	}
@@ -176,7 +167,7 @@ public class SimpleMessageListenerContainerTests {
 			}
 		};
 		container.start();
-		assertEquals(1, ReflectionTestUtils.getField(container, "concurrentConsumers"));
+		assertThat(ReflectionTestUtils.getField(container, "concurrentConsumers")).isEqualTo(1);
 		container.stop();
 		singleConnectionFactory.destroy();
 	}
@@ -221,8 +212,8 @@ public class SimpleMessageListenerContainerTests {
 		consumer.get().handleDelivery("1", envelope, props, payload);
 		envelope = new Envelope(4L, false, "foo", "bar");
 		consumer.get().handleDelivery("1", envelope, props, payload);
-		assertTrue(latch.await(5, TimeUnit.SECONDS));
-		assertEquals(4, messages.size());
+		assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+		assertThat(messages).hasSize(4);
 		Executors.newSingleThreadExecutor().execute(container::stop);
 		consumer.get().handleCancelOk("1");
 		verify(channel, times(2)).basicAck(anyLong(), anyBoolean());
@@ -271,10 +262,10 @@ public class SimpleMessageListenerContainerTests {
 		consumer.get().handleDelivery(consumerTag, envelope, props, payload);
 		envelope = new Envelope(3L, false, "foo", "bar");
 		consumer.get().handleDelivery(consumerTag, envelope, props, payload);
-		assertTrue(latch.await(5, TimeUnit.SECONDS));
-		assertEquals(3, messages.size());
-		assertEquals(consumerTag, messages.get(0).getMessageProperties().getConsumerTag());
-		assertEquals("foobar", messages.get(0).getMessageProperties().getConsumerQueue());
+		assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+		assertThat(messages).hasSize(3);
+		assertThat(messages.get(0).getMessageProperties().getConsumerTag()).isEqualTo(consumerTag);
+		assertThat(messages.get(0).getMessageProperties().getConsumerQueue()).isEqualTo("foobar");
 		Executors.newSingleThreadExecutor().execute(container::stop);
 		consumer.get().handleCancelOk(consumerTag);
 		verify(channel, times(2)).basicAck(anyLong(), anyBoolean());
@@ -313,8 +304,8 @@ public class SimpleMessageListenerContainerTests {
 		verify(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
 				any(Map.class),
 				any(Consumer.class));
-		assertTrue(args.get() != null);
-		assertEquals(10, args.get().get("x-priority"));
+		assertThat(args.get() != null).isTrue();
+		assertThat(args.get().get("x-priority")).isEqualTo(10);
 		consumer.get().handleCancelOk("foo");
 		container.stop();
 	}
@@ -345,9 +336,9 @@ public class SimpleMessageListenerContainerTests {
 		});
 		container.afterPropertiesSet();
 		container.start();
-		assertTrue(latch1.await(10, TimeUnit.SECONDS));
+		assertThat(latch1.await(10, TimeUnit.SECONDS)).isTrue();
 		container.addQueueNames("bar");
-		assertTrue(latch2.await(10, TimeUnit.SECONDS));
+		assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
 		container.stop();
 		verify(channel1).basicCancel("0");
 		verify(channel2, atLeastOnce()).basicCancel("1");
@@ -360,11 +351,11 @@ public class SimpleMessageListenerContainerTests {
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setQueueNames("foo");
 		List<?> queues = TestUtils.getPropertyValue(container, "queues", List.class);
-		assertEquals(1, queues.size());
+		assertThat(queues).hasSize(1);
 		container.addQueueNames(new AnonymousQueue().getName(), new AnonymousQueue().getName());
-		assertEquals(3, queues.size());
+		assertThat(queues).hasSize(3);
 		container.removeQueues(new Queue("foo"));
-		assertEquals(2, queues.size());
+		assertThat(queues).hasSize(2);
 		container.stop();
 	}
 
@@ -464,15 +455,15 @@ public class SimpleMessageListenerContainerTests {
 		doAnswer(messageToConsumer(mockChannel2, container, true, latch2)).when(mockChannel2).basicCancel(anyString());
 
 		container.start();
-		assertTrue(latch1.await(10, TimeUnit.SECONDS));
+		assertThat(latch1.await(10, TimeUnit.SECONDS)).isTrue();
 		Set<?> consumers = TestUtils.getPropertyValue(container, "consumers", Set.class);
 		container.stop();
-		assertTrue(latch2.await(10, TimeUnit.SECONDS));
+		assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
 
 		waitForConsumersToStop(consumers);
 		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections", Set.class);
-		assertEquals(2, allocatedConnections.size());
-		assertEquals("1", ccf.getCacheProperties().get("openConnections"));
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(ccf.getCacheProperties().get("openConnections")).isEqualTo("1");
 	}
 
 	@Test
@@ -511,7 +502,7 @@ public class SimpleMessageListenerContainerTests {
 		}).when(logger).warn(any());
 		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
 		consumer.get().handleCancel("foo");
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 		container.stop();
 	}
 
@@ -536,7 +527,7 @@ public class SimpleMessageListenerContainerTests {
 		while (container.isActive() && n++ < 100) {
 			Thread.sleep(100);
 		}
-		assertThat(n, lessThanOrEqualTo(100));
+		assertThat(n).isLessThanOrEqualTo(100);
 	}
 
 	@Test
@@ -553,8 +544,8 @@ public class SimpleMessageListenerContainerTests {
 
 		container.start();
 
-		assertTrue(container.isActive());
-		assertTrue(container.isRunning());
+		assertThat(container.isActive()).isTrue();
+		assertThat(container.isRunning()).isTrue();
 
 		container.destroy();
 	}
@@ -602,7 +593,7 @@ public class SimpleMessageListenerContainerTests {
 			container.afterPropertiesSet();
 
 			Object proxy = TestUtils.getPropertyValue(container, "proxy");
-			assertTrue(AopUtils.isAopProxy(proxy));
+			assertThat(AopUtils.isAopProxy(proxy)).isTrue();
 		}
 		finally {
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
@@ -635,11 +626,12 @@ public class SimpleMessageListenerContainerTests {
 		container.addAfterReceivePostProcessors(mpp1, mpp2);
 		container.addAfterReceivePostProcessors(mpp3);
 		boolean removed = container.removeAfterReceivePostProcessor(mpp1);
-		Collection<?> afterReceivePostProcessors =
-				(Collection<?>) ReflectionTestUtils.getField(container, "afterReceivePostProcessors");
+		@SuppressWarnings("unchecked")
+		Collection<Object> afterReceivePostProcessors =
+				(Collection<Object>) ReflectionTestUtils.getField(container, "afterReceivePostProcessors");
 
-		assertThat(removed, Matchers.is(true));
-		assertThat(afterReceivePostProcessors, Matchers.contains(mpp2, mpp3));
+		assertThat(removed).isEqualTo(true);
+		assertThat(afterReceivePostProcessors).containsExactly(mpp2, mpp3);
 	}
 
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,
@@ -676,7 +668,7 @@ public class SimpleMessageListenerContainerTests {
 			}
 			Thread.sleep(10);
 		}
-		assertFalse(stillUp);
+		assertThat(stillUp).isFalse();
 	}
 
 	@SuppressWarnings("serial")

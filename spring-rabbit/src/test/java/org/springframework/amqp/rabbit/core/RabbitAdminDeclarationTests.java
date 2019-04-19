@@ -16,11 +16,8 @@
 
 package org.springframework.amqp.rabbit.core;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -99,7 +96,7 @@ public class RabbitAdminDeclarationTests {
 		context.refresh();
 		admin.setApplicationContext(context);
 		admin.afterPropertiesSet();
-		assertNotNull(listener.get());
+		assertThat(listener.get()).isNotNull();
 		listener.get().onCreate(conn);
 
 		verify(channel).queueDeclare("foo", true, false, false, new HashMap<>());
@@ -145,7 +142,7 @@ public class RabbitAdminDeclarationTests {
 		ccf.createConnection().close();
 		ccf.destroy();
 
-		assertEquals("Admin should not have created a channel", 0,  mockChannels.size());
+		assertThat(mockChannels.size()).as("Admin should not have created a channel").isEqualTo(0);
 	}
 
 	@Test
@@ -176,7 +173,7 @@ public class RabbitAdminDeclarationTests {
 		context.refresh();
 		admin.setApplicationContext(context);
 		admin.afterPropertiesSet();
-		assertNotNull(listener.get());
+		assertThat(listener.get()).isNotNull();
 		listener.get().onCreate(conn);
 
 		verify(channel).queueDeclare("foo", true, false, false, new HashMap<>());
@@ -213,7 +210,7 @@ public class RabbitAdminDeclarationTests {
 		context.refresh();
 		admin.setApplicationContext(context);
 		admin.afterPropertiesSet();
-		assertNotNull(listener.get());
+		assertThat(listener.get()).isNotNull();
 		listener.get().onCreate(conn);
 
 		verify(channel, never()).queueDeclare(eq("foo"), anyBoolean(), anyBoolean(), anyBoolean(), any(Map.class));
@@ -250,7 +247,7 @@ public class RabbitAdminDeclarationTests {
 		context.refresh();
 		admin.setApplicationContext(context);
 		admin.afterPropertiesSet();
-		assertNotNull(listener.get());
+		assertThat(listener.get()).isNotNull();
 		listener.get().onCreate(conn);
 
 		verify(channel, never()).queueDeclare(eq("foo"), anyBoolean(), anyBoolean(), anyBoolean(), any(Map.class));
@@ -284,29 +281,29 @@ public class RabbitAdminDeclarationTests {
 		RabbitAdmin admin1 = new RabbitAdmin(cf);
 		RabbitAdmin admin2 = new RabbitAdmin(cf);
 		queue.setAdminsThatShouldDeclare(admin1, admin2);
-		assertEquals(2, queue.getDeclaringAdmins().size());
+		assertThat(queue.getDeclaringAdmins()).hasSize(2);
 		queue.setAdminsThatShouldDeclare(admin1);
-		assertEquals(1, queue.getDeclaringAdmins().size());
+		assertThat(queue.getDeclaringAdmins()).hasSize(1);
 		queue.setAdminsThatShouldDeclare(new Object[] {null});
-		assertEquals(0, queue.getDeclaringAdmins().size());
+		assertThat(queue.getDeclaringAdmins()).hasSize(0);
 		queue.setAdminsThatShouldDeclare(admin1, admin2);
-		assertEquals(2, queue.getDeclaringAdmins().size());
+		assertThat(queue.getDeclaringAdmins()).hasSize(2);
 		queue.setAdminsThatShouldDeclare();
-		assertEquals(0, queue.getDeclaringAdmins().size());
+		assertThat(queue.getDeclaringAdmins()).hasSize(0);
 		queue.setAdminsThatShouldDeclare(admin1, admin2);
-		assertEquals(2, queue.getDeclaringAdmins().size());
+		assertThat(queue.getDeclaringAdmins()).hasSize(2);
 		queue.setAdminsThatShouldDeclare((AmqpAdmin) null);
-		assertEquals(0, queue.getDeclaringAdmins().size());
+		assertThat(queue.getDeclaringAdmins()).hasSize(0);
 		queue.setAdminsThatShouldDeclare(admin1, admin2);
-		assertEquals(2, queue.getDeclaringAdmins().size());
+		assertThat(queue.getDeclaringAdmins()).hasSize(2);
 		queue.setAdminsThatShouldDeclare((Object[]) null);
-		assertEquals(0, queue.getDeclaringAdmins().size());
+		assertThat(queue.getDeclaringAdmins()).hasSize(0);
 		try {
 			queue.setAdminsThatShouldDeclare(null, admin1);
 			fail("Expected Exception");
 		}
 		catch (IllegalArgumentException e) {
-			assertThat(e.getMessage(), containsString("'admins' cannot contain null elements"));
+			assertThat(e.getMessage()).contains("'admins' cannot contain null elements");
 		}
 	}
 

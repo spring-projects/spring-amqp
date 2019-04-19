@@ -10,6 +10,8 @@ This section describes the changes between version 2.1 and version 2.2.
 You can now configure an `executor` on each listener, overriding the factory configuration, to more easily identify threads associated with the listener.
 See <<async-annotation-driven-enable>> for more information.
 
+When using <<receiving-batch,batching>>, `@RabbitListener` methods can now receive a complete batch of messages in one call instead of getting them one at at time.
+
 ===== AMQP Logging Appenders Changes
 
 The Log4J and Logback `AmqpAppender` s now support a `verifyHostname` SSL option.

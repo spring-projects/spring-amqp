@@ -16,9 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +28,6 @@ import org.apache.logging.log4j.Level;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
@@ -61,9 +58,6 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 	@Rule
 	public LogLevelAdjuster logLevels = new LogLevelAdjuster(Level.INFO, RabbitTemplate.class,
 			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
-
-	@Rule
-	public ExpectedException exception = ExpectedException.none();
 
 	@After
 	public void tearDown() {
@@ -120,8 +114,8 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 			int timeout = Math.min(1 + messageCount / concurrentConsumers, 30);
 			boolean waited = latch.await(timeout, TimeUnit.SECONDS);
 			logger.info("All messages recovered: " + waited);
-			assertEquals(concurrentConsumers, container.getActiveConsumerCount());
-			assertTrue("Timed out waiting for messages", waited);
+			assertThat(container.getActiveConsumerCount()).isEqualTo(concurrentConsumers);
+			assertThat(waited).as("Timed out waiting for messages").isTrue();
 		}
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
@@ -129,10 +123,10 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 		}
 		finally {
 			container.shutdown();
-			assertEquals(0, container.getActiveConsumerCount());
+			assertThat(container.getActiveConsumerCount()).isEqualTo(0);
 		}
-		assertNull(template.receiveAndConvert(queue1.getName()));
-		assertNull(template.receiveAndConvert(queue2.getName()));
+		assertThat(template.receiveAndConvert(queue1.getName())).isNull();
+		assertThat(template.receiveAndConvert(queue2.getName())).isNull();
 
 		connectionFactory.destroy();
 	}

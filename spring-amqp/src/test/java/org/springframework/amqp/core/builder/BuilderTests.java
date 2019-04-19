@@ -16,12 +16,7 @@
 
 package org.springframework.amqp.core.builder;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Test;
 
@@ -44,56 +39,56 @@ public class BuilderTests {
 	@Test
 	public void testQueueBuilder() {
 		Queue queue = QueueBuilder.durable("foo").autoDelete().exclusive().withArgument("foo", "bar").build();
-		assertThat(queue.getName(), equalTo("foo"));
-		assertTrue(queue.isAutoDelete());
-		assertTrue(queue.isExclusive());
-		assertTrue(queue.isDurable());
-		assertThat((String) queue.getArguments().get("foo"), equalTo("bar"));
+		assertThat(queue.getName()).isEqualTo("foo");
+		assertThat(queue.isAutoDelete()).isTrue();
+		assertThat(queue.isExclusive()).isTrue();
+		assertThat(queue.isDurable()).isTrue();
+		assertThat((String) queue.getArguments().get("foo")).isEqualTo("bar");
 
 		queue = QueueBuilder.nonDurable().build();
-		assertThat(queue.getName(), startsWith("spring.gen-"));
-		assertFalse(queue.isAutoDelete());
-		assertFalse(queue.isExclusive());
-		assertFalse(queue.isDurable());
+		assertThat(queue.getName()).startsWith("spring.gen-");
+		assertThat(queue.isAutoDelete()).isFalse();
+		assertThat(queue.isExclusive()).isFalse();
+		assertThat(queue.isDurable()).isFalse();
 
 		queue = QueueBuilder.durable().build();
-		assertThat(queue.getName(), startsWith("spring.gen-"));
-		assertFalse(queue.isAutoDelete());
-		assertFalse(queue.isExclusive());
-		assertTrue(queue.isDurable());
+		assertThat(queue.getName()).startsWith("spring.gen-");
+		assertThat(queue.isAutoDelete()).isFalse();
+		assertThat(queue.isExclusive()).isFalse();
+		assertThat(queue.isDurable()).isTrue();
 	}
 
 	@Test
 	public void testExchangeBuilder() {
 		Exchange exchange = ExchangeBuilder.directExchange("foo").autoDelete().delayed().internal()
 				.withArgument("foo", "bar").build();
-		assertThat(exchange, instanceOf(DirectExchange.class));
-		assertTrue(exchange.isAutoDelete());
-		assertTrue(exchange.isDurable());
-		assertTrue(exchange.isInternal());
-		assertTrue(exchange.isDelayed());
-		assertThat((String) exchange.getArguments().get("foo"), equalTo("bar"));
+		assertThat(exchange).isInstanceOf(DirectExchange.class);
+		assertThat(exchange.isAutoDelete()).isTrue();
+		assertThat(exchange.isDurable()).isTrue();
+		assertThat(exchange.isInternal()).isTrue();
+		assertThat(exchange.isDelayed()).isTrue();
+		assertThat((String) exchange.getArguments().get("foo")).isEqualTo("bar");
 
 		exchange = ExchangeBuilder.topicExchange("foo").durable(false).build();
-		assertThat(exchange, instanceOf(TopicExchange.class));
-		assertFalse(exchange.isAutoDelete());
-		assertFalse(exchange.isDurable());
-		assertFalse(exchange.isInternal());
-		assertFalse(exchange.isDelayed());
+		assertThat(exchange).isInstanceOf(TopicExchange.class);
+		assertThat(exchange.isAutoDelete()).isFalse();
+		assertThat(exchange.isDurable()).isFalse();
+		assertThat(exchange.isInternal()).isFalse();
+		assertThat(exchange.isDelayed()).isFalse();
 
 		exchange = ExchangeBuilder.fanoutExchange("foo").build();
-		assertThat(exchange, instanceOf(FanoutExchange.class));
-		assertFalse(exchange.isAutoDelete());
-		assertTrue(exchange.isDurable());
-		assertFalse(exchange.isInternal());
-		assertFalse(exchange.isDelayed());
+		assertThat(exchange).isInstanceOf(FanoutExchange.class);
+		assertThat(exchange.isAutoDelete()).isFalse();
+		assertThat(exchange.isDurable()).isTrue();
+		assertThat(exchange.isInternal()).isFalse();
+		assertThat(exchange.isDelayed()).isFalse();
 
 		exchange = ExchangeBuilder.headersExchange("foo").build();
-		assertThat(exchange, instanceOf(HeadersExchange.class));
-		assertFalse(exchange.isAutoDelete());
-		assertTrue(exchange.isDurable());
-		assertFalse(exchange.isInternal());
-		assertFalse(exchange.isDelayed());
+		assertThat(exchange).isInstanceOf(HeadersExchange.class);
+		assertThat(exchange.isAutoDelete()).isFalse();
+		assertThat(exchange.isDurable()).isTrue();
+		assertThat(exchange.isInternal()).isFalse();
+		assertThat(exchange.isDelayed()).isFalse();
 	}
 
 }

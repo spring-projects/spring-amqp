@@ -16,9 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -135,12 +133,12 @@ public abstract class LocallyTransactedTests {
 		container.setShutdownTimeout(100);
 		container.afterPropertiesSet();
 		container.start();
-		assertTrue(consumerLatch.await(10, TimeUnit.SECONDS));
+		assertThat(consumerLatch.await(10, TimeUnit.SECONDS)).isTrue();
 
 		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
 				new byte[] { 0 });
 
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 
 		Exception e = tooManyChannels.get();
 		if (e != null) {
@@ -148,14 +146,14 @@ public abstract class LocallyTransactedTests {
 		}
 
 		verify(mockConnection, times(1)).createChannel();
-		assertTrue(commitLatch.get().await(10, TimeUnit.SECONDS));
+		assertThat(commitLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
 		verify(onlyChannel).txCommit();
 		verify(onlyChannel).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
 				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 
 		DirectFieldAccessor dfa = new DirectFieldAccessor(cachingConnectionFactory);
 		List<?> channels = (List<?>) dfa.getPropertyValue("cachedChannelsTransactional");
-		assertEquals(0, channels.size());
+		assertThat(channels).hasSize(0);
 
 		container.setMessageListener(m -> {
 			throw new RuntimeException();
@@ -163,8 +161,8 @@ public abstract class LocallyTransactedTests {
 		commitLatch.set(new CountDownLatch(1));
 		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
 				new byte[] { 0 });
-		assertTrue(commitLatch.get().await(10, TimeUnit.SECONDS));
-		assertTrue(rollbackLatch.get().await(10, TimeUnit.SECONDS));
+		assertThat(commitLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(rollbackLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
 		verify(onlyChannel).basicNack(anyLong(), anyBoolean(), anyBoolean());
 		verify(onlyChannel, times(1)).txRollback();
 
@@ -177,8 +175,8 @@ public abstract class LocallyTransactedTests {
 		rollbackLatch.set(new CountDownLatch(1));
 		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
 				new byte[] { 0 });
-		assertTrue(rollbackLatch.get().await(10, TimeUnit.SECONDS));
-		assertTrue(commitLatch.get().await(10, TimeUnit.SECONDS));
+		assertThat(rollbackLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(commitLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
 		verify(onlyChannel, times(2)).basicNack(anyLong(), anyBoolean(), anyBoolean());
 		verify(onlyChannel, times(2)).txRollback();
 
@@ -189,7 +187,7 @@ public abstract class LocallyTransactedTests {
 		commitLatch.set(new CountDownLatch(1));
 		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
 				new byte[] { 0 });
-		assertTrue(commitLatch.get().await(10, TimeUnit.SECONDS));
+		assertThat(commitLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
 		verify(onlyChannel, times(2)).basicAck(anyLong(), anyBoolean());
 		verify(onlyChannel, times(4)).txCommit();
 
@@ -244,12 +242,12 @@ public abstract class LocallyTransactedTests {
 		container.setShutdownTimeout(100);
 		container.afterPropertiesSet();
 		container.start();
-		assertTrue(consumerLatch.await(10, TimeUnit.SECONDS));
+		assertThat(consumerLatch.await(10, TimeUnit.SECONDS)).isTrue();
 
 		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
 				new byte[] { 0 });
 
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 
 		Exception e = tooManyChannels.get();
 		if (e != null) {
@@ -257,7 +255,7 @@ public abstract class LocallyTransactedTests {
 		}
 
 		verify(mockConnection, times(1)).createChannel();
-		assertTrue(rollbackLatch.await(10, TimeUnit.SECONDS));
+		assertThat(rollbackLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		container.stop();
 	}
 
@@ -333,12 +331,12 @@ public abstract class LocallyTransactedTests {
 		container.setShutdownTimeout(100);
 		container.afterPropertiesSet();
 		container.start();
-		assertTrue(consumerLatch.await(10, TimeUnit.SECONDS));
+		assertThat(consumerLatch.await(10, TimeUnit.SECONDS)).isTrue();
 
 		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
 				new byte[] { 0 });
 
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 
 		Exception e = tooManyChannels.get();
 		if (e != null) {
@@ -346,7 +344,7 @@ public abstract class LocallyTransactedTests {
 		}
 
 		verify(mockConnection, times(2)).createChannel();
-		assertTrue(commitLatch.await(10, TimeUnit.SECONDS));
+		assertThat(commitLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		verify(channel1).txCommit();
 		verify(channel1, never()).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
 				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
@@ -356,7 +354,7 @@ public abstract class LocallyTransactedTests {
 		// verify close() was never called on the channel
 		DirectFieldAccessor dfa = new DirectFieldAccessor(cachingConnectionFactory);
 		List<?> channels = (List<?>) dfa.getPropertyValue("cachedChannelsNonTransactional");
-		assertEquals(1, channels.size());
+		assertThat(channels).hasSize(1);
 
 		container.stop();
 
@@ -429,12 +427,12 @@ public abstract class LocallyTransactedTests {
 		container.setShutdownTimeout(100);
 		container.afterPropertiesSet();
 		container.start();
-		assertTrue(consumerLatch.await(10, TimeUnit.SECONDS));
+		assertThat(consumerLatch.await(10, TimeUnit.SECONDS)).isTrue();
 
 		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
 				new byte[] { 0 });
 
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 
 		Exception e = tooManyChannels.get();
 		if (e != null) {
@@ -442,7 +440,7 @@ public abstract class LocallyTransactedTests {
 		}
 
 		verify(mockConnection, Mockito.times(1)).createChannel();
-		assertTrue(commitLatch.await(10, TimeUnit.SECONDS));
+		assertThat(commitLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		verify(onlyChannel).txCommit();
 		verify(onlyChannel).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
 				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
@@ -452,7 +450,7 @@ public abstract class LocallyTransactedTests {
 
 		container.stop();
 
-		assertSame(onlyChannel, exposed.get());
+		assertThat(exposed.get()).isSameAs(onlyChannel);
 	}
 
 	/**
@@ -518,11 +516,11 @@ public abstract class LocallyTransactedTests {
 		container.setShutdownTimeout(100);
 		container.afterPropertiesSet();
 		container.start();
-		assertTrue(consumerLatch.await(10, TimeUnit.SECONDS));
+		assertThat(consumerLatch.await(10, TimeUnit.SECONDS)).isTrue();
 
 		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(), new byte[] {0});
 
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 
 		Exception e = tooManyChannels.get();
 		if (e != null) {
@@ -531,13 +529,13 @@ public abstract class LocallyTransactedTests {
 
 		// once for listener, once for exposed + 0 for template (used bound)
 		verify(mockConnection, Mockito.times(2)).createChannel();
-		assertTrue(commitLatch.await(10, TimeUnit.SECONDS));
+		assertThat(commitLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		verify(firstChannel).txCommit();
 		verify(secondChannel).txCommit();
 		verify(secondChannel).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
 				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 
-		assertSame(secondChannel, exposed.get());
+		assertThat(exposed.get()).isSameAs(secondChannel);
 
 		verify(firstChannel, Mockito.never()).close();
 		verify(secondChannel, Mockito.times(1)).close();

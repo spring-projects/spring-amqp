@@ -16,12 +16,7 @@
 
 package org.springframework.amqp.core;
 
-import java.nio.ByteBuffer;
 import java.util.Map;
-import java.util.UUID;
-
-import org.springframework.util.Assert;
-import org.springframework.util.Base64Utils;
 
 /**
  * Represents an anonymous, non-durable, exclusive, auto-delete queue. The name has the
@@ -53,32 +48,6 @@ public class AnonymousQueue extends Queue {
 	/**
 	 * Construct a queue with a name provided by the supplied naming strategy.
 	 * @param namingStrategy the naming strategy.
-	 * @deprecated in favor of {@link #AnonymousQueue(NamingStrategy)}.
-	 *
-	 * @since 1.5.3
-	 */
-	@Deprecated
-	public AnonymousQueue(NamingStrategy namingStrategy) {
-		this(namingStrategy, null);
-	}
-
-	/**
-	 * Construct a queue with a name provided by the supplied naming strategy with the
-	 * supplied arguments.
-	 * @param namingStrategy the naming strategy.
-	 * @param arguments the arguments.
-	 * @deprecated in favor of {@link #AnonymousQueue(NamingStrategy, Map)}.
-	 *
-	 * @since 1.5.3
-	 */
-	@Deprecated
-	public AnonymousQueue(NamingStrategy namingStrategy, Map<String, Object> arguments) {
-		super(namingStrategy.generateName(), false, true, true, arguments);
-	}
-
-	/**
-	 * Construct a queue with a name provided by the supplied naming strategy.
-	 * @param namingStrategy the naming strategy.
 	 * @since 2.1
 	 */
 	public AnonymousQueue(org.springframework.amqp.core.NamingStrategy namingStrategy) {
@@ -97,89 +66,6 @@ public class AnonymousQueue extends Queue {
 		if (!getArguments().containsKey(X_QUEUE_MASTER_LOCATOR)) {
 			setMasterLocator("client-local");
 		}
-	}
-
-	/**
-	 * A strategy to name anonymous queues.
-	 * @deprecated - use the {@link org.springframework.amqp.core.NamingStrategy}.
-	 * @since 1.5.3
-	 *
-	 */
-	@Deprecated
-	@FunctionalInterface
-	public interface NamingStrategy extends org.springframework.amqp.core.NamingStrategy {
-
-	}
-
-	/**
-	 * Generates names with the form {@code <prefix><base64url>} where
-	 * 'prefix' is 'spring.gen-' by default
-	 * (e.g. spring.gen-eIwaZAYgQv6LvwaDCfVTNQ);
-	 * the 'base64url' String is generated from a UUID. The base64 alphabet
-	 * is the "URL and Filename Safe Alphabet"; see RFC-4648. Trailing padding
-	 * characters (@code =) are removed.
-	 * @deprecated - use the {@link org.springframework.amqp.core.Base64UrlNamingStrategy}.
-	 * @since 1.5.3
-	 */
-	@Deprecated
-	public static class Base64UrlNamingStrategy implements NamingStrategy {
-
-		/**
-		 * The default instance - using {@code spring.gen-} as the prefix.
-		 */
-		public static final Base64UrlNamingStrategy DEFAULT = new Base64UrlNamingStrategy();
-
-		private final String prefix;
-
-		/**
-		 * Construct an instance using the default prefix {@code spring.gen-}.
-		 */
-		public Base64UrlNamingStrategy() {
-			this("spring.gen-");
-		}
-
-		/**
-		 * Construct an instance using the supplied prefix.
-		 * @param prefix The prefix.
-		 */
-		public Base64UrlNamingStrategy(String prefix) {
-			Assert.notNull(prefix, "'prefix' cannot be null; use an empty String ");
-			this.prefix = prefix;
-		}
-
-		@Override
-		public String generateName() {
-			UUID uuid = UUID.randomUUID();
-			ByteBuffer bb = ByteBuffer.wrap(new byte[16]); // NOSONAR - Magic # deprecated anyway
-			bb.putLong(uuid.getMostSignificantBits())
-			  .putLong(uuid.getLeastSignificantBits());
-			// Convert to base64 and remove trailing =
-			return this.prefix + Base64Utils.encodeToUrlSafeString(bb.array())
-									.replaceAll("=", "");
-		}
-
-	}
-
-	/**
-	 * Generates names using {@link UUID#randomUUID()}.
-	 * (e.g. "f20c818a-006b-4416-bf91-643590fedb0e").
-	 * @author Gary Russell
-	 * @deprecated - use the {@link org.springframework.amqp.core.UUIDNamingStrategy}.
-	 * @since 2.0
-	 */
-	@Deprecated
-	public static class UUIDNamingStrategy implements NamingStrategy {
-
-		/**
-		 * The default instance.
-		 */
-		public static final UUIDNamingStrategy DEFAULT = new UUIDNamingStrategy();
-
-		@Override
-		public String generateName() {
-			return UUID.randomUUID().toString();
-		}
-
 	}
 
 }

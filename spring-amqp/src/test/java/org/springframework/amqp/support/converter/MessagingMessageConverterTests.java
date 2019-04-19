@@ -16,12 +16,10 @@
 
 package org.springframework.amqp.support.converter;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.messaging.Message;
@@ -34,15 +32,12 @@ import org.springframework.messaging.support.MessageBuilder;
  */
 public class MessagingMessageConverterTests {
 
-	@Rule
-	public final ExpectedException thrown = ExpectedException.none();
-
 	private final MessagingMessageConverter converter = new MessagingMessageConverter();
 
 	@Test
 	public void onlyHandlesMessage() {
-		thrown.expect(IllegalArgumentException.class);
-		converter.toMessage(new Object(), new MessageProperties());
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> converter.toMessage(new Object(), new MessageProperties()));
 	}
 
 	@Test
@@ -50,13 +45,13 @@ public class MessagingMessageConverterTests {
 		org.springframework.amqp.core.Message message = converter
 				.toMessage(MessageBuilder.withPayload("Hello World").build(), new MessageProperties());
 
-		assertEquals(MessageProperties.CONTENT_TYPE_TEXT_PLAIN, message.getMessageProperties().getContentType());
-		assertEquals("Hello World", new String(message.getBody()));
+		assertThat(message.getMessageProperties().getContentType()).isEqualTo(MessageProperties.CONTENT_TYPE_TEXT_PLAIN);
+		assertThat(new String(message.getBody())).isEqualTo("Hello World");
 	}
 
 	@Test
 	public void fromNull() {
-		assertNull(converter.fromMessage(null));
+		assertThat(converter.fromMessage(null)).isNull();
 	}
 
 	@Test
@@ -70,7 +65,7 @@ public class MessagingMessageConverterTests {
 		});
 
 		Message<?> msg = (Message<?>) converter.fromMessage(createTextMessage("1224"));
-		assertEquals(1224L, msg.getPayload());
+		assertThat(msg.getPayload()).isEqualTo(1224L);
 	}
 
 	@Test
@@ -84,8 +79,8 @@ public class MessagingMessageConverterTests {
 			}
 		});
 		Message<?> msg = (Message<?>) converter.fromMessage(createTextMessage("foo"));
-		assertEquals(message.getPayload(), msg.getPayload());
-		assertEquals(true, msg.getHeaders().get("inside"));
+		assertThat(msg.getPayload()).isEqualTo(message.getPayload());
+		assertThat(msg.getHeaders().get("inside")).isEqualTo(true);
 	}
 
 	public org.springframework.amqp.core.Message createTextMessage(String body) {

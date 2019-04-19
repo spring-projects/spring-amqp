@@ -16,15 +16,13 @@
 
 package org.springframework.amqp.support;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import java.util.Date;
 import java.util.Map;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
@@ -37,9 +35,6 @@ import org.springframework.util.MimeType;
  * @author Gary Russell
  */
 public class AmqpMessageHeaderAccessorTests {
-
-	@Rule
-	public final ExpectedException thrown = ExpectedException.none();
 
 	@Test
 	public void validateAmqpHeaders() {
@@ -73,28 +68,28 @@ public class AmqpMessageHeaderAccessorTests {
 		Message<String> message = MessageBuilder.withPayload("test").copyHeaders(mappedHeaders).build();
 		AmqpMessageHeaderAccessor headerAccessor = AmqpMessageHeaderAccessor.wrap(message);
 
-		assertEquals("app-id-1234", headerAccessor.getAppId());
-		assertEquals("cluster-id-1234", headerAccessor.getClusterId());
-		assertEquals("UTF-16", headerAccessor.getContentEncoding());
-		assertEquals(Long.valueOf(200), headerAccessor.getContentLength());
-		assertEquals(MimeType.valueOf("text/plain"), headerAccessor.getContentType());
-		assertEquals(correlationId, headerAccessor.getCorrelationId());
-		assertEquals(MessageDeliveryMode.NON_PERSISTENT, headerAccessor.getReceivedDeliveryMode());
-		assertEquals(Long.valueOf(555), headerAccessor.getDeliveryTag());
-		assertEquals("expiration-1234", headerAccessor.getExpiration());
-		assertEquals(Integer.valueOf(42), headerAccessor.getMessageCount());
-		assertEquals("message-id-1234", headerAccessor.getMessageId());
-		assertEquals(Integer.valueOf(9), headerAccessor.getPriority());
-		assertEquals("received-exchange-1234", headerAccessor.getReceivedExchange());
-		assertEquals("received-routing-key-1234", headerAccessor.getReceivedRoutingKey());
-		assertEquals(true, headerAccessor.getRedelivered());
-		assertEquals("reply-to-1234", headerAccessor.getReplyTo());
-		assertEquals(Long.valueOf(timestamp.getTime()), headerAccessor.getTimestamp());
-		assertEquals("type-1234", headerAccessor.getType());
-		assertEquals("user-id-1234", headerAccessor.getReceivedUserId());
+		assertThat(headerAccessor.getAppId()).isEqualTo("app-id-1234");
+		assertThat(headerAccessor.getClusterId()).isEqualTo("cluster-id-1234");
+		assertThat(headerAccessor.getContentEncoding()).isEqualTo("UTF-16");
+		assertThat(headerAccessor.getContentLength()).isEqualTo(Long.valueOf(200));
+		assertThat(headerAccessor.getContentType()).isEqualTo(MimeType.valueOf("text/plain"));
+		assertThat(headerAccessor.getCorrelationId()).isEqualTo(correlationId);
+		assertThat(headerAccessor.getReceivedDeliveryMode()).isEqualTo(MessageDeliveryMode.NON_PERSISTENT);
+		assertThat(headerAccessor.getDeliveryTag()).isEqualTo(Long.valueOf(555));
+		assertThat(headerAccessor.getExpiration()).isEqualTo("expiration-1234");
+		assertThat(headerAccessor.getMessageCount()).isEqualTo(Integer.valueOf(42));
+		assertThat(headerAccessor.getMessageId()).isEqualTo("message-id-1234");
+		assertThat(headerAccessor.getPriority()).isEqualTo(Integer.valueOf(9));
+		assertThat(headerAccessor.getReceivedExchange()).isEqualTo("received-exchange-1234");
+		assertThat(headerAccessor.getReceivedRoutingKey()).isEqualTo("received-routing-key-1234");
+		assertThat(headerAccessor.getRedelivered()).isEqualTo(true);
+		assertThat(headerAccessor.getReplyTo()).isEqualTo("reply-to-1234");
+		assertThat(headerAccessor.getTimestamp()).isEqualTo(Long.valueOf(timestamp.getTime()));
+		assertThat(headerAccessor.getType()).isEqualTo("type-1234");
+		assertThat(headerAccessor.getReceivedUserId()).isEqualTo("user-id-1234");
 
 		// Making sure replyChannel is not mixed with replyTo
-		assertNull(headerAccessor.getReplyChannel());
+		assertThat(headerAccessor.getReplyChannel()).isNull();
 	}
 
 	@Test
@@ -102,15 +97,15 @@ public class AmqpMessageHeaderAccessorTests {
 		Message<?> message = MessageBuilder.withPayload("payload").
 				setHeader(AmqpMessageHeaderAccessor.PRIORITY, 90).build();
 		AmqpMessageHeaderAccessor accessor = new AmqpMessageHeaderAccessor(message);
-		assertEquals(Integer.valueOf(90), accessor.getPriority());
+		assertThat(accessor.getPriority()).isEqualTo(Integer.valueOf(90));
 	}
 
 	@Test
 	public void priorityMustBeInteger() {
 		AmqpMessageHeaderAccessor accessor = new AmqpMessageHeaderAccessor(MessageBuilder.withPayload("foo").build());
-		thrown.expect(IllegalArgumentException.class);
-		thrown.expectMessage("priority");
-		accessor.setHeader(AmqpMessageHeaderAccessor.PRIORITY, "Foo");
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> accessor.setHeader(AmqpMessageHeaderAccessor.PRIORITY, "Foo"))
+				.withFailMessage("priority");
 	}
 
 }

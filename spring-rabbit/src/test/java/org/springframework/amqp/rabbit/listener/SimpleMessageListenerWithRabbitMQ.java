@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.junit.Assert.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,7 +51,7 @@ public final class SimpleMessageListenerWithRabbitMQ {
 		connectionFactory.setHost("localhost");
 		connectionFactory.setUsername("guest");
 		connectionFactory.setPassword("guest");
-		assertNotNull(connectionFactory);
+		assertThat(connectionFactory).isNotNull();
 
 		MessageConverter messageConverter = new SimpleMessageConverter();
 		MessageProperties  messageProperties = new MessageProperties();

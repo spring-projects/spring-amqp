@@ -18,8 +18,10 @@ package org.springframework.amqp.rabbit.core.support;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.function.Consumer;
 
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageProperties;
 
 /**
  * Strategy for batching messages. The methods will never be called concurrently.
@@ -51,5 +53,28 @@ public interface BatchingStrategy {
 	 * @return The batched message(s).
 	 */
 	Collection<MessageBatch> releaseBatches();
+
+	/**
+	 * Return true if this strategy can decode a batch of messages from a message body.
+	 * Returning true means you must override {@link #deBatch(Message, Consumer)}.
+	 * @param properties the message properties.
+	 * @return true if we can decode the message.
+	 * @since 2.2
+	 * @see #deBatch(Message, Consumer)
+	 */
+	default boolean canDebatch(MessageProperties properties) {
+		return false;
+	}
+
+	/**
+	 * Decode a message into fragments.
+	 * @param message the message.
+	 * @param fragmentConsumer a consumer for fragments.
+	 * @since 2.2
+	 * @see #canDebatch(MessageProperties)
+	 */
+	default void deBatch(Message message, Consumer<Message> fragmentConsumer) {
+		throw new UnsupportedOperationException("Cannot debatch this message");
+	}
 
 }

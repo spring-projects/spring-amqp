@@ -113,16 +113,10 @@ public class PublisherCallbackChannelImpl
 
 	/**
 	 * Create a {@link PublisherCallbackChannelImpl} instance based on the provided
-	 * delegate.
-	 * @param delegate the {@link Channel} to delegate.
-	 * @deprecated since 2.2.1 in favor of
-	 * {@link #PublisherCallbackChannelImpl(Channel, ExecutorService)}
+	 * delegate and executor.
+	 * @param delegate the delegate channel.
+	 * @param executor the exceutor.
 	 */
-	@Deprecated
-	public PublisherCallbackChannelImpl(Channel delegate) {
-		this(delegate, null); // NOSONAR = deprecated ctor
-	}
-
 	public PublisherCallbackChannelImpl(Channel delegate, ExecutorService executor) {
 		Assert.notNull(executor, "'executor' must not be null");
 		this.delegate = delegate;

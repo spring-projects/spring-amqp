@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.connection;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -66,7 +66,7 @@ public class SingleConnectionFactoryTests extends AbstractConnectionFactoryTests
 
 		Connection con = connectionFactory.createConnection();
 		Channel channel = con.createChannel(false);
-		assertEquals(1, called.get());
+		assertThat(called.get()).isEqualTo(1);
 		channel.close();
 
 		con.close();
@@ -74,7 +74,7 @@ public class SingleConnectionFactoryTests extends AbstractConnectionFactoryTests
 
 		connectionFactory.createConnection();
 		con.createChannel(false);
-		assertEquals(2, called.get());
+		assertThat(called.get()).isEqualTo(2);
 
 		connectionFactory.destroy();
 		verify(mockConnection, atLeastOnce()).close(anyInt());

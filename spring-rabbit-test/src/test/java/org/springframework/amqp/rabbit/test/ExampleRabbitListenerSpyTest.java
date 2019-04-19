@@ -16,9 +16,7 @@
 
 package org.springframework.amqp.rabbit.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
@@ -31,6 +29,7 @@ import org.junit.runner.RunWith;
 
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -50,6 +49,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.6
  *
  */
@@ -74,18 +75,18 @@ public class ExampleRabbitListenerSpyTest {
 	private RabbitListenerTestHarness harness;
 
 	@Test
-	public void testTwoWay() throws Exception {
-		assertEquals("FOO", this.rabbitTemplate.convertSendAndReceive(this.queue1.getName(), "foo"));
+	public void testTwoWay() {
+		assertThat(this.rabbitTemplate.convertSendAndReceive(this.queue1.getName(), "foo")).isEqualTo("FOO");
 
 		Listener listener = this.harness.getSpy("foo");
-		assertNotNull(listener);
+		assertThat(listener).isNotNull();
 		verify(listener).foo("foo");
 	}
 
 	@Test
 	public void testOneWay() throws Exception {
 		Listener listener = this.harness.getSpy("bar");
-		assertNotNull(listener);
+		assertThat(listener).isNotNull();
 
 		LatchCountDownAndCallRealMethodAnswer answer = new LatchCountDownAndCallRealMethodAnswer(2);
 		doAnswer(answer).when(listener).foo(anyString(), anyString());
@@ -93,12 +94,13 @@ public class ExampleRabbitListenerSpyTest {
 		this.rabbitTemplate.convertAndSend(this.queue2.getName(), "bar");
 		this.rabbitTemplate.convertAndSend(this.queue2.getName(), "baz");
 
-		assertTrue(answer.getLatch().await(10, TimeUnit.SECONDS));
+		assertThat(answer.getLatch().await(10, TimeUnit.SECONDS)).isTrue();
 		verify(listener).foo("bar", this.queue2.getName());
 		verify(listener).foo("baz", this.queue2.getName());
 	}
 
 	@Configuration
+	@EnableRabbit
 	@RabbitListenerTest
 	public static class Config {
 

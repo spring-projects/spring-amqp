@@ -17,22 +17,7 @@
 package org.springframework.amqp.rabbit.annotation;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.arrayWithSize;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
@@ -241,132 +226,130 @@ public class EnableRabbitIntegrationTests {
 
 	@Test
 	public void autoDeclare() {
-		assertEquals("FOOthreadNamer-1", rabbitTemplate.convertSendAndReceive("auto.exch", "auto.rk", "foo"));
+		assertThat(rabbitTemplate.convertSendAndReceive("auto.exch", "auto.rk", "foo")).isEqualTo("FOOthreadNamer-1");
 		assertThat(this.myService.channelBoundOk).isTrue();
 	}
 
 	@Test
 	public void autoSimpleDeclare() {
-		assertEquals("FOOexec1-1", rabbitTemplate.convertSendAndReceive("test.simple.declare", "foo"));
+		assertThat(rabbitTemplate.convertSendAndReceive("test.simple.declare", "foo")).isEqualTo("FOOexec1-1");
 	}
 
 	@Test
 	public void autoSimpleDeclareAnonymousQueue() {
 		final SimpleMessageListenerContainer container = (SimpleMessageListenerContainer) registry
 				.getListenerContainer("anonymousQueue575");
-		assertThat(container.getQueueNames(), arrayWithSize(1));
-		assertEquals("viaAnonymous:foo", rabbitTemplate.convertSendAndReceive(container.getQueueNames()[0], "foo"));
+		assertThat(container.getQueueNames()).hasSize(1);
+		assertThat(rabbitTemplate.convertSendAndReceive(container.getQueueNames()[0], "foo")).isEqualTo("viaAnonymous:foo");
 		Object messageListener = container.getMessageListener();
-		assertThat(TestUtils.getPropertyValue(messageListener, "retryTemplate"), notNullValue());
-		assertThat(TestUtils.getPropertyValue(messageListener, "recoveryCallback"), notNullValue());
+		assertThat(TestUtils.getPropertyValue(messageListener, "retryTemplate")).isNotNull();
+		assertThat(TestUtils.getPropertyValue(messageListener, "recoveryCallback")).isNotNull();
 	}
 
 	@Test
 	public void tx() {
-		assertTrue(AopUtils.isJdkDynamicProxy(this.txService));
+		assertThat(AopUtils.isJdkDynamicProxy(this.txService)).isTrue();
 		Baz baz = new Baz();
 		baz.field = "baz";
 		rabbitTemplate.setReplyTimeout(600000);
-		assertEquals("BAZ: baz: auto.rk.tx", rabbitTemplate.convertSendAndReceive("auto.exch.tx", "auto.rk.tx", baz));
+		assertThat(rabbitTemplate.convertSendAndReceive("auto.exch.tx", "auto.rk.tx", baz)).isEqualTo("BAZ: baz: auto.rk.tx");
 	}
 
 	@Test
 	public void autoDeclareFanout() {
-		assertEquals("FOOFOO", rabbitTemplate.convertSendAndReceive("auto.exch.fanout", "", "foo"));
+		assertThat(rabbitTemplate.convertSendAndReceive("auto.exch.fanout", "", "foo")).isEqualTo("FOOFOO");
 	}
 
 	@Test
 	public void autoDeclareAnon() {
-		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("auto.exch", "auto.anon.rk", "foo"));
+		assertThat(rabbitTemplate.convertSendAndReceive("auto.exch", "auto.anon.rk", "foo")).isEqualTo("FOO");
 	}
 
 	@Test
 	public void autoStart() {
 		MessageListenerContainer listenerContainer = this.registry.getListenerContainer("notStarted");
-		assertNotNull(listenerContainer);
-		assertFalse(listenerContainer.isRunning());
+		assertThat(listenerContainer).isNotNull();
+		assertThat(listenerContainer.isRunning()).isFalse();
 		this.registry.start();
-		assertTrue(listenerContainer.isRunning());
+		assertThat(listenerContainer.isRunning()).isTrue();
 		listenerContainer.stop();
 	}
 
 	@Test
 	public void autoDeclareAnonWitAtts() {
 		String received = (String) rabbitTemplate.convertSendAndReceive("auto.exch", "auto.anon.atts.rk", "foo");
-		assertThat(received, startsWith("foo:"));
+		assertThat(received).startsWith("foo:");
 		org.springframework.amqp.core.Queue anonQueueWithAttributes
 				= new org.springframework.amqp.core.Queue(received.substring(4), true, true, true);
 		this.rabbitAdmin.declareQueue(anonQueueWithAttributes); // will fail if atts not correctly set
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void simpleEndpoint() {
-		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("test.simple", "foo"));
-		assertEquals(2, this.context.getBean("testGroup", List.class).size());
+		assertThat(rabbitTemplate.convertSendAndReceive("test.simple", "foo")).isEqualTo("FOO");
+		assertThat(this.context.getBean("testGroup", List.class)).hasSize(2);
 	}
 
 	@Test
 	public void simpleDirectEndpoint() {
 		MessageListenerContainer container = this.registry.getListenerContainer("direct");
-		assertFalse(container.isRunning());
+		assertThat(container.isRunning()).isFalse();
 		container.start();
 		String reply = (String) rabbitTemplate.convertSendAndReceive("test.simple.direct", "foo");
-		assertThat(reply, startsWith("FOOfoo"));
-		assertThat(reply, containsString("rabbitClientThread-")); // container runs on client thread
-		assertThat(TestUtils.getPropertyValue(container, "consumersPerQueue"), equalTo(2));
+		assertThat(reply).startsWith("FOOfoo");
+		assertThat(reply).contains("rabbitClientThread-"); // container runs on client thread
+		assertThat(TestUtils.getPropertyValue(container, "consumersPerQueue")).isEqualTo(2);
 	}
 
 	@Test
 	public void simpleDirectEndpointWithConcurrency() {
 		String reply = (String) rabbitTemplate.convertSendAndReceive("test.simple.direct2", "foo");
-		assertThat(reply, startsWith("FOOfoo"));
-		assertThat(reply, containsString("rabbitClientThread-")); // container runs on client thread
+		assertThat(reply).startsWith("FOOfoo");
+		assertThat(reply).contains("rabbitClientThread-"); // container runs on client thread
 		assertThat(TestUtils.getPropertyValue(this.registry.getListenerContainer("directWithConcurrency"),
-				"consumersPerQueue"), equalTo(3));
+				"consumersPerQueue")).isEqualTo(3);
 	}
 
 	@Test
 	public void simpleInheritanceMethod() {
-		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("test.inheritance", "foo"));
+		assertThat(rabbitTemplate.convertSendAndReceive("test.inheritance", "foo")).isEqualTo("FOO");
 	}
 
 	@Test
 	public void simpleInheritanceClass() {
-		assertEquals("FOOBAR", rabbitTemplate.convertSendAndReceive("test.inheritance.class", "foo"));
+		assertThat(rabbitTemplate.convertSendAndReceive("test.inheritance.class", "foo")).isEqualTo("FOOBAR");
 	}
 
 	@Test
 	public void commas() {
-		assertEquals("FOOfoo", rabbitTemplate.convertSendAndReceive("test,with,commas", "foo"));
+		assertThat(rabbitTemplate.convertSendAndReceive("test,with,commas", "foo")).isEqualTo("FOOfoo");
 		List<?> commaContainers = this.context.getBean("commas", List.class);
-		assertEquals(1, commaContainers.size());
+		assertThat(commaContainers).hasSize(1);
 		SimpleMessageListenerContainer container = (SimpleMessageListenerContainer) commaContainers.get(0);
 		List<String> queueNames = Arrays.asList(container.getQueueNames());
-		assertThat(queueNames,
-				contains("test.comma.1", "test.comma.2", "test,with,commas", "test.comma.3", "test.comma.4"));
+		assertThat(queueNames).containsExactly("test.comma.1", "test.comma.2", "test,with,commas", "test.comma.3", "test.comma.4");
 	}
 
 	@Test
 	public void multiListener() {
 		Foo foo = new Foo();
 		foo.field = "foo";
-		assertEquals("FOO: foo handled by default handler",
-				rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", foo));
+		assertThat(rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", foo)).isEqualTo("FOO: foo handled by default handler");
 		Bar bar = new Bar();
 		bar.field = "bar";
 		rabbitTemplate.convertAndSend("multi.exch", "multi.rk", bar);
 		rabbitTemplate.setReceiveTimeout(10000);
-		assertEquals("BAR: bar", this.rabbitTemplate.receiveAndConvert("sendTo.replies"));
+		assertThat(this.rabbitTemplate.receiveAndConvert("sendTo.replies")).isEqualTo("BAR: bar");
 		Baz baz = new Baz();
 		baz.field = "baz";
-		assertEquals("BAZ: baz", rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", baz));
+		assertThat(rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", baz)).isEqualTo("BAZ: baz");
 		Qux qux = new Qux();
 		qux.field = "qux";
-		assertEquals("QUX: qux: multi.rk", rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", qux));
-		assertEquals("BAR: barbar", rabbitTemplate.convertSendAndReceive("multi.exch.tx", "multi.rk.tx", bar));
-		assertEquals("BAZ: bazbaz: multi.rk.tx",
-				rabbitTemplate.convertSendAndReceive("multi.exch.tx", "multi.rk.tx", baz));
-		assertTrue(AopUtils.isJdkDynamicProxy(this.txClassLevel));
+		assertThat(rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", qux)).isEqualTo("QUX: qux: multi.rk");
+		assertThat(rabbitTemplate.convertSendAndReceive("multi.exch.tx", "multi.rk.tx", bar)).isEqualTo("BAR: barbar");
+		assertThat(rabbitTemplate.convertSendAndReceive("multi.exch.tx", "multi.rk.tx", baz)).isEqualTo("BAZ: bazbaz: multi.rk.tx");
+		assertThat(AopUtils.isJdkDynamicProxy(this.txClassLevel)).isTrue();
 	}
 
 	@Test
@@ -375,24 +358,22 @@ public class EnableRabbitIntegrationTests {
 		bar.field = "bar";
 		String exchange = "multi.json.exch";
 		String routingKey = "multi.json.rk";
-		assertEquals("BAR: barMultiListenerJsonBean",
-				this.jsonRabbitTemplate.convertSendAndReceive(exchange, routingKey, bar));
+		assertThat(this.jsonRabbitTemplate.convertSendAndReceive(exchange, routingKey, bar)).isEqualTo("BAR: barMultiListenerJsonBean");
 		Baz baz = new Baz();
 		baz.field = "baz";
-		assertEquals("BAZ: baz", this.jsonRabbitTemplate.convertSendAndReceive(exchange, routingKey, baz));
+		assertThat(this.jsonRabbitTemplate.convertSendAndReceive(exchange, routingKey, baz)).isEqualTo("BAZ: baz");
 		Qux qux = new Qux();
 		qux.field = "qux";
-		assertEquals("QUX: qux: multi.json.rk",
-				this.jsonRabbitTemplate.convertSendAndReceive(exchange, routingKey, qux));
+		assertThat(this.jsonRabbitTemplate.convertSendAndReceive(exchange, routingKey, qux)).isEqualTo("QUX: qux: multi.json.rk");
 
 		// SpEL replyTo
 		this.jsonRabbitTemplate.convertAndSend(exchange, routingKey, bar);
 		this.jsonRabbitTemplate.setReceiveTimeout(10000);
-		assertEquals("BAR: barMultiListenerJsonBean", this.jsonRabbitTemplate.receiveAndConvert("sendTo.replies.spel"));
+		assertThat(this.jsonRabbitTemplate.receiveAndConvert("sendTo.replies.spel")).isEqualTo("BAR: barMultiListenerJsonBean");
 		MessageListenerContainer container = this.registry.getListenerContainer("multi");
-		assertThat(TestUtils.getPropertyValue(container, "concurrentConsumers"), equalTo(1));
-		assertThat(TestUtils.getPropertyValue(container, "messageListener.errorHandler"), notNullValue());
-		assertTrue(TestUtils.getPropertyValue(container, "messageListener.returnExceptions", Boolean.class));
+		assertThat(TestUtils.getPropertyValue(container, "concurrentConsumers")).isEqualTo(1);
+		assertThat(TestUtils.getPropertyValue(container, "messageListener.errorHandler")).isNotNull();
+		assertThat(TestUtils.getPropertyValue(container, "messageListener.returnExceptions", Boolean.class)).isTrue();
 	}
 
 	@Test
@@ -401,8 +382,8 @@ public class EnableRabbitIntegrationTests {
 		properties.setHeader("prefix", "prefix-");
 		Message request = MessageTestUtils.createTextMessage("foo", properties);
 		Message reply = rabbitTemplate.sendAndReceive("test.header", request);
-		assertEquals("prefix-FOO", MessageTestUtils.extractText(reply));
-		assertEquals(reply.getMessageProperties().getHeaders().get("replyMPPApplied"), Boolean.TRUE);
+		assertThat(MessageTestUtils.extractText(reply)).isEqualTo("prefix-FOO");
+		assertThat(Boolean.TRUE).isEqualTo(reply.getMessageProperties().getHeaders().get("replyMPPApplied"));
 	}
 
 	@Test
@@ -411,7 +392,7 @@ public class EnableRabbitIntegrationTests {
 		properties.setHeader("prefix", "prefix-");
 		Message request = MessageTestUtils.createTextMessage("foo", properties);
 		Message reply = rabbitTemplate.sendAndReceive("test.message", request);
-		assertEquals("prefix-FOO", MessageTestUtils.extractText(reply));
+		assertThat(MessageTestUtils.extractText(reply)).isEqualTo("prefix-FOO");
 	}
 
 	@Test
@@ -420,9 +401,9 @@ public class EnableRabbitIntegrationTests {
 		properties.setHeader("foo", "fooValue");
 		Message request = MessageTestUtils.createTextMessage("content", properties);
 		Message reply = rabbitTemplate.sendAndReceive("test.reply", request);
-		assertEquals("Wrong reply", "content", MessageTestUtils.extractText(reply));
-		assertEquals("Wrong foo header", "fooValue", reply.getMessageProperties().getHeaders().get("foo"));
-		assertThat((String) reply.getMessageProperties().getHeaders().get("bar"), startsWith(tagPrefix));
+		assertThat(MessageTestUtils.extractText(reply)).as("Wrong reply").isEqualTo("content");
+		assertThat(reply.getMessageProperties().getHeaders().get("foo")).as("Wrong foo header").isEqualTo("fooValue");
+		assertThat((String) reply.getMessageProperties().getHeaders().get("bar")).startsWith(tagPrefix);
 	}
 
 	@Test
@@ -431,8 +412,8 @@ public class EnableRabbitIntegrationTests {
 		rabbitTemplate.convertAndSend("test.sendTo", "bar");
 		rabbitTemplate.setReceiveTimeout(10000);
 		Object result = rabbitTemplate.receiveAndConvert("test.sendTo.reply");
-		assertNotNull(result);
-		assertEquals("BAR", result);
+		assertThat(result).isNotNull();
+		assertThat(result).isEqualTo("BAR");
 	}
 
 	@Test
@@ -441,8 +422,8 @@ public class EnableRabbitIntegrationTests {
 		rabbitTemplate.convertAndSend("test.sendTo.spel", "bar");
 		rabbitTemplate.setReceiveTimeout(10000);
 		Object result = rabbitTemplate.receiveAndConvert("test.sendTo.reply.spel");
-		assertNotNull(result);
-		assertEquals("BARbar", result);
+		assertThat(result).isNotNull();
+		assertThat(result).isEqualTo("BARbar");
 	}
 
 	@Test
@@ -450,8 +431,8 @@ public class EnableRabbitIntegrationTests {
 		rabbitTemplate.convertAndSend("test.sendTo.runtimespel", "spel");
 		rabbitTemplate.setReceiveTimeout(10000);
 		Object result = rabbitTemplate.receiveAndConvert("test.sendTo.reply.runtimespel");
-		assertNotNull(result);
-		assertEquals("runtimespel", result);
+		assertThat(result).isNotNull();
+		assertThat(result).isEqualTo("runtimespel");
 	}
 
 	@Test
@@ -459,23 +440,21 @@ public class EnableRabbitIntegrationTests {
 		rabbitTemplate.convertAndSend("test.sendTo.runtimespelsource", "spel");
 		rabbitTemplate.setReceiveTimeout(10000);
 		Object result = rabbitTemplate.receiveAndConvert("test.sendTo.runtimespelsource.reply");
-		assertNotNull(result);
-		assertEquals("sourceEval", result);
+		assertThat(result).isNotNull();
+		assertThat(result).isEqualTo("sourceEval");
 	}
 
 	@Test
 	public void testInvalidPojoConversion() throws InterruptedException {
 		this.rabbitTemplate.convertAndSend("test.invalidPojo", "bar");
 
-		assertTrue(this.errorHandlerLatch.await(10, TimeUnit.SECONDS));
+		assertThat(this.errorHandlerLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		Throwable throwable = this.errorHandlerError.get();
-		assertNotNull(throwable);
-		assertThat(throwable, instanceOf(AmqpRejectAndDontRequeueException.class));
-		assertThat(throwable.getCause(), instanceOf(ListenerExecutionFailedException.class));
-		assertThat(throwable.getCause().getCause(),
-				instanceOf(org.springframework.messaging.converter.MessageConversionException.class));
-		assertThat(throwable.getCause().getCause().getMessage(),
-				containsString("Failed to convert message payload 'bar' to 'java.util.Date'"));
+		assertThat(throwable).isNotNull();
+		assertThat(throwable).isInstanceOf(AmqpRejectAndDontRequeueException.class);
+		assertThat(throwable.getCause()).isInstanceOf(ListenerExecutionFailedException.class);
+		assertThat(throwable.getCause().getCause()).isInstanceOf(org.springframework.messaging.converter.MessageConversionException.class);
+		assertThat(throwable.getCause().getCause().getMessage()).contains("Failed to convert message payload 'bar' to 'java.util.Date'");
 	}
 
 	@Test
@@ -483,11 +462,10 @@ public class EnableRabbitIntegrationTests {
 		Foo1 foo = new Foo1();
 		foo.setBar("bar");
 		this.jsonRabbitTemplate.convertAndSend("differentTypes", foo);
-		assertTrue(this.service.latch.await(10, TimeUnit.SECONDS));
-		assertThat(this.service.foos.get(0), instanceOf(Foo2.class));
-		assertEquals("bar", ((Foo2) this.service.foos.get(0)).getBar());
-		assertThat(TestUtils.getPropertyValue(this.registry.getListenerContainer("different"), "concurrentConsumers"),
-				equalTo(2));
+		assertThat(this.service.latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.service.foos.get(0)).isInstanceOf(Foo2.class);
+		assertThat(((Foo2) this.service.foos.get(0)).getBar()).isEqualTo("bar");
+		assertThat(TestUtils.getPropertyValue(this.registry.getListenerContainer("different"), "concurrentConsumers")).isEqualTo(2);
 	}
 
 	@Test
@@ -495,12 +473,12 @@ public class EnableRabbitIntegrationTests {
 		Foo1 foo = new Foo1();
 		foo.setBar("bar");
 		this.jsonRabbitTemplate.convertAndSend("differentTypes", foo);
-		assertTrue(this.service.latch.await(10, TimeUnit.SECONDS));
-		assertThat(this.service.foos.get(0), instanceOf(Foo2.class));
-		assertEquals("bar", ((Foo2) this.service.foos.get(0)).getBar());
+		assertThat(this.service.latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.service.foos.get(0)).isInstanceOf(Foo2.class);
+		assertThat(((Foo2) this.service.foos.get(0)).getBar()).isEqualTo("bar");
 		MessageListenerContainer container = this.registry.getListenerContainer("differentWithConcurrency");
-		assertThat(TestUtils.getPropertyValue(container, "concurrentConsumers"), equalTo(3));
-		assertNull(TestUtils.getPropertyValue(container, "maxConcurrentConsumers"));
+		assertThat(TestUtils.getPropertyValue(container, "concurrentConsumers")).isEqualTo(3);
+		assertThat(TestUtils.getPropertyValue(container, "maxConcurrentConsumers")).isNull();
 	}
 
 	@Test
@@ -508,21 +486,20 @@ public class EnableRabbitIntegrationTests {
 		Foo1 foo = new Foo1();
 		foo.setBar("bar");
 		this.jsonRabbitTemplate.convertAndSend("differentTypes", foo);
-		assertTrue(this.service.latch.await(10, TimeUnit.SECONDS));
-		assertThat(this.service.foos.get(0), instanceOf(Foo2.class));
-		assertEquals("bar", ((Foo2) this.service.foos.get(0)).getBar());
+		assertThat(this.service.latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.service.foos.get(0)).isInstanceOf(Foo2.class);
+		assertThat(((Foo2) this.service.foos.get(0)).getBar()).isEqualTo("bar");
 		MessageListenerContainer container = this.registry.getListenerContainer("differentWithVariableConcurrency");
-		assertThat(TestUtils.getPropertyValue(container, "concurrentConsumers"), equalTo(3));
-		assertThat(TestUtils.getPropertyValue(container, "maxConcurrentConsumers"), equalTo(4));
+		assertThat(TestUtils.getPropertyValue(container, "concurrentConsumers")).isEqualTo(3);
+		assertThat(TestUtils.getPropertyValue(container, "maxConcurrentConsumers")).isEqualTo(4);
 	}
 
 	@Test
 	public void testInterceptor() throws InterruptedException {
 		this.rabbitTemplate.convertAndSend("test.intercepted", "intercept this");
-		assertTrue(this.interceptor.oneWayLatch.await(10, TimeUnit.SECONDS));
-		assertEquals("INTERCEPT THIS",
-				this.rabbitTemplate.convertSendAndReceive("test.intercepted.withReply", "intercept this"));
-		assertTrue(this.interceptor.twoWayLatch.await(10, TimeUnit.SECONDS));
+		assertThat(this.interceptor.oneWayLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.rabbitTemplate.convertSendAndReceive("test.intercepted.withReply", "intercept this")).isEqualTo("INTERCEPT THIS");
+		assertThat(this.interceptor.twoWayLatch.await(10, TimeUnit.SECONDS)).isTrue();
 	}
 
 	@Test
@@ -535,9 +512,9 @@ public class EnableRabbitIntegrationTests {
 		Jackson2JsonMessageConverter converter = ctx.getBean(Jackson2JsonMessageConverter.class);
 		converter.setTypePrecedence(TypePrecedence.TYPE_ID);
 		Object returned = template.convertSendAndReceive("test.converted", foo1);
-		assertThat(returned, instanceOf(Foo2.class));
-		assertEquals("bar", ((Foo2) returned).getBar());
-		assertTrue(TestUtils.getPropertyValue(ctx.getBean("foo1To2Converter"), "converted", Boolean.class));
+		assertThat(returned).isInstanceOf(Foo2.class);
+		assertThat(((Foo2) returned).getBar()).isEqualTo("bar");
+		assertThat(TestUtils.getPropertyValue(ctx.getBean("foo1To2Converter"), "converted", Boolean.class)).isTrue();
 		converter.setTypePrecedence(TypePrecedence.INFERRED);
 
 		// No type info in message
@@ -546,66 +523,71 @@ public class EnableRabbitIntegrationTests {
 		MessagePostProcessor messagePostProcessor = message -> {
 			message.getMessageProperties().setContentType("application/json");
 			message.getMessageProperties().setUserId("guest");
+			message.getMessageProperties().setHeader("stringHeader", "string");
+			message.getMessageProperties().setHeader("intHeader", 42);
 			return message;
 		};
 		returned = template.convertSendAndReceive("", "test.converted", "{ \"bar\" : \"baz\" }", messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("{\"bar\":\"baz\"}", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("{\"bar\":\"baz\"}");
 
 		returned = template.convertSendAndReceive("", "test.converted.list", "[ { \"bar\" : \"baz\" } ]",
 				messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("{\"bar\":\"BAZZZZ\"}", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("{\"bar\":\"BAZZZZ\"}");
 
 		returned = template.convertSendAndReceive("", "test.converted.array", "[ { \"bar\" : \"baz\" } ]",
 				messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("{\"bar\":\"BAZZxx\"}", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("{\"bar\":\"BAZZxx\"}");
 
 		returned = template.convertSendAndReceive("", "test.converted.args1", "{ \"bar\" : \"baz\" }",
 				messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("\"bar=baztest.converted.args1\"", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("\"bar=baztest.converted.args1\"");
 
 		returned = template.convertSendAndReceive("", "test.converted.args2", "{ \"bar\" : \"baz\" }",
 				messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("\"bar=baztest.converted.args2\"", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("\"bar=baztest.converted.args2\"");
 
 		returned = template.convertSendAndReceive("", "test.converted.message", "{ \"bar\" : \"baz\" }",
 				messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("\"bar=bazfoo2MessageFoo2Service\"", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("\"bar=bazfoo2MessageFoo2Service\"");
 
 		returned = template.convertSendAndReceive("", "test.notconverted.message", "{ \"bar\" : \"baz\" }",
 				messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("\"fooMessage\"", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("\"fooMessage\"");
+		Foo2Service foo2service = ctx.getBean(Foo2Service.class);
+		assertThat(foo2service.stringHeader).isEqualTo("string");
+		assertThat(foo2service.intHeader).isEqualTo(42);
 
 		returned = template.convertSendAndReceive("", "test.notconverted.channel", "{ \"bar\" : \"baz\" }",
 				messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("\"barAndChannel\"", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("\"barAndChannel\"");
 
 		returned = template.convertSendAndReceive("", "test.notconverted.messagechannel", "{ \"bar\" : \"baz\" }",
 				messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("\"bar=bazMessageAndChannel\"", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("\"bar=bazMessageAndChannel\"");
 
 		returned = template.convertSendAndReceive("", "test.notconverted.messagingmessage", "{ \"bar\" : \"baz\" }",
 				messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("\"GenericMessageLinkedHashMap\"", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("\"GenericMessageLinkedHashMap\"");
 
 		returned = template.convertSendAndReceive("", "test.converted.foomessage", "{ \"bar\" : \"baz\" }",
 				messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("\"GenericMessageFoo2guest\"", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("\"GenericMessageFoo2guest\"");
 
 		returned = template.convertSendAndReceive("", "test.notconverted.messagingmessagenotgeneric",
 				"{ \"bar\" : \"baz\" }", messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("\"GenericMessageLinkedHashMap\"", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("\"GenericMessageLinkedHashMap\"");
 
 		Jackson2JsonMessageConverter jsonConverter = ctx.getBean(Jackson2JsonMessageConverter.class);
 
@@ -626,9 +608,9 @@ public class EnableRabbitIntegrationTests {
 		Jackson2XmlMessageConverter converter = ctx.getBean(Jackson2XmlMessageConverter.class);
 		converter.setTypePrecedence(TypePrecedence.TYPE_ID);
 		Object returned = template.convertSendAndReceive("test.converted", foo1);
-		assertThat(returned, instanceOf(Foo2.class));
-		assertEquals("bar", ((Foo2) returned).getBar());
-		assertTrue(TestUtils.getPropertyValue(ctx.getBean("foo1To2Converter"), "converted", Boolean.class));
+		assertThat(returned).isInstanceOf(Foo2.class);
+		assertThat(((Foo2) returned).getBar()).isEqualTo("bar");
+		assertThat(TestUtils.getPropertyValue(ctx.getBean("foo1To2Converter"), "converted", Boolean.class)).isTrue();
 		converter.setTypePrecedence(TypePrecedence.INFERRED);
 
 		// No type info in message
@@ -640,63 +622,63 @@ public class EnableRabbitIntegrationTests {
 			return message;
 		};
 		returned = template.convertSendAndReceive("", "test.converted", "<Foo2><bar>baz</bar></Foo2>", messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("<Foo2><bar>baz</bar></Foo2>", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("<Foo2><bar>baz</bar></Foo2>");
 
 		returned = template.convertSendAndReceive("", "test.converted.list", "<Foo2><list><bar>baz</bar></list></Foo2>",
 				messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("<Foo2><bar>BAZZZZ</bar></Foo2>", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("<Foo2><bar>BAZZZZ</bar></Foo2>");
 
 		returned = template.convertSendAndReceive("", "test.converted.array", "<Foo2><list><bar>baz</bar></list></Foo2>",
 				messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("<Foo2><bar>BAZZxx</bar></Foo2>", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("<Foo2><bar>BAZZxx</bar></Foo2>");
 
 		returned = template.convertSendAndReceive("", "test.converted.args1", "<Foo2><bar>baz</bar></Foo2>",
 				messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("<String>bar=baztest.converted.args1</String>", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("<String>bar=baztest.converted.args1</String>");
 
 		returned = template.convertSendAndReceive("", "test.converted.args2", "<Foo2><bar>baz</bar></Foo2>",
 				messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("<String>bar=baztest.converted.args2</String>", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("<String>bar=baztest.converted.args2</String>");
 
 		returned = template.convertSendAndReceive("", "test.converted.message", "<Foo2><bar>baz</bar></Foo2>",
 				messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("<String>bar=bazfoo2MessageFoo2Service</String>", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("<String>bar=bazfoo2MessageFoo2Service</String>");
 
 		returned = template.convertSendAndReceive("", "test.notconverted.message", "<Foo2><bar>baz</bar></Foo2>",
 				messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("<String>fooMessage</String>", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("<String>fooMessage</String>");
 
 		returned = template.convertSendAndReceive("", "test.notconverted.channel", "<Foo2><bar>baz</bar></Foo2>",
 				messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("<String>barAndChannel</String>", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("<String>barAndChannel</String>");
 
 		returned = template.convertSendAndReceive("", "test.notconverted.messagechannel", "<Foo2><bar>baz</bar></Foo2>",
 				messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("<String>bar=bazMessageAndChannel</String>", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("<String>bar=bazMessageAndChannel</String>");
 
 		returned = template.convertSendAndReceive("", "test.notconverted.messagingmessage", "<Foo2><bar>baz</bar></Foo2>",
 				messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("<String>GenericMessageLinkedHashMap</String>", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("<String>GenericMessageLinkedHashMap</String>");
 
 		returned = template.convertSendAndReceive("", "test.converted.foomessage", "<Foo2><bar>baz</bar></Foo2>",
 				messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("<String>GenericMessageFoo2guest</String>", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("<String>GenericMessageFoo2guest</String>");
 
 		returned = template.convertSendAndReceive("", "test.notconverted.messagingmessagenotgeneric",
 				"<Foo2><bar>baz</bar></Foo2>", messagePostProcessor);
-		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("<String>GenericMessageLinkedHashMap</String>", new String((byte[]) returned));
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("<String>GenericMessageLinkedHashMap</String>");
 
 		Jackson2XmlMessageConverter xmlConverter = ctx.getBean(Jackson2XmlMessageConverter.class);
 
@@ -710,34 +692,34 @@ public class EnableRabbitIntegrationTests {
 	@Test
 	public void testMeta() throws Exception {
 		this.rabbitTemplate.convertAndSend("test.metaFanout", "", "foo");
-		assertTrue(this.metaListener.latch.await(10, TimeUnit.SECONDS));
+		assertThat(this.metaListener.latch.await(10, TimeUnit.SECONDS)).isTrue();
 	}
 
 	@Test
 	public void testHeadersExchange() throws Exception {
-		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("auto.headers", "", "foo",
+		assertThat(rabbitTemplate.convertSendAndReceive("auto.headers", "", "foo",
 				message -> {
 					message.getMessageProperties().getHeaders().put("foo", "bar");
 					message.getMessageProperties().getHeaders().put("baz", "qux");
 					return message;
-				}));
-		assertEquals("BAR", rabbitTemplate.convertSendAndReceive("auto.headers", "", "bar",
+				})).isEqualTo("FOO");
+		assertThat(rabbitTemplate.convertSendAndReceive("auto.headers", "", "bar",
 				message -> {
 					message.getMessageProperties().getHeaders().put("baz", "fiz");
 					return message;
-				}));
+				})).isEqualTo("BAR");
 	}
 
 	@Test
 	public void deadLetterOnDefaultExchange() {
 		this.rabbitTemplate.convertAndSend("amqp656", "foo");
-		assertEquals("foo", this.rabbitTemplate.receiveAndConvert("amqp656dlq", 10000));
+		assertThat(this.rabbitTemplate.receiveAndConvert("amqp656dlq", 10000)).isEqualTo("foo");
 		try {
 			Client rabbitRestClient = new Client("http://localhost:15672/api/", "guest", "guest");
 			QueueInfo amqp656 = rabbitRestClient.getQueue("/", "amqp656");
 			if (amqp656 != null) {
-				assertEquals("", amqp656.getArguments().get("test-empty"));
-				assertEquals("undefined", amqp656.getArguments().get("test-null"));
+				assertThat(amqp656.getArguments().get("test-empty")).isEqualTo("");
+				assertThat(amqp656.getArguments().get("test-null")).isEqualTo("undefined");
 			}
 		}
 		catch (Exception e) {
@@ -754,13 +736,13 @@ public class EnableRabbitIntegrationTests {
 			fail("ExpectedException");
 		}
 		catch (Exception e) {
-			assertThat(e.getCause().getMessage(), equalTo("return this"));
+			assertThat(e.getCause().getMessage()).isEqualTo("return this");
 		}
 	}
 
 	@Test
 	public void listenerErrorHandler() {
-		assertEquals("BAR", this.rabbitTemplate.convertSendAndReceive("test.pojo.errors", "foo"));
+		assertThat(this.rabbitTemplate.convertSendAndReceive("test.pojo.errors", "foo")).isEqualTo("BAR");
 	}
 
 	@Test
@@ -772,8 +754,8 @@ public class EnableRabbitIntegrationTests {
 			fail("ExpectedException");
 		}
 		catch (Exception e) {
-			assertThat(e.getCause().getMessage(), equalTo("from error handler"));
-			assertThat(e.getCause().getCause().getMessage(), equalTo("return this"));
+			assertThat(e.getCause().getMessage()).isEqualTo("from error handler");
+			assertThat(e.getCause().getCause().getMessage()).isEqualTo("return this");
 		}
 	}
 
@@ -783,47 +765,47 @@ public class EnableRabbitIntegrationTests {
 				this.context.getBean(RabbitListenerAnnotationBeanPostProcessor.class);
 		@SuppressWarnings("unchecked")
 		Map<Class<?>, ?> typeCache = TestUtils.getPropertyValue(bpp, "typeCache", Map.class);
-		assertFalse(typeCache.containsKey(Foo1.class));
+		assertThat(typeCache.containsKey(Foo1.class)).isFalse();
 		this.context.getBean("foo1Prototype");
-		assertTrue(typeCache.containsKey(Foo1.class));
+		assertThat(typeCache.containsKey(Foo1.class)).isTrue();
 		Object value = typeCache.get(Foo1.class);
 		this.context.getBean("foo1Prototype");
-		assertTrue(typeCache.containsKey(Foo1.class));
-		assertSame(value, typeCache.get(Foo1.class));
+		assertThat(typeCache.containsKey(Foo1.class)).isTrue();
+		assertThat(typeCache.get(Foo1.class)).isSameAs(value);
 	}
 
 	@Test
 	public void testGenericReturnTypes() {
 		Object returned = this.jsonRabbitTemplate.convertSendAndReceive("", "test.generic.list", new JsonObject("baz"));
-		assertThat(returned, instanceOf(List.class));
-		assertThat(((List<?>) returned).get(0), instanceOf(JsonObject.class));
+		assertThat(returned).isInstanceOf(List.class);
+		assertThat(((List<?>) returned).get(0)).isInstanceOf(JsonObject.class);
 
 		returned = this.jsonRabbitTemplate.convertSendAndReceive("", "test.generic.map", new JsonObject("baz"));
-		assertThat(returned, instanceOf(Map.class));
-		assertThat(((Map<?, ?>) returned).get("key"), instanceOf(JsonObject.class));
+		assertThat(returned).isInstanceOf(Map.class);
+		assertThat(((Map<?, ?>) returned).get("key")).isInstanceOf(JsonObject.class);
 	}
 
 	@Test
 	public void testManualContainer() throws Exception {
 		this.rabbitTemplate.convertAndSend("test.manual.container", "foo");
 		EnableRabbitConfig config = this.context.getBean(EnableRabbitConfig.class);
-		assertTrue(config.manualContainerLatch.await(10, TimeUnit.SECONDS));
-		assertThat(new String(config.message.getBody()), equalTo("foo"));
+		assertThat(config.manualContainerLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(new String(config.message.getBody())).isEqualTo("foo");
 	}
 
 	@Test
 	public void testNoListenerYet() throws Exception {
 		this.rabbitTemplate.convertAndSend("test.no.listener.yet", "bar");
 		EnableRabbitConfig config = this.context.getBean(EnableRabbitConfig.class);
-		assertTrue(config.noListenerLatch.await(10, TimeUnit.SECONDS));
-		assertThat(new String(config.message.getBody()), equalTo("bar"));
+		assertThat(config.noListenerLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(new String(config.message.getBody())).isEqualTo("bar");
 	}
 
 	@Test
 	public void connectionName() {
 		Connection conn = this.connectionFactory.createConnection();
 		conn.close();
-		assertThat(conn.getDelegate().getClientProvidedName(), equalTo("testConnectionName"));
+		assertThat(conn.getDelegate().getClientProvidedName()).isEqualTo("testConnectionName");
 	}
 
 	@Test
@@ -831,9 +813,9 @@ public class EnableRabbitIntegrationTests {
 		Message message = org.springframework.amqp.core.MessageBuilder.withBody("\"messaging\"".getBytes())
 			.andProperties(MessagePropertiesBuilder.newInstance().setContentType("application/json").build()).build();
 		message = this.rabbitTemplate.sendAndReceive("test.messaging.message", message);
-		assertThat(message, is(notNullValue()));
-		assertThat(new String(message.getBody()), equalTo("{\"field\":\"MESSAGING\"}"));
-		assertThat(message.getMessageProperties().getHeaders().get("foo"), equalTo("bar"));
+		assertThat(message).isNotNull();
+		assertThat(new String(message.getBody())).isEqualTo("{\"field\":\"MESSAGING\"}");
+		assertThat(message.getMessageProperties().getHeaders().get("foo")).isEqualTo("bar");
 	}
 
 	@Test
@@ -841,9 +823,9 @@ public class EnableRabbitIntegrationTests {
 		Message message = org.springframework.amqp.core.MessageBuilder.withBody("amqp".getBytes())
 				.andProperties(MessagePropertiesBuilder.newInstance().setContentType("text/plain").build()).build();
 		message = this.rabbitTemplate.sendAndReceive("test.amqp.message", message);
-		assertThat(message, is(notNullValue()));
-		assertThat(new String(message.getBody()), equalTo("AMQP"));
-		assertThat(message.getMessageProperties().getHeaders().get("foo"), equalTo("bar"));
+		assertThat(message).isNotNull();
+		assertThat(new String(message.getBody())).isEqualTo("AMQP");
+		assertThat(message.getMessageProperties().getHeaders().get("foo")).isEqualTo("bar");
 	}
 
 	@Test
@@ -1953,6 +1935,10 @@ public class EnableRabbitIntegrationTests {
 
 	public static class Foo2Service {
 
+		String stringHeader;
+
+		Integer intHeader;
+
 		@RabbitListener(queues = "test.converted")
 		public Foo2 foo2(Foo2 foo2) {
 			return foo2;
@@ -1990,6 +1976,8 @@ public class EnableRabbitIntegrationTests {
 
 		@RabbitListener(queues = "test.notconverted.message")
 		public String justMessage(Message message) {
+			this.stringHeader = message.getMessageProperties().getHeader("stringHeader");
+			this.intHeader = message.getMessageProperties().getHeader("intHeader");
 			return "foo" + message.getClass().getSimpleName();
 		}
 

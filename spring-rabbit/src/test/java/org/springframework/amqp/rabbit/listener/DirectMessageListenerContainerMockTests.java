@@ -16,9 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -99,10 +97,10 @@ public class DirectMessageListenerContainerMockTests {
 		container.afterPropertiesSet();
 		container.start();
 
-		assertTrue(latch1.await(10, TimeUnit.SECONDS));
-		assertThat(qos.get(), equalTo(2));
+		assertThat(latch1.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(qos.get()).isEqualTo(2);
 		isOpen.set(false);
-		assertTrue(latch2.await(10, TimeUnit.SECONDS));
+		assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
 		container.stop();
 	}
 
@@ -166,8 +164,8 @@ public class DirectMessageListenerContainerMockTests {
 		container.afterPropertiesSet();
 		container.start();
 
-		assertTrue(latch1.await(10, TimeUnit.SECONDS));
-		assertThat(qos.get(), equalTo(10));
+		assertThat(latch1.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(qos.get()).isEqualTo(10);
 		BasicProperties props = new BasicProperties();
 		byte[] body = new byte[1];
 		for (long i = 1; i < 16; i++) {
@@ -176,16 +174,16 @@ public class DirectMessageListenerContainerMockTests {
 		Thread.sleep(200);
 		consumer.get().handleDelivery("consumerTag", envelope(16), props, body);
 		// should get 2 acks #10 and #6 (timeout)
-		assertTrue(latch2.await(10, TimeUnit.SECONDS));
+		assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
 		consumer.get().handleDelivery("consumerTag", envelope(17), props, body);
 		verify(channel).basicAck(10L, true);
 		verify(channel).basicAck(16L, true);
-		assertTrue(latch3.await(10, TimeUnit.SECONDS));
+		assertThat(latch3.await(10, TimeUnit.SECONDS)).isTrue();
 		// monitor task timeout
 		verify(channel).basicAck(17L, true);
 		consumer.get().handleDelivery("consumerTag", envelope(18), props, body);
 		consumer.get().handleDelivery("consumerTag", envelope(19), props, body);
-		assertTrue(latch4.await(10, TimeUnit.SECONDS));
+		assertThat(latch4.await(10, TimeUnit.SECONDS)).isTrue();
 		// pending acks before nack
 		verify(channel).basicAck(18L, true);
 		verify(channel).basicNack(19L, true, true);
@@ -197,7 +195,7 @@ public class DirectMessageListenerContainerMockTests {
 			return null;
 		}).given(channel).basicCancel("consumerTag");
 		Executors.newSingleThreadExecutor().execute(container::stop);
-		assertTrue(latch5.await(10, TimeUnit.SECONDS));
+		assertThat(latch5.await(10, TimeUnit.SECONDS)).isTrue();
 		// pending acks on stop
 		verify(channel).basicAck(20L, true);
 	}
@@ -249,13 +247,13 @@ public class DirectMessageListenerContainerMockTests {
 		container.afterPropertiesSet();
 		container.start();
 
-		assertTrue(latch1.await(10, TimeUnit.SECONDS));
-		assertThat(qos.get(), equalTo(2));
+		assertThat(latch1.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(qos.get()).isEqualTo(2);
 		isOpen.set(false);
 		container.removeQueueNames("test1");
-		assertTrue(latch2.await(10, TimeUnit.SECONDS));
+		assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
 		isOpen.set(true);
-		assertTrue(latch3.await(10, TimeUnit.SECONDS));
+		assertThat(latch3.await(10, TimeUnit.SECONDS)).isTrue();
 
 		verify(channel, times(1)).basicConsume(eq("test1"), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
 				anyMap(), any(Consumer.class));

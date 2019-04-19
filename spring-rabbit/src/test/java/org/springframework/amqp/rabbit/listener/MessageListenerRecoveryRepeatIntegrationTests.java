@@ -16,8 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -138,9 +137,9 @@ public class MessageListenerRecoveryRepeatIntegrationTests {
 		int timeout = Math.min(4 + messageCount / (4 * concurrentConsumers), 30);
 		logger.debug("Waiting for messages with timeout = " + timeout + " (s)");
 		boolean waited = latch.await(timeout, TimeUnit.SECONDS);
-		assertTrue("Timed out waiting for message", waited);
+		assertThat(waited).as("Timed out waiting for message").isTrue();
 
-		assertNull(template.receiveAndConvert(queue.getName()));
+		assertThat(template.receiveAndConvert(queue.getName())).isNull();
 
 	}
 

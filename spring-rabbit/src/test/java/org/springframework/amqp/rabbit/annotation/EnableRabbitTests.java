@@ -17,19 +17,15 @@
 package org.springframework.amqp.rabbit.annotation;
 
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
-import org.hamcrest.core.Is;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.config.MessageListenerTestContainer;
@@ -67,9 +63,6 @@ import com.rabbitmq.client.Channel;
  */
 public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 
-	@Rule
-	public final ExpectedException thrown = ExpectedException.none();
-
 	@Override
 	@Test
 	public void sampleConfiguration() {
@@ -96,9 +89,10 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 
 	@Override
 	public void noRabbitAdminConfiguration() {
-		thrown.expect(BeanCreationException.class);
-		thrown.expectMessage("'rabbitAdmin'");
-		new AnnotationConfigApplicationContext(EnableRabbitSampleConfig.class, FullBean.class).close();
+		assertThatThrownBy(
+				() -> new AnnotationConfigApplicationContext(EnableRabbitSampleConfig.class, FullBean.class).close())
+			.isExactlyInstanceOf(BeanCreationException.class)
+			.withFailMessage("'rabbitAdmin'");
 	}
 
 	@Override
@@ -127,29 +121,30 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 
 	@Override
 	@Test
-	public void rabbitHandlerMethodFactoryConfiguration() throws Exception {
+	public void rabbitHandlerMethodFactoryConfiguration() {
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
 				EnableRabbitHandlerMethodFactoryConfig.class, ValidationBean.class);
 
-		thrown.expect(ListenerExecutionFailedException.class);
-		thrown.expectCause(Is.<MethodArgumentNotValidException>isA(MethodArgumentNotValidException.class));
-		testRabbitHandlerMethodFactoryConfiguration(context);
+		assertThatThrownBy(() -> testRabbitHandlerMethodFactoryConfiguration(context))
+			.isExactlyInstanceOf(ListenerExecutionFailedException.class)
+			.hasCauseExactlyInstanceOf(MethodArgumentNotValidException.class);
 	}
 
 	@Test
 	public void unknownFactory() {
-		thrown.expect(BeanCreationException.class);
-		thrown.expectMessage("customFactory"); // Not found
-		new AnnotationConfigApplicationContext(
-				EnableRabbitSampleConfig.class, CustomBean.class).close();
+		assertThatThrownBy(
+				() -> new AnnotationConfigApplicationContext(EnableRabbitSampleConfig.class, CustomBean.class).close())
+			.isExactlyInstanceOf(BeanCreationException.class)
+			.withFailMessage("customFactory");
 	}
 
 	@Test
 	public void invalidPriorityConfiguration() {
-		thrown.expect(BeanCreationException.class);
-		thrown.expectMessage("NotANumber"); // Invalid number
-		new AnnotationConfigApplicationContext(
-				EnableRabbitSampleConfig.class, InvalidPriorityBean.class).close();
+		assertThatThrownBy(
+				() -> new AnnotationConfigApplicationContext(EnableRabbitSampleConfig.class, InvalidPriorityBean.class)
+					.close())
+			.isExactlyInstanceOf(BeanCreationException.class)
+			.withFailMessage("NotANumber");
 	}
 
 	@Test
@@ -158,14 +153,14 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 				EnableRabbitDefaultContainerFactoryConfig.class, LazyBean.class);
 		RabbitListenerContainerTestFactory defaultFactory =
 				context.getBean("rabbitListenerContainerFactory", RabbitListenerContainerTestFactory.class);
-		assertEquals(0, defaultFactory.getListenerContainers().size());
+		assertThat(defaultFactory.getListenerContainers()).hasSize(0);
 
 		context.getBean(LazyBean.class); // trigger lazy resolution
-		assertEquals(1, defaultFactory.getListenerContainers().size());
+		assertThat(defaultFactory.getListenerContainers()).hasSize(1);
 		MessageListenerTestContainer container = defaultFactory.getListenerContainers().get(0);
-		assertTrue("Should have been started " + container, container.isStarted());
+		assertThat(container.isStarted()).as("Should have been started " + container).isTrue();
 		context.close(); // Close and stop the listeners
-		assertTrue("Should have been stopped " + container, container.isStopped());
+		assertThat(container.isStopped()).as("Should have been stopped " + container).isTrue();
 	}
 
 	@Override
@@ -190,7 +185,7 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 		// And not all containers has been stopped from the RabbitListenerEndpointRegistry
 		context.close();
 		for (MessageListenerContainer messageListenerContainer : listenerEndpointRegistry.getListenerContainers()) {
-			assertFalse(messageListenerContainer.isRunning());
+			assertThat(messageListenerContainer.isRunning()).isFalse();
 		}
 	}
 

@@ -16,9 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -233,10 +231,10 @@ public class BlockingQueueConsumerTests {
 				}
 			}
 		});
-		assertTrue(consumerLatch.await(10, TimeUnit.SECONDS));
+		assertThat(consumerLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		Consumer consumer = consumerCaptor.getValue();
 		consumer.handleCancel("consumer1");
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 	}
 
 	private void testRequeueOrNotDefaultYes(Exception ex, boolean expectedRequeue) throws Exception {
@@ -303,6 +301,7 @@ public class BlockingQueueConsumerTests {
 		verify(channel).basicCancel("consumerTag");
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testDrainAndReject() throws IOException, TimeoutException {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
@@ -350,10 +349,10 @@ public class BlockingQueueConsumerTests {
 		consumer.handleDelivery("consumerTag", envelope, props, new byte[0]);
 		envelope = new Envelope(2, false, "foo", "bar");
 		consumer.handleDelivery("consumerTag", envelope, props, new byte[0]);
-		assertThat(TestUtils.getPropertyValue(blockingQueueConsumer, "queue", BlockingQueue.class).size(), equalTo(2));
+		assertThat(TestUtils.getPropertyValue(blockingQueueConsumer, "queue", BlockingQueue.class)).hasSize(2);
 		envelope = new Envelope(3, false, "foo", "bar");
 		consumer.handleDelivery("consumerTag", envelope, props, new byte[0]);
-		assertThat(TestUtils.getPropertyValue(blockingQueueConsumer, "queue", BlockingQueue.class).size(), equalTo(0));
+		assertThat(TestUtils.getPropertyValue(blockingQueueConsumer, "queue", BlockingQueue.class)).hasSize(0);
 		verify(channel, times(1)).basicCancel("consumerTag");
 	}
 

@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,7 +43,6 @@ import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
-import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -53,6 +51,8 @@ import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.RoutingConnectionFactory;
+import org.springframework.amqp.rabbit.core.support.BatchingStrategy;
+import org.springframework.amqp.rabbit.core.support.SimpleBatchingStrategy;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
@@ -61,8 +61,6 @@ import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.support.ConditionalExceptionLogger;
 import org.springframework.amqp.support.ConsumerTagStrategy;
-import org.springframework.amqp.support.converter.MessageConversionException;
-import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.postprocessor.MessagePostProcessorUtils;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
@@ -175,8 +173,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private ErrorHandler errorHandler = new ConditionalRejectingErrorHandler();
 
-	private MessageConverter messageConverter;
-
 	private boolean exposeListenerChannel = true;
 
 	private volatile MessageListener messageListener;
@@ -221,6 +217,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private boolean forceCloseChannel = true;
 
 	private String errorHandlerLoggerName = getClass().getName();
+
+	private BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(0, 0, 0L);
 
 	private volatile boolean lazyLoad;
 
@@ -399,24 +397,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
-	 * Set the message listener implementation to register. This can be either a Spring
-	 * {@link MessageListener} object or a Spring {@link ChannelAwareMessageListener}
-	 * object.
-	 *
-	 * @param messageListener The listener.
-	 * @throws IllegalArgumentException if the supplied listener is not a
-	 * {@link MessageListener} or a {@link ChannelAwareMessageListener}
-	 * @deprecated use {@link #setMessageListener(MessageListener)}.
-	 * @see MessageListener
-	 * @see ChannelAwareMessageListener
-	 */
-	@Deprecated
-	public void setMessageListener(Object messageListener) {
-		checkMessageListener(messageListener);
-		setMessageListener((MessageListener) messageListener);
-	}
-
-	/**
 	 * Set the {@link MessageListener}.
 	 * @param messageListener the listener.
 	 * @since 2.0
@@ -426,27 +406,15 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
-	 * Set the {@link ChannelAwareMessageListener}.
-	 * @param messageListener the listener.
-	 * @since 2.0
-	 * @deprecated use {@link #setMessageListener(MessageListener)} since
-	 * {@link ChannelAwareMessageListener} now inherits {@link MessageListener}.
-	 */
-	@Deprecated
-	public void setChannelAwareMessageListener(ChannelAwareMessageListener messageListener) {
-		this.messageListener = messageListener;
-	}
-
-	/**
 	 * Check the given message listener, throwing an exception if it does not correspond to a supported listener type.
 	 * <p>
 	 * Only a Spring {@link MessageListener} object will be accepted.
-	 * @param messageListener the message listener object to check
+	 * @param listener the message listener object to check
 	 * @throws IllegalArgumentException if the supplied listener is not a MessageListener
 	 * @see MessageListener
 	 */
-	protected void checkMessageListener(Object messageListener) {
-		if (!(messageListener instanceof MessageListener)) {
+	protected void checkMessageListener(Object listener) {
+		if (!(listener instanceof MessageListener)) {
 			throw new IllegalArgumentException("Message listener needs to be of type ["
 					+ MessageListener.class.getName() + "] or [" + ChannelAwareMessageListener.class.getName() + "]");
 		}
@@ -470,31 +438,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
-	 * Set the {@link MessageConverter} strategy for converting AMQP Messages.
-	 * @param messageConverter the message converter to use
-	 * @deprecated - this converter is not used by the container; it was only
-	 * used to configure the converter for a {@code @RabbitListener} adapter.
-	 * That is now handled differently. If you are manually creating a listener
-	 * container, the converter must be configured in a listener adapter (if
-	 * present).
-	 */
-	@Deprecated
-	public void setMessageConverter(MessageConverter messageConverter) {
-		this.logger.warn("It is preferred to configure the message converter via the endpoint. "
-				+ "See RabbitListenerEndpoint.setMessageConverter");
-		this.messageConverter = messageConverter;
-	}
-
-	@Override
-	@Deprecated
-	public MessageConverter getMessageConverter() {
-		return this.messageConverter;
-	}
-
-	/**
 	 * Determine whether or not the container should de-batch batched
 	 * messages (true) or call the listener with the batch (false). Default: true.
 	 * @param deBatchingEnabled the deBatchingEnabled to set.
+	 * @see #setBatchingStrategy(BatchingStrategy)
 	 */
 	public void setDeBatchingEnabled(boolean deBatchingEnabled) {
 		this.deBatchingEnabled = deBatchingEnabled;
@@ -677,8 +624,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	protected String getRoutingLookupKey() {
 		return super.getConnectionFactory() instanceof RoutingConnectionFactory
 				? this.lookupKeyQualifier + "[" + this.queues.stream()
-								.map(Queue::getName)
-								.collect(Collectors.joining(",")) + "]"
+				.map(Queue::getName)
+				.collect(Collectors.joining(",")) + "]"
 				: null;
 	}
 
@@ -938,17 +885,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		return this.messagePropertiesConverter;
 	}
 
-	/**
-	 * Return the admin.
-	 * @return the admin.
-	 * @deprecated in favor of {@link #getAmqpAdmin()}
-	 */
-	@Deprecated
-	@Nullable
-	protected AmqpAdmin getRabbitAdmin() {
-		return getAmqpAdmin();
-	}
-
 	@Nullable
 	protected AmqpAdmin getAmqpAdmin() {
 		return this.amqpAdmin;
@@ -965,20 +901,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	public void setAmqpAdmin(AmqpAdmin amqpAdmin) {
 		this.amqpAdmin = amqpAdmin;
-	}
-
-	/**
-	 * Set the {@link AmqpAdmin}, used to declare any auto-delete queues, bindings
-	 * etc when the container is started. Only needed if those queues use conditional
-	 * declaration (have a 'declared-by' attribute). If not specified, an internal
-	 * admin will be used which will attempt to declare all elements not having a
-	 * 'declared-by' attribute.
-	 * @param amqpAdmin The admin.
-	 * @deprecated in favor of {@link #setAmqpAdmin(AmqpAdmin)}
-	 */
-	@Deprecated
-	public final void setRabbitAdmin(AmqpAdmin amqpAdmin) {
-		setAmqpAdmin(amqpAdmin);
 	}
 
 	/**
@@ -1126,6 +1048,18 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
+	 * Set a batching strategy to use when de-batching messages.
+	 * Default is {@link SimpleBatchingStrategy}.
+	 * @param batchingStrategy the strategy.
+	 * @since 2.2
+	 * @see #setDeBatchingEnabled(boolean)
+	 */
+	public void setBatchingStrategy(BatchingStrategy batchingStrategy) {
+		Assert.notNull(batchingStrategy, "'batchingStrategy' cannot be null");
+		this.batchingStrategy = batchingStrategy;
+	}
+
+	/**
 	 * Delegates to {@link #validateConfiguration()} and {@link #initialize()}.
 	 */
 	@Override
@@ -1134,11 +1068,13 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		Assert.state(
 				this.exposeListenerChannel || !getAcknowledgeMode().isManual(),
 				"You cannot acknowledge messages manually if the channel is not exposed to the listener "
-						+ "(please check your configuration and set exposeListenerChannel=true or acknowledgeMode!=MANUAL)");
+						+ "(please check your configuration and set exposeListenerChannel=true or " +
+						"acknowledgeMode!=MANUAL)");
 		Assert.state(
 				!(getAcknowledgeMode().isAutoAck() && isChannelTransacted()),
 				"The acknowledgeMode is NONE (autoack in Rabbit terms) which is not consistent with having a "
-						+ "transactional channel. Either use a different AcknowledgeMode or make sure channelTransacted=false");
+						+ "transactional channel. Either use a different AcknowledgeMode or make sure " +
+						"channelTransacted=false");
 		validateConfiguration();
 		initialize();
 	}
@@ -1437,25 +1373,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				}
 			}
 		}
-		Object batchFormat = message.getMessageProperties().getHeaders().get(MessageProperties.SPRING_BATCH_FORMAT);
-		if (MessageProperties.BATCH_FORMAT_LENGTH_HEADER4.equals(batchFormat) && this.deBatchingEnabled) {
-			ByteBuffer byteBuffer = ByteBuffer.wrap(message.getBody());
-			MessageProperties messageProperties = message.getMessageProperties();
-			messageProperties.getHeaders().remove(MessageProperties.SPRING_BATCH_FORMAT);
-			while (byteBuffer.hasRemaining()) {
-				int length = byteBuffer.getInt();
-				if (length < 0 || length > byteBuffer.remaining()) {
-					throw new ListenerExecutionFailedException("Bad batched message received",
-							new MessageConversionException("Insufficient batch data at offset " + byteBuffer.position()),
-							message);
-				}
-				byte[] body = new byte[length];
-				byteBuffer.get(body);
-				messageProperties.setContentLength(length);
-				// Caveat - shared MessageProperties.
-				Message fragment = new Message(body, messageProperties);
-				invokeListener(channel, fragment);
-			}
+		if (this.deBatchingEnabled && this.batchingStrategy.canDebatch(message.getMessageProperties())) {
+			this.batchingStrategy.deBatch(message, fragment -> invokeListener(channel, fragment));
 		}
 		else {
 			invokeListener(channel, message);
@@ -1898,6 +1817,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		protected SharedConnectionNotInitializedException(String msg) {
 			super(msg);
 		}
+
 	}
 
 	/**

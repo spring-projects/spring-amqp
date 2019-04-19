@@ -16,15 +16,9 @@
 
 package org.springframework.amqp.rabbit.connection;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -54,7 +48,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.AmqpApplicationContextClosedException;
 import org.springframework.amqp.AmqpAuthenticationException;
@@ -100,9 +93,6 @@ public class CachingConnectionFactoryIntegrationTests {
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(CF_INTEGRATION_TEST_QUEUE);
 
 	@Rule
-	public ExpectedException exception = ExpectedException.none();
-
-	@Rule
 	public LogLevelAdjuster adjuster = new LogLevelAdjuster(Level.DEBUG,
 			CachingConnectionFactoryIntegrationTests.class, CachingConnectionFactory.class)
 		.categories("com.rabbitmq");
@@ -120,7 +110,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		if (!this.connectionFactory.getVirtualHost().equals("non-existent")) {
 			this.brokerIsRunning.removeTestQueues();
 		}
-		assertEquals("bar", connectionFactory.getRabbitConnectionFactory().getClientProperties().get("foo"));
+		assertThat(connectionFactory.getRabbitConnectionFactory().getClientProperties().get("foo")).isEqualTo("bar");
 		connectionFactory.destroy();
 	}
 
@@ -132,24 +122,24 @@ public class CachingConnectionFactoryIntegrationTests {
 		List<Connection> connections = new ArrayList<>();
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
-		assertNotSame(connections.get(0), connections.get(1));
+		assertThat(connections.get(1)).isNotSameAs(connections.get(0));
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
 		Set<?> allocatedConnections = TestUtils.getPropertyValue(connectionFactory, "allocatedConnections", Set.class);
-		assertEquals(6, allocatedConnections.size());
+		assertThat(allocatedConnections).hasSize(6);
 		connections.forEach(Connection::close);
-		assertEquals(6, allocatedConnections.size());
-		assertEquals("5", connectionFactory.getCacheProperties().get("openConnections"));
+		assertThat(allocatedConnections).hasSize(6);
+		assertThat(connectionFactory.getCacheProperties().get("openConnections")).isEqualTo("5");
 		BlockingQueue<?> idleConnections = TestUtils.getPropertyValue(connectionFactory, "idleConnections",
 				BlockingQueue.class);
-		assertEquals(6, idleConnections.size());
+		assertThat(idleConnections).hasSize(6);
 		connections.clear();
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
-		assertEquals(6, allocatedConnections.size());
-		assertEquals(4, idleConnections.size());
+		assertThat(allocatedConnections).hasSize(6);
+		assertThat(idleConnections).hasSize(4);
 		connections.forEach(Connection::close);
 	}
 
@@ -180,8 +170,8 @@ public class CachingConnectionFactoryIntegrationTests {
 		channels.get(1).close();
 		channels.add(connections.get(0).createChannel(false));
 		channels.add(connections.get(1).createChannel(false));
-		assertSame(channels.get(0), channels.get(2));
-		assertSame(channels.get(1), channels.get(3));
+		assertThat(channels.get(2)).isSameAs(channels.get(0));
+		assertThat(channels.get(3)).isSameAs(channels.get(1));
 		channels.get(2).close();
 		channels.get(3).close();
 		connections.forEach(Connection::close);
@@ -198,8 +188,8 @@ public class CachingConnectionFactoryIntegrationTests {
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
 		Set<?> allocatedConnections = TestUtils.getPropertyValue(connectionFactory, "allocatedConnections", Set.class);
-		assertEquals(2, allocatedConnections.size());
-		assertNotSame(connections.get(0), connections.get(1));
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(connections.get(1)).isNotSameAs(connections.get(0));
 		List<Channel> channels = new ArrayList<Channel>();
 		for (int i = 0; i < 5; i++) {
 			channels.add(connections.get(0).createChannel(false));
@@ -210,54 +200,54 @@ public class CachingConnectionFactoryIntegrationTests {
 		@SuppressWarnings("unchecked")
 		Map<?, List<?>> cachedChannels = TestUtils.getPropertyValue(connectionFactory,
 				"allocatedConnectionNonTransactionalChannels", Map.class);
-		assertEquals(0, cachedChannels.get(connections.get(0)).size());
-		assertEquals(0, cachedChannels.get(connections.get(1)).size());
+		assertThat(cachedChannels.get(connections.get(0))).hasSize(0);
+		assertThat(cachedChannels.get(connections.get(1))).hasSize(0);
 		@SuppressWarnings("unchecked")
 		Map<?, List<?>> cachedTxChannels = TestUtils.getPropertyValue(connectionFactory,
 				"allocatedConnectionTransactionalChannels", Map.class);
-		assertEquals(0, cachedTxChannels.get(connections.get(0)).size());
-		assertEquals(0, cachedTxChannels.get(connections.get(1)).size());
+		assertThat(cachedTxChannels.get(connections.get(0))).hasSize(0);
+		assertThat(cachedTxChannels.get(connections.get(1))).hasSize(0);
 		for (Channel channel : channels) {
 			channel.close();
 		}
-		assertEquals(3, cachedChannels.get(connections.get(0)).size());
-		assertEquals(3, cachedChannels.get(connections.get(1)).size());
-		assertEquals(3, cachedTxChannels.get(connections.get(0)).size());
-		assertEquals(3, cachedTxChannels.get(connections.get(1)).size());
+		assertThat(cachedChannels.get(connections.get(0))).hasSize(3);
+		assertThat(cachedChannels.get(connections.get(1))).hasSize(3);
+		assertThat(cachedTxChannels.get(connections.get(0))).hasSize(3);
+		assertThat(cachedTxChannels.get(connections.get(1))).hasSize(3);
 		for (int i = 0; i < 3; i++) {
-			assertEquals(channels.get(i * 4), connections.get(0).createChannel(false));
-			assertEquals(channels.get(i * 4 + 1), connections.get(1).createChannel(false));
-			assertEquals(channels.get(i * 4 + 2), connections.get(0).createChannel(true));
-			assertEquals(channels.get(i * 4 + 3), connections.get(1).createChannel(true));
+			assertThat(connections.get(0).createChannel(false)).isEqualTo(channels.get(i * 4));
+			assertThat(connections.get(1).createChannel(false)).isEqualTo(channels.get(i * 4 + 1));
+			assertThat(connections.get(0).createChannel(true)).isEqualTo(channels.get(i * 4 + 2));
+			assertThat(connections.get(1).createChannel(true)).isEqualTo(channels.get(i * 4 + 3));
 		}
-		assertEquals(0, cachedChannels.get(connections.get(0)).size());
-		assertEquals(0, cachedChannels.get(connections.get(1)).size());
-		assertEquals(0, cachedTxChannels.get(connections.get(0)).size());
-		assertEquals(0, cachedTxChannels.get(connections.get(1)).size());
+		assertThat(cachedChannels.get(connections.get(0))).hasSize(0);
+		assertThat(cachedChannels.get(connections.get(1))).hasSize(0);
+		assertThat(cachedTxChannels.get(connections.get(0))).hasSize(0);
+		assertThat(cachedTxChannels.get(connections.get(1))).hasSize(0);
 		for (Channel channel : channels) {
 			channel.close();
 		}
 		for (Connection connection : connections) {
 			connection.close();
 		}
-		assertEquals(3, cachedChannels.get(connections.get(0)).size());
-		assertEquals(0, cachedChannels.get(connections.get(1)).size());
-		assertEquals(3, cachedTxChannels.get(connections.get(0)).size());
-		assertEquals(0, cachedTxChannels.get(connections.get(1)).size());
+		assertThat(cachedChannels.get(connections.get(0))).hasSize(3);
+		assertThat(cachedChannels.get(connections.get(1))).hasSize(0);
+		assertThat(cachedTxChannels.get(connections.get(0))).hasSize(3);
+		assertThat(cachedTxChannels.get(connections.get(1))).hasSize(0);
 
-		assertEquals(2, allocatedConnections.size());
-		assertEquals("1", connectionFactory.getCacheProperties().get("openConnections"));
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(connectionFactory.getCacheProperties().get("openConnections")).isEqualTo("1");
 
 		Connection connection = connectionFactory.createConnection();
 		Connection rabbitConnection = TestUtils.getPropertyValue(connection, "target", Connection.class);
 		rabbitConnection.close();
 		Channel channel = connection.createChannel(false);
-		assertEquals(2, allocatedConnections.size());
-		assertEquals("1", connectionFactory.getCacheProperties().get("openConnections"));
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(connectionFactory.getCacheProperties().get("openConnections")).isEqualTo("1");
 		channel.close();
 		connection.close();
-		assertEquals(2, allocatedConnections.size());
-		assertEquals("1", connectionFactory.getCacheProperties().get("openConnections"));
+		assertThat(allocatedConnections).hasSize(2);
+		assertThat(connectionFactory.getCacheProperties().get("openConnections")).isEqualTo("1");
 	}
 
 	@Test
@@ -269,26 +259,27 @@ public class CachingConnectionFactoryIntegrationTests {
 		Queue queue = admin.declareQueue();
 		template.convertAndSend(queue.getName(), "message");
 		String result = (String) template.receiveAndConvert(queue.getName());
-		assertEquals("message", result);
+		assertThat(result).isEqualTo("message");
 		template.stop();
 
 	}
 
 	@Test
-	public void testReceiveFromNonExistentVirtualHost() throws Exception {
+	public void testReceiveFromNonExistentVirtualHost() {
 		connectionFactory.setVirtualHost("non-existent");
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 
-		// Wrong vhost is very unfriendly to client - the exception has no clue (just an EOF)
-		exception.expect(anyOf(instanceOf(AmqpIOException.class),
-				instanceOf(AmqpAuthenticationException.class),
-				/*
-				 * If localhost also resolves to an IPv6 address, the client will try that
-				 * after a failure due to an invalid vHost and, if Rabbit is not listening there,
-				 * we'll get an...
-				 */
-				instanceOf(AmqpConnectException.class)));
-		template.receiveAndConvert("foo");
+		assertThatThrownBy(() -> template.receiveAndConvert("foo"))
+			.isInstanceOfAny(
+					// Wrong vhost is very unfriendly to client - the exception has no clue (just an EOF)
+					AmqpIOException.class,
+					AmqpAuthenticationException.class,
+					/*
+					 * If localhost also resolves to an IPv6 address, the client will try that
+					 * after a failure due to an invalid vHost and, if Rabbit is not listening there,
+					 * we'll get an...
+					 */
+					AmqpConnectException.class);
 	}
 
 	@Test
@@ -301,13 +292,11 @@ public class CachingConnectionFactoryIntegrationTests {
 		template.convertAndSend(queue.getName(), "message");
 
 		// Force a physical close of the channel
-		connectionFactory.destroy();
+		this.connectionFactory.resetConnection();
 
 		// The queue was removed when the channel was closed
-		exception.expect(AmqpIOException.class);
-
-		String result = (String) template.receiveAndConvert(queue.getName());
-		assertEquals("message", result);
+		assertThatThrownBy(() -> template.receiveAndConvert(queue.getName()))
+			.isInstanceOf(AmqpIOException.class);
 		template.stop();
 	}
 
@@ -323,16 +312,15 @@ public class CachingConnectionFactoryIntegrationTests {
 
 		template1.convertAndSend(queue.getName(), "message");
 		String result = (String) template2.receiveAndConvert(queue.getName());
-		assertEquals("message", result);
+		assertThat(result).isEqualTo("message");
 
 		// The channel is not transactional
-		exception.expect(AmqpIOException.class);
-
-		template2.execute(channel -> {
-			// Should be an exception because the channel is not transactional
-			channel.txRollback();
-			return null;
-		});
+		assertThatThrownBy(() ->
+			template2.execute(channel -> {
+				// Should be an exception because the channel is not transactional
+				channel.txRollback();
+				return null;
+			})).isInstanceOf(AmqpIOException.class);
 
 	}
 
@@ -366,21 +354,21 @@ public class CachingConnectionFactoryIntegrationTests {
 			// expected
 		}
 		template.convertAndSend(route, "message");
-		assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+		assertThat(latch.await(1000, TimeUnit.MILLISECONDS)).isTrue();
 		String result = (String) template.receiveAndConvert(route);
-		assertEquals("message", result);
+		assertThat(result).isEqualTo("message");
 		result = (String) template.receiveAndConvert(route);
-		assertEquals(null, result);
+		assertThat(result).isEqualTo(null);
 	}
 
 	@Test
 	public void testConnectionCloseLog() {
-		Log logger = spy(TestUtils.getPropertyValue(this.connectionFactory, "logger", Log.class));
-		new DirectFieldAccessor(this.connectionFactory).setPropertyValue("logger", logger);
+		Log log = spy(TestUtils.getPropertyValue(this.connectionFactory, "logger", Log.class));
+		new DirectFieldAccessor(this.connectionFactory).setPropertyValue("logger", log);
 		Connection conn = this.connectionFactory.createConnection();
 		conn.createChannel(false);
 		this.connectionFactory.destroy();
-		verify(logger, never()).error(anyString());
+		verify(log, never()).error(anyString());
 	}
 
 	@Test
@@ -388,7 +376,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		Connection connection = this.connectionFactory.createConnection();
 		com.rabbitmq.client.Connection rabbitConnection = TestUtils.getPropertyValue(connection, "target.delegate",
 				com.rabbitmq.client.Connection.class);
-		assertEquals(CF_INTEGRATION_CONNECTION_NAME, rabbitConnection.getClientProperties().get("connection_name"));
+		assertThat(rabbitConnection.getClientProperties().get("connection_name")).isEqualTo(CF_INTEGRATION_CONNECTION_NAME);
 		this.connectionFactory.destroy();
 	}
 
@@ -397,7 +385,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		Connection connection1 = this.connectionFactory.createConnection();
 		this.connectionFactory.destroy();
 		Connection connection2 = this.connectionFactory.createConnection();
-		assertSame(connection1, connection2);
+		assertThat(connection2).isSameAs(connection1);
 		ApplicationContext context = mock(ApplicationContext.class);
 		this.connectionFactory.setApplicationContext(context);
 		this.connectionFactory.onApplicationEvent(new ContextClosedEvent(context));
@@ -407,7 +395,7 @@ public class CachingConnectionFactoryIntegrationTests {
 			fail("Expected exception");
 		}
 		catch (AmqpApplicationContextClosedException e) {
-			assertThat(e.getMessage(), containsString("is closed"));
+			assertThat(e.getMessage()).contains("is closed");
 		}
 	}
 

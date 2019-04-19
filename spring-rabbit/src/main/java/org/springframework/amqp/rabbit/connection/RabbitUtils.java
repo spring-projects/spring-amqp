@@ -363,7 +363,7 @@ public abstract class RabbitUtils {
 				return rcon.getFrameMax();
 			}
 		}
-		catch (RuntimeException e) {
+		catch (@SuppressWarnings("unused") RuntimeException e) {
 			// NOSONAR
 		}
 		return -1;

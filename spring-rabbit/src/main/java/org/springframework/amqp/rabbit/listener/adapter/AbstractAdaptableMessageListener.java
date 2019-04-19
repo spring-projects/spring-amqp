@@ -195,17 +195,6 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	}
 
 	/**
-	 * Set a post processor to process the reply immediately before
-	 * {@code Channel#basicPublish()}. Often used to compress the data.
-	 * @param replyPostProcessor the reply post processor.
-	 * @deprecated in favor of {@link #setBeforeSendReplyPostProcessors(MessagePostProcessor...)}.
-	 */
-	@Deprecated
-	public void setReplyPostProcessor(MessagePostProcessor replyPostProcessor) {
-		setBeforeSendReplyPostProcessors(replyPostProcessor);
-	}
-
-	/**
 	 * Set post processors that will be applied before sending replies.
 	 * @param beforeSendReplyPostProcessors the post processors.
 	 * @since 2.0.3
