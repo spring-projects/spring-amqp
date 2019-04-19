@@ -343,8 +343,8 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	protected Object[] buildListenerArguments(Object extractedMessage) {
 		return new Object[] {extractedMessage};
 	}
-	
-	 /**
+
+	/**
      * Give a chance to repack listenerArguments, with channel/message
      * <p>
      * ListenerArguments will always be passed into a <i>single</i> method argument, so when acknowledge type be assigned
