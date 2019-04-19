@@ -19,3 +19,8 @@ See <<data-projection>> for more information.
 
 The Log4J and Logback `AmqpAppender` s now support a `verifyHostname` SSL option.
 See <<logging>> for more information.
+
+===== MessageListenerAdapter Changes
+
+The `MessageListenerAdapter` provides now a new `buildListenerArguments(Object, Channel, Message)` method  to build an array of arguments to be passed into target listener and an old one is deprecated.
+See <<message-listener-adapter>> for more information.

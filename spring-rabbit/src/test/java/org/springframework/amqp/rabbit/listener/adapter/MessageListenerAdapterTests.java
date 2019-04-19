@@ -1,4 +1,4 @@
-/*
+	/*
  * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -46,6 +48,7 @@ import com.rabbitmq.client.Channel;
  * @author Dave Syer
  * @author Greg Turnquist
  * @author Gary Russell
+ * @author Cai Kun
  *
  */
 public class MessageListenerAdapterTests {
@@ -65,14 +68,47 @@ public class MessageListenerAdapterTests {
 	}
 
 	@Test
+	public void testExtendedListenerAdapter() throws Exception {
+		class ExtendedListenerAdapter extends MessageListenerAdapter {
+
+			@Override
+			protected Object[] buildListenerArguments(Object extractedMessage, Channel channel, Message message) {
+				return new Object[] { extractedMessage, channel, message };
+			}
+
+		}
+		MessageListenerAdapter extendedAdapter = new ExtendedListenerAdapter();
+		final AtomicBoolean called = new AtomicBoolean(false);
+		Channel channel = mock(Channel.class);
+		class Delegate {
+
+			@SuppressWarnings("unused")
+			public void handleMessage(String input, Channel channel, Message message) throws IOException {
+				assertThat(input).isNotNull();
+				assertThat(channel).isNotNull();
+				assertThat(message).isNotNull();
+				channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+				called.set(true);
+			}
+
+		}
+		extendedAdapter.setDelegate(new Delegate());
+		extendedAdapter.containerAckMode(AcknowledgeMode.MANUAL);
+		extendedAdapter.onMessage(new Message("foo".getBytes(), messageProperties), channel);
+		assertThat(called.get()).isTrue();
+	}
+
+	@Test
 	public void testDefaultListenerMethod() throws Exception {
 		final AtomicBoolean called = new AtomicBoolean(false);
 		class Delegate {
+
 			@SuppressWarnings("unused")
 			public String handleMessage(String input) {
 				called.set(true);
 				return "processed" + input;
 			}
+
 		}
 		this.adapter.setDelegate(new Delegate());
 		this.adapter.onMessage(new Message("foo".getBytes(), messageProperties), null);
@@ -83,11 +119,13 @@ public class MessageListenerAdapterTests {
 	public void testAlternateConstructor() throws Exception {
 		final AtomicBoolean called = new AtomicBoolean(false);
 		class Delegate {
+
 			@SuppressWarnings("unused")
 			public String myPojoMessageMethod(String input) {
 				called.set(true);
 				return "processed" + input;
 			}
+
 		}
 		this.adapter = new MessageListenerAdapter(new Delegate(), "myPojoMessageMethod");
 		this.adapter.onMessage(new Message("foo".getBytes(), messageProperties), null);
@@ -163,7 +201,7 @@ public class MessageListenerAdapterTests {
 		Channel channel = mock(Channel.class);
 		RuntimeException ex = new RuntimeException();
 		willThrow(ex).given(channel)
-			.basicPublish(eq("foo"), eq("bar"), eq(Boolean.FALSE), any(), any());
+				.basicPublish(eq("foo"), eq("bar"), eq(Boolean.FALSE), any(), any());
 		Message message = new Message("foo".getBytes(), this.messageProperties);
 		this.adapter.onMessage(message, channel);
 		assertThat(this.simpleService.called).isEqualTo("handle");
@@ -205,4 +243,5 @@ public class MessageListenerAdapterTests {
 		}
 
 	}
+
 }

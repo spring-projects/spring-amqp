@@ -1705,6 +1705,36 @@ new MessageListenerAdapter((ReplyingMessageListener<String, String>) data -> {
 ----
 ====
 
+Starting with version 2.2, the `buildListenerArguments(Object)` has been deprecated and new `buildListenerArguments(Object, Channel, Message)` one has been introduced instead.
+The new method helps listener to get `Channel` and `Message` arguments to do more, such as calling `channel.basicReject(long, boolean)` in manual acknowledge mode.
+The following listing shows the most basic example:
+
+====
+[source,java]
+----
+public class ExtendedListenerAdapter extends MessageListenerAdapter {
+
+    @Override
+    protected Object[] buildListenerArguments(Object extractedMessage, Channel channel, Message message) {
+        return new Object[]{extractedMessage, channel, message};
+    }
+
+}
+----
+====
+
+Now you could configure `ExtendedListenerAdapter` as same as `MessageListenerAdapter` if you need to receive "`channel`" and "`message`".
+Parameters of listener should be set as `buildListenerArguments(Object, Channel, Message)` returned, as the following example of listener shows:
+
+====
+[source,java]
+----
+public void handleMessage(Object object, Channel channel, Message message) throws IOException {
+    ...
+}
+----
+====
+
 ====== Container
 
 Now that you have seen the various options for the `Message`-listening callback, we can turn our attention to the container.
