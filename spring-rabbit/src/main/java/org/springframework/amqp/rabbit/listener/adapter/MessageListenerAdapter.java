@@ -345,22 +345,22 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	}
 
 	/**
-     * Give a chance to repack listenerArguments, with channel/message
-     * <p>
-     * ListenerArguments will always be passed into a <i>single</i> method argument, so when acknowledge type be assigned
-     * to AcknowledgeMode.MANUAL, you have to override this method for receiving Channel and Message to ack or reject.
-     * <p>
-     * This can be overridden to add argument for receiving such as Channel or Message.
-     *
-     * @param listenerArguments the content of the message
-     * @param channel           the Rabbit channel to operate on
-     * @param message           the incoming Rabbit message
-     * @return the array of arguments to be passed into the listener method (each element of the array corresponding to
-     * a distinct method argument)
-     */
-    protected Object[] repackArgument(Object[] listenerArguments, Channel channel, Message message) {
-        return listenerArguments;
-    }
+	 * Give a chance to repack listenerArguments, with channel/message
+	 * <p>
+	 * ListenerArguments will always be passed into a <i>single</i> method argument, so when acknowledge type be assigned
+	 * to AcknowledgeMode.MANUAL, you have to override this method for receiving Channel and Message to ack or reject.
+	 * <p>
+	 * This can be overridden to add argument for receiving such as Channel or Message.
+	 *
+	 * @param listenerArguments the content of the message
+	 * @param channel           the Rabbit channel to operate on
+	 * @param message           the incoming Rabbit message
+	 * @return the array of arguments to be passed into the listener method (each element of the array corresponding to
+	 * a distinct method argument)
+	 */
+	protected Object[] repackArgument(Object[] listenerArguments, Channel channel, Message message) {
+		return listenerArguments;
+	}
 
 	/**
 	 * Invoke the specified listener method.
