@@ -32,6 +32,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.web.JsonPath;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -264,6 +265,21 @@ public class Jackson2JsonMessageConverterTests {
 		assertThat(((Bar) value).getFoo()).isEqualTo(new Foo("bar"));
 	}
 
+	@Test
+	public void testProjection() {
+		Jackson2JsonMessageConverter conv = new Jackson2JsonMessageConverter();
+		conv.setUseProjectionForInterfaces(true);
+		MessageProperties properties = new MessageProperties();
+		properties.setInferredArgumentType(Sample.class);
+		properties.setContentType("application/json");
+		Message message = new Message(
+				"{ \"username\" : \"SomeUsername\", \"user\" : { \"name\" : \"SomeName\"}}".getBytes(), properties);
+		Object fromMessage = conv.fromMessage(message);
+		assertThat(fromMessage).isInstanceOf(Sample.class);
+		assertThat(((Sample) fromMessage).getUsername()).isEqualTo("SomeUsername");
+		assertThat(((Sample) fromMessage).getName()).isEqualTo("SomeName");
+	}
+
 	public static class Foo {
 
 		private String name = "foo";
@@ -377,6 +393,15 @@ public class Jackson2JsonMessageConverterTests {
 			}
 			return true;
 		}
+
+	}
+
+	interface Sample {
+
+		String getUsername();
+
+		@JsonPath("$.user.name")
+		String getName();
 
 	}
 

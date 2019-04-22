@@ -74,6 +74,10 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 
 	private Jackson2JavaTypeMapper javaTypeMapper = new DefaultJackson2JavaTypeMapper();
 
+	private boolean useProjectionForInterfaces;
+
+	private ProjectingMessageConverter projectingConverter;
+
 	/**
 	 * Construct with the provided {@link ObjectMapper} instance.
 	 * @param objectMapper the {@link ObjectMapper} to use.
@@ -184,6 +188,20 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 		}
 	}
 
+	protected boolean isUseProjectionForInterfaces() {
+		return this.useProjectionForInterfaces;
+	}
+
+	/**
+	 * Set to true to use Spring Data projection to create the object if the inferred
+	 * parameter type is an interface.
+	 * @param useProjectionForInterfaces true to use projection.
+	 * @since 2.2
+	 */
+	public void setUseProjectionForInterfaces(boolean useProjectionForInterfaces) {
+		this.useProjectionForInterfaces = useProjectionForInterfaces;
+	}
+
 	@Override
 	public Object fromMessage(Message message) throws MessageConversionException {
 		return fromMessage(message, null);
@@ -205,7 +223,15 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 					encoding = getDefaultCharset();
 				}
 				try {
-					if (conversionHint instanceof ParameterizedTypeReference) {
+					JavaType inferredType = this.javaTypeMapper.getInferredType(properties);
+					if (inferredType != null && this.useProjectionForInterfaces && inferredType.isInterface()
+							&& !inferredType.getRawClass().getPackage().getName().startsWith("java.util")) { // List etc
+						if (this.projectingConverter == null) {
+							this.projectingConverter = new ProjectingMessageConverter(this.objectMapper);
+						}
+						content = this.projectingConverter.convert(message, inferredType.getRawClass());
+					}
+					else if (conversionHint instanceof ParameterizedTypeReference) {
 						content = convertBytesToObject(message.getBody(), encoding,
 								this.objectMapper.getTypeFactory().constructType(
 										((ParameterizedTypeReference<?>) conversionHint).getType()));
@@ -265,9 +291,14 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 
 		byte[] bytes;
 		try {
-			String jsonString = this.objectMapper
-					.writeValueAsString(objectToConvert);
-			bytes = jsonString.getBytes(getDefaultCharset());
+			if (getDefaultCharset().equals("UTF-8")) {
+				bytes = this.objectMapper.writeValueAsBytes(objectToConvert);
+			}
+			else {
+				String jsonString = this.objectMapper
+						.writeValueAsString(objectToConvert);
+				bytes = jsonString.getBytes(getDefaultCharset());
+			}
 		}
 		catch (IOException e) {
 			throw new MessageConversionException("Failed to convert Message content", e);

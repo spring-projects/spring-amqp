@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,14 +31,14 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 
 /**
  * Jackson 2 type mapper.
- *
  * @author Mark Pollack
  * @author Sam Nelson
  * @author Andreas Asplund
  * @author Artem Bilan
  * @author Gary Russell
  */
-public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implements Jackson2JavaTypeMapper {
+public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
+		implements Jackson2JavaTypeMapper, ClassMapper {
 
 	private static final List<String> TRUSTED_PACKAGES =
 			Arrays.asList(
@@ -112,13 +112,12 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 
 	@Override
 	public JavaType toJavaType(MessageProperties properties) {
-		boolean hasInferredTypeHeader = hasInferredTypeHeader(properties);
-		if (hasInferredTypeHeader && this.typePrecedence.equals(TypePrecedence.INFERRED)) {
-			JavaType targetType = fromInferredTypeHeader(properties);
-			if ((!targetType.isAbstract() && !targetType.isInterface())
-					|| targetType.getRawClass().getPackage().getName().startsWith("java.util")) {
-				return targetType;
-			}
+		JavaType inferredType = getInferredType(properties);
+		if (inferredType != null) {
+			 if (!inferredType.isAbstract() && !inferredType.isInterface()
+					|| inferredType.getRawClass().getPackage().getName().startsWith("java.util")) {
+				return inferredType;
+			 }
 		}
 
 		String typeIdHeader = retrieveHeaderAsString(properties, getClassIdFieldName());
@@ -127,7 +126,7 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 			return fromTypeHeader(properties, typeIdHeader);
 		}
 
-		if (hasInferredTypeHeader) {
+		if (hasInferredTypeHeader(properties)) {
 			return fromInferredTypeHeader(properties);
 		}
 
@@ -149,6 +148,16 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 		JavaType keyClassType = getClassIdType(retrieveHeader(properties, getKeyClassIdFieldName()));
 		return TypeFactory.defaultInstance()
 				.constructMapLikeType(classType.getRawClass(), keyClassType, contentClassType);
+	}
+
+	@Override
+	@Nullable
+	public JavaType getInferredType(MessageProperties properties) {
+		if (hasInferredTypeHeader(properties) && this.typePrecedence.equals(TypePrecedence.INFERRED)) {
+			JavaType targetType = fromInferredTypeHeader(properties);
+			return targetType;
+		}
+		return null;
 	}
 
 	private JavaType getClassIdType(String classId) {

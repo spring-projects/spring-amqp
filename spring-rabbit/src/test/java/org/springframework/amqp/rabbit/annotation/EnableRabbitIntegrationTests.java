@@ -106,6 +106,7 @@ import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.data.web.JsonPath;
 import org.springframework.lang.NonNull;
 import org.springframework.messaging.converter.GenericMessageConverter;
 import org.springframework.messaging.handler.annotation.Header;
@@ -166,7 +167,7 @@ public class EnableRabbitIntegrationTests {
 			"test.converted.foomessage", "test.notconverted.messagingmessagenotgeneric", "test.simple.direct",
 			"test.simple.direct2", "test.generic.list", "test.generic.map",
 			"amqp656dlq", "test.simple.declare", "test.return.exceptions", "test.pojo.errors", "test.pojo.errors2",
-			"test.messaging.message", "test.amqp.message", "test.bytes.to.string");
+			"test.messaging.message", "test.amqp.message", "test.bytes.to.string", "test.projection");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -588,6 +589,11 @@ public class EnableRabbitIntegrationTests {
 				"{ \"bar\" : \"baz\" }", messagePostProcessor);
 		assertThat(returned).isInstanceOf(byte[].class);
 		assertThat(new String((byte[]) returned)).isEqualTo("\"GenericMessageLinkedHashMap\"");
+
+		returned = template.convertSendAndReceive("", "test.projection",
+				"{ \"username\" : \"SomeUsername\", \"user\" : { \"name\" : \"SomeName\"}}", messagePostProcessor);
+		assertThat(returned).isInstanceOf(byte[].class);
+		assertThat(new String((byte[]) returned)).isEqualTo("\"SomeUsernameSomeName\"");
 
 		Jackson2JsonMessageConverter jsonConverter = ctx.getBean(Jackson2JsonMessageConverter.class);
 
@@ -1801,6 +1807,7 @@ public class EnableRabbitIntegrationTests {
 			DefaultJackson2JavaTypeMapper mapper = Mockito.spy(TestUtils.getPropertyValue(jackson2JsonMessageConverter,
 					"javaTypeMapper", DefaultJackson2JavaTypeMapper.class));
 			new DirectFieldAccessor(jackson2JsonMessageConverter).setPropertyValue("javaTypeMapper", mapper);
+			jackson2JsonMessageConverter.setUseProjectionForInterfaces(true);
 			return jackson2JsonMessageConverter;
 		}
 
@@ -2009,6 +2016,10 @@ public class EnableRabbitIntegrationTests {
 			return message.getClass().getSimpleName() + message.getPayload().getClass().getSimpleName();
 		}
 
+		@RabbitListener(queues = "test.projection")
+		public String projection(Sample in) {
+			return in.getUsername() + in.getName();
+		}
 	}
 
 	/**
@@ -2029,5 +2040,15 @@ public class EnableRabbitIntegrationTests {
 		}
 
 	}
+
+	interface Sample {
+
+		String getUsername();
+
+		@JsonPath("$.user.name")
+		String getName();
+
+	}
+
 
 }
