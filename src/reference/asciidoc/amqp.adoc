@@ -3308,7 +3308,7 @@ public void projection(SomeSample in) {
 ====
 
 Accessor methods will be used to lookup the property name as field in the received JSON document by default.
-The @JsonPath expression allows customization of the value lookup, and even to define multiple JSONPath expressions, to lookup values from multiple places until an expression returns an actual value.
+The `@JsonPath` expression allows customization of the value lookup, and even to define multiple JSON path expressions, to lookup values from multiple places until an expression returns an actual value.
 
 To enable this feature, set the `useProjectionForInterfaces` to `true` on the message converter.
 You must also add `spring-data:spring-data-commons` and `com.jayway.jsonpath:json-path` to the class path.

@@ -25,6 +25,7 @@ import org.springframework.data.projection.MethodInterceptorFactory;
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.projection.SpelAwareProxyProjectionFactory;
 import org.springframework.data.web.JsonProjectingMethodInterceptorFactory;
+import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
@@ -42,6 +43,7 @@ public class ProjectingMessageConverter {
 	private final ProjectionFactory projectionFactory;
 
 	public ProjectingMessageConverter(ObjectMapper mapper) {
+		Assert.notNull(mapper, "'mapper' cannot be null");
 		JacksonMappingProvider provider = new JacksonMappingProvider(mapper);
 		MethodInterceptorFactory interceptorFactory = new JsonProjectingMethodInterceptorFactory(provider);
 

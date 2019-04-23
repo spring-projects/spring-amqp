@@ -18,6 +18,8 @@ package org.springframework.amqp.support.converter;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -53,9 +55,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 
 	protected final Log log = LogFactory.getLog(getClass()); // NOSONAR protected
 
-	public static final String DEFAULT_CHARSET = "UTF-8";
-
-	private volatile String defaultCharset = DEFAULT_CHARSET;
+	public static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 
 	/**
 	 * The supported content type; only the subtype is checked, e.g. *&#47;json,
@@ -68,6 +68,8 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	@Nullable
 	private ClassMapper classMapper = null;
 
+	private Charset defaultCharset = DEFAULT_CHARSET;
+
 	private boolean typeMapperSet;
 
 	private ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
@@ -77,6 +79,8 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	private boolean useProjectionForInterfaces;
 
 	private ProjectingMessageConverter projectingConverter;
+
+	private boolean standardCharset;
 
 	/**
 	 * Construct with the provided {@link ObjectMapper} instance.
@@ -111,12 +115,15 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	 * @param defaultCharset The default charset.
 	 */
 	public void setDefaultCharset(@Nullable String defaultCharset) {
-		this.defaultCharset = (defaultCharset != null) ? defaultCharset
+		this.defaultCharset = (defaultCharset != null) ? Charset.forName(defaultCharset)
 				: DEFAULT_CHARSET;
+		if (this.defaultCharset.equals(StandardCharsets.UTF_8)) {
+			this.standardCharset = true;
+		}
 	}
 
 	public String getDefaultCharset() {
-		return this.defaultCharset;
+		return this.defaultCharset.name();
 	}
 
 	@Override
@@ -200,6 +207,12 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	 */
 	public void setUseProjectionForInterfaces(boolean useProjectionForInterfaces) {
 		this.useProjectionForInterfaces = useProjectionForInterfaces;
+		try {
+			ClassUtils.forName("org.springframework.data.projection.ProjectionFactory", this.classLoader);
+		}
+		catch (ClassNotFoundException | LinkageError e) {
+			throw new IllegalStateException("'spring-data-commons' is required to use Projection Interfaces", e);
+		}
 	}
 
 	@Override
@@ -291,7 +304,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 
 		byte[] bytes;
 		try {
-			if (getDefaultCharset().equals("UTF-8")) {
+			if (this.standardCharset) {
 				bytes = this.objectMapper.writeValueAsBytes(objectToConvert);
 			}
 			else {
