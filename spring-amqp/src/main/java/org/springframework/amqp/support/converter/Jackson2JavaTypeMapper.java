@@ -17,6 +17,7 @@
 package org.springframework.amqp.support.converter;
 
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.lang.Nullable;
 
 import com.fasterxml.jackson.databind.JavaType;
 
@@ -70,5 +71,15 @@ public interface Jackson2JavaTypeMapper extends ClassMapper {
 	default void addTrustedPackages(String... packages) {
 		// no op
 	}
+
+	/**
+	 * Return the inferred type, if the type precedence is inferred and the
+	 * header is present.
+	 * @param properties the message properties.
+	 * @return the type.
+	 * @since 2.2
+	 */
+	@Nullable
+	JavaType getInferredType(MessageProperties properties);
 
 }

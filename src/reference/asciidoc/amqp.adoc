@@ -3277,6 +3277,44 @@ converter to determine the type.
 IMPORTANT: Starting with version 1.6.11, `Jackson2JsonMessageConverter` and, therefore, `DefaultJackson2JavaTypeMapper` (`DefaultClassMapper`) provide the `trustedPackages` option to overcome https://pivotal.io/security/cve-2017-4995[Serialization Gadgets] vulnerability.
 By default and for backward compatiblity, the `Jackson2JsonMessageConverter` trusts all packages -- that is, it uses `*` for the option.
 
+[[data-projection]]
+====== Using Spring Data Projection Interfaces
+
+Starting with version 2.2, you can convert JSON to a Spring Data Projection interface instead of a concrete type.
+This allows very selective, and low-coupled bindings to data, including the lookup of values from multiple places inside the JSON document.
+For example the following interface can be defined as message payload type:
+
+====
+[source, java]
+----
+interface SomeSample {
+
+  @JsonPath({ "$.username", "$.user.name" })
+  String getUsername();
+
+}
+----
+====
+
+====
+[source, java]
+----
+@RabbitListener(queues = "projection")
+public void projection(SomeSample in) {
+    String username = in.getUsername();
+    ...
+}
+----
+====
+
+Accessor methods will be used to lookup the property name as field in the received JSON document by default.
+The `@JsonPath` expression allows customization of the value lookup, and even to define multiple JSON path expressions, to lookup values from multiple places until an expression returns an actual value.
+
+To enable this feature, set the `useProjectionForInterfaces` to `true` on the message converter.
+You must also add `spring-data:spring-data-commons` and `com.jayway.jsonpath:json-path` to the class path.
+
+When used as the parameter to a `@RabbitListener` method, the interface type is automatically passed to the converter as normal.
+
 [[json-complex]]
 ====== Converting From a `Message` With `RabbitTemplate`
 

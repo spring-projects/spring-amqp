@@ -12,6 +12,9 @@ See <<async-annotation-driven-enable>> for more information.
 
 When using <<receiving-batch,batching>>, `@RabbitListener` methods can now receive a complete batch of messages in one call instead of getting them one at at time.
 
+Spring Data Projection interfaces are now supported by the `Jackson2JsonMessageConverter`.
+See <<data-projection>> for more information.
+
 ===== AMQP Logging Appenders Changes
 
 The Log4J and Logback `AmqpAppender` s now support a `verifyHostname` SSL option.
