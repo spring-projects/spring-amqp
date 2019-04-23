@@ -55,6 +55,9 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 
 	protected final Log log = LogFactory.getLog(getClass()); // NOSONAR protected
 
+	/**
+	 * The charset used when converting {@link String} to/from {@code byte[]}.
+	 */
 	public static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 
 	/**
@@ -207,11 +210,11 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	 */
 	public void setUseProjectionForInterfaces(boolean useProjectionForInterfaces) {
 		this.useProjectionForInterfaces = useProjectionForInterfaces;
-		try {
-			ClassUtils.forName("org.springframework.data.projection.ProjectionFactory", this.classLoader);
-		}
-		catch (ClassNotFoundException | LinkageError e) {
-			throw new IllegalStateException("'spring-data-commons' is required to use Projection Interfaces", e);
+		if (useProjectionForInterfaces) {
+			if (!ClassUtils.isPresent("org.springframework.data.projection.ProjectionFactory", this.classLoader)) {
+				throw new IllegalStateException("'spring-data-commons' is required to use Projection Interfaces");
+			}
+			this.projectingConverter = new ProjectingMessageConverter(this.objectMapper);
 		}
 	}
 
@@ -239,9 +242,6 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 					JavaType inferredType = this.javaTypeMapper.getInferredType(properties);
 					if (inferredType != null && this.useProjectionForInterfaces && inferredType.isInterface()
 							&& !inferredType.getRawClass().getPackage().getName().startsWith("java.util")) { // List etc
-						if (this.projectingConverter == null) {
-							this.projectingConverter = new ProjectingMessageConverter(this.objectMapper);
-						}
 						content = this.projectingConverter.convert(message, inferredType.getRawClass());
 					}
 					else if (conversionHint instanceof ParameterizedTypeReference) {
