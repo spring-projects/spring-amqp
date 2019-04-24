@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -54,6 +56,8 @@ public class MessageListenerAdapterTests {
 
 	private MessageListenerAdapter adapter;
 
+	private MessageListenerAdapter extendedAdapter;
+
 	private final SimpleService simpleService = new SimpleService();
 
 	@Before
@@ -62,6 +66,28 @@ public class MessageListenerAdapterTests {
 		this.messageProperties.setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN);
 		this.adapter = new MessageListenerAdapter();
 		this.adapter.setMessageConverter(new SimpleMessageConverter());
+		this.extendedAdapter = new ExtendedListenerAdapter();
+		this.extendedAdapter.setMessageConverter(new SimpleMessageConverter());
+	}
+
+	@Test
+	public void testExtendedListenerAdapter() throws Exception {
+		final AtomicBoolean called = new AtomicBoolean(false);
+		Channel channel = mock(Channel.class);
+		class Delegate {
+			@SuppressWarnings("unused")
+			public void handleMessage(String input, Channel channel, Message message) throws IOException {
+				assertThat(input).isNotNull();
+				assertThat(channel).isNotNull();
+				assertThat(message).isNotNull();
+				channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+				called.set(true);
+			}
+		}
+		this.extendedAdapter.setDelegate(new Delegate());
+		this.extendedAdapter.containerAckMode(AcknowledgeMode.MANUAL);
+		this.extendedAdapter.onMessage(new Message("foo".getBytes(), messageProperties), channel);
+		assertThat(called.get()).isTrue();
 	}
 
 	@Test
@@ -205,4 +231,12 @@ public class MessageListenerAdapterTests {
 		}
 
 	}
+
+	private class ExtendedListenerAdapter extends MessageListenerAdapter {
+		@Override
+		protected Object[] buildListenerArguments(Object extractedMessage, Channel channel, Message message) {
+			return new Object[]{extractedMessage, channel, message};
+		}
+	}
+
 }

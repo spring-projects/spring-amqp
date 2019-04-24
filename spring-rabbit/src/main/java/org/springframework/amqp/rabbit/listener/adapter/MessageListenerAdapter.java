@@ -288,7 +288,7 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 		}
 
 		// Invoke the handler method with appropriate arguments.
-		Object[] listenerArguments = enhanceListenerArguments(buildListenerArguments(convertedMessage), channel, message);
+		Object[] listenerArguments = buildListenerArguments(convertedMessage, channel, message);
 		Object result = invokeListenerMethod(methodName, listenerArguments, message);
 		if (result != null) {
 			handleResult(new InvocationResult(result, null, null), message, channel);
@@ -345,21 +345,22 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	}
 
 	/**
-	 * Enhance listenerArguments with channel/message
+	 * Build an array of arguments to be passed into the target listener method. Allows for multiple method arguments to
+	 * be built from message object with channel, More detail about extractedMessage in the method
+	 * #buildListenerArguments(java.lang.Object)
 	 * <p>
-	 * ListenerArguments will always be passed into a <i>single</i> method argument, so when acknowledge type be assigned
-	 * to AcknowledgeMode.MANUAL, you have to override this method for receiving Channel and Message to ack or reject.
-	 * <p>
-	 * This can be overridden to add argument for receiving such as Channel or Message.
+	 * This can be overridden to treat special message content such as arrays differently, and add argument in case of
+	 * receiving Channel and original Message object to invoke basicAck method in the listener by manual acknowledge
+	 * mode
 	 *
-	 * @param listenerArguments the content of the message
-	 * @param channel           the Rabbit channel to operate on
-	 * @param message           the incoming Rabbit message
+	 * @param extractedMessage the content of the message
+	 * @param channel the Rabbit channel to operate on
+	 * @param message the incoming Rabbit message
 	 * @return the array of arguments to be passed into the listener method (each element of the array corresponding to
 	 * a distinct method argument)
 	 */
-	protected Object[] enhanceListenerArguments(Object[] listenerArguments, Channel channel, Message message) {
-		return listenerArguments;
+	protected Object[] buildListenerArguments(Object extractedMessage, Channel channel, Message message) {
+		return buildListenerArguments(extractedMessage);
 	}
 
 	/**
