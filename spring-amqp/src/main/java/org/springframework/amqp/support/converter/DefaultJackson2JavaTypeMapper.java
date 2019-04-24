@@ -112,11 +112,10 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 	@Override
 	public JavaType toJavaType(MessageProperties properties) {
 		JavaType inferredType = getInferredType(properties);
-		if (inferredType != null) {
-			 if (!inferredType.isAbstract() && !inferredType.isInterface()
-					|| inferredType.getRawClass().getPackage().getName().startsWith("java.util")) {
-				return inferredType;
-			 }
+		if (inferredType != null
+			 && ((!inferredType.isAbstract() && !inferredType.isInterface()
+					|| inferredType.getRawClass().getPackage().getName().startsWith("java.util")))) {
+			return inferredType;
 		}
 
 		String typeIdHeader = retrieveHeaderAsString(properties, getClassIdFieldName());
@@ -153,8 +152,7 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 	@Nullable
 	public JavaType getInferredType(MessageProperties properties) {
 		if (hasInferredTypeHeader(properties) && this.typePrecedence.equals(TypePrecedence.INFERRED)) {
-			JavaType targetType = fromInferredTypeHeader(properties);
-			return targetType;
+			return fromInferredTypeHeader(properties);
 		}
 		return null;
 	}
