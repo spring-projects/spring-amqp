@@ -16,3 +16,8 @@ When using <<receiving-batch,batching>>, `@RabbitListener` methods can now recei
 
 The Log4J and Logback `AmqpAppender` s now support a `verifyHostname` SSL option.
 See <<logging>> for more information.
+
+===== MessageListenerAdapter Changes
+
+You can now receive Channel and Message objects in listener by means of doing extends MessageListenerAdapter.
+See <<message-listener-adapter>> for more information.
