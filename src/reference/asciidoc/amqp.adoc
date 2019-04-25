@@ -1705,7 +1705,7 @@ new MessageListenerAdapter((ReplyingMessageListener<String, String>) data -> {
 ----
 ====
 
-Starting with version 2.2, we deprecate method `buildListenerArguments` and provide new one with complete arguments including `Channel` and `Message`, that helping listener to receive customized arguments, such as get `Channel` to basicReject in manual acknowledge mode by means of doing extends `MessageListenerAdapter` and overriding `buildListenerArguments(Object, Channel, Message)` then return array carried `Channel` and `Message`.
+Starting with version 2.2, we deprecate method `buildListenerArguments` and provide new one with complete arguments including `Channel` and `Message`, which helping listener to receive customized arguments, such as getting `Channel` to basicReject in manual acknowledge mode by means of doing extends `MessageListenerAdapter` and overriding `buildListenerArguments(Object, Channel, Message)` then return array carried `Channel` and `Message`.
 
 ====== Container
 
