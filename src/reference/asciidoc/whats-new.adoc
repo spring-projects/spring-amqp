@@ -19,5 +19,6 @@ See <<logging>> for more information.
 
 ===== MessageListenerAdapter Changes
 
-You can now receive Channel and Message objects in listener by means of doing extends MessageListenerAdapter.
+`MessageListenerAdapter` provides now a new method to build an array of arguments to be passed into target listener
+and an old one is deprecated.
 See <<message-listener-adapter>> for more information.
