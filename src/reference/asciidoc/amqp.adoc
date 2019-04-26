@@ -1708,8 +1708,8 @@ new MessageListenerAdapter((ReplyingMessageListener<String, String>) data -> {
 Starting with version 2.2, we deprecate method `buildListenerArguments(Object)` and provide
 `buildListenerArguments(Object, Channel, Message)`. the new method not only treat `Object` like `buildListenerArguments(Object)` but new arguments
 `Channel` and `Message`, which helping listener to custom operations, such as getting `Channel` object to `basicReject(long, boolean)` in manual acknowledge mode
-by means of doing extends `MessageListenerAdapter` and overriding `buildListenerArguments(Object, Channel, Message)` then return
-array carried `Channel` and `Message`.
+by means of doing extends `MessageListenerAdapter` and overriding `buildListenerArguments(Object, Channel, Message)`
+then return array carried `Channel` and `Message`.
 
 ====== Container
 
