@@ -342,7 +342,6 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	 * @deprecated use @{org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter#buildListenerArguments
 	 * (java.lang.Object, com.rabbitmq.client.Channel, org.springframework.amqp.core.Message)} to get complete arguments
 	 */
-	@SuppressWarnings("deprecation")
 	protected Object[] buildListenerArguments(Object extractedMessage) {
 		return new Object[] {extractedMessage};
 	}
@@ -362,6 +361,7 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	 * @return the array of arguments to be passed into the listener method (each element of the array corresponding to
 	 * a distinct method argument)
 	 */
+	@SuppressWarnings("deprecation")
 	protected Object[] buildListenerArguments(Object extractedMessage, Channel channel, Message message) {
 		return buildListenerArguments(extractedMessage);
 	}
