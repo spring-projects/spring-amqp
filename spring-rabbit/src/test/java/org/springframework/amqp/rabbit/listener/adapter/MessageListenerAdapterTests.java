@@ -56,8 +56,6 @@ public class MessageListenerAdapterTests {
 
 	private MessageListenerAdapter adapter;
 
-	private MessageListenerAdapter extendedAdapter;
-
 	private final SimpleService simpleService = new SimpleService();
 
 	@Before
@@ -66,12 +64,17 @@ public class MessageListenerAdapterTests {
 		this.messageProperties.setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN);
 		this.adapter = new MessageListenerAdapter();
 		this.adapter.setMessageConverter(new SimpleMessageConverter());
-		this.extendedAdapter = new ExtendedListenerAdapter();
-		this.extendedAdapter.setMessageConverter(new SimpleMessageConverter());
 	}
 
 	@Test
 	public void testExtendedListenerAdapter() throws Exception {
+		class ExtendedListenerAdapter extends MessageListenerAdapter {
+			@Override
+			protected Object[] buildListenerArguments(Object extractedMessage, Channel channel, Message message) {
+				return new Object[]{extractedMessage, channel, message};
+			}
+		}
+		MessageListenerAdapter extendedAdapter = new ExtendedListenerAdapter();
 		final AtomicBoolean called = new AtomicBoolean(false);
 		Channel channel = mock(Channel.class);
 		class Delegate {
@@ -84,9 +87,9 @@ public class MessageListenerAdapterTests {
 				called.set(true);
 			}
 		}
-		this.extendedAdapter.setDelegate(new Delegate());
-		this.extendedAdapter.containerAckMode(AcknowledgeMode.MANUAL);
-		this.extendedAdapter.onMessage(new Message("foo".getBytes(), messageProperties), channel);
+		extendedAdapter.setDelegate(new Delegate());
+		extendedAdapter.containerAckMode(AcknowledgeMode.MANUAL);
+		extendedAdapter.onMessage(new Message("foo".getBytes(), messageProperties), channel);
 		assertThat(called.get()).isTrue();
 	}
 
@@ -230,13 +233,6 @@ public class MessageListenerAdapterTests {
 			return "processed" + input;
 		}
 
-	}
-
-	private class ExtendedListenerAdapter extends MessageListenerAdapter {
-		@Override
-		protected Object[] buildListenerArguments(Object extractedMessage, Channel channel, Message message) {
-			return new Object[]{extractedMessage, channel, message};
-		}
 	}
 
 }
