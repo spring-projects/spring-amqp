@@ -1705,8 +1705,8 @@ new MessageListenerAdapter((ReplyingMessageListener<String, String>) data -> {
 ----
 ====
 
-Starting with version 2.2, `buildListenerArguments(Object)` has been deprecated and provide `buildListenerArguments(Object, Channel, Message)`.
-The new method treats not only `Object` but also helps listener to get `Channel` and `Message` arguments, such as getting `Channel` object to `basicReject(long, boolean)` in manual acknowledge mode.
+Starting with version 2.2, `buildListenerArguments(Object)` has been deprecated and the new method `buildListenerArguments(Object, Channel, Message)` instead of its functions.
+The new method helps listener to get `Channel` and `Message` arguments to do more, such as calling `channel.basicReject(long, boolean)` in manual acknowledge mode.
 The following listing shows the most basic example:
 
 ====
@@ -1721,8 +1721,8 @@ public class ExtendedListenerAdapter extends MessageListenerAdapter {
 ----
 ====
 
-Now you can replace `MessageListenerAdapter` with `ExtendedListenerAdapter` if you need to receive "`channel`" and "`message`".
-Parameters of listener should be set same as `buildListenerArguments(Object, Channel, Message)` returned, as the following example of listener shows:
+Now you could configure `ExtendedListenerAdapter` as same as `MessageListenerAdapter` if you need to receive "`channel`" and "`message`".
+Parameters of listener should be set as `buildListenerArguments(Object, Channel, Message)` returned, as the following example of listener shows:
 
 ====
 [source,java]
