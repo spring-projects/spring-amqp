@@ -1705,11 +1705,33 @@ new MessageListenerAdapter((ReplyingMessageListener<String, String>) data -> {
 ----
 ====
 
-Starting with version 2.2, we deprecate method `buildListenerArguments(Object)` and provide
-`buildListenerArguments(Object, Channel, Message)`. the new method not only treat `Object` like `buildListenerArguments(Object)` but new arguments
-`Channel` and `Message`, which helping listener to custom operations, such as getting `Channel` object to `basicReject(long, boolean)` in manual acknowledge mode
-by means of doing extends `MessageListenerAdapter` and overriding `buildListenerArguments(Object, Channel, Message)`
-then return array carried `Channel` and `Message`.
+Starting with version 2.2, `MessageListenerAdapter.buildListenerArguments(Object)` has been deprecated and provide `buildListenerArguments(Object, Channel, Message)`.
+The new method treats not only `Object` but also helps listener to get `Channel` and `Message` arguments, such as getting `Channel` object to `basicReject(long, boolean)` in manual acknowledge mode.
+The following listing shows the most basic example:
+
+====
+[source,java]
+----
+public class ExtendedListenerAdapter extends MessageListenerAdapter {
+    @Override
+    protected Object[] buildListenerArguments(Object extractedMessage, Channel channel, Message message) {
+        return new Object[]{extractedMessage, channel, message};
+    }
+}
+----
+====
+
+Now you can replace `MessageListenerAdapter` with `ExtendedListenerAdapter` in your configurations.
+Arguments of listener should be set in matched position, as the following example shows:
+
+====
+[source,java]
+----
+public void handleMessage(Object object, Channel channel, Message message) throws IOException {
+    ...
+}
+----
+====
 
 ====== Container
 
