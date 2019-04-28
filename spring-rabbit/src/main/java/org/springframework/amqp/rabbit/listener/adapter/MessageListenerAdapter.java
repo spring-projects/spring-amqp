@@ -117,6 +117,7 @@ import com.rabbitmq.client.Channel;
  * @author Dave Syer
  * @author Gary Russell
  * @author Greg Turnquist
+ * @author Cai Kun
  *
  * @see #setDelegate
  * @see #setDefaultListenerMethod

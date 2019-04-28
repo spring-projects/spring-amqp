@@ -48,6 +48,7 @@ import com.rabbitmq.client.Channel;
  * @author Dave Syer
  * @author Greg Turnquist
  * @author Gary Russell
+ * @author Cai Kun
  *
  */
 public class MessageListenerAdapterTests {
