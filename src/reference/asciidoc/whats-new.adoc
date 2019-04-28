@@ -19,5 +19,5 @@ See <<logging>> for more information.
 
 ===== MessageListenerAdapter Changes
 
-`MessageListenerAdapter` provides now a new method `buildListenerArguments(Object, Channel, Message)` to build an array of arguments to be passed into target listener and an old one is deprecated.
+`MessageListenerAdapter` provides a new method `buildListenerArguments(Object, Channel, Message)` to build an array of arguments to be passed into target listener and an old one is deprecated.
 See <<message-listener-adapter>> for more information.
