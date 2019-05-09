@@ -253,4 +253,14 @@ public @interface RabbitListener {
 	 */
 	String executor() default "";
 
+	/**
+	 * Override the container factory
+	 * {@link org.springframework.amqp.core.AcknowledgeMode} property. Must be one of the
+	 * valid enumerations. If a SpEL expression is provided, it must evaluate to a
+	 * {@link String} or {@link org.springframework.amqp.core.AcknowledgeMode}.
+	 * @return the acknowledgement mode.
+	 * @since 2.2
+	 */
+	String ackMode() default "";
+
 }

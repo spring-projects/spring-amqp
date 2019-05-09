@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Base64UrlNamingStrategy;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
@@ -397,7 +398,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 						method = iface.getMethod(method.getName(), method.getParameterTypes());
 						break;
 					}
-					catch (NoSuchMethodException noMethod) {
+					catch (@SuppressWarnings("unused") NoSuchMethodException noMethod) {
 					}
 				}
 			}
@@ -466,9 +467,26 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 		resolveExecutor(endpoint, rabbitListener, target, beanName);
 		resolveAdmin(endpoint, rabbitListener, target);
+		resolveAckMode(endpoint, rabbitListener);
 		RabbitListenerContainerFactory<?> factory = resolveContainerFactory(rabbitListener, target, beanName);
 
 		this.registrar.registerEndpoint(endpoint, factory);
+	}
+
+	private void resolveAckMode(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener) {
+		String ackModeAttr = rabbitListener.ackMode();
+		if (StringUtils.hasText(ackModeAttr)) {
+			Object ackMode = resolveExpression(ackModeAttr);
+			if (ackMode instanceof String) {
+				endpoint.setAckMode(AcknowledgeMode.valueOf((String) ackMode));
+			}
+			else if (ackMode instanceof AcknowledgeMode) {
+				endpoint.setAckMode((AcknowledgeMode) ackMode);
+			}
+			else {
+				Assert.isNull(ackMode, "ackMode must resolve to a String or AcknowledgeMode");
+			}
+		}
 	}
 
 	private void resolveAdmin(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener, Object adminTarget) {

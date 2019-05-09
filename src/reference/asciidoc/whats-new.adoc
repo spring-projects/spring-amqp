@@ -8,7 +8,8 @@ This section describes the changes between version 2.1 and version 2.2.
 ===== @RabbitListener Changes
 
 You can now configure an `executor` on each listener, overriding the factory configuration, to more easily identify threads associated with the listener.
-See <<async-annotation-driven-enable>> for more information.
+You can now override the container factory's `acknowledgeMode` property with the annotation's `ackMode` property.
+See <<listener-property-overrides,overriding container factory properties>> for more information.
 
 When using <<receiving-batch,batching>>, `@RabbitListener` methods can now receive a complete batch of messages in one call instead of getting them one at at time.
 

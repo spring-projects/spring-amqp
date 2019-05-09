@@ -2215,6 +2215,8 @@ For `DirectMessageListenerContainer` instances, you can use XML similar to the f
 ----
 ====
 
+[[listener-property-overrides]]
+
 Starting with version 2.0, the `@RabbitListener` annotation has a `concurrency` property.
 It supports SpEL expressions (`#{...}`) and property placeholders (`${...}`).
 Its meaning and allowed values depend on the container type, as follows:
@@ -2227,6 +2229,21 @@ Previously you had to define different container factories if you had listeners 
 
 The annotation also allows overriding the factory `autoStartup` and `taskExecutor` properties via the `autoStartup` and `executor` (since 2.2) annotation properties.
 Using a different executor for each might help with identifying threads associated with each listener in logs and thread dumps.
+
+Version 2.2 also added the `ackMode` property, which allows you to override the container factory's `acknowledgeMode` property.
+
+====
+[source, java]
+----
+@RabbitListener(id = "manual.acks.1", queues = "manual.acks.1", ackMode = "MANUAL")
+public void manual1(String in, Channel channel,
+    @Header(AmqpHeaders.DELIVERY_TAG) long tag) throws IOException {
+
+    ...
+    channel.basicAck(tag, false);
+}
+----
+====
 
 [[async-annotation-conversion]]
 ====== Message Conversion for Annotated Methods

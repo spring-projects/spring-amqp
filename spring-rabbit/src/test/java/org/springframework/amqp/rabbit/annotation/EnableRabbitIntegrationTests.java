@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -50,6 +51,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.Message;
@@ -167,7 +169,8 @@ public class EnableRabbitIntegrationTests {
 			"test.converted.foomessage", "test.notconverted.messagingmessagenotgeneric", "test.simple.direct",
 			"test.simple.direct2", "test.generic.list", "test.generic.map",
 			"amqp656dlq", "test.simple.declare", "test.return.exceptions", "test.pojo.errors", "test.pojo.errors2",
-			"test.messaging.message", "test.amqp.message", "test.bytes.to.string", "test.projection");
+			"test.messaging.message", "test.amqp.message", "test.bytes.to.string", "test.projection",
+			"manual.acks.1", "manual.acks.2");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -842,6 +845,14 @@ public class EnableRabbitIntegrationTests {
 		assertThat(message.getBody()).isEqualTo("BYTES".getBytes());
 	}
 
+	@Test
+	public void testManualOverride() {
+		assertThat(TestUtils.getPropertyValue(this.registry.getListenerContainer("manual.acks.1"), "acknowledgeMode"))
+			.isEqualTo(AcknowledgeMode.MANUAL);
+		assertThat(TestUtils.getPropertyValue(this.registry.getListenerContainer("manual.acks.2"), "acknowledgeMode"))
+			.isEqualTo(AcknowledgeMode.MANUAL);
+	}
+
 	interface TxService {
 
 		@Transactional
@@ -1168,6 +1179,24 @@ public class EnableRabbitIntegrationTests {
 
 		@RabbitListener(queues = "test.bytes.to.string")
 		public String bytesToString(String in) {
+			return in.toUpperCase();
+		}
+
+		@RabbitListener(id = "manual.acks.1", queues = "manual.acks.1", ackMode = "MANUAL")
+		public String manual1(String in, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag)
+				throws IOException {
+
+			channel.basicAck(tag, false);
+			return in.toUpperCase();
+		}
+
+		@RabbitListener(id = "manual.acks.2", queues = "manual.acks.2",
+				ackMode = "#{T(org.springframework.amqp.core.AcknowledgeMode).MANUAL}")
+
+		public String manual2(String in, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag)
+				throws IOException {
+
+			channel.basicAck(tag, false);
 			return in.toUpperCase();
 		}
 
