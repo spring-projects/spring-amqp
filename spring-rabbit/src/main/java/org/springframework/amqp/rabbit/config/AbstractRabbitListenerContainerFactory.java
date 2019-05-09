@@ -404,7 +404,8 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		if (endpoint != null) { // endpoint settings overriding default factory settings
 			javaUtils
 				.acceptIfNotNull(endpoint.getAutoStartup(), instance::setAutoStartup)
-				.acceptIfNotNull(endpoint.getTaskExecutor(), instance::setTaskExecutor);
+				.acceptIfNotNull(endpoint.getTaskExecutor(), instance::setTaskExecutor)
+				.acceptIfNotNull(endpoint.getAckMode(), instance::setAcknowledgeMode);
 			javaUtils
 				.acceptIfNotNull(this.batchingStrategy, endpoint::setBatchingStrategy);
 			instance.setListenerId(endpoint.getId());

@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.rabbit.core.support.BatchingStrategy;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.core.task.TaskExecutor;
@@ -123,6 +124,16 @@ public interface RabbitListenerEndpoint {
 	 */
 	default void setBatchingStrategy(BatchingStrategy batchingStrategy) {
 		// NOSONAR empty
+	}
+
+	/**
+	 * Override the container factory's {@link AcknowledgeMode}.
+	 * @return the acknowledgment mode.
+	 * @since 2.2
+	 */
+	@Nullable
+	default AcknowledgeMode getAckMode() {
+		return null;
 	}
 
 }

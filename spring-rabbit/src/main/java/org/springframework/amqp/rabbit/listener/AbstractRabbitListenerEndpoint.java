@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
@@ -86,6 +87,8 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	private boolean batchListener;
 
 	private BatchingStrategy batchingStrategy;
+
+	private AcknowledgeMode ackMode;
 
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
@@ -307,6 +310,16 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	@Override
 	public void setBatchingStrategy(BatchingStrategy batchingStrategy) {
 		this.batchingStrategy = batchingStrategy;
+	}
+
+	@Override
+	@Nullable
+	public AcknowledgeMode getAckMode() {
+		return this.ackMode;
+	}
+
+	public void setAckMode(AcknowledgeMode ackMode) {
+		this.ackMode = ackMode;
 	}
 
 	@Override
