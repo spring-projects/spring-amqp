@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.core.support;
+package org.springframework.amqp.rabbit.batch;
 
 import java.util.Collection;
 import java.util.Date;

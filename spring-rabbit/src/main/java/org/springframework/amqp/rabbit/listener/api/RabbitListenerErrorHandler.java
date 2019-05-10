@@ -17,7 +17,7 @@
 package org.springframework.amqp.rabbit.listener.api;
 
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
+import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 
 /**
  * An error handler which is called when a {code @RabbitListener} method
