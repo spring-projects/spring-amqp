@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
@@ -36,6 +37,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -54,6 +56,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -72,6 +75,8 @@ import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
 import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.rabbitmq.client.Address;
@@ -1653,6 +1658,63 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		channel.close();
 		RabbitUtils.setPhysicalCloseRequired(channel, false);
 		Thread.sleep(6000);
+	}
+
+	@Test
+	public void testOrderlyShutDown() throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		Channel mockChannel = mock(Channel.class);
+
+		given(mockConnectionFactory.newConnection((ExecutorService) isNull(), anyString())).willReturn(mockConnection);
+		given(mockConnection.createChannel()).willReturn(mockChannel);
+		given(mockChannel.isOpen()).willReturn(true);
+		given(mockConnection.isOpen()).willReturn(true);
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setPublisherConfirms(true);
+		ApplicationContext ac = mock(ApplicationContext.class);
+		ccf.setApplicationContext(ac);
+		PublisherCallbackChannel pcc = mock(PublisherCallbackChannel.class);
+		given(pcc.isOpen()).willReturn(true);
+		AtomicReference<ExecutorService> executor = new AtomicReference<>();
+		AtomicBoolean rejected = new AtomicBoolean(true);
+		CountDownLatch closeLatch = new CountDownLatch(1);
+		ccf.setPublisherChannelFactory((channel, exec) -> {
+			executor.set(spy(exec));
+			return pcc;
+		});
+		willAnswer(invoc -> {
+			try {
+				executor.get().execute(() -> {
+				});
+				rejected.set(false);
+			}
+			catch (@SuppressWarnings("unused") RejectedExecutionException e) {
+				rejected.set(true);
+			}
+			closeLatch.countDown();
+			return null;
+		}).given(pcc).close();
+		Channel channel = ccf.createConnection().createChannel(false);
+		ExecutorService closeExec = Executors.newSingleThreadExecutor();
+		CountDownLatch asyncClosingLatch = new CountDownLatch(1);
+		closeExec.execute(() -> {
+			RabbitUtils.setPhysicalCloseRequired(channel, true);
+			try {
+				channel.close();
+				asyncClosingLatch.countDown();
+			}
+			catch (@SuppressWarnings("unused") IOException | TimeoutException e) {
+				// ignore
+			}
+		});
+		assertThat(asyncClosingLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		ccf.onApplicationEvent(new ContextClosedEvent(ac));
+		ccf.destroy();
+		assertThat(closeLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(rejected.get()).isFalse();
+		closeExec.shutdownNow();
 	}
 
 }

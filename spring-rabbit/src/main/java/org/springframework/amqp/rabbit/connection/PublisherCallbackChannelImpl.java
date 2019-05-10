@@ -1125,4 +1125,8 @@ public class PublisherCallbackChannelImpl
 		return "PublisherCallbackChannelImpl: " + this.delegate.toString();
 	}
 
+	public static PublisherCallbackChannelFactory factory() {
+		return (channel, exec) -> new PublisherCallbackChannelImpl(channel, exec);
+	}
+
 }
