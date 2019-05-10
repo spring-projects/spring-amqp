@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
@@ -1709,11 +1710,11 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 				// ignore
 			}
 		});
-		assertThat(asyncClosingLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertTrue(asyncClosingLatch.await(10, TimeUnit.SECONDS));
 		ccf.onApplicationEvent(new ContextClosedEvent(ac));
 		ccf.destroy();
-		assertThat(closeLatch.await(10, TimeUnit.SECONDS)).isTrue();
-		assertThat(rejected.get()).isFalse();
+		assertTrue(closeLatch.await(10, TimeUnit.SECONDS));
+		assertFalse(rejected.get());
 		closeExec.shutdownNow();
 	}
 
