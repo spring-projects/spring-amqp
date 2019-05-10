@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
@@ -1627,6 +1628,11 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ccf.setApplicationContext(ac);
 		PublisherCallbackChannel pcc = mock(PublisherCallbackChannel.class);
 		given(pcc.isOpen()).willReturn(true);
+		CountDownLatch asyncClosingLatch = new CountDownLatch(1);
+		willAnswer(invoc -> {
+			asyncClosingLatch.countDown();
+			return null;
+		}).given(pcc).waitForConfirmsOrDie(anyLong());
 		AtomicReference<ExecutorService> executor = new AtomicReference<>();
 		AtomicBoolean rejected = new AtomicBoolean(true);
 		CountDownLatch closeLatch = new CountDownLatch(1);
@@ -1648,12 +1654,10 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		}).given(pcc).close();
 		Channel channel = ccf.createConnection().createChannel(false);
 		ExecutorService closeExec = Executors.newSingleThreadExecutor();
-		CountDownLatch asyncClosingLatch = new CountDownLatch(1);
 		closeExec.execute(() -> {
 			RabbitUtils.setPhysicalCloseRequired(channel, true);
 			try {
 				channel.close();
-				asyncClosingLatch.countDown();
 			}
 			catch (@SuppressWarnings("unused") IOException | TimeoutException e) {
 				// ignore
