@@ -665,7 +665,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(nack.get()).isFalse();
 		assertThat(correlation.get().toString()).isEqualTo(correlationData.toString());
-		assertThat(reason.get()).contains("NOT_FOUND - no exchange '" + exchange);
+		assertThat(reason.get()).containsPattern(
+				"(Channel closed by application|NOT_FOUND - no exchange '" + exchange + ")");
 		assertThat(log.get()).contains("NOT_FOUND - no exchange '" + exchange);
 	}
 
@@ -674,9 +675,9 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		final CountDownLatch latch = new CountDownLatch(40);
 		templateWithConfirmsEnabled.setConfirmCallback((correlationData, ack, cause) -> latch.countDown());
 
-		ExecutorService executorService = Executors.newCachedThreadPool();
+		ExecutorService exec = Executors.newCachedThreadPool();
 		for (int i = 0; i < 20; i++) {
-			executorService.execute(() -> {
+			exec.execute(() -> {
 				templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
 				templateWithConfirmsEnabled.convertAndSend("BAD_ROUTE", (Object) "bad", new CorrelationData("cba"));
 			});
@@ -684,6 +685,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(templateWithConfirmsEnabled.getUnconfirmed(-1)).isNull();
+		exec.shutdownNow();
 	}
 
 	// AMQP-506 ConcurrentModificationException
@@ -721,6 +723,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		}
 		assertThat(sentAll.get()).isTrue();
 		assertThat(confirmed.get()).isFalse();
+		exec.shutdownNow();
 	}
 
 	@Test
@@ -786,6 +789,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		});
 		assertThat(sentAll.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(confirmed.await(10, TimeUnit.SECONDS)).isTrue();
+		exec.shutdownNow();
 	}
 
 	@SuppressWarnings("unchecked")
