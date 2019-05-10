@@ -26,7 +26,7 @@ import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.core.support.BatchingStrategy;
+import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;

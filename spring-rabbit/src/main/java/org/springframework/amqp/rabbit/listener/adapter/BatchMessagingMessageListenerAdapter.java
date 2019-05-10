@@ -20,8 +20,8 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.amqp.rabbit.core.support.BatchingStrategy;
-import org.springframework.amqp.rabbit.core.support.SimpleBatchingStrategy;
+import org.springframework.amqp.rabbit.batch.BatchingStrategy;
+import org.springframework.amqp.rabbit.batch.SimpleBatchingStrategy;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;

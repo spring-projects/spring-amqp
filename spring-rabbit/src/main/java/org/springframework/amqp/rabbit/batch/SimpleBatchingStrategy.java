@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.core.support;
+package org.springframework.amqp.rabbit.batch;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
+import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.util.Assert;
 

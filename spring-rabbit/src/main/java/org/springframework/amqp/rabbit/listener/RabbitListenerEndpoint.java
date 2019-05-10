@@ -17,7 +17,7 @@
 package org.springframework.amqp.rabbit.listener;
 
 import org.springframework.amqp.core.AcknowledgeMode;
-import org.springframework.amqp.rabbit.core.support.BatchingStrategy;
+import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.lang.Nullable;

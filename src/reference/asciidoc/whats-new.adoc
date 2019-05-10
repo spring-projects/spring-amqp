@@ -5,6 +5,16 @@
 
 This section describes the changes between version 2.1 and version 2.2.
 
+===== Package Changes
+
+The following classes/interfaces have been moved from `org.springframework.amqp.rabbit.core.support` to `org.springframework.amqp.rabbit.batch`:
+
+* `BatchingStrategy`
+* `MessageBatch`
+* `SimpleBatchingStrategy`
+
+In addition, `ListenerExecutionFailedException` has been moved from `org.springframework.amqp.rabbit.listener.exception` to `org.springframework.amqp.rabbit.support`.
+
 ===== @RabbitListener Changes
 
 You can now configure an `executor` on each listener, overriding the factory configuration, to more easily identify threads associated with the listener.
