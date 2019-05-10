@@ -115,7 +115,7 @@ public class PublisherCallbackChannelImpl
 	 * Create a {@link PublisherCallbackChannelImpl} instance based on the provided
 	 * delegate and executor.
 	 * @param delegate the delegate channel.
-	 * @param executor the exceutor.
+	 * @param executor the executor.
 	 */
 	public PublisherCallbackChannelImpl(Channel delegate, ExecutorService executor) {
 		Assert.notNull(executor, "'executor' must not be null");
@@ -1115,6 +1115,10 @@ public class PublisherCallbackChannelImpl
 	@Override
 	public String toString() {
 		return "PublisherCallbackChannelImpl: " + this.delegate.toString();
+	}
+
+	public static PublisherCallbackChannelFactory factory() {
+		return (channel, exec) -> new PublisherCallbackChannelImpl(channel, exec);
 	}
 
 }

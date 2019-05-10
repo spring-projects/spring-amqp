@@ -50,6 +50,7 @@ import org.apache.commons.logging.Log;
 import org.springframework.amqp.AmqpApplicationContextClosedException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpTimeoutException;
+import org.springframework.amqp.rabbit.listener.ActiveObjectCounter;
 import org.springframework.amqp.support.ConditionalExceptionLogger;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jmx.export.annotation.ManagedAttribute;
@@ -105,6 +106,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	private static final String DEFAULT_DEFERRED_POOL_PREFIX = "spring-rabbit-deferred-pool-";
 
+	private static final int CHANNEL_EXEC_SHUTDOWN_TIMEOUT = 30;
+
 	/**
 	 * Create a unique ID for the pool.
 	 */
@@ -159,6 +162,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	/** Synchronization monitor for the shared Connection. */
 	private final Object connectionMonitor = new Object();
 
+	private final ActiveObjectCounter<Channel> inFlightAsyncCloses = new ActiveObjectCounter<>();
+
 	private long channelCheckoutTimeout = 0;
 
 	private CacheMode cacheMode = CacheMode.CHANNEL;
@@ -176,6 +181,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	private boolean publisherReturns;
 
 	private ConditionalExceptionLogger closeExceptionLogger = new DefaultChannelCloseLogger();
+
+	private PublisherCallbackChannelFactory publisherChannelFactory = PublisherCallbackChannelImpl.factory();
 
 	private volatile boolean active = true;
 
@@ -430,6 +437,16 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 	}
 
+	/**
+	 * Set the factory to use to create {@link PublisherCallbackChannel} instances.
+	 * @param publisherChannelFactory the factory.
+	 * @since 2.1.6
+	 */
+	public void setPublisherChannelFactory(PublisherCallbackChannelFactory publisherChannelFactory) {
+		Assert.notNull(publisherChannelFactory, "'publisherChannelFactory' cannot be null");
+		this.publisherChannelFactory = publisherChannelFactory;
+	}
+
 	@Override
 	public void afterPropertiesSet() {
 		this.initialized = true;
@@ -651,8 +668,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		return null; // NOSONAR doCreate will throw an exception
 	}
 
-	private Channel doCreateBareChannel(ChannelCachingConnectionProxy connection, boolean transactional) {
-		Channel channel = connection.createBareChannel(transactional);
+	private Channel doCreateBareChannel(ChannelCachingConnectionProxy conn, boolean transactional) {
+		Channel channel = conn.createBareChannel(transactional);
 		if (this.publisherConfirms || this.simplePublisherConfirms) {
 			try {
 				channel.confirmSelect();
@@ -663,7 +680,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 		if ((this.publisherConfirms || this.publisherReturns)
 				&& !(channel instanceof PublisherCallbackChannelImpl)) {
-			channel = new PublisherCallbackChannelImpl(channel, getChannelsExecutor());
+			channel = this.publisherChannelFactory.createChannel(channel, getChannelsExecutor());
 		}
 		if (channel != null) {
 			channel.addShutdownListener(this);
@@ -819,7 +836,18 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		if (getContextStopped()) {
 			this.stopped = true;
 			if (this.channelsExecutor != null) {
-				this.channelsExecutor.shutdownNow();
+				try {
+					if (!this.inFlightAsyncCloses.await(CHANNEL_EXEC_SHUTDOWN_TIMEOUT, TimeUnit.SECONDS)) {
+						this.logger.warn("Async closes are still in-flight: " + this.inFlightAsyncCloses.getCount());
+					}
+					this.channelsExecutor.shutdown();
+					if (!this.channelsExecutor.awaitTermination(CHANNEL_EXEC_SHUTDOWN_TIMEOUT, TimeUnit.SECONDS)) {
+						this.logger.warn("Channel executor failed to shut down");
+					}
+				}
+				catch (@SuppressWarnings("unused") InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
 			}
 		}
 	}
@@ -1276,37 +1304,46 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		private void asyncClose() {
 			ExecutorService executorService = getChannelsExecutor();
 			final Channel channel = CachedChannelInvocationHandler.this.target;
-			executorService.execute(() -> {
-				try {
-					if (CachingConnectionFactory.this.publisherConfirms) {
-						channel.waitForConfirmsOrDie(ASYNC_CLOSE_TIMEOUT);
-					}
-					else {
-						Thread.sleep(ASYNC_CLOSE_TIMEOUT);
-					}
-				}
-				catch (InterruptedException e1) {
-					Thread.currentThread().interrupt();
-				}
-				catch (Exception e2) {
-				}
-				finally {
+			CachingConnectionFactory.this.inFlightAsyncCloses.add(channel);
+			try {
+				executorService.execute(() -> {
 					try {
-						channel.close();
-					}
-					catch (IOException e3) {
-					}
-					catch (AlreadyClosedException e4) {
-					}
-					catch (TimeoutException e5) {
-					}
-					catch (ShutdownSignalException e6) {
-						if (!RabbitUtils.isNormalShutdown(e6)) {
-							logger.debug("Unexpected exception on deferred close", e6);
+						if (CachingConnectionFactory.this.publisherConfirms) {
+							channel.waitForConfirmsOrDie(ASYNC_CLOSE_TIMEOUT);
+						}
+						else {
+							Thread.sleep(ASYNC_CLOSE_TIMEOUT);
 						}
 					}
-				}
-			});
+					catch (InterruptedException e1) {
+						Thread.currentThread().interrupt();
+					}
+					catch (Exception e2) {
+					}
+					finally {
+						try {
+							channel.close();
+						}
+						catch (IOException e3) {
+						}
+						catch (AlreadyClosedException e4) {
+						}
+						catch (TimeoutException e5) {
+						}
+						catch (ShutdownSignalException e6) {
+							if (!RabbitUtils.isNormalShutdown(e6)) {
+								logger.debug("Unexpected exception on deferred close", e6);
+							}
+						}
+						finally {
+							CachingConnectionFactory.this.inFlightAsyncCloses.release(channel);
+						}
+					}
+				});
+			}
+			catch (@SuppressWarnings("unused") RuntimeException e) {
+				CachingConnectionFactory.this.inFlightAsyncCloses.release(channel);
+			}
 		}
 
 	}
