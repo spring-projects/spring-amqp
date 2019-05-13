@@ -68,69 +68,71 @@ public class MessageProperties implements Serializable {
 
 	private final Map<String, Object> headers = new HashMap<>();
 
-	private volatile Date timestamp;
+	private Date timestamp;
 
-	private volatile String messageId;
+	private String messageId;
 
-	private volatile String userId;
+	private String userId;
 
-	private volatile String appId;
+	private String appId;
 
-	private volatile String clusterId;
+	private String clusterId;
 
-	private volatile String type;
+	private String type;
 
-	private volatile String correlationId;
+	private String correlationId;
 
-	private volatile String replyTo;
+	private String replyTo;
 
-	private volatile String contentType = DEFAULT_CONTENT_TYPE;
+	private String contentType = DEFAULT_CONTENT_TYPE;
 
-	private volatile String contentEncoding;
+	private String contentEncoding;
 
-	private volatile long contentLength;
+	private long contentLength;
 
-	private volatile boolean contentLengthSet;
+	private boolean contentLengthSet;
 
-	private volatile MessageDeliveryMode deliveryMode = DEFAULT_DELIVERY_MODE;
+	private MessageDeliveryMode deliveryMode = DEFAULT_DELIVERY_MODE;
 
-	private volatile String expiration;
+	private String expiration;
 
-	private volatile Integer priority = DEFAULT_PRIORITY;
+	private Integer priority = DEFAULT_PRIORITY;
 
-	private volatile Boolean redelivered;
+	private Boolean redelivered;
 
-	private volatile String receivedExchange;
+	private String receivedExchange;
 
-	private volatile String receivedRoutingKey;
+	private String receivedRoutingKey;
 
-	private volatile String receivedUserId;
+	private String receivedUserId;
 
-	private volatile long deliveryTag;
+	private long deliveryTag;
 
-	private volatile boolean deliveryTagSet;
+	private boolean deliveryTagSet;
 
-	private volatile Integer messageCount;
+	private Integer messageCount;
 
 	// Not included in hashCode()
 
-	private volatile String consumerTag;
+	private String consumerTag;
 
-	private volatile String consumerQueue;
+	private String consumerQueue;
 
-	private volatile Integer receivedDelay;
+	private Integer receivedDelay;
 
-	private volatile MessageDeliveryMode receivedDeliveryMode;
+	private MessageDeliveryMode receivedDeliveryMode;
 
-	private volatile boolean finalRetryForMessageWithNoId;
+	private boolean finalRetryForMessageWithNoId;
 
-	private volatile long publishSequenceNumber;
+	private long publishSequenceNumber;
 
-	private transient volatile Type inferredArgumentType;
+	private boolean lastInBatch;
 
-	private transient volatile Method targetMethod;
+	private transient Type inferredArgumentType;
 
-	private transient volatile Object targetBean;
+	private transient Method targetMethod;
+
+	private transient Object targetBean;
 
 	public void setHeader(String key, Object value) {
 		this.headers.put(key, value);
@@ -533,6 +535,24 @@ public class MessageProperties implements Serializable {
 	}
 
 	/**
+	 * When true; the message having these properties is the last message from a batch.
+	 * @return true for the last message.
+	 * @since 2.2
+	 */
+	public boolean isLastInBatch() {
+		return this.lastInBatch;
+	}
+
+	/**
+	 * Set to true to indicate these properties are for the last message in a batch.
+	 * @param lastInBatch true for the last.
+	 * @since 2.2
+	 */
+	public void setLastInBatch(boolean lastInBatch) {
+		this.lastInBatch = lastInBatch;
+	}
+
+	/**
 	 * Return the x-death header.
 	 * @return the header.
 	 */
@@ -541,7 +561,7 @@ public class MessageProperties implements Serializable {
 		try {
 			return (List<Map<String, ?>>) this.headers.get("x-death");
 		}
-		catch (Exception e) {
+		catch (@SuppressWarnings("unused") Exception e) {
 			return null;
 		}
 	}

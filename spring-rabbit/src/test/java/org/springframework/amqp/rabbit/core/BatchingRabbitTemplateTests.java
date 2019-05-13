@@ -227,8 +227,10 @@ public class BatchingRabbitTemplateTests {
 		final CountDownLatch latch = new CountDownLatch(2);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactory);
 		container.setQueueNames(ROUTE);
+		List<Boolean> lastInBatch = new ArrayList<>();
 		container.setMessageListener((MessageListener) message -> {
 			received.add(message);
+			lastInBatch.add(message.getMessageProperties().isLastInBatch());
 			latch.countDown();
 		});
 		container.setReceiveTimeout(100);
@@ -247,8 +249,10 @@ public class BatchingRabbitTemplateTests {
 			assertThat(received).hasSize(2);
 			assertThat(new String(received.get(0).getBody())).isEqualTo("foo");
 			assertThat(received.get(0).getMessageProperties().getContentLength()).isEqualTo(3);
+			assertThat(lastInBatch.get(0)).isFalse();
 			assertThat(new String(received.get(1).getBody())).isEqualTo("bar");
 			assertThat(received.get(0).getMessageProperties().getContentLength()).isEqualTo(3);
+			assertThat(lastInBatch.get(1)).isTrue();
 		}
 		finally {
 			container.stop();

@@ -118,4 +118,10 @@ public abstract class AmqpHeaders {
 	 */
 	public static final String RAW_MESSAGE = PREFIX + "raw_message";
 
+	/**
+	 * A flag to indicate that the current message is the last from a batch.
+	 * @since 2.2
+	 */
+	public static final String LAST_IN_BATCH = PREFIX + "lastInBatch";
+
 }

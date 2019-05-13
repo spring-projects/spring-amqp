@@ -32,6 +32,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.BatchingRabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
+import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -72,7 +73,11 @@ public class EnableRabbitBatchIntegrationTests {
 		this.template.convertAndSend("batch.2", new Foo("bar"));
 		assertThat(this.listener.fooMessagesLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.listener.fooMessages.get(0).getPayload().getBar()).isEqualTo("foo");
+		assertThat(this.listener.fooMessages.get(0).getHeaders().get(AmqpHeaders.LAST_IN_BATCH, Boolean.class))
+				.isFalse();
 		assertThat(this.listener.fooMessages.get(1).getPayload().getBar()).isEqualTo("bar");
+		assertThat(this.listener.fooMessages.get(1).getHeaders().get(AmqpHeaders.LAST_IN_BATCH, Boolean.class))
+				.isTrue();
 	}
 
 	@Configuration
