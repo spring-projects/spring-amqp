@@ -89,9 +89,9 @@ subprojects { subproject ->
 		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.7.0'
 		rabbitmqHttpClientVersion = '3.2.0.RELEASE'
 		reactorVersion = '3.2.6.RELEASE'
-		springDataCommonsVersion = '2.2.0.BUILD-SNAPSHOT'
+		springDataCommonsVersion = '2.2.0.M4'
 
-		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.2.0.BUILD-SNAPSHOT'
+		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.2.0.M2'
 
 		springRetryVersion = '1.2.4.RELEASE'
 	}
