@@ -21,7 +21,9 @@ You can now configure an `executor` on each listener, overriding the factory con
 You can now override the container factory's `acknowledgeMode` property with the annotation's `ackMode` property.
 See <<listener-property-overrides,overriding container factory properties>> for more information.
 
-When using <<receiving-batch,batching>>, `@RabbitListener` methods can now receive a complete batch of messages in one call instead of getting them one at at time.
+When using <<receiving-batch,batching>>, `@RabbitListener` methods can now receive a complete batch of messages in one call instead of getting them one-at-a-time.
+
+When receiving batched messages one-at-a-time, the last message has the `isLastInBatch` message property set to true.
 
 Spring Data Projection interfaces are now supported by the `Jackson2JsonMessageConverter`.
 See <<data-projection>> for more information.

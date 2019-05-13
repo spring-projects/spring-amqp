@@ -185,6 +185,9 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 			messageProperties.setContentLength(length);
 			// Caveat - shared MessageProperties.
 			Message fragment = new Message(body, messageProperties);
+			if (!byteBuffer.hasRemaining()) {
+				messageProperties.setLastInBatch(true);
+			}
 			fragmentConsumer.accept(fragment);
 		}
 	}

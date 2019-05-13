@@ -163,6 +163,7 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 							putString)
 					.acceptIfHasText(AmqpHeaders.CONSUMER_TAG, amqpMessageProperties.getConsumerTag(), putString)
 					.acceptIfHasText(AmqpHeaders.CONSUMER_QUEUE, amqpMessageProperties.getConsumerQueue(), putString);
+			headers.put(AmqpHeaders.LAST_IN_BATCH, amqpMessageProperties.isLastInBatch());
 
 			// Map custom headers
 			for (Map.Entry<String, Object> entry : amqpMessageProperties.getHeaders().entrySet()) {

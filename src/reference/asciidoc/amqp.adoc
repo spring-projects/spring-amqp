@@ -1465,7 +1465,7 @@ This preempts the `batchSize`, if exceeded, and causes a partial batch to be sen
 The `SimpleBatchingStrategy` formats the batch by preceding each embedded message with a four-byte binary length.
 This is communicated to the receiving system by setting the `springBatchFormat` message property to `lengthHeader4`.
 
-IMPORTANT: Batched messages are automatically de-batched by listener containers (by using the `springBatchFormat` message header).
+IMPORTANT: Batched messages are automatically de-batched by listener containers by default (by using the `springBatchFormat` message header).
 Rejecting any message from a batch causes the entire batch to be rejected.
 
 However, see <<receiving-batch>> for more information.
@@ -2807,6 +2807,10 @@ public void listen2(List<Message<Thing>> in) {
 Setting the `batchListener` property to true automatically turns off the `debatchingEnabled` container property in containers that the factory creates - effectively, the debatching is moved from the container to the listener adapter and the adapter creates the list that is passed to the listener.
 
 A batch-enabled factory cannot be used with a <<annotation-method-selection, multi-method listener>>.
+
+Also starting with version 2.2. when receiving batched messages one-at-a-time, the last message contains a boolean header set to `true`.
+This header can be obtained by adding the `@Header(AmqpHeaders.LAST_IN_BATCH)` boolean last` parameter to your listener method.
+The header is mapped from `MessageProperties.isLastInBatch()`.
 
 [[using-container-factories]]
 ===== Using Container Factories
