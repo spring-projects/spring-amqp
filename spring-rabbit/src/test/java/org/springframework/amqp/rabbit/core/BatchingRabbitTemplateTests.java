@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.Deflater;
 
@@ -54,6 +55,7 @@ import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.rabbit.listener.ConditionalRejectingErrorHandler;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.postprocessor.AbstractCompressingPostProcessor;
 import org.springframework.amqp.support.postprocessor.DelegatingDecompressingPostProcessor;
 import org.springframework.amqp.support.postprocessor.GUnzipPostProcessor;
@@ -228,9 +230,11 @@ public class BatchingRabbitTemplateTests {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactory);
 		container.setQueueNames(ROUTE);
 		List<Boolean> lastInBatch = new ArrayList<>();
+		AtomicInteger batchSize = new AtomicInteger();
 		container.setMessageListener((MessageListener) message -> {
 			received.add(message);
 			lastInBatch.add(message.getMessageProperties().isLastInBatch());
+			batchSize.set(message.getMessageProperties().getHeader(AmqpHeaders.BATCH_SIZE));
 			latch.countDown();
 		});
 		container.setReceiveTimeout(100);
@@ -253,6 +257,7 @@ public class BatchingRabbitTemplateTests {
 			assertThat(new String(received.get(1).getBody())).isEqualTo("bar");
 			assertThat(received.get(0).getMessageProperties().getContentLength()).isEqualTo(3);
 			assertThat(lastInBatch.get(1)).isTrue();
+			assertThat(batchSize.get()).isEqualTo(2);
 		}
 		finally {
 			container.stop();

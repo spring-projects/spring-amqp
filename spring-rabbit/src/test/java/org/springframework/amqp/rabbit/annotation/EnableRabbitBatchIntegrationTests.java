@@ -78,6 +78,8 @@ public class EnableRabbitBatchIntegrationTests {
 		assertThat(this.listener.fooMessages.get(1).getPayload().getBar()).isEqualTo("bar");
 		assertThat(this.listener.fooMessages.get(1).getHeaders().get(AmqpHeaders.LAST_IN_BATCH, Boolean.class))
 				.isTrue();
+		assertThat(this.listener.fooMessages.get(1).getHeaders().get(AmqpHeaders.BATCH_SIZE, Integer.class))
+				.isEqualTo(2);
 	}
 
 	@Configuration
