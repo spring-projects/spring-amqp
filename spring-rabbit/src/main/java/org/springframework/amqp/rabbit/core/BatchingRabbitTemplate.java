@@ -76,6 +76,7 @@ public class BatchingRabbitTemplate extends RabbitTemplate {
 	@Override
 	public synchronized void send(String exchange, String routingKey, Message message, CorrelationData correlationData)
 			throws AmqpException {
+
 		if (correlationData != null) {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Cannot use batching with correlation data");

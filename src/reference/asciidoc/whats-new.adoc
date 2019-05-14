@@ -25,6 +25,8 @@ When using <<receiving-batch,batching>>, `@RabbitListener` methods can now recei
 
 When receiving batched messages one-at-a-time, the last message has the `isLastInBatch` message property set to true.
 
+In addition, received batched messages now contain the `amqp_batchSize` header.
+
 Spring Data Projection interfaces are now supported by the `Jackson2JsonMessageConverter`.
 See <<data-projection>> for more information.
 

@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
+import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.util.Assert;
 
@@ -150,9 +151,9 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 		}
 		messageProperties.getHeaders().put(MessageProperties.SPRING_BATCH_FORMAT,
 				MessageProperties.BATCH_FORMAT_LENGTH_HEADER4);
+		messageProperties.getHeaders().put(AmqpHeaders.BATCH_SIZE, this.messages.size());
 		return new Message(body, messageProperties);
 	}
-
 
 	@Override
 	public boolean canDebatch(MessageProperties properties) {
