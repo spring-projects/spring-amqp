@@ -1089,7 +1089,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 						if (CachingConnectionFactory.this.active && !RabbitUtils.isPhysicalCloseRequired() &&
 								(this.channelList.size() < getChannelCacheSize()
 										|| this.channelList.contains(proxy))) {
-							releasePermitIfNecessary(proxy);
 							logicalClose((ChannelProxy) proxy);
 							return null;
 						}
@@ -1097,8 +1096,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				}
 
 				// If we get here, we're supposed to shut down.
-				physicalClose();
-				releasePermitIfNecessary(proxy);
+				physicalClose(proxy);
 				return null;
 			}
 			else if (methodName.equals("getTargetChannel")) {
@@ -1242,6 +1240,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 							if (logger.isTraceEnabled()) {
 								logger.trace("Returning cached Channel: " + this.target);
 							}
+							releasePermitIfNecessary(proxy);
 							this.channelList.addLast((ChannelProxy) proxy);
 							setHighWaterMark();
 						}
@@ -1249,9 +1248,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					else {
 						if (proxy.isOpen()) {
 							try {
-								physicalClose();
+								physicalClose(proxy);
 							}
-							catch (Exception e) {
+							catch (@SuppressWarnings("unused") Exception e) {
 							}
 						}
 					}
@@ -1271,18 +1270,20 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 		}
 
-		private void physicalClose() throws IOException, TimeoutException {
+		private void physicalClose(Object proxy) throws IOException, TimeoutException {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Closing cached Channel: " + this.target);
 			}
 			if (this.target == null) {
 				return;
 			}
+			boolean async = false;
 			try {
 				if (CachingConnectionFactory.this.active &&
 						(CachingConnectionFactory.this.publisherConfirms ||
 								CachingConnectionFactory.this.publisherReturns)) {
-					asyncClose();
+					async = true;
+					asyncClose(proxy);
 				}
 				else {
 					this.target.close();
@@ -1293,15 +1294,18 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 			catch (AlreadyClosedException e) {
 				if (logger.isTraceEnabled()) {
-					logger.trace(this.target + " is already closed");
+					logger.trace(this.target + " is already closed", e);
 				}
 			}
 			finally {
 				this.target = null;
+				if (!async) {
+					releasePermitIfNecessary(proxy);
+				}
 			}
 		}
 
-		private void asyncClose() {
+		private void asyncClose(Object proxy) {
 			ExecutorService executorService = getChannelsExecutor();
 			final Channel channel = CachedChannelInvocationHandler.this.target;
 			CachingConnectionFactory.this.inFlightAsyncCloses.add(channel);
@@ -1315,20 +1319,20 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 							Thread.sleep(ASYNC_CLOSE_TIMEOUT);
 						}
 					}
-					catch (InterruptedException e1) {
+					catch (@SuppressWarnings("unused") InterruptedException e1) {
 						Thread.currentThread().interrupt();
 					}
-					catch (Exception e2) {
+					catch (@SuppressWarnings("unused") Exception e2) {
 					}
 					finally {
 						try {
 							channel.close();
 						}
-						catch (IOException e3) {
+						catch (@SuppressWarnings("unused") IOException e3) {
 						}
-						catch (AlreadyClosedException e4) {
+						catch (@SuppressWarnings("unused") AlreadyClosedException e4) {
 						}
-						catch (TimeoutException e5) {
+						catch (@SuppressWarnings("unused") TimeoutException e5) {
 						}
 						catch (ShutdownSignalException e6) {
 							if (!RabbitUtils.isNormalShutdown(e6)) {
@@ -1337,6 +1341,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 						}
 						finally {
 							CachingConnectionFactory.this.inFlightAsyncCloses.release(channel);
+							releasePermitIfNecessary(proxy);
 						}
 					}
 				});

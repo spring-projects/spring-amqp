@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.any;
@@ -68,6 +69,7 @@ import org.mockito.InOrder;
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ContextClosedEvent;
@@ -576,6 +578,47 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verify(mockChannel1, never()).close();
 
 		ccf.destroy();
+	}
+
+	@Test
+	public void testCheckoutLimitWithPublisherConfirmsLogical() throws IOException, Exception {
+		testCheckoutLimitWithPublisherConfirms(false);
+	}
+
+	@Test
+	public void testCheckoutLimitWithPublisherConfirmsPhysical() throws IOException, Exception {
+		testCheckoutLimitWithPublisherConfirms(true);
+	}
+
+	public void testCheckoutLimitWithPublisherConfirms(boolean physicalClose) throws IOException, Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		Channel mockChannel1 = mock(Channel.class);
+
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
+		when(mockConnection.createChannel()).thenReturn(mockChannel1);
+		when(mockConnection.isOpen()).thenReturn(true);
+
+		// Called during physical close
+		when(mockChannel1.isOpen()).thenReturn(true);
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setExecutor(mock(ExecutorService.class));
+		ccf.setChannelCacheSize(1);
+		ccf.setChannelCheckoutTimeout(1);
+		ccf.setPublisherConfirms(true);
+
+		final Connection con = ccf.createConnection();
+
+		if (physicalClose) {
+			Channel channel = con.createChannel(false);
+			RabbitUtils.setPhysicalCloseRequired(channel, physicalClose);
+			channel.close();
+		}
+		else {
+			new RabbitTemplate(ccf).convertAndSend("foo", "bar"); // pending confirm
+		}
+		assertThatThrownBy(() -> con.createChannel(false)).isInstanceOf(AmqpTimeoutException.class);
 	}
 
 	@Test
