@@ -16,60 +16,24 @@
 
 package org.springframework.amqp.rabbit.core;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import com.rabbitmq.client.*;
+import com.rabbitmq.client.AMQP.BasicProperties;
+import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Address;
-import org.springframework.amqp.core.AmqpMessageReturnedException;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageListener;
-import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.core.ReceiveAndReplyCallback;
-import org.springframework.amqp.core.ReceiveAndReplyMessageCallback;
-import org.springframework.amqp.core.ReplyToAddressCallback;
-import org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory;
-import org.springframework.amqp.rabbit.connection.ChannelProxy;
-import org.springframework.amqp.rabbit.connection.ClosingRecoveryListener;
+import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
-import org.springframework.amqp.rabbit.connection.CorrelationData;
-import org.springframework.amqp.rabbit.connection.PendingConfirm;
-import org.springframework.amqp.rabbit.connection.PublisherCallbackChannel;
-import org.springframework.amqp.rabbit.connection.RabbitAccessor;
-import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
-import org.springframework.amqp.rabbit.connection.RabbitUtils;
+import org.springframework.amqp.rabbit.connection.*;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
-import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.Delivery;
-import org.springframework.amqp.rabbit.support.ListenerContainerAware;
-import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
-import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
-import org.springframework.amqp.rabbit.support.ValueExpression;
+import org.springframework.amqp.rabbit.support.*;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.support.converter.SmartMessageConverter;
@@ -93,15 +57,10 @@ import org.springframework.util.Assert;
 import org.springframework.util.ErrorHandler;
 import org.springframework.util.StringUtils;
 
-import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.AMQP.BasicProperties;
-import com.rabbitmq.client.AMQP.Queue.DeclareOk;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.ConfirmListener;
-import com.rabbitmq.client.DefaultConsumer;
-import com.rabbitmq.client.Envelope;
-import com.rabbitmq.client.GetResponse;
-import com.rabbitmq.client.ShutdownListener;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * <p>
@@ -1051,6 +1010,12 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
+	public void convertAndSend(String exchange, String routingKey, final Object message,
+			MessageProperties messageProperties) throws AmqpException {
+		send(exchange, routingKey, convertMessageIfNecessary(message, messageProperties), null);
+	}
+
+	@Override
 	public void convertAndSend(Object message, MessagePostProcessor messagePostProcessor) throws AmqpException {
 		convertAndSend(this.exchange, this.routingKey, message, messagePostProcessor);
 	}
@@ -1721,10 +1686,19 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	protected Message convertMessageIfNecessary(final Object object) {
+		return convertMessageIfNecessary(object, null);
+	}
+
+	protected Message convertMessageIfNecessary(final Object object, @Nullable MessageProperties messageProperties) {
 		if (object instanceof Message) {
 			return (Message) object;
+
 		}
-		return getRequiredMessageConverter().toMessage(object, new MessageProperties());
+		else if (messageProperties == null) {
+			messageProperties = new MessageProperties();
+		}
+
+		return getRequiredMessageConverter().toMessage(object, messageProperties);
 	}
 
 	/**

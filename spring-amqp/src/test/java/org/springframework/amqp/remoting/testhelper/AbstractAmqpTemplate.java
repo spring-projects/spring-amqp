@@ -20,6 +20,7 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
 import org.springframework.amqp.core.ReplyToAddressCallback;
 import org.springframework.core.ParameterizedTypeReference;
@@ -75,6 +76,12 @@ public abstract class AbstractAmqpTemplate implements AmqpTemplate {
 	@Override
 	public void convertAndSend(String exchange, String routingKey, Object message,
 			MessagePostProcessor messagePostProcessor) throws AmqpException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void convertAndSend(String exchange, String routingKey, Object message,
+			MessageProperties messageProperties) throws AmqpException {
 		throw new UnsupportedOperationException();
 	}
 

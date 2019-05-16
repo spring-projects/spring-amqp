@@ -176,6 +176,51 @@ public class RabbitTemplateTests {
 		assertThat(message).isSameAs(input);
 	}
 
+
+	@Test
+	public void testConvertBytesWithProperties() {
+		RabbitTemplate template = new RabbitTemplate();
+		byte[] payload = "Hello, world!".getBytes();
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setHeader("hello", "world");
+		Message message = template.convertMessageIfNecessary(payload, messageProperties);
+		assertThat(message.getBody()).isSameAs(payload);
+		assertThat(message.getMessageProperties()).isSameAs(messageProperties);
+	}
+
+	@Test
+	public void testConvertStringWithProperties() throws Exception {
+		RabbitTemplate template = new RabbitTemplate();
+		String payload = "Hello, world!";
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setHeader("hello", "world");
+		Message message = template.convertMessageIfNecessary(payload, messageProperties);
+		assertThat(new String(message.getBody(), SimpleMessageConverter.DEFAULT_CHARSET)).isEqualTo(payload);
+		assertThat(message.getMessageProperties()).isSameAs(messageProperties);
+	}
+
+	@Test
+	public void testConvertSerializableWithProperties() {
+		RabbitTemplate template = new RabbitTemplate();
+		Long payload = 43L;
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setHeader("hello", "world");
+		Message message = template.convertMessageIfNecessary(payload, messageProperties);
+		assertThat(SerializationUtils.deserialize(message.getBody())).isEqualTo(payload);
+		assertThat(message.getMessageProperties()).isSameAs(messageProperties);
+	}
+
+	@Test
+	public void testConvertMessageWithProperties() {
+		RabbitTemplate template = new RabbitTemplate();
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setHeader("hello", "world");
+		Message input = new Message("Hello, world!".getBytes(), messageProperties);
+		Message message = template.convertMessageIfNecessary(input);
+		assertThat(message).isSameAs(input);
+		assertThat(message.getMessageProperties()).isSameAs(messageProperties);
+	}
+
 	@Test // AMQP-249
 	public void dontHangConsumerThread() throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
