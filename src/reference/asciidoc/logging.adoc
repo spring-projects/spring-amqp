@@ -176,7 +176,7 @@ The following example shows how to configure a Log4j 2 appender:
 
 [IMPORTANT]
 ====
-Starting with versions 1.6.10 and 1.7.3, by default, the log4j2 sppender publishes the messages to RabbitMQ on the calling thread.
+Starting with versions 1.6.10 and 1.7.3, by default, the log4j2 appender publishes the messages to RabbitMQ on the calling thread.
 This is because Log4j 2 does not, by default, create thread-safe events.
 If the broker is down, the `maxSenderRetries` is used to retry, with no delay between retries.
 If you wish to restore the previous behavior of publishing the messages on separate threads (`senderPoolSize`), you can set the `async` property to `true`.

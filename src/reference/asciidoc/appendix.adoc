@@ -55,7 +55,7 @@ Users are discouraged from using the old mechanism of declaring `<Collection<Que
 By default, the old mechanism is disabled.
 See <<collection-declaration>> for more information.
 
-`AnonymousQueue` isntances are now declared with `x-queue-master-locator` set to `client-local` by default, to ensure the queues are created on the node the application is connected to.
+`AnonymousQueue` instances are now declared with `x-queue-master-locator` set to `client-local` by default, to ensure the queues are created on the node the application is connected to.
 See <<broker-configuration>> for more information.
 
 ===== RabbitTemplate Changes
@@ -267,7 +267,7 @@ You can now set after receive and before send (reply) `MessagePostProcessor` ins
 
 See <<async-annotation-driven>> for more information.
 
-Starting with version 2.0.3, one of the `@RabbitHandler` annotationss on a class-level `@RabbitListener` can be designated as the default.
+Starting with version 2.0.3, one of the `@RabbitHandler` annotations on a class-level `@RabbitListener` can be designated as the default.
 See <<annotation-method-selection>> for more information.
 
 ===== Container Conditional Rollback

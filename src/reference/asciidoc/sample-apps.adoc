@@ -118,7 +118,7 @@ The AMQP default exchange is a direct exchange with no name.
 All queues are bound to that default exchange with their name as the routing key.
 That is why we only need to provide the routing key here.
 
-The following listing shows the `rabbitTemplate` defintion:
+The following listing shows the `rabbitTemplate` definition:
 
 ====
 [source,java]
@@ -325,7 +325,7 @@ Now, while keeping the existing `Server` and `Client` running, change that prope
 You should see that the first client still receives NASDAQ quotes while the second client receives NYSE quotes.
 You could instead change the pattern to get all stocks or even an individual ticker.
 
-The final feature we explore is the request-reply interaction from the lient's perspective.
+The final feature we explore is the request-reply interaction from the client's perspective.
 Recall that we have already seen the `ServerHandler` that accepts `TradeRequest` objects and returns `TradeResponse` objects.
 The corresponding code on the `Client` side is `RabbitStockServiceGateway` in the `org.springframework.amqp.rabbit.stocks.gateway` package.
 It delegates to the `RabbitTemplate` in order to send messages.

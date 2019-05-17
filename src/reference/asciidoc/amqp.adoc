@@ -1606,7 +1606,7 @@ There are, nevertheless, scenarios where the prefetch value should be low:
 * Other special cases
 
 Also, with low-volume messaging and multiple consumers (including concurrency within a single listener container instance), you may wish to reduce the prefetch to get a more even distribution of messages across consumers.
-We also recomend using `prefetch = 1` with the `MANUAL` `ack` mode.
+We also recommend using `prefetch = 1` with the `MANUAL` `ack` mode.
 The `basicAck` is an asynchronous operation and, if something wrong happens on the Broker (double `ack` for the same delivery tag, for example), you end up with processed subsequent messages in the batch that are unacknowledged on the Broker, and other consumers may see them.
 
 See <<containerAttributes>>.
@@ -1693,7 +1693,7 @@ public interface ReplyingMessageListener<T, R> {
 ----
 ====
 
-This interface facilitates convenient configuration of the adapter by using Java 8 lamdas, as the following example shows:
+This interface facilitates convenient configuration of the adapter by using Java 8 lambdas, as the following example shows:
 
 ====
 [source, java]
@@ -2368,7 +2368,7 @@ It should be noted that you could just as well skip the use of `@RabbitListener`
 ====== Annotated Endpoint Method Signature
 
 So far, we have been injecting a simple `String` in our endpoint, but it can actually have a very flexible method signature.
-The follwoing example rewrites it to inject the `Order` with a custom header:
+The following example rewrites it to inject the `Order` with a custom header:
 
 ====
 [source,java]
@@ -3327,7 +3327,7 @@ For this reason, the infrastructure provides the `targetObject` message property
 converter to determine the type.
 
 IMPORTANT: Starting with version 1.6.11, `Jackson2JsonMessageConverter` and, therefore, `DefaultJackson2JavaTypeMapper` (`DefaultClassMapper`) provide the `trustedPackages` option to overcome https://pivotal.io/security/cve-2017-4995[Serialization Gadgets] vulnerability.
-By default and for backward compatiblity, the `Jackson2JsonMessageConverter` trusts all packages -- that is, it uses `*` for the option.
+By default and for backward compatibility, the `Jackson2JsonMessageConverter` trusts all packages -- that is, it uses `*` for the option.
 
 [[data-projection]]
 ====== Using Spring Data Projection Interfaces
@@ -3665,7 +3665,7 @@ This element provides a listener container for the reply queue, with the templat
 All of the <<containerAttributes>> attributes allowed on a <listener-container/> are allowed on the element, except for `connection-factory` and `message-converter`, which are inherited from the template's configuration.
 
 IMPORTANT: If you run multiple instances of your application or use multiple `RabbitTemplate` instances, you *MUST* use a unique reply queue for each.
-RabbitMQ has no ability to select messages from a queue, so, if they all use the samequ eue, each instance would compete for replies and not necessarily receive their own.
+RabbitMQ has no ability to select messages from a queue, so, if they all use the same queue, each instance would compete for replies and not necessarily receive their own.
 
 The following example defines a rabbit template with a connection factory:
 
@@ -3959,7 +3959,7 @@ The AMQP specification describes how the protocol can be used to configure queue
 These operations (which are portable from the 0.8 specification and higher) are present in the `AmqpAdmin` interface in the `org.springframework.amqp.core` package.
 The RabbitMQ implementation of that class is `RabbitAdmin` located in the `org.springframework.amqp.rabbit.core` package.
 
-The `AmqpAdmin` interface is based on using the Spring AMQP domain abstractions and is shown in the follwoing listing:
+The `AmqpAdmin` interface is based on using the Spring AMQP domain abstractions and is shown in the following listing:
 
 ====
 [source,java]
@@ -4830,7 +4830,7 @@ If the `channelTransacted` flag was set to `false` (the default) in the precedin
 Prior to version 1.6.6, adding a rollback rule to a container's `transactionAttribute` when using an external transaction manager (such as JDBC) had no effect.
 Exceptions always rolled back the transaction.
 
-Also, when using a https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/html/transaction.html#transaction-declarative[transaction advice] in the container's advice chain, conditional rollback was not very usefulm, because all listener exceptions are wrapped in a `ListenerExecutionFailedException`.
+Also, when using a https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/html/transaction.html#transaction-declarative[transaction advice] in the container's advice chain, conditional rollback was not very useful, because all listener exceptions are wrapped in a `ListenerExecutionFailedException`.
 
 The first problem has been corrected, and the rules are now applied properly.
 Further, the `ListenerFailedRuleBasedTransactionAttribute` is now provided.
