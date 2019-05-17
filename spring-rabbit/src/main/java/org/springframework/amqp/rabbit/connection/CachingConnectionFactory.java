@@ -1211,6 +1211,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 						if (this.channelList.contains(proxy)) {
 							this.channelList.remove(proxy);
 						}
+						else {
+							releasePermitIfNecessary(proxy);
+						}
 						this.target = null;
 						return;
 					}

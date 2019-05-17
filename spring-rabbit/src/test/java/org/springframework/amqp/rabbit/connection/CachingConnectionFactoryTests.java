@@ -28,6 +28,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -675,6 +676,39 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 			assertThat(ok).isTrue();
 		}
 		exec.shutdownNow();
+	}
+
+	@Test
+	public void testCheckoutLimitWithPublisherConfirmsLogicalAlreadyCloses() throws IOException, Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		Channel mockChannel = mock(Channel.class);
+
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
+		when(mockConnection.createChannel()).thenReturn(mockChannel);
+		when(mockConnection.isOpen()).thenReturn(true);
+
+		AtomicBoolean open = new AtomicBoolean(true);
+		doAnswer(invoc -> {
+			return open.get();
+		}).when(mockChannel).isOpen();
+		when(mockChannel.getNextPublishSeqNo()).thenReturn(1L);
+		doAnswer(invoc -> {
+			open.set(false); // so the logical close detects a closed delegate
+			return null;
+		}).when(mockChannel).basicPublish(any(), any(), anyBoolean(),  any(), any());
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setExecutor(mock(ExecutorService.class));
+		ccf.setChannelCacheSize(1);
+		ccf.setChannelCheckoutTimeout(1);
+		ccf.setPublisherConfirms(true);
+
+		RabbitTemplate rabbitTemplate = new RabbitTemplate(ccf);
+		rabbitTemplate.convertAndSend("foo", "bar");
+		open.set(true);
+		rabbitTemplate.convertAndSend("foo", "bar");
+		verify(mockChannel, times(2)).basicPublish(any(), any(), anyBoolean(),  any(), any());
 	}
 
 	@Test
