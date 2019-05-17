@@ -102,6 +102,8 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
 public class CachingConnectionFactory extends AbstractConnectionFactory
 		implements InitializingBean, ShutdownListener {
 
+	private static final String UNUSED = "unused";
+
 	private static final int DEFAULT_CHANNEL_CACHE_SIZE = 25;
 
 	private static final String DEFAULT_DEFERRED_POOL_PREFIX = "spring-rabbit-deferred-pool-";
@@ -845,7 +847,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 						this.logger.warn("Channel executor failed to shut down");
 					}
 				}
-				catch (@SuppressWarnings("unused") InterruptedException e) {
+				catch (@SuppressWarnings(UNUSED) InterruptedException e) {
 					Thread.currentThread().interrupt();
 				}
 			}
@@ -1250,7 +1252,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 							try {
 								physicalClose(proxy);
 							}
-							catch (@SuppressWarnings("unused") Exception e) {
+							catch (@SuppressWarnings(UNUSED) Exception e) {
 							}
 						}
 					}
@@ -1319,20 +1321,20 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 							Thread.sleep(ASYNC_CLOSE_TIMEOUT);
 						}
 					}
-					catch (@SuppressWarnings("unused") InterruptedException e1) {
+					catch (@SuppressWarnings(UNUSED) InterruptedException e1) {
 						Thread.currentThread().interrupt();
 					}
-					catch (@SuppressWarnings("unused") Exception e2) {
+					catch (@SuppressWarnings(UNUSED) Exception e2) {
 					}
 					finally {
 						try {
 							channel.close();
 						}
-						catch (@SuppressWarnings("unused") IOException e3) {
+						catch (@SuppressWarnings(UNUSED) IOException e3) {
 						}
-						catch (@SuppressWarnings("unused") AlreadyClosedException e4) {
+						catch (@SuppressWarnings(UNUSED) AlreadyClosedException e4) {
 						}
-						catch (@SuppressWarnings("unused") TimeoutException e5) {
+						catch (@SuppressWarnings(UNUSED) TimeoutException e5) {
 						}
 						catch (ShutdownSignalException e6) {
 							if (!RabbitUtils.isNormalShutdown(e6)) {
@@ -1346,7 +1348,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					}
 				});
 			}
-			catch (@SuppressWarnings("unused") RuntimeException e) {
+			catch (@SuppressWarnings(UNUSED) RuntimeException e) {
 				CachingConnectionFactory.this.inFlightAsyncCloses.release(channel);
 			}
 		}

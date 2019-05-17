@@ -77,6 +77,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.rabbitmq.client.Address;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.ConfirmListener;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.GetResponse;
 import com.rabbitmq.client.ShutdownSignalException;
@@ -590,35 +591,77 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		testCheckoutLimitWithPublisherConfirms(true);
 	}
 
-	public void testCheckoutLimitWithPublisherConfirms(boolean physicalClose) throws IOException, Exception {
+	private void testCheckoutLimitWithPublisherConfirms(boolean physicalClose) throws IOException, Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
-		Channel mockChannel1 = mock(Channel.class);
+		Channel mockChannel = mock(Channel.class);
 
 		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
-		when(mockConnection.createChannel()).thenReturn(mockChannel1);
+		when(mockConnection.createChannel()).thenReturn(mockChannel);
 		when(mockConnection.isOpen()).thenReturn(true);
 
 		// Called during physical close
-		when(mockChannel1.isOpen()).thenReturn(true);
+		when(mockChannel.isOpen()).thenReturn(true);
+		CountDownLatch confirmsLatch = new CountDownLatch(1);
+		doAnswer(invoc -> {
+			confirmsLatch.await(10, TimeUnit.SECONDS);
+			return null;
+		}).when(mockChannel).waitForConfirmsOrDie(anyLong());
+		AtomicReference<ConfirmListener> confirmListener = new AtomicReference<>();
+		doAnswer(invoc -> {
+			confirmListener.set(invoc.getArgument(0));
+			return null;
+		}).when(mockChannel).addConfirmListener(any());
+		when(mockChannel.getNextPublishSeqNo()).thenReturn(1L);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
-		ccf.setExecutor(mock(ExecutorService.class));
+		ExecutorService exec = Executors.newCachedThreadPool();
+		ccf.setExecutor(exec);
 		ccf.setChannelCacheSize(1);
 		ccf.setChannelCheckoutTimeout(1);
 		ccf.setPublisherConfirms(true);
 
 		final Connection con = ccf.createConnection();
 
+		RabbitTemplate rabbitTemplate = new RabbitTemplate(ccf);
 		if (physicalClose) {
-			Channel channel = con.createChannel(false);
-			RabbitUtils.setPhysicalCloseRequired(channel, physicalClose);
-			channel.close();
+			Channel channel1 = con.createChannel(false);
+			RabbitUtils.setPhysicalCloseRequired(channel1, physicalClose);
+			channel1.close();
 		}
 		else {
-			new RabbitTemplate(ccf).convertAndSend("foo", "bar"); // pending confirm
+			rabbitTemplate.convertAndSend("foo", "bar"); // pending confirm
 		}
 		assertThatThrownBy(() -> con.createChannel(false)).isInstanceOf(AmqpTimeoutException.class);
+		int n = 0;
+		if (physicalClose) {
+			confirmsLatch.countDown();
+			Channel channel2 = null;
+			while (channel2 == null && n++ < 100) {
+				try {
+					channel2 = con.createChannel(false);
+				}
+				catch (Exception e) {
+					Thread.sleep(100);
+				}
+			}
+			assertThat(channel2).isNotNull();
+		}
+		else {
+			confirmListener.get().handleAck(1L, false);
+			boolean ok = false;
+			while (!ok && n++ < 100) {
+				try {
+					rabbitTemplate.convertAndSend("foo", "bar");
+					ok = true;
+				}
+				catch (Exception e) {
+					Thread.sleep(100);
+				}
+			}
+			assertThat(ok).isTrue();
+		}
+		exec.shutdownNow();
 	}
 
 	@Test
@@ -1485,7 +1528,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		testConsumerChannelPhysicallyClosedWhenNotIsOpenGuts(true);
 	}
 
-	public void testConsumerChannelPhysicallyClosedWhenNotIsOpenGuts(boolean confirms) throws Exception {
+	private void testConsumerChannelPhysicallyClosedWhenNotIsOpenGuts(boolean confirms) throws Exception {
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		try {
 			com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
