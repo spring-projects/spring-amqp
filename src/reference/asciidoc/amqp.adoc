@@ -3665,7 +3665,7 @@ This element provides a listener container for the reply queue, with the templat
 All of the <<containerAttributes>> attributes allowed on a <listener-container/> are allowed on the element, except for `connection-factory` and `message-converter`, which are inherited from the template's configuration.
 
 IMPORTANT: If you run multiple instances of your application or use multiple `RabbitTemplate` instances, you *MUST* use a unique reply queue for each.
-RabbitMQ has no ability to select messages from a queue, so, if they all use the samequ eue, each instance would compete for replies and not necessarily receive their own.
+RabbitMQ has no ability to select messages from a queue, so, if they all use the same queue, each instance would compete for replies and not necessarily receive their own.
 
 The following example defines a rabbit template with a connection factory:
 
