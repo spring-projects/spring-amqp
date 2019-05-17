@@ -2368,7 +2368,7 @@ It should be noted that you could just as well skip the use of `@RabbitListener`
 ====== Annotated Endpoint Method Signature
 
 So far, we have been injecting a simple `String` in our endpoint, but it can actually have a very flexible method signature.
-The follwoing example rewrites it to inject the `Order` with a custom header:
+The following example rewrites it to inject the `Order` with a custom header:
 
 ====
 [source,java]
@@ -3959,7 +3959,7 @@ The AMQP specification describes how the protocol can be used to configure queue
 These operations (which are portable from the 0.8 specification and higher) are present in the `AmqpAdmin` interface in the `org.springframework.amqp.core` package.
 The RabbitMQ implementation of that class is `RabbitAdmin` located in the `org.springframework.amqp.rabbit.core` package.
 
-The `AmqpAdmin` interface is based on using the Spring AMQP domain abstractions and is shown in the follwoing listing:
+The `AmqpAdmin` interface is based on using the Spring AMQP domain abstractions and is shown in the following listing:
 
 ====
 [source,java]
