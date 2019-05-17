@@ -4474,35 +4474,33 @@ In the following example, the components are declared by `admin1` but not by`adm
 [source,java]
 ----
 @Bean
-public RabbitAdmin admin() {
-    RabbitAdmin rabbitAdmin = new RabbitAdmin(cf1());
-    return rabbitAdmin;
+public RabbitAdmin admin1() {
+    return new RabbitAdmin(cf1());
 }
 
 @Bean
 public RabbitAdmin admin2() {
-    RabbitAdmin rabbitAdmin = new RabbitAdmin(cf2());
-    return rabbitAdmin;
+    return new RabbitAdmin(cf2());
 }
 
 @Bean
 public Queue queue() {
     Queue queue = new Queue("foo");
-    queue.setAdminsThatShouldDeclare(admin());
+    queue.setAdminsThatShouldDeclare(admin1());
     return queue;
 }
 
 @Bean
 public Exchange exchange() {
     DirectExchange exchange = new DirectExchange("bar");
-    exchange.setAdminsThatShouldDeclare(admin());
+    exchange.setAdminsThatShouldDeclare(admin1());
     return exchange;
 }
 
 @Bean
 public Binding binding() {
     Binding binding = new Binding("foo", DestinationType.QUEUE, exchange().getName(), "foo", null);
-    binding.setAdminsThatShouldDeclare(admin());
+    binding.setAdminsThatShouldDeclare(admin1());
     return binding;
 }
 ----
