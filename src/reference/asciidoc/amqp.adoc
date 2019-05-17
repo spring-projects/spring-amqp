@@ -4476,14 +4476,12 @@ In the following example, the components are declared by `admin1` but not by`adm
 @Bean
 public RabbitAdmin admin() {
     RabbitAdmin rabbitAdmin = new RabbitAdmin(cf1());
-    rabbitAdmin.afterPropertiesSet();
     return rabbitAdmin;
 }
 
 @Bean
 public RabbitAdmin admin2() {
     RabbitAdmin rabbitAdmin = new RabbitAdmin(cf2());
-    rabbitAdmin.afterPropertiesSet();
     return rabbitAdmin;
 }
 
