@@ -118,7 +118,7 @@ The AMQP default exchange is a direct exchange with no name.
 All queues are bound to that default exchange with their name as the routing key.
 That is why we only need to provide the routing key here.
 
-The following listing shows the `rabbitTemplate` defintion:
+The following listing shows the `rabbitTemplate` definition:
 
 ====
 [source,java]
