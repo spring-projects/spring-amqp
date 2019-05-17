@@ -1693,7 +1693,7 @@ public interface ReplyingMessageListener<T, R> {
 ----
 ====
 
-This interface facilitates convenient configuration of the adapter by using Java 8 lamdas, as the following example shows:
+This interface facilitates convenient configuration of the adapter by using Java 8 lambdas, as the following example shows:
 
 ====
 [source, java]
