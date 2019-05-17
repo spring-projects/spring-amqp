@@ -4830,7 +4830,7 @@ If the `channelTransacted` flag was set to `false` (the default) in the precedin
 Prior to version 1.6.6, adding a rollback rule to a container's `transactionAttribute` when using an external transaction manager (such as JDBC) had no effect.
 Exceptions always rolled back the transaction.
 
-Also, when using a https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/html/transaction.html#transaction-declarative[transaction advice] in the container's advice chain, conditional rollback was not very usefulm, because all listener exceptions are wrapped in a `ListenerExecutionFailedException`.
+Also, when using a https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/html/transaction.html#transaction-declarative[transaction advice] in the container's advice chain, conditional rollback was not very useful, because all listener exceptions are wrapped in a `ListenerExecutionFailedException`.
 
 The first problem has been corrected, and the rules are now applied properly.
 Further, the `ListenerFailedRuleBasedTransactionAttribute` is now provided.
