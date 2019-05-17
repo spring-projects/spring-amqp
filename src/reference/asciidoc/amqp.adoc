@@ -3327,7 +3327,7 @@ For this reason, the infrastructure provides the `targetObject` message property
 converter to determine the type.
 
 IMPORTANT: Starting with version 1.6.11, `Jackson2JsonMessageConverter` and, therefore, `DefaultJackson2JavaTypeMapper` (`DefaultClassMapper`) provide the `trustedPackages` option to overcome https://pivotal.io/security/cve-2017-4995[Serialization Gadgets] vulnerability.
-By default and for backward compatiblity, the `Jackson2JsonMessageConverter` trusts all packages -- that is, it uses `*` for the option.
+By default and for backward compatibility, the `Jackson2JsonMessageConverter` trusts all packages -- that is, it uses `*` for the option.
 
 [[data-projection]]
 ====== Using Spring Data Projection Interfaces
