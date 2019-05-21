@@ -334,14 +334,24 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 		}
 	}
 
-	private void asyncSuccess(InvocationResult resultArg, Message request, Channel channel, Object source, Object r) {
-		// We only get here with Mono<?> and ListenableFuture<?> which have exactly one type argument
-		Type returnType = ((ParameterizedType) resultArg.getReturnType()).getActualTypeArguments()[0]; // NOSONAR
-		if (returnType instanceof WildcardType) {
-			// Set the return type to null so the converter will use the actual returned object's class for type info
-			returnType = null;
+	private void asyncSuccess(InvocationResult resultArg, Message request, Channel channel, Object source,
+			Object deferredResult) {
+
+		if (deferredResult == null) {
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("Async result is null, ignoring");
+			}
 		}
-		doHandleResult(new InvocationResult(r, resultArg.getSendTo(), returnType), request, channel, source);
+		else {
+			// We only get here with Mono<?> and ListenableFuture<?> which have exactly one type argument
+			Type returnType = ((ParameterizedType) resultArg.getReturnType()).getActualTypeArguments()[0]; // NOSONAR
+			if (returnType instanceof WildcardType) {
+				// Set the return type to null so the converter will use the actual returned object's class for type info
+				returnType = null;
+			}
+			doHandleResult(new InvocationResult(deferredResult, resultArg.getSendTo(), returnType), request, channel,
+					source);
+		}
 		try {
 			channel.basicAck(request.getMessageProperties().getDeliveryTag(), false);
 		}
