@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -84,6 +85,12 @@ public class AsyncListenerTests {
 	@Autowired
 	private Queue queue3;
 
+	@Autowired
+	private Queue queue4;
+
+	@Autowired
+	private Listener listener;
+
 	@Test
 	public void testAsyncListener() throws Exception {
 		assertThat(this.rabbitTemplate.convertSendAndReceive(this.queue1.getName(), "foo")).isEqualTo("FOO");
@@ -97,6 +104,8 @@ public class AsyncListenerTests {
 		assertThat(this.rabbitTemplate.convertSendAndReceive(this.queue3.getName(), "foo")).isEqualTo(foos);
 		assertThat(this.config.typeId).isEqualTo("java.util.List");
 		assertThat(this.config.contentTypeId).isEqualTo("java.lang.String");
+		this.rabbitTemplate.convertAndSend(this.queue4.getName(), "foo");
+		assertThat(listener.latch4.await(10, TimeUnit.SECONDS));
 	}
 
 	@Configuration
@@ -167,6 +176,11 @@ public class AsyncListenerTests {
 		}
 
 		@Bean
+		public Queue queue4() {
+			return new AnonymousQueue();
+		}
+
+		@Bean
 		public Listener listener() {
 			return new Listener();
 		}
@@ -179,6 +193,8 @@ public class AsyncListenerTests {
 		private final AtomicBoolean fooFirst = new AtomicBoolean(true);
 
 		private final AtomicBoolean barFirst = new AtomicBoolean(true);
+
+		private final CountDownLatch latch4 = new CountDownLatch(1);
 
 		@RabbitListener(id = "foo", queues = "#{queue1.name}")
 		public ListenableFuture<String> listen1(String foo) {
@@ -205,6 +221,14 @@ public class AsyncListenerTests {
 		@RabbitListener(id = "baz", queues = "#{queue3.name}")
 		public Mono<List<String>> listen3(String foo) {
 			return Mono.just(Collections.singletonList(foo.toUpperCase()));
+		}
+
+		@RabbitListener(id = "qux", queues = "#{queue4.name}")
+		public ListenableFuture<Void> listen4(@SuppressWarnings("unused") String foo) {
+			SettableListenableFuture<Void> future = new SettableListenableFuture<>();
+			future.set(null);
+			this.latch4.countDown();
+			return future;
 		}
 
 	}
