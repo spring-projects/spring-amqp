@@ -89,6 +89,9 @@ public class AsyncListenerTests {
 	private Queue queue4;
 
 	@Autowired
+	private Queue queue5;
+
+	@Autowired
 	private Listener listener;
 
 	@Test
@@ -106,6 +109,8 @@ public class AsyncListenerTests {
 		assertThat(this.config.contentTypeId).isEqualTo("java.lang.String");
 		this.rabbitTemplate.convertAndSend(this.queue4.getName(), "foo");
 		assertThat(listener.latch4.await(10, TimeUnit.SECONDS));
+		this.rabbitTemplate.convertAndSend(this.queue5.getName(), "foo");
+		assertThat(listener.latch5.await(10, TimeUnit.SECONDS));
 	}
 
 	@Configuration
@@ -181,6 +186,11 @@ public class AsyncListenerTests {
 		}
 
 		@Bean
+		public Queue queue5() {
+			return new AnonymousQueue();
+		}
+
+		@Bean
 		public Listener listener() {
 			return new Listener();
 		}
@@ -195,6 +205,8 @@ public class AsyncListenerTests {
 		private final AtomicBoolean barFirst = new AtomicBoolean(true);
 
 		private final CountDownLatch latch4 = new CountDownLatch(1);
+
+		private final CountDownLatch latch5 = new CountDownLatch(1);
 
 		@RabbitListener(id = "foo", queues = "#{queue1.name}")
 		public ListenableFuture<String> listen1(String foo) {
@@ -231,6 +243,10 @@ public class AsyncListenerTests {
 			return future;
 		}
 
+		@RabbitListener(id = "quux", queues = "#{queue5.name}")
+		public Mono<Void> listen5(@SuppressWarnings("unused") String foo) {
+			return Mono.empty().doOnTerminate(this.latch5::countDown).then();
+		}
 	}
 
 }

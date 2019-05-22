@@ -322,7 +322,8 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 				}
 				MonoHandler.subscribe(resultArg.getReturnValue(),
 						r -> asyncSuccess(resultArg, request, channel, source, r),
-						t -> asyncFailure(request, channel, t));
+						t -> asyncFailure(request, channel, t),
+						() -> basicAck(request, channel));
 			}
 			else {
 				doHandleResult(resultArg, request, channel, source);
@@ -352,6 +353,10 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 			doHandleResult(new InvocationResult(deferredResult, resultArg.getSendTo(), returnType), request, channel,
 					source);
 		}
+		basicAck(request, channel);
+	}
+
+	private void basicAck(Message request, Channel channel) {
 		try {
 			channel.basicAck(request.getMessageProperties().getDeliveryTag(), false);
 		}
@@ -589,9 +594,9 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 
 		@SuppressWarnings("unchecked")
 		static void subscribe(Object returnValue, Consumer<? super Object> success,
-				Consumer<? super Throwable> failure) {
+							  Consumer<? super Throwable> failure, Runnable empty) {
 
-			((Mono<? super Object>) returnValue).subscribe(success, failure);
+			((Mono<? super Object>) returnValue).switchIfEmpty(Mono.fromRunnable(empty)).subscribe(success, failure);
 		}
 
 	}
