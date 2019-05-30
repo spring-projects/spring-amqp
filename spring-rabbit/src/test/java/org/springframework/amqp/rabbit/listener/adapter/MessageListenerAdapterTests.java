@@ -47,6 +47,7 @@ import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.SettableListenableFuture;
 
 import com.rabbitmq.client.Channel;
+import reactor.core.publisher.Mono;
 
 /**
  * @author Dave Syer
@@ -238,6 +239,23 @@ public class MessageListenerAdapterTests {
 		verify(mockChannel).basicAck(anyLong(), eq(false));
 	}
 
+	@Test
+	public void testMonoVoidReturnAck() throws Exception {
+		class Delegate {
+
+			@SuppressWarnings("unused")
+			public Mono<Void> myPojoMessageMethod(String input) {
+				return Mono.empty();
+			}
+
+		}
+		this.adapter = new MessageListenerAdapter(new Delegate(), "myPojoMessageMethod");
+		this.adapter.containerAckMode(AcknowledgeMode.MANUAL);
+		this.adapter.setResponseExchange("default");
+		Channel mockChannel = mock(Channel.class);
+		this.adapter.onMessage(new Message("foo".getBytes(), this.messageProperties), mockChannel);
+		verify(mockChannel).basicAck(anyLong(), eq(false));
+	}
 
 	public interface Service {
 
