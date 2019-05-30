@@ -82,9 +82,9 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	private static final boolean monoPresent = // NOSONAR - lower case
 			ClassUtils.isPresent("reactor.core.publisher.Mono", ChannelAwareMessageListener.class.getClassLoader());
 
-	;
-
-	/** Logger available to subclasses. */
+	/**
+	 * Logger available to subclasses.
+	 */
 	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR protected
 
 	private final StandardEvaluationContext evalContext = new StandardEvaluationContext();
