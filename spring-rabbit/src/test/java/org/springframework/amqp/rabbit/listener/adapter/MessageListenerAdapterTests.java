@@ -23,9 +23,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,6 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -44,6 +47,8 @@ import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.retry.RetryPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.util.concurrent.ListenableFuture;
+import org.springframework.util.concurrent.SettableListenableFuture;
 
 import com.rabbitmq.client.Channel;
 
@@ -51,7 +56,7 @@ import com.rabbitmq.client.Channel;
  * @author Dave Syer
  * @author Greg Turnquist
  * @author Gary Russell
- *
+ * @author Artem Bilan
  */
 public class MessageListenerAdapterTests {
 
@@ -179,6 +184,27 @@ public class MessageListenerAdapterTests {
 		assertThat(replyAddress.get().getRoutingKey(), equalTo("bar"));
 		assertThat(throwable.get(), sameInstance(ex));
 	}
+
+	@Test
+	public void testListenableFutureReturn() throws Exception {
+		class Delegate {
+
+			@SuppressWarnings("unused")
+			public ListenableFuture<String> myPojoMessageMethod(String input) {
+				SettableListenableFuture<String> future = new SettableListenableFuture<>();
+				future.set("processed" + input);
+				return future;
+			}
+
+		}
+		this.adapter = new MessageListenerAdapter(new Delegate(), "myPojoMessageMethod");
+		this.adapter.containerAckMode(AcknowledgeMode.MANUAL);
+		this.adapter.setResponseExchange("default");
+		Channel mockChannel = mock(Channel.class);
+		this.adapter.onMessage(new Message("foo".getBytes(), this.messageProperties), mockChannel);
+		verify(mockChannel).basicAck(anyLong(), eq(false));
+	}
+
 
 	public interface Service {
 

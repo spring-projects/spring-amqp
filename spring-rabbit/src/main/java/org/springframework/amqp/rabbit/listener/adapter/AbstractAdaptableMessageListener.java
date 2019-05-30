@@ -80,9 +80,11 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	private static final ParserContext PARSER_CONTEXT = new TemplateParserContext("!{", "}");
 
 	private static final boolean monoPresent = // NOSONAR - lower case
-			ClassUtils.isPresent("reactor.core.publisher.Mono", ChannelAwareMessageListener.class.getClassLoader());;
+			ClassUtils.isPresent("reactor.core.publisher.Mono", ChannelAwareMessageListener.class.getClassLoader());
 
-	/** Logger available to subclasses. */
+	/**
+	 * Logger available to subclasses.
+	 */
 	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR protected
 
 	private final StandardEvaluationContext evalContext = new StandardEvaluationContext();
@@ -95,7 +97,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 
 	private Expression responseExpression;
 
-	private volatile boolean mandatoryPublish;
+	private boolean mandatoryPublish;
 
 	private MessageConverter messageConverter = new SimpleMessageConverter();
 
@@ -355,10 +357,17 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 		}
 		else {
 			// We only get here with Mono<?> and ListenableFuture<?> which have exactly one type argument
-			Type returnType = ((ParameterizedType) resultArg.getReturnType()).getActualTypeArguments()[0]; // NOSONAR
-			if (returnType instanceof WildcardType) {
-				// Set the return type to null so the converter will use the actual returned object's class for type info
-				returnType = null;
+			Type returnType = resultArg.getReturnType();
+			if (returnType != null) {
+				Type[] actualTypeArguments = ((ParameterizedType) returnType).getActualTypeArguments();
+				if (actualTypeArguments.length > 0) {
+					returnType = actualTypeArguments[0]; // NOSONAR
+					if (returnType instanceof WildcardType) {
+						// Set the return type to null so the converter will use the actual returned
+						// object's class for type info
+						returnType = null;
+					}
+				}
 			}
 			doHandleResult(new InvocationResult(deferredResult, resultArg.getSendTo(), returnType), request, channel,
 					source);
@@ -486,7 +495,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	}
 
 	private Address evaluateReplyTo(Message request, Object source, Object result, Expression expression) {
-		Address replyTo = null;
+		Address replyTo;
 		Object value = expression.getValue(this.evalContext, new ReplyExpressionRoot(request, source, result));
 		Assert.state(value instanceof String || value instanceof Address,
 				"response expression must evaluate to a String or Address");
