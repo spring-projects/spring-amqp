@@ -64,6 +64,7 @@ import reactor.core.publisher.Mono;
  * @author Stephane Nicoll
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Johan Haleby
  *
  * @since 1.4
  *
@@ -325,7 +326,10 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 							+ "otherwise the container will ack the message immediately");
 				}
 				((ListenableFuture<?>) resultArg.getReturnValue()).addCallback(
-						r -> asyncSuccess(resultArg, request, channel, source, r),
+						r -> {
+							asyncSuccess(resultArg, request, channel, source, r);
+							basicAck(request, channel);
+						},
 						t -> asyncFailure(request, channel, t));
 			}
 			else if (monoPresent && MonoHandler.isMono(resultArg.getReturnValue())) {
@@ -335,7 +339,8 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 				}
 				MonoHandler.subscribe(resultArg.getReturnValue(),
 						r -> asyncSuccess(resultArg, request, channel, source, r),
-						t -> asyncFailure(request, channel, t));
+						t -> asyncFailure(request, channel, t),
+						() -> basicAck(request, channel));
 			}
 			else {
 				doHandleResult(resultArg, request, channel, source);
@@ -372,6 +377,9 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 			doHandleResult(new InvocationResult(deferredResult, resultArg.getSendTo(), returnType), request, channel,
 					source);
 		}
+	}
+
+	private void basicAck(Message request, Channel channel) {
 		try {
 			channel.basicAck(request.getMessageProperties().getDeliveryTag(), false);
 		}
@@ -609,9 +617,9 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 
 		@SuppressWarnings("unchecked")
 		static void subscribe(Object returnValue, Consumer<? super Object> success,
-				Consumer<? super Throwable> failure) {
+				Consumer<? super Throwable> failure, Runnable completeConsumer) {
 
-			((Mono<? super Object>) returnValue).subscribe(success, failure);
+			((Mono<? super Object>) returnValue).subscribe(success, failure, completeConsumer);
 		}
 
 	}
