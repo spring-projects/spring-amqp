@@ -2756,6 +2756,21 @@ If you use JSON, consider using an `errorHandler` to return some other Jackson-f
 
 IMPORTANT: In version 2.1, this interface moved from package `o.s.amqp.rabbit.listener` to `o.s.amqp.rabbit.listener.api`.
 
+Starting with version 2.1.7, the `Channel` is available in a messaging message header; this allows you to ack or nack the failed messasge when using `AcknowledgeMode.MANUAL`:
+
+====
+[source, java]
+----
+public Object handleError(Message amqpMessage, org.springframework.messaging.Message<?> message,
+          ListenerExecutionFailedException exception) {
+              ...
+              message.getHeaders().get(AmqpHeaders.CHANNEL, Channel.class)
+                  .basicReject(message.getHeaders().get(AmqpHeaders.DELIVERY_TAG, Long.class),
+                               true);
+          }
+----
+====
+
 ====== Container Management
 
 Containers created for annotations are not registered with the application context.
