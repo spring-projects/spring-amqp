@@ -765,6 +765,8 @@ public class EnableRabbitIntegrationTests {
 		catch (Exception e) {
 			assertThat(e.getCause().getMessage()).isEqualTo("from error handler");
 			assertThat(e.getCause().getCause().getMessage()).isEqualTo("return this");
+			EnableRabbitConfig config = this.context.getBean(EnableRabbitConfig.class);
+			assertThat(config.errorHandlerChannel).isNotNull();
 		}
 	}
 
@@ -1351,6 +1353,8 @@ public class EnableRabbitIntegrationTests {
 
 		private final CountDownLatch noListenerLatch = new CountDownLatch(1);
 
+		private volatile Channel errorHandlerChannel;
+
 		@Bean
 		public ConnectionNameStrategy cns() {
 			return new SimplePropertyValueConnectionNameStrategy("spring.application.name");
@@ -1552,6 +1556,7 @@ public class EnableRabbitIntegrationTests {
 		@Bean
 		public RabbitListenerErrorHandler throwANewException() {
 			return (m, sm, e) -> {
+				this.errorHandlerChannel = sm.getHeaders().get(AmqpHeaders.CHANNEL, Channel.class);
 				throw new RuntimeException("from error handler", e.getCause());
 			};
 		}
