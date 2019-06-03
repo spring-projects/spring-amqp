@@ -25,6 +25,7 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.support.AmqpHeaderMapper;
+import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.MessagingMessageConverter;
@@ -32,6 +33,7 @@ import org.springframework.core.MethodParameter;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.remoting.support.RemoteInvocationResult;
 import org.springframework.util.Assert;
 
@@ -135,6 +137,9 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		catch (ListenerExecutionFailedException e) {
 			if (this.errorHandler != null) {
 				try {
+					message = MessageBuilder.fromMessage(message)
+							.setHeader(AmqpHeaders.CHANNEL, channel)
+							.build();
 					Object errorResult = this.errorHandler.handleError(amqpMessage, message, e);
 					if (errorResult != null) {
 						handleResult(new InvocationResult(errorResult, null, null), amqpMessage, channel, message);
