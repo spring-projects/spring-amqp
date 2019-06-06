@@ -16,8 +16,10 @@
 
 package org.springframework.amqp.core;
 
+import java.util.Arrays;
 import java.util.Map;
 
+import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 /**
@@ -47,7 +49,7 @@ public final class ExchangeBuilder extends AbstractBuilder {
 
 	private boolean declare = true;
 
-	private Object[] admins;
+	private Object[] declaringAdmins;
 
 	/**
 	 * Construct an instance of the appropriate type.
@@ -176,13 +178,15 @@ public final class ExchangeBuilder extends AbstractBuilder {
 	}
 
 	/**
-	 * Admins, or admin bean names that should declare this exchange.
+	 * Admin instances, or admin bean names that should declare this exchange.
 	 * @param admins the admins.
 	 * @return the builder.
 	 * @since 2.1
 	 */
 	public ExchangeBuilder admins(Object... admins) {
-		this.admins = admins;
+		Assert.notNull(admins, "'admins' cannot be null");
+		Assert.noNullElements(admins, "'admins' can't have null elements");
+		this.declaringAdmins = Arrays.copyOf(admins, admins.length);
 		return this;
 	}
 
@@ -207,8 +211,8 @@ public final class ExchangeBuilder extends AbstractBuilder {
 		exchange.setDelayed(this.delayed);
 		exchange.setIgnoreDeclarationExceptions(this.ignoreDeclarationExceptions);
 		exchange.setShouldDeclare(this.declare);
-		if (!ObjectUtils.isEmpty(this.admins)) {
-			exchange.setAdminsThatShouldDeclare(this.admins);
+		if (!ObjectUtils.isEmpty(this.declaringAdmins)) {
+			exchange.setAdminsThatShouldDeclare(this.declaringAdmins);
 		}
 		return exchange;
 	}

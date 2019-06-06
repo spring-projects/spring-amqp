@@ -198,11 +198,11 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 		this.acknowledgeMode = acknowledgeMode;
 	}
 
-	public void setQueueNames(String... queueName) {
+	public void setQueueNames(String... queueName) { // NOSONAR
 		this.queueNames = queueName;
 	}
 
-	public void setQueues(Queue... queues) {
+	public void setQueues(Queue... queues) { // NOSONAR
 		this.queues = queues;
 	}
 
@@ -222,11 +222,11 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 		this.deBatchingEnabled = deBatchingEnabled;
 	}
 
-	public void setAdviceChain(Advice... adviceChain) {
+	public void setAdviceChain(Advice... adviceChain) { // NOSONAR
 		this.adviceChain = adviceChain;
 	}
 
-	public void setAfterReceivePostProcessors(MessagePostProcessor... afterReceivePostProcessors) {
+	public void setAfterReceivePostProcessors(MessagePostProcessor... afterReceivePostProcessors) { // NOSONAR
 		this.afterReceivePostProcessors = afterReceivePostProcessors;
 	}
 

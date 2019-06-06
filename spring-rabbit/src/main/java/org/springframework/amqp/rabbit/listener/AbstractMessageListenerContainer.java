@@ -485,15 +485,15 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * <p>
 	 * In contrast to {@link #setAfterReceivePostProcessors(MessagePostProcessor...)}, this
 	 * method does not override the previously added afterReceivePostProcessors.
-	 * @param afterReceivePostProcessors the post processor.
+	 * @param postprocessors the post processor.
 	 * @since 2.1.4
 	 */
-	public void addAfterReceivePostProcessors(MessagePostProcessor... afterReceivePostProcessors) {
-		Assert.notNull(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot be null");
+	public void addAfterReceivePostProcessors(MessagePostProcessor... postprocessors) {
+		Assert.notNull(postprocessors, "'afterReceivePostProcessors' cannot be null");
 		if (this.afterReceivePostProcessors == null) {
 			this.afterReceivePostProcessors = new ArrayList<>();
 		}
-		this.afterReceivePostProcessors.addAll(Arrays.asList(afterReceivePostProcessors));
+		this.afterReceivePostProcessors.addAll(Arrays.asList(postprocessors));
 		this.afterReceivePostProcessors = MessagePostProcessorUtils.sort(this.afterReceivePostProcessors);
 	}
 

@@ -46,6 +46,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.retry.RecoveryCallback;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.util.Assert;
 import org.springframework.util.ErrorHandler;
 import org.springframework.util.backoff.BackOff;
 import org.springframework.util.backoff.FixedBackOff;
@@ -295,23 +296,27 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 	/**
 	 * Set post processors which will be applied after the Message is received.
-	 * @param afterReceivePostProcessors the post processors.
+	 * @param postProcessors the post processors.
 	 * @since 2.0
 	 * @see AbstractMessageListenerContainer#setAfterReceivePostProcessors(MessagePostProcessor...)
 	 */
-	public void setAfterReceivePostProcessors(MessagePostProcessor... afterReceivePostProcessors) {
-		this.afterReceivePostProcessors = afterReceivePostProcessors;
+	public void setAfterReceivePostProcessors(MessagePostProcessor... postProcessors) {
+		Assert.notNull(postProcessors, "'postProcessors' cannot be null");
+		Assert.noNullElements(postProcessors, "'postProcessors' cannot have null elements");
+		this.afterReceivePostProcessors = Arrays.copyOf(postProcessors, postProcessors.length);
 	}
 
 	/**
 	 * Set post processors that will be applied before sending replies; added to each
 	 * message listener adapter.
-	 * @param beforeSendReplyPostProcessors the post processors.
+	 * @param postProcessors the post processors.
 	 * @since 2.0.3
 	 * @see AbstractAdaptableMessageListener#setBeforeSendReplyPostProcessors(MessagePostProcessor...)
 	 */
-	public void setBeforeSendReplyPostProcessors(MessagePostProcessor... beforeSendReplyPostProcessors) {
-		this.beforeSendReplyPostProcessors = beforeSendReplyPostProcessors;
+	public void setBeforeSendReplyPostProcessors(MessagePostProcessor... postProcessors) {
+		Assert.notNull(postProcessors, "'postProcessors' cannot be null");
+		Assert.noNullElements(postProcessors, "'postProcessors' cannot have null elements");
+		this.beforeSendReplyPostProcessors = Arrays.copyOf(postProcessors, postProcessors.length);
 	}
 
 	/**

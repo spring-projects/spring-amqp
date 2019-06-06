@@ -218,7 +218,12 @@ public final class BrokerRunning extends TestWatcher {
 
 	private BrokerRunning(boolean assumeOnline, boolean purge, boolean management, String... queues) {
 		this.assumeOnline = assumeOnline;
-		this.queues = queues;
+		if (queues != null) {
+			this.queues = Arrays.copyOf(queues, queues.length);
+		}
+		else {
+			this.queues = null;
+		}
 		this.purge = purge;
 		this.management = management;
 		setPort(this.defaultPort);

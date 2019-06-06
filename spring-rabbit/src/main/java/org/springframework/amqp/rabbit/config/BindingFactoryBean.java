@@ -76,8 +76,8 @@ public class BindingFactoryBean implements FactoryBean<Binding> {
 		this.ignoreDeclarationExceptions = ignoreDeclarationExceptions;
 	}
 
-	public void setAdminsThatShouldDeclare(AmqpAdmin... adminsThatShouldDeclare) {
-		this.adminsThatShouldDeclare = adminsThatShouldDeclare;
+	public void setAdminsThatShouldDeclare(AmqpAdmin... admins) {
+		this.adminsThatShouldDeclare = admins;
 	}
 
 	@Override
