@@ -168,11 +168,28 @@ The following example shows how to configure a Log4j 2 appender:
         applicationId="myAppId" routingKeyPattern="%X{applicationId}.%c.%p"
         contentType="text/plain" contentEncoding="UTF-8" generateId="true" deliveryMode="NON_PERSISTENT"
         charset="UTF-8"
-        senderPoolSize="3" maxSenderRetries="5">
+        senderPoolSize="3" maxSenderRetries="5"
+        addMdcAsHeaders="true">
     </RabbitMQ>
 </Appenders>
 ----
 ====
+
+.Log4j 2 Appender Properties
+[cols="2l,2l,4", options="header"]
+|===
+| Property
+| Default
+| Description
+
+| `addMdcAsHeaders`
+| `false`
+| MDC properties were always added into RabbitMQ message headers Until this property was introduced.
+  It can lead to issues for big MDC as while RabbitMQ has limited buffer size for all headers and this buffer is pretty small.
+  And this property was introduced to avoid issues in case of big MDC.
+   `true` turns on serialization MDC into headers. Please note, JsonLayout adds MDC into the message by default.
+|===
+
 
 [IMPORTANT]
 ====
