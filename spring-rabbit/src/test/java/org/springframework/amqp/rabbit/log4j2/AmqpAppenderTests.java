@@ -155,7 +155,7 @@ public class AmqpAppenderTests {
 		// change the property to true and this fails and test() randomly fails too.
 		assertThat(TestUtils.getPropertyValue(manager, "async", Boolean.class)).isFalse();
 		// default value
-		assertThat(TestUtils.getPropertyValue(manager, "serializeMdc", Boolean.class)).isFalse();
+		assertThat(TestUtils.getPropertyValue(manager, "addMdcAsHeaders", Boolean.class)).isFalse();
 
 		assertThat(TestUtils.getPropertyValue(appender, "events.items", Object[].class).length).isEqualTo(10);
 
@@ -172,7 +172,7 @@ public class AmqpAppenderTests {
 		Object events = TestUtils.getPropertyValue(appender, "events");
 
 		Object manager = TestUtils.getPropertyValue(appender, "manager");
-		assertThat(TestUtils.getPropertyValue(manager, "serializeMdc", Boolean.class)).isTrue();
+		assertThat(TestUtils.getPropertyValue(manager, "addMdcAsHeaders", Boolean.class)).isTrue();
 
 		assertThat(events.getClass()).isEqualTo(LinkedBlockingQueue.class);
 	}
@@ -190,7 +190,7 @@ public class AmqpAppenderTests {
 		assertThat(TestUtils.getPropertyValue(manager, "username")).isNull();
 		assertThat(TestUtils.getPropertyValue(manager, "password")).isNull();
 		assertThat(TestUtils.getPropertyValue(manager, "virtualHost")).isNull();
-		assertThat(TestUtils.getPropertyValue(manager, "serializeMdc", Boolean.class)).isFalse();
+		assertThat(TestUtils.getPropertyValue(manager, "addMdcAsHeaders", Boolean.class)).isFalse();
 	}
 
 	@Test
