@@ -22,7 +22,8 @@
 				  addresses="localhost:5672"
 				  host="localhost" port="5672" user="guest" password="guest" applicationId="testAppId" charset="UTF-8"
 				  routingKeyPattern="%X{applicationId}.%c.%p"
-				  exchange="log4j2Test_default_queue" deliveryMode="NON_PERSISTENT">
+				  exchange="log4j2Test_default_queue" deliveryMode="NON_PERSISTENT"
+				  serializeMdc="true">
 		</RabbitMQ>
 		<RabbitMQ name="rabbitmq_uri"
 				  uri="amqp://guest:guest@localhost:5672/"
@@ -32,7 +33,8 @@
 				  contentType="text/plain" contentEncoding="UTF-8" generateId="true" deliveryMode="NON_PERSISTENT"
 				  charset="UTF-8"
 				  clientConnectionProperties="bar:foo,baz:qux"
-				  senderPoolSize="3" maxSenderRetries="5">
+				  senderPoolSize="3" maxSenderRetries="5"
+				  serializeMdc="false">
 		</RabbitMQ>
 	</Appenders>
 	<Loggers>

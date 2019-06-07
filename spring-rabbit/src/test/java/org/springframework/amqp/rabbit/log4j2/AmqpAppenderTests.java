@@ -154,6 +154,8 @@ public class AmqpAppenderTests {
 		assertThat(TestUtils.getPropertyValue(manager, "maxSenderRetries")).isEqualTo(5);
 		// change the property to true and this fails and test() randomly fails too.
 		assertThat(TestUtils.getPropertyValue(manager, "async", Boolean.class)).isFalse();
+		// default value
+		assertThat(TestUtils.getPropertyValue(manager, "serializeMdc", Boolean.class)).isFalse();
 
 		assertThat(TestUtils.getPropertyValue(appender, "events.items", Object[].class).length).isEqualTo(10);
 
@@ -168,6 +170,10 @@ public class AmqpAppenderTests {
 				Map.class).get("rabbitmq_default_queue");
 
 		Object events = TestUtils.getPropertyValue(appender, "events");
+
+		Object manager = TestUtils.getPropertyValue(appender, "manager");
+		assertThat(TestUtils.getPropertyValue(manager, "serializeMdc", Boolean.class)).isTrue();
+
 		assertThat(events.getClass()).isEqualTo(LinkedBlockingQueue.class);
 	}
 
@@ -184,6 +190,7 @@ public class AmqpAppenderTests {
 		assertThat(TestUtils.getPropertyValue(manager, "username")).isNull();
 		assertThat(TestUtils.getPropertyValue(manager, "password")).isNull();
 		assertThat(TestUtils.getPropertyValue(manager, "virtualHost")).isNull();
+		assertThat(TestUtils.getPropertyValue(manager, "serializeMdc", Boolean.class)).isFalse();
 	}
 
 	@Test
