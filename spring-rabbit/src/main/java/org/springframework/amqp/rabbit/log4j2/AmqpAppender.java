@@ -156,7 +156,8 @@ public class AmqpAppender extends AbstractAppender {
 			@PluginAttribute("contentEncoding") String contentEncoding,
 			@PluginAttribute("clientConnectionProperties") String clientConnectionProperties,
 			@PluginAttribute("async") boolean async,
-			@PluginAttribute("charset") String charset) {
+			@PluginAttribute("charset") String charset,
+      	    @PluginAttribute(value = "serializeMdc") boolean serializeMdc) {
 		if (name == null) {
 			LOGGER.error("No name for AmqpAppender");
 		}
@@ -187,6 +188,8 @@ public class AmqpAppender extends AbstractAppender {
 		manager.clientConnectionProperties = clientConnectionProperties;
 		manager.charset = charset;
 		manager.async = async;
+		manager.serializeMdc = serializeMdc;
+
 		AmqpAppender appender = new AmqpAppender(name, filter, theLayout, ignoreExceptions, manager);
 		if (manager.activateOptions()) {
 			appender.startSenders();
@@ -235,7 +238,7 @@ public class AmqpAppender extends AbstractAppender {
 		return message;
 	}
 
-	private void sendEvent(final Event event, Map<?, ?> properties) {
+	protected void sendEvent(final Event event, Map<?, ?> properties) {
 		LogEvent logEvent = event.getEvent();
 		String name = logEvent.getLoggerName();
 		Level level = logEvent.getLevel();
@@ -264,8 +267,10 @@ public class AmqpAppender extends AbstractAppender {
 		amqpProps.setTimestamp(tstamp.getTime());
 
 		// Copy properties in from MDC
-		for (Entry<?, ?> entry : properties.entrySet()) {
-			amqpProps.setHeader(entry.getKey().toString(), entry.getValue());
+		if (this.manager.serializeMdc) {
+			for (Entry<?, ?> entry : properties.entrySet()) {
+				amqpProps.setHeader(entry.getKey().toString(), entry.getValue());
+			}
 		}
 		if (logEvent.getSource() != null) {
 			amqpProps.setHeader(
@@ -275,6 +280,10 @@ public class AmqpAppender extends AbstractAppender {
 							logEvent.getSource().getLineNumber()));
 		}
 
+		doSend(event, logEvent, amqpProps);
+	}
+
+	protected void doSend(final Event event, LogEvent logEvent, MessageProperties amqpProps) {
 		StringBuilder msgBody;
 		String routingKey;
 
@@ -490,6 +499,11 @@ public class AmqpAppender extends AbstractAppender {
 		 * the system charset.
 		 */
 		private String charset = Charset.defaultCharset().name();
+
+		/**
+		 * Whether or not add MDC properties into message headers. Default is true to keep backward compatibility.
+		 */
+		private boolean serializeMdc = true;
 
 		private boolean durable = true;
 

@@ -111,6 +111,7 @@ public class AmqpAppenderTests {
 		assertEquals("UTF-8", TestUtils.getPropertyValue(manager, "contentEncoding"));
 		assertEquals(3, TestUtils.getPropertyValue(manager, "senderPoolSize"));
 		assertEquals(5, TestUtils.getPropertyValue(manager, "maxSenderRetries"));
+		assertEquals(true, TestUtils.getPropertyValue(manager, "serializeMdc"));
 	}
 
 }
