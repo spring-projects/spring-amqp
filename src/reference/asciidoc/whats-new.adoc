@@ -116,4 +116,6 @@ See <<async-listeners>> for more information.
 ===== AMQP Logging Appenders Changes
 
 The Log4J and Logback `AmqpAppender` s now support a `verifyHostname` SSL option.
+Also these appendes now can be configured to not add MDC entries as headers.
+The `addMdcAsHeaders` boolean option has been introduces to configure such a behavior.
 See <<logging>> for more information.
