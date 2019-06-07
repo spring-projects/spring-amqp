@@ -32,7 +32,7 @@ The following example shows how to configure an inbound channel adapter:
 ==== Outbound Channel Adapter
 
 To send AMQP Messages to an exchange, you can configure an `<outbound-channel-adapter>`.
-You can optionallyi provide a 'routing-key' in addition to the exchange name.
+You can optionally provide a 'routing-key' in addition to the exchange name.
 The following example shows how to define an outbound channel adapter:
 
 ====

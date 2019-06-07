@@ -781,7 +781,9 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 					try {
 						t.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
 					}
-					catch (AmqpException e) { }
+					catch (AmqpException e) {
+
+					}
 				}
 				return null;
 			});

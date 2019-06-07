@@ -159,13 +159,17 @@ public class CachingConnectionFactoryIntegrationTests {
 			channels.add(connections.get(0).createChannel(false));
 			fail("Exception expected");
 		}
-		catch (AmqpTimeoutException e) { }
+		catch (AmqpTimeoutException e) {
+
+		}
 		channels.add(connections.get(1).createChannel(false));
 		try {
 			channels.add(connections.get(1).createChannel(false));
 			fail("Exception expected");
 		}
-		catch (AmqpTimeoutException e) { }
+		catch (AmqpTimeoutException e) {
+
+		}
 		channels.get(0).close();
 		channels.get(1).close();
 		channels.add(connections.get(0).createChannel(false));
@@ -422,7 +426,9 @@ public class CachingConnectionFactoryIntegrationTests {
 								socket.close();
 								proxy.close();
 							}
-							catch (Exception ee) { }
+							catch (Exception ee) {
+
+							}
 						}
 					}
 				});
@@ -438,7 +444,9 @@ public class CachingConnectionFactoryIntegrationTests {
 							socket.close();
 							proxy.close();
 						}
-						catch (Exception ee) { }
+						catch (Exception ee) {
+
+						}
 					}
 				}
 				socket.close();
