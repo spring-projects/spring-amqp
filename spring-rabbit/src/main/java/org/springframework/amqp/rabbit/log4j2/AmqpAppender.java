@@ -157,7 +157,7 @@ public class AmqpAppender extends AbstractAppender {
 			@PluginAttribute("clientConnectionProperties") String clientConnectionProperties,
 			@PluginAttribute("async") boolean async,
 			@PluginAttribute("charset") String charset,
-      	    @PluginAttribute("serializeMdc") boolean serializeMdc) {
+      	    @PluginAttribute("addMdcAsHeaders") boolean addMdcAsHeaders) {
 		if (name == null) {
 			LOGGER.error("No name for AmqpAppender");
 		}
@@ -188,7 +188,7 @@ public class AmqpAppender extends AbstractAppender {
 		manager.clientConnectionProperties = clientConnectionProperties;
 		manager.charset = charset;
 		manager.async = async;
-		manager.serializeMdc = serializeMdc;
+		manager.addMdcAsHeaders = addMdcAsHeaders;
 
 		AmqpAppender appender = new AmqpAppender(name, filter, theLayout, ignoreExceptions, manager);
 		if (manager.activateOptions()) {
@@ -267,7 +267,7 @@ public class AmqpAppender extends AbstractAppender {
 		amqpProps.setTimestamp(tstamp.getTime());
 
 		// Copy properties in from MDC
-		if (this.manager.serializeMdc) {
+		if (this.manager.addMdcAsHeaders) {
 			for (Entry<?, ?> entry : properties.entrySet()) {
 				amqpProps.setHeader(entry.getKey().toString(), entry.getValue());
 			}
@@ -501,9 +501,9 @@ public class AmqpAppender extends AbstractAppender {
 		private String charset = Charset.defaultCharset().name();
 
 		/**
-		 * Whether or not add MDC properties into message headers. Default is true to keep backward compatibility.
+		 * Whether or not add MDC properties into message headers.
 		 */
-		private boolean serializeMdc = true;
+		private boolean addMdcAsHeaders = false;
 
 		private boolean durable = true;
 

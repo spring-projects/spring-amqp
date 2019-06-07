@@ -13,7 +13,7 @@
 			charset="UTF-8"
 			clientConnectionProperties="foo:bar,baz:qux"
 			async="false"
-			serializeMdc="true"
+			addMdcAsHeaders="true"
 			senderPoolSize="3" maxSenderRetries="5">
 		</RabbitMQ>
 	</Appenders>
