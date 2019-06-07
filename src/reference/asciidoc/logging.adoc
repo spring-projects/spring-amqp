@@ -20,130 +20,130 @@ The following properties are available with all appenders:
 | Default
 | Description
 
-| `exchangeName`
-| `logs`
+| exchangeName
+| logs
 | Name of the exchange to which to publish log events.
 
-| `exchangeType`
-| `topic`
+| exchangeType
+| topic
 | Type of the exchange to which to publish log events -- needed only if the appender declares the exchange.
 See `declareExchange`.
 
-| `routingKeyPattern`
-| `%c.%p`
+| routingKeyPattern
+| %c.%p
 | Logging subsystem pattern format to use to generate a routing key.
 
-| `applicationId`
+| applicationId
 |
 | Application ID -- added to the routing key if the pattern includes `%X{applicationId}`.
 
-| `senderPoolSize`
-| `2`
+| senderPoolSize
+| 2
 | The number of threads to use to publish log events.
 
-| `maxSenderRetries`
-| `30`
+| maxSenderRetries
+| 30
 | How many times to retry sending a message if the broker is unavailable or there is some other error.
 Retries are delayed as follows: `N ^ log(N)`, where `N` is the retry number.
 
-| `addresses`
+| addresses
 |
 | A comma-delimited list of broker addresses in the following form: `host:port[,host:port]*` - overrides `host` and `port`.
 
-| `host`
-| `localhost`
+| host
+| localhost
 | RabbitMQ host to which to connect .
 
-| `port`
-| `5672`
+| port
+| 5672
 | RabbitMQ port to which to connect.
 
-| `virtualHost`
-| `/`
+| virtualHost
+| /
 | RabbitMQ virtual host to which to connect.
 
-| `username`
-| `guest`
+| username
+| guest
 | RabbitMQ user to use when connecting.
 
-| `password`
-| `guest`
+| password
+| guest
 | RabbitMQ password for this user.
 
-| `useSsl`
-| `false`
+| useSsl
+| false
 | Whether to use SSL for the RabbitMQ connection.
 See <<_rabbitconnectionfactorybean_and_configuring_ssl>>
 
-| `sslAlgorithm`
-| `null`
+| sslAlgorithm
+| null
 | The SSL algorithm to use.
 
-| `sslPropertiesLocation`
-| `null`
+| sslPropertiesLocation
+| null
 | Location of the SSL properties file.
 
-| `keyStore`
-| `null`
+| keyStore
+| null
 | Location of the keystore.
 
-| `keyStorePassphrase`
-| `null`
+| keyStorePassphrase
+| null
 | Passphrase for the keystore.
 
-| `keyStoreType`
-| `JKS`
+| keyStoreType
+| JKS
 | The keystore type.
 
-| `trustStore`
-| `null`
+| trustStore
+| null
 | Location of the truststore.
 
-| `trustStorePassphrase`
-| `null`
+| trustStorePassphrase
+| null
 | Passphrase for the truststore.
 
-| `trustStoreType`
-| `JKS`
+| trustStoreType
+| JKS
 | The truststore type.
 
-| `contentType`
-| `text/plain`
+| contentType
+| text/plain
 | `content-type` property of log messages.
 
-| `contentEncoding`
+| contentEncoding
 |
 | `content-encoding` property of log messages.
 
-| `declareExchange`
-| `false`
+| declareExchange
+| false
 | Whether or not to declare the configured exchange when this appender starts.
 See also `durable` and `autoDelete`.
 
-| `durable`
-| `true`
+| durable
+| true
 | When `declareExchange` is `true`, the durable flag is set to this value.
 
-| `autoDelete`
-| `false`
+| autoDelete
+| false
 | When `declareExchange` is `true`, the auto-delete flag is set to this value.
 
-| `charset`
-| `null`
+| charset
+| null
 | Character set to use when converting `String` to `byte[]`.
 Default: null (the system default charset is used).
 If the character set is unsupported on the current platform, we fall back to using the system character set.
 
-| `deliveryMode`
-| `PERSISTENT`
+| deliveryMode
+| PERSISTENT
 | `PERSISTENT` or `NON_PERSISTENT` to determine whether or not RabbitMQ should persist the messages.
 
-| `generateId`
-| `false`
+| generateId
+| false
 | Used to determine whether the `messageId` property is set to a unique value.
 
-| `clientConnectionProperties`
-| `null`
+| clientConnectionProperties
+| null
 | A comma-delimited list of `key:value` pairs for custom client properties to the RabbitMQ connection.
 
 |===
