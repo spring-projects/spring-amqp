@@ -25,6 +25,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Bean;
@@ -33,6 +34,7 @@ import org.springframework.context.annotation.Scope;
 
 /**
  * @author Jon Brisbin
+ * @author Artem Bilan
  */
 @Configuration
 public class AmqpAppenderConfiguration {
@@ -104,4 +106,12 @@ public class AmqpAppenderConfiguration {
 	public TestListener testListener(int count) {
 		return new TestListener(count);
 	}
+
+	@Bean
+	public RabbitTemplate rabbitTemplate() {
+		RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory());
+		rabbitTemplate.setReceiveTimeout(10_000);
+		return rabbitTemplate;
+	}
+
 }

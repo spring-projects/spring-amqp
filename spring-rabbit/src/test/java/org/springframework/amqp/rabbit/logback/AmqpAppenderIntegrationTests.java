@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.logback;
 
+import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
@@ -37,6 +38,9 @@ import org.slf4j.MDC;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.log4j.AmqpAppenderConfiguration;
@@ -52,6 +56,7 @@ import ch.qos.logback.classic.Logger;
 /**
  * @author Artem Bilan
  * @author Nicolas Ristock
+ * @author Eugene Gusev
  *
  * @since 1.4
  */
@@ -69,15 +74,23 @@ public class AmqpAppenderIntegrationTests {
 	@Autowired
 	private ApplicationContext applicationContext;
 
+	@Autowired
+	private RabbitTemplate template;
+
+	@Autowired
+	private Queue testQueue;
+
 	private SimpleMessageListenerContainer listenerContainer;
 
 	@Before
-	public void setUp() throws Exception {
-		listenerContainer = applicationContext.getBean(SimpleMessageListenerContainer.class);
+	public void setUp() {
+		this.listenerContainer = this.applicationContext.getBean(SimpleMessageListenerContainer.class);
+		MDC.clear();
 	}
 
 	@After
 	public void tearDown() {
+		MDC.clear();
 		listenerContainer.shutdown();
 	}
 
@@ -120,7 +133,9 @@ public class AmqpAppenderIntegrationTests {
 		assertNotNull(location);
 		assertThat(location, instanceOf(String.class));
 		assertThat((String) location,
-				startsWith("org.springframework.amqp.rabbit.logback.AmqpAppenderIntegrationTests.testAppenderWithProps()"));
+				startsWith("org.springframework.amqp.rabbit.logback.AmqpAppenderIntegrationTests" +
+						".testAppenderWithProps" +
+						"()"));
 		Object threadName = messageProperties.getHeaders().get("thread");
 		assertNotNull(threadName);
 		assertThat(threadName, instanceOf(String.class));
@@ -142,6 +157,32 @@ public class AmqpAppenderIntegrationTests {
 		assertEquals(0xe0, body[body.length - 5 - lineSeparatorExtraBytes] & 0xff);
 		assertEquals(0xbf, body[body.length - 4 - lineSeparatorExtraBytes] & 0xff);
 		assertEquals(0xbf, body[body.length - 3 - lineSeparatorExtraBytes] & 0xff);
+	}
+
+	@Test
+	public void testAddMdcAsHeaders() {
+		this.applicationContext.getBean(SingleConnectionFactory.class).createConnection().close();
+
+		Logger logWithMdc = (Logger) LoggerFactory.getLogger("withMdc");
+		Logger logWithoutMdc = (Logger) LoggerFactory.getLogger("withoutMdc");
+		MDC.put("mdc1", "test1");
+		MDC.put("mdc2", "test2");
+
+		logWithMdc.info("test message with MDC in headers");
+		Message received1 = this.template.receive(this.testQueue.getName());
+
+		assertNotNull(received1);
+		assertEquals("test message with MDC in headers", new String(received1.getBody()));
+		assertThat(received1.getMessageProperties().getHeaders(), hasEntry("mdc1", "test1"));
+		assertThat(received1.getMessageProperties().getHeaders(), hasEntry("mdc2", "test2"));
+
+		logWithoutMdc.info("test message without MDC in headers");
+		Message received2 = this.template.receive(this.testQueue.getName());
+
+		assertNotNull(received2);
+		assertEquals("test message without MDC in headers", new String(received2.getBody()));
+		assertThat(received1.getMessageProperties().getHeaders(), hasEntry("mdc1", "test1"));
+		assertThat(received1.getMessageProperties().getHeaders(), hasEntry("mdc2", "test2"));
 	}
 
 	public static class EnhancedAppender extends AmqpAppender {

@@ -7,8 +7,7 @@ The framework provides logging appenders for several popular logging subsystems:
 - logback (since Spring AMQP _version 1.4_)
 - log4j2 (since Spring AMQP _version 1.6_)
 
-The appenders are configured using the normal mechanisms for the logging subsystem, available properties are specified
-in the following sections.
+The appenders are configured by using the normal mechanisms for the logging subsystem, available properties are specified in the following sections.
 
 ==== Common properties
 
@@ -109,6 +108,15 @@ If the charset is unsupported on the current platform, we fall back to using the
 | null
 | A comma-delimited list of `key:value` pairs for custom client properties to the RabbitMQ connection.
 
+| addMdcAsHeaders
+| true
+| MDC properties were always added into RabbitMQ message headers until this property was introduced.
+It can lead to issues for big MDC as while RabbitMQ has limited buffer size for all headers and this buffer is pretty small.
+This property was introduced to avoid issues in cases of big MDC.
+By default this value set to `true` for backward compatibility.
+The `false` turns off serialization MDC into headers.
+Please note, the `JsonLayout` adds MDC into the message by default.
+
 |===
 
 ==== Log4j Appender
@@ -144,7 +152,8 @@ NOTE: This appender is deprecated and will be removed in _version 2.0_.
         applicationId="myAppId" routingKeyPattern="%X{applicationId}.%c.%p"
         contentType="text/plain" contentEncoding="UTF-8" generateId="true" deliveryMode="NON_PERSISTENT"
         charset="UTF-8"
-        senderPoolSize="3" maxSenderRetries="5">
+        senderPoolSize="3" maxSenderRetries="5"
+        addMdcAsHeaders="false">
     </RabbitMQ>
 </Appenders>
 ----
@@ -179,6 +188,7 @@ If async publishing is used with the `ReusableLogEventFactory`, events will have
     <durable>false</durable>
     <deliveryMode>NON_PERSISTENT</deliveryMode>
     <declareExchange>true</declareExchange>
+    <addMdcAsHeaders>false</addMdcAsHeaders>
 </appender>
 ----
 

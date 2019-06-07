@@ -77,6 +77,7 @@ import ch.qos.logback.core.Layout;
  * @author Artem Bilan
  * @author Gary Russell
  * @author Nicolas Ristock
+ * @author Eugene Gusev
  *
  * @since 1.4
  */
@@ -222,6 +223,11 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 */
 	private String charset;
 
+	/**
+	 * Whether or not add MDC properties into message headers. true by default for backward compatibility
+	 */
+	private boolean addMdcAsHeaders = true;
+
 	private boolean durable = true;
 
 	private MessageDeliveryMode deliveryMode = MessageDeliveryMode.PERSISTENT;
@@ -357,6 +363,14 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 	public void setMaxSenderRetries(int maxSenderRetries) {
 		this.maxSenderRetries = maxSenderRetries;
+	}
+
+	public boolean isAddMdcAsHeaders() {
+		return this.addMdcAsHeaders;
+	}
+
+	public void setAddMdcAsHeaders(boolean addMdcAsHeaders) {
+		this.addMdcAsHeaders = addMdcAsHeaders;
 	}
 
 	public boolean isDurable() {
@@ -579,10 +593,12 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 					amqpProps.setTimestamp(tstamp.getTime());
 
 					// Copy properties in from MDC
-					Map<String, String> props = event.getProperties();
-					Set<Entry<String, String>> entrySet = props.entrySet();
-					for (Entry<String, String> entry : entrySet) {
-						amqpProps.setHeader(entry.getKey(), entry.getValue());
+					if (AmqpAppender.this.addMdcAsHeaders) {
+						Map<String, String> props = event.getProperties();
+						Set<Entry<String, String>> entrySet = props.entrySet();
+						for (Entry<String, String> entry : entrySet) {
+							amqpProps.setHeader(entry.getKey(), entry.getValue());
+						}
 					}
 					String[] location = AmqpAppender.this.locationLayout.doLayout(logEvent).split("\\|");
 					if (!"?".equals(location[0])) {
@@ -629,6 +645,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 						if (retries < AmqpAppender.this.maxSenderRetries) {
 							// Schedule a retry based on the number of times I've tried to re-send this
 							AmqpAppender.this.retryTimer.schedule(new TimerTask() {
+
 								@Override
 								public void run() {
 									AmqpAppender.this.events.add(event);
@@ -646,6 +663,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 				Thread.currentThread().interrupt();
 			}
 		}
+
 	}
 
 	/**
