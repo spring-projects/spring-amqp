@@ -157,7 +157,7 @@ public class AmqpAppender extends AbstractAppender {
 			@PluginAttribute("clientConnectionProperties") String clientConnectionProperties,
 			@PluginAttribute("async") boolean async,
 			@PluginAttribute("charset") String charset,
-      	    @PluginAttribute(value = "serializeMdc") boolean serializeMdc) {
+      	    @PluginAttribute("serializeMdc") boolean serializeMdc) {
 		if (name == null) {
 			LOGGER.error("No name for AmqpAppender");
 		}
