@@ -184,7 +184,7 @@ public class AmqpAppender extends AbstractAppender {
 			@PluginAttribute("charset") String charset,
 			@PluginAttribute(value = "bufferSize", defaultInt = Integer.MAX_VALUE) int bufferSize,
 			@PluginElement(BlockingQueueFactory.ELEMENT_TYPE) BlockingQueueFactory<Event> blockingQueueFactory,
-  		    @PluginAttribute(value = "serializeMdc") boolean serializeMdc) {
+  		    @PluginAttribute("serializeMdc") boolean serializeMdc) {
 		if (name == null) {
 			LOGGER.error("No name for AmqpAppender");
 		}
