@@ -67,6 +67,7 @@ import org.springframework.test.util.ReflectionTestUtils;
  * @author Artem Bilan
  * @author Dominique Villard
  * @author Nicolas Ristock
+ * @author Eugene Gusev
  *
  * @since 1.6
  */
@@ -162,6 +163,8 @@ public class AmqpAppenderTests {
 		assertEquals(5, TestUtils.getPropertyValue(manager, "maxSenderRetries"));
 		// change the property to true and this fails and test() randomly fails too.
 		assertFalse(TestUtils.getPropertyValue(manager, "async", Boolean.class));
+		// default value
+		assertTrue(TestUtils.getPropertyValue(manager, "addMdcAsHeaders", Boolean.class));
 
 		assertEquals(10, TestUtils.getPropertyValue(appender, "events.items", Object[].class).length);
 
@@ -176,7 +179,11 @@ public class AmqpAppenderTests {
 				Map.class).get("rabbitmq_default_queue");
 
 		Object events = TestUtils.getPropertyValue(appender, "events");
-		assertEquals(LinkedBlockingQueue.class, events.getClass());
+
+		Object manager = TestUtils.getPropertyValue(appender, "manager");
+		assertTrue(TestUtils.getPropertyValue(manager, "addMdcAsHeaders", Boolean.class));
+
+		assertThat(events, instanceOf(LinkedBlockingQueue.class));
 	}
 
 	@Test
@@ -192,6 +199,7 @@ public class AmqpAppenderTests {
 		assertNull(TestUtils.getPropertyValue(manager, "username"));
 		assertNull(TestUtils.getPropertyValue(manager, "password"));
 		assertNull(TestUtils.getPropertyValue(manager, "virtualHost"));
+		assertFalse(TestUtils.getPropertyValue(manager, "addMdcAsHeaders", Boolean.class));
 	}
 
 	@Test

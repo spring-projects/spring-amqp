@@ -89,6 +89,7 @@ import com.rabbitmq.client.ConnectionFactory;
  * @author Stephen Oakey
  * @author Dominique Villard
  * @author Nicolas Ristock
+ * @author Eugene Gusev
  *
  * @since 1.4
  */
@@ -285,6 +286,11 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 * the system charset.
 	 */
 	private String charset;
+
+	/**
+	 * Whether or not add MDC properties into message headers. true by default for backward compatibility
+	 */
+	private boolean addMdcAsHeaders = true;
 
 	private boolean durable = true;
 
@@ -503,6 +509,14 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 	public void setMaxSenderRetries(int maxSenderRetries) {
 		this.maxSenderRetries = maxSenderRetries;
+	}
+
+	public boolean isAddMdcAsHeaders() {
+		return this.addMdcAsHeaders;
+	}
+
+	public void setAddMdcAsHeaders(boolean addMdcAsHeaders) {
+		this.addMdcAsHeaders = addMdcAsHeaders;
 	}
 
 	public boolean isDurable() {
@@ -750,6 +764,54 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		}
 	}
 
+	protected MessageProperties prepareMessageProperties(Event event) {
+		ILoggingEvent logEvent = event.getEvent();
+
+		String name = logEvent.getLoggerName();
+		Level level = logEvent.getLevel();
+
+		MessageProperties amqpProps = new MessageProperties();
+		amqpProps.setDeliveryMode(this.deliveryMode);
+		amqpProps.setContentType(this.contentType);
+		if (null != this.contentEncoding) {
+			amqpProps.setContentEncoding(this.contentEncoding);
+		}
+		amqpProps.setHeader(CATEGORY_NAME, name);
+		amqpProps.setHeader(THREAD_NAME, logEvent.getThreadName());
+		amqpProps.setHeader(CATEGORY_LEVEL, level.toString());
+		if (this.generateId) {
+			amqpProps.setMessageId(UUID.randomUUID().toString());
+		}
+
+		// Set timestamp
+		Calendar tstamp = Calendar.getInstance();
+		tstamp.setTimeInMillis(logEvent.getTimeStamp());
+		amqpProps.setTimestamp(tstamp.getTime());
+
+		// Copy properties in from MDC
+		if (this.addMdcAsHeaders) {
+			Map<String, String> props = event.getProperties();
+			Set<Entry<String, String>> entrySet = props.entrySet();
+			for (Entry<String, String> entry : entrySet) {
+				amqpProps.setHeader(entry.getKey(), entry.getValue());
+			}
+		}
+
+		String[] location = this.locationLayout.doLayout(logEvent).split("\\|");
+		if (!"?".equals(location[0])) {
+			amqpProps.setHeader(
+					"location",
+					String.format("%s.%s()[%s]", location[0], location[1], location[2]));
+		}
+
+		// Set applicationId, if we're using one
+		if (this.applicationId != null) {
+			amqpProps.setAppId(this.applicationId);
+		}
+
+		return amqpProps;
+	}
+
 	/**
 	 * Subclasses may modify the final message before sending.
 	 *
@@ -773,98 +835,75 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 				RabbitTemplate rabbitTemplate = new RabbitTemplate(AmqpAppender.this.connectionFactory);
 				while (true) {
 					final Event event = AmqpAppender.this.events.take();
-					ILoggingEvent logEvent = event.getEvent();
 
-					String name = logEvent.getLoggerName();
-					Level level = logEvent.getLevel();
+					MessageProperties amqpProps = prepareMessageProperties(event);
 
-					MessageProperties amqpProps = new MessageProperties();
-					amqpProps.setDeliveryMode(AmqpAppender.this.deliveryMode);
-					amqpProps.setContentType(AmqpAppender.this.contentType);
-					if (null != AmqpAppender.this.contentEncoding) {
-						amqpProps.setContentEncoding(AmqpAppender.this.contentEncoding);
-					}
-					amqpProps.setHeader(CATEGORY_NAME, name);
-					amqpProps.setHeader(THREAD_NAME, logEvent.getThreadName());
-					amqpProps.setHeader(CATEGORY_LEVEL, level.toString());
-					if (AmqpAppender.this.generateId) {
-						amqpProps.setMessageId(UUID.randomUUID().toString());
-					}
+					String routingKey = AmqpAppender.this.routingKeyLayout.doLayout(event.getEvent());
 
-					// Set timestamp
-					Calendar tstamp = Calendar.getInstance();
-					tstamp.setTimeInMillis(logEvent.getTimeStamp());
-					amqpProps.setTimestamp(tstamp.getTime());
+					sendOneEncoderPatternMessage(rabbitTemplate, routingKey);
 
-					// Copy properties in from MDC
-					Map<String, String> props = event.getProperties();
-					Set<Entry<String, String>> entrySet = props.entrySet();
-					for (Entry<String, String> entry : entrySet) {
-						amqpProps.setHeader(entry.getKey(), entry.getValue());
-					}
-					String[] location = AmqpAppender.this.locationLayout.doLayout(logEvent).split("\\|");
-					if (!"?".equals(location[0])) {
-						amqpProps.setHeader(
-								"location",
-								String.format("%s.%s()[%s]", location[0], location[1], location[2]));
-					}
-					byte[] msgBody;
-					String routingKey = AmqpAppender.this.routingKeyLayout.doLayout(logEvent);
-					// Set applicationId, if we're using one
-					if (AmqpAppender.this.applicationId != null) {
-						amqpProps.setAppId(AmqpAppender.this.applicationId);
-					}
-
-					if (AmqpAppender.this.encoder != null && AmqpAppender.this.headerWritten.compareAndSet(false, true)) {
-						byte[] header = AmqpAppender.this.encoder.headerBytes();
-						if (header != null && header.length > 0) {
-							rabbitTemplate.convertAndSend(AmqpAppender.this.exchangeName, routingKey, header, m -> {
-								if (AmqpAppender.this.applicationId != null) {
-									m.getMessageProperties().setAppId(AmqpAppender.this.applicationId);
-								}
-								return m;
-							});
-						}
-					}
-
-					if (AmqpAppender.this.abbreviator != null && logEvent instanceof LoggingEvent) {
-						((LoggingEvent) logEvent).setLoggerName(AmqpAppender.this.abbreviator.abbreviate(name));
-						msgBody = encodeMessage(logEvent);
-						((LoggingEvent) logEvent).setLoggerName(name);
-					}
-					else {
-						msgBody = encodeMessage(logEvent);
-					}
-
-					// Send a message
-					try {
-						Message message = new Message(msgBody, amqpProps);
-
-						message = postProcessMessageBeforeSend(message, event);
-						rabbitTemplate.send(AmqpAppender.this.exchangeName, routingKey, message);
-					}
-					catch (AmqpException e) {
-						int retries = event.incrementRetries();
-						if (retries < AmqpAppender.this.maxSenderRetries) {
-							// Schedule a retry based on the number of times I've tried to re-send this
-							AmqpAppender.this.retryTimer.schedule(new TimerTask() {
-
-								@Override
-								public void run() {
-									AmqpAppender.this.events.add(event);
-								}
-
-							}, (long) (Math.pow(retries, Math.log(retries)) * 1000));
-						}
-						else {
-							addError("Could not send log message " + logEvent.getMessage()
-									+ " after " + AmqpAppender.this.maxSenderRetries + " retries", e);
-						}
-					}
+					doSend(rabbitTemplate, event, event.getEvent(), name, amqpProps, routingKey);
 				}
 			}
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
+			}
+		}
+
+		private void sendOneEncoderPatternMessage(RabbitTemplate rabbitTemplate, String routingKey) {
+			/*
+			 * If the encoder provides its pattern, send it as an additional one-time message.
+			 */
+			if (AmqpAppender.this.encoder != null
+					&& AmqpAppender.this.headerWritten.compareAndSet(false, true)) {
+				byte[] header = AmqpAppender.this.encoder.headerBytes();
+				if (header != null && header.length > 0) {
+					rabbitTemplate.convertAndSend(AmqpAppender.this.exchangeName, routingKey, header, m -> {
+						if (AmqpAppender.this.applicationId != null) {
+							m.getMessageProperties().setAppId(AmqpAppender.this.applicationId);
+						}
+						return m;
+					});
+				}
+			}
+		}
+
+		private void doSend(RabbitTemplate rabbitTemplate, final Event event, ILoggingEvent logEvent, String name,
+				MessageProperties amqpProps, String routingKey) {
+			byte[] msgBody;
+			if (AmqpAppender.this.abbreviator != null && logEvent instanceof LoggingEvent) {
+				((LoggingEvent) logEvent).setLoggerName(AmqpAppender.this.abbreviator.abbreviate(name));
+				msgBody = encodeMessage(logEvent);
+				((LoggingEvent) logEvent).setLoggerName(name);
+			}
+			else {
+				msgBody = encodeMessage(logEvent);
+			}
+
+			// Send a message
+			try {
+				Message message = new Message(msgBody, amqpProps);
+
+				message = postProcessMessageBeforeSend(message, event);
+				rabbitTemplate.send(AmqpAppender.this.exchangeName, routingKey, message);
+			}
+			catch (AmqpException e) {
+				int retries = event.incrementRetries();
+				if (retries < AmqpAppender.this.maxSenderRetries) {
+					// Schedule a retry based on the number of times I've tried to re-send this
+					AmqpAppender.this.retryTimer.schedule(new TimerTask() {
+
+						@Override
+						public void run() {
+							AmqpAppender.this.events.add(event);
+						}
+
+					}, (long) (Math.pow(retries, Math.log(retries)) * 1000)); // NOSONAR magic #
+				}
+				else {
+					addError("Could not send log message " + logEvent.getMessage()
+							+ " after " + AmqpAppender.this.maxSenderRetries + " retries", e);
+				}
 			}
 		}
 
