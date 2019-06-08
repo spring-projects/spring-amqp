@@ -540,7 +540,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	public boolean isAddMdcAsHeaders() {
-		return addMdcAsHeaders;
+		return this.addMdcAsHeaders;
 	}
 
 	public void setAddMdcAsHeaders(boolean addMdcAsHeaders) {
