@@ -872,7 +872,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 				while (true) {
 					final Event event = AmqpAppender.this.events.take();
 
-					MessageProperties amqpProps = AmqpAppender.this.prepareMessageProperties(event);
+					MessageProperties amqpProps = prepareMessageProperties(event);
 
 					String routingKey = AmqpAppender.this.routingKeyLayout.doLayout(event.getEvent());
 
