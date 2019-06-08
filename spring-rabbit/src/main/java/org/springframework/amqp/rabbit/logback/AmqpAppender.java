@@ -296,6 +296,11 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 */
 	private String charset;
 
+	/**
+	 * Whether or not add MDC properties into message headers.
+	 */
+	private boolean addMdcAsHeaders = false;
+
 	private boolean durable = true;
 
 	private MessageDeliveryMode deliveryMode = MessageDeliveryMode.PERSISTENT;
@@ -532,6 +537,14 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 	public void setMaxSenderRetries(int maxSenderRetries) {
 		this.maxSenderRetries = maxSenderRetries;
+	}
+
+	public boolean isAddMdcAsHeaders() {
+		return addMdcAsHeaders;
+	}
+
+	public void setAddMdcAsHeaders(boolean addMdcAsHeaders) {
+		this.addMdcAsHeaders = addMdcAsHeaders;
 	}
 
 	public boolean isDurable() {
@@ -788,6 +801,54 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		}
 	}
 
+	protected MessageProperties prepareMessageProperties(Event event) {
+		ILoggingEvent logEvent = event.getEvent();
+
+		String name = logEvent.getLoggerName();
+		Level level = logEvent.getLevel();
+
+		MessageProperties amqpProps = new MessageProperties();
+		amqpProps.setDeliveryMode(this.deliveryMode);
+		amqpProps.setContentType(this.contentType);
+		if (null != this.contentEncoding) {
+			amqpProps.setContentEncoding(this.contentEncoding);
+		}
+		amqpProps.setHeader(CATEGORY_NAME, name);
+		amqpProps.setHeader(THREAD_NAME, logEvent.getThreadName());
+		amqpProps.setHeader(CATEGORY_LEVEL, level.toString());
+		if (this.generateId) {
+			amqpProps.setMessageId(UUID.randomUUID().toString());
+		}
+
+		// Set timestamp
+		Calendar tstamp = Calendar.getInstance();
+		tstamp.setTimeInMillis(logEvent.getTimeStamp());
+		amqpProps.setTimestamp(tstamp.getTime());
+
+		// Copy properties in from MDC
+		if (this.addMdcAsHeaders) {
+			Map<String, String> props = event.getProperties();
+			Set<Entry<String, String>> entrySet = props.entrySet();
+			for (Entry<String, String> entry : entrySet) {
+				amqpProps.setHeader(entry.getKey(), entry.getValue());
+			}
+		}
+
+		String[] location = this.locationLayout.doLayout(logEvent).split("\\|");
+		if (!"?".equals(location[0])) {
+			amqpProps.setHeader(
+					"location",
+					String.format("%s.%s()[%s]", location[0], location[1], location[2]));
+		}
+
+		// Set applicationId, if we're using one
+		if (this.applicationId != null) {
+			amqpProps.setAppId(this.applicationId);
+		}
+
+		return amqpProps;
+	}
+
 	/**
 	 * Subclasses may modify the final message before sending.
 	 * @param message The message.
@@ -810,50 +871,14 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 				RabbitTemplate rabbitTemplate = new RabbitTemplate(AmqpAppender.this.connectionFactory);
 				while (true) {
 					final Event event = AmqpAppender.this.events.take();
-					ILoggingEvent logEvent = event.getEvent();
 
-					String name = logEvent.getLoggerName();
-					Level level = logEvent.getLevel();
+					MessageProperties amqpProps = AmqpAppender.this.prepareMessageProperties(event);
 
-					MessageProperties amqpProps = new MessageProperties();
-					amqpProps.setDeliveryMode(AmqpAppender.this.deliveryMode);
-					amqpProps.setContentType(AmqpAppender.this.contentType);
-					if (null != AmqpAppender.this.contentEncoding) {
-						amqpProps.setContentEncoding(AmqpAppender.this.contentEncoding);
-					}
-					amqpProps.setHeader(CATEGORY_NAME, name);
-					amqpProps.setHeader(THREAD_NAME, logEvent.getThreadName());
-					amqpProps.setHeader(CATEGORY_LEVEL, level.toString());
-					if (AmqpAppender.this.generateId) {
-						amqpProps.setMessageId(UUID.randomUUID().toString());
-					}
-
-					// Set timestamp
-					Calendar tstamp = Calendar.getInstance();
-					tstamp.setTimeInMillis(logEvent.getTimeStamp());
-					amqpProps.setTimestamp(tstamp.getTime());
-
-					// Copy properties in from MDC
-					Map<String, String> props = event.getProperties();
-					Set<Entry<String, String>> entrySet = props.entrySet();
-					for (Entry<String, String> entry : entrySet) {
-						amqpProps.setHeader(entry.getKey(), entry.getValue());
-					}
-					String[] location = AmqpAppender.this.locationLayout.doLayout(logEvent).split("\\|");
-					if (!"?".equals(location[0])) {
-						amqpProps.setHeader(
-								"location",
-								String.format("%s.%s()[%s]", location[0], location[1], location[2]));
-					}
-					String routingKey = AmqpAppender.this.routingKeyLayout.doLayout(logEvent);
-					// Set applicationId, if we're using one
-					if (AmqpAppender.this.applicationId != null) {
-						amqpProps.setAppId(AmqpAppender.this.applicationId);
-					}
+					String routingKey = AmqpAppender.this.routingKeyLayout.doLayout(event.getEvent());
 
 					sendOneEncoderPatternMessage(rabbitTemplate, routingKey);
 
-					doSend(rabbitTemplate, event, logEvent, name, amqpProps, routingKey);
+					doSend(rabbitTemplate, event, event.getEvent(), name, amqpProps, routingKey);
 				}
 			}
 			catch (InterruptedException e) {

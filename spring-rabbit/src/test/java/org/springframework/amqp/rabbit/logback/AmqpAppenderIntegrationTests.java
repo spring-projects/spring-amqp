@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.logback;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -75,15 +76,20 @@ public class AmqpAppenderIntegrationTests {
 	@Autowired
 	private Queue encodedQueue;
 
+	@Autowired
+	private Queue testQueue;
+
 	private SimpleMessageListenerContainer listenerContainer;
 
 	@Before
 	public void setUp() throws Exception {
 		listenerContainer = applicationContext.getBean(SimpleMessageListenerContainer.class);
+		MDC.clear();
 	}
 
 	@After
 	public void tearDown() {
+		MDC.clear();
 		listenerContainer.shutdown();
 	}
 
@@ -175,6 +181,38 @@ public class AmqpAppenderIntegrationTests {
 		BlockingQueue<AmqpAppender.Event> appenderQueue =
 				((CustomQueueAppender) log.getAppender("AMQPWithCustomQueue")).mockedQueue;
 		verify(appenderQueue).add(argThat(arg -> arg.getEvent().getMessage().equals(testMessage)));
+	}
+
+	@Test
+	public void testAddMdcAsHeaders() {
+		this.applicationContext.getBean(SingleConnectionFactory.class).createConnection().close();
+
+		// Given
+		Logger logWithMdc = (Logger) LoggerFactory.getLogger("withMdc");
+		Logger logWithoutMdc = (Logger) LoggerFactory.getLogger("withoutMdc");
+		MDC.put("mdc1", "test1" );
+		MDC.put("mdc2", "test2" );
+
+		// When
+		logWithMdc.info("test message with MDC in headers");
+		Message received1 = this.template.receive(this.testQueue.getName());
+
+		// Then
+		assertThat(received1).isNotNull();
+		assertThat(new String(received1.getBody())).isEqualTo("test message with MDC in headers");
+		assertThat(received1.getMessageProperties().getHeaders())
+				.contains(entry("mdc1", "test1"), entry("mdc1", "test1"));
+
+
+		// When
+		logWithoutMdc.info("test message without MDC in headers");
+		Message received2 = this.template.receive(this.testQueue.getName());
+
+		// Then
+		assertThat(received2).isNotNull();
+		assertThat(new String(received2.getBody())).isEqualTo("test message without MDC in headers");
+		assertThat(received2.getMessageProperties().getHeaders())
+				.doesNotContain(entry("mdc1", "test1"), entry("mdc1", "test1"));
 	}
 
 	public static class EnhancedAppender extends AmqpAppender {
