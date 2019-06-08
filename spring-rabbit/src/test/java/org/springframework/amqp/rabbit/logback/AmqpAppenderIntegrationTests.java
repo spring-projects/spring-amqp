@@ -190,8 +190,8 @@ public class AmqpAppenderIntegrationTests {
 		// Given
 		Logger logWithMdc = (Logger) LoggerFactory.getLogger("withMdc");
 		Logger logWithoutMdc = (Logger) LoggerFactory.getLogger("withoutMdc");
-		MDC.put("mdc1", "test1" );
-		MDC.put("mdc2", "test2" );
+		MDC.put("mdc1", "test1");
+		MDC.put("mdc2", "test2");
 
 		// When
 		logWithMdc.info("test message with MDC in headers");
