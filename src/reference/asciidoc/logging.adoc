@@ -244,7 +244,7 @@ In addition they populate headers with the following values:
 * The level of the log event
 * `thread`: the name of the thread where log event happened
 * The location of the stack trace of the log event call
-* A copy of all the MDC properties
+* A copy of all the MDC properties (in the case if `addMdcAsHeaders` is set to `true`)
 
 Each of the appenders can be subclassed, letting you modify the messages before publishing.
 The following example shows how to customize log messages:
