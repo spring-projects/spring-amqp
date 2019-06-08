@@ -151,6 +151,13 @@ If the character set is unsupported on the current platform, we fall back to usi
 | null
 | A comma-delimited list of `key:value` pairs for custom client properties to the RabbitMQ connection.
 
+| addMdcAsHeaders
+| false
+| MDC properties were always added into RabbitMQ message headers until this property was introduced.
+  It can lead to issues for big MDC as while RabbitMQ has limited buffer size for all headers and this buffer is pretty small.
+  This property was introduced to avoid issues in cases of big MDC.
+   `true` turns on serialization MDC into headers. Please note, JsonLayout adds MDC into the message by default.
+
 |===
 
 ==== Log4j 2 Appender
@@ -174,22 +181,6 @@ The following example shows how to configure a Log4j 2 appender:
 </Appenders>
 ----
 ====
-
-.Log4j 2 Appender Properties
-[cols="2l,2l,4", options="header"]
-|===
-| Property
-| Default
-| Description
-
-| `addMdcAsHeaders`
-| `false`
-| MDC properties were always added into RabbitMQ message headers Until this property was introduced.
-  It can lead to issues for big MDC as while RabbitMQ has limited buffer size for all headers and this buffer is pretty small.
-  And this property was introduced to avoid issues in case of big MDC.
-   `true` turns on serialization MDC into headers. Please note, JsonLayout adds MDC into the message by default.
-|===
-
 
 [IMPORTANT]
 ====
@@ -223,6 +214,7 @@ The following example shows how to configure a logback appender:
     <durable>false</durable>
     <deliveryMode>NON_PERSISTENT</deliveryMode>
     <declareExchange>true</declareExchange>
+    <addMdcAsHeaders>true</addMdcAsHeaders>
 </appender>
 ----
 ====
