@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -146,6 +147,34 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class)).hasSize(0);
 		template.stop();
 		cf.destroy();
+		executor.destroy();
+	}
+
+	@Test
+	public void testBadHost() throws InterruptedException {
+		CachingConnectionFactory cf = new CachingConnectionFactory("this.host.does.not.exist");
+		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+		executor.setThreadNamePrefix("client-");
+		executor.afterPropertiesSet();
+		cf.setExecutor(executor);
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
+		container.setQueueNames("dummy");
+		container.setConsumersPerQueue(2);
+		container.setMessageListener(in -> {
+		});
+		container.setBeanName("simple");
+		container.setConsumerTagStrategy(new Tag());
+		CountDownLatch latch = new CountDownLatch(1);
+		container.setApplicationEventPublisher(ev -> {
+			if (ev instanceof ListenerContainerConsumerFailedEvent) {
+				latch.countDown();
+			}
+		});
+		container.setRecoveryInterval(100);
+		container.afterPropertiesSet();
+		container.start();
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		container.stop();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -219,6 +248,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class)).hasSize(0);
 		template.stop();
 		cf.destroy();
+		executor.destroy();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -262,6 +292,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class)).hasSize(0);
 		template.stop();
 		cf.destroy();
+		executor.destroy();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -305,6 +336,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class)).hasSize(0);
 		template.stop();
 		cf.destroy();
+		executor.destroy();
 	}
 
 	@Test
@@ -347,8 +379,8 @@ public class DirectMessageListenerContainerIntegrationTests {
 				.put("x-dead-letter-routing-key", DLQ1)
 				.get());
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
-		RabbitAdmin admin = new RabbitAdmin(cf);
-		admin.declareQueue(q1);
+		RabbitAdmin rabbitAdmin = new RabbitAdmin(cf);
+		rabbitAdmin.declareQueue(q1);
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
 		container.setQueueNames(Q1);
 		container.setConsumersPerQueue(2);
@@ -457,13 +489,15 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.start();
 		assertThat(latch1.await(10, TimeUnit.SECONDS)).isTrue();
 		Consumer consumer = consumerCaptor.getValue();
-		Executors.newSingleThreadExecutor().execute(() -> {
+		ExecutorService exec = Executors.newSingleThreadExecutor();
+		exec.execute(() -> {
 			container.stop();
 			latch2.countDown();
 		});
 		assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
 		verify(channel).basicCancel(tag); // canceled properly even without consumeOk
 		consumer.handleCancelOk(tag);
+		exec.shutdownNow();
 	}
 
 	@Test
@@ -483,9 +517,9 @@ public class DirectMessageListenerContainerIntegrationTests {
 		if (autoDeclare) {
 			GenericApplicationContext context = new GenericApplicationContext();
 			context.getBeanFactory().registerSingleton("foo", new Queue(Q1));
-			RabbitAdmin admin = new RabbitAdmin(cf);
-			admin.setApplicationContext(context);
-			context.getBeanFactory().registerSingleton("admin", admin);
+			RabbitAdmin rabbitAdmin = new RabbitAdmin(cf);
+			rabbitAdmin.setApplicationContext(context);
+			context.getBeanFactory().registerSingleton("admin", rabbitAdmin);
 			context.refresh();
 			container.setApplicationContext(context);
 		}
@@ -506,10 +540,10 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q2, 2)).isTrue();
 		assertThat(activeConsumerCount(container, 2)).isTrue();
 		assertThat(restartConsumerCount(container, 2)).isTrue();
-		RabbitAdmin admin = new RabbitAdmin(cf);
+		RabbitAdmin rabbitAdmin = new RabbitAdmin(cf);
 		if (!autoDeclare) {
 			Thread.sleep(2000);
-			admin.declareQueue(new Queue(Q1));
+			rabbitAdmin.declareQueue(new Queue(Q1));
 		}
 		assertThat(consumersOnQueue(Q1, 2)).isTrue();
 		assertThat(consumersOnQueue(Q2, 2)).isTrue();

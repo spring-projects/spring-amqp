@@ -663,6 +663,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			connection = getConnectionFactory().createConnection();
 		}
 		catch (Exception e) {
+			publishConsumerFailedEvent(e.getMessage(), false, e);
 			addConsumerToRestart(new SimpleConsumer(null, null, queue));
 			throw e instanceof AmqpConnectException // NOSONAR exception type check
 					? (AmqpConnectException) e
