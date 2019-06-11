@@ -162,7 +162,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.setConsumersPerQueue(2);
 		container.setMessageListener(in -> {
 		});
-		container.setBeanName("simple");
+		container.setBeanName("badHost");
 		container.setConsumerTagStrategy(new Tag());
 		CountDownLatch latch = new CountDownLatch(1);
 		container.setApplicationEventPublisher(ev -> {
@@ -175,6 +175,8 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.start();
 		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 		container.stop();
+		cf.destroy();
+		executor.destroy();
 	}
 
 	@SuppressWarnings("unchecked")
