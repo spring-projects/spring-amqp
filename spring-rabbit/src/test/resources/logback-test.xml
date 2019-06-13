@@ -24,7 +24,6 @@
 		<connectionName>logbackAppender</connectionName>
 		<clientConnectionProperties>foo:bar,baz:qux</clientConnectionProperties>
 		<foo>bar</foo>
-		<addMdcAsHeaders>true</addMdcAsHeaders>
 	</appender>
 
 	<appender name="AMQPWithCustomQueue"
@@ -93,6 +92,7 @@
 		<durable>false</durable>
 		<deliveryMode>NON_PERSISTENT</deliveryMode>
 		<declareExchange>false</declareExchange>
+		<addMdcAsHeaders>false</addMdcAsHeaders>
 	</appender>
 
 	<logger name="org.springframework.amqp.rabbit.logback" level="DEBUG" additivity="false">

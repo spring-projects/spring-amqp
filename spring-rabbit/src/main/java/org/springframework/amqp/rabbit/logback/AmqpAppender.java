@@ -297,9 +297,9 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	private String charset;
 
 	/**
-	 * Whether or not add MDC properties into message headers.
+	 * Whether or not add MDC properties into message headers. true by default for backward compatibility
 	 */
-	private boolean addMdcAsHeaders = false;
+	private boolean addMdcAsHeaders = true;
 
 	private boolean durable = true;
 

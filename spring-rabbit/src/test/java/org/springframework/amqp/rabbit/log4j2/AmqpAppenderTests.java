@@ -155,7 +155,7 @@ public class AmqpAppenderTests {
 		// change the property to true and this fails and test() randomly fails too.
 		assertThat(TestUtils.getPropertyValue(manager, "async", Boolean.class)).isFalse();
 		// default value
-		assertThat(TestUtils.getPropertyValue(manager, "addMdcAsHeaders", Boolean.class)).isFalse();
+		assertThat(TestUtils.getPropertyValue(manager, "addMdcAsHeaders", Boolean.class)).isTrue();
 
 		assertThat(TestUtils.getPropertyValue(appender, "events.items", Object[].class).length).isEqualTo(10);
 

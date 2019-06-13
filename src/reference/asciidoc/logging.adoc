@@ -152,11 +152,11 @@ If the character set is unsupported on the current platform, we fall back to usi
 | A comma-delimited list of `key:value` pairs for custom client properties to the RabbitMQ connection.
 
 | addMdcAsHeaders
-| false
+| true
 | MDC properties were always added into RabbitMQ message headers until this property was introduced.
   It can lead to issues for big MDC as while RabbitMQ has limited buffer size for all headers and this buffer is pretty small.
-  This property was introduced to avoid issues in cases of big MDC.
-   `true` turns on serialization MDC into headers. Please note, JsonLayout adds MDC into the message by default.
+  This property was introduced to avoid issues in cases of big MDC. By default this value set to `true` for backward compatibility.
+   `false` turns off serialization MDC into headers. Please note, JsonLayout adds MDC into the message by default.
 
 |===
 
@@ -176,7 +176,7 @@ The following example shows how to configure a Log4j 2 appender:
         contentType="text/plain" contentEncoding="UTF-8" generateId="true" deliveryMode="NON_PERSISTENT"
         charset="UTF-8"
         senderPoolSize="3" maxSenderRetries="5"
-        addMdcAsHeaders="true">
+        addMdcAsHeaders="false">
     </RabbitMQ>
 </Appenders>
 ----
@@ -214,7 +214,7 @@ The following example shows how to configure a logback appender:
     <durable>false</durable>
     <deliveryMode>NON_PERSISTENT</deliveryMode>
     <declareExchange>true</declareExchange>
-    <addMdcAsHeaders>true</addMdcAsHeaders>
+    <addMdcAsHeaders>false</addMdcAsHeaders>
 </appender>
 ----
 ====
@@ -244,7 +244,7 @@ In addition they populate headers with the following values:
 * The level of the log event
 * `thread`: the name of the thread where log event happened
 * The location of the stack trace of the log event call
-* A copy of all the MDC properties (in the case if `addMdcAsHeaders` is set to `true`)
+* A copy of all the MDC properties (unless `addMdcAsHeaders` is set to `false`)
 
 Each of the appenders can be subclassed, letting you modify the messages before publishing.
 The following example shows how to customize log messages:

@@ -184,7 +184,7 @@ public class AmqpAppender extends AbstractAppender {
 			@PluginAttribute("charset") String charset,
 			@PluginAttribute(value = "bufferSize", defaultInt = Integer.MAX_VALUE) int bufferSize,
 			@PluginElement(BlockingQueueFactory.ELEMENT_TYPE) BlockingQueueFactory<Event> blockingQueueFactory,
-  		    @PluginAttribute("addMdcAsHeaders") boolean addMdcAsHeaders) {
+  		    @PluginAttribute(value = "addMdcAsHeaders", defaultBoolean = true) boolean addMdcAsHeaders) {
 		if (name == null) {
 			LOGGER.error("No name for AmqpAppender");
 		}
@@ -610,9 +610,9 @@ public class AmqpAppender extends AbstractAppender {
 		private String charset = Charset.defaultCharset().name();
 
 		/**
-		 * Whether or not add MDC properties into message headers.
+		 * Whether or not add MDC properties into message headers. true by default for backward compatibility
 		 */
-		private boolean addMdcAsHeaders = false;
+		private boolean addMdcAsHeaders = true;
 
 		private boolean durable = true;
 
