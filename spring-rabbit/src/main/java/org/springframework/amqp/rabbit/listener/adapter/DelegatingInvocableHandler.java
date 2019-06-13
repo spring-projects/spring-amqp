@@ -272,4 +272,13 @@ public class DelegatingInvocableHandler {
 		return this.defaultHandler != null;
 	}
 
+	@Nullable
+	public Expression getSendToForPayload(Object payload) {
+		InvocableHandlerMethod handler = findHandlerForPayload(payload.getClass());
+		if (handler != null) {
+			return this.handlerSendTo.get(handler);
+		}
+		return null;
+	}
+
 }

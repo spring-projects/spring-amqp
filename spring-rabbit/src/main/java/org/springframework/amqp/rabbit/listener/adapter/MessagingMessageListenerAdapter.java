@@ -149,7 +149,9 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 							.build();
 					Object errorResult = this.errorHandler.handleError(amqpMessage, message, e);
 					if (errorResult != null) {
-						handleResult(new InvocationResult(errorResult, null, null), amqpMessage, channel, message);
+						handleResult(new InvocationResult(errorResult,
+									this.handlerAdapter.getSendToForPayload(message.getPayload()), null),
+								amqpMessage, channel, message);
 					}
 					else {
 						logger.trace("Error handler returned no result");
