@@ -48,6 +48,7 @@ import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.SimpleResourceHolder;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
+import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.ListenerContainerAware;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;

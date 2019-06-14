@@ -50,7 +50,7 @@ import org.apache.commons.logging.Log;
 import org.springframework.amqp.AmqpApplicationContextClosedException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpTimeoutException;
-import org.springframework.amqp.rabbit.listener.ActiveObjectCounter;
+import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
 import org.springframework.amqp.support.ConditionalExceptionLogger;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jmx.export.annotation.ManagedAttribute;

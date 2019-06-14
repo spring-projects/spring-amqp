@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.listener;
+package org.springframework.amqp.rabbit.support;
 
 import java.util.Collection;
 import java.util.HashSet;

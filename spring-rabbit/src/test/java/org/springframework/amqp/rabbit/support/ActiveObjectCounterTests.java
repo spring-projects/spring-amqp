@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.listener;
+package org.springframework.amqp.rabbit.support;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
