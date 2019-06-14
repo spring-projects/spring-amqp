@@ -345,6 +345,11 @@ public class EnableRabbitIntegrationTests {
 		rabbitTemplate.convertAndSend("multi.exch", "multi.rk", bar);
 		rabbitTemplate.setReceiveTimeout(10000);
 		assertThat(this.rabbitTemplate.receiveAndConvert("sendTo.replies")).isEqualTo("BAR: bar");
+		bar.field = "crash";
+		rabbitTemplate.convertAndSend("multi.exch", "multi.rk", bar);
+		assertThat(this.rabbitTemplate.receiveAndConvert("sendTo.replies"))
+			.isEqualTo("CRASHCRASH Test reply from error handler");
+		bar.field = "bar";
 		Baz baz = new Baz();
 		baz.field = "baz";
 		assertThat(rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", baz)).isEqualTo("BAZ: baz");
@@ -1550,14 +1555,22 @@ public class EnableRabbitIntegrationTests {
 
 		@Bean
 		public RabbitListenerErrorHandler alwaysBARHandler() {
-			return (m, sm, e) -> "BAR";
+			return (msg, springMsg, ex) -> "BAR";
+		}
+
+		@Bean
+		public RabbitListenerErrorHandler upcaseAndRepeatErrorHandler() {
+			return (msg, springMsg, ex) -> {
+				String payload = ((Bar) springMsg.getPayload()).field.toUpperCase();
+				return payload + payload + " " + ex.getCause().getMessage();
+ 			};
 		}
 
 		@Bean
 		public RabbitListenerErrorHandler throwANewException() {
-			return (m, sm, e) -> {
-				this.errorHandlerChannel = sm.getHeaders().get(AmqpHeaders.CHANNEL, Channel.class);
-				throw new RuntimeException("from error handler", e.getCause());
+			return (msg, springMsg, ex) -> {
+				this.errorHandlerChannel = springMsg.getHeaders().get(AmqpHeaders.CHANNEL, Channel.class);
+				throw new RuntimeException("from error handler", ex.getCause());
 			};
 		}
 
@@ -1637,7 +1650,7 @@ public class EnableRabbitIntegrationTests {
 
 		@Bean
 		public org.springframework.amqp.core.Queue sendToReplies() {
-			return new org.springframework.amqp.core.Queue(sendToRepliesBean(), false, false, true);
+			return new org.springframework.amqp.core.Queue(sendToRepliesBean(), false, false, false);
 		}
 
 		@Bean
@@ -1672,12 +1685,15 @@ public class EnableRabbitIntegrationTests {
 	@RabbitListener(bindings = @QueueBinding
 			(value = @Queue,
 					exchange = @Exchange(value = "multi.exch", autoDelete = "true"),
-					key = "multi.rk"))
+					key = "multi.rk"), errorHandler = "upcaseAndRepeatErrorHandler")
 	static class MultiListenerBean {
 
 		@RabbitHandler
 		@SendTo("${foo.bar:#{sendToRepliesBean}}")
 		public String bar(@NonNull Bar bar) {
+			if (bar.field.equals("crash")) {
+				throw new RuntimeException("Test reply from error handler");
+			}
 			return "BAR: " + bar.field;
 		}
 

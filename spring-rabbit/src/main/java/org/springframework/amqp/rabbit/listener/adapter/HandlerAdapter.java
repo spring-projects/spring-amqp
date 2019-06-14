@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener.adapter;
 
+import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 
@@ -94,5 +95,14 @@ public class HandlerAdapter {
 		}
 	}
 
+	@Nullable
+	public InvocationResult getInvocationResultFor(Object result, Object inboundPayload) {
+		if (this.invokerHandlerMethod != null) {
+			return new InvocationResult(result, null, this.invokerHandlerMethod.getMethod().getGenericReturnType());
+		}
+		else {
+			return this.delegatingHandler.getInvocationResultFor(result, inboundPayload);
+		}
+	}
 
 }
