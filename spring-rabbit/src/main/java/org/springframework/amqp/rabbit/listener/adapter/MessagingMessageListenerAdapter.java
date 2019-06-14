@@ -149,8 +149,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 							.build();
 					Object errorResult = this.errorHandler.handleError(amqpMessage, message, e);
 					if (errorResult != null) {
-						handleResult(new InvocationResult(errorResult,
-									this.handlerAdapter.getSendToForPayload(message.getPayload()), null),
+						handleResult(this.handlerAdapter.getInvocationResultFor(errorResult, message.getPayload()),
 								amqpMessage, channel, message);
 					}
 					else {

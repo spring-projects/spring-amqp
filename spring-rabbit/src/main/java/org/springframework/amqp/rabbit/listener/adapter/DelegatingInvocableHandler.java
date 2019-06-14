@@ -273,10 +273,11 @@ public class DelegatingInvocableHandler {
 	}
 
 	@Nullable
-	public Expression getSendToForPayload(Object payload) {
-		InvocableHandlerMethod handler = findHandlerForPayload(payload.getClass());
+	public InvocationResult getInvocationResultFor(Object result, Object inboundPayload) {
+		InvocableHandlerMethod handler = findHandlerForPayload(inboundPayload.getClass());
 		if (handler != null) {
-			return this.handlerSendTo.get(handler);
+			return new InvocationResult(result, this.handlerSendTo.get(handler),
+					handler.getMethod().getGenericReturnType());
 		}
 		return null;
 	}
