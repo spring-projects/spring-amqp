@@ -98,7 +98,7 @@ subprojects { subproject ->
 		reactorVersion = '3.3.0.M2'
 		springDataCommonsVersion = '2.2.0.RC1'
 
-		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.2.0.M2'
+		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.2.0.M3'
 
 		springRetryVersion = '1.2.4.RELEASE'
 	}
