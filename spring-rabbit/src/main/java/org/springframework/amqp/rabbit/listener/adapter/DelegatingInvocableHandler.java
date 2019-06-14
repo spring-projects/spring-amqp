@@ -272,4 +272,14 @@ public class DelegatingInvocableHandler {
 		return this.defaultHandler != null;
 	}
 
+	@Nullable
+	public InvocationResult getInvocationResultFor(Object result, Object inboundPayload) {
+		InvocableHandlerMethod handler = findHandlerForPayload(inboundPayload.getClass());
+		if (handler != null) {
+			return new InvocationResult(result, this.handlerSendTo.get(handler),
+					handler.getMethod().getGenericReturnType());
+		}
+		return null;
+	}
+
 }
