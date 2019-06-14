@@ -15,4 +15,4 @@ cache:
     - $HOME/.gradle/wrapper/
 install: true
 script:
-    - ./gradlew check --no-daemon
+    - ./gradlew check --no-daemon --debug
