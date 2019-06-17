@@ -638,15 +638,17 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			else if (this.cacheMode == CacheMode.CONNECTION) {
 				ChannelCachingConnectionProxy connection = findIdleConnection();
 				long now = System.currentTimeMillis();
-				while (connection == null && System.currentTimeMillis() - now < this.channelCheckoutTimeout) {
-					if (countOpenConnections() >= this.connectionLimit) {
-						try {
-							this.connectionMonitor.wait(this.channelCheckoutTimeout);
-							connection = findIdleConnection();
-						}
-						catch (InterruptedException e) {
-							Thread.currentThread().interrupt();
-							throw new AmqpException("Interrupted while waiting for a connection", e);
+				if (connection == null && countOpenConnections() >= this.connectionLimit) {
+					while (connection == null && System.currentTimeMillis() - now < this.channelCheckoutTimeout) {
+						if (countOpenConnections() >= this.connectionLimit) {
+							try {
+								this.connectionMonitor.wait(this.channelCheckoutTimeout);
+								connection = findIdleConnection();
+							}
+							catch (InterruptedException e) {
+								Thread.currentThread().interrupt();
+								throw new AmqpException("Interrupted while waiting for a connection", e);
+							}
 						}
 					}
 				}

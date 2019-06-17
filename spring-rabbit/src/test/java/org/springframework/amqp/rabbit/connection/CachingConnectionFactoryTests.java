@@ -16,11 +16,13 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.AdditionalMatchers.aryEq;
@@ -28,6 +30,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
@@ -1652,6 +1655,25 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		channel.close();
 		RabbitUtils.setPhysicalCloseRequired(channel, false);
 		Thread.sleep(6000);
+	}
+
+	@Test
+	public void testFirstConnectionDoesntWait() throws IOException, TimeoutException {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		Channel mockChannel = mock(Channel.class);
+
+		given(mockConnectionFactory.newConnection((ExecutorService) isNull(), anyString())).willReturn(mockConnection);
+		given(mockConnection.createChannel()).willReturn(mockChannel);
+		given(mockChannel.isOpen()).willReturn(true);
+		given(mockConnection.isOpen()).willReturn(true);
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setCacheMode(CacheMode.CONNECTION);
+		ccf.setChannelCheckoutTimeout(60000);
+		long t1 = System.currentTimeMillis();
+		ccf.createConnection();
+		assertThat(System.currentTimeMillis() - t1, lessThan(30_000L));
 	}
 
 }
