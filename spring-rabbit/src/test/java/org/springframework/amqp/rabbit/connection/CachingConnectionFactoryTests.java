@@ -1791,4 +1791,23 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		closeExec.shutdownNow();
 	}
 
+	@Test
+	public void testFirstConnectionDoesntWait() throws IOException, TimeoutException {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		Channel mockChannel = mock(Channel.class);
+
+		given(mockConnectionFactory.newConnection((ExecutorService) isNull(), anyString())).willReturn(mockConnection);
+		given(mockConnection.createChannel()).willReturn(mockChannel);
+		given(mockChannel.isOpen()).willReturn(true);
+		given(mockConnection.isOpen()).willReturn(true);
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setCacheMode(CacheMode.CONNECTION);
+		ccf.setChannelCheckoutTimeout(60000);
+		long t1 = System.currentTimeMillis();
+		ccf.createConnection();
+		assertThat(System.currentTimeMillis() - t1).isLessThan(30_000);
+	}
+
 }
