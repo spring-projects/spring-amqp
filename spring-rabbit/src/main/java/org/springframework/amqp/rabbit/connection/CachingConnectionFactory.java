@@ -719,7 +719,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	private Connection connectionFromCache() {
 		ChannelCachingConnectionProxy cachedConnection = findIdleConnection();
 		long now = System.currentTimeMillis();
-		if (cachedConnection == null) {
+		if (cachedConnection == null && countOpenConnections() >= this.connectionLimit) {
 			cachedConnection = waitForConnection(now);
 		}
 		if (cachedConnection == null) {
