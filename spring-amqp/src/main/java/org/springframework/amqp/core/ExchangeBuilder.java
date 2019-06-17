@@ -110,11 +110,11 @@ public final class ExchangeBuilder extends AbstractBuilder {
 
 	/**
 	 * Set the durable flag.
-	 * @param durable the durable flag (default true).
+	 * @param isDurable the durable flag (default true).
 	 * @return the builder.
 	 */
-	public ExchangeBuilder durable(boolean durable) {
-		this.durable = durable;
+	public ExchangeBuilder durable(boolean isDurable) {
+		this.durable = isDurable;
 		return this;
 	}
 
@@ -137,6 +137,10 @@ public final class ExchangeBuilder extends AbstractBuilder {
 	public ExchangeBuilder withArguments(Map<String, Object> arguments) {
 		this.getOrCreateArguments().putAll(arguments);
 		return this;
+	}
+
+	public ExchangeBuilder alternate(String exchange) {
+		return withArgument("alternate-exchange", exchange);
 	}
 
 	/**
@@ -190,7 +194,8 @@ public final class ExchangeBuilder extends AbstractBuilder {
 		return this;
 	}
 
-	public Exchange build() {
+	@SuppressWarnings("unchecked")
+	public <T extends Exchange> T build() {
 		AbstractExchange exchange;
 		if (ExchangeTypes.DIRECT.equals(this.type)) {
 			exchange = new DirectExchange(this.name, this.durable, this.autoDelete, getArguments());
@@ -214,7 +219,7 @@ public final class ExchangeBuilder extends AbstractBuilder {
 		if (!ObjectUtils.isEmpty(this.declaringAdmins)) {
 			exchange.setAdminsThatShouldDeclare(this.declaringAdmins);
 		}
-		return exchange;
+		return (T) exchange;
 	}
 
 }

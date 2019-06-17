@@ -121,11 +121,177 @@ public final class QueueBuilder extends AbstractBuilder {
 	}
 
 	/**
+	 * Set the message time-to-live after which it will be discarded, or routed to the
+	 * dead-letter-exchange, if so configured.
+	 * @param ttl the time to live (milliseconds).
+	 * @return the builder.
+	 * @since 2.2
+	 * @see #deadLetterExchange(String)
+	 */
+	public QueueBuilder ttl(int ttl) {
+		return withArgument("x-message-ttl", ttl);
+	}
+
+	/**
+	 * Set the time that the queue can remain unused before being deleted.
+	 * @param expires the expiration (milliseconds).
+	 * @return the builder.
+	 * @since 2.2
+	 */
+	public QueueBuilder expires(int expires) {
+		return withArgument("x-expires", expires);
+	}
+
+	/**
+	 * Set the number of (ready) messages allowed in the queue before it starts to drop
+	 * them.
+	 * @param count the number of (ready) messages allowed.
+	 * @return the builder.
+	 * @since 2.2
+	 * @see #overflow(Overflow)
+	 */
+	public QueueBuilder maxLength(int count) {
+		return withArgument("x-max-length", count);
+	}
+
+	/**
+	 * Set the total aggregate body size allowed in the queue before it starts to drop
+	 * them.
+	 * @param bytes the total aggregate body size.
+	 * @return the builder.
+	 * @since 2.2
+	 */
+	public QueueBuilder maxLengthBytes(int bytes) {
+		return withArgument("x-max-length-bytes", bytes);
+	}
+
+	/**
+	 * Set the overflow mode when messages are dropped due to max messages or max message
+	 * size is exceeded.
+	 * @param overflow {@link Overflow#dropHead} or {@link Overflow#rejectPublish}.
+	 * @return the builder.
+	 * @since 2.2
+	 */
+	public QueueBuilder overflow(Overflow overflow) {
+		return withArgument("x-overflow", overflow.getValue());
+	}
+
+	/**
+	 * Set the dead-letter exchange to which to route expired or rejected messages.
+	 * @param dlx the dead-letter exchange.
+	 * @return the builder.
+	 * @since 2.2
+	 * @see #deadLetterRoutingKey(String)
+	 */
+	public QueueBuilder deadLetterExchange(String dlx) {
+		return withArgument("x-dead-letter-exchange", dlx);
+	}
+
+	/**
+	 * Set the routing key to use when routing expired or rejected messages to the
+	 * dead-letter exchange.
+	 * @param dlrk the dead-letter routing key.
+	 * @return the builder.
+	 * @since 2.2
+	 * @see #deadLetterExchange(String)
+	 */
+	public QueueBuilder deadLetterRoutingKey(String dlrk) {
+		return withArgument("x-dead-letter-routing-key", dlrk);
+	}
+
+	/**
+	 * Set the maximum number if priority levels for the queue to support; if not set, the
+	 * queue will not support message priorities.
+	 * @param maxPriority the maximum priority.
+	 * @return the builder.
+	 * @since 2.2
+	 */
+	public QueueBuilder maxPriority(int maxPriority) {
+		return withArgument("x-max-priority", maxPriority);
+	}
+
+	/**
+	 * Set the queue into lazy mode, keeping as many messages as possible on disk to
+	 * reduce RAM usage on the broker. if not set, the queue will keep an in-memory cache
+	 * to deliver messages as fast as possible.
+	 * @return the builder.
+	 * @since 2.2
+	 */
+	public QueueBuilder lazy() {
+		return withArgument("x-queue-mode", "lazy");
+	}
+
+	/**
+	 * Set the master locator mode which determines which node a queue master will be
+	 * located on a cluster of nodes.
+	 * @param locator {@link MasterLocator#minMasters}, {@link MasterLocator#clientLocal}
+	 * or {@link MasterLocator#random}.
+	 * @return the builder.
+	 * @since 2.2
+	 */
+	public QueueBuilder masterLocator(MasterLocator locator) {
+		return withArgument("x-queue-master-locator", locator.getValue());
+	}
+
+	/**
 	 * Builds a final queue.
 	 * @return the Queue instance.
 	 */
 	public Queue build() {
 		return new Queue(this.name, this.durable, this.exclusive, this.autoDelete, getArguments());
+	}
+
+	public enum Overflow {
+
+		/**
+		 * Drop the oldest message.
+		 */
+		dropHead("drop-head"),
+
+		/**
+		 * Reject the new message.
+		 */
+		rejectPublish("reject-publish");
+
+		private final String value;
+
+		Overflow(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+	}
+
+	public enum MasterLocator {
+
+		/**
+		 * Deploy on the node with the fewest masters.
+		 */
+		minMasters("min-masters"),
+
+		/**
+		 * Deploy on the node we are connected to.
+		 */
+		clientLocal("client-local"),
+
+		/**
+		 * Deploy on a random node.
+		 */
+		random("random");
+
+		private final String value;
+
+		MasterLocator(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
 	}
 
 }

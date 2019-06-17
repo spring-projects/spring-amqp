@@ -4362,6 +4362,37 @@ Starting with version 2.0, the `ExchangeBuilder` now creates durable exchanges b
 To make a non-durable exchange with the builder, use `.durable(false)` before invoking `.build()`.
 The `durable()` method with no parameter is no longer provided.
 
+Version 2.2 introduced fluent APIs to add "well known" exchange and queue arguments...
+
+====
+[source, java]
+----
+@Bean
+public Queue allArgs1() {
+    return QueueBuilder.nonDurable("all.args.1")
+            .ttl(1000)
+            .expires(200_000)
+            .maxLength(42)
+            .maxLengthBytes(10_000)
+            .overflow(Overflow.rejectPublish)
+            .deadLetterExchange("dlx")
+            .deadLetterRoutingKey("dlrk")
+            .maxPriority(4)
+            .lazy()
+            .masterLocator(MasterLocator.minMasters)
+            .build();
+}
+
+@Bean
+public DirectExchange ex() {
+    return ExchangeBuilder.directExchange("ex.with.alternate")
+            .durable(true)
+            .alternate("alternate")
+            .build();
+}
+----
+====
+
 [[collection-declaration]]
 ===== Declaring Collections of Exchanges, Queues, and Bindings
 
