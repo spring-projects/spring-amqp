@@ -19,12 +19,12 @@ package org.springframework.amqp.rabbit.connection;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
@@ -61,10 +61,13 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.commons.logging.Log;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 import org.springframework.amqp.AmqpConnectException;
@@ -1639,7 +1642,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ccf.createConnection();
 		verify(mock).isAutomaticRecoveryEnabled();
 		verify(mock)
-				.newConnection(isNull(), aryEq(new Address[] { new Address("mq1") }), anyString());
+				.newConnection(isNull(), eq(Collections.singletonList(new Address("mq1"))), anyString());
 		verifyNoMoreInteractions(mock);
 	}
 
@@ -1653,7 +1656,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verify(mock).isAutomaticRecoveryEnabled();
 		verify(mock).setAutomaticRecoveryEnabled(false);
 		verify(mock).newConnection(isNull(),
-				aryEq(new Address[] { new Address("mq1"), new Address("mq2") }), anyString());
+				eq(Arrays.asList(new Address("mq1"), new Address("mq2"))), anyString());
 		verifyNoMoreInteractions(mock);
 	}
 
@@ -1808,6 +1811,36 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		long t1 = System.currentTimeMillis();
 		ccf.createConnection();
 		assertThat(System.currentTimeMillis() - t1).isLessThan(30_000);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Test
+	public void testShuffle() throws IOException, TimeoutException {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		Channel mockChannel = mock(Channel.class);
+
+		given(mockConnectionFactory.newConnection((ExecutorService) isNull(), any(List.class), anyString()))
+			.willReturn(mockConnection);
+		given(mockConnection.createChannel()).willReturn(mockChannel);
+		given(mockChannel.isOpen()).willReturn(true);
+		given(mockConnection.isOpen()).willReturn(true);
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setCacheMode(CacheMode.CONNECTION);
+		ccf.setAddresses("host1:5672,host2:5672,host3:5672");
+		ccf.setShuffleAddresses(true);
+		IntStream.range(0, 100).forEach(i -> ccf.createConnection());
+		ccf.destroy();
+		ArgumentCaptor<List<Address>> captor = ArgumentCaptor.forClass(List.class);
+		verify(mockConnectionFactory, times(100)).newConnection(isNull(), captor.capture(), anyString());
+		List<String> firstAddress = captor.getAllValues()
+			.stream()
+			.map(addresses -> addresses.get(0).getHost())
+			.distinct()
+			.sorted()
+			.collect(Collectors.toList());
+		assertThat(firstAddress).containsExactly("host1", "host2", "host3");
 	}
 
 }

@@ -1384,6 +1384,14 @@
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 	List of addresses; e.g. host1,host2:4567,host3 - overrides host/port if supplied.
+	Connection will be attempted in order unless 'shuffle-addresses' is 'true'.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="shuffle-addresses" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Set to true when 'addresses' has more than one address to shuffle the list into a random order.
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
