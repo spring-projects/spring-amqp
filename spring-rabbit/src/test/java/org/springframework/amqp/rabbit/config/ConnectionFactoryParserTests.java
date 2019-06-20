@@ -21,6 +21,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import org.junit.Before;
@@ -110,19 +111,20 @@ public final class ConnectionFactoryParserTests {
 	}
 
 	@Test
-	public void testMultiHost() throws Exception {
+	public void testMultiHost() {
 		CachingConnectionFactory connectionFactory = beanFactory.getBean("multiHost", CachingConnectionFactory.class);
 		assertNotNull(connectionFactory);
 		assertEquals(10, connectionFactory.getChannelCacheSize());
 		DirectFieldAccessor dfa =  new DirectFieldAccessor(connectionFactory);
-		Address[] addresses = (Address[]) dfa.getPropertyValue("addresses");
-		assertEquals(3, addresses.length);
-		assertEquals("host1", addresses[0].getHost());
-		assertEquals(1234, addresses[0].getPort());
-		assertEquals("host2", addresses[1].getHost());
-		assertEquals(-1, addresses[1].getPort());
-		assertEquals("host3", addresses[2].getHost());
-		assertEquals(4567, addresses[2].getPort());
+		@SuppressWarnings("unchecked")
+		List<Address> addresses = (List<Address>) dfa.getPropertyValue("addresses");
+		assertEquals(3, addresses.size());
+		assertEquals("host1", addresses.get(0).getHost());
+		assertEquals(1234, addresses.get(0).getPort());
+		assertEquals("host2", addresses.get(1).getHost());
+		assertEquals(-1, addresses.get(1).getPort());
+		assertEquals("host3", addresses.get(2).getHost());
+		assertEquals(4567, addresses.get(2).getPort());
 		assertSame(beanFactory.getBean("tf"), TestUtils.getPropertyValue(connectionFactory,
 				"rabbitConnectionFactory.threadFactory"));
 	}

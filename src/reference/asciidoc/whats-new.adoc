@@ -119,3 +119,9 @@ The Log4J and Logback `AmqpAppender` s now support a `verifyHostname` SSL option
 Also these appendes now can be configured to not add MDC entries as headers.
 The `addMdcAsHeaders` boolean option has been introduces to configure such a behavior.
 See <<logging>> for more information.
+
+===== Connection Factory Changes
+
+The `CachingConnectionFactory` has a new property `shuffleAddresses`.
+When providing a list of broker node addresses, the list will be shuffled before creating a connection so that the order in which the connections are attempted is random.
+See <<cluster>> for more information.
