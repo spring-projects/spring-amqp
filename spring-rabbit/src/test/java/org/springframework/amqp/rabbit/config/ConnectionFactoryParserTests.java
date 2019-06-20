@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import org.junit.Before;
@@ -110,14 +111,16 @@ public final class ConnectionFactoryParserTests {
 		assertThat(connectionFactory).isNotNull();
 		assertThat(connectionFactory.getChannelCacheSize()).isEqualTo(10);
 		DirectFieldAccessor dfa =  new DirectFieldAccessor(connectionFactory);
-		Address[] addresses = (Address[]) dfa.getPropertyValue("addresses");
-		assertThat(addresses.length).isEqualTo(3);
-		assertThat(addresses[0].getHost()).isEqualTo("host1");
-		assertThat(addresses[0].getPort()).isEqualTo(1234);
-		assertThat(addresses[1].getHost()).isEqualTo("host2");
-		assertThat(addresses[1].getPort()).isEqualTo(-1);
-		assertThat(addresses[2].getHost()).isEqualTo("host3");
-		assertThat(addresses[2].getPort()).isEqualTo(4567);
+		@SuppressWarnings("unchecked")
+		List<Address> addresses = (List<Address>) dfa.getPropertyValue("addresses");
+		assertThat(addresses).hasSize(3);
+		assertThat(addresses.get(0).getHost()).isEqualTo("host1");
+		assertThat(addresses.get(0).getPort()).isEqualTo(1234);
+		assertThat(addresses.get(1).getHost()).isEqualTo("host2");
+		assertThat(addresses.get(1).getPort()).isEqualTo(-1);
+		assertThat(addresses.get(2).getHost()).isEqualTo("host3");
+		assertThat(addresses.get(2).getPort()).isEqualTo(4567);
+		assertThat(dfa.getPropertyValue("shuffleAddresses")).isEqualTo(Boolean.TRUE);
 		assertThat(TestUtils.getPropertyValue(connectionFactory,
 				"rabbitConnectionFactory.threadFactory")).isSameAs(beanFactory.getBean("tf"));
 	}

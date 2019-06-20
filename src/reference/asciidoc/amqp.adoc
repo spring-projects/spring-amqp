@@ -356,9 +356,11 @@ Alternatively, if running in a clustered environment, you can use the addresses 
 [source,xml]
 ----
 <rabbit:connection-factory
-    id="connectionFactory" addresses="host1:5672,host2:5672"/>
+    id="connectionFactory" addresses="host1:5672,host2:5672" shuffle-addresses="true"/>
 ----
 ====
+
+See <<cluster>> for information about `shuffle-addresses`.
 
 The following example with a custom thread factory that prefixes thread names with `rabbitmq-`:
 
@@ -521,6 +523,39 @@ If you wish to skip this validation for some reason, set the factory bean's `ski
 Starting with version 2.1, the `RabbitConnectionFactoryBean` now calls `enableHostnameVerification()` by default.
 To revert to the previous behavior, set the `enableHostnameVerification` property to `false`.
 
+[[cluster]]
+===== Connecting to a Cluster
+
+To connect to a cluster, configure the `addresses` property on the `CachingConnectionFactory`:
+
+====
+[source, java]
+----
+@Bean
+public CachingConnectionFactory ccf() {
+    CachingConnectionFactory ccf = new CachingConnectionFactory();
+    ccf.setAddresses("host1:5672,host2:5672,host3:5672");
+    return ccf;
+}
+----
+====
+
+The underlying connection factory will attempt to connect to each host, in order, whenever a new connection is established.
+Starting with version 2.1.8, the connection order can be made random by setting the `shuffleAddresses` property to true; the shuffle will be applied before creating any new connection.
+
+====
+[source, java]
+----
+@Bean
+public CachingConnectionFactory ccf() {
+    CachingConnectionFactory ccf = new CachingConnectionFactory();
+    ccf.setAddresses("host1:5672,host2:5672,host3:5672");
+    ccf.setShuffleAddresses(true);
+    return ccf;
+}
+----
+====
+
 [[routing-connection-factory]]
 ===== Routing Connection Factory
 
@@ -592,7 +627,7 @@ For example, with lookup key qualifier `thing1` and a container listening to que
 
 When using HA queues in a cluster, for the best performance, you may want to connect to the physical broker
 where the master queue resides.
-While the `CachingConnectionFactory` can be configured with multiple broker addresses.
+The `CachingConnectionFactory` can be configured with multiple broker addresses.
 This is to fail over and the client attempts to connect in order.
 The `LocalizedQueueConnectionFactory` uses the REST API provided by the admin plugin to determine on which node the queue is mastered.
 It then creates (or retrieves from a cache) a `CachingConnectionFactory` that connects to just that node.
