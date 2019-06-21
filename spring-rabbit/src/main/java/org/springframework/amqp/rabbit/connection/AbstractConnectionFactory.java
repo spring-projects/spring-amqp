@@ -470,27 +470,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		try {
 			String connectionName = this.connectionNameStrategy.obtainNewConnectionName(this);
 
-			com.rabbitmq.client.Connection rabbitConnection;
-			if (this.addresses != null) {
-				List<Address> addressesToConnect = this.addresses;
-				if (this.shuffleAddresses && addressesToConnect.size() > 1) {
-					List<Address> list = new ArrayList<>(addressesToConnect);
-					Collections.shuffle(list);
-					addressesToConnect = list;
-				}
-				if (this.logger.isInfoEnabled()) {
-					this.logger.info("Attempting to connect to: " + addressesToConnect);
-				}
-				rabbitConnection = this.rabbitConnectionFactory.newConnection(this.executorService, addressesToConnect,
-						connectionName);
-			}
-			else {
-				if (this.logger.isInfoEnabled()) {
-					this.logger.info("Attempting to connect to: " + this.rabbitConnectionFactory.getHost()
-							+ ":" + this.rabbitConnectionFactory.getPort());
-				}
-				rabbitConnection = this.rabbitConnectionFactory.newConnection(this.executorService, connectionName);
-			}
+			com.rabbitmq.client.Connection rabbitConnection = connect(connectionName);
 
 			Connection connection = new SimpleConnection(rabbitConnection, this.closeTimeout);
 			if (rabbitConnection instanceof AutorecoveringConnection) {
@@ -529,6 +509,31 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		catch (IOException | TimeoutException e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 		}
+	}
+
+	private com.rabbitmq.client.Connection connect(String connectionName) throws IOException, TimeoutException {
+		com.rabbitmq.client.Connection rabbitConnection;
+		if (this.addresses != null) {
+			List<Address> addressesToConnect = this.addresses;
+			if (this.shuffleAddresses && addressesToConnect.size() > 1) {
+				List<Address> list = new ArrayList<>(addressesToConnect);
+				Collections.shuffle(list);
+				addressesToConnect = list;
+			}
+			if (this.logger.isInfoEnabled()) {
+				this.logger.info("Attempting to connect to: " + addressesToConnect);
+			}
+			rabbitConnection = this.rabbitConnectionFactory.newConnection(this.executorService, addressesToConnect,
+					connectionName);
+		}
+		else {
+			if (this.logger.isInfoEnabled()) {
+				this.logger.info("Attempting to connect to: " + this.rabbitConnectionFactory.getHost()
+						+ ":" + this.rabbitConnectionFactory.getPort());
+			}
+			rabbitConnection = this.rabbitConnectionFactory.newConnection(this.executorService, connectionName);
+		}
+		return rabbitConnection;
 	}
 
 	protected final String getDefaultHostName() {
