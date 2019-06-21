@@ -186,12 +186,6 @@ public class BrokerEventListener implements MessageListener, ApplicationEventPub
 	}
 
 	@Override
-	public void stop(Runnable callback) {
-		stop();
-		callback.run();
-	}
-
-	@Override
 	public void onMessage(Message message) {
 		if (this.applicationEventPublisher != null) {
 			this.applicationEventPublisher.publishEvent(new BrokerEvent(this, message.getMessageProperties()));
