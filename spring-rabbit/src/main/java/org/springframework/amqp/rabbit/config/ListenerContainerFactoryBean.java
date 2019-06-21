@@ -629,6 +629,9 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 		if (this.container != null) {
 			this.container.stop(callback);
 		}
+		else {
+			callback.run();
+		}
 	}
 
 }

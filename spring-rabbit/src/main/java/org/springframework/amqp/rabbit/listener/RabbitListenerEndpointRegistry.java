@@ -256,17 +256,22 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 
 	@Override
 	public void stop(Runnable callback) {
-		Collection<MessageListenerContainer> listenerContainers = getListenerContainers();
-		AggregatingCallback aggregatingCallback = new AggregatingCallback(listenerContainers.size(), callback);
-		for (MessageListenerContainer listenerContainer : listenerContainers) {
-			try {
-				listenerContainer.stop(aggregatingCallback);
-			}
-			catch (Exception e) {
-				if (this.logger.isWarnEnabled()) {
-					this.logger.warn("Failed to stop listener container [" + listenerContainer + "]", e);
+		Collection<MessageListenerContainer> containers = getListenerContainers();
+		if (containers.size() > 0) {
+			AggregatingCallback aggregatingCallback = new AggregatingCallback(containers.size(), callback);
+			for (MessageListenerContainer listenerContainer : containers) {
+				try {
+					listenerContainer.stop(aggregatingCallback);
+				}
+				catch (Exception e) {
+					if (this.logger.isWarnEnabled()) {
+						this.logger.warn("Failed to stop listener container [" + listenerContainer + "]", e);
+					}
 				}
 			}
+		}
+		else {
+			callback.run();
 		}
 	}
 
