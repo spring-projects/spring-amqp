@@ -40,6 +40,7 @@ import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AmqpAdmin;
+import org.springframework.amqp.core.BatchMessageListener;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -53,6 +54,7 @@ import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.RoutingConnectionFactory;
+import org.springframework.amqp.rabbit.listener.api.ChannelAwareBatchMessagelistener;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
@@ -1059,6 +1061,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		this.batchingStrategy = batchingStrategy;
 	}
 
+	protected Collection<MessagePostProcessor> getAfterReceivePostProcessors() {
+		return this.afterReceivePostProcessors;
+	}
+
 	/**
 	 * Delegates to {@link #validateConfiguration()} and {@link #initialize()}.
 	 */
@@ -1321,30 +1327,39 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	/**
 	 * Execute the specified listener, committing or rolling back the transaction afterwards (if necessary).
 	 * @param channel the Rabbit Channel to operate on
-	 * @param messageIn the received Rabbit Message
+	 * @param data the received Rabbit Message
 	 * @see #invokeListener
 	 * @see #handleListenerException
 	 */
-	protected void executeListener(Channel channel, Message messageIn) {
+	@SuppressWarnings("unchecked")
+	protected void executeListener(Channel channel, Object data) {
 		if (!isRunning()) {
 			if (logger.isWarnEnabled()) {
-				logger.warn("Rejecting received message because the listener container has been stopped: " + messageIn);
+				logger.warn(
+						"Rejecting received message(s) because the listener container has been stopped: " + data);
 			}
 			throw new MessageRejectedWhileStoppingException();
 		}
 		try {
-			doExecuteListener(channel, messageIn);
+			doExecuteListener(channel, data);
 		}
 		catch (RuntimeException ex) {
-			if (messageIn.getMessageProperties().isFinalRetryForMessageWithNoId()) {
+			Message message;
+			if (data instanceof Message) {
+				message = (Message) data;
+			}
+			else {
+				message = ((List<Message>) data).get(0);
+			}
+			if (message.getMessageProperties().isFinalRetryForMessageWithNoId()) {
 				if (this.statefulRetryFatalWithNullMessageId) {
 					throw new FatalListenerExecutionException(
-							"Illegal null id in message. Failed to manage retry for message: " + messageIn, ex);
+							"Illegal null id in message. Failed to manage retry for message: " + message, ex);
 				}
 				else {
 					throw new ListenerExecutionFailedException("Cannot retry message more than once without an ID",
 							new AmqpRejectAndDontRequeueException("Not retryable; rejecting and not requeuing", ex),
-							messageIn);
+							message);
 				}
 			}
 			handleListenerException(ex);
@@ -1352,39 +1367,44 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		}
 	}
 
-	private void doExecuteListener(Channel channel, Message messageIn) {
-		Message message = messageIn;
-		if (this.afterReceivePostProcessors != null) {
-			for (MessagePostProcessor processor : this.afterReceivePostProcessors) {
-				message = processor.postProcessMessage(message);
-				if (message == null) {
-					throw new ImmediateAcknowledgeAmqpException(
-							"Message Post Processor returned 'null', discarding message");
+	private void doExecuteListener(Channel channel, Object data) {
+		if (data instanceof Message) {
+			Message message = (Message) data;
+			if (this.afterReceivePostProcessors != null) {
+				for (MessagePostProcessor processor : this.afterReceivePostProcessors) {
+					message = processor.postProcessMessage(message);
+					if (message == null) {
+						throw new ImmediateAcknowledgeAmqpException(
+								"Message Post Processor returned 'null', discarding message");
+					}
 				}
 			}
-		}
-		if (this.deBatchingEnabled && this.batchingStrategy.canDebatch(message.getMessageProperties())) {
-			this.batchingStrategy.deBatch(message, fragment -> invokeListener(channel, fragment));
+			if (this.deBatchingEnabled && this.batchingStrategy.canDebatch(message.getMessageProperties())) {
+				this.batchingStrategy.deBatch(message, fragment -> invokeListener(channel, fragment));
+			}
+			else {
+				invokeListener(channel, message);
+			}
 		}
 		else {
-			invokeListener(channel, message);
+			invokeListener(channel, data);
 		}
 	}
 
-	protected void invokeListener(Channel channel, Message message) {
-		this.proxy.invokeListener(channel, message);
+	protected void invokeListener(Channel channel, Object data) {
+		this.proxy.invokeListener(channel, data);
 	}
 
 	/**
 	 * Invoke the specified listener: either as standard MessageListener or (preferably) as SessionAwareMessageListener.
 	 * @param channel the Rabbit Channel to operate on
-	 * @param message the received Rabbit Message
+	 * @param data the received Rabbit Message or List of Message.
 	 * @see #setMessageListener(MessageListener)
 	 */
-	protected void actualInvokeListener(Channel channel, Message message) {
+	protected void actualInvokeListener(Channel channel, Object data) {
 		Object listener = getMessageListener();
 		if (listener instanceof ChannelAwareMessageListener) {
-			doInvokeListener((ChannelAwareMessageListener) listener, channel, message);
+			doInvokeListener((ChannelAwareMessageListener) listener, channel, data);
 		}
 		else if (listener instanceof MessageListener) {
 			boolean bindChannel = isExposeListenerChannel() && isChannelLocallyTransacted();
@@ -1395,7 +1415,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 						resourceHolder);
 			}
 			try {
-				doInvokeListener((MessageListener) listener, message);
+				doInvokeListener((MessageListener) listener, data);
 			}
 			finally {
 				if (bindChannel) {
@@ -1419,12 +1439,14 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * An exception thrown from the listener will be wrapped in a {@link ListenerExecutionFailedException}.
 	 * @param listener the Spring ChannelAwareMessageListener to invoke
 	 * @param channel the Rabbit Channel to operate on
-	 * @param message the received Rabbit Message
+	 * @param data the received Rabbit Message or List of Message.
 	 * @see ChannelAwareMessageListener
 	 * @see #setExposeListenerChannel(boolean)
 	 */
-	protected void doInvokeListener(ChannelAwareMessageListener listener, Channel channel, Message message) {
+	@SuppressWarnings("unchecked")
+	protected void doInvokeListener(ChannelAwareMessageListener listener, Channel channel, Object data) {
 
+		Message message = null;
 		RabbitResourceHolder resourceHolder = null;
 		Channel channelToUse = channel;
 		boolean boundHere = false;
@@ -1458,7 +1480,13 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			}
 			// Actually invoke the message listener...
 			try {
-				listener.onMessage(message, channelToUse);
+				if (data instanceof List) {
+					((ChannelAwareBatchMessagelistener) listener).onMessageBatch((List<Message>) data, channelToUse);
+				}
+				else {
+					message = (Message) data;
+					listener.onMessage(message, channelToUse);
+				}
 			}
 			catch (Exception e) {
 				throw wrapToListenerExecutionFailedExceptionIfNeeded(e, message);
@@ -1500,13 +1528,21 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * Exception thrown from listener will be wrapped to {@link ListenerExecutionFailedException}.
 	 *
 	 * @param listener the Rabbit MessageListener to invoke
-	 * @param message the received Rabbit Message
+	 * @param data the received Rabbit Message or List of Message.
 	 *
 	 * @see org.springframework.amqp.core.MessageListener#onMessage
 	 */
-	protected void doInvokeListener(MessageListener listener, Message message) {
+	@SuppressWarnings("unchecked")
+	protected void doInvokeListener(MessageListener listener, Object data) {
+		Message message = null;
 		try {
-			listener.onMessage(message);
+			if (listener instanceof BatchMessageListener) {
+				listener.onMessageBatch((List<Message>) data);
+			}
+			else {
+				message = (Message) data;
+				listener.onMessage(message);
+			}
 		}
 		catch (Exception e) {
 			throw wrapToListenerExecutionFailedExceptionIfNeeded(e, message);
@@ -1789,7 +1825,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	@FunctionalInterface
 	private interface ContainerDelegate {
 
-		void invokeListener(Channel channel, Message message);
+		void invokeListener(Channel channel, Object data);
 
 	}
 

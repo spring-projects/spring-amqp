@@ -2974,8 +2974,9 @@ The `concurrentConsumers` and associated properties are not available with this 
 
 The following features are available with the SMLC but not the DMLC:
 
-* `txSize`: With the SMLC, you can set this to control how many messages are delivered in a transaction or to reduce the number of acks, but it may cause the number of duplicate deliveries to increase after a failure.
-(The DMLC does have `messagesPerAck`, which you can use to reduce the acks, the same as with `txSize` and the SMLC, but it cannot be used with transactions -- each message is delivered and ack'd in a separate transaction).
+* `batchSize`: With the SMLC, you can set this to control how many messages are delivered in a transaction or to reduce the number of acks, but it may cause the number of duplicate deliveries to increase after a failure.
+(The DMLC does have `messagesPerAck`, which you can use to reduce the acks, the same as with `batchSize` and the SMLC, but it cannot be used with transactions -- each message is delivered and ack'd in a separate transaction).
+* `consumerBatchEnabled`: enables batching of discrete messages in the consumer; see <<containerAttributes>> for more information.
 * `maxConcurrentConsumers` and consumer scaling intervals or triggers -- there is no auto-scaling in the DMLC.
 It does, however, let you programmatically change the `consumersPerQueue` property and the consumers are adjusted accordingly.
 
@@ -5038,7 +5039,7 @@ RabbitMQ calls this "`autoack`", because the broker assumes all messages are ack
 * `AUTO`: The container acknowledges the message automatically, unless the `MessageListener` throws an exception.
 Note that `acknowledgeMode` is complementary to `channelTransacted` -- if the channel is transacted, the broker requires a commit notification in addition to the ack.
 This is the default mode.
-See also `txSize`.
+See also `batchSize`.
 
 a| image::images/tickmark.png[]
 a| image::images/tickmark.png[]
@@ -5058,7 +5059,7 @@ a| image::images/tickmark.png[]
 a| The number of unacknowledged messages that can be outstanding at each consumer.
 The higher this value is, the faster the messages can be delivered, but the higher the risk of non-sequential processing.
 Ignored if the `acknowledgeMode` is `NONE`.
-This is increased, if necessary, to match the `txSize` or `messagePerAck`.
+This is increased, if necessary, to match the `batchSize` or `messagePerAck`.
 Defaults to 250 since 2.0.
 You can set it to 1 to revert to the previous behavior.
 
@@ -5092,12 +5093,22 @@ You can set it to `false` to revert to the previous behavior.
 a| image::images/tickmark.png[]
 a| image::images/tickmark.png[]
 
-| txSize
+| batchSize
 (transaction-size)
+(batch-size)
 
 | When used with `acknowledgeMode` set to `AUTO`, the container tries to process up to this number of messages before sending an ack (waiting for each one up to the receive timeout setting).
 This is also when a transactional channel is committed.
-If the `prefetchCount` is less than the `txSize`, it is increased to match the `txSize`.
+If the `prefetchCount` is less than the `batchSize`, it is increased to match the `batchSize`.
+
+a| image::images/tickmark.png[]
+a|
+
+| consumerBatchEnabled
+(batch-enabled)
+
+| If the `MessageListener` supports it, setting this to true enables batching of discrete messages, up to `batchSize`; a partial batch will be delivered if no new messages arrive in `receiveTimeout`.
+When this is false, batching is only supported for batches created by a producer; see <<template-batching>>.
 
 a| image::images/tickmark.png[]
 a|
@@ -5134,7 +5145,8 @@ a| image::images/tickmark.png[]
 
 | The maximum time to wait for each message.
 If `acknowledgeMode=NONE`, this has very little effect -- the container spins round and asks for another message.
-It has the biggest effect for a transactional `Channel` with `txSize > 1`, since it can cause messages already consumed not to be acknowledged until the timeout expires.
+It has the biggest effect for a transactional `Channel` with `batchSize > 1`, since it can cause messages already consumed not to be acknowledged until the timeout expires.
+When `consumerBatchEnabled` is true, a partial batch will be delivered if this timeout occurs before a batch is complete.
 
 a| image::images/tickmark.png[]
 a|
@@ -5261,7 +5273,7 @@ a|
 (min-consecutive-active)
 
 | The minimum number of consecutive messages received by a consumer, without a receive timeout occurring, when considering starting a new consumer.
-Also impacted by 'txSize'.
+Also impacted by 'batchSize'.
 See <<listener-concurrency>>.
 Default: 10.
 
@@ -5272,7 +5284,7 @@ a|
 (min-consecutive-idle)
 
 | The minimum number of receive timeouts a consumer must experience before considering stopping a consumer.
-Also impacted by 'txSize'.
+Also impacted by 'batchSize'.
 See <<listener-concurrency>>.
 Default: 10.
 
@@ -5611,14 +5623,14 @@ This works in conjunction with four additional properties: `consecutiveActiveTri
 With the default settings, the algorithm to increase consumers works as follows:
 
 If the `maxConcurrentConsumers` has not been reached and an existing consumer is active for ten consecutive cycles AND at least 10 seconds has elapsed since the last consumer was started, a new consumer is started.
-A consumer is considered active if it received at least one message in `txSize` * `receiveTimeout` milliseconds.
+A consumer is considered active if it received at least one message in `batchSize` * `receiveTimeout` milliseconds.
 
 With the default settings, the algorithm to decrease consumers works as follows:
 
 If there are more than `concurrentConsumers` running and a consumer detects ten consecutive timeouts (idle) AND the last consumer was stopped at least 60 seconds ago, a consumer is stopped.
-The timeout depends on the `receiveTimeout` and the `txSize` properties.
-A consumer is considered idle if it receives no messages in `txSize` * `receiveTimeout` milliseconds.
-So, with the default timeout (one second) and a `txSize` of four, stopping a consumer is considered after 40 seconds of idle time (four timeouts correspond to one idle detection).
+The timeout depends on the `receiveTimeout` and the `batchSize` properties.
+A consumer is considered idle if it receives no messages in `batchSize` * `receiveTimeout` milliseconds.
+So, with the default timeout (one second) and a `batchSize` of four, stopping a consumer is considered after 40 seconds of idle time (four timeouts correspond to one idle detection).
 
 NOTE: Practically, consumers can be stopped only if the whole container is idle for some time.
 This is because the broker shares its work across all the active consumers.

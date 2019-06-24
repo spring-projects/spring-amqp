@@ -130,7 +130,7 @@ public class MessageListenerManualAckIntegrationTests {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
 		container.setMessageListener(new MessageListenerAdapter(listener));
 		container.setQueueNames(queue.getName());
-		container.setTxSize(txSize);
+		container.setBatchSize(txSize);
 		container.setPrefetchCount(txSize);
 		container.setConcurrentConsumers(concurrentConsumers);
 		container.setChannelTransacted(transactional);

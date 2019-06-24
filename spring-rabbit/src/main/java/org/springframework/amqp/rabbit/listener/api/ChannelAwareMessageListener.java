@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.rabbit.listener.api;
 
+import java.util.List;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 
@@ -43,6 +45,11 @@ public interface ChannelAwareMessageListener extends MessageListener {
 	@Override
 	default void onMessage(Message message) {
 		throw new IllegalStateException("Should never be called for a ChannelAwareMessageListener");
+	}
+
+	@SuppressWarnings("unused")
+	default void onMessageBatch(List<Message> messages, Channel channel) {
+		throw new UnsupportedOperationException("Should never be called by the container");
 	}
 
 }

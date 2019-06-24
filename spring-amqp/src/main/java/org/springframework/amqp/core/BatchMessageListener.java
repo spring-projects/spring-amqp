@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,37 +19,21 @@ package org.springframework.amqp.core;
 import java.util.List;
 
 /**
- * Listener interface to receive asynchronous delivery of Amqp Messages.
+ * Used to receive a batch of messages if the container supports it.
  *
- * @author Mark Pollack
  * @author Gary Russell
+ * @since 2.2
+ *
  */
-@FunctionalInterface
-public interface MessageListener {
+public interface BatchMessageListener extends MessageListener {
 
-	/**
-	 * Delivers a single message.
-	 * @param message the message.
-	 */
-	void onMessage(Message message);
-
-	/**
-	 * Called by the container to inform the listener of its acknowledgement
-	 * mode.
-	 * @param mode the {@link AcknowledgeMode}.
-	 * @since 2.1.4
-	 */
-	default void containerAckMode(AcknowledgeMode mode) {
-		// NOSONAR - empty
-	}
-
-	/**
-	 * Delivers a batch of messages.
-	 * @param messages the messages.
-	 * @since 2.2
-	 */
-	default void onMessageBatch(List<Message> messages) {
+	@Override
+	default void onMessage(Message message) {
 		throw new UnsupportedOperationException("Should never be called by the container");
 	}
+
+	@Override
+	void onMessageBatch(List<Message> messages);
+
 
 }

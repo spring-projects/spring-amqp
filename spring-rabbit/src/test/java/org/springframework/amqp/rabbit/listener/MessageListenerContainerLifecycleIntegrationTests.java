@@ -247,7 +247,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 		if (transactionMode.getPrefetch() > 0) {
 			container.setPrefetchCount(transactionMode.getPrefetch());
-			container.setTxSize(transactionMode.getTxSize());
+			container.setBatchSize(transactionMode.getTxSize());
 		}
 		container.setQueueNames(queue.getName());
 		container.setShutdownTimeout(30000);

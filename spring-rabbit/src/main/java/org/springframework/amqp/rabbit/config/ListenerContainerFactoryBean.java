@@ -161,11 +161,13 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 
 	private Long receiveTimeout;
 
-	private Integer txSize;
+	private Integer batchSize;
 
 	private Integer declarationRetries;
 
 	private Long retryDeclarationInterval;
+
+	private Boolean consumerBatchEnabled;
 
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
@@ -366,8 +368,17 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 		this.receiveTimeout = receiveTimeout;
 	}
 
+	public void setBatchSize(int batchSize) {
+		this.batchSize = batchSize;
+	}
+
+	@Deprecated
 	public void setTxSize(int txSize) {
-		this.txSize = txSize;
+		setBatchSize(txSize);
+	}
+
+	protected void setConsumerBatchEnabled(boolean consumerBatchEnabled) {
+		this.consumerBatchEnabled = consumerBatchEnabled;
 	}
 
 	public void setDeclarationRetries(int declarationRetries) {
@@ -380,8 +391,9 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 
 	@Override
 	public Class<?> getObjectType() {
-		return this.listenerContainer == null ? AbstractMessageListenerContainer.class : this.listenerContainer
-				.getClass();
+		return this.listenerContainer == null ? AbstractMessageListenerContainer.class
+				: this.listenerContainer
+						.getClass();
 	}
 
 	@SuppressWarnings("deprecation")
@@ -446,7 +458,8 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 					.acceptIfNotNull(this.consecutiveActiveTrigger, container::setConsecutiveActiveTrigger)
 					.acceptIfNotNull(this.consecutiveIdleTrigger, container::setConsecutiveIdleTrigger)
 					.acceptIfNotNull(this.receiveTimeout, container::setReceiveTimeout)
-					.acceptIfNotNull(this.txSize, container::setTxSize)
+					.acceptIfNotNull(this.batchSize, container::setBatchSize)
+					.acceptIfNotNull(this.consumerBatchEnabled, container::setConsumerBatchEnabled)
 					.acceptIfNotNull(this.declarationRetries, container::setDeclarationRetries)
 					.acceptIfNotNull(this.retryDeclarationInterval, container::setRetryDeclarationInterval);
 			return container;

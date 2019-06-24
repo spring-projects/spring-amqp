@@ -277,7 +277,7 @@ public class BatchingRabbitTemplateTests {
 		});
 		container.setReceiveTimeout(100);
 		container.setPrefetchCount(1000);
-		container.setTxSize(1000);
+		container.setBatchSize(1000);
 		container.afterPropertiesSet();
 		container.start();
 		try {

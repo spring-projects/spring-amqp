@@ -157,7 +157,7 @@ public class MessageListenerRecoveryRepeatIntegrationTests {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setMessageListener(new MessageListenerAdapter(listener));
 		container.setQueueNames(queueName);
-		container.setTxSize(txSize);
+		container.setBatchSize(txSize);
 		container.setPrefetchCount(txSize);
 		container.setConcurrentConsumers(concurrentConsumers);
 		container.setChannelTransacted(transactional);

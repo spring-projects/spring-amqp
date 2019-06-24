@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -37,6 +38,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 import org.springframework.amqp.core.AcknowledgeMode;
+import org.springframework.amqp.core.BatchMessageListener;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
@@ -221,6 +223,27 @@ public class SimpleMessageListenerContainerIntegrationTests {
 			.isThrownBy(() -> container = createContainer(m -> { }, (String) null));
 	}
 
+	@Test
+	public void testConsumerBatching() throws InterruptedException {
+		AtomicReference<List<Message>> received = new AtomicReference<>();
+		CountDownLatch latch = new CountDownLatch(1);
+		this.container = createContainer((BatchMessageListener) messages -> {
+			received.set(messages);
+			latch.countDown();
+		}, this.queue);
+		this.container.setConsumerBatchEnabled(true);
+		this.container.setBatchSize(this.messageCount);
+		this.container.setConcurrentConsumers(1);
+		this.container.afterPropertiesSet();
+		this.container.start();
+		for (int i = 0; i < this.messageCount; i++) {
+			this.template.convertAndSend(this.queue.getName(), i + "foo");
+		}
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(received.get()).isNotNull();
+		assertThat(received.get()).hasSize(this.messageCount);
+	}
+
 	private void doSunnyDayTest(CountDownLatch latch, MessageListener listener) throws Exception {
 		container = createContainer(listener);
 		for (int i = 0; i < messageCount; i++) {
@@ -281,7 +304,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 	private SimpleMessageListenerContainer doCreateContainer(MessageListener listener) {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
 		container.setMessageListener(listener);
-		container.setTxSize(txSize);
+		container.setBatchSize(txSize);
 		container.setPrefetchCount(txSize);
 		container.setConcurrentConsumers(concurrentConsumers);
 		container.setChannelTransacted(transactional);

@@ -61,7 +61,7 @@ public final class SimpleMessageListenerWithRabbitMQ {
 		container.setConnectionFactory(connectionFactory);
 		container.setQueueNames("foo");
 		container.setPrefetchCount(1000);
-		container.setTxSize(500);
+		container.setBatchSize(500);
 		container.setAcknowledgeMode(AcknowledgeMode.AUTO);
 		container.setConcurrentConsumers(20);
 		container.setMessageListener(new MessageListenerAdapter(new SimpleAdapter(), messageConverter));

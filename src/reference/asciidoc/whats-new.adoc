@@ -27,6 +27,9 @@ When receiving batched messages one-at-a-time, the last message has the `isLastI
 
 In addition, received batched messages now contain the `amqp_batchSize` header.
 
+Listeners can also consume batches created in the `SimpleMessageListenerContainer`, even if the batch is not created by the producer.
+See <<choose-container>> for more information.
+
 Spring Data Projection interfaces are now supported by the `Jackson2JsonMessageConverter`.
 See <<data-projection>> for more information.
 
