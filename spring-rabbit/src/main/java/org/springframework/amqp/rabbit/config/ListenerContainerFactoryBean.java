@@ -368,6 +368,30 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 		this.receiveTimeout = receiveTimeout;
 	}
 
+	/**
+	 * This property has several functions.
+	 * <p>
+	 * When the channel is transacted, it determines how many messages to process in a
+	 * single transaction. It should be less than or equal to
+	 * {@link #setPrefetchCount(int) the prefetch count}.
+	 * <p>
+	 * It also affects how often acks are sent when using
+	 * {@link org.springframework.amqp.core.AcknowledgeMode#AUTO} - one ack per BatchSize.
+	 * <p>
+	 * Finally, when {@link #setConsumerBatchEnabled(boolean)} is true, it determines how
+	 * many records to include in the batch as long as sufficient messages arrive within
+	 * {@link #setReceiveTimeout(long)}.
+	 * <p>
+	 * <b>IMPORTANT</b> The batch size represents the number of physical messages
+	 * received. If {@link #setDeBatchingEnabled(boolean)} is true and a message is a
+	 * batch created by a producer, the actual number of messages received by the listener
+	 * will be larger than this batch size.
+	 * <p>
+	 *
+	 * Default is 1.
+	 * @param batchSize the batch size
+	 * @since 2.2
+	 */
 	public void setBatchSize(int batchSize) {
 		this.batchSize = batchSize;
 	}
@@ -377,7 +401,14 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 		setBatchSize(txSize);
 	}
 
-	protected void setConsumerBatchEnabled(boolean consumerBatchEnabled) {
+	/**
+	 * Set to true to present a list of messages based on the {@link #setBatchSize(int)},
+	 * if the container and listener support it.
+	 * @param consumerBatchEnabled true to create message batches in the container.
+	 * @since 2.2
+	 * @see #setBatchSize(int)
+	 */
+	public void setConsumerBatchEnabled(boolean consumerBatchEnabled) {
 		this.consumerBatchEnabled = consumerBatchEnabled;
 	}
 

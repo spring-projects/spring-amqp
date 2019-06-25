@@ -331,8 +331,17 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * many records to include in the batch as long as sufficient messages arrive within
 	 * {@link #setReceiveTimeout(long)}.
 	 * <p>
+	 * <b>IMPORTANT</b> The batch size represents the number of physical messages
+	 * received. If {@link #setDeBatchingEnabled(boolean)} is true and a message is a
+	 * batch created by a producer, the actual number of messages received by the listener
+	 * will be larger than this batch size.
+	 * <p>
+	 *
 	 * Default is 1.
 	 * @param batchSize the batch size
+	 * @since 2.2
+	 * @see #setConsumerBatchEnabled(boolean)
+	 * @see #setDeBatchingEnabled(boolean)
 	 */
 	public void setBatchSize(int batchSize) {
 		Assert.isTrue(batchSize > 0, "'batchSize' must be > 0");
@@ -353,7 +362,13 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		setBatchSize(txSize);
 	}
 
-
+	/**
+	 * Set to true to present a list of messages based on the {@link #setBatchSize(int)},
+	 * if the listener supports it.
+	 * @param consumerBatchEnabled true to create message batches in the container.
+	 * @since 2.2
+	 * @see #setBatchSize(int)
+	 */
 	public void setConsumerBatchEnabled(boolean consumerBatchEnabled) {
 		this.consumerBatchEnabled = consumerBatchEnabled;
 	}
@@ -921,7 +936,13 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					if (messages == null) {
 						messages = new ArrayList<>(this.batchSize);
 					}
-					messages.add(message);
+					if (isDeBatchingEnabled() && getBatchingStrategy().canDebatch(message.getMessageProperties())) {
+						final List<Message> messageList = messages;
+						getBatchingStrategy().deBatch(message, fragment -> messageList.add(fragment));
+					}
+					else {
+						messages.add(message);
+					}
 				}
 			}
 			else {

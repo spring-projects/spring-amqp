@@ -26,7 +26,7 @@ import com.rabbitmq.client.Channel;
  * Used to receive a batch of messages if the container supports it.
  *
  * @author Gary Russell
- * @since 5.2
+ * @since 2.2
  *
  */
 public interface ChannelAwareBatchMessagelistener extends ChannelAwareMessageListener {

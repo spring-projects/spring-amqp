@@ -449,6 +449,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		this.deBatchingEnabled = deBatchingEnabled;
 	}
 
+	protected boolean isDeBatchingEnabled() {
+		return this.deBatchingEnabled;
+	}
+
 	/**
 	 * Public setter for the {@link Advice} to apply to listener executions.
 	 * <p>
@@ -1059,6 +1063,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	public void setBatchingStrategy(BatchingStrategy batchingStrategy) {
 		Assert.notNull(batchingStrategy, "'batchingStrategy' cannot be null");
 		this.batchingStrategy = batchingStrategy;
+	}
+
+	protected BatchingStrategy getBatchingStrategy() {
+		return this.batchingStrategy;
 	}
 
 	protected Collection<MessagePostProcessor> getAfterReceivePostProcessors() {
