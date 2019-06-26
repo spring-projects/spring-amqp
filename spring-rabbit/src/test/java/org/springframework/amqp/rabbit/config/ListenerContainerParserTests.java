@@ -179,7 +179,7 @@ public class ListenerContainerParserTests {
 	public void testParseWithTx() {
 		SimpleMessageListenerContainer container = beanFactory.getBean("container6", SimpleMessageListenerContainer.class);
 		assertThat(container.isChannelTransacted()).isTrue();
-		assertThat(ReflectionTestUtils.getField(container, "txSize")).isEqualTo(5);
+		assertThat(ReflectionTestUtils.getField(container, "batchSize")).isEqualTo(5);
 	}
 
 	@Test

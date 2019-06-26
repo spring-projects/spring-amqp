@@ -161,11 +161,13 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 
 	private Long receiveTimeout;
 
-	private Integer txSize;
+	private Integer batchSize;
 
 	private Integer declarationRetries;
 
 	private Long retryDeclarationInterval;
+
+	private Boolean consumerBatchEnabled;
 
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
@@ -366,8 +368,53 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 		this.receiveTimeout = receiveTimeout;
 	}
 
+	/**
+	 * This property has several functions.
+	 * <p>
+	 * When the channel is transacted, it determines how many messages to process in a
+	 * single transaction. It should be less than or equal to
+	 * {@link #setPrefetchCount(int) the prefetch count}.
+	 * <p>
+	 * It also affects how often acks are sent when using
+	 * {@link org.springframework.amqp.core.AcknowledgeMode#AUTO} - one ack per BatchSize.
+	 * <p>
+	 * Finally, when {@link #setConsumerBatchEnabled(boolean)} is true, it determines how
+	 * many records to include in the batch as long as sufficient messages arrive within
+	 * {@link #setReceiveTimeout(long)}.
+	 * <p>
+	 * <b>IMPORTANT</b> The batch size represents the number of physical messages
+	 * received. If {@link #setDeBatchingEnabled(boolean)} is true and a message is a
+	 * batch created by a producer, the actual number of messages received by the listener
+	 * will be larger than this batch size.
+	 * <p>
+	 *
+	 * Default is 1.
+	 * @param batchSize the batch size
+	 * @since 2.2
+	 */
+	public void setBatchSize(int batchSize) {
+		this.batchSize = batchSize;
+	}
+
+	/**
+	 * Set the txSize.
+	 * @param txSize the txSize.
+	 * @deprecated in favor of {@link #setBatchSize(int)}.
+	 */
+	@Deprecated
 	public void setTxSize(int txSize) {
-		this.txSize = txSize;
+		setBatchSize(txSize);
+	}
+
+	/**
+	 * Set to true to present a list of messages based on the {@link #setBatchSize(int)},
+	 * if the container and listener support it.
+	 * @param consumerBatchEnabled true to create message batches in the container.
+	 * @since 2.2
+	 * @see #setBatchSize(int)
+	 */
+	public void setConsumerBatchEnabled(boolean consumerBatchEnabled) {
+		this.consumerBatchEnabled = consumerBatchEnabled;
 	}
 
 	public void setDeclarationRetries(int declarationRetries) {
@@ -380,8 +427,9 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 
 	@Override
 	public Class<?> getObjectType() {
-		return this.listenerContainer == null ? AbstractMessageListenerContainer.class : this.listenerContainer
-				.getClass();
+		return this.listenerContainer == null
+				? AbstractMessageListenerContainer.class
+				: this.listenerContainer.getClass();
 	}
 
 	@SuppressWarnings("deprecation")
@@ -446,7 +494,8 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 					.acceptIfNotNull(this.consecutiveActiveTrigger, container::setConsecutiveActiveTrigger)
 					.acceptIfNotNull(this.consecutiveIdleTrigger, container::setConsecutiveIdleTrigger)
 					.acceptIfNotNull(this.receiveTimeout, container::setReceiveTimeout)
-					.acceptIfNotNull(this.txSize, container::setTxSize)
+					.acceptIfNotNull(this.batchSize, container::setBatchSize)
+					.acceptIfNotNull(this.consumerBatchEnabled, container::setConsumerBatchEnabled)
 					.acceptIfNotNull(this.declarationRetries, container::setDeclarationRetries)
 					.acceptIfNotNull(this.retryDeclarationInterval, container::setRetryDeclarationInterval);
 			return container;

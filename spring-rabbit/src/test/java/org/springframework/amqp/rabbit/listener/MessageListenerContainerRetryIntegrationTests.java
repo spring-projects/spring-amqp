@@ -222,7 +222,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 		container.setMessageListener(new MessageListenerAdapter(listener));
 		container.setAcknowledgeMode(AcknowledgeMode.AUTO);
 		container.setChannelTransacted(true);
-		container.setTxSize(txSize);
+		container.setBatchSize(txSize);
 		container.setConcurrentConsumers(concurrentConsumers);
 
 		final CountDownLatch latch = new CountDownLatch(failedMessageCount);

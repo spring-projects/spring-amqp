@@ -140,7 +140,7 @@ public class SimpleRabbitListenerContainerFactory
 		super.initializeContainer(instance, endpoint);
 
 		JavaUtils javaUtils = JavaUtils.INSTANCE
-			.acceptIfNotNull(this.txSize, instance::setTxSize);
+			.acceptIfNotNull(this.txSize, instance::setBatchSize);
 		String concurrency = null;
 		if (endpoint != null) {
 			concurrency = endpoint.getConcurrency();

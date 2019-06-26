@@ -293,7 +293,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		container.setConcurrentConsumers(concurrentConsumers);
 
 		container.setPrefetchCount(messageCount);
-		container.setTxSize(messageCount);
+		container.setBatchSize(messageCount);
 		container.setQueueNames(queue.getName());
 		container.setErrorHandler(errorHandler);
 		container.setReceiveTimeout(50);

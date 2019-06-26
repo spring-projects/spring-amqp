@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.core;
 
+import java.util.List;
+
 /**
  * Listener interface to receive asynchronous delivery of Amqp Messages.
  *
@@ -25,6 +27,10 @@ package org.springframework.amqp.core;
 @FunctionalInterface
 public interface MessageListener {
 
+	/**
+	 * Delivers a single message.
+	 * @param message the message.
+	 */
 	void onMessage(Message message);
 
 	/**
@@ -35,6 +41,15 @@ public interface MessageListener {
 	 */
 	default void containerAckMode(AcknowledgeMode mode) {
 		// NOSONAR - empty
+	}
+
+	/**
+	 * Delivers a batch of messages.
+	 * @param messages the messages.
+	 * @since 2.2
+	 */
+	default void onMessageBatch(List<Message> messages) {
+		throw new UnsupportedOperationException("This listener does not support message batches");
 	}
 
 }

@@ -199,7 +199,7 @@ public class SimpleMessageListenerContainerTests {
 		final List<Message> messages = new ArrayList<>();
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setQueueNames("foo");
-		container.setTxSize(2);
+		container.setBatchSize(2);
 		container.setMessageListener(messages::add);
 		container.start();
 		BasicProperties props = new BasicProperties();
@@ -251,7 +251,7 @@ public class SimpleMessageListenerContainerTests {
 		final List<Message> messages = new ArrayList<>();
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setQueueNames("foobar");
-		container.setTxSize(2);
+		container.setBatchSize(2);
 		container.setMessageListener(messages::add);
 		container.start();
 		BasicProperties props = new BasicProperties();
@@ -555,7 +555,7 @@ public class SimpleMessageListenerContainerTests {
 		class Container extends SimpleMessageListenerContainer {
 
 			@Override
-			public void executeListener(Channel channel, Message messageIn) {
+			public void executeListener(Channel channel, Object messageIn) {
 				super.executeListener(channel, messageIn);
 			}
 
@@ -605,7 +605,7 @@ public class SimpleMessageListenerContainerTests {
 		class Container extends SimpleMessageListenerContainer {
 
 			@Override
-			public void executeListener(Channel channel, Message messageIn) {
+			public void executeListener(Channel channel, Object messageIn) {
 				super.executeListener(channel, messageIn);
 			}
 

@@ -117,7 +117,7 @@ public class RabbitListenerContainerFactoryTests {
 		DirectFieldAccessor fieldAccessor = new DirectFieldAccessor(container);
 		assertThat(fieldAccessor.getPropertyValue("taskExecutor")).isSameAs(executor);
 		assertThat(fieldAccessor.getPropertyValue("transactionManager")).isSameAs(transactionManager);
-		assertThat(fieldAccessor.getPropertyValue("txSize")).isEqualTo(10);
+		assertThat(fieldAccessor.getPropertyValue("batchSize")).isEqualTo(10);
 		assertThat(fieldAccessor.getPropertyValue("concurrentConsumers")).isEqualTo(2);
 		assertThat(fieldAccessor.getPropertyValue("maxConcurrentConsumers")).isEqualTo(5);
 		assertThat(fieldAccessor.getPropertyValue("startConsumerMinInterval")).isEqualTo(2000L);
