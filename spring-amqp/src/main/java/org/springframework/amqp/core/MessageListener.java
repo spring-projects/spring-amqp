@@ -49,7 +49,9 @@ public interface MessageListener {
 	 * @since 2.2
 	 */
 	default void onMessageBatch(List<Message> messages) {
-		throw new UnsupportedOperationException("Should never be called by the container");
+		throw new UnsupportedOperationException(
+				"The container has been configured with 'consumerBatchEnabled' but the listener is not "
+				+ "a 'BatchMessageListener");
 	}
 
 }

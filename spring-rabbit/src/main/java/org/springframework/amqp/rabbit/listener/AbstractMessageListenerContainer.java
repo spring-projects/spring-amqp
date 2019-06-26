@@ -1489,7 +1489,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			// Actually invoke the message listener...
 			try {
 				if (data instanceof List) {
-					((ChannelAwareBatchMessagelistener) listener).onMessageBatch((List<Message>) data, channelToUse);
+					listener.onMessageBatch((List<Message>) data, channelToUse);
 				}
 				else {
 					message = (Message) data;
@@ -1544,7 +1544,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	protected void doInvokeListener(MessageListener listener, Object data) {
 		Message message = null;
 		try {
-			if (listener instanceof BatchMessageListener) {
+			if (data instanceof List) {
 				listener.onMessageBatch((List<Message>) data);
 			}
 			else {

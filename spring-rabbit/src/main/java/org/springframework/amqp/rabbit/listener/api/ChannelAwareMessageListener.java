@@ -49,7 +49,9 @@ public interface ChannelAwareMessageListener extends MessageListener {
 
 	@SuppressWarnings("unused")
 	default void onMessageBatch(List<Message> messages, Channel channel) {
-		throw new UnsupportedOperationException("Should never be called by the container");
+		throw new UnsupportedOperationException(
+				"The container has been configured with 'consumerBatchEnabled' but the listener is not "
+				+ "a 'ChannelAwareBatchMessageListener");
 	}
 
 }

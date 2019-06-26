@@ -396,6 +396,11 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 		this.batchSize = batchSize;
 	}
 
+	/**
+	 * Set the txSize.
+	 * @param txSize the txSize.
+	 * @deprecated in favor of {@link #setBatchSize(int)}.
+	 */
 	@Deprecated
 	public void setTxSize(int txSize) {
 		setBatchSize(txSize);
@@ -422,9 +427,9 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 
 	@Override
 	public Class<?> getObjectType() {
-		return this.listenerContainer == null ? AbstractMessageListenerContainer.class
-				: this.listenerContainer
-						.getClass();
+		return this.listenerContainer == null
+				? AbstractMessageListenerContainer.class
+				: this.listenerContainer.getClass();
 	}
 
 	@SuppressWarnings("deprecation")
