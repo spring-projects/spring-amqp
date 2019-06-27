@@ -919,14 +919,15 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			if (this.consumerBatchEnabled) {
 				Collection<MessagePostProcessor> afterReceivePostProcessors = getAfterReceivePostProcessors();
 				if (afterReceivePostProcessors != null) {
+					Message original = message;
 					deliveryTag = message.getMessageProperties().getDeliveryTag();
 					for (MessagePostProcessor processor : getAfterReceivePostProcessors()) {
 						message = processor.postProcessMessage(message);
 						if (message == null) {
 							channel.basicAck(deliveryTag, false);
 							if (this.logger.isDebugEnabled()) {
-								this.logger
-										.debug("Message Post Processor returned 'null', discarding message " + message);
+								this.logger.debug(
+										"Message Post Processor returned 'null', discarding message " + original);
 							}
 							break;
 						}
