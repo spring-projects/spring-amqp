@@ -1495,7 +1495,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				}
 			}
 			catch (Exception e) {
-				throw wrapToListenerExecutionFailedExceptionIfNeeded(e, message);
+				throw wrapToListenerExecutionFailedExceptionIfNeeded(e, data);
 			}
 		}
 		finally {
@@ -1551,7 +1551,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			}
 		}
 		catch (Exception e) {
-			throw wrapToListenerExecutionFailedExceptionIfNeeded(e, message);
+			throw wrapToListenerExecutionFailedExceptionIfNeeded(e, data);
 		}
 	}
 
@@ -1590,16 +1590,23 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	/**
 	 * @param e The Exception.
-	 * @param message The failed message.
+	 * @param data The failed message.
 	 * @return If 'e' is of type {@link ListenerExecutionFailedException} - return 'e' as it is, otherwise wrap it to
 	 * {@link ListenerExecutionFailedException} and return.
 	 */
+	@SuppressWarnings("unchecked")
 	protected ListenerExecutionFailedException wrapToListenerExecutionFailedExceptionIfNeeded(Exception e,
-			Message message) {
+			Object data) {
 
 		if (!(e instanceof ListenerExecutionFailedException)) {
 			// Wrap exception to ListenerExecutionFailedException.
-			return new ListenerExecutionFailedException("Listener threw exception", e, message);
+			if (data instanceof List) {
+				return new ListenerExecutionFailedException("Listener threw exception", e,
+						((List<Message>) data).toArray(new Message[0]));
+			}
+			else {
+				return new ListenerExecutionFailedException("Listener threw exception", e, (Message) data);
+			}
 		}
 		return (ListenerExecutionFailedException) e;
 	}

@@ -19,14 +19,19 @@ package org.springframework.amqp.rabbit.listener.adapter;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.batch.SimpleBatchingStrategy;
+import org.springframework.amqp.rabbit.listener.api.ChannelAwareBatchMessagelistener;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
+import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.GenericMessage;
 import org.springframework.messaging.support.MessageBuilder;
+
+import com.rabbitmq.client.Channel;
 
 /**
  * A listener adapter for batch listeners.
@@ -35,7 +40,8 @@ import org.springframework.messaging.support.MessageBuilder;
  * @since 2.2
  *
  */
-public class BatchMessagingMessageListenerAdapter extends MessagingMessageListenerAdapter {
+public class BatchMessagingMessageListenerAdapter extends MessagingMessageListenerAdapter
+			implements ChannelAwareBatchMessagelistener {
 
 	private final MessagingMessageConverterAdapter converterAdapter;
 
@@ -47,6 +53,34 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 		super(bean, method, returnExceptions, errorHandler, true);
 		this.converterAdapter = (MessagingMessageConverterAdapter) getMessagingMessageConverter();
 		this.batchingStrategy = batchingStrategy == null ? new SimpleBatchingStrategy(0, 0, 0L) : batchingStrategy;
+	}
+
+	@Override
+	public void onMessageBatch(List<org.springframework.amqp.core.Message> messages, Channel channel) {
+		Message<?> converted;
+		if (this.converterAdapter.isAmqpMessageList()) {
+			converted = new GenericMessage<>(messages);
+		}
+		else {
+			List<Message<?>> messagingMessages = messages.stream()
+				.map(message -> toMessagingMessage(message))
+				.collect(Collectors.toList());
+			if (this.converterAdapter.isMessageList()) {
+				converted = new GenericMessage<>(messagingMessages);
+			}
+			else {
+				converted = new GenericMessage<>(messagingMessages
+						.stream()
+						.map(msg -> msg.getPayload())
+						.collect(Collectors.toList()));
+			}
+		}
+		try {
+			invokeHandlerAndProcessResult(null, channel, converted);
+		}
+		catch (Exception e) {
+			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+		}
 	}
 
 	@Override

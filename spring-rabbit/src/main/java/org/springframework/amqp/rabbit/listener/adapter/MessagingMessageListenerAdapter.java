@@ -31,6 +31,7 @@ import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.MessagingMessageConverter;
 import org.springframework.core.MethodParameter;
+import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -128,6 +129,12 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	@Override
 	public void onMessage(org.springframework.amqp.core.Message amqpMessage, Channel channel) throws Exception { // NOSONAR
 		Message<?> message = toMessagingMessage(amqpMessage);
+		invokeHandlerAndProcessResult(amqpMessage, channel, message);
+	}
+
+	protected void invokeHandlerAndProcessResult(@Nullable org.springframework.amqp.core.Message amqpMessage,
+			Channel channel, Message<?> message) throws Exception { // NOSONAR
+
 		if (logger.isDebugEnabled()) {
 			logger.debug("Processing [" + message + "]");
 		}
@@ -197,8 +204,9 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	 * @param message the messaging message.
 	 * @return the result of invoking the handler.
 	 */
-	private InvocationResult invokeHandler(org.springframework.amqp.core.Message amqpMessage, Channel channel,
+	private InvocationResult invokeHandler(@Nullable org.springframework.amqp.core.Message amqpMessage, Channel channel,
 			Message<?> message) {
+
 		try {
 			return this.handlerAdapter.invoke(message, amqpMessage, channel);
 		}
@@ -267,6 +275,8 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 		private boolean isMessageList;
 
+		private boolean isAmqpMessageList;
+
 		MessagingMessageConverterAdapter(Object bean, Method method, boolean batch) {
 			this.bean = bean;
 			this.method = method;
@@ -279,6 +289,14 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 		protected boolean isMessageList() {
 			return this.isMessageList;
+		}
+
+		protected boolean isAmqpMessageList() {
+			return this.isAmqpMessageList;
+		}
+
+		protected Method getMethod() {
+			return this.method;
 		}
 
 		@Override
@@ -362,6 +380,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 					boolean messageHasGeneric = paramType instanceof ParameterizedType
 							&& ((ParameterizedType) paramType).getRawType().equals(Message.class);
 					this.isMessageList = paramType.equals(Message.class) || messageHasGeneric;
+					this.isAmqpMessageList = paramType.equals(org.springframework.amqp.core.Message.class);
 					if (messageHasGeneric) {
 						genericParameterType = ((ParameterizedType) paramType).getActualTypeArguments()[0];
 					}
