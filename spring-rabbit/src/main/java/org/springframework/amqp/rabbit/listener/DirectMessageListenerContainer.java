@@ -471,11 +471,11 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		final List<SimpleConsumer> consumersToCancel;
 		synchronized (this.consumersMonitor) {
 			consumersToCancel = this.consumers.stream()
-					.filter(c -> {
-						boolean open = c.getChannel().isOpen();
+					.filter(consumer -> {
+						boolean open = consumer.getChannel().isOpen() && !consumer.isAckFailed();
 						if (open && this.messagesPerAck > 1) {
 							try {
-								c.ackIfNecessary(now);
+								consumer.ackIfNecessary(now);
 							}
 							catch (IOException e) {
 								this.logger.error("Exception while sending delayed ack", e);
@@ -486,18 +486,18 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					.collect(Collectors.toList());
 		}
 		consumersToCancel
-				.forEach(c -> {
+				.forEach(consumer -> {
 					try {
-						RabbitUtils.closeMessageConsumer(c.getChannel(),
-								Collections.singletonList(c.getConsumerTag()), isChannelTransacted());
+						RabbitUtils.closeMessageConsumer(consumer.getChannel(),
+								Collections.singletonList(consumer.getConsumerTag()), isChannelTransacted());
 					}
 					catch (Exception e) {
 						if (logger.isDebugEnabled()) {
-							logger.debug("Error closing consumer " + c, e);
+							logger.debug("Error closing consumer " + consumer, e);
 						}
 					}
-					this.logger.error("Consumer canceled - channel closed " + c);
-					c.cancelConsumer("Consumer " + c + " channel closed");
+					this.logger.error("Consumer canceled - channel closed " + consumer);
+					consumer.cancelConsumer("Consumer " + consumer + " channel closed");
 				});
 	}
 
@@ -812,7 +812,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				this.logger.debug("Canceling " + consumer);
 			}
 			synchronized (consumer) {
-				consumer.canceled = true;
+				consumer.setCanceled(true);
 				if (this.messagesPerAck > 1) {
 					consumer.ackIfNecessary(0L);
 				}
@@ -886,6 +886,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		private volatile boolean canceled;
 
+		private volatile boolean ackFailed;
+
 		private SimpleConsumer(Connection connection, Channel channel, String queue) {
 			super(channel);
 			this.connection = connection;
@@ -908,6 +910,23 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		 */
 		int getEpoch() {
 			return this.epoch;
+		}
+
+		/**
+		 * Set to true to indicate this consumer is canceled and should send any pending
+		 * acks.
+		 * @param canceled the canceled to set
+		 */
+		void setCanceled(boolean canceled) {
+			this.canceled = canceled;
+		}
+
+		/**
+		 * True if an ack/nack failed (probably due to a closed channel).
+		 * @return the ackFailed
+		 */
+		boolean isAckFailed() {
+			return this.ackFailed;
 		}
 
 		/**
@@ -1068,6 +1087,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			catch (Exception e) {
+				this.ackFailed = true;
 				this.logger.error("Error acking", e);
 			}
 		}
@@ -1078,7 +1098,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		 * @param now the current time.
 		 * @throws IOException if one occurs.
 		 */
-		private synchronized void ackIfNecessary(long now) throws IOException {
+		synchronized void ackIfNecessary(long now) throws IOException {
 			if (this.pendingAcks >= this.messagesPerAck || (
 					this.pendingAcks > 0 && (now - this.lastAck > this.ackTimeout || this.canceled))) {
 				sendAck(now);

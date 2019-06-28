@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -242,13 +243,20 @@ public class RabbitTemplateTests {
 	}
 
 	@Test
-	public void testEvaluateDirectReplyToWithConnectException() throws Exception {
+	public void testEvaluateDirectReplyToWithConnectException() {
 		org.springframework.amqp.rabbit.connection.ConnectionFactory mockConnectionFactory =
 				mock(org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
 		willThrow(new AmqpConnectException(null)).given(mockConnectionFactory).createConnection();
 		RabbitTemplate template = new RabbitTemplate(mockConnectionFactory);
-		assertThatThrownBy(() -> template.convertSendAndReceive("foo")).isInstanceOf(AmqpConnectException.class);
-		assertThat(TestUtils.getPropertyValue(template, "evaluatedFastReplyTo", Boolean.class)).isFalse();
+
+		try {
+			template.convertSendAndReceive("foo");
+		}
+		catch (Exception ex) {
+			assertThat(ex, instanceOf(AmqpConnectException.class));
+		}
+
+		assertFalse(TestUtils.getPropertyValue(template, "evaluatedFastReplyTo", Boolean.class));
 	}
 
 	@Test
@@ -500,6 +508,7 @@ public class RabbitTemplateTests {
 		public Message postProcessMessage(Message message) throws AmqpException {
 			return message;
 		}
+
 	}
 
 }
