@@ -67,7 +67,8 @@ public class SimpleRabbitListenerContainerFactory
 	}
 
 	/**
-	 * @param batchSize the transaction size.
+	 * @param batchSize the batch size.
+	 * @since 2.2
 	 * @see SimpleMessageListenerContainer#setBatchSize
 	 */
 	public void setBatchSize(Integer batchSize) {

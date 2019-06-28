@@ -116,6 +116,23 @@ public class ConsumerBatchingTests {
 			.contains("baz", "qux");
 	}
 
+	@Test
+	public void rejectOneReplyRest() throws InterruptedException {
+		this.template.convertAndSend("c.batch.5", new Foo("foo"));
+		this.template.convertAndSend("c.batch.5", new Foo("bar"));
+		this.template.convertAndSend("c.batch.5", new Foo("baz"));
+		this.template.convertAndSend("c.batch.5", new Foo("qux"));
+		assertThat(this.listener.dlqOneRejectedLatch1.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.listener.dlqOneRejectedMessages).hasSize(7);
+		assertThat(this.listener.dlqOneRejectedMessages)
+			.extracting(foo -> foo.getPayload().getBar())
+			.contains("foo", "bar", "baz", "qux", "foo", "baz", "qux");
+		assertThat(this.listener.dlqOneRejectedLatch2.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.listener.dlqOneRejected)
+			.extracting(foo -> foo.getBar())
+			.contains("bar");
+	}
+
 	@Configuration
 	@EnableRabbit
 	public static class Config {
@@ -187,6 +204,22 @@ public class ConsumerBatchingTests {
 					.build();
 		}
 
+		@Bean
+		public org.springframework.amqp.core.Queue batch5() {
+			return QueueBuilder.nonDurable("c.batch.5")
+					.autoDelete()
+					.deadLetterExchange("")
+					.deadLetterRoutingKey("c.batch.5.dlq")
+					.build();
+		}
+
+		@Bean
+		public org.springframework.amqp.core.Queue batch5Dlq() {
+			return QueueBuilder.nonDurable("c.batch.5.dlq")
+					.autoDelete()
+					.build();
+		}
+
 	}
 
 	public static class Listener {
@@ -199,6 +232,10 @@ public class ConsumerBatchingTests {
 
 		final List<Foo> dlqHalf = new ArrayList<>();
 
+		final List<Message<Foo>> dlqOneRejectedMessages = new ArrayList<>();
+
+		final List<Foo> dlqOneRejected = new ArrayList<>();
+
 		CountDownLatch foosLatch = new CountDownLatch(1);
 
 		CountDownLatch fooMessagesLatch = new CountDownLatch(1);
@@ -206,6 +243,10 @@ public class ConsumerBatchingTests {
 		CountDownLatch dlqLatch = new CountDownLatch(1);
 
 		CountDownLatch dlqHalfLatch = new CountDownLatch(1);
+
+		CountDownLatch dlqOneRejectedLatch1 = new CountDownLatch(1);
+
+		CountDownLatch dlqOneRejectedLatch2 = new CountDownLatch(1);
 
 		volatile boolean first = true;
 
@@ -253,6 +294,24 @@ public class ConsumerBatchingTests {
 		public void listen4dlq(List<Foo> in) {
 			this.dlqHalf.addAll(in);
 			this.dlqHalfLatch.countDown();
+		}
+
+		@RabbitListener(queues = "c.batch.5")
+		public void listen5(List<Message<Foo>> in, Channel channel) throws IOException {
+			this.dlqOneRejectedMessages.addAll(in);
+			if (this.first) {
+				this.first = false;
+				channel.basicReject(in.get(1).getHeaders().get(AmqpHeaders.DELIVERY_TAG, Long.class), false); // nack 2
+				throw new RuntimeException();
+			}
+			this.dlqOneRejectedLatch1.countDown();
+			this.first = true;
+		}
+
+		@RabbitListener(queues = "c.batch.5.dlq")
+		public void listen5dlq(List<Foo> in) {
+			this.dlqOneRejected.addAll(in);
+			this.dlqOneRejectedLatch2.countDown();
 		}
 
 	}
