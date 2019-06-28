@@ -170,7 +170,7 @@ public class EnableRabbitIntegrationTests {
 			"test.simple.direct2", "test.generic.list", "test.generic.map",
 			"amqp656dlq", "test.simple.declare", "test.return.exceptions", "test.pojo.errors", "test.pojo.errors2",
 			"test.messaging.message", "test.amqp.message", "test.bytes.to.string", "test.projection",
-			"manual.acks.1", "manual.acks.2", "batch.1", "batch.2", "batch.3");
+			"manual.acks.1", "manual.acks.2", "erit.batch.1", "erit.batch.2", "erit.batch.3");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -862,12 +862,12 @@ public class EnableRabbitIntegrationTests {
 
 	@Test
 	public void testConsumerBatchEnabled() throws InterruptedException {
-		this.rabbitTemplate.convertAndSend("batch.1", "foo");
-		this.rabbitTemplate.convertAndSend("batch.1", "bar");
-		this.rabbitTemplate.convertAndSend("batch.2", "foo");
-		this.rabbitTemplate.convertAndSend("batch.2", "bar");
-		this.rabbitTemplate.convertAndSend("batch.3", "foo");
-		this.rabbitTemplate.convertAndSend("batch.3", "bar");
+		this.rabbitTemplate.convertAndSend("erit.batch.1", "foo");
+		this.rabbitTemplate.convertAndSend("erit.batch.1", "bar");
+		this.rabbitTemplate.convertAndSend("erit.batch.2", "foo");
+		this.rabbitTemplate.convertAndSend("erit.batch.2", "bar");
+		this.rabbitTemplate.convertAndSend("erit.batch.3", "foo");
+		this.rabbitTemplate.convertAndSend("erit.batch.3", "bar");
 		assertThat(this.myService.batch1Latch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.myService.batch2Latch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.myService.batch3Latch.await(10, TimeUnit.SECONDS)).isTrue();
@@ -1239,19 +1239,19 @@ public class EnableRabbitIntegrationTests {
 			return in.toUpperCase();
 		}
 
-		@RabbitListener(queues = "batch.1", containerFactory = "consumerBatchContainerFactory")
+		@RabbitListener(queues = "erit.batch.1", containerFactory = "consumerBatchContainerFactory")
 		public void consumerBatch1(List<Message> amqpMessages) {
 			this.amqpMessagesReceived = amqpMessages;
 			this.batch1Latch.countDown();
 		}
 
-		@RabbitListener(queues = "batch.2", containerFactory = "consumerBatchContainerFactory")
+		@RabbitListener(queues = "erit.batch.2", containerFactory = "consumerBatchContainerFactory")
 		public void consumerBatch2(List<org.springframework.messaging.Message<?>> messages) {
 			this.messagingMessagesReceived = messages;
 			this.batch2Latch.countDown();
 		}
 
-		@RabbitListener(queues = "batch.3", containerFactory = "consumerBatchContainerFactory")
+		@RabbitListener(queues = "erit.batch.3", containerFactory = "consumerBatchContainerFactory")
 		public void consumerBatch3(List<String> strings) {
 			this.batch3Strings = strings;
 			this.batch3Latch.countDown();
@@ -1551,11 +1551,8 @@ public class EnableRabbitIntegrationTests {
 			factory.setConnectionFactory(rabbitConnectionFactory());
 			factory.setConsumerTagStrategy(consumerTagStrategy());
 			factory.setBatchListener(true);
-			factory.setContainerConfigurer(container -> {
-				container.setConsumerBatchEnabled(true);
-				container.setDeBatchingEnabled(true);
-				container.setBatchSize(2);
-			});
+			factory.setBatchSize(2);
+			factory.setConsumerBatchEnabled(true);
 			return factory;
 		}
 

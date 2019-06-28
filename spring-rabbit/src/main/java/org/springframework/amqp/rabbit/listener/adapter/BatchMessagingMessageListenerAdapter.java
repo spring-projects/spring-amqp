@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbit.listener.adapter;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.batch.SimpleBatchingStrategy;
@@ -62,17 +61,19 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 			converted = new GenericMessage<>(messages);
 		}
 		else {
-			List<Message<?>> messagingMessages = messages.stream()
-				.map(message -> toMessagingMessage(message))
-				.collect(Collectors.toList());
+			List<Message<?>> messagingMessages = new ArrayList<>();
+			for (org.springframework.amqp.core.Message message : messages) {
+				messagingMessages.add(toMessagingMessage(message));
+			}
 			if (this.converterAdapter.isMessageList()) {
 				converted = new GenericMessage<>(messagingMessages);
 			}
 			else {
-				converted = new GenericMessage<>(messagingMessages
-						.stream()
-						.map(msg -> msg.getPayload())
-						.collect(Collectors.toList()));
+				List<Object> payloads = new ArrayList<>();
+				for (Message<?> message : messagingMessages) {
+					payloads.add(message.getPayload());
+				}
+				converted = new GenericMessage<>(payloads);
 			}
 		}
 		try {

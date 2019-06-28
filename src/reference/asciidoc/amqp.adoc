@@ -2873,7 +2873,7 @@ In addition, `AmqpHeaders.BATCH_SIZE` is populated with the size of the batch in
 In addition, a new property `consumerBatchEnabled` has been added to the `SimpleMessageListenerContainer`.
 When this is true, the container will create a batch of messages, up to `batchSize`; a partial batch is delivered if `receiveTimeout` elapses with no new messages arriving.
 If a producer-created batch is received, it is debatched and added to the consumer-side batch; therefore the actual number of messages delivered may exceed `batchSize`, which represents the number of messages received from the broker.
-`deBatchingEnabled` must be true when `consumerBatchEnabled` is true.
+`deBatchingEnabled` must be true when `consumerBatchEnabled` is true; the container factory will enforce this requirement.
 
 ====
 [source, java]
@@ -2882,12 +2882,10 @@ If a producer-created batch is received, it is debatched and added to the consum
 public SimpleRabbitListenerContainerFactory consumerBatchContainerFactory() {
     SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
     factory.setConnectionFactory(rabbitConnectionFactory());
-    factory.setBatchListener(true);
-    factory.setContainerConfigurer(container -> {
-        container.setConsumerBatchEnabled(true);
-        container.setDeBatchingEnabled(true); // required because the factory sets to false for a batch listener
-        container.setBatchSize(20);
-    });
+    factory.setConsumerTagStrategy(consumerTagStrategy());
+    factory.setBatchListener(true); // configures a BatchMessageListenerAdapter
+    factory.setBatchSize(2);
+    factory.setConsumerBatchEnabled(true);
     return factory;
 }
 ----

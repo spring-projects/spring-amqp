@@ -125,6 +125,8 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 	private BatchingStrategy batchingStrategy;
 
+	private Boolean deBatchingEnabled;
+
 	/**
 	 * @param connectionFactory The connection factory.
 	 * @see AbstractMessageListenerContainer#setConnectionFactory(ConnectionFactory)
@@ -375,6 +377,17 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		this.batchingStrategy = batchingStrategy;
 	}
 
+	/**
+	 * Determine whether or not the container should de-batch batched
+	 * messages (true) or call the listener with the batch (false). Default: true.
+	 * @param deBatchingEnabled whether or not to disable de-batching of messages.
+	 * @since 2.2
+	 * @see AbstractMessageListenerContainer#setDeBatchingEnabled(boolean)
+	 */
+	public void setDeBatchingEnabled(final Boolean deBatchingEnabled) {
+		this.deBatchingEnabled = deBatchingEnabled;
+	}
+
 	@Override
 	public C createListenerContainer(RabbitListenerEndpoint endpoint) {
 		C instance = createContainerInstance();
@@ -404,8 +417,12 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 			.acceptIfNotNull(this.applicationEventPublisher, instance::setApplicationEventPublisher)
 			.acceptIfNotNull(this.autoStartup, instance::setAutoStartup)
 			.acceptIfNotNull(this.phase, instance::setPhase)
-			.acceptIfNotNull(this.afterReceivePostProcessors, instance::setAfterReceivePostProcessors);
-		instance.setDeBatchingEnabled(!this.batchListener);
+			.acceptIfNotNull(this.afterReceivePostProcessors, instance::setAfterReceivePostProcessors)
+			.acceptIfNotNull(this.deBatchingEnabled, instance::setDeBatchingEnabled);
+		if (this.batchListener && this.deBatchingEnabled == null) {
+			// turn off container debatching by default for batch listeners
+			instance.setDeBatchingEnabled(false);
+		}
 		if (endpoint != null) { // endpoint settings overriding default factory settings
 			javaUtils
 				.acceptIfNotNull(endpoint.getAutoStartup(), instance::setAutoStartup)

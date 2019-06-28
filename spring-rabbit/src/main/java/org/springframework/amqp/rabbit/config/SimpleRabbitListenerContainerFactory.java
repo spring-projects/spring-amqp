@@ -38,7 +38,7 @@ import org.springframework.amqp.utils.JavaUtils;
 public class SimpleRabbitListenerContainerFactory
 		extends AbstractRabbitListenerContainerFactory<SimpleMessageListenerContainer> {
 
-	private Integer txSize;
+	private Integer batchSize;
 
 	private Integer concurrentConsumers;
 
@@ -54,14 +54,24 @@ public class SimpleRabbitListenerContainerFactory
 
 	private Long receiveTimeout;
 
-	private Boolean deBatchingEnabled;
+	private Boolean consumerBatchEnabled;
 
 	/**
 	 * @param txSize the transaction size.
-	 * @see SimpleMessageListenerContainer#setTxSize
+	 * @see SimpleMessageListenerContainer#setBatchSize
+	 * @deprecated in favor of {@link #setBatchSize(Integer)}
 	 */
+	@Deprecated
 	public void setTxSize(Integer txSize) {
-		this.txSize = txSize;
+		setBatchSize(txSize);
+	}
+
+	/**
+	 * @param batchSize the transaction size.
+	 * @see SimpleMessageListenerContainer#setBatchSize
+	 */
+	public void setBatchSize(Integer batchSize) {
+		this.batchSize = batchSize;
 	}
 
 	/**
@@ -121,13 +131,14 @@ public class SimpleRabbitListenerContainerFactory
 	}
 
 	/**
-	 * Determine whether or not the container should de-batch batched
-	 * messages (true) or call the listener with the batch (false). Default: true.
-	 * @param deBatchingEnabled whether or not to disable de-batching of messages.
-	 * @see SimpleMessageListenerContainer#setDeBatchingEnabled(boolean)
+	 * Set to true to present a list of messages based on the {@link #setBatchSize(Integer)},
+	 * if the listener supports it.
+	 * @param consumerBatchEnabled true to create message batches in the container.
+	 * @since 2.2
+	 * @see #setBatchSize(Integer)
 	 */
-	public void setDeBatchingEnabled(final Boolean deBatchingEnabled) {
-		this.deBatchingEnabled = deBatchingEnabled;
+	public void setConsumerBatchEnabled(boolean consumerBatchEnabled) {
+		this.consumerBatchEnabled = consumerBatchEnabled;
 	}
 
 	@Override
@@ -140,7 +151,7 @@ public class SimpleRabbitListenerContainerFactory
 		super.initializeContainer(instance, endpoint);
 
 		JavaUtils javaUtils = JavaUtils.INSTANCE
-			.acceptIfNotNull(this.txSize, instance::setBatchSize);
+			.acceptIfNotNull(this.batchSize, instance::setBatchSize);
 		String concurrency = null;
 		if (endpoint != null) {
 			concurrency = endpoint.getConcurrency();
@@ -149,14 +160,22 @@ public class SimpleRabbitListenerContainerFactory
 		javaUtils
 			.acceptIfCondition(concurrency == null && this.concurrentConsumers != null, this.concurrentConsumers,
 				instance::setConcurrentConsumers)
-			.acceptIfCondition((concurrency == null || !(concurrency.contains("-"))) && this.maxConcurrentConsumers != null,
+			.acceptIfCondition((concurrency == null || !(concurrency.contains("-")))
+					&& this.maxConcurrentConsumers != null,
 				this.maxConcurrentConsumers, instance::setMaxConcurrentConsumers)
 			.acceptIfNotNull(this.startConsumerMinInterval, instance::setStartConsumerMinInterval)
 			.acceptIfNotNull(this.stopConsumerMinInterval, instance::setStopConsumerMinInterval)
 			.acceptIfNotNull(this.consecutiveActiveTrigger, instance::setConsecutiveActiveTrigger)
 			.acceptIfNotNull(this.consecutiveIdleTrigger, instance::setConsecutiveIdleTrigger)
-			.acceptIfNotNull(this.receiveTimeout, instance::setReceiveTimeout)
-			.acceptIfNotNull(this.deBatchingEnabled, instance::setDeBatchingEnabled);
+			.acceptIfNotNull(this.receiveTimeout, instance::setReceiveTimeout);
+		if (Boolean.TRUE.equals(this.consumerBatchEnabled)) {
+			instance.setConsumerBatchEnabled(true);
+			/*
+			 * 'batchListener=true' turns off container debatching by default, it must be
+			 * true when consumer batching is enabled.
+			 */
+			instance.setDeBatchingEnabled(true);
+		}
 	}
 
 }
