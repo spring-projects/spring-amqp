@@ -33,6 +33,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
@@ -665,15 +666,17 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 		if (this.replyAddress == null || Address.AMQ_RABBITMQ_REPLY_TO.equals(this.replyAddress)) {
 			try {
-				execute(new ChannelCallback<Void>() {
+				return execute(new ChannelCallback<Boolean>() {
 
 					@Override
-					public Void doInRabbit(Channel channel) throws Exception {
+					public Boolean doInRabbit(Channel channel) throws Exception {
 						channel.queueDeclarePassive(Address.AMQ_RABBITMQ_REPLY_TO);
-						return null;
+						return true;
 					}
 				});
-				return true;
+			}
+			catch (AmqpConnectException ex) {
+				throw ex;
 			}
 			catch (Exception e) {
 				if (this.replyAddress != null) {

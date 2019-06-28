@@ -17,10 +17,13 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
@@ -44,6 +47,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpAuthenticationException;
+import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
@@ -123,6 +127,7 @@ public class RabbitTemplateTests {
 		template.setChannelTransacted(true);
 
 		txTemplate.execute(new TransactionCallback<Object>() {
+
 			@Override
 			public Object doInTransaction(TransactionStatus status) {
 				template.convertAndSend("foo", "bar");
@@ -130,6 +135,7 @@ public class RabbitTemplateTests {
 			}
 		});
 		txTemplate.execute(new TransactionCallback<Object>() {
+
 			@Override
 			public Object doInTransaction(TransactionStatus status) {
 				template.convertAndSend("baz", "qux");
@@ -188,6 +194,7 @@ public class RabbitTemplateTests {
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
 		doAnswer(new Answer<Object>() {
+
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				consumer.set((Consumer) invocation.getArguments()[6]);
@@ -222,6 +229,23 @@ public class RabbitTemplateTests {
 			assertThat(e.getMessage(), containsString("foo"));
 		}
 		assertEquals(3, count.get());
+	}
+
+	@Test
+	public void testEvaluateDirectReplyToWithConnectException() {
+		org.springframework.amqp.rabbit.connection.ConnectionFactory mockConnectionFactory =
+				mock(org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
+		willThrow(new AmqpConnectException(null)).given(mockConnectionFactory).createConnection();
+		RabbitTemplate template = new RabbitTemplate(mockConnectionFactory);
+
+		try {
+			template.convertSendAndReceive("foo");
+		}
+		catch (Exception ex) {
+			assertThat(ex, instanceOf(AmqpConnectException.class));
+		}
+
+		assertFalse(TestUtils.getPropertyValue(template, "evaluatedFastReplyTo", Boolean.class));
 	}
 
 	@Test
