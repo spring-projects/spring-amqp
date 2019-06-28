@@ -1927,9 +1927,16 @@ When the container is later started, it uses its reference to `containerAdmin` t
 [[de-batching]]
 ===== Batched Messages
 
-Batched messages are automatically de-batched by listener containers (using the `springBatchFormat` message header).
+Batched messages (created by a producer) are automatically de-batched by listener containers (using the `springBatchFormat` message header).
 Rejecting any message from a batch causes the entire batch to be rejected.
 See <<template-batching>> for more information about batching.
+
+Starting with version 2.2, the `SimpleMessageListeneContainer` can be use to create batches on the consumer side (where the producer sent discrete messages).
+
+Set the container property `consumerBatchEnabled` to enable this feature.
+`deBatchingEnabled` must also be true so that the container is responsible for processing batches of both types.
+Implement `BatchMessageListener` or `ChannelAwareBatchMessageListener` when `consumerBatchEnabled` is true.
+See <<receiving-batch>> for information about using this feature with `@RabbitListener`.
 
 [[consumer-events]]
 ===== Consumer Events
@@ -2854,7 +2861,7 @@ public void listen2(List<Message<Thing>> in) {
 ----
 ====
 
-Setting the `batchListener` property to true automatically turns off the `debatchingEnabled` container property in containers that the factory creates - effectively, the debatching is moved from the container to the listener adapter and the adapter creates the list that is passed to the listener.
+Setting the `batchListener` property to true automatically turns off the `deBatchingEnabled` container property in containers that the factory creates (unless `consumerBatchEnabled` is `true` - see below). Effectively, the debatching is moved from the container to the listener adapter and the adapter creates the list that is passed to the listener.
 
 A batch-enabled factory cannot be used with a <<annotation-method-selection, multi-method listener>>.
 
@@ -2862,6 +2869,59 @@ Also starting with version 2.2. when receiving batched messages one-at-a-time, t
 This header can be obtained by adding the `@Header(AmqpHeaders.LAST_IN_BATCH)` boolean last` parameter to your listener method.
 The header is mapped from `MessageProperties.isLastInBatch()`.
 In addition, `AmqpHeaders.BATCH_SIZE` is populated with the size of the batch in every message fragment.
+
+In addition, a new property `consumerBatchEnabled` has been added to the `SimpleMessageListenerContainer`.
+When this is true, the container will create a batch of messages, up to `batchSize`; a partial batch is delivered if `receiveTimeout` elapses with no new messages arriving.
+If a producer-created batch is received, it is debatched and added to the consumer-side batch; therefore the actual number of messages delivered may exceed `batchSize`, which represents the number of messages received from the broker.
+`deBatchingEnabled` must be true when `consumerBatchEnabled` is true; the container factory will enforce this requirement.
+
+====
+[source, java]
+----
+@Bean
+public SimpleRabbitListenerContainerFactory consumerBatchContainerFactory() {
+    SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+    factory.setConnectionFactory(rabbitConnectionFactory());
+    factory.setConsumerTagStrategy(consumerTagStrategy());
+    factory.setBatchListener(true); // configures a BatchMessageListenerAdapter
+    factory.setBatchSize(2);
+    factory.setConsumerBatchEnabled(true);
+    return factory;
+}
+----
+====
+
+When using `consumerBatchEnabled` with `@RabbitListener`:
+
+====
+[source, java]
+----
+@RabbitListener(queues = "batch.1", containerFactory = "consumerBatchContainerFactory")
+public void consumerBatch1(List<Message> amqpMessages) {
+    this.amqpMessagesReceived = amqpMessages;
+    this.batch1Latch.countDown();
+}
+
+@RabbitListener(queues = "batch.2", containerFactory = "consumerBatchContainerFactory")
+public void consumerBatch2(List<org.springframework.messaging.Message<Invoice>> messages) {
+    this.messagingMessagesReceived = messages;
+    this.batch2Latch.countDown();
+}
+
+@RabbitListener(queues = "batch.3", containerFactory = "consumerBatchContainerFactory")
+public void consumerBatch3(List<Invoice> strings) {
+    this.batch3Strings = strings;
+    this.batch3Latch.countDown();
+}
+----
+====
+
+* the first is called with the raw, unconverted `org.springframework.amqp.core.Message` s received.
+* the second is called with the `org.springframework.messaging.Message<?>` s with converted payloads and mapped headers/properties.
+* the third is called with the converted payloads, with no access to headers/properteis.
+
+You can also add a `Channel` parameter, often used when using `MANUAL` ack mode.
+This is not very useful with the third example because you don't have access to the `delivery_tag` property.
 
 [[using-container-factories]]
 ===== Using Container Factories

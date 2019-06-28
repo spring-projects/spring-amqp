@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.rabbit.batch.SimpleBatchingStrategy;
+import org.springframework.amqp.rabbit.config.DirectRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -49,7 +50,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
  */
 @SpringJUnitConfig
 @DirtiesContext
-@RabbitAvailable(queues = { "batch.1", "batch.2" })
+@RabbitAvailable(queues = { "batch.1", "batch.2", "batch.3" })
 public class EnableRabbitBatchIntegrationTests {
 
 	@Autowired
@@ -63,6 +64,7 @@ public class EnableRabbitBatchIntegrationTests {
 		this.template.convertAndSend("batch.1", new Foo("foo"));
 		this.template.convertAndSend("batch.1", new Foo("bar"));
 		assertThat(this.listener.foosLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.listener.foos).hasSize(2);
 		assertThat(this.listener.foos.get(0).getBar()).isEqualTo("foo");
 		assertThat(this.listener.foos.get(1).getBar()).isEqualTo("bar");
 	}
@@ -72,6 +74,7 @@ public class EnableRabbitBatchIntegrationTests {
 		this.template.convertAndSend("batch.2", new Foo("foo"));
 		this.template.convertAndSend("batch.2", new Foo("bar"));
 		assertThat(this.listener.fooMessagesLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.listener.fooMessages).hasSize(2);
 		assertThat(this.listener.fooMessages.get(0).getPayload().getBar()).isEqualTo("foo");
 		assertThat(this.listener.fooMessages.get(0).getHeaders().get(AmqpHeaders.LAST_IN_BATCH, Boolean.class))
 				.isFalse();
@@ -80,6 +83,20 @@ public class EnableRabbitBatchIntegrationTests {
 				.isTrue();
 		assertThat(this.listener.fooMessages.get(1).getHeaders().get(AmqpHeaders.BATCH_SIZE, Integer.class))
 				.isEqualTo(2);
+	}
+
+	@Test
+	public void simpleListConsumerAndProducerBatching() throws InterruptedException {
+		this.template.convertAndSend("batch.3", new Foo("foo"));
+		this.template.convertAndSend("batch.3", new Foo("bar"));
+		this.template.convertAndSend("batch.3", new Foo("baz"));
+		this.template.convertAndSend("batch.3", new Foo("qux"));
+		assertThat(this.listener.fooConsumerBatchTooLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.listener.foosConsumerBatchToo).hasSize(4);
+		assertThat(this.listener.foosConsumerBatchToo.get(0).getBar()).isEqualTo("foo");
+		assertThat(this.listener.foosConsumerBatchToo.get(1).getBar()).isEqualTo("bar");
+		assertThat(this.listener.foosConsumerBatchToo.get(2).getBar()).isEqualTo("baz");
+		assertThat(this.listener.foosConsumerBatchToo.get(3).getBar()).isEqualTo("qux");
 	}
 
 	@Configuration
@@ -91,6 +108,24 @@ public class EnableRabbitBatchIntegrationTests {
 			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 			factory.setConnectionFactory(connectionFactory());
 			factory.setBatchListener(true);
+			return factory;
+		}
+
+		@Bean
+		public DirectRabbitListenerContainerFactory directListenerContainerFactory() {
+			DirectRabbitListenerContainerFactory factory = new DirectRabbitListenerContainerFactory();
+			factory.setConnectionFactory(connectionFactory());
+			factory.setBatchListener(true);
+			return factory;
+		}
+
+		@Bean
+		public SimpleRabbitListenerContainerFactory consumerBatchContainerFactory() {
+			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+			factory.setConnectionFactory(connectionFactory());
+			factory.setBatchListener(true);
+			factory.setConsumerBatchEnabled(true);
+			factory.setBatchSize(2);
 			return factory;
 		}
 
@@ -127,16 +162,26 @@ public class EnableRabbitBatchIntegrationTests {
 
 		CountDownLatch fooMessagesLatch = new CountDownLatch(1);
 
+		List<Foo> foosConsumerBatchToo;
+
+		CountDownLatch fooConsumerBatchTooLatch = new CountDownLatch(1);
+
 		@RabbitListener(queues = "batch.1")
 		public void listen1(List<Foo> in) {
 			this.foos = in;
 			this.foosLatch.countDown();
 		}
 
-		@RabbitListener(queues = "batch.2")
+		@RabbitListener(queues = "batch.2", containerFactory = "directListenerContainerFactory")
 		public void listen2(List<Message<Foo>> in) {
 			this.fooMessages = in;
 			this.fooMessagesLatch.countDown();
+		}
+
+		@RabbitListener(queues = "batch.3", containerFactory = "consumerBatchContainerFactory")
+		public void listen3(List<Foo> in) {
+			this.foosConsumerBatchToo = in;
+			this.fooConsumerBatchTooLatch.countDown();
 		}
 
 	}

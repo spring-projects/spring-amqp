@@ -88,7 +88,7 @@ public class RabbitListenerContainerFactoryTests {
 		setBasicConfig(this.factory);
 		this.factory.setTaskExecutor(executor);
 		this.factory.setTransactionManager(transactionManager);
-		this.factory.setTxSize(10);
+		this.factory.setBatchSize(10);
 		this.factory.setConcurrentConsumers(2);
 		this.factory.setMaxConcurrentConsumers(5);
 		this.factory.setStartConsumerMinInterval(2000L);

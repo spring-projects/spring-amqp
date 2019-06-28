@@ -236,6 +236,10 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		this.charset = charset;
 	}
 
+	MessageHandlerMethodFactory getMessageHandlerMethodFactory() {
+		return this.messageHandlerMethodFactory;
+	}
+
 	@Override
 	public void afterSingletonsInstantiated() {
 		this.registrar.setBeanFactory(this.beanFactory);

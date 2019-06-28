@@ -170,7 +170,7 @@ public class EnableRabbitIntegrationTests {
 			"test.simple.direct2", "test.generic.list", "test.generic.map",
 			"amqp656dlq", "test.simple.declare", "test.return.exceptions", "test.pojo.errors", "test.pojo.errors2",
 			"test.messaging.message", "test.amqp.message", "test.bytes.to.string", "test.projection",
-			"manual.acks.1", "manual.acks.2");
+			"manual.acks.1", "manual.acks.2", "erit.batch.1", "erit.batch.2", "erit.batch.3");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -860,6 +860,26 @@ public class EnableRabbitIntegrationTests {
 			.isEqualTo(AcknowledgeMode.MANUAL);
 	}
 
+	@Test
+	public void testConsumerBatchEnabled() throws InterruptedException {
+		this.rabbitTemplate.convertAndSend("erit.batch.1", "foo");
+		this.rabbitTemplate.convertAndSend("erit.batch.1", "bar");
+		this.rabbitTemplate.convertAndSend("erit.batch.2", "foo");
+		this.rabbitTemplate.convertAndSend("erit.batch.2", "bar");
+		this.rabbitTemplate.convertAndSend("erit.batch.3", "foo");
+		this.rabbitTemplate.convertAndSend("erit.batch.3", "bar");
+		assertThat(this.myService.batch1Latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.myService.batch2Latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.myService.batch3Latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.myService.amqpMessagesReceived).hasSize(2);
+		assertThat(this.myService.amqpMessagesReceived.get(0)).isInstanceOf(Message.class);
+		assertThat(this.myService.messagingMessagesReceived).hasSize(2);
+		assertThat(this.myService.messagingMessagesReceived.get(0))
+				.isInstanceOf(org.springframework.messaging.Message.class);
+		assertThat(this.myService.batch3Strings).hasSize(2);
+		assertThat(this.myService.batch3Strings.get(0)).isInstanceOf(String.class);
+	}
+
 	interface TxService {
 
 		@Transactional
@@ -916,9 +936,25 @@ public class EnableRabbitIntegrationTests {
 
 	public static class MyService {
 
-		private final RabbitTemplate txRabbitTemplate;
+		final RabbitTemplate txRabbitTemplate;
 
-		private volatile boolean channelBoundOk;
+		final List<Object> foos = new ArrayList<Object>();
+
+		final CountDownLatch latch = new CountDownLatch(1);
+
+		final CountDownLatch batch1Latch = new CountDownLatch(1);
+
+		final CountDownLatch batch2Latch = new CountDownLatch(1);
+
+		final CountDownLatch batch3Latch = new CountDownLatch(1);
+
+		volatile boolean channelBoundOk;
+
+		volatile List<Message> amqpMessagesReceived;
+
+		volatile List<org.springframework.messaging.Message<?>> messagingMessagesReceived;
+
+		volatile List<String> batch3Strings;
 
 		public MyService(RabbitTemplate txRabbitTemplate) {
 			this.txRabbitTemplate = txRabbitTemplate;
@@ -1044,10 +1080,6 @@ public class EnableRabbitIntegrationTests {
 		public void handleIt(Date body) {
 
 		}
-
-		private final List<Object> foos = new ArrayList<Object>();
-
-		private final CountDownLatch latch = new CountDownLatch(1);
 
 		@RabbitListener(id = "different", queues = "differentTypes", containerFactory = "jsonListenerContainerFactory")
 		public void handleDifferent(Foo2 foo) {
@@ -1205,6 +1237,24 @@ public class EnableRabbitIntegrationTests {
 
 			channel.basicAck(tag, false);
 			return in.toUpperCase();
+		}
+
+		@RabbitListener(queues = "erit.batch.1", containerFactory = "consumerBatchContainerFactory")
+		public void consumerBatch1(List<Message> amqpMessages) {
+			this.amqpMessagesReceived = amqpMessages;
+			this.batch1Latch.countDown();
+		}
+
+		@RabbitListener(queues = "erit.batch.2", containerFactory = "consumerBatchContainerFactory")
+		public void consumerBatch2(List<org.springframework.messaging.Message<?>> messages) {
+			this.messagingMessagesReceived = messages;
+			this.batch2Latch.countDown();
+		}
+
+		@RabbitListener(queues = "erit.batch.3", containerFactory = "consumerBatchContainerFactory")
+		public void consumerBatch3(List<String> strings) {
+			this.batch3Strings = strings;
+			this.batch3Latch.countDown();
 		}
 
 	}
@@ -1492,6 +1542,17 @@ public class EnableRabbitIntegrationTests {
 			factory.setErrorHandler(errorHandler());
 			factory.setConsumerTagStrategy(consumerTagStrategy());
 			factory.setConsumersPerQueue(2);
+			return factory;
+		}
+
+		@Bean
+		public SimpleRabbitListenerContainerFactory consumerBatchContainerFactory() {
+			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+			factory.setConnectionFactory(rabbitConnectionFactory());
+			factory.setConsumerTagStrategy(consumerTagStrategy());
+			factory.setBatchListener(true);
+			factory.setBatchSize(2);
+			factory.setConsumerBatchEnabled(true);
 			return factory;
 		}
 
