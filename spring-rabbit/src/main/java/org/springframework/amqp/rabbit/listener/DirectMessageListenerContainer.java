@@ -387,7 +387,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			synchronized (this.consumersMonitor) {
 				consumersToCancel = this.consumers.stream()
 						.filter(c -> {
-							boolean open = c.getChannel().isOpen();
+							boolean open = c.getChannel().isOpen() && !c.isAckFailed();
 							if (open && this.messagesPerAck > 1) {
 								try {
 									c.ackIfNecessary(now);
@@ -502,7 +502,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						}
 					}
 				}
-
 			});
 		}
 		else {
@@ -717,7 +716,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				this.logger.debug("Canceling " + consumer);
 			}
 			synchronized (consumer) {
-				consumer.canceled = true;
+				consumer.setCanceled(true);
 				if (this.messagesPerAck > 1) {
 					consumer.ackIfNecessary(0L);
 				}
@@ -791,6 +790,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		private volatile boolean canceled;
 
+		private volatile boolean ackFailed;
+
 		private SimpleConsumer(Connection connection, Channel channel, String queue) {
 			super(channel);
 			this.connection = connection;
@@ -813,6 +814,23 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		 */
 		int getEpoch() {
 			return this.epoch;
+		}
+
+		/**
+		 * Set to true to indicate this consumer is canceled and should send any pending
+		 * acks.
+		 * @param canceled the canceled to set
+		 */
+		void setCanceled(boolean canceled) {
+			this.canceled = canceled;
+		}
+
+		/**
+		 * True if an ack/nack failed (probably due to a closed channel).
+		 * @return the ackFailed
+		 */
+		boolean isAckFailed() {
+			return this.ackFailed;
 		}
 
 		/**
@@ -966,6 +984,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			catch (Exception e) {
+				this.ackFailed = true;
 				this.logger.error("Error acking", e);
 			}
 		}
@@ -976,7 +995,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		 * @param now the current time.
 		 * @throws IOException if one occurs.
 		 */
-		private synchronized void ackIfNecessary(long now) throws IOException {
+		synchronized void ackIfNecessary(long now) throws IOException {
 			if (this.pendingAcks >= this.messagesPerAck || (
 					this.pendingAcks > 0 && (now - this.lastAck > this.ackTimeout || this.canceled))) {
 				sendAck(now);

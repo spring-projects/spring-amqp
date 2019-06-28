@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -42,6 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -262,6 +264,50 @@ public class DirectMessageListenerContainerMockTests {
 		verify(channel, times(2)).basicConsume(eq("test2"), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
 				anyMap(), any(Consumer.class));
 
+		container.stop();
+	}
+
+	@Test
+	public void testMonitorCancelsAfterBadAckEvenIfChannelReportsOpen() throws Exception {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		ChannelProxy channel = mock(ChannelProxy.class);
+		Channel rabbitChannel = mock(Channel.class);
+		given(channel.getTargetChannel()).willReturn(rabbitChannel);
+
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(anyBoolean())).willReturn(channel);
+		given(channel.isOpen()).willReturn(true);
+		given(channel.queueDeclarePassive(Mockito.anyString()))
+				.willAnswer(invocation -> mock(AMQP.Queue.DeclareOk.class));
+		AtomicReference<Consumer> consumer = new AtomicReference<>();
+		final CountDownLatch latch1 = new CountDownLatch(1);
+		final CountDownLatch latch2 = new CountDownLatch(1);
+		willAnswer(inv -> {
+			consumer.set(inv.getArgument(6));
+			latch1.countDown();
+			return "consumerTag";
+		}).given(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+						anyMap(), any(Consumer.class));
+
+		willThrow(new RuntimeException("bad ack")).given(channel).basicAck(1L, false);
+		willAnswer(inv -> {
+			consumer.get().handleCancelOk("consumerTag");
+			latch2.countDown();
+			return null;
+		}).given(channel).basicCancel("consumerTag");
+
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(connectionFactory);
+		container.setQueueNames("test");
+		container.setPrefetchCount(2);
+		container.setMonitorInterval(100);
+		container.setMessageListener(mock(MessageListener.class));
+		container.afterPropertiesSet();
+		container.start();
+
+		assertTrue(latch1.await(10, TimeUnit.SECONDS));
+		consumer.get().handleDelivery("consumerTag", envelope(1L), new BasicProperties(), new byte[1]);
+		assertTrue(latch2.await(10, TimeUnit.SECONDS));
 		container.stop();
 	}
 
