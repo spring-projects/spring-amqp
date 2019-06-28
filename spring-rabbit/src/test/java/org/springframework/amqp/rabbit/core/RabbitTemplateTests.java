@@ -32,6 +32,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willReturn;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -55,6 +56,7 @@ import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
 import org.springframework.amqp.AmqpAuthenticationException;
+import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
@@ -70,6 +72,7 @@ import org.springframework.amqp.rabbit.connection.SimpleRoutingConnectionFactory
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.SerializationUtils;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
@@ -236,6 +239,16 @@ public class RabbitTemplateTests {
 			assertThat(e.getMessage(), containsString("foo"));
 		}
 		assertEquals(3, count.get());
+	}
+
+	@Test
+	public void testEvaluateDirectReplyToWithConnectException() throws Exception {
+		org.springframework.amqp.rabbit.connection.ConnectionFactory mockConnectionFactory =
+				mock(org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
+		willThrow(new AmqpConnectException(null)).given(mockConnectionFactory).createConnection();
+		RabbitTemplate template = new RabbitTemplate(mockConnectionFactory);
+		assertThatThrownBy(() -> template.convertSendAndReceive("foo")).isInstanceOf(AmqpConnectException.class);
+		assertThat(TestUtils.getPropertyValue(template, "evaluatedFastReplyTo", Boolean.class)).isFalse();
 	}
 
 	@Test

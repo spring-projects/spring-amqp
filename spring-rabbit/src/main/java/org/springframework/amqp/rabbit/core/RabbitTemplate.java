@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
@@ -955,11 +956,13 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 		if (this.replyAddress == null || Address.AMQ_RABBITMQ_REPLY_TO.equals(this.replyAddress)) {
 			try {
-				execute(channel -> {
+				return execute(channel -> {
 					channel.queueDeclarePassive(Address.AMQ_RABBITMQ_REPLY_TO);
-					return null;
+					return true;
 				});
-				return true;
+			}
+			catch (AmqpConnectException ex) {
+				throw ex;
 			}
 			catch (Exception e) {
 				if (logger.isDebugEnabled()) {
