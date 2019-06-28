@@ -117,7 +117,7 @@ public class ConsumerBatchingTests {
 	}
 
 	@Test
-	public void rejectOneReplyRest() throws InterruptedException {
+	public void rejectOneReplayRest() throws InterruptedException {
 		this.template.convertAndSend("c.batch.5", new Foo("foo"));
 		this.template.convertAndSend("c.batch.5", new Foo("bar"));
 		this.template.convertAndSend("c.batch.5", new Foo("baz"));
