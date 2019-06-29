@@ -946,12 +946,15 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 		if (this.replyAddress == null || Address.AMQ_RABBITMQ_REPLY_TO.equals(this.replyAddress)) {
 			try {
-				return execute(channel -> {
+				return execute(channel -> { // NOSONAR - never null
 					channel.queueDeclarePassive(Address.AMQ_RABBITMQ_REPLY_TO);
 					return true;
 				});
 			}
 			catch (AmqpConnectException ex) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Connection error, deferring directReplyTo detection");
+				}
 				throw ex;
 			}
 			catch (Exception e) {

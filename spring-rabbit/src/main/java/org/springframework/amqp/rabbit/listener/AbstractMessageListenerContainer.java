@@ -102,6 +102,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		implements MessageListenerContainer, ApplicationContextAware, BeanNameAware, DisposableBean,
 		ApplicationEventPublisherAware {
 
+	private static final String UNCHECKED = "unchecked";
+
 	static final int DEFAULT_FAILED_DECLARATION_RETRY_INTERVAL = 5000;
 
 	public static final boolean DEFAULT_DEBATCHING_ENABLED = true;
@@ -1337,7 +1339,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @see #invokeListener
 	 * @see #handleListenerException
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings(UNCHECKED)
 	protected void executeListener(Channel channel, Object data) {
 		if (!isRunning()) {
 			if (logger.isWarnEnabled()) {
@@ -1449,7 +1451,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @see ChannelAwareMessageListener
 	 * @see #setExposeListenerChannel(boolean)
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings(UNCHECKED)
 	protected void doInvokeListener(ChannelAwareMessageListener listener, Channel channel, Object data) {
 
 		Message message = null;
@@ -1538,7 +1540,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 *
 	 * @see org.springframework.amqp.core.MessageListener#onMessage
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings(UNCHECKED)
 	protected void doInvokeListener(MessageListener listener, Object data) {
 		Message message = null;
 		try {
@@ -1594,7 +1596,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @return If 'e' is of type {@link ListenerExecutionFailedException} - return 'e' as it is, otherwise wrap it to
 	 * {@link ListenerExecutionFailedException} and return.
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings(UNCHECKED)
 	protected ListenerExecutionFailedException wrapToListenerExecutionFailedExceptionIfNeeded(Exception e,
 			Object data) {
 

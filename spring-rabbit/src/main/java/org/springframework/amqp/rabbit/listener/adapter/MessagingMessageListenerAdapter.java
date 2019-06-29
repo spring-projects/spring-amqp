@@ -151,10 +151,10 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		catch (ListenerExecutionFailedException e) {
 			if (this.errorHandler != null) {
 				try {
-					message = MessageBuilder.fromMessage(message)
+					Message<?> messageWithChannel = MessageBuilder.fromMessage(message)
 							.setHeader(AmqpHeaders.CHANNEL, channel)
 							.build();
-					Object errorResult = this.errorHandler.handleError(amqpMessage, message, e);
+					Object errorResult = this.errorHandler.handleError(amqpMessage, messageWithChannel, e);
 					if (errorResult != null) {
 						handleResult(this.handlerAdapter.getInvocationResultFor(errorResult, message.getPayload()),
 								amqpMessage, channel, message);
