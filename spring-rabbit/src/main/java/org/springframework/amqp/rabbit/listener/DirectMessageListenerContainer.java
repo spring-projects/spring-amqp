@@ -47,6 +47,7 @@ import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
@@ -472,7 +473,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		synchronized (this.consumersMonitor) {
 			consumersToCancel = this.consumers.stream()
 					.filter(consumer -> {
-						boolean open = consumer.getChannel().isOpen() && !consumer.isAckFailed();
+						boolean open = consumer.getChannel().isOpen() && !consumer.isAckFailed()
+								&& !consumer.targetChanged();
 						if (open && this.messagesPerAck > 1) {
 							try {
 								consumer.ackIfNecessary(now);
@@ -870,6 +872,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		private final long ackTimeout = DirectMessageListenerContainer.this.ackTimeout;
 
+		private final Channel targetChannel;
+
 		private int pendingAcks;
 
 		private long lastAck = System.currentTimeMillis();
@@ -888,11 +892,17 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		private volatile boolean ackFailed;
 
-		private SimpleConsumer(Connection connection, Channel channel, String queue) {
+		SimpleConsumer(Connection connection, Channel channel, String queue) {
 			super(channel);
 			this.connection = connection;
 			this.queue = queue;
 			this.ackRequired = !getAcknowledgeMode().isAutoAck() && !getAcknowledgeMode().isManual();
+			if (channel instanceof ChannelProxy) {
+				this.targetChannel = ((ChannelProxy) channel).getTargetChannel();
+			}
+			else {
+				this.targetChannel = null;
+			}
 		}
 
 		private String getQueue() {
@@ -927,6 +937,15 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		 */
 		boolean isAckFailed() {
 			return this.ackFailed;
+		}
+
+		/**
+		 * True if the channel is a proxy and the underlying channel has changed.
+		 * @return true if the condition exists.
+		 */
+		boolean targetChanged() {
+			return this.targetChannel != null
+					&& !((ChannelProxy) getChannel()).getTargetChannel().equals(this.targetChannel);
 		}
 
 		/**
