@@ -960,16 +960,16 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				}
 				if (cause instanceof ShutdownSignalException) {
 					if (RabbitUtils.isPassiveDeclarationChannelClose((ShutdownSignalException) cause)) {
-						if (logger.isDebugEnabled()) {
+						if (logger.isWarnEnabled()) {
 							logger.warn("Broker does not support fast replies via 'amq.rabbitmq.reply-to', temporary "
-									+ "queues will be used:" + ex.getMessage() + ".");
+									+ "queues will be used: " + cause.getMessage() + ".");
 						}
 						this.replyAddress = null;
 						return false;
 					}
 				}
 				if (logger.isDebugEnabled()) {
-					logger.debug("IO error, deferring directReplyTo detection");
+					logger.debug("IO error, deferring directReplyTo detection: " + ex.toString());
 				}
 				throw ex;
 			}
