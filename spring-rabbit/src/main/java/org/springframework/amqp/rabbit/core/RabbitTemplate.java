@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Address;
@@ -103,6 +104,7 @@ import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
 import com.rabbitmq.client.ShutdownListener;
+import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * <p>
@@ -951,18 +953,25 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 					return true;
 				});
 			}
-			catch (AmqpConnectException ex) {
+			catch (AmqpConnectException | AmqpIOException ex) {
+				Throwable cause = ex;
+				while (cause != null && !(cause instanceof ShutdownSignalException)) {
+					cause = cause.getCause();
+				}
+				if (cause instanceof ShutdownSignalException) {
+					if (RabbitUtils.isPassiveDeclarationChannelClose((ShutdownSignalException) cause)) {
+						if (logger.isWarnEnabled()) {
+							logger.warn("Broker does not support fast replies via 'amq.rabbitmq.reply-to', temporary "
+									+ "queues will be used: " + cause.getMessage() + ".");
+						}
+						this.replyAddress = null;
+						return false;
+					}
+				}
 				if (logger.isDebugEnabled()) {
-					logger.debug("Connection error, deferring directReplyTo detection");
+					logger.debug("IO error, deferring directReplyTo detection: " + ex.toString());
 				}
 				throw ex;
-			}
-			catch (Exception e) {
-				if (logger.isDebugEnabled()) {
-					logger.warn("Broker does not support fast replies via 'amq.rabbitmq.reply-to', temporary "
-							+ "queues will be used:" + e.getMessage() + ".");
-				}
-				this.replyAddress = null;
 			}
 		}
 		return false;
