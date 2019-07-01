@@ -29,7 +29,7 @@ import com.rabbitmq.client.Channel;
  * @since 2.2
  *
  */
-public interface ChannelAwareBatchMessagelistener extends ChannelAwareMessageListener {
+public interface ChannelAwareBatchMessageListener extends ChannelAwareMessageListener {
 
 	@Override
 	default void onMessage(Message message, Channel channel) throws Exception {

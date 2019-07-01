@@ -22,7 +22,7 @@ import java.util.List;
 
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.batch.SimpleBatchingStrategy;
-import org.springframework.amqp.rabbit.listener.api.ChannelAwareBatchMessagelistener;
+import org.springframework.amqp.rabbit.listener.api.ChannelAwareBatchMessageListener;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.lang.Nullable;
@@ -40,7 +40,7 @@ import com.rabbitmq.client.Channel;
  *
  */
 public class BatchMessagingMessageListenerAdapter extends MessagingMessageListenerAdapter
-			implements ChannelAwareBatchMessagelistener {
+			implements ChannelAwareBatchMessageListener {
 
 	private final MessagingMessageConverterAdapter converterAdapter;
 

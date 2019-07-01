@@ -48,7 +48,7 @@ import org.springframework.amqp.rabbit.connection.ConsumerChannelRegistry;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.SimpleResourceHolder;
-import org.springframework.amqp.rabbit.listener.api.ChannelAwareBatchMessagelistener;
+import org.springframework.amqp.rabbit.listener.api.ChannelAwareBatchMessageListener;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
@@ -516,7 +516,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	@Override
 	protected void doInitialize() {
 		Assert.state(!this.consumerBatchEnabled || getMessageListener() instanceof BatchMessageListener
-				|| getMessageListener() instanceof ChannelAwareBatchMessagelistener,
+				|| getMessageListener() instanceof ChannelAwareBatchMessageListener,
 				"When setting 'consumerBatchEnabled' to true, the listener must support batching");
 		Assert.state(!this.consumerBatchEnabled  || isDeBatchingEnabled(),
 				"When setting 'consumerBatchEnabled' to true, 'deBatchingEnabled' must also be true");
