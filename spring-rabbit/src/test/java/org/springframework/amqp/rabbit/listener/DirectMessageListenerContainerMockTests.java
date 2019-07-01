@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.Connection;
@@ -175,7 +176,7 @@ public class DirectMessageListenerContainerMockTests {
 		}
 		Thread.sleep(200);
 		consumer.get().handleDelivery("consumerTag", envelope(16), props, body);
-		// should get 2 acks #10 and #6 (timeout)
+		// should get 2 acks #10 and #16 (timeout)
 		assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
 		consumer.get().handleDelivery("consumerTag", envelope(17), props, body);
 		verify(channel).basicAck(10L, true);
@@ -300,6 +301,56 @@ public class DirectMessageListenerContainerMockTests {
 		container.setPrefetchCount(2);
 		container.setMonitorInterval(100);
 		container.setMessageListener(mock(MessageListener.class));
+		container.afterPropertiesSet();
+		container.start();
+
+		assertThat(latch1.await(10, TimeUnit.SECONDS)).isTrue();
+		consumer.get().handleDelivery("consumerTag", envelope(1L), new BasicProperties(), new byte[1]);
+		assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
+		container.stop();
+	}
+
+	@Test
+	public void testMonitorCancelsAfterTargetChannelChanges() throws Exception {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		ChannelProxy channel = mock(ChannelProxy.class);
+		Channel rabbitChannel1 = mock(Channel.class);
+		Channel rabbitChannel2 = mock(Channel.class);
+		AtomicReference<Channel> target = new AtomicReference<>(rabbitChannel1);
+		willAnswer(inv -> {
+			return target.get();
+		}).given(channel).getTargetChannel();
+
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(anyBoolean())).willReturn(channel);
+		given(channel.isOpen()).willReturn(true);
+		given(channel.queueDeclarePassive(Mockito.anyString()))
+				.willAnswer(invocation -> mock(AMQP.Queue.DeclareOk.class));
+		AtomicReference<Consumer> consumer = new AtomicReference<>();
+		final CountDownLatch latch1 = new CountDownLatch(1);
+		final CountDownLatch latch2 = new CountDownLatch(1);
+		willAnswer(inv -> {
+			consumer.set(inv.getArgument(6));
+			latch1.countDown();
+			return "consumerTag";
+		}).given(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+						anyMap(), any(Consumer.class));
+
+		willAnswer(inv -> {
+			consumer.get().handleCancelOk("consumerTag");
+			latch2.countDown();
+			return null;
+		}).given(channel).basicCancel("consumerTag");
+
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(connectionFactory);
+		container.setQueueNames("test");
+		container.setPrefetchCount(2);
+		container.setMonitorInterval(100);
+		container.setMessageListener(msg -> {
+			target.set(rabbitChannel2);
+		});
+		container.setAcknowledgeMode(AcknowledgeMode.MANUAL);
 		container.afterPropertiesSet();
 		container.start();
 
