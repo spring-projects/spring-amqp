@@ -51,6 +51,7 @@ import org.mockito.Mockito;
 import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -61,6 +62,7 @@ import org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFacto
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.PublisherCallbackChannel;
+import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.SimpleRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
@@ -239,6 +241,62 @@ public class RabbitTemplateTests {
 		RabbitTemplate template = new RabbitTemplate(mockConnectionFactory);
 		assertThatThrownBy(() -> template.convertSendAndReceive("foo")).isInstanceOf(AmqpConnectException.class);
 		assertThat(TestUtils.getPropertyValue(template, "evaluatedFastReplyTo", Boolean.class)).isFalse();
+	}
+
+	@Test
+	public void testEvaluateDirectReplyToWithIOException() throws Exception {
+		org.springframework.amqp.rabbit.connection.ConnectionFactory mockConnectionFactory =
+				mock(org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
+		willThrow(new AmqpIOException(null)).given(mockConnectionFactory).createConnection();
+		RabbitTemplate template = new RabbitTemplate(mockConnectionFactory);
+		assertThatThrownBy(() -> template.convertSendAndReceive("foo")).isInstanceOf(AmqpIOException.class);
+		assertThat(TestUtils.getPropertyValue(template, "evaluatedFastReplyTo", Boolean.class)).isFalse();
+	}
+
+	@Test
+	public void testEvaluateDirectReplyToWithIOExceptionDeclareFailed() throws Exception {
+		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
+		Connection mockConnection = mock(Connection.class);
+		Channel mockChannel = mock(Channel.class);
+
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
+		given(mockConnection.isOpen()).willReturn(true);
+		given(mockConnection.createChannel()).willReturn(mockChannel);
+		AMQP.Channel.Close mockMethod = mock(AMQP.Channel.Close.class);
+		given(mockMethod.getReplyCode()).willReturn(AMQP.NOT_FOUND);
+		given(mockMethod.getClassId()).willReturn(RabbitUtils.QUEUE_CLASS_ID_50);
+		given(mockMethod.getMethodId()).willReturn(RabbitUtils.DECLARE_METHOD_ID_10);
+		willThrow(new ShutdownSignalException(true, false, mockMethod, null)).given(mockChannel)
+				.queueDeclarePassive(Address.AMQ_RABBITMQ_REPLY_TO);
+		given(mockChannel.queueDeclare()).willReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		connectionFactory.setExecutor(mock(ExecutorService.class));
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		template.setReplyTimeout(1);
+		template.convertSendAndReceive("foo");
+		assertThat(TestUtils.getPropertyValue(template, "evaluatedFastReplyTo", Boolean.class)).isTrue();
+		assertThat(TestUtils.getPropertyValue(template, "usingFastReplyTo", Boolean.class)).isFalse();
+	}
+
+	@Test
+	public void testEvaluateDirectReplyToOK() throws Exception {
+		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
+		Connection mockConnection = mock(Connection.class);
+		Channel mockChannel = mock(Channel.class);
+		given(mockChannel.isOpen()).willReturn(true);
+
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
+		given(mockConnection.isOpen()).willReturn(true);
+		given(mockConnection.createChannel()).willReturn(mockChannel);
+		given(mockChannel.queueDeclarePassive(Address.AMQ_RABBITMQ_REPLY_TO))
+				.willReturn(new AMQImpl.Queue.DeclareOk(Address.AMQ_RABBITMQ_REPLY_TO, 0, 0));
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		connectionFactory.setExecutor(mock(ExecutorService.class));
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		template.setReplyTimeout(1);
+		template.convertSendAndReceive("foo");
+		assertThat(TestUtils.getPropertyValue(template, "evaluatedFastReplyTo", Boolean.class)).isTrue();
+		assertThat(TestUtils.getPropertyValue(template, "usingFastReplyTo", Boolean.class)).isTrue();
 	}
 
 	@Test
