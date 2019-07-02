@@ -598,7 +598,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 
 	}
 
-	private static class MonoHandler {
+	private static class MonoHandler { // NOSONAR - pointless to name it ..Utils|Helper
 
 		static boolean isMono(Object result) {
 			return result instanceof Mono;

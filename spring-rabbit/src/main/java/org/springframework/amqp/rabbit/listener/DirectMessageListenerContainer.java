@@ -720,7 +720,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	@Nullable
-	private SimpleConsumer handleConsumeException(String queue, SimpleConsumer consumerArg, Exception e) {
+	private SimpleConsumer handleConsumeException(String queue, @Nullable SimpleConsumer consumerArg, Exception e) {
 
 		SimpleConsumer consumer = consumerArg;
 		if (e.getCause() instanceof ShutdownSignalException
@@ -732,7 +732,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		else if (e.getCause() instanceof ShutdownSignalException
 				&& RabbitUtils.isPassiveDeclarationChannelClose((ShutdownSignalException) e.getCause())) {
 			this.logger.error("Queue not present, scheduling consumer "
-				+ (consumer == null ? "for queue " + queue : consumer) + " for restart", e);
+					+ (consumer == null ? "for queue " + queue : consumer) + " for restart", e);
 		}
 		else if (this.logger.isWarnEnabled()) {
 			this.logger.warn("basicConsume failed, scheduling consumer "
@@ -755,7 +755,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		boolean waitForConsumers = false;
 		synchronized (this.consumersMonitor) {
 			if (this.started || this.aborted) {
-				// Copy in the same order to avoid ConcurrentModificationException during remove in the cancelConsumer().
+				// Copy in the same order to avoid ConcurrentModificationException during remove in the
+				// cancelConsumer().
 				canceledConsumers = new LinkedList<>(this.consumers);
 				actualShutDown(canceledConsumers);
 				waitForConsumers = true;
@@ -879,8 +880,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		private long lastAck = System.currentTimeMillis();
 
-		private long lastDeliveryComplete = this.lastAck;
-
 		private long latestDeferredDeliveryTag;
 
 		private volatile String consumerTag;
@@ -893,7 +892,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		private volatile boolean ackFailed;
 
-		SimpleConsumer(Connection connection, Channel channel, String queue) {
+		SimpleConsumer(@Nullable Connection connection, @Nullable Channel channel, String queue) {
 			super(channel);
 			this.connection = connection;
 			this.queue = queue;
@@ -1094,8 +1093,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						synchronized (this) {
 							this.latestDeferredDeliveryTag = deliveryTag;
 							this.pendingAcks++;
-							this.lastDeliveryComplete = System.currentTimeMillis();
-							ackIfNecessary(this.lastDeliveryComplete);
+							ackIfNecessary(this.lastAck);
 						}
 					}
 					else if (!isChannelTransacted() || isLocallyTransacted) {
