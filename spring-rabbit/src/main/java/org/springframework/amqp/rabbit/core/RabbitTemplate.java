@@ -954,25 +954,31 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				});
 			}
 			catch (AmqpConnectException | AmqpIOException ex) {
-				Throwable cause = ex;
-				while (cause != null && !(cause instanceof ShutdownSignalException)) {
-					cause = cause.getCause();
+				if (shouldRethrow(ex)) {
+					throw ex;
 				}
-				if (cause != null && RabbitUtils.isPassiveDeclarationChannelClose((ShutdownSignalException) cause)) {
-					if (logger.isWarnEnabled()) {
-						logger.warn("Broker does not support fast replies via 'amq.rabbitmq.reply-to', temporary "
-								+ "queues will be used: " + cause.getMessage() + ".");
-					}
-					this.replyAddress = null;
-					return false;
-				}
-				if (logger.isDebugEnabled()) {
-					logger.debug("IO error, deferring directReplyTo detection: " + ex.toString());
-				}
-				throw ex;
 			}
 		}
 		return false;
+	}
+
+	private boolean shouldRethrow(AmqpException ex) {
+		Throwable cause = ex;
+		while (cause != null && !(cause instanceof ShutdownSignalException)) {
+			cause = cause.getCause();
+		}
+		if (cause != null && RabbitUtils.isPassiveDeclarationChannelClose((ShutdownSignalException) cause)) {
+			if (logger.isWarnEnabled()) {
+				logger.warn("Broker does not support fast replies via 'amq.rabbitmq.reply-to', temporary "
+						+ "queues will be used: " + cause.getMessage() + ".");
+			}
+			this.replyAddress = null;
+			return false;
+		}
+		if (logger.isDebugEnabled()) {
+			logger.debug("IO error, deferring directReplyTo detection: " + ex.toString());
+		}
+		return true;
 	}
 
 	@Override
