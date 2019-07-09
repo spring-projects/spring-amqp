@@ -55,3 +55,8 @@ See <<builder-api>> for more information.
 The `CachingConnectionFactory` has a new property `shuffleAddresses`.
 When providing a list of broker node addresses, the list will be shuffled before creating a connection so that the order in which the connections are attempted is random.
 See <<cluster>> for more information.
+
+===== Other Changes
+
+The `Declarables` object (for declaring multiple queues, exchanges, bindings) now has a filtered getter for each type.
+See <<collection-declaration>> for more information.

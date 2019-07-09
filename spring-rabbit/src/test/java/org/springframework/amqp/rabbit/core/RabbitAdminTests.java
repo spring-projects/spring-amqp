@@ -45,8 +45,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
+import org.junit.ClassRule;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -97,8 +97,8 @@ import com.rabbitmq.http.client.domain.QueueInfo;
  */
 public class RabbitAdminTests {
 
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isBrokerAndManagementRunning();
+	@ClassRule
+	public static BrokerRunning brokerIsRunning = BrokerRunning.isBrokerAndManagementRunning();
 
 	@Test
 	public void testSettingOfNullConnectionFactory() {
@@ -253,6 +253,19 @@ public class RabbitAdminTests {
 		admin.deleteExchange("e3");
 		admin.deleteExchange("e4");
 		assertThat(admin.getQueueProperties(ctx.getBean(Config.class).prototypeQueueName)).isNull();
+		Declarables mixedDeclarables = ctx.getBean("ds", Declarables.class);
+		assertThat(mixedDeclarables.getFilteredDeclarables(Queue.class))
+			.hasSize(1)
+			.extracting(queue -> queue.getName())
+			.contains("q4");
+		assertThat(mixedDeclarables.getFilteredDeclarables(Exchange.class))
+			.hasSize(1)
+			.extracting(exch -> exch.getName())
+			.contains("e4");
+		assertThat(mixedDeclarables.getFilteredDeclarables(Binding.class))
+			.hasSize(1)
+			.extracting(binding -> binding.getDestination())
+			.contains("q4");
 		ctx.close();
 	}
 
