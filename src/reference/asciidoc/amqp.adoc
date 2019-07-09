@@ -3655,6 +3655,9 @@ Also, the inbound `userId` property is no longer mapped to `MessageProperties.us
 It is mapped to `MessageProperties.receivedUserId` instead.
 These changes are to avoid unexpected propagation of these properties if the same `MessageProperties` object is used for an outbound message.
 
+Starting with version 2.2, the `DefaultMessagePropertiesConverter` converts any custom headers with values of type `Class<?>`  using `getName()` instead of `toString()`; this avoids consuming application having to parse the class name out of the `toString()` representation.
+For rolling upgrades, you may need to change your consumers to understand both formats until all producers are upgraded.
+
 [[post-processing]]
 ==== Modifying Messages - Compression and More
 
