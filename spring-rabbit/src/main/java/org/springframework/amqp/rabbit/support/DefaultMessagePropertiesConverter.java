@@ -184,7 +184,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	private Object convertHeaderValueIfNecessary(@Nullable Object valueArg) {
 		Object value = valueArg;
 		boolean valid = (value instanceof String) || (value instanceof byte[]) // NOSONAR boolean complexity
-				|| (value instanceof Boolean)
+				|| (value instanceof Boolean) || (value instanceof Class)
 				|| (value instanceof LongString) || (value instanceof Integer) || (value instanceof Long)
 				|| (value instanceof Float) || (value instanceof Double) || (value instanceof BigDecimal)
 				|| (value instanceof Short) || (value instanceof Byte) || (value instanceof Date)
@@ -215,6 +215,9 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 				writableMap.put(entry.getKey(), this.convertHeaderValueIfNecessary(entry.getValue()));
 			}
 			value = writableMap;
+		}
+		else if (value instanceof Class) {
+			value = ((Class<?>) value).getName();
 		}
 		return value;
 	}

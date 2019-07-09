@@ -193,6 +193,14 @@ public class DefaultMessagePropertiesConverterTests {
 		assertThat(props.getDeliveryMode()).isNull();
 	}
 
+	@Test
+	public void testClassHeader() {
+		MessageProperties props = new MessageProperties();
+		props.setHeader("aClass", getClass());
+		BasicProperties basic = new DefaultMessagePropertiesConverter().fromMessageProperties(props, "UTF8");
+		assertThat(basic.getHeaders().get("aClass")).isEqualTo(getClass().getName());
+	}
+
 	private static class Foo {
 
 		Foo() {
