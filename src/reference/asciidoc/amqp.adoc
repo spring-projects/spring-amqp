@@ -4571,7 +4571,7 @@ This can cause undesirable side effects in some cases, because the admin has to 
 This feature is now disabled in favor of `Declarables`, as discussed earlier in this section.
 You can revert to the previous behavior by setting the `RabbitAdmin` property called `declareCollections` to `true`.
 
-Version 2.2 added the `getFilteredDeclarables` method to `Declarables`; this can be used as a convenience, for example, when declaring the listener container bean(s).
+Version 2.2 added the `getDeclarablesByType` method to `Declarables`; this can be used as a convenience, for example, when declaring the listener container bean(s).
 
 ====
 [source, java]
@@ -4580,7 +4580,7 @@ public SimpleMessageListenerContainer container(ConnectionFactory connectionFact
         Declarables mixedDeclarables, MessageListener listener) {
 
     SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
-    container.setQueues(mixedDeclarables.getFilteredDeclarables(Queue.class).toArray(new Queue[0]));
+    container.setQueues(mixedDeclarables.getDeclarablesByType(Queue.class).toArray(new Queue[0]));
     container.setMessageListener(listener);
     return container;
 }

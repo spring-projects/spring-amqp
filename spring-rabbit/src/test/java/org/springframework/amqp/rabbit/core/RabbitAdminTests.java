@@ -254,17 +254,17 @@ public class RabbitAdminTests {
 		admin.deleteExchange("e4");
 		assertThat(admin.getQueueProperties(ctx.getBean(Config.class).prototypeQueueName)).isNull();
 		Declarables mixedDeclarables = ctx.getBean("ds", Declarables.class);
-		assertThat(mixedDeclarables.getFilteredDeclarables(Queue.class))
+		assertThat(mixedDeclarables.getDeclarablesByType(Queue.class))
 			.hasSize(1)
-			.extracting(queue -> queue.getName())
+			.extracting(Queue::getName)
 			.contains("q4");
-		assertThat(mixedDeclarables.getFilteredDeclarables(Exchange.class))
+		assertThat(mixedDeclarables.getDeclarablesByType(Exchange.class))
 			.hasSize(1)
-			.extracting(exch -> exch.getName())
+			.extracting(Exchange::getName)
 			.contains("e4");
-		assertThat(mixedDeclarables.getFilteredDeclarables(Binding.class))
+		assertThat(mixedDeclarables.getDeclarablesByType(Binding.class))
 			.hasSize(1)
-			.extracting(binding -> binding.getDestination())
+			.extracting(Binding::getDestination)
 			.contains("q4");
 		ctx.close();
 	}

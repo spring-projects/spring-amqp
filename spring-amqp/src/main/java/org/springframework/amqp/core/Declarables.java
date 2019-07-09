@@ -54,14 +54,14 @@ public class Declarables {
 	/**
 	 * Return the elements that are instances of the provided class.
 	 * @param <T> The type.
-	 * @param clazz the class.
+	 * @param type the type's class.
 	 * @return the filtered list.
 	 * @since 2.2
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> List<T> getFilteredDeclarables(Class<T> clazz) {
+	public <T> List<T> getDeclarablesByType(Class<T> type) {
 		return this.declarables.stream()
-				.filter(dec -> clazz.isInstance(dec))
+				.filter(type::isInstance)
 				.map(dec -> (T) dec)
 				.collect(Collectors.toList());
 	}
