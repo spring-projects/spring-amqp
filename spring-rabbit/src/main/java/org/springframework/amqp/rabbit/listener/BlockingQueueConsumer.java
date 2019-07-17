@@ -80,6 +80,7 @@ import com.rabbitmq.utility.Utility;
  * @author Artem Bilan
  * @author Alex Panchenko
  * @author Johno Crawford
+ * @author Ian Roberts
  */
 public class BlockingQueueConsumer {
 
@@ -603,15 +604,15 @@ public class BlockingQueueConsumer {
 				if (passiveDeclareRetries > 0 && this.channel.isOpen()) {
 					if (logger.isWarnEnabled()) {
 						logger.warn("Queue declaration failed; retries left=" + (passiveDeclareRetries), e);
-						try {
-							Thread.sleep(this.failedDeclarationRetryInterval);
-						}
-						catch (InterruptedException e1) {
-							this.declaring = false;
-							Thread.currentThread().interrupt();
-							this.activeObjectCounter.release(this);
-							throw RabbitExceptionTranslator.convertRabbitAccessException(e1);
-						}
+					}
+					try {
+						Thread.sleep(this.failedDeclarationRetryInterval);
+					}
+					catch (InterruptedException e1) {
+						this.declaring = false;
+						Thread.currentThread().interrupt();
+						this.activeObjectCounter.release(this);
+						throw RabbitExceptionTranslator.convertRabbitAccessException(e1);
 					}
 				}
 				else if (e.getFailedQueues().size() < this.queues.length) {
