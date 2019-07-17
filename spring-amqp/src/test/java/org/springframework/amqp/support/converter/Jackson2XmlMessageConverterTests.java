@@ -187,8 +187,9 @@ public class Jackson2XmlMessageConverterTests {
 		byte[] bytes = "<root><name>foo</name><root/>".getBytes();
 		MessageProperties messageProperties = new MessageProperties();
 		Message message = new Message(bytes, messageProperties);
-		Object foo = xmlConverterWithDefaultType.fromMessage(message);
-		assertThat(new String(bytes)).isEqualTo(new String((byte[]) foo));
+		this.xmlConverterWithDefaultType.setAssumeSupportedContentType(false);
+		Object foo = this.xmlConverterWithDefaultType.fromMessage(message);
+		assertThat(foo).isEqualTo(bytes);
 	}
 
 	@Test

@@ -85,6 +85,8 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 
 	private boolean standardCharset;
 
+	private boolean assumeSupportedContentType = true;
+
 	/**
 	 * Construct with the provided {@link ObjectMapper} instance.
 	 * @param objectMapper the {@link ObjectMapper} to use.
@@ -218,6 +220,19 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 		}
 	}
 
+	/**
+	 * By default the supported content type is assumed when there is no contentType
+	 * property or it is set to the default ('application/octet-stream'). Set to 'false'
+	 * to revert to the previous behavior of returning an unconverted 'byte[]' when this
+	 * condition exists.
+	 * @param assumeSupportedContentType set false to not assume the content type is
+	 * supported.
+	 * @since 2.2
+	 */
+	public void setAssumeSupportedContentType(boolean assumeSupportedContentType) {
+		this.assumeSupportedContentType = assumeSupportedContentType;
+	}
+
 	@Override
 	public Object fromMessage(Message message) throws MessageConversionException {
 		return fromMessage(message, null);
@@ -233,7 +248,8 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 		MessageProperties properties = message.getMessageProperties();
 		if (properties != null) {
 			String contentType = properties.getContentType();
-			if (contentType != null && contentType.contains(this.supportedContentType.getSubtype())) {
+			if ((this.assumeSupportedContentType && (contentType == null || contentType.equals(MessageProperties.DEFAULT_CONTENT_TYPE)))
+					|| (contentType != null && contentType.contains(this.supportedContentType.getSubtype()))) {
 				String encoding = properties.getContentEncoding();
 				if (encoding == null) {
 					encoding = getDefaultCharset();

@@ -189,8 +189,9 @@ public class Jackson2JsonMessageConverterTests {
 		byte[] bytes = "{\"name\" : \"foo\" }".getBytes();
 		MessageProperties messageProperties = new MessageProperties();
 		Message message = new Message(bytes, messageProperties);
-		Object foo = jsonConverterWithDefaultType.fromMessage(message);
-		assertThat(new String((byte[]) foo)).isEqualTo(new String(bytes));
+		this.jsonConverterWithDefaultType.setAssumeSupportedContentType(false);
+		Object foo = this.jsonConverterWithDefaultType.fromMessage(message);
+		assertThat(foo).isEqualTo(bytes);
 	}
 
 	@Test
@@ -278,6 +279,27 @@ public class Jackson2JsonMessageConverterTests {
 		assertThat(fromMessage).isInstanceOf(Sample.class);
 		assertThat(((Sample) fromMessage).getUsername()).isEqualTo("SomeUsername");
 		assertThat(((Sample) fromMessage).getName()).isEqualTo("SomeName");
+	}
+
+	@Test
+	public void testMissingContentType() {
+		byte[] bytes = "{\"name\" : \"foo\" }".getBytes();
+		MessageProperties messageProperties = new MessageProperties();
+		Message message = new Message(bytes, messageProperties);
+		Jackson2JsonMessageConverter j2Converter = new Jackson2JsonMessageConverter();
+		DefaultClassMapper classMapper = new DefaultClassMapper();
+		classMapper.setDefaultType(Foo.class);
+		j2Converter.setClassMapper(classMapper);
+		Object foo = j2Converter.fromMessage(message);
+		assertThat(foo).isInstanceOf(Foo.class);
+
+		messageProperties.setContentType(null);
+		foo = j2Converter.fromMessage(message);
+		assertThat(foo).isInstanceOf(Foo.class);
+
+		j2Converter.setAssumeSupportedContentType(false);
+		foo = j2Converter.fromMessage(message);
+		assertThat(foo).isSameAs(bytes);
 	}
 
 	public static class Foo {

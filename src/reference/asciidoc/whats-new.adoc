@@ -33,6 +33,12 @@ See <<choose-container>> for more information.
 Spring Data Projection interfaces are now supported by the `Jackson2JsonMessageConverter`.
 See <<data-projection>> for more information.
 
+The `Jackson2JsonMessageConverter` now assumes the content is JSON if there is no `contentType` property, or it is the default (`application/octet-string`).
+See <<Jackson2JsonMessageConverter-from-message>> for more information.
+
+Similarly. the `Jackson2XmlMessageConverter` now assumes the content is XML if there is no `contentType` property, or it is the default (`application/octet-string`).
+See <<jackson2xml>> for more information.
+
 ===== AMQP Logging Appenders Changes
 
 The Log4J and Logback `AmqpAppender` s now support a `verifyHostname` SSL option.
