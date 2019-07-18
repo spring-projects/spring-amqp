@@ -248,7 +248,8 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 		MessageProperties properties = message.getMessageProperties();
 		if (properties != null) {
 			String contentType = properties.getContentType();
-			if ((this.assumeSupportedContentType && (contentType == null || contentType.equals(MessageProperties.DEFAULT_CONTENT_TYPE)))
+			if ((this.assumeSupportedContentType // NOSONAR Boolean complexity
+					&& (contentType == null || contentType.equals(MessageProperties.DEFAULT_CONTENT_TYPE)))
 					|| (contentType != null && contentType.contains(this.supportedContentType.getSubtype()))) {
 				String encoding = properties.getContentEncoding();
 				if (encoding == null) {
@@ -323,7 +324,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 
 	@Override
 	protected Message createMessage(Object objectToConvert, MessageProperties messageProperties,
-				@Nullable Type genericType)
+			@Nullable Type genericType)
 			throws MessageConversionException {
 
 		byte[] bytes;
