@@ -36,6 +36,30 @@
 				  senderPoolSize="3" maxSenderRetries="5"
 				  addMdcAsHeaders="false">
 		</RabbitMQ>
+		<RabbitMQ name="sasl1"
+				  addresses="localhost:5672"
+				  applicationId="testAppId"
+				  useSsl="true"
+				  saslConfig="DefaultSaslConfig.PLAIN">
+		</RabbitMQ>
+		<RabbitMQ name="sasl2"
+				  addresses="localhost:5672"
+				  applicationId="testAppId"
+				  useSsl="true"
+				  saslConfig="DefaultSaslConfig.EXTERNAL">
+		</RabbitMQ>
+		<RabbitMQ name="sasl3"
+				  addresses="localhost:5672"
+				  applicationId="testAppId"
+				  useSsl="true"
+				  saslConfig="JDKSaslConfig">
+		</RabbitMQ>
+		<RabbitMQ name="sasl4"
+				  addresses="localhost:5672"
+				  applicationId="testAppId"
+				  useSsl="true"
+				  saslConfig="CRDemoSaslConfig">
+		</RabbitMQ>
 	</Appenders>
 	<Loggers>
 		<Logger name="foo" level="info">
@@ -46,6 +70,12 @@
 		</Logger>
 		<Logger name="bar" level="info">
 			<AppenderRef ref="rabbitmq_uri"/>
+		</Logger>
+		<Logger name="sasl" level="info">
+			<AppenderRef ref="sasl1"/>
+			<AppenderRef ref="sasl2"/>
+			<AppenderRef ref="sasl3"/>
+			<AppenderRef ref="sasl4"/>
 		</Logger>
 		<Root>
 			<AppenderRef ref="STDOUT"/>

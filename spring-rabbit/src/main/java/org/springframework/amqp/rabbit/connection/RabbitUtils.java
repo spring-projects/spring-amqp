@@ -30,8 +30,12 @@ import org.springframework.util.Assert;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.DefaultSaslConfig;
+import com.rabbitmq.client.JDKSaslConfig;
 import com.rabbitmq.client.Method;
+import com.rabbitmq.client.SaslConfig;
 import com.rabbitmq.client.ShutdownSignalException;
+import com.rabbitmq.client.impl.CRDemoMechanism;
 import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
 
 /**
@@ -367,6 +371,36 @@ public abstract class RabbitUtils {
 			// NOSONAR
 		}
 		return -1;
+	}
+
+	/**
+	 * Convert a String value to a {@link SaslConfig}.
+	 * Valid string values:
+	 * <ul>
+	 * <li>{@code DefaultSaslConfig.PLAIN}</li>
+	 * <li>{@code DefaultSaslConfig.EXTERNAL}</li>
+	 * <li>{@code JDKSaslConfig}</li>
+	 * <li>{@code CRDemoSaslConfig}</li>
+	 * </ul>
+	 * @param saslConfig the string value.
+	 * @param connectionFactory the connection factory to get the name, pw, host.
+	 * @return the saslConfig.
+	 */
+	public static SaslConfig stringToSaslConfig(String saslConfig,
+			com.rabbitmq.client.ConnectionFactory connectionFactory) {
+
+		switch (saslConfig) {
+		case "DefaultSaslConfig.PLAIN":
+			return DefaultSaslConfig.PLAIN;
+		case "DefaultSaslConfig.EXTERNAL":
+			return DefaultSaslConfig.EXTERNAL;
+		case "JDKSaslConfig":
+			return new JDKSaslConfig(connectionFactory);
+		case "CRDemoSaslConfig":
+			return new CRDemoMechanism.CRDemoSaslConfig();
+		default:
+			throw new IllegalStateException("Unrecognized SaslConfig: " + saslConfig);
+		}
 	}
 
 }

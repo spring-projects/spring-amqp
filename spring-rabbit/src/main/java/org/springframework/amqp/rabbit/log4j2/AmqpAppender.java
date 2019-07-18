@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
@@ -65,15 +64,18 @@ import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryConfigurationUtils;
 import org.springframework.amqp.rabbit.connection.RabbitConnectionFactoryBean;
+import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.core.DeclareExchangeConnectionListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.retry.RetryPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.ConnectionFactory;
@@ -166,6 +168,7 @@ public class AmqpAppender extends AbstractAppender {
 			@PluginAttribute("trustStore") String trustStore,
 			@PluginAttribute("trustStorePassphrase") String trustStorePassphrase,
 			@PluginAttribute("trustStoreType") String trustStoreType,
+			@PluginAttribute("saslConfig") String saslConfig,
 			@PluginAttribute("senderPoolSize") int senderPoolSize,
 			@PluginAttribute("maxSenderRetries") int maxSenderRetries,
 			@PluginAttribute("applicationId") String applicationId,
@@ -195,41 +198,43 @@ public class AmqpAppender extends AbstractAppender {
 			theLayout = PatternLayout.createDefaultLayout();
 		}
 		AmqpManager manager = new AmqpManager(configuration.getLoggerContext(), name);
-		manager.uri = uri;
-		manager.host = host;
-		Optional.ofNullable(port).ifPresent(v -> manager.port = Integers.parseInt(v));
-		manager.addresses = addresses;
-		manager.username = user;
-		manager.password = password;
-		manager.virtualHost = virtualHost;
-		manager.useSsl = useSsl;
-		manager.verifyHostname = verifyHostname;
-		manager.sslAlgorithm = sslAlgorithm;
-		manager.sslPropertiesLocation = sslPropertiesLocation;
-		manager.keyStore = keyStore;
-		manager.keyStorePassphrase = keyStorePassphrase;
-		manager.keyStoreType = keyStoreType;
-		manager.trustStore = trustStore;
-		manager.trustStorePassphrase = trustStorePassphrase;
-		manager.trustStoreType = trustStoreType;
-		manager.senderPoolSize = senderPoolSize;
-		manager.maxSenderRetries = maxSenderRetries;
-		manager.applicationId = applicationId;
-		manager.routingKeyPattern = routingKeyPattern;
-		manager.generateId = generateId;
-		manager.deliveryMode = MessageDeliveryMode.valueOf(deliveryMode);
-		manager.exchangeName = exchange;
-		manager.exchangeType = exchangeType;
-		manager.declareExchange = declareExchange;
-		manager.durable = durable;
-		manager.autoDelete = autoDelete;
-		manager.contentType = contentType;
-		manager.contentEncoding = contentEncoding;
-		manager.connectionName = connectionName;
-		manager.clientConnectionProperties = clientConnectionProperties;
-		manager.charset = charset;
-		manager.async = async;
-		manager.addMdcAsHeaders = addMdcAsHeaders;
+		JavaUtils.INSTANCE
+			.acceptIfNotNull(uri, value -> manager.uri = value)
+			.acceptIfNotNull(host, value -> manager.host = value)
+			.acceptIfNotNull(port, value -> manager.port = Integers.parseInt(value))
+			.acceptIfNotNull(addresses, value -> manager.addresses = value)
+			.acceptIfNotNull(user, value -> manager.username = value)
+			.acceptIfNotNull(password, value -> manager.password = value)
+			.acceptIfNotNull(virtualHost, value -> manager.virtualHost = value)
+			.acceptIfNotNull(useSsl, value -> manager.useSsl = value)
+			.acceptIfNotNull(verifyHostname, value -> manager.verifyHostname = value)
+			.acceptIfNotNull(sslAlgorithm, value -> manager.sslAlgorithm = value)
+			.acceptIfNotNull(sslPropertiesLocation, value -> manager.sslPropertiesLocation = value)
+			.acceptIfNotNull(keyStore, value -> manager.keyStore = value)
+			.acceptIfNotNull(keyStorePassphrase, value -> manager.keyStorePassphrase = value)
+			.acceptIfNotNull(keyStoreType, value -> manager.keyStoreType = value)
+			.acceptIfNotNull(trustStore, value -> manager.trustStore = value)
+			.acceptIfNotNull(trustStorePassphrase, value -> manager.trustStorePassphrase = value)
+			.acceptIfNotNull(trustStoreType, value -> manager.trustStoreType = value)
+			.acceptIfNotNull(saslConfig, value -> manager.saslConfig = value)
+			.acceptIfNotNull(senderPoolSize, value -> manager.senderPoolSize = value)
+			.acceptIfNotNull(maxSenderRetries, value -> manager.maxSenderRetries = value)
+			.acceptIfNotNull(applicationId, value -> manager.applicationId = value)
+			.acceptIfNotNull(routingKeyPattern, value -> manager.routingKeyPattern = value)
+			.acceptIfNotNull(generateId, value -> manager.generateId = value)
+			.acceptIfNotNull(deliveryMode, value -> manager.deliveryMode = MessageDeliveryMode.valueOf(deliveryMode))
+			.acceptIfNotNull(exchange, value -> manager.exchangeName = value)
+			.acceptIfNotNull(exchangeType, value -> manager.exchangeType = value)
+			.acceptIfNotNull(declareExchange, value -> manager.declareExchange = value)
+			.acceptIfNotNull(durable, value -> manager.durable = value)
+			.acceptIfNotNull(autoDelete, value -> manager.autoDelete = value)
+			.acceptIfNotNull(contentType, value -> manager.contentType = value)
+			.acceptIfNotNull(contentEncoding, value -> manager.contentEncoding = value)
+			.acceptIfNotNull(connectionName, value -> manager.connectionName = value)
+			.acceptIfNotNull(clientConnectionProperties, value -> manager.clientConnectionProperties = value)
+			.acceptIfNotNull(charset, value -> manager.charset = value)
+			.acceptIfNotNull(async, value -> manager.async = value)
+			.acceptIfNotNull(addMdcAsHeaders, value -> manager.addMdcAsHeaders = value);
 
 		BlockingQueue<Event> eventQueue;
 		if (blockingQueueFactory == null) {
@@ -293,11 +298,10 @@ public class AmqpAppender extends AbstractAppender {
 		Level level = logEvent.getLevel();
 
 		MessageProperties amqpProps = new MessageProperties();
-		amqpProps.setDeliveryMode(this.manager.deliveryMode);
-		amqpProps.setContentType(this.manager.contentType);
-		if (null != this.manager.contentEncoding) {
-			amqpProps.setContentEncoding(this.manager.contentEncoding);
-		}
+		JavaUtils.INSTANCE
+			.acceptIfNotNull(this.manager.deliveryMode, amqpProps::setDeliveryMode)
+			.acceptIfNotNull(this.manager.contentType, amqpProps::setContentType)
+			.acceptIfNotNull(this.manager.contentEncoding, amqpProps::setContentEncoding);
 		amqpProps.setHeader(CATEGORY_NAME, name);
 		amqpProps.setHeader(THREAD_NAME, logEvent.getThreadName());
 		amqpProps.setHeader(CATEGORY_LEVEL, level.toString());
@@ -579,6 +583,12 @@ public class AmqpAppender extends AbstractAppender {
 		private String trustStoreType = "JKS";
 
 		/**
+		 * SaslConfig.
+		 * @see RabbitUtils#stringToSaslConfig(String, ConnectionFactory)
+		 */
+		public String saslConfig;
+
+		/**
 		 * Default content-type of log messages.
 		 */
 		private String contentType = "text/plain";
@@ -644,6 +654,7 @@ public class AmqpAppender extends AbstractAppender {
 		private boolean activateOptions() {
 			ConnectionFactory rabbitConnectionFactory = createRabbitConnectionFactory();
 			if (rabbitConnectionFactory != null) {
+				Assert.state(this.applicationId != null, "applicationId is required");
 				this.routingKeyLayout = PatternLayout.newBuilder()
 						.withPattern(this.routingKeyPattern.replaceAll("%X\\{applicationId}", this.applicationId))
 						.withCharset(Charset.forName(this.charset))
@@ -721,6 +732,16 @@ public class AmqpAppender extends AbstractAppender {
 					factoryBean.setTrustStore(this.trustStore);
 					factoryBean.setTrustStorePassphrase(this.trustStorePassphrase);
 					factoryBean.setTrustStoreType(this.trustStoreType);
+					JavaUtils.INSTANCE
+							.acceptIfNotNull(this.saslConfig, config -> {
+								try {
+									factoryBean.setSaslConfig(RabbitUtils.stringToSaslConfig(config,
+											factoryBean.getRabbitConnectionFactory()));
+								}
+								catch (Exception e) {
+									throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+								}
+							});
 				}
 			}
 		}

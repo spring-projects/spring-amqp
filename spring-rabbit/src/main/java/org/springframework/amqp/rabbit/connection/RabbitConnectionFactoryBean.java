@@ -658,6 +658,16 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		this.trustStoreAlgorithm = trustStoreAlgorithm;
 	}
 
+	/**
+	 * Access the connection factory to set any other properties not supported by
+	 * this factory bean.
+	 * @return the connection factory.
+	 * @since 1.7.14
+	 */
+	public ConnectionFactory getRabbitConnectionFactory() {
+		return this.connectionFactory;
+	}
+
 	@Override
 	public void afterPropertiesSet() {
 		try {
