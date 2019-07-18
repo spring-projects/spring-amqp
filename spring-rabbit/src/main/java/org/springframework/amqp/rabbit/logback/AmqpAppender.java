@@ -45,9 +45,11 @@ import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryConfigurationUtils;
 import org.springframework.amqp.rabbit.connection.RabbitConnectionFactoryBean;
+import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.core.DeclareExchangeConnectionListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -62,6 +64,7 @@ import ch.qos.logback.core.AppenderBase;
 import ch.qos.logback.core.Layout;
 import ch.qos.logback.core.encoder.Encoder;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.SaslConfig;
 
 /**
  * A Logback appender that publishes logging events to an AMQP Exchange.
@@ -273,6 +276,12 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 */
 	private String trustStoreType = "JKS";
 
+	/**
+	 * SaslConfig.
+	 * @see RabbitUtils#stringToSaslConfig(String, ConnectionFactory)
+	 */
+	public String saslConfig;
+
 	private boolean verifyHostname = true;
 
 	/**
@@ -470,6 +479,20 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 	public void setTrustStoreType(String trustStoreType) {
 		this.trustStoreType = trustStoreType;
+	}
+
+	public String getSaslConfig() {
+		return this.saslConfig;
+	}
+
+	/**
+	 * Set the {@link SaslConfig}.
+	 * @param saslConfig the saslConfig to set
+	 * @since 1.7.14
+	 * @see RabbitUtils#stringToSaslConfig(String, ConnectionFactory)
+	 */
+	public void setSaslConfig(String saslConfig) {
+		this.saslConfig = saslConfig;
 	}
 
 	public String getExchangeName() {
@@ -727,6 +750,16 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 				factoryBean.setTrustStore(this.trustStore);
 				factoryBean.setTrustStorePassphrase(this.trustStorePassphrase);
 				factoryBean.setTrustStoreType(this.trustStoreType);
+				JavaUtils.INSTANCE
+				.acceptIfNotNull(this.saslConfig, config -> {
+					try {
+						factoryBean.setSaslConfig(RabbitUtils.stringToSaslConfig(config,
+								factoryBean.getRabbitConnectionFactory()));
+					}
+					catch (Exception e) {
+						throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+					}
+				});
 			}
 		}
 		if (this.layout == null && this.encoder == null) {

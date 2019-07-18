@@ -61,6 +61,11 @@ import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.DefaultSaslConfig;
+import com.rabbitmq.client.JDKSaslConfig;
+import com.rabbitmq.client.impl.CRDemoMechanism;
+
 /**
  * @author Gary Russell
  * @author Stephen Oakey
@@ -184,6 +189,33 @@ public class AmqpAppenderTests {
 		assertTrue(TestUtils.getPropertyValue(manager, "addMdcAsHeaders", Boolean.class));
 
 		assertThat(events, instanceOf(LinkedBlockingQueue.class));
+	}
+
+	@Test
+	public void testSaslConfig() {
+		Logger logger = LogManager.getLogger("sasl");
+		AmqpAppender appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
+				Map.class).get("sasl1");
+		assertThat(TestUtils.getPropertyValue(appender, "manager.connectionFactory.rabbitConnectionFactory",
+				ConnectionFactory.class).getSaslConfig())
+			.isInstanceOf(DefaultSaslConfig.class)
+			.hasFieldOrPropertyWithValue("mechanism", "PLAIN");
+		appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
+				Map.class).get("sasl2");
+		assertThat(TestUtils.getPropertyValue(appender, "manager.connectionFactory.rabbitConnectionFactory",
+				ConnectionFactory.class).getSaslConfig())
+			.isInstanceOf(DefaultSaslConfig.class)
+			.hasFieldOrPropertyWithValue("mechanism", "EXTERNAL");
+		appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
+				Map.class).get("sasl3");
+		assertThat(TestUtils.getPropertyValue(appender, "manager.connectionFactory.rabbitConnectionFactory",
+				ConnectionFactory.class).getSaslConfig())
+			.isInstanceOf(JDKSaslConfig.class);
+		appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
+				Map.class).get("sasl4");
+		assertThat(TestUtils.getPropertyValue(appender, "manager.connectionFactory.rabbitConnectionFactory",
+				ConnectionFactory.class).getSaslConfig())
+			.isInstanceOf(CRDemoMechanism.CRDemoSaslConfig.class);
 	}
 
 	@Test

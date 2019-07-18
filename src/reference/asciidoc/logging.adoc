@@ -111,6 +111,10 @@ See <<_rabbitconnectionfactorybean_and_configuring_ssl>>
 | JKS
 | The truststore type.
 
+| saslConfig
+| null (RabbitMQ client default applies)
+| The `saslConfig` - see the javadoc for `RabbitUtils.stringToSaslConfig` for valid values.
+
 | contentType
 | text/plain
 | `content-type` property of log messages.
