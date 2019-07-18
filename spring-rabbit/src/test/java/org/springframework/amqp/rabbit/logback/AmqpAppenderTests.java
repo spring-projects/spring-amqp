@@ -16,8 +16,11 @@
 
 package org.springframework.amqp.rabbit.logback;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -35,6 +38,7 @@ import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.UncategorizedAmqpException;
 import org.springframework.amqp.rabbit.connection.RabbitConnectionFactoryBean;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -47,6 +51,7 @@ import com.rabbitmq.client.impl.CRDemoMechanism;
  *
  * @author Stephen Oakey
  * @author Artem Bilan
+ * @author Gary Russell
  *
  * @since 2.0
  */
@@ -214,30 +219,34 @@ public class AmqpAppenderTests {
 		verify(bean).setUseSSL(eq(true));
 		ArgumentCaptor<SaslConfig> captor = ArgumentCaptor.forClass(SaslConfig.class);
 		verify(bean).setSaslConfig(captor.capture());
-		assertThat(captor.getValue())
-				.isInstanceOf(DefaultSaslConfig.class)
-				.hasFieldOrPropertyWithValue("mechanism", "PLAIN");
+		SaslConfig saslConfig = captor.getValue();
+		assertThat(saslConfig, instanceOf(DefaultSaslConfig.class));
+		assertEquals("PLAIN", TestUtils.getPropertyValue(saslConfig, "mechanism"));
 		appender.setSaslConfig("DefaultSaslConfig.EXTERNAL");
 		appender.configureRabbitConnectionFactory(bean);
 		verify(bean, times(2)).setSaslConfig(captor.capture());
-		assertThat(captor.getValue())
-				.isInstanceOf(DefaultSaslConfig.class)
-				.hasFieldOrPropertyWithValue("mechanism", "EXTERNAL");
+		saslConfig = captor.getValue();
+		assertThat(saslConfig, instanceOf(DefaultSaslConfig.class));
+		assertEquals("EXTERNAL", TestUtils.getPropertyValue(saslConfig, "mechanism"));
 		appender.setSaslConfig("JDKSaslConfig");
 		appender.configureRabbitConnectionFactory(bean);
 		verify(bean, times(3)).setSaslConfig(captor.capture());
-		assertThat(captor.getValue())
-				.isInstanceOf(JDKSaslConfig.class);
+		assertThat(captor.getValue(), instanceOf(JDKSaslConfig.class));
 		appender.setSaslConfig("CRDemoSaslConfig");
 		appender.configureRabbitConnectionFactory(bean);
 		verify(bean, times(4)).setSaslConfig(captor.capture());
-		assertThat(captor.getValue())
-				.isInstanceOf(CRDemoMechanism.CRDemoSaslConfig.class);
+		assertThat(captor.getValue(), instanceOf(CRDemoMechanism.CRDemoSaslConfig.class));
 		appender.setSaslConfig("junk");
-		assertThatThrownBy(() -> appender.configureRabbitConnectionFactory(bean))
-			.isInstanceOf(UncategorizedAmqpException.class)
-			.hasCauseInstanceOf(IllegalStateException.class)
-			.withFailMessage("Unrecognized SaslConfig: junk");
+
+
+		try {
+			appender.configureRabbitConnectionFactory(bean);
+		}
+		catch (Exception e) {
+			assertThat(e, instanceOf(UncategorizedAmqpException.class));
+			assertThat(e.getCause(), instanceOf(IllegalStateException.class));
+			assertThat(e.getMessage(), containsString("Unrecognized SaslConfig: junk"));
+		}
 	}
 
 
