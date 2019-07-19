@@ -586,7 +586,7 @@ public class AmqpAppender extends AbstractAppender {
 		 * SaslConfig.
 		 * @see RabbitUtils#stringToSaslConfig(String, ConnectionFactory)
 		 */
-		public String saslConfig;
+		private String saslConfig;
 
 		/**
 		 * Default content-type of log messages.

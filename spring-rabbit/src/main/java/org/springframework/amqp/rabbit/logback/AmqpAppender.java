@@ -64,7 +64,6 @@ import ch.qos.logback.core.AppenderBase;
 import ch.qos.logback.core.Layout;
 import ch.qos.logback.core.encoder.Encoder;
 import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.SaslConfig;
 
 /**
  * A Logback appender that publishes logging events to an AMQP Exchange.
@@ -280,7 +279,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 * SaslConfig.
 	 * @see RabbitUtils#stringToSaslConfig(String, ConnectionFactory)
 	 */
-	public String saslConfig;
+	private String saslConfig;
 
 	private boolean verifyHostname = true;
 
@@ -486,7 +485,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	/**
-	 * Set the {@link SaslConfig}.
+	 * Set the {@link com.rabbitmq.client.SaslConfig}.
 	 * @param saslConfig the saslConfig to set
 	 * @since 1.7.14
 	 * @see RabbitUtils#stringToSaslConfig(String, ConnectionFactory)
@@ -751,15 +750,15 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 				factoryBean.setTrustStorePassphrase(this.trustStorePassphrase);
 				factoryBean.setTrustStoreType(this.trustStoreType);
 				JavaUtils.INSTANCE
-				.acceptIfNotNull(this.saslConfig, config -> {
-					try {
-						factoryBean.setSaslConfig(RabbitUtils.stringToSaslConfig(config,
-								factoryBean.getRabbitConnectionFactory()));
-					}
-					catch (Exception e) {
-						throw RabbitExceptionTranslator.convertRabbitAccessException(e);
-					}
-				});
+						.acceptIfNotNull(this.saslConfig, config -> {
+							try {
+								factoryBean.setSaslConfig(RabbitUtils.stringToSaslConfig(config,
+										factoryBean.getRabbitConnectionFactory()));
+							}
+							catch (Exception e) {
+								throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+							}
+						});
 			}
 		}
 		if (this.layout == null && this.encoder == null) {
