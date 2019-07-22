@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbit.test;
 import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.type.AnnotationMetadata;
 
@@ -32,7 +31,6 @@ import org.springframework.core.type.AnnotationMetadata;
  * @since 1.6
  *
  */
-@Configuration
 public class RabbitListenerTestBootstrap implements ImportBeanDefinitionRegistrar {
 
 	@Override
