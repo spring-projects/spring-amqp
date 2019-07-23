@@ -39,7 +39,8 @@ public final class ContainerUtils {
 	/**
 	 * Determine whether a message should be requeued; returns true if the throwable is a
 	 * {@link MessageRejectedWhileStoppingException} or defaultRequeueRejected is true and
-	 * there is not an {@link AmqpRejectAndDontRequeueException} in the cause chain.
+	 * there is not an {@link AmqpRejectAndDontRequeueException} in the cause chain or if
+	 * there is an {@link ImmediateRequeueAmqpException} in the cause chain.
 	 * @param defaultRequeueRejected the default requeue rejected.
 	 * @param throwable the throwable.
 	 * @param logger the logger to use for debug.
@@ -47,12 +48,16 @@ public final class ContainerUtils {
 	 */
 	public static boolean shouldRequeue(boolean defaultRequeueRejected, Throwable throwable, Log logger) {
 		boolean shouldRequeue = defaultRequeueRejected ||
-				throwable instanceof MessageRejectedWhileStoppingException ||
-				throwable instanceof ImmediateRequeueAmqpException;
+				throwable instanceof MessageRejectedWhileStoppingException;
 		Throwable t = throwable;
-		while (shouldRequeue && t != null) {
+		while (t != null) {
 			if (t instanceof AmqpRejectAndDontRequeueException) {
 				shouldRequeue = false;
+				break;
+			}
+			else if (t instanceof ImmediateRequeueAmqpException) {
+				shouldRequeue = true;
+				break;
 			}
 			t = t.getCause();
 		}
