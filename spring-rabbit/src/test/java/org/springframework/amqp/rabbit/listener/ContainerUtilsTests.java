@@ -24,10 +24,13 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.ImmediateRequeueAmqpException;
-import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.1.8
  *
  */
@@ -36,17 +39,19 @@ public class ContainerUtilsTests {
 	@Test
 	void testMustRequeue() {
 		assertThat(ContainerUtils.shouldRequeue(false,
-				new ListenerExecutionFailedException("", new ImmediateRequeueAmqpException("requeue")),
+				new ListenerExecutionFailedException("", new ImmediateRequeueAmqpException("requeue"),
+						mock(Message.class)),
 				mock(Log.class)))
-			.isTrue();
+				.isTrue();
 	}
 
 	@Test
 	void testMustNotRequeue() {
 		assertThat(ContainerUtils.shouldRequeue(true,
-				new ListenerExecutionFailedException("", new AmqpRejectAndDontRequeueException("no requeue")),
+				new ListenerExecutionFailedException("", new AmqpRejectAndDontRequeueException("no requeue"),
+						mock(Message.class)),
 				mock(Log.class)))
-			.isFalse();
+				.isFalse();
 	}
 
 }
