@@ -66,6 +66,10 @@ The `CachingConnectionFactory` has a new property `shuffleAddresses`.
 When providing a list of broker node addresses, the list will be shuffled before creating a connection so that the order in which the connections are attempted is random.
 See <<cluster>> for more information.
 
+When using Publisher confirms and returns, the callbacks are now invoked on the connection factory's `executor`.
+This avoids a possible deadlock in the `amqp-clients` library if you perform rabbit operations from within the callback.
+See <<template-confirms>> for more information.
+
 ===== Other Changes
 
 The `Declarables` object (for declaring multiple queues, exchanges, bindings) now has a filtered getter for each type.

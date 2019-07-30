@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
@@ -78,8 +79,11 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 		final CountDownLatch returnLatch = new CountDownLatch(1);
 		final CountDownLatch confirmLatch = new CountDownLatch(1);
 		final AtomicInteger cacheCount = new AtomicInteger();
+		final AtomicBoolean returnCalledFirst = new AtomicBoolean();
 		template.setConfirmCallback((cd, a, c) -> {
+			CachingConnectionFactory lcf = cf;
 			cacheCount.set(TestUtils.getPropertyValue(cf, "cachedChannelsNonTransactional", List.class).size());
+			returnCalledFirst.set(returnLatch.getCount() == 0);
 			confirmLatch.countDown();
 		});
 		template.setReturnCallback((m, r, rt, e, rk) -> {
@@ -97,6 +101,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 		assertThat(returnLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(confirmLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(cacheCount.get()).isEqualTo(1);
+		assertThat(returnCalledFirst.get()).isTrue();
 		cf.destroy();
 	}
 

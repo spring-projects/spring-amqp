@@ -157,9 +157,11 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		final CountDownLatch latch = new CountDownLatch(10000);
 		final AtomicInteger acks = new AtomicInteger();
 		final AtomicReference<CorrelationData> confirmCorrelation = new AtomicReference<CorrelationData>();
+		AtomicReference<String> callbackThreadName = new AtomicReference<>();
 		this.templateWithConfirmsEnabled.setConfirmCallback((correlationData, ack, cause) -> {
 			acks.incrementAndGet();
 			confirmCorrelation.set(correlationData);
+			callbackThreadName.set(Thread.currentThread().getName());
 			latch.countDown();
 		});
 		this.templateWithConfirmsEnabled.setCorrelationDataPostProcessor((m, c) -> new CorrelationData("abc"));
@@ -213,6 +215,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		new DirectFieldAccessor(connectionFactoryWithConfirmsEnabled).setPropertyValue("logger", logger);
 		cleanUp();
 		verify(logger, never()).error(any());
+		assertThat(callbackThreadName.get()).startsWith("spring-rabbit-deferred-pool");
 	}
 
 	@Test
@@ -848,23 +851,29 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertThat(cd1.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
 		CorrelationData cd2 = new CorrelationData();
 		this.templateWithConfirmsEnabled.convertAndSend("", queue.getName(), "bar", cd2);
-		// TODO: Uncomment when travis updates to rabbitmq 3.7
-//		assertFalse(cd2.getFuture().get(10, TimeUnit.SECONDS).isAck());
+		assertThat(cd2.getFuture().get(10, TimeUnit.SECONDS).isAck()).isFalse();
 		CorrelationData cd3 = new CorrelationData();
 		this.templateWithConfirmsEnabled.convertAndSend("NO_EXCHANGE_HERE", queue.getName(), "foo", cd3);
 		assertThat(cd3.getFuture().get(10, TimeUnit.SECONDS).isAck()).isFalse();
 		assertThat(cd3.getFuture().get().getReason()).contains("NOT_FOUND");
 		CorrelationData cd4 = new CorrelationData("42");
 		AtomicBoolean resent = new AtomicBoolean();
+		AtomicReference<String> callbackThreadName = new AtomicReference<>();
+		CountDownLatch callbackLatch = new CountDownLatch(1);
 		this.templateWithConfirmsAndReturnsEnabled.setReturnCallback((m, r, rt, e, rk) -> {
-			this.templateWithConfirmsEnabled.send(ROUTE, m);
+			this.templateWithConfirmsAndReturnsEnabled.send(ROUTE, m);
+			callbackThreadName.set(Thread.currentThread().getName());
 			resent.set(true);
+			callbackLatch.countDown();
 		});
 		this.templateWithConfirmsAndReturnsEnabled.convertAndSend("", "NO_QUEUE_HERE", "foo", cd4);
 		assertThat(cd4.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
+		assertThat(callbackLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(cd4.getReturnedMessage()).isNotNull();
 		assertThat(resent.get()).isTrue();
+		assertThat(callbackThreadName.get()).startsWith("spring-rabbit-deferred-pool");
 		admin.deleteQueue(queue.getName());
+
 	}
 
 }
