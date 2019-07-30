@@ -32,7 +32,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
@@ -92,8 +94,9 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
 public class PublisherCallbackChannelImpl
 		implements PublisherCallbackChannel, ConfirmListener, ReturnListener, ShutdownListener {
 
-	private static final MessagePropertiesConverter converter // NOSONAR - lower case
-		= new DefaultMessagePropertiesConverter();
+	private static final MessagePropertiesConverter CONVERTER  = new DefaultMessagePropertiesConverter();
+
+	private static final long RETURN_CALLBACK_TIMEOUT = 60;
 
 	private final Log logger = LogFactory.getLog(this.getClass());
 
@@ -109,7 +112,11 @@ public class PublisherCallbackChannelImpl
 
 	private final ExecutorService executor;
 
+	private final CountDownLatch returnLatch = new CountDownLatch(1);
+
 	private volatile java.util.function.Consumer<Channel> afterAckCallback;
+
+	private boolean hasReturned;
 
 	/**
 	 * Create a {@link PublisherCallbackChannelImpl} instance based on the provided
@@ -931,17 +938,6 @@ public class PublisherCallbackChannelImpl
 		catch (Exception e) {
 			this.logger.error("Failed to process publisher confirm", e);
 		}
-		finally {
-			try {
-				if (this.afterAckCallback != null && getPendingConfirmsCount() == 0) {
-					this.afterAckCallback.accept(this);
-					this.afterAckCallback = null;
-				}
-			}
-			catch (Exception e) {
-				this.logger.error("Failed to invoke afterAckCallback", e);
-			}
-		}
 	}
 
 	private void doProcessAck(long seq, boolean ack, boolean multiple, boolean remove) {
@@ -1017,17 +1013,34 @@ public class PublisherCallbackChannelImpl
 	}
 
 	private void doHandleConfirm(boolean ack, Listener listener, PendingConfirm pendingConfirm) {
-		try {
-			if (listener.isConfirmListener()) {
-				if (this.logger.isDebugEnabled()) {
-					this.logger.debug("Sending confirm " + pendingConfirm);
+		this.executor.execute(() -> {
+			try {
+				if (listener.isConfirmListener()) {
+					if (this.hasReturned && !this.returnLatch.await(RETURN_CALLBACK_TIMEOUT, TimeUnit.SECONDS)) {
+						this.logger
+								.error("Return callback failed to execute in " + RETURN_CALLBACK_TIMEOUT + " seconds");
+					}
+					if (this.logger.isDebugEnabled()) {
+						this.logger.debug("Sending confirm " + pendingConfirm);
+					}
+					listener.handleConfirm(pendingConfirm, ack);
 				}
-				listener.handleConfirm(pendingConfirm, ack);
 			}
-		}
-		catch (Exception e) {
-			this.logger.error("Exception delivering confirm", e);
-		}
+			catch (Exception e) {
+				this.logger.error("Exception delivering confirm", e);
+			}
+			finally {
+				try {
+					if (this.afterAckCallback != null && getPendingConfirmsCount() == 0) {
+						this.afterAckCallback.accept(this);
+						this.afterAckCallback = null;
+					}
+				}
+				catch (Exception e) {
+					this.logger.error("Failed to invoke afterAckCallback", e);
+				}
+			}
+		});
 	}
 
 	@Override
@@ -1058,7 +1071,7 @@ public class PublisherCallbackChannelImpl
 		if (returnCorrelation != null) {
 			PendingConfirm confirm = this.pendingReturns.remove(returnCorrelation.toString());
 			if (confirm != null) {
-				MessageProperties messageProperties = converter.toMessageProperties(properties,
+				MessageProperties messageProperties = CONVERTER.toMessageProperties(properties,
 						new Envelope(0L, false, exchange, routingKey), StandardCharsets.UTF_8.name());
 				if (confirm.getCorrelationData() != null) {
 					confirm.getCorrelationData().setReturnedMessage(new Message(body, messageProperties)); // NOSONAR never null
@@ -1083,12 +1096,19 @@ public class PublisherCallbackChannelImpl
 			}
 		}
 		else {
-			try {
-				listener.handleReturn(replyCode, replyText, exchange, routingKey, properties, body);
-			}
-			catch (Exception e) {
-				this.logger.error("Exception delivering returned message ", e);
-			}
+			this.hasReturned = true;
+			Listener listenerToInvoke = listener;
+			this.executor.execute(() -> {
+				try {
+					listenerToInvoke.handleReturn(replyCode, replyText, exchange, routingKey, properties, body);
+				}
+				catch (Exception e) {
+					this.logger.error("Exception delivering returned message ", e);
+				}
+				finally {
+					this.returnLatch.countDown();
+				}
+			});
 		}
 	}
 
