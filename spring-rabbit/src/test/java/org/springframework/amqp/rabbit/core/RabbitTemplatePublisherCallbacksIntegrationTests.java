@@ -538,7 +538,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		});
 		final RabbitTemplate template2 = new RabbitTemplate(ccf);
 
-		final CountDownLatch latch2 = new CountDownLatch(1);
+		final CountDownLatch latch2 = new CountDownLatch(2);
 		template2.setConfirmCallback((correlationData, ack, cause) -> {
 			if (ack) {
 				confirms.add(correlationData.getId() + "2");
@@ -601,8 +601,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 				delayAckProcessingLatch.await(2, TimeUnit.SECONDS);
 				// only delay first time through
 				delayAckProcessingLatch.countDown();
-				waitForAll3AcksLatch.countDown();
 				acks.incrementAndGet();
+				waitForAll3AcksLatch.countDown();
 			}
 			catch (InterruptedException e) {
 				e.printStackTrace();
