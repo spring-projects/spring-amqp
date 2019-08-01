@@ -32,6 +32,7 @@ import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.rabbit.listener.ContainerUtils;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
@@ -114,6 +115,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 
 	private boolean isManualAck;
 
+	private boolean defaultRequeueRejected = true;
 
 	/**
 	 * Set the routing key to use when sending response messages.
@@ -249,6 +251,16 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 		return this.messageConverter;
 	}
 
+	/**
+	 * Set to the value of this listener's container equivalent property. Used when
+	 * rejecting from an async listener.
+	 * @param defaultRequeueRejected false to not requeue.
+	 * @since 2.1.8
+	 */
+	public void setDefaultRequeueRejected(boolean defaultRequeueRejected) {
+		this.defaultRequeueRejected = defaultRequeueRejected;
+	}
+
 	@Override
 	public void containerAckMode(AcknowledgeMode mode) {
 		this.isManualAck = AcknowledgeMode.MANUAL.equals(mode);
@@ -380,7 +392,8 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	private void asyncFailure(Message request, Channel channel, Throwable t) {
 		this.logger.error("Future or Mono was completed with an exception for " + request, t);
 		try {
-			channel.basicNack(request.getMessageProperties().getDeliveryTag(), false, true);
+			channel.basicNack(request.getMessageProperties().getDeliveryTag(), false,
+					ContainerUtils.shouldRequeue(this.defaultRequeueRejected, t, this.logger));
 		}
 		catch (IOException e) {
 			this.logger.error("Failed to nack message", e);

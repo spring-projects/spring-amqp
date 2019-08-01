@@ -20,7 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,6 +31,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
+import org.springframework.amqp.ImmediateRequeueAmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
@@ -89,6 +93,15 @@ public class AsyncListenerTests {
 	private Queue queue4;
 
 	@Autowired
+	private Queue queue5;
+
+	@Autowired
+	private Queue queue6;
+
+	@Autowired
+	private Queue queue7;
+
+	@Autowired
 	private Listener listener;
 
 	@Test
@@ -106,6 +119,19 @@ public class AsyncListenerTests {
 		assertThat(this.config.contentTypeId).isEqualTo("java.lang.String");
 		this.rabbitTemplate.convertAndSend(this.queue4.getName(), "foo");
 		assertThat(listener.latch4.await(10, TimeUnit.SECONDS));
+	}
+
+	@Test
+	public void testRouteToDLQ() throws InterruptedException {
+		this.rabbitTemplate.convertAndSend(this.queue5.getName(), "foo");
+		assertThat(this.listener.latch5.await(10, TimeUnit.SECONDS)).isTrue();
+		this.rabbitTemplate.convertAndSend(this.queue6.getName(), "foo");
+		assertThat(this.listener.latch6.await(10, TimeUnit.SECONDS)).isTrue();
+	}
+
+	@Test
+	public void testOverrideDontRequeue() throws Exception {
+		assertThat(this.rabbitTemplate.convertSendAndReceive(this.queue7.getName(), "foo")).isEqualTo("listen7");
 	}
 
 	@Configuration
@@ -128,6 +154,17 @@ public class AsyncListenerTests {
 			factory.setMismatchedQueuesFatal(true);
 			factory.setAcknowledgeMode(AcknowledgeMode.MANUAL);
 			factory.setMessageConverter(converter());
+			return factory;
+		}
+
+		@Bean
+		public SimpleRabbitListenerContainerFactory dontRequeueFactory() {
+			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+			factory.setConnectionFactory(rabbitConnectionFactory());
+			factory.setMismatchedQueuesFatal(true);
+			factory.setAcknowledgeMode(AcknowledgeMode.MANUAL);
+			factory.setMessageConverter(converter());
+			factory.setDefaultRequeueRejected(false);
 			return factory;
 		}
 
@@ -181,6 +218,37 @@ public class AsyncListenerTests {
 		}
 
 		@Bean
+		public Queue queue5() {
+			Map<String, Object> args = new HashMap<>();
+			args.put("x-dead-letter-exchange", "");
+			args.put("x-dead-letter-routing-key", queue5DLQ().getName());
+			return new AnonymousQueue(args);
+		}
+
+		@Bean
+		public Queue queue5DLQ() {
+			return new AnonymousQueue();
+		}
+
+		@Bean
+		public Queue queue6() {
+			Map<String, Object> args = new HashMap<>();
+			args.put("x-dead-letter-exchange", "");
+			args.put("x-dead-letter-routing-key", queue6DLQ().getName());
+			return new AnonymousQueue(args);
+		}
+
+		@Bean
+		public Queue queue6DLQ() {
+			return new AnonymousQueue();
+		}
+
+		@Bean
+		public Queue queue7() {
+			return new AnonymousQueue();
+		}
+
+		@Bean
 		public Listener listener() {
 			return new Listener();
 		}
@@ -195,6 +263,12 @@ public class AsyncListenerTests {
 		private final AtomicBoolean barFirst = new AtomicBoolean(true);
 
 		private final CountDownLatch latch4 = new CountDownLatch(1);
+
+		private final CountDownLatch latch5 = new CountDownLatch(1);
+
+		private final CountDownLatch latch6 = new CountDownLatch(1);
+
+		private final AtomicBoolean first7 = new AtomicBoolean(true);
 
 		@RabbitListener(id = "foo", queues = "#{queue1.name}")
 		public ListenableFuture<String> listen1(String foo) {
@@ -228,6 +302,43 @@ public class AsyncListenerTests {
 			SettableListenableFuture<Void> future = new SettableListenableFuture<>();
 			future.set(null);
 			this.latch4.countDown();
+			return future;
+		}
+
+		@RabbitListener(id = "fiz", queues = "#{queue5.name}")
+		public ListenableFuture<Void> listen5(@SuppressWarnings("unused") String foo) {
+			SettableListenableFuture<Void> future = new SettableListenableFuture<>();
+			future.setException(new AmqpRejectAndDontRequeueException("asyncToDLQ"));
+			return future;
+		}
+
+		@RabbitListener(id = "buz", queues = "#{queue5DLQ.name}")
+		public void listen5DLQ(@SuppressWarnings("unused") String foo) {
+			this.latch5.countDown();
+		}
+
+		@RabbitListener(id = "fix", queues = "#{queue6.name}", containerFactory = "dontRequeueFactory")
+		public ListenableFuture<Void> listen6(@SuppressWarnings("unused") String foo) {
+			SettableListenableFuture<Void> future = new SettableListenableFuture<>();
+			future.setException(new IllegalStateException("asyncDefaultToDLQ"));
+			return future;
+		}
+
+		@RabbitListener(id = "fox", queues = "#{queue6DLQ.name}")
+		public void listen6DLQ(@SuppressWarnings("unused") String foo) {
+			this.latch6.countDown();
+		}
+
+		@RabbitListener(id = "overrideFactoryRequeue", queues = "#{queue7.name}",
+				containerFactory = "dontRequeueFactory")
+		public ListenableFuture<String> listen7(@SuppressWarnings("unused") String foo) {
+			SettableListenableFuture<String> future = new SettableListenableFuture<>();
+			if (this.first7.compareAndSet(true, false)) {
+				future.setException(new ImmediateRequeueAmqpException("asyncOverrideDefaultToDLQ"));
+			}
+			else {
+				future.set("listen7");
+			}
 			return future;
 		}
 

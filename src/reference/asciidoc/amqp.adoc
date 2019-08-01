@@ -2994,8 +2994,9 @@ Starting with version 2.1, `@RabbitListener` (and `@RabbitHandler`) methods can 
 
 IMPORTANT: The listener container factory must be configured with `AcknowledgeMode.MANUAL` so that the consumer thread will not ack the message; instead, the asynchronous completion will ack or nack the message when the async operation completes.
 When the async result is completed with an error, whether the message is requeued or not depends on the exception type thrown, the container configuration, and the container error handler.
-By default, the message will be requeued, unless the container's `defaultRequeueRejected` property is set to `false`.
+By default, the message will be requeued, unless the container's `defaultRequeueRejected` property is set to `false` (it is `true` by default).
 If the async result is completed with an `AmqpRejectAndDontRequeueException`, the message will not be requeued.
+If the container's `defaultRequeueRejected` property is `false`, you can override that by setting the future's exception to a `ImmediateRequeueException` and the message will be requeued.
 If some exception occurs within the listener method that prevents creation of the async result object, you MUST catch that exception and return an appropriate return object that will cause the message to be acknowledged or requeued.
 
 [[threading]]
