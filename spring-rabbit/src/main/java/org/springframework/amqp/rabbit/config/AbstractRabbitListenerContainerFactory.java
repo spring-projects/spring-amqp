@@ -396,7 +396,8 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 				.acceptIfNotNull(this.beforeSendReplyPostProcessors, messageListener::setBeforeSendReplyPostProcessors)
 				.acceptIfNotNull(this.retryTemplate, messageListener::setRetryTemplate)
 				.acceptIfCondition(this.retryTemplate != null && this.recoveryCallback != null, this.recoveryCallback,
-					messageListener::setRecoveryCallback);
+					messageListener::setRecoveryCallback)
+				.acceptIfNotNull(this.defaultRequeueRejected, messageListener::setDefaultRequeueRejected);
 		}
 		initializeContainer(instance, endpoint);
 
