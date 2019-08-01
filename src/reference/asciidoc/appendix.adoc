@@ -92,7 +92,7 @@ See <<async-annotation-driven-enable>> for more information.
 ===== Async `@RabbitListener` Return
 
 `@RabbitListener` methods can now return `ListenableFuture<?>` or `Mono<?>`.
-See <<async-return>> for more information.
+See <<async-returns>> for more information.
 
 ===== Connection Factory Bean Changes
 
