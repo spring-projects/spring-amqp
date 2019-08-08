@@ -25,9 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.junit.After;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
@@ -36,7 +35,7 @@ import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
@@ -52,21 +51,18 @@ import com.rabbitmq.http.client.domain.QueueInfo;
  * @since 1.5
  *
  */
+@RabbitAvailable(management = true)
 public class RabbitRestApiTests {
 
 	private final CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
 
 	private final Client rabbitRestClient;
 
-
-	@ClassRule
-	public static BrokerRunning brokerAndManagementRunning = BrokerRunning.isBrokerAndManagementRunning();
-
 	public RabbitRestApiTests() throws MalformedURLException, URISyntaxException {
 		this.rabbitRestClient = new Client("http://localhost:15672/api/", "guest", "guest");
 	}
 
-	@After
+	@AfterEach
 	public void tearDown() {
 		connectionFactory.destroy();
 	}

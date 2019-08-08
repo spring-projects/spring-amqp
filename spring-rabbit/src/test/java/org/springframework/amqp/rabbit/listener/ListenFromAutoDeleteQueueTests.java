@@ -30,17 +30,16 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -51,10 +50,8 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  * @author Artem Bilan
  * @since 1.3
  */
+@RabbitAvailable
 public class ListenFromAutoDeleteQueueTests {
-
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
 
 	private SimpleMessageListenerContainer listenerContainer1;
 
@@ -66,7 +63,7 @@ public class ListenFromAutoDeleteQueueTests {
 
 	private Queue expiringQueue;
 
-	@Before
+	@BeforeEach
 	public void setup() {
 		this.context = new ClassPathXmlApplicationContext(this.getClass().getSimpleName() + "-context.xml",
 				this.getClass());
@@ -75,7 +72,7 @@ public class ListenFromAutoDeleteQueueTests {
 		this.expiringQueue = context.getBean("xExpires", Queue.class);
 	}
 
-	@After
+	@AfterEach
 	public void tearDown() {
 		if (this.context != null) {
 			this.context.close();

@@ -22,15 +22,13 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.AfterClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.utils.test.TestUtils;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
@@ -40,15 +38,8 @@ import com.rabbitmq.client.AMQP.BasicProperties;
  * @since 2.0
  *
  */
+@RabbitAvailable(queues = "test.shutdown")
 public class ContainerShutDownTests {
-
-	@ClassRule
-	public static BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues("test.shutdown");
-
-	@AfterClass
-	public static void tearDown() {
-		brokerRunning.removeTestQueues();
-	}
 
 	@Test
 	public void testUninterruptibleListenerSMLC() throws Exception {

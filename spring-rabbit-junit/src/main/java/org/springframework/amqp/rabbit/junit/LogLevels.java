@@ -24,42 +24,35 @@ import java.lang.annotation.Target;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.springframework.core.annotation.AliasFor;
-
 /**
- * Test classes annotated with this will not run if there is no broker on localhost.
+ * Test classes annotated with this will change logging levels between tests.
  *
  * @author Gary Russell
- * @since 2.0.2
+ * @since 2.2
  *
  */
-@ExtendWith(RabbitAvailableCondition.class)
-@Target({ ElementType.TYPE })
+@ExtendWith(LogLevelsCondition.class)
+@Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface RabbitAvailable {
+public @interface LogLevels {
 
 	/**
-	 * The queues to create and ensure empty; they will be deleted after the test class
-	 * completes.
-	 * @return the queues.
-	 * @since 2.2
+	 * Classes representing Log4j categories to change.
+	 * @return the classes.
 	 */
-	@AliasFor("queues")
-	String[] value() default {};
+	Class<?>[] classes() default {};
 
 	/**
-	 * The queues to create and ensure empty; they will be deleted after the test class
-	 * completes.
-	 * @return the queues.
+	 * Category names representing Log4j or Logback categories to change.
+	 * @return the names.
 	 */
-	@AliasFor("value")
-	String[] queues() default {};
+	String[] categories() default {};
 
 	/**
-	 * Requires the management plugin to be available.
-	 * @return true to require a management plugin.
+	 * The Log4j level name to switch the categories to during the test.
+	 * @return the level.
 	 */
-	boolean management() default false;
+	String level() default "";
 
 }

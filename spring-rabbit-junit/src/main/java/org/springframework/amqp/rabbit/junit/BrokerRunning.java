@@ -511,10 +511,30 @@ public final class BrokerRunning extends TestWatcher {
 	}
 
 	/**
-	 * Delete arbitrary queues from the broker.
-	 * @param queues the queues to delete.
+	 * Delete and re-declare all the configured queues. Can be used between tests when
+	 * a test might leave stale data and multiple tests use the same queue.
 	 */
-	public void deleteQueues(String... queues) {
+	public void purgeTestQueues() {
+		removeTestQueues();
+		Connection connection = null; // NOSONAR (closeResources())
+		Channel channel = null;
+		try {
+			connection = getConnection(getConnectionFactory());
+			channel = createQueues(connection);
+		}
+		catch (Exception e) {
+			logger.warn("Failed to re-declare queues during purge: " + e.getMessage());
+		}
+		finally {
+			closeResources(connection, channel);
+		}
+	}
+
+	/**
+	 * Delete arbitrary queues from the broker.
+	 * @param queuesToDelete the queues to delete.
+	 */
+	public void deleteQueues(String... queuesToDelete) {
 		Connection connection = null; // NOSONAR (closeResources())
 		Channel channel = null;
 
@@ -523,7 +543,7 @@ public final class BrokerRunning extends TestWatcher {
 			connection.setId(generateId() + ".queueDelete");
 			channel = connection.createChannel();
 
-			for (String queue : queues) {
+			for (String queue : queuesToDelete) {
 				channel.queueDelete(queue);
 			}
 		}
@@ -603,7 +623,7 @@ public final class BrokerRunning extends TestWatcher {
 			try {
 				channel.close();
 			}
-			catch (IOException | TimeoutException e) {
+			catch (@SuppressWarnings("unused") IOException | TimeoutException e) {
 				// Ignore
 			}
 		}
@@ -611,7 +631,7 @@ public final class BrokerRunning extends TestWatcher {
 			try {
 				connection.close();
 			}
-			catch (IOException e) {
+			catch (@SuppressWarnings("unused") IOException e) {
 				// Ignore
 			}
 		}

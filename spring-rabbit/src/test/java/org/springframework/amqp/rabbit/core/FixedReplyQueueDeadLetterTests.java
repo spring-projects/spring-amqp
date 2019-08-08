@@ -24,10 +24,9 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.AfterClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
@@ -39,16 +38,16 @@ import org.springframework.amqp.core.QueueBuilder.MasterLocator;
 import org.springframework.amqp.core.QueueBuilder.Overflow;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.FixedReplyQueueDeadLetterTests.FixedReplyQueueDeadLetterConfig;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
+import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import com.rabbitmq.http.client.Client;
 import com.rabbitmq.http.client.domain.ExchangeInfo;
@@ -60,10 +59,12 @@ import com.rabbitmq.http.client.domain.QueueInfo;
  * @since 1.3.6
  */
 
-@ContextConfiguration(classes = FixedReplyQueueDeadLetterConfig.class)
-@RunWith(SpringJUnit4ClassRunner.class)
+@SpringJUnitConfig
 @DirtiesContext
+@RabbitAvailable(management = true)
 public class FixedReplyQueueDeadLetterTests {
+
+	private static BrokerRunning brokerRunning;
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -71,11 +72,13 @@ public class FixedReplyQueueDeadLetterTests {
 	@Autowired
 	private DeadListener deadListener;
 
-	@ClassRule
-	public static BrokerRunning brokerRunning = BrokerRunning.isBrokerAndManagementRunningWithEmptyQueues();
+	@BeforeAll
+	static void setUp() {
+		brokerRunning = RabbitAvailableCondition.getBrokerRunning();
+	}
 
-	@AfterClass
-	public static void tearDown() {
+	@AfterAll
+	static void tearDown() {
 		brokerRunning.deleteQueues("all.args.1", "all.args.2", "all.args.3");
 	}
 
@@ -365,7 +368,7 @@ public class FixedReplyQueueDeadLetterTests {
 	public static class DeadListener {
 		private final CountDownLatch latch = new CountDownLatch(1);
 
-		public void handleMessage(String foo) {
+		public void handleMessage(@SuppressWarnings("unused") String foo) {
 			latch.countDown();
 		}
 

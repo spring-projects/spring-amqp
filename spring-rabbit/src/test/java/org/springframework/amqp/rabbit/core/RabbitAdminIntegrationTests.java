@@ -17,15 +17,15 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
 import java.util.UUID;
 
-import org.junit.After;
 import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.AbstractExchange;
@@ -42,8 +42,8 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.AutoRecoverConnectionNotCurrentlyOpenException;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.context.support.GenericApplicationContext;
 
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
@@ -60,12 +60,10 @@ import com.rabbitmq.http.client.domain.ExchangeInfo;
  * @author Gunnar Hillert
  * @author Artem Bilan
  */
+@RabbitAvailable(management = true)
 public class RabbitAdminIntegrationTests {
 
 	private final CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
-
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isBrokerAndManagementRunning();
 
 	private GenericApplicationContext context;
 
@@ -75,7 +73,7 @@ public class RabbitAdminIntegrationTests {
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 	}
 
-	@Before
+	@BeforeEach
 	public void init() {
 		connectionFactory.setHost("localhost");
 		context = new GenericApplicationContext();
@@ -88,7 +86,7 @@ public class RabbitAdminIntegrationTests {
 		rabbitAdmin.setAutoStartup(true);
 	}
 
-	@After
+	@AfterEach
 	public void close() {
 		if (context != null) {
 			context.close();
@@ -107,7 +105,7 @@ public class RabbitAdminIntegrationTests {
 		assertThat(rabbitAdmin.deleteQueue(queue.getName())).isTrue();
 	}
 
-	@Test(expected = AmqpIOException.class)
+	@Test
 	public void testDoubleDeclarationOfExclusiveQueue() {
 		// Expect exception because the queue is locked when it is declared a second time.
 		CachingConnectionFactory connectionFactory1 = new CachingConnectionFactory();
@@ -120,7 +118,8 @@ public class RabbitAdminIntegrationTests {
 		rabbitAdmin.deleteQueue(queue.getName());
 		new RabbitAdmin(connectionFactory1).declareQueue(queue);
 		try {
-			new RabbitAdmin(connectionFactory2).declareQueue(queue);
+			assertThatThrownBy((() -> new RabbitAdmin(connectionFactory2).declareQueue((Queue) queue.clone())))
+				.isInstanceOf(AmqpIOException.class);
 		}
 		finally {
 			// Need to release the connection so the exclusive queue is deleted
@@ -340,10 +339,11 @@ public class RabbitAdminIntegrationTests {
 		context.getBeanFactory().registerSingleton("bar", queue);
 		Binding binding = new Binding(queueName, DestinationType.QUEUE, exchange.getName(), "test.routingKey", null);
 		context.getBeanFactory().registerSingleton("baz", binding);
-		rabbitAdmin.afterPropertiesSet();
+		this.rabbitAdmin.setRetryTemplate(null);
+		this.rabbitAdmin.afterPropertiesSet();
 
 		try {
-			rabbitAdmin.declareBinding(binding);
+			this.rabbitAdmin.declareBinding(binding);
 		}
 		catch (AmqpIOException ex) {
 			Throwable cause = ex;
@@ -387,7 +387,7 @@ public class RabbitAdminIntegrationTests {
 				throw e;
 			}
 		}
-		catch (AutoRecoverConnectionNotCurrentlyOpenException e) {
+		catch (@SuppressWarnings("unused") AutoRecoverConnectionNotCurrentlyOpenException e) {
 			Assume.assumeTrue("Broker does not have the delayed message exchange plugin installed", false);
 		}
 		this.rabbitAdmin.declareQueue(queue);
@@ -440,10 +440,10 @@ public class RabbitAdminIntegrationTests {
 	 * @return True if the queue exists
 	 */
 	private boolean queueExists(final Queue queue) throws Exception {
-		ConnectionFactory connectionFactory = new ConnectionFactory();
-		connectionFactory.setHost("localhost");
-		connectionFactory.setPort(BrokerTestUtils.getPort());
-		Connection connection = connectionFactory.newConnection();
+		ConnectionFactory cf = new ConnectionFactory();
+		cf.setHost("localhost");
+		cf.setPort(BrokerTestUtils.getPort());
+		Connection connection = cf.newConnection();
 		Channel channel = connection.createChannel();
 		try {
 			DeclareOk result = channel.queueDeclarePassive(queue.getName());
