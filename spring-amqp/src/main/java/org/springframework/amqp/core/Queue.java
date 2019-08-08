@@ -30,7 +30,7 @@ import org.springframework.util.StringUtils;
  * @author Gary Russell
  * @see AmqpAdmin
  */
-public class Queue extends AbstractDeclarable {
+public class Queue extends AbstractDeclarable implements Cloneable {
 
 	/**
 	 * Argument key for the master locator.
@@ -173,6 +173,11 @@ public class Queue extends AbstractDeclarable {
 		else {
 			this.arguments.put(X_QUEUE_MASTER_LOCATOR, locator);
 		}
+	}
+
+	@Override
+	public Object clone() throws CloneNotSupportedException {
+		return super.clone();
 	}
 
 	@Override

@@ -24,6 +24,8 @@ import java.lang.annotation.Target;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.springframework.core.annotation.AliasFor;
+
 /**
  * Test classes annotated with this will not run if there is no broker on localhost.
  *
@@ -41,7 +43,17 @@ public @interface RabbitAvailable {
 	 * The queues to create and ensure empty; they will be deleted after the test class
 	 * completes.
 	 * @return the queues.
+	 * @since 2.2
 	 */
+	@AliasFor("queues")
+	String[] value() default {};
+
+	/**
+	 * The queues to create and ensure empty; they will be deleted after the test class
+	 * completes.
+	 * @return the queues.
+	 */
+	@AliasFor("value")
 	String[] queues() default {};
 
 	/**

@@ -22,9 +22,7 @@ import static org.assertj.core.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.UUID;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.UncategorizedAmqpException;
 import org.springframework.amqp.core.AnonymousQueue;
@@ -39,16 +37,14 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
-import org.springframework.amqp.rabbit.listener.JavaConfigFixedReplyQueueTests.FixedReplyQueueConfig;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 /**
  * <b>NOTE:</b> This class is referenced in the reference documentation; if it is changed/moved, be
@@ -58,9 +54,9 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
  * @since 1.3
  */
 
-@ContextConfiguration(classes = FixedReplyQueueConfig.class)
-@RunWith(SpringJUnit4ClassRunner.class)
+@SpringJUnitConfig
 @DirtiesContext
+@RabbitAvailable
 public class JavaConfigFixedReplyQueueTests {
 
 	@Autowired
@@ -77,9 +73,6 @@ public class JavaConfigFixedReplyQueueTests {
 
 	@Autowired
 	private SimpleMessageListenerContainer replyListenerContainerWrongQueue;
-
-	@Rule
-	public BrokerRunning brokerRunning = BrokerRunning.isRunning();
 
 	/**
 	 * Sends a message to a service that upcases the String and returns as a reply

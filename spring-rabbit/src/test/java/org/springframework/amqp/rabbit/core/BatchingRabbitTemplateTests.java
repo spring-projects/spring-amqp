@@ -36,10 +36,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.Deflater;
 
 import org.apache.commons.logging.Log;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.AmqpException;
@@ -51,8 +50,9 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.batch.SimpleBatchingStrategy;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
+import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.rabbit.listener.ConditionalRejectingErrorHandler;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.support.AmqpHeaders;
@@ -76,18 +76,16 @@ import org.springframework.util.StopWatch;
  * @since 1.4.1
  *
  */
+@RabbitAvailable(queues = BatchingRabbitTemplateTests.ROUTE)
 public class BatchingRabbitTemplateTests {
 
-	private static final String ROUTE = "test.queue";
-
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE);
+	public static final String ROUTE = "test.queue.BatchingRabbitTemplateTests";
 
 	private CachingConnectionFactory connectionFactory;
 
 	private ThreadPoolTaskScheduler scheduler;
 
-	@Before
+	@BeforeEach
 	public void setup() {
 		this.connectionFactory = new CachingConnectionFactory();
 		this.connectionFactory.setHost("localhost");
@@ -97,9 +95,9 @@ public class BatchingRabbitTemplateTests {
 		scheduler.initialize();
 	}
 
-	@After
+	@AfterEach
 	public void tearDown() {
-		this.brokerIsRunning.removeTestQueues();
+		RabbitAvailableCondition.getBrokerRunning().purgeTestQueues();
 		this.connectionFactory.destroy();
 	}
 

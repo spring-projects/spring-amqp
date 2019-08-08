@@ -22,13 +22,14 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
+import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.utils.test.TestUtils;
@@ -45,16 +46,16 @@ import com.rabbitmq.client.GetResponse;
  * @since 2.0
  *
  */
+@RabbitAvailable(queues = DirectReplyToMessageListenerContainerTests.TEST_RELEASE_CONSUMER_Q)
 public class DirectReplyToMessageListenerContainerTests {
 
-	private static final String TEST_RELEASE_CONSUMER_Q = "test.release.consumer";
+	public static final String TEST_RELEASE_CONSUMER_Q = "test.release.consumer";
 
-	@Rule
-	public BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(TEST_RELEASE_CONSUMER_Q);
+	public BrokerRunning brokerRunning = RabbitAvailableCondition.getBrokerRunning();
 
-	@After
+	@AfterEach
 	public void tearDown() {
-		this.brokerRunning.removeTestQueues();
+		this.brokerRunning.purgeTestQueues();
 	}
 
 	@Test

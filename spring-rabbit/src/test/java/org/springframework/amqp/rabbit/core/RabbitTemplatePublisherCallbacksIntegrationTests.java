@@ -47,10 +47,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Correlation;
@@ -59,14 +58,15 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.core.QueueBuilder.Overflow;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.connection.PendingConfirm;
 import org.springframework.amqp.rabbit.connection.PublisherCallbackChannel.Listener;
 import org.springframework.amqp.rabbit.connection.PublisherCallbackChannelImpl;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
@@ -75,6 +75,7 @@ import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.test.context.junit.jupiter.DisabledIf;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -89,12 +90,10 @@ import com.rabbitmq.client.ConnectionFactory;
  * @since 1.1
  *
  */
+@RabbitAvailable(queues = RabbitTemplatePublisherCallbacksIntegrationTests.ROUTE)
 public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
-	private static final String ROUTE = "test.queue";
-
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE);
+	public static final String ROUTE = "test.queue.RabbitTemplatePublisherCallbacksIntegrationTests";
 
 	private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
@@ -112,7 +111,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 	private RabbitTemplate templateWithConfirmsAndReturnsEnabled;
 
-	@Before
+	@BeforeEach
 	public void create() {
 		connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setHost("localhost");
@@ -140,15 +139,13 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		templateWithConfirmsAndReturnsEnabled.setMandatory(true);
 	}
 
-	@After
+	@AfterEach
 	public void cleanUp() {
 		this.templateWithConfirmsEnabled.stop();
 		this.templateWithReturnsEnabled.stop();
 		this.connectionFactory.destroy();
 		this.connectionFactoryWithConfirmsEnabled.destroy();
 		this.connectionFactoryWithReturnsEnabled.destroy();
-		this.brokerIsRunning.removeTestQueues();
-
 		this.executorService.shutdown();
 	}
 
@@ -252,7 +249,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			try {
 				threadLatch.await(10, TimeUnit.SECONDS);
 			}
-			catch (InterruptedException e) {
+			catch (@SuppressWarnings("unused") InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
 			templateWithConfirmsEnabled.doSend(channel, "", ROUTE,
@@ -385,7 +382,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			try {
 				threadLatch.await(10, TimeUnit.SECONDS);
 			}
-			catch (InterruptedException e) {
+			catch (@SuppressWarnings("unused") InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
 			template.doSend(channel, "", ROUTE,
@@ -784,7 +781,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 					try {
 						t.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
 					}
-					catch (AmqpException e) {
+					catch (@SuppressWarnings("unused") AmqpException e) {
 
 					}
 				}
@@ -838,12 +835,13 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	}
 
 	@Test
+	@DisabledIf(expression = "#{systemEnvironment['TRAVIS'] ?: false}", reason = "Overflow needs RabbitMQ 3.7")
 	public void testWithFuture() throws Exception {
 		RabbitAdmin admin = new RabbitAdmin(this.connectionFactory);
 		Queue queue = QueueBuilder.nonDurable()
 						.autoDelete()
-						.withArgument("x-max-length", 1)
-						.withArgument("x-overflow", "reject-publish")
+						.maxLength(1)
+						.overflow(Overflow.rejectPublish)
 						.build();
 		admin.declareQueue(queue);
 		CorrelationData cd1 = new CorrelationData();
@@ -851,8 +849,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertThat(cd1.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
 		CorrelationData cd2 = new CorrelationData();
 		this.templateWithConfirmsEnabled.convertAndSend("", queue.getName(), "bar", cd2);
-		// TODO: Uncomment when travis updates to rabbitmq 3.7
-//		assertFalse(cd2.getFuture().get(10, TimeUnit.SECONDS).isAck());
+		assertThat(cd2.getFuture().get(10, TimeUnit.SECONDS).isAck()).isFalse();
 		CorrelationData cd3 = new CorrelationData();
 		this.templateWithConfirmsEnabled.convertAndSend("NO_EXCHANGE_HERE", queue.getName(), "foo", cd3);
 		assertThat(cd3.getFuture().get(10, TimeUnit.SECONDS).isAck()).isFalse();
@@ -874,7 +871,6 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertThat(resent.get()).isTrue();
 		assertThat(callbackThreadName.get()).startsWith("spring-rabbit-deferred-pool");
 		admin.deleteQueue(queue.getName());
-
 	}
 
 }

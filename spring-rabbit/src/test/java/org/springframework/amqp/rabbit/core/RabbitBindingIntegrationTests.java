@@ -18,10 +18,9 @@ package org.springframework.amqp.rabbit.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.BindingBuilder;
@@ -33,6 +32,8 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
+import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.rabbit.listener.BlockingQueueConsumer;
 import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
@@ -43,27 +44,29 @@ import org.springframework.amqp.support.converter.SimpleMessageConverter;
  * @author Gunnar Hillert
  * @author Gary Russell
  */
+@RabbitAvailable(queues = RabbitBindingIntegrationTests.QUEUE_NAME)
 public class RabbitBindingIntegrationTests {
 
-	private static Queue queue = new Queue("test.queue");
+	public static final String QUEUE_NAME = "test.queue.RabbitBindingIntegrationTests";
+
+	private static Queue QUEUE = new Queue(QUEUE_NAME);
 
 	private CachingConnectionFactory connectionFactory;
 
 	private RabbitTemplate template;
 
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue.getName());
+	public BrokerRunning brokerIsRunning = RabbitAvailableCondition.getBrokerRunning();
 
-	@Before
+	@BeforeEach
 	public void setup() {
 		connectionFactory = new CachingConnectionFactory(BrokerTestUtils.getPort());
 		connectionFactory.setHost("localhost");
 		template = new RabbitTemplate(connectionFactory);
 	}
 
-	@After
+	@AfterEach
 	public void cleanUp() {
-		this.brokerIsRunning.removeTestQueues();
+		this.brokerIsRunning.purgeTestQueues();
 		this.template.stop();
 		this.connectionFactory.destroy();
 	}
@@ -76,7 +79,7 @@ public class RabbitBindingIntegrationTests {
 		admin.declareExchange(exchange);
 		template.setExchange(exchange.getName());
 
-		admin.declareBinding(BindingBuilder.bind(queue).to(exchange).with("*.end"));
+		admin.declareBinding(BindingBuilder.bind(QUEUE).to(exchange).with("*.end"));
 
 		template.execute(channel -> {
 
@@ -88,11 +91,11 @@ public class RabbitBindingIntegrationTests {
 
 			try {
 
-				String result = getResult(consumer);
+				String result = getResult(consumer, false);
 				assertThat(result).isEqualTo(null);
 
 				template.convertAndSend("foo.end", "message");
-				result = getResult(consumer);
+				result = getResult(consumer, true);
 				assertThat(result).isEqualTo("message");
 
 			}
@@ -113,7 +116,7 @@ public class RabbitBindingIntegrationTests {
 		final TopicExchange exchange = new TopicExchange("topic");
 		admin.declareExchange(exchange);
 
-		admin.declareBinding(BindingBuilder.bind(queue).to(exchange).with("*.end"));
+		admin.declareBinding(BindingBuilder.bind(QUEUE).to(exchange).with("*.end"));
 
 		template.execute(channel -> {
 
@@ -125,11 +128,11 @@ public class RabbitBindingIntegrationTests {
 
 			try {
 
-				String result = getResult(consumer);
+				String result = getResult(consumer, false);
 				assertThat(result).isEqualTo(null);
 
 				template.convertAndSend("topic", "foo.end", "message");
-				result = getResult(consumer);
+				result = getResult(consumer, true);
 				assertThat(result).isEqualTo("message");
 
 			}
@@ -152,16 +155,16 @@ public class RabbitBindingIntegrationTests {
 		admin.declareExchange(exchange);
 		template.setExchange(exchange.getName());
 
-		admin.declareBinding(BindingBuilder.bind(queue).to(exchange).with("*.end"));
+		admin.declareBinding(BindingBuilder.bind(QUEUE).to(exchange).with("*.end"));
 
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
 		cachingConnectionFactory.setHost("localhost");
-		final RabbitTemplate template = new RabbitTemplate(cachingConnectionFactory);
-		template.setExchange(exchange.getName());
+		final RabbitTemplate template1 = new RabbitTemplate(cachingConnectionFactory);
+		template1.setExchange(exchange.getName());
 
-		BlockingQueueConsumer consumer = template.execute(channel -> {
+		BlockingQueueConsumer consumer = template1.execute(channel -> {
 
-			BlockingQueueConsumer consumer1 = createConsumer(template);
+			BlockingQueueConsumer consumer1 = createConsumer(template1);
 			String tag = consumer1.getConsumerTags().iterator().next();
 			assertThat(tag).isNotNull();
 
@@ -169,12 +172,12 @@ public class RabbitBindingIntegrationTests {
 
 		});
 
-		template.convertAndSend("foo", "message");
-		String result = getResult(consumer);
+		template1.convertAndSend("foo", "message");
+		String result = getResult(consumer, false);
 		assertThat(result).isEqualTo(null);
 
-		template.convertAndSend("foo.end", "message");
-		result = getResult(consumer);
+		template1.convertAndSend("foo.end", "message");
+		result = getResult(consumer, true);
 		assertThat(result).isEqualTo("message");
 
 		consumer.stop();
@@ -191,7 +194,7 @@ public class RabbitBindingIntegrationTests {
 		admin.declareExchange(exchange);
 		template.setExchange(exchange.getName());
 
-		admin.declareBinding(BindingBuilder.bind(queue).to(exchange).with("*.end"));
+		admin.declareBinding(BindingBuilder.bind(QUEUE).to(exchange).with("*.end"));
 
 		template.execute(channel -> {
 
@@ -201,7 +204,7 @@ public class RabbitBindingIntegrationTests {
 
 			try {
 				template.convertAndSend("foo", "message");
-				String result = getResult(consumer);
+				String result = getResult(consumer, false);
 				assertThat(result).isEqualTo(null);
 			}
 			finally {
@@ -220,7 +223,7 @@ public class RabbitBindingIntegrationTests {
 
 			try {
 				template.convertAndSend("foo.end", "message");
-				String result = getResult(consumer);
+				String result = getResult(consumer, true);
 				assertThat(result).isEqualTo("message");
 			}
 			finally {
@@ -241,7 +244,7 @@ public class RabbitBindingIntegrationTests {
 		admin.declareExchange(exchange);
 		template.setExchange(exchange.getName());
 
-		admin.declareBinding(BindingBuilder.bind(queue).to(exchange));
+		admin.declareBinding(BindingBuilder.bind(QUEUE).to(exchange));
 
 		template.execute(channel -> {
 
@@ -251,7 +254,7 @@ public class RabbitBindingIntegrationTests {
 
 			try {
 				template.convertAndSend("message");
-				String result = getResult(consumer);
+				String result = getResult(consumer, true);
 				assertThat(result).isEqualTo("message");
 			}
 			finally {
@@ -267,7 +270,7 @@ public class RabbitBindingIntegrationTests {
 	private BlockingQueueConsumer createConsumer(RabbitAccessor accessor) {
 		BlockingQueueConsumer consumer = new BlockingQueueConsumer(
 				accessor.getConnectionFactory(), new DefaultMessagePropertiesConverter(),
-				new ActiveObjectCounter<BlockingQueueConsumer>(), AcknowledgeMode.AUTO, true, 1, queue.getName());
+				new ActiveObjectCounter<BlockingQueueConsumer>(), AcknowledgeMode.AUTO, true, 1, QUEUE.getName());
 		consumer.start();
 		// wait for consumeOk...
 		int n = 0;
@@ -276,7 +279,7 @@ public class RabbitBindingIntegrationTests {
 				try {
 					Thread.sleep(100);
 				}
-				catch (InterruptedException e) {
+				catch (@SuppressWarnings("unused") InterruptedException e) {
 					Thread.currentThread().interrupt();
 					break;
 				}
@@ -285,8 +288,8 @@ public class RabbitBindingIntegrationTests {
 		return consumer;
 	}
 
-	private String getResult(final BlockingQueueConsumer consumer) throws InterruptedException {
-		Message response = consumer.nextMessage(2000L);
+	private String getResult(final BlockingQueueConsumer consumer, boolean expected) throws InterruptedException {
+		Message response = consumer.nextMessage(expected ? 2000L : 100L);
 		if (response == null) {
 			return null;
 		}

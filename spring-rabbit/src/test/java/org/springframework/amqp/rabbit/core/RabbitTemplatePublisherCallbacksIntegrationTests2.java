@@ -21,14 +21,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.DefaultConsumer;
@@ -39,18 +38,16 @@ import com.rabbitmq.client.Envelope;
  * @since 1.6
  *
  */
+@RabbitAvailable(queues = RabbitTemplatePublisherCallbacksIntegrationTests2.ROUTE)
 public class RabbitTemplatePublisherCallbacksIntegrationTests2 {
 
-	private static final String ROUTE = "test.queue";
+	public static final String ROUTE = "test.queue.RabbitTemplatePublisherCallbacksIntegrationTests2";
 
 	private CachingConnectionFactory connectionFactoryWithConfirmsEnabled;
 
 	private RabbitTemplate templateWithConfirmsEnabled;
 
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE);
-
-	@Before
+	@BeforeEach
 	public void create() {
 		connectionFactoryWithConfirmsEnabled = new CachingConnectionFactory();
 		connectionFactoryWithConfirmsEnabled.setHost("localhost");
@@ -62,12 +59,11 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests2 {
 		templateWithConfirmsEnabled = new RabbitTemplate(connectionFactoryWithConfirmsEnabled);
 	}
 
-	@After
+	@AfterEach
 	public void cleanUp() {
 		if (connectionFactoryWithConfirmsEnabled != null) {
 			connectionFactoryWithConfirmsEnabled.destroy();
 		}
-		this.brokerIsRunning.removeTestQueues();
 	}
 
 	@Test
