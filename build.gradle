@@ -300,7 +300,6 @@ project('spring-amqp') {
 		compile ("com.jayway.jsonpath:json-path:$jaywayJsonPathVersion", optional)
 
 		testCompile "org.assertj:assertj-core:$assertjVersion"
-		testRuntime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 	}
 
 }
@@ -356,7 +355,8 @@ project('spring-rabbit-junit') {
 		compile "org.assertj:assertj-core:$assertjVersion"
 		compileOnly 'org.apiguardian:apiguardian-api:1.0.0'
 
-		testRuntime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+		testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
+
 	}
 
 }
