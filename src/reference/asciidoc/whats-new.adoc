@@ -15,6 +15,10 @@ The following classes/interfaces have been moved from `org.springframework.amqp.
 
 In addition, `ListenerExecutionFailedException` has been moved from `org.springframework.amqp.rabbit.listener.exception` to `org.springframework.amqp.rabbit.support`.
 
+===== Dependency Changes
+
+JUnit (4) is now an optional dependency and will no longer appear as a transitive dependency.
+
 ===== @RabbitListener Changes
 
 You can now configure an `executor` on each listener, overriding the factory configuration, to more easily identify threads associated with the listener.

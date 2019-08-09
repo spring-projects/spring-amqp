@@ -368,6 +368,7 @@ project('spring-rabbit-test') {
 
 		compile project(":spring-rabbit")
 		compile ("junit:junit:$junit4Version") {
+			optional(it)
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
 		}
 		compile "org.hamcrest:hamcrest-all:$hamcrestVersion"
