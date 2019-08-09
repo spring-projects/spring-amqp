@@ -82,13 +82,18 @@ public class LongLevelsCondition
 	public void afterEach(ExtensionContext context) {
 		Store store = context.getStore(Namespace.create(getClass(), context));
 		LevelsContainer container = store.get(STORE_CONTAINER_KEY, LevelsContainer.class);
+		boolean parentStore = false;
 		if (container == null) {
 			ExtensionContext parent = context.getParent().get();
 			store = parent.getStore(Namespace.create(getClass(), parent));
 			container = store.get(STORE_CONTAINER_KEY, LevelsContainer.class);
+			parentStore = true;
 		}
 		JUnitUtils.revertLevels(context.getDisplayName(), container);
 		store.remove(STORE_CONTAINER_KEY);
+		if (!parentStore) {
+			store.remove(STORE_ANNOTATION_KEY);
+		}
 	}
 
 	@Override
