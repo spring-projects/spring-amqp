@@ -63,6 +63,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
+import org.springframework.amqp.rabbit.junit.LogLevels;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.utils.test.TestUtils;
@@ -232,6 +233,7 @@ public class RabbitAdminTests {
 	}
 
 	@Test
+	@LogLevels(classes = RabbitAdmin.class, level = "DEBUG")
 	public void testMultiEntities() {
 		ConfigurableApplicationContext ctx = new AnnotationConfigApplicationContext(Config.class);
 		RabbitTemplate template = ctx.getBean(RabbitTemplate.class);

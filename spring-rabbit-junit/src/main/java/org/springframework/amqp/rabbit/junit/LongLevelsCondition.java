@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 import org.apache.logging.log4j.Level;
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
@@ -38,7 +39,8 @@ import org.springframework.core.annotation.MergedAnnotations;
  * @since 5.2
  *
  */
-public class LongLevelsCondition implements ExecutionCondition, BeforeEachCallback, AfterEachCallback {
+public class LongLevelsCondition
+		implements ExecutionCondition, BeforeEachCallback, AfterEachCallback, AfterAllCallback {
 
 	private static final String STORE_ANNOTATION_KEY = "logLevelsAnnotation";
 
@@ -63,9 +65,13 @@ public class LongLevelsCondition implements ExecutionCondition, BeforeEachCallba
 
 	@Override
 	public void beforeEach(ExtensionContext context) {
-		ExtensionContext parent = context.getParent().get();
-		Store store = parent.getStore(Namespace.create(getClass(), parent));
+		Store store = context.getStore(Namespace.create(getClass(), context));
 		LogLevels logLevels = store.get(STORE_ANNOTATION_KEY, LogLevels.class);
+		if (logLevels == null) {
+			ExtensionContext parent = context.getParent().get();
+			store = parent.getStore(Namespace.create(getClass(), parent));
+			logLevels = store.get(STORE_ANNOTATION_KEY, LogLevels.class);
+		}
 		store.put(STORE_CONTAINER_KEY, JUnitUtils.adjustLogLevels(context.getDisplayName(),
 				Arrays.asList((logLevels.classes())),
 				Arrays.asList(logLevels.categories()),
@@ -74,9 +80,21 @@ public class LongLevelsCondition implements ExecutionCondition, BeforeEachCallba
 
 	@Override
 	public void afterEach(ExtensionContext context) {
-		ExtensionContext parent = context.getParent().get();
-		Store store = parent.getStore(Namespace.create(getClass(), parent));
-		JUnitUtils.revertLevels(context.getDisplayName(), store.get(STORE_CONTAINER_KEY, LevelsContainer.class));
+		Store store = context.getStore(Namespace.create(getClass(), context));
+		LevelsContainer container = store.get(STORE_CONTAINER_KEY, LevelsContainer.class);
+		if (container == null) {
+			ExtensionContext parent = context.getParent().get();
+			store = parent.getStore(Namespace.create(getClass(), parent));
+			container = store.get(STORE_CONTAINER_KEY, LevelsContainer.class);
+		}
+		JUnitUtils.revertLevels(context.getDisplayName(), container);
+		store.remove(STORE_CONTAINER_KEY);
+	}
+
+	@Override
+	public void afterAll(ExtensionContext context) {
+		Store store = context.getStore(Namespace.create(getClass(), context));
+		store.remove(STORE_ANNOTATION_KEY);
 	}
 
 }

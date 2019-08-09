@@ -194,6 +194,7 @@ public class RabbitTemplateIntegrationTests {
 	}
 
 	@Test
+	@LogLevels(classes = RabbitTemplate.class, level = "DEBUG")
 	public void testChannelCloseInTx() throws Exception {
 		this.connectionFactory.setPublisherReturns(false);
 		Channel channel = this.connectionFactory.createConnection().createChannel(true);
