@@ -50,12 +50,7 @@ public class LongRunningIntegrationTest extends TestWatcher {
 	 * @since 2.0.2
 	 */
 	public LongRunningIntegrationTest(String property) {
-		for (String value: new String[] { System.getenv(property), System.getProperty(property) }) {
-			if (Boolean.parseBoolean(value)) {
-				this.shouldRun = true;
-				break;
-			}
-		}
+		this.shouldRun = JUnitUtils.parseBooleanProperty(property);
 	}
 
 	@Override
