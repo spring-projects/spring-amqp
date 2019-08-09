@@ -1050,7 +1050,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				publishConsumerFailedEvent("Consumer thread interrupted, processing stopped", true, e);
 			}
 			catch (QueuesNotAvailableException ex) {
-				logger.error("Consumer received fatal=" + isMismatchedQueuesFatal() + " exception on startup", ex);
+				logger.error("Consumer threw missing queues exception, fatal=" + isMissingQueuesFatal(), ex);
 				if (isMissingQueuesFatal()) {
 					this.startupException = ex;
 					// Fatal, but no point re-throwing, so just abort.
