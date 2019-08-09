@@ -81,7 +81,6 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 		final AtomicInteger cacheCount = new AtomicInteger();
 		final AtomicBoolean returnCalledFirst = new AtomicBoolean();
 		template.setConfirmCallback((cd, a, c) -> {
-			CachingConnectionFactory lcf = cf;
 			cacheCount.set(TestUtils.getPropertyValue(cf, "cachedChannelsNonTransactional", List.class).size());
 			returnCalledFirst.set(returnLatch.getCount() == 0);
 			confirmLatch.countDown();

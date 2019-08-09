@@ -16,7 +16,8 @@
 
 package org.springframework.amqp.rabbit.core;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 
 /**
  * @author Gary Russell
@@ -26,9 +27,9 @@ import org.junit.Before;
 public class RabbitTemplateIntegrationPubCFTests extends RabbitTemplateIntegrationTests {
 
 	@Override
-	@Before
-	public void create() {
-		super.create();
+	@BeforeEach
+	public void create(TestInfo info) {
+		super.create(info);
 		this.template.setUsePublisherConnection(true);
 		this.routingTemplate.setUsePublisherConnection(true);
 	}

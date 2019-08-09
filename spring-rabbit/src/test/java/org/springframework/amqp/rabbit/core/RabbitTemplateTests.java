@@ -384,19 +384,19 @@ public class RabbitTemplateTests {
 			try {
 				template.convertAndSend("foo", "bar", "baz");
 			}
-			catch (Exception e) {
+			catch (@SuppressWarnings("unused") Exception e) {
 				//Ignore it. Doesn't matter for this test.
 			}
 			try {
 				template.receive("foo");
 			}
-			catch (Exception e) {
+			catch (@SuppressWarnings("unused") Exception e) {
 				//Ignore it. Doesn't matter for this test.
 			}
 			try {
 				template.receiveAndReply("foo", mock(ReceiveAndReplyCallback.class));
 			}
-			catch (Exception e) {
+			catch (@SuppressWarnings("unused") Exception e) {
 				//Ignore it. Doesn't matter for this test.
 			}
 		}
@@ -467,7 +467,7 @@ public class RabbitTemplateTests {
 			try {
 				shutdownLatch.await(10, TimeUnit.SECONDS);
 			}
-			catch (InterruptedException e) {
+			catch (@SuppressWarnings("unused") InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
 			listener.get().shutdownCompleted(new ShutdownSignalException(true, false, null, null));

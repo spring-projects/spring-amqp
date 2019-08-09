@@ -345,7 +345,7 @@ project('spring-rabbit-junit') {
 	dependencies { // no spring-amqp dependencies allowed
 
 		compile "org.springframework:spring-core:$springVersion"
-		compile "junit:junit:$junit4Version"
+		compile ("junit:junit:$junit4Version", optional)
 		compile "com.rabbitmq:amqp-client:$rabbitmqVersion"
 		compile ("com.rabbitmq:http-client:$rabbitmqHttpClientVersion") {
 			exclude group: 'org.springframework', module: 'spring-web'
@@ -353,9 +353,9 @@ project('spring-rabbit-junit') {
 		compile "org.springframework:spring-web:$springVersion"
 		compile ("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion", optional)
 		compile "org.assertj:assertj-core:$assertjVersion"
+		compile ("ch.qos.logback:logback-classic:$logbackVersion", optional)
+		compile ("org.apache.logging.log4j:log4j-core:$log4jVersion", optional)
 		compileOnly 'org.apiguardian:apiguardian-api:1.0.0'
-
-		testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
 
 	}
 

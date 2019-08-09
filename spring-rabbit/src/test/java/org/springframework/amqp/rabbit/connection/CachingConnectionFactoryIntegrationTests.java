@@ -61,7 +61,7 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
-import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
+import org.springframework.amqp.rabbit.junit.LogLevelAdjuster;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.context.ApplicationContext;
