@@ -31,7 +31,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * @since 2.2
  *
  */
-@ExtendWith(LongLevelsCondition.class)
+@ExtendWith(LogLevelsCondition.class)
 @Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
 @Documented

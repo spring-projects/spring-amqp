@@ -39,7 +39,7 @@ import org.springframework.core.annotation.MergedAnnotations;
  * @since 5.2
  *
  */
-public class LongLevelsCondition
+public class LogLevelsCondition
 		implements ExecutionCondition, BeforeEachCallback, AfterEachCallback, AfterAllCallback {
 
 	private static final String STORE_ANNOTATION_KEY = "logLevelsAnnotation";
