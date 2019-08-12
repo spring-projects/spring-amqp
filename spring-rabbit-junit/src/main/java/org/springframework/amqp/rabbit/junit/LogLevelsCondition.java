@@ -35,6 +35,8 @@ import org.springframework.core.annotation.MergedAnnotation;
 import org.springframework.core.annotation.MergedAnnotations;
 
 /**
+ * JUnit condition that adjusts and reverts log levels before/after each test.
+ *
  * @author Gary Russell
  * @since 2.2
  *
