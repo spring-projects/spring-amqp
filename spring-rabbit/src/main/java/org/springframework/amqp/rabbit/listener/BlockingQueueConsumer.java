@@ -749,7 +749,8 @@ public class BlockingQueueConsumer {
 	 */
 	public void rollbackOnExceptionIfNecessary(Throwable ex) {
 
-		boolean ackRequired = !this.acknowledgeMode.isAutoAck() && !this.acknowledgeMode.isManual();
+		boolean ackRequired = !this.acknowledgeMode.isAutoAck()
+				&& (!this.acknowledgeMode.isManual() || RabbitUtils.isRejectManual(ex));
 		try {
 			if (this.transactional) {
 				if (logger.isDebugEnabled()) {
@@ -780,11 +781,11 @@ public class BlockingQueueConsumer {
 
 	/**
 	 * Perform a commit or message acknowledgement, as appropriate.
-	 * @param locallyTransacted Whether the channel is locally transacted.
+	 * @param localTx Whether the channel is locally transacted.
 	 * @return true if at least one delivery tag exists.
 	 * @throws IOException Any IOException.
 	 */
-	public boolean commitIfNecessary(boolean locallyTransacted) throws IOException {
+	public boolean commitIfNecessary(boolean localTx) throws IOException {
 
 		if (this.deliveryTags.isEmpty()) {
 			return false;
@@ -793,7 +794,7 @@ public class BlockingQueueConsumer {
 		/*
 		 * If we have a TX Manager, but no TX, act like we are locally transacted.
 		 */
-		boolean isLocallyTransacted = locallyTransacted
+		boolean isLocallyTransacted = localTx
 				|| (this.transactional
 				&& TransactionSynchronizationManager.getResource(this.connectionFactory) == null);
 		try {

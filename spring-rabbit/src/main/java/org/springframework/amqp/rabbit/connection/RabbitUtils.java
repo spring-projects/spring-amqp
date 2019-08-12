@@ -23,6 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.AmqpIOException;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -401,6 +402,17 @@ public abstract class RabbitUtils {
 		default:
 			throw new IllegalStateException("Unrecognized SaslConfig: " + saslConfig);
 		}
+	}
+
+	/**
+	 * Return true for {@link AmqpRejectAndDontRequeueException#isRejectManual()}.
+	 * @param ex the exception.
+	 * @return the exception's rejectManual property, if it's an
+	 * {@link AmqpRejectAndDontRequeueException}.
+	 */
+	public static boolean isRejectManual(Throwable ex) {
+		return ex instanceof AmqpRejectAndDontRequeueException
+				&& ((AmqpRejectAndDontRequeueException) ex).isRejectManual();
 	}
 
 }
