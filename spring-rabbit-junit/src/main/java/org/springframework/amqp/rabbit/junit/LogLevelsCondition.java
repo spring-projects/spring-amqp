@@ -36,7 +36,7 @@ import org.springframework.core.annotation.MergedAnnotations;
 
 /**
  * @author Gary Russell
- * @since 5.2
+ * @since 2.2
  *
  */
 public class LogLevelsCondition
