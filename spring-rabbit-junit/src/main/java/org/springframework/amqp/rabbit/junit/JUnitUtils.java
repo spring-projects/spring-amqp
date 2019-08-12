@@ -26,6 +26,9 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -60,18 +63,53 @@ public final class JUnitUtils {
 	public static LevelsContainer adjustLogLevels(String methodName, List<Class<?>> classes, List<String> categories,
 			Level level) {
 
-		Map<Class<?>, Level> oldLevels = new HashMap<Class<?>, Level>();
-		Map<String, Level> oldCatLevels = new HashMap<String, Level>();
+		LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+		Configuration config = ctx.getConfiguration();
+
+		Map<Class<?>, Level> classLevels = new HashMap<>();
+		for (Class<?> cls : classes) {
+			String className = cls.getName();
+			LoggerConfig loggerConfig = config.getLoggerConfig(className);
+			LoggerConfig specificConfig = loggerConfig;
+
+			// We need a specific configuration for this logger,
+			// otherwise we would change the level of all other loggers
+			// having the original configuration as parent as well
+
+			if (!loggerConfig.getName().equals(className)) {
+				specificConfig = new LoggerConfig(className, loggerConfig.getLevel(), true);
+				specificConfig.setParent(loggerConfig);
+				config.addLogger(className, specificConfig);
+			}
+
+			classLevels.put(cls, specificConfig.getLevel());
+			specificConfig.setLevel(level);
+		}
+
+		Map<String, Level> categoryLevels = new HashMap<>();
+		for (String category : categories) {
+			LoggerConfig loggerConfig = config.getLoggerConfig(category);
+			LoggerConfig specificConfig = loggerConfig;
+
+			// We need a specific configuration for this logger,
+			// otherwise we would change the level of all other loggers
+			// having the original configuration as parent as well
+
+			if (!loggerConfig.getName().equals(category)) {
+				specificConfig = new LoggerConfig(category, loggerConfig.getLevel(), true);
+				specificConfig.setParent(loggerConfig);
+				config.addLogger(category, specificConfig);
+			}
+
+			categoryLevels.put(category, specificConfig.getLevel());
+			specificConfig.setLevel(level);
+		}
+
+		ctx.updateLoggers();
+
 		Map<String, ch.qos.logback.classic.Level> oldLbLevels = new HashMap<>();
-		classes.stream()
-			.forEach(cls -> {
-				oldLevels.put(cls, LogManager.getLogger(cls).getLevel());
-				((Logger) LogManager.getLogger(cls)).setLevel(level);
-			});
 		categories.stream()
 			.forEach(cat -> {
-				oldCatLevels.put(cat, LogManager.getLogger(cat).getLevel());
-				((Logger) LogManager.getLogger(cat)).setLevel(level);
 				ch.qos.logback.classic.Logger lbLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(cat);
 				oldLbLevels.put(cat, lbLogger.getLevel());
 				lbLogger.setLevel(ch.qos.logback.classic.Level.toLevel(level.name()));
@@ -83,7 +121,7 @@ public final class JUnitUtils {
 					.collect(Collectors.toList())
 				+ " and " + categories.toString()
 				+ " for test " + methodName);
-		return new LevelsContainer(oldLevels, oldCatLevels, oldLbLevels);
+		return new LevelsContainer(classLevels, categoryLevels, oldLbLevels);
 	}
 
 	public static void revertLevels(String methodName, LevelsContainer container) {
