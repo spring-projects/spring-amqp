@@ -73,6 +73,7 @@ import org.mockito.InOrder;
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.context.ApplicationContext;
@@ -623,7 +624,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ccf.setExecutor(exec);
 		ccf.setChannelCacheSize(1);
 		ccf.setChannelCheckoutTimeout(1);
-		ccf.setPublisherConfirms(true);
+		ccf.setPublisherConfirmType(ConfirmType.CORRELATED);
 
 		final Connection con = ccf.createConnection();
 
@@ -692,7 +693,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ccf.setExecutor(mock(ExecutorService.class));
 		ccf.setChannelCacheSize(1);
 		ccf.setChannelCheckoutTimeout(1);
-		ccf.setPublisherConfirms(true);
+		ccf.setPublisherConfirmType(ConfirmType.CORRELATED);
 
 		RabbitTemplate rabbitTemplate = new RabbitTemplate(ccf);
 		rabbitTemplate.convertAndSend("foo", "bar");
@@ -1579,7 +1580,9 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 			CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 			ccf.setExecutor(executor);
-			ccf.setPublisherConfirms(confirms);
+			if (confirms) {
+				ccf.setPublisherConfirmType(ConfirmType.CORRELATED);
+			}
 			Connection con = ccf.createConnection();
 
 			Channel channel = con.createChannel(false);
@@ -1746,7 +1749,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		given(mockConnection.isOpen()).willReturn(true);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
-		ccf.setPublisherConfirms(true);
+		ccf.setPublisherConfirmType(ConfirmType.CORRELATED);
 		ApplicationContext ac = mock(ApplicationContext.class);
 		ccf.setApplicationContext(ac);
 		PublisherCallbackChannel pcc = mock(PublisherCallbackChannel.class);

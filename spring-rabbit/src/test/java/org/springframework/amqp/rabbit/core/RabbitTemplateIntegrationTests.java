@@ -72,6 +72,7 @@ import org.springframework.amqp.core.ReceiveAndReplyCallback;
 import org.springframework.amqp.core.ReceiveAndReplyMessageCallback;
 import org.springframework.amqp.core.ReplyToAddressCallback;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
 import org.springframework.amqp.rabbit.connection.ChannelListener;
 import org.springframework.amqp.rabbit.connection.ClosingRecoveryListener;
 import org.springframework.amqp.rabbit.connection.Connection;
@@ -1601,7 +1602,7 @@ public class RabbitTemplateIntegrationTests {
 
 	@Test
 	public void waitForConfirms() {
-		this.connectionFactory.setPublisherConfirms(true);
+		this.connectionFactory.setPublisherConfirmType(ConfirmType.CORRELATED);
 		Collection<?> messages = getMessagesToSend();
 		Boolean result = this.template.invoke(t -> {
 			messages.forEach(m -> t.convertAndSend(ROUTE, m));

@@ -685,7 +685,7 @@ mastered and connects to the address in the same array position.
 [[cf-pub-conf-ret]]
 ===== Publisher Confirms and Returns
 
-Confirmed and returned messages are supported by setting the `publisherConfirms` and `publisherReturns` properties of the `CachingConnectionFactory` to 'true'.
+Confirmed (with correlation) and returned messages are supported by setting the `CachingConnectionFactory` property `publisherConfirmType` to `ConfirmType.CORRELATED` and the `publisherReturns` property to 'true'.
 
 When these options are set, `Channel` instances created by the factory are wrapped in an `PublisherCallbackChannel`, which is used to facilitate the callbacks.
 When such a channel is obtained, the client can register a `PublisherCallbackChannel.Listener` with the `Channel`.
@@ -1059,7 +1059,7 @@ void returnedMessage(Message message, int replyCode, String replyText,
 Only one `ReturnCallback` is supported by each `RabbitTemplate`.
 See also <<reply-timeout>>.
 
-For publisher confirms (also known as publisher acknowledgements), the template requires a `CachingConnectionFactory` that has its `publisherConfirms` property set to `true`.
+For publisher confirms (also known as publisher acknowledgements), the template requires a `CachingConnectionFactory` that has its `publisherConfirm` property set to `ConfirmType.CORRELATED`.
 Confirms are sent to the client by it registering a `RabbitTemplate.ConfirmCallback` by calling `setConfirmCallback(ConfirmCallback callback)`.
 The callback must implement this method:
 
@@ -1105,7 +1105,7 @@ This is no longer necessary since the framework now hands off the callback invoc
 IMPORTANT: The guarantee of receiving a returned message before the ack is still maintained as long as the return callback executes in 60 seconds or less.
 The confirm is scheduled to be delivered after the return callback exits or after 60 seconds, whichever comes first.
 
-Starting with version 2.1, the `CorrelationData` object has a `ListenableFuture` that you can \used to get the result, instead of using a `ConfirmCallback` on the template.
+Starting with version 2.1, the `CorrelationData` object has a `ListenableFuture` that you can use to get the result, instead of using a `ConfirmCallback` on the template.
 The following example shows how to configure a `CorrelationData` instance:
 
 ====
@@ -1176,9 +1176,9 @@ NOTE: The preceding discussion is moot if the template operations are already pe
 In that case, the operations are performed on that channel and committed when the thread returns to the container.
 It is not necessary to use `invoke` in that scenario.
 
-When using confirms in this way, much of the infrastructure set up for correlating confirms to requests is not really needed.
-Starting with version 2.1, the connection factory supports a new property called `simplePublisherConfirms`.
-When this is `true`, the infrastructure is avoided and the confirm processing can be more efficient.
+When using confirms in this way, much of the infrastructure set up for correlating confirms to requests is not really needed (unless returns are also enabled).
+Starting with version 2.2, the connection factory supports a new property called `publisherConfirmType`.
+When this is set to `ConfirmType.SIMPLE`, the infrastructure is avoided and the confirm processing can be more efficient.
 
 Furthermore, the `RabbitTemplate` sets the `publisherSequenceNumber` property in the sent message `MessageProperties`.
 If you wish to check (or log or otherwise use) specific confirms, you can do so with an overloaded `invoke` method, as the following example shows:

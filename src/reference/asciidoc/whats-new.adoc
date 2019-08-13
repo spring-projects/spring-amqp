@@ -79,6 +79,8 @@ When using Publisher confirms and returns, the callbacks are now invoked on the 
 This avoids a possible deadlock in the `amqp-clients` library if you perform rabbit operations from within the callback.
 See <<template-confirms>> for more information.
 
+Also, the publisher confirm type is now specified with the `ConfirmType` enum instead of the two mutually exclusive setter methods.
+
 ===== Other Changes
 
 The `Declarables` object (for declaring multiple queues, exchanges, bindings) now has a filtered getter for each type.

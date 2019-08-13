@@ -111,6 +111,7 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, FACTORY_TIMEOUT, "channelCheckoutTimeout");
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, CONNECTION_LIMIT);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, "connection-name-strategy");
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, "confirm-type", "publisherConfirmType");
 	}
 
 }

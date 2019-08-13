@@ -129,14 +129,41 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 * The cache mode.
 	 */
 	public enum CacheMode {
+
 		/**
 		 * Cache channels - single connection.
 		 */
 		CHANNEL,
+
 		/**
 		 * Cache connections and channels within each connection.
 		 */
 		CONNECTION
+
+	}
+
+	/**
+	 * The type of publisher confirms to use.
+	 */
+	public enum ConfirmType {
+
+		/**
+		 * Use {@code RabbitTemplate#waitForConfirms()} (or {@code waitForConfirmsOrDie()}
+		 * within scoped operations.
+		 */
+		SIMPLE,
+
+		/**
+		 * Use with {@code CorrelationData} to correlate confirmations with sent
+		 * messsages.
+		 */
+		CORRELATED,
+
+		/**
+		 * Publisher confirms are disabled (default).
+		 */
+		NONE
+
 	}
 
 	private final Set<ChannelCachingConnectionProxy> allocatedConnections = new HashSet<>();
@@ -176,9 +203,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	private int connectionLimit = Integer.MAX_VALUE;
 
-	private boolean publisherConfirms;
-
-	private boolean simplePublisherConfirms;
+	private ConfirmType confirmType = ConfirmType.NONE;
 
 	private boolean publisherReturns;
 
@@ -356,7 +381,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	@Override
 	public boolean isPublisherConfirms() {
-		return this.publisherConfirms;
+		return ConfirmType.CORRELATED.equals(this.confirmType);
 	}
 
 	@Override
@@ -372,36 +397,53 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	}
 
 	/**
-	 * Use full publisher confirms, with correlation data and a callback for each message.
+	 * Use full (correlated) publisher confirms, with correlation data and a callback for
+	 * each message.
+	 * @deprecated in favor of {@link #setPublisherConfirmType(ConfirmType)}.
 	 * @param publisherConfirms true for full publisher returns,
 	 * @since 1.1
 	 * @see #setSimplePublisherConfirms(boolean)
 	 */
+	@Deprecated
 	public void setPublisherConfirms(boolean publisherConfirms) {
-		Assert.isTrue(!this.simplePublisherConfirms, "Cannot set both publisherConfirms and simplePublisherConfirms");
-		this.publisherConfirms = publisherConfirms;
+		Assert.isTrue(!ConfirmType.SIMPLE.equals(this.confirmType),
+				"Cannot set both publisherConfirms and simplePublisherConfirms");
+		this.confirmType = ConfirmType.CORRELATED;
 		if (this.publisherConnectionFactory != null) {
-			this.publisherConnectionFactory.setPublisherConfirms(publisherConfirms);
+			this.publisherConnectionFactory.setPublisherConfirmType(this.confirmType);
 		}
 	}
 
 	/**
 	 * Use simple publisher confirms where the template simply waits for completion.
+	 * @deprecated in favor of {@link #setPublisherConfirmType(ConfirmType)}.
 	 * @param simplePublisherConfirms true for confirms.
 	 * @since 2.1
 	 * @see #setPublisherConfirms(boolean)
 	 */
+	@Deprecated
 	public void setSimplePublisherConfirms(boolean simplePublisherConfirms) {
-		Assert.isTrue(!this.publisherConfirms, "Cannot set both publisherConfirms and simplePublisherConfirms");
-		this.simplePublisherConfirms = simplePublisherConfirms;
+		Assert.isTrue(!ConfirmType.CORRELATED.equals(this.confirmType),
+				"Cannot set both publisherConfirms and simplePublisherConfirms");
+		this.confirmType = ConfirmType.SIMPLE;
 		if (this.publisherConnectionFactory != null) {
-			this.publisherConnectionFactory.setSimplePublisherConfirms(simplePublisherConfirms);
+			this.publisherConnectionFactory.setPublisherConfirmType(this.confirmType);
 		}
 	}
 
 	@Override
 	public boolean isSimplePublisherConfirms() {
-		return this.simplePublisherConfirms;
+		return this.confirmType.equals(ConfirmType.SIMPLE);
+	}
+
+	/**
+	 * Set the confirm type to use; default {@link ConfirmType#NONE}.
+	 * @param confirmType the confirm type.
+	 * @since 2.2
+	 */
+	public void setPublisherConfirmType(ConfirmType confirmType) {
+		Assert.notNull(confirmType, "'confirmType' cannot be null");
+		this.confirmType = confirmType;
 	}
 
 	/**
@@ -630,7 +672,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 		getChannelListener().onCreate(targetChannel, transactional);
 		Class<?>[] interfaces;
-		if (this.publisherConfirms || this.publisherReturns) {
+		if (ConfirmType.CORRELATED.equals(this.confirmType) || this.publisherReturns) {
 			interfaces = new Class<?>[] { ChannelProxy.class, PublisherCallbackChannel.class };
 		}
 		else {
@@ -672,7 +714,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	private Channel doCreateBareChannel(ChannelCachingConnectionProxy conn, boolean transactional) {
 		Channel channel = conn.createBareChannel(transactional);
-		if (this.publisherConfirms || this.simplePublisherConfirms) {
+		if (!ConfirmType.NONE.equals(this.confirmType)) {
 			try {
 				channel.confirmSelect();
 			}
@@ -680,7 +722,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				logger.error("Could not configure the channel to receive publisher confirms", e);
 			}
 		}
-		if ((this.publisherConfirms || this.publisherReturns)
+		if ((ConfirmType.CORRELATED.equals(this.confirmType) || this.publisherReturns)
 				&& !(channel instanceof PublisherCallbackChannelImpl)) {
 			channel = this.publisherChannelFactory.createChannel(channel, getChannelsExecutor());
 		}
@@ -1037,9 +1079,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 		private final boolean transactional;
 
-		private final boolean confirmSelected = CachingConnectionFactory.this.simplePublisherConfirms;
+		private final boolean confirmSelected = ConfirmType.SIMPLE.equals(CachingConnectionFactory.this.confirmType);
 
-		private final boolean publisherConfirms = CachingConnectionFactory.this.publisherConfirms;
+		private final boolean publisherConfirms =
+				ConfirmType.CORRELATED.equals(CachingConnectionFactory.this.confirmType);
 
 		private volatile Channel target;
 
@@ -1285,7 +1328,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			boolean async = false;
 			try {
 				if (CachingConnectionFactory.this.active &&
-						(CachingConnectionFactory.this.publisherConfirms ||
+						(ConfirmType.CORRELATED.equals(CachingConnectionFactory.this.confirmType) ||
 								CachingConnectionFactory.this.publisherReturns)) {
 					async = true;
 					asyncClose(proxy);
@@ -1317,7 +1360,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			try {
 				executorService.execute(() -> {
 					try {
-						if (CachingConnectionFactory.this.publisherConfirms) {
+						if (ConfirmType.CORRELATED.equals(CachingConnectionFactory.this.confirmType)) {
 							channel.waitForConfirmsOrDie(ASYNC_CLOSE_TIMEOUT);
 						}
 						else {

@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 
 /**
@@ -41,7 +42,7 @@ public class SimplePublisherConfirmsTests {
 	@Test
 	public void testConfirms() {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
-		cf.setSimplePublisherConfirms(true);
+		cf.setPublisherConfirmType(ConfirmType.SIMPLE);
 		RabbitTemplate template = new RabbitTemplate(cf);
 		template.setRoutingKey(QUEUE);
 		Boolean invokeResult = template.invoke(t -> {
@@ -57,7 +58,7 @@ public class SimplePublisherConfirmsTests {
 	@Test
 	public void testConfirmsWithCallbacks() {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
-		cf.setSimplePublisherConfirms(true);
+		cf.setPublisherConfirmType(ConfirmType.SIMPLE);
 		RabbitTemplate template = new RabbitTemplate(cf);
 		template.setRoutingKey(QUEUE);
 		AtomicReference<MessageProperties> finalProperties = new AtomicReference<>();
