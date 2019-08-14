@@ -1127,7 +1127,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			if (isChannelTransacted()) {
 				RabbitUtils.rollbackIfNecessary(getChannel());
 			}
-			if (this.ackRequired || RabbitUtils.isRejectManual(e)) {
+			if (this.ackRequired || ContainerUtils.isRejectManual(e)) {
 				try {
 					if (this.messagesPerAck > 1) {
 						synchronized (this) {

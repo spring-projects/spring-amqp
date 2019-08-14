@@ -750,7 +750,7 @@ public class BlockingQueueConsumer {
 	public void rollbackOnExceptionIfNecessary(Throwable ex) {
 
 		boolean ackRequired = !this.acknowledgeMode.isAutoAck()
-				&& (!this.acknowledgeMode.isManual() || RabbitUtils.isRejectManual(ex));
+				&& (!this.acknowledgeMode.isManual() || ContainerUtils.isRejectManual(ex));
 		try {
 			if (this.transactional) {
 				if (logger.isDebugEnabled()) {
