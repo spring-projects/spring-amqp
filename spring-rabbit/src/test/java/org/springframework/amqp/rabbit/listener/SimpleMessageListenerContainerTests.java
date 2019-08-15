@@ -493,8 +493,10 @@ public class SimpleMessageListenerContainerTests {
 		Log logger = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
 		doReturn(false).when(logger).isDebugEnabled();
 		final CountDownLatch latch = new CountDownLatch(1);
+		final List<String> messages = new ArrayList<>();
 		doAnswer(invocation -> {
 			String message = invocation.getArgument(0);
+			messages.add(message);
 			if (message.startsWith("Consumer raised exception")) {
 				latch.countDown();
 			}
@@ -502,7 +504,9 @@ public class SimpleMessageListenerContainerTests {
 		}).when(logger).warn(any());
 		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
 		consumer.get().handleCancel("foo");
-		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(latch.await(10, TimeUnit.SECONDS))
+				.as("Expected 'Consumer raised exception' but got %s", messages)
+				.isTrue();
 		container.stop();
 	}
 
