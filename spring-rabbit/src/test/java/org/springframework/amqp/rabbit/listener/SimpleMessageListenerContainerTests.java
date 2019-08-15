@@ -124,7 +124,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setAcknowledgeMode(AcknowledgeMode.NONE);
 		container.setTransactionManager(new TestTransactionManager());
 		assertThatIllegalStateException()
-			.isThrownBy(() -> container.afterPropertiesSet());
+			.isThrownBy(container::afterPropertiesSet);
 		container.stop();
 		singleConnectionFactory.destroy();
 	}
@@ -138,7 +138,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setChannelTransacted(true);
 		container.setAcknowledgeMode(AcknowledgeMode.NONE);
 		assertThatIllegalStateException()
-			.isThrownBy(() -> container.afterPropertiesSet());
+			.isThrownBy(container::afterPropertiesSet);
 		container.stop();
 		singleConnectionFactory.destroy();
 	}
@@ -182,7 +182,7 @@ public class SimpleMessageListenerContainerTests {
 		Channel channel = mock(Channel.class);
 		when(connectionFactory.createConnection()).thenReturn(connection);
 		when(connection.createChannel(false)).thenReturn(channel);
-		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
+		final AtomicReference<Consumer> consumer = new AtomicReference<>();
 		doAnswer(invocation -> {
 			consumer.set(invocation.getArgument(6));
 			consumer.get().handleConsumeOk("1");
@@ -492,6 +492,7 @@ public class SimpleMessageListenerContainerTests {
 				any(Consumer.class));
 		Log logger = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
 		doReturn(false).when(logger).isDebugEnabled();
+		doReturn(true).when(logger).isWarnEnabled();
 		final CountDownLatch latch = new CountDownLatch(1);
 		final List<String> messages = new ArrayList<>();
 		doAnswer(invocation -> {
