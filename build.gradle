@@ -76,9 +76,6 @@ allprojects {
 		generatedPomCustomization {
 			enabled = false
 		}
-		imports {
-			mavenBom "com.fasterxml.jackson:jackson-bom:$jackson2Version"
-		}
 	}
 
 	repositories {
@@ -292,6 +289,12 @@ subprojects { subproject ->
 
 project('spring-amqp') {
 	description = 'Spring AMQP Core'
+	dependencyManagement {
+		imports {
+			mavenBom "com.fasterxml.jackson:jackson-bom:$jackson2Version"
+		}
+	}
+
 	dependencies {
 
 		compile "org.springframework:spring-core:$springVersion"
@@ -320,6 +323,12 @@ project('spring-amqp') {
 
 project('spring-rabbit') {
 	description = 'Spring RabbitMQ Support'
+
+	dependencyManagement {
+		imports {
+			mavenBom "com.fasterxml.jackson:jackson-bom:$jackson2Version"
+		}
+	}
 
 	dependencies {
 
@@ -377,6 +386,12 @@ project('spring-rabbit-junit') {
 
 project('spring-rabbit-test') {
 	description = 'Spring Rabbit Test Support'
+
+	dependencyManagement {
+		imports {
+			mavenBom "com.fasterxml.jackson:jackson-bom:$jackson2Version"
+		}
+	}
 
 	dependencies {
 
