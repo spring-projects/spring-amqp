@@ -4927,6 +4927,11 @@ A common pattern for handling DLQ messages is to set a `time-to-live` on those m
 The problem with this technique is that messages that cause fatal exceptions loop forever.
 Starting with version 2.1, the `ConditionalRejectingErrorHandler` detects an `x-death` header on a message that causes a fatal exception to be thrown.
 The message is logged and discarded.
+You can revert to the previous behavior by setting the `discardFatalsWithXDeath` property on the `ConditionalRejectingErrorHandler` to `false`.
+
+IMPORTANT: Starting with version 2.1.9, messages with these fatal exceptions are rejected and NOT requeued by default, even if the container acknowledge mode is MANUAL.
+These exceptions generally occur before the listener is invoked so the listener does not have a chance to ack or nack the message so it remained in the queue in an un-acked state.
+To revert to the previous behavior, set the `rejectManual` property on the `ConditionalRejectingErrorHandler` to `false`.
 
 [[transactions]]
 ==== Transactions
