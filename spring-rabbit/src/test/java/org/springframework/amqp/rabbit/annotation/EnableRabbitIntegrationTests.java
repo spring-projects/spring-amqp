@@ -938,7 +938,7 @@ public class EnableRabbitIntegrationTests {
 
 		final RabbitTemplate txRabbitTemplate;
 
-		final List<Object> foos = new ArrayList<Object>();
+		final List<Object> foos = new ArrayList<>();
 
 		final CountDownLatch latch = new CountDownLatch(1);
 
@@ -948,7 +948,7 @@ public class EnableRabbitIntegrationTests {
 
 		final CountDownLatch batch3Latch = new CountDownLatch(1);
 
-		volatile boolean channelBoundOk;
+		volatile Boolean channelBoundOk;
 
 		volatile List<Message> amqpMessagesReceived;
 
@@ -966,9 +966,7 @@ public class EnableRabbitIntegrationTests {
 				key = "auto.rk"), containerFactory = "txListenerContainerFactory"
 		)
 		public String handleWithDeclare(String foo, Channel channel) {
-			this.channelBoundOk = this.txRabbitTemplate.execute(c -> {
-				return c.equals(channel);
-			});
+			this.channelBoundOk = this.txRabbitTemplate.execute(c -> c.equals(channel));
 			return foo.toUpperCase() + Thread.currentThread().getName();
 		}
 
@@ -1511,7 +1509,7 @@ public class EnableRabbitIntegrationTests {
 			factory.setConsumerTagStrategy(consumerTagStrategy());
 			Jackson2JsonMessageConverter messageConverter = new Jackson2JsonMessageConverter();
 			DefaultClassMapper classMapper = new DefaultClassMapper();
-			Map<String, Class<?>> idClassMapping = new HashMap<String, Class<?>>();
+			Map<String, Class<?>> idClassMapping = new HashMap<>();
 			idClassMapping.put(
 					"org.springframework.amqp.rabbit.annotation.EnableRabbitIntegrationTests$Foo1", Foo2.class);
 			classMapper.setIdClassMapping(idClassMapping);
@@ -1565,7 +1563,7 @@ public class EnableRabbitIntegrationTests {
 		public Collection<org.springframework.amqp.core.Queue> commaQueues() {
 			org.springframework.amqp.core.Queue comma3 = new org.springframework.amqp.core.Queue("test.comma.3");
 			org.springframework.amqp.core.Queue comma4 = new org.springframework.amqp.core.Queue("test.comma.4");
-			List<org.springframework.amqp.core.Queue> list = new ArrayList<org.springframework.amqp.core.Queue>();
+			List<org.springframework.amqp.core.Queue> list = new ArrayList<>();
 			list.add(comma3);
 			list.add(comma4);
 			return list;
@@ -1909,6 +1907,7 @@ public class EnableRabbitIntegrationTests {
 		public RabbitTemplate jsonRabbitTemplate() {
 			RabbitTemplate rabbitTemplate = new RabbitTemplate(rabbitConnectionFactory());
 			rabbitTemplate.setMessageConverter(jsonConverter());
+			rabbitTemplate.setReplyTimeout(60_000);
 			return rabbitTemplate;
 		}
 
