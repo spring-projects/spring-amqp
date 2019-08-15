@@ -15,7 +15,7 @@ plugins {
 	id 'org.asciidoctor.convert' version '1.6.1'
 	id 'org.ajoberstar.grgit' version '3.1.1'
 	id "io.spring.nohttp" version "0.0.3.RELEASE"
-	id "io.spring.dependency-management" version "1.0.7.RELEASE" apply false
+	id "io.spring.dependency-management" version "1.0.8.RELEASE" apply false
 }
 
 description = 'Spring AMQP'
