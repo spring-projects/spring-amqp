@@ -16,6 +16,8 @@
 
 package org.springframework.amqp;
 
+import org.springframework.lang.Nullable;
+
 /**
  * Exception for listener implementations used to indicate the
  * basic.reject will be sent with requeue=false in order to enable
@@ -27,16 +29,54 @@ package org.springframework.amqp;
 @SuppressWarnings("serial")
 public class AmqpRejectAndDontRequeueException extends AmqpException {
 
-	public AmqpRejectAndDontRequeueException(String message, Throwable cause) {
-		super(message, cause);
-	}
+	private final boolean rejectManual;
 
+	/**
+	 * Construct an instance with the supplied argument.
+	 * @param message A message describing the problem.
+	 */
 	public AmqpRejectAndDontRequeueException(String message) {
-		super(message);
+		this(message, false, null);
 	}
 
+	/**
+	 * Construct an instance with the supplied argument.
+	 * @param cause the cause.
+	 */
 	public AmqpRejectAndDontRequeueException(Throwable cause) {
-		super(cause);
+		this(null, false, cause);
+	}
+
+	/**
+	 * Construct an instance with the supplied arguments.
+	 * @param message A message describing the problem.
+	 * @param cause the cause.
+	 */
+	public AmqpRejectAndDontRequeueException(String message, Throwable cause) {
+		this(message, false, cause);
+	}
+
+	/**
+	 * Construct an instance with the supplied arguments.
+	 * @param message A message describing the problem.
+	 * @param rejectManual true to reject the message, even with Manual Acks if this is
+	 * the top-level exception (e.g. thrown by an error handler).
+	 * @param cause the cause.
+	 * @since 2.1.9
+	 */
+	public AmqpRejectAndDontRequeueException(@Nullable String message, boolean rejectManual,
+			@Nullable Throwable cause) {
+
+		super(message, cause);
+		this.rejectManual = rejectManual;
+	}
+
+	/**
+	 * True if the container should reject the message, even with manual acks.
+	 * @return true to reject.
+	 */
+	public boolean isRejectManual() {
+		return this.rejectManual;
 	}
 
 }

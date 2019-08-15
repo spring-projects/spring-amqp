@@ -60,6 +60,8 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 
 	private boolean discardFatalsWithXDeath = true;
 
+	private boolean rejectManual = true;
+
 	/**
 	 * Create a handler with the {@link ConditionalRejectingErrorHandler.DefaultExceptionStrategy}.
 	 */
@@ -87,6 +89,15 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 		this.discardFatalsWithXDeath = discardFatalsWithXDeath;
 	}
 
+	/**
+	 * Set to false to NOT reject a fatal message when MANUAL ack mode is being used.
+	 * @param rejectManual false to leave the message in an unack'd state.
+	 * @since 2.1.9
+	 */
+	public void setRejectManual(boolean rejectManual) {
+		this.rejectManual = rejectManual;
+	}
+
 	@Override
 	public void handleError(Throwable t) {
 		log(t);
@@ -102,7 +113,8 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 					}
 				}
 			}
-			throw new AmqpRejectAndDontRequeueException("Error Handler converted exception to fatal", t);
+			throw new AmqpRejectAndDontRequeueException("Error Handler converted exception to fatal", this.rejectManual,
+					t);
 		}
 	}
 

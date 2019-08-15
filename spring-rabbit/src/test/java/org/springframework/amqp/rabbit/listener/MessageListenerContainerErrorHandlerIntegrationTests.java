@@ -198,19 +198,49 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 	}
 
 	@Test
-	public void testRejectingErrorHandler() throws Exception {
+	public void testRejectingErrorHandlerSimpleAuto() throws Exception {
 		RabbitTemplate template = createTemplate(1);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
+		container.setReceiveTimeout(50);
+		testRejectingErrorHandler(template, container);
+	}
+
+	@Test
+	public void testRejectingErrorHandlerSimpleManual() throws Exception {
+		RabbitTemplate template = createTemplate(1);
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
+		container.setReceiveTimeout(50);
+		container.setAcknowledgeMode(AcknowledgeMode.MANUAL);
+		testRejectingErrorHandler(template, container);
+	}
+
+	@Test
+	public void testRejectingErrorHandlerDirectAuto() throws Exception {
+		RabbitTemplate template = createTemplate(1);
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(template.getConnectionFactory());
+		testRejectingErrorHandler(template, container);
+	}
+
+	@Test
+	public void testRejectingErrorHandlerDirectManual() throws Exception {
+		RabbitTemplate template = createTemplate(1);
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(template.getConnectionFactory());
+		container.setAcknowledgeMode(AcknowledgeMode.MANUAL);
+		testRejectingErrorHandler(template, container);
+	}
+
+	private void testRejectingErrorHandler(RabbitTemplate template, AbstractMessageListenerContainer container)
+			throws Exception {
 		MessageListenerAdapter messageListener = new MessageListenerAdapter();
 		messageListener.setDelegate(new Object());
 		container.setMessageListener(messageListener);
 
 		RabbitAdmin admin = new RabbitAdmin(template.getConnectionFactory());
-		Queue queue = QueueBuilder.nonDurable("")
+		Queue queueForTest = QueueBuilder.nonDurable("")
 				.autoDelete()
 				.withArgument("x-dead-letter-exchange", "test.DLE")
 				.build();
-		String testQueueName = admin.declareQueue(queue);
+		String testQueueName = admin.declareQueue(queueForTest);
 		// Create a DeadLetterExchange and bind a queue to it with the original routing key
 		DirectExchange dle = new DirectExchange("test.DLE", false, true);
 		admin.declareExchange(dle);
@@ -219,7 +249,6 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		admin.declareBinding(BindingBuilder.bind(dlq).to(dle).with(testQueueName));
 
 		container.setQueueNames(testQueueName);
-		container.setReceiveTimeout(50);
 		container.afterPropertiesSet();
 		container.start();
 
@@ -229,7 +258,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 				.build();
 		template.send("", testQueueName, message);
 
-		Message rejected = template.receive(dlq.getName());
+		Message rejected = template.receive(dlq.getName()); // can't use timed receive, queue will be deleted
 		int n = 0;
 		while (n++ < 100 && rejected == null) {
 			Thread.sleep(100);

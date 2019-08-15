@@ -67,4 +67,16 @@ public final class ContainerUtils {
 		return shouldRequeue;
 	}
 
+	/**
+	 * Return true for {@link AmqpRejectAndDontRequeueException#isRejectManual()}.
+	 * @param ex the exception.
+	 * @return the exception's rejectManual property, if it's an
+	 * {@link AmqpRejectAndDontRequeueException}.
+	 * @since 2.2
+	 */
+	public static boolean isRejectManual(Throwable ex) {
+		return ex instanceof AmqpRejectAndDontRequeueException
+				&& ((AmqpRejectAndDontRequeueException) ex).isRejectManual();
+	}
+
 }
