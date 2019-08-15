@@ -77,8 +77,9 @@ allprojects {
 			enabled = false
 		}
 		imports {
-			mavenBom "com.fasterxml.jackson:jackson-bom:$jackson2Version"}
+			mavenBom "com.fasterxml.jackson:jackson-bom:$jackson2Version"
 		}
+	}
 
 	repositories {
 		maven { url 'https://repo.spring.io/libs-release' }
