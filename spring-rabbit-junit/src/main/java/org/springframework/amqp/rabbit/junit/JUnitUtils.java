@@ -35,6 +35,8 @@ import org.slf4j.LoggerFactory;
  * Utility methods for JUnit rules and conditions.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.2
  *
  */
@@ -52,7 +54,7 @@ public final class JUnitUtils {
 	 * @return the parsed property value if it exists, false otherwise.
 	 */
 	public static boolean parseBooleanProperty(String property) {
-		for (String value: new String[] { System.getenv(property), System.getProperty(property) }) {
+		for (String value : new String[] { System.getenv(property), System.getProperty(property) }) {
 			if (Boolean.parseBoolean(value)) {
 				return true;
 			}
@@ -108,17 +110,16 @@ public final class JUnitUtils {
 		ctx.updateLoggers();
 
 		Map<String, ch.qos.logback.classic.Level> oldLbLevels = new HashMap<>();
-		categories.stream()
-			.forEach(cat -> {
-				ch.qos.logback.classic.Logger lbLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(cat);
-				oldLbLevels.put(cat, lbLogger.getLevel());
-				lbLogger.setLevel(ch.qos.logback.classic.Level.toLevel(level.name()));
-			});
+		categories.forEach(cat -> {
+			ch.qos.logback.classic.Logger lbLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(cat);
+			oldLbLevels.put(cat, lbLogger.getLevel());
+			lbLogger.setLevel(ch.qos.logback.classic.Level.toLevel(level.name()));
+		});
 		LOGGER.info("++++++++++++++++++++++++++++ "
 				+ "Overridden log level setting for: "
 				+ classes.stream()
-					.map(Class::getSimpleName)
-					.collect(Collectors.toList())
+				.map(Class::getSimpleName)
+				.collect(Collectors.toList())
 				+ " and " + categories.toString()
 				+ " for test " + methodName);
 		return new LevelsContainer(classLevels, categoryLevels, oldLbLevels);
@@ -127,35 +128,27 @@ public final class JUnitUtils {
 	public static void revertLevels(String methodName, LevelsContainer container) {
 		LOGGER.info("++++++++++++++++++++++++++++ "
 				+ "Restoring log level setting for test " + methodName);
-		container.oldCatLevels.entrySet()
-				.stream()
-				.forEach(entry -> {
-					if (!entry.getKey().contains("BrokerRunning")) {
-						((Logger) LogManager.getLogger(entry.getKey())).setLevel(entry.getValue());
-					}
-				});
-		container.oldLevels.entrySet()
-				.stream()
-				.forEach(entry -> {
-					if (!entry.getKey().equals(BrokerRunning.class)) {
-						((Logger) LogManager.getLogger(entry.getKey())).setLevel(entry.getValue());
-					}
-				});
-		container.oldLbLevels.entrySet()
-				.stream()
-				.forEach(entry -> {
-					((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(entry.getKey()))
-							.setLevel(entry.getValue());
-				});
+		container.oldCatLevels.forEach((key, value) -> {
+			if (!key.contains("BrokerRunning")) {
+				((Logger) LogManager.getLogger(key)).setLevel(value);
+			}
+		});
+		container.oldLevels.forEach((key, value) -> {
+			if (!key.equals(BrokerRunning.class)) {
+				((Logger) LogManager.getLogger(key)).setLevel(value);
+			}
+		});
+		container.oldLbLevels.forEach((key, value) ->
+				((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(key)).setLevel(value));
 	}
 
 	public static class LevelsContainer {
 
-		final Map<Class<?>, Level> oldLevels;
+		private final Map<Class<?>, Level> oldLevels;
 
-		final Map<String, Level> oldCatLevels;
+		private final Map<String, Level> oldCatLevels;
 
-		final Map<String, ch.qos.logback.classic.Level> oldLbLevels;
+		private final Map<String, ch.qos.logback.classic.Level> oldLbLevels;
 
 		public LevelsContainer(Map<Class<?>, Level> oldLevels, Map<String, Level> oldCatLevels,
 				Map<String, ch.qos.logback.classic.Level> oldLbLevels) {
