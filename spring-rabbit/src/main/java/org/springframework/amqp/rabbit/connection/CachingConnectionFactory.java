@@ -438,7 +438,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	public void setPublisherConfirmType(ConfirmType confirmType) {
 		Assert.notNull(confirmType, "'confirmType' cannot be null");
 		this.confirmType = confirmType;
-		if (this.publisherChannelFactory != null) {
+		if (this.publisherConnectionFactory != null) {
 			this.publisherConnectionFactory.setPublisherConfirmType(confirmType);
 		}
 	}
