@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 
@@ -55,7 +56,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests2 {
 		// otherwise channels can be closed before confirms are received.
 		connectionFactoryWithConfirmsEnabled.setChannelCacheSize(100);
 		connectionFactoryWithConfirmsEnabled.setPort(BrokerTestUtils.getPort());
-		connectionFactoryWithConfirmsEnabled.setPublisherConfirms(true);
+		connectionFactoryWithConfirmsEnabled.setPublisherConfirmType(ConfirmType.CORRELATED);
 		templateWithConfirmsEnabled = new RabbitTemplate(connectionFactoryWithConfirmsEnabled);
 	}
 

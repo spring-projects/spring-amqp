@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
@@ -55,7 +56,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 	public void testRepublishOnNackThreadNoExchange() throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory(
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
-		cf.setPublisherConfirms(true);
+		cf.setPublisherConfirmType(ConfirmType.CORRELATED);
 		final RabbitTemplate template = new RabbitTemplate(cf);
 		final CountDownLatch confirmLatch = new CountDownLatch(2);
 		template.setConfirmCallback((cd, a, c) -> {
@@ -74,7 +75,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 		final CachingConnectionFactory cf = new CachingConnectionFactory(
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
 		cf.setPublisherReturns(true);
-		cf.setPublisherConfirms(true);
+		cf.setPublisherConfirmType(ConfirmType.CORRELATED);
 		final RabbitTemplate template = new RabbitTemplate(cf);
 		final CountDownLatch returnLatch = new CountDownLatch(1);
 		final CountDownLatch confirmLatch = new CountDownLatch(1);
@@ -108,7 +109,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 	public void testDeferredChannelCacheAck() throws Exception {
 		final CachingConnectionFactory cf = new CachingConnectionFactory(
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
-		cf.setPublisherConfirms(true);
+		cf.setPublisherConfirmType(ConfirmType.CORRELATED);
 		final RabbitTemplate template = new RabbitTemplate(cf);
 		final CountDownLatch confirmLatch = new CountDownLatch(1);
 		final AtomicInteger cacheCount = new AtomicInteger();
@@ -134,7 +135,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 	public void testTwoSendsAndReceivesDRTMLC() throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory(
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
-		cf.setPublisherConfirms(true);
+		cf.setPublisherConfirmType(ConfirmType.CORRELATED);
 		RabbitTemplate template = new RabbitTemplate(cf);
 		template.setReplyTimeout(0);
 		final CountDownLatch confirmLatch = new CountDownLatch(2);

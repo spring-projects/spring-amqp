@@ -31,6 +31,7 @@
 
 	<rabbit:connection-factory id="withExecutorService" host="foo" virtual-host="/bar"
 		channel-cache-size="10" port="6888" username="user" password="password"
+		confirm-type="SIMPLE"
 		executor="execService" />
 
 	<bean id="execService" class="java.util.concurrent.Executors" factory-method="newSingleThreadExecutor" />

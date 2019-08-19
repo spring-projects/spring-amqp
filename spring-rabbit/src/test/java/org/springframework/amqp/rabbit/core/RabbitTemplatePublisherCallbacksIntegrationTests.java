@@ -60,6 +60,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.QueueBuilder.Overflow;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.connection.PendingConfirm;
@@ -121,7 +122,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		connectionFactoryWithConfirmsEnabled.setHost("localhost");
 		connectionFactoryWithConfirmsEnabled.setChannelCacheSize(100);
 		connectionFactoryWithConfirmsEnabled.setPort(BrokerTestUtils.getPort());
-		connectionFactoryWithConfirmsEnabled.setPublisherConfirms(true);
+		connectionFactoryWithConfirmsEnabled.setPublisherConfirmType(ConfirmType.CORRELATED);
 		templateWithConfirmsEnabled = new RabbitTemplate(connectionFactoryWithConfirmsEnabled);
 		connectionFactoryWithReturnsEnabled = new CachingConnectionFactory();
 		connectionFactoryWithReturnsEnabled.setHost("localhost");
@@ -133,7 +134,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		connectionFactoryWithConfirmsAndReturnsEnabled.setHost("localhost");
 		connectionFactoryWithConfirmsAndReturnsEnabled.setChannelCacheSize(100);
 		connectionFactoryWithConfirmsAndReturnsEnabled.setPort(BrokerTestUtils.getPort());
-		connectionFactoryWithConfirmsAndReturnsEnabled.setPublisherConfirms(true);
+		connectionFactoryWithConfirmsAndReturnsEnabled.setPublisherConfirmType(ConfirmType.CORRELATED);
 		connectionFactoryWithConfirmsAndReturnsEnabled.setPublisherReturns(true);
 		templateWithConfirmsAndReturnsEnabled = new RabbitTemplate(connectionFactoryWithConfirmsAndReturnsEnabled);
 		templateWithConfirmsAndReturnsEnabled.setMandatory(true);
@@ -331,7 +332,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setExecutor(mock(ExecutorService.class));
-		ccf.setPublisherConfirms(true);
+		ccf.setPublisherConfirmType(ConfirmType.CORRELATED);
 		final RabbitTemplate template = new RabbitTemplate(ccf);
 
 		final AtomicBoolean confirmed = new AtomicBoolean();
@@ -366,7 +367,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setExecutor(mock(ExecutorService.class));
-		ccf.setPublisherConfirms(true);
+		ccf.setPublisherConfirmType(ConfirmType.CORRELATED);
 		ccf.setChannelCacheSize(3);
 		final RabbitTemplate template = new RabbitTemplate(ccf);
 
@@ -440,7 +441,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setExecutor(mock(ExecutorService.class));
-		ccf.setPublisherConfirms(true);
+		ccf.setPublisherConfirmType(ConfirmType.CORRELATED);
 		final RabbitTemplate template = new RabbitTemplate(ccf);
 
 		final AtomicBoolean confirmed = new AtomicBoolean();
@@ -482,7 +483,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setExecutor(mock(ExecutorService.class));
-		ccf.setPublisherConfirms(true);
+		ccf.setPublisherConfirmType(ConfirmType.CORRELATED);
 		final RabbitTemplate template = new RabbitTemplate(ccf);
 
 		final CountDownLatch latch = new CountDownLatch(2);
@@ -522,7 +523,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setExecutor(mock(ExecutorService.class));
-		ccf.setPublisherConfirms(true);
+		ccf.setPublisherConfirmType(ConfirmType.CORRELATED);
 		final RabbitTemplate template1 = new RabbitTemplate(ccf);
 
 		final Set<String> confirms = new HashSet<String>();
@@ -581,7 +582,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setExecutor(mock(ExecutorService.class));
-		ccf.setPublisherConfirms(true);
+		ccf.setPublisherConfirmType(ConfirmType.CORRELATED);
 		ccf.setChannelCacheSize(3);
 		final RabbitTemplate template = new RabbitTemplate(ccf);
 
@@ -704,7 +705,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setExecutor(mock(ExecutorService.class));
-		ccf.setPublisherConfirms(true);
+		ccf.setPublisherConfirmType(ConfirmType.CORRELATED);
 		final RabbitTemplate template = new RabbitTemplate(ccf);
 
 		final AtomicBoolean confirmed = new AtomicBoolean();
@@ -766,7 +767,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setExecutor(Executors.newSingleThreadExecutor());
-		ccf.setPublisherConfirms(true);
+		ccf.setPublisherConfirmType(ConfirmType.CORRELATED);
 		final RabbitTemplate template = new RabbitTemplate(ccf);
 
 		final CountDownLatch confirmed = new CountDownLatch(1);

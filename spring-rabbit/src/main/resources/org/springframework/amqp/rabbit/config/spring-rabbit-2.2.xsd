@@ -1454,9 +1454,20 @@
 			<xsd:attribute name="publisher-confirms" type="xsd:string" use="optional">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
-	When true, channels on connections created by this factory support publisher confirms.
+	When true, channels on connections created by this factory support correlated publisher confirms.
+	DEPRECATED in favor of 'confirm-type'.
 					]]></xsd:documentation>
 				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="confirm-type" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	The type of publisher confirmation to use, or NONE to disable.
+					]]></xsd:documentation>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:union memberTypes="confirmTypes xsd:string"/>
+				</xsd:simpleType>
 			</xsd:attribute>
 			<xsd:attribute name="publisher-returns" type="xsd:string" use="optional">
 				<xsd:annotation>
@@ -1591,6 +1602,14 @@
 		<xsd:restriction base="xsd:token">
 			<xsd:enumeration value="CHANNEL"/>
 			<xsd:enumeration value="CONNECTION"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="confirmTypes">
+		<xsd:restriction base="xsd:token">
+			<xsd:enumeration value="SIMPLE"/>
+			<xsd:enumeration value="CORRELATED"/>
+			<xsd:enumeration value="NONE"/>
 		</xsd:restriction>
 	</xsd:simpleType>
 

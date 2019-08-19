@@ -25,6 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
 import org.springframework.amqp.rabbit.connection.ConnectionNameStrategy;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
@@ -61,7 +62,7 @@ public final class ConnectionFactoryParserTests {
 		assertThat(connectionFactory.getChannelCacheSize()).isEqualTo(10);
 		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory);
 		assertThat(dfa.getPropertyValue("executorService")).isNull();
-		assertThat(dfa.getPropertyValue("publisherConfirms")).isEqualTo(Boolean.TRUE);
+		assertThat(dfa.getPropertyValue("confirmType")).isEqualTo(ConfirmType.CORRELATED);
 		assertThat(dfa.getPropertyValue("publisherReturns")).isEqualTo(Boolean.TRUE);
 		assertThat(TestUtils.getPropertyValue(connectionFactory, "rabbitConnectionFactory.requestedHeartbeat")).isEqualTo(123);
 		assertThat(TestUtils.getPropertyValue(connectionFactory, "rabbitConnectionFactory.connectionTimeout")).isEqualTo(789);
@@ -87,7 +88,7 @@ public final class ConnectionFactoryParserTests {
 		ThreadPoolTaskExecutor exec = beanFactory.getBean("exec", ThreadPoolTaskExecutor.class);
 		assertThat(executor).isSameAs(exec.getThreadPoolExecutor());
 		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory);
-		assertThat(dfa.getPropertyValue("publisherConfirms")).isEqualTo(Boolean.FALSE);
+		assertThat(dfa.getPropertyValue("confirmType")).isEqualTo(ConfirmType.NONE);
 		assertThat(dfa.getPropertyValue("publisherReturns")).isEqualTo(Boolean.FALSE);
 		assertThat(connectionFactory.getCacheMode()).isEqualTo(CachingConnectionFactory.CacheMode.CONNECTION);
 		assertThat(TestUtils.getPropertyValue(connectionFactory, "rabbitConnectionFactory.connectionTimeout")).isEqualTo(new ConnectionFactory().getConnectionTimeout());
@@ -103,6 +104,8 @@ public final class ConnectionFactoryParserTests {
 		assertThat(executor).isNotNull();
 		ExecutorService exec = beanFactory.getBean("execService", ExecutorService.class);
 		assertThat(executor).isSameAs(exec);
+		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory);
+		assertThat(dfa.getPropertyValue("confirmType")).isEqualTo(ConfirmType.SIMPLE);
 	}
 
 	@Test
