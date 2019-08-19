@@ -399,36 +399,30 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	/**
 	 * Use full (correlated) publisher confirms, with correlation data and a callback for
 	 * each message.
-	 * @deprecated in favor of {@link #setPublisherConfirmType(ConfirmType)}.
 	 * @param publisherConfirms true for full publisher returns,
 	 * @since 1.1
+	 * @deprecated in favor of {@link #setPublisherConfirmType(ConfirmType)}.
 	 * @see #setSimplePublisherConfirms(boolean)
 	 */
 	@Deprecated
 	public void setPublisherConfirms(boolean publisherConfirms) {
 		Assert.isTrue(!ConfirmType.SIMPLE.equals(this.confirmType),
 				"Cannot set both publisherConfirms and simplePublisherConfirms");
-		this.confirmType = ConfirmType.CORRELATED;
-		if (this.publisherConnectionFactory != null) {
-			this.publisherConnectionFactory.setPublisherConfirmType(this.confirmType);
-		}
+		setPublisherConfirmType(ConfirmType.CORRELATED);
 	}
 
 	/**
 	 * Use simple publisher confirms where the template simply waits for completion.
-	 * @deprecated in favor of {@link #setPublisherConfirmType(ConfirmType)}.
 	 * @param simplePublisherConfirms true for confirms.
 	 * @since 2.1
+	 * @deprecated in favor of {@link #setPublisherConfirmType(ConfirmType)}.
 	 * @see #setPublisherConfirms(boolean)
 	 */
 	@Deprecated
 	public void setSimplePublisherConfirms(boolean simplePublisherConfirms) {
 		Assert.isTrue(!ConfirmType.CORRELATED.equals(this.confirmType),
 				"Cannot set both publisherConfirms and simplePublisherConfirms");
-		this.confirmType = ConfirmType.SIMPLE;
-		if (this.publisherConnectionFactory != null) {
-			this.publisherConnectionFactory.setPublisherConfirmType(this.confirmType);
-		}
+		setPublisherConfirmType(ConfirmType.SIMPLE);
 	}
 
 	@Override
@@ -444,6 +438,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	public void setPublisherConfirmType(ConfirmType confirmType) {
 		Assert.notNull(confirmType, "'confirmType' cannot be null");
 		this.confirmType = confirmType;
+		if (this.publisherChannelFactory != null) {
+			this.publisherConnectionFactory.setPublisherConfirmType(confirmType);
+		}
 	}
 
 	/**
