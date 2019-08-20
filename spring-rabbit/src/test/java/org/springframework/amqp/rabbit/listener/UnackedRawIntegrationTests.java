@@ -23,10 +23,10 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.rabbit.support.Delivery;
@@ -45,7 +45,7 @@ import com.rabbitmq.client.GetResponse;
  * @author Dave Syer
  *
  */
-@Ignore
+@Disabled
 public class UnackedRawIntegrationTests {
 
 	private final ConnectionFactory factory = new ConnectionFactory();
@@ -53,7 +53,7 @@ public class UnackedRawIntegrationTests {
 	private Channel noTxChannel;
 	private Channel txChannel;
 
-	@Before
+	@BeforeEach
 	public void init() throws Exception {
 
 		factory.setHost("localhost");
@@ -74,7 +74,7 @@ public class UnackedRawIntegrationTests {
 
 	}
 
-	@After
+	@AfterEach
 	public void clear() throws Exception {
 		if (txChannel != null) {
 			try {

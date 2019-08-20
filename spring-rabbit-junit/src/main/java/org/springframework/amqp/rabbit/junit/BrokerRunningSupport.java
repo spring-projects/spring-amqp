@@ -96,9 +96,6 @@ public final class BrokerRunningSupport {
 
 	private final String[] queues;
 
-	private final int defaultPort = fromEnvironment(BROKER_PORT, null) == null ? BrokerTestUtils.getPort()
-			: Integer.valueOf(fromEnvironment(BROKER_PORT, null));
-
 	private int port;
 
 	private String hostName = fromEnvironment(BROKER_HOSTNAME, "localhost");
@@ -204,7 +201,9 @@ public final class BrokerRunningSupport {
 		}
 		this.purge = purge;
 		this.management = management;
-		setPort(this.defaultPort);
+		setPort(fromEnvironment(BROKER_PORT, null) == null
+				? BrokerTestUtils.getPort()
+				: Integer.valueOf(fromEnvironment(BROKER_PORT, null)));
 	}
 
 	private BrokerRunningSupport(boolean assumeOnline, String... queues) {

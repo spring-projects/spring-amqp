@@ -41,10 +41,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.AmqpIOException;
@@ -61,9 +60,9 @@ import org.springframework.amqp.rabbit.connection.PublisherCallbackChannelImpl;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
-import org.springframework.amqp.rabbit.junit.LongRunningIntegrationTest;
+import org.springframework.amqp.rabbit.junit.LongRunning;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
@@ -88,50 +87,45 @@ import com.rabbitmq.client.Channel;
  * @since 1.3
  *
  */
+@RabbitAvailable(queues = { SimpleMessageListenerContainerIntegration2Tests.TEST_QUEUE,
+		SimpleMessageListenerContainerIntegration2Tests.TEST_QUEUE_1 })
+@LongRunning
 public class SimpleMessageListenerContainerIntegration2Tests {
+
+	public static final String TEST_QUEUE = "test.queue.SimpleMessageListenerContainerIntegration2Tests";
+
+	public static final String TEST_QUEUE_1 = "test.queue.1.SimpleMessageListenerContainerIntegration2Tests";
 
 	private static Log logger = LogFactory.getLog(SimpleMessageListenerContainerIntegration2Tests.class);
 
 	private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
-	private final Queue queue = new Queue("test.queue");
+	private final Queue queue = new Queue(TEST_QUEUE);
 
-	private final Queue queue1 = new Queue("test.queue.1");
+	private final Queue queue1 = new Queue(TEST_QUEUE_1);
 
 	private final RabbitTemplate template = new RabbitTemplate();
 
 	private RabbitAdmin admin;
 
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue.getName(), queue1.getName());
-
-	@Rule
-	public LongRunningIntegrationTest longRunningIntegrationTest = new LongRunningIntegrationTest();
-
 	private SimpleMessageListenerContainer container;
 
-	@Before
+	@BeforeEach
 	public void declareQueues() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setHost("localhost");
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		template.setConnectionFactory(connectionFactory);
 		admin = new RabbitAdmin(connectionFactory);
-		admin.deleteQueue(queue.getName());
-		admin.declareQueue(queue);
-		admin.deleteQueue(queue1.getName());
-		admin.declareQueue(queue1);
 	}
 
-	@After
+	@AfterEach
 	public void clear() throws Exception {
 		logger.debug("Shutting down at end of test");
 		if (container != null) {
 			container.shutdown();
 		}
 		((DisposableBean) template.getConnectionFactory()).destroy();
-		this.brokerIsRunning.removeTestQueues();
-
 		this.executorService.shutdown();
 	}
 
