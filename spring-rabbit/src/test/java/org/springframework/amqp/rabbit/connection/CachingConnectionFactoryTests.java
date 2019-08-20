@@ -1846,4 +1846,24 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertThat(firstAddress).containsExactly("host1", "host2", "host3");
 	}
 
+	@SuppressWarnings("deprecation")
+	@Test
+	public void confirmsSimple() {
+		CachingConnectionFactory cf = new CachingConnectionFactory(mock(ConnectionFactory.class));
+		cf.setSimplePublisherConfirms(false);
+		assertThat(cf.isSimplePublisherConfirms()).isFalse();
+		cf.setSimplePublisherConfirms(true);
+		assertThat(cf.isSimplePublisherConfirms()).isTrue();
+	}
+
+	@SuppressWarnings("deprecation")
+	@Test
+	public void confirmsCorrelated() {
+		CachingConnectionFactory cf = new CachingConnectionFactory(mock(ConnectionFactory.class));
+		cf.setPublisherConfirms(false);
+		assertThat(cf.isPublisherConfirms()).isFalse();
+		cf.setPublisherConfirms(true);
+		assertThat(cf.isPublisherConfirms()).isTrue();
+	}
+
 }
