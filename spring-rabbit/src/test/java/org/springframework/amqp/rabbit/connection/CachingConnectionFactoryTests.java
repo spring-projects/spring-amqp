@@ -1854,6 +1854,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertThat(cf.isSimplePublisherConfirms()).isFalse();
 		cf.setSimplePublisherConfirms(true);
 		assertThat(cf.isSimplePublisherConfirms()).isTrue();
+		cf.setSimplePublisherConfirms(false);
+		assertThat(cf.isSimplePublisherConfirms()).isFalse();
 	}
 
 	@SuppressWarnings("deprecation")
@@ -1864,6 +1866,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertThat(cf.isPublisherConfirms()).isFalse();
 		cf.setPublisherConfirms(true);
 		assertThat(cf.isPublisherConfirms()).isTrue();
+		cf.setPublisherConfirms(false);
+		assertThat(cf.isPublisherConfirms()).isFalse();
 	}
 
 }

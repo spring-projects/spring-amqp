@@ -411,6 +411,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		if (publisherConfirms) {
 			setPublisherConfirmType(ConfirmType.CORRELATED);
 		}
+		else if (this.confirmType.equals(ConfirmType.CORRELATED)) {
+			this.confirmType = ConfirmType.NONE;
+		}
 	}
 
 	/**
@@ -426,6 +429,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				"Cannot set both publisherConfirms and simplePublisherConfirms");
 		if (simplePublisherConfirms) {
 			setPublisherConfirmType(ConfirmType.SIMPLE);
+		}
+		else if (this.confirmType.equals(ConfirmType.SIMPLE)) {
+			this.confirmType = ConfirmType.NONE;
 		}
 	}
 
