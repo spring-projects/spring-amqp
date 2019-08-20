@@ -406,9 +406,14 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 */
 	@Deprecated
 	public void setPublisherConfirms(boolean publisherConfirms) {
-		Assert.isTrue(!ConfirmType.SIMPLE.equals(this.confirmType),
+		Assert.isTrue(!publisherConfirms || !ConfirmType.SIMPLE.equals(this.confirmType),
 				"Cannot set both publisherConfirms and simplePublisherConfirms");
-		setPublisherConfirmType(ConfirmType.CORRELATED);
+		if (publisherConfirms) {
+			setPublisherConfirmType(ConfirmType.CORRELATED);
+		}
+		else if (this.confirmType.equals(ConfirmType.CORRELATED)) {
+			setPublisherConfirmType(ConfirmType.NONE);
+		}
 	}
 
 	/**
@@ -420,9 +425,14 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 */
 	@Deprecated
 	public void setSimplePublisherConfirms(boolean simplePublisherConfirms) {
-		Assert.isTrue(!ConfirmType.CORRELATED.equals(this.confirmType),
+		Assert.isTrue(!simplePublisherConfirms || !ConfirmType.CORRELATED.equals(this.confirmType),
 				"Cannot set both publisherConfirms and simplePublisherConfirms");
-		setPublisherConfirmType(ConfirmType.SIMPLE);
+		if (simplePublisherConfirms) {
+			setPublisherConfirmType(ConfirmType.SIMPLE);
+		}
+		else if (this.confirmType.equals(ConfirmType.SIMPLE)) {
+			setPublisherConfirmType(ConfirmType.NONE);
+		}
 	}
 
 	@Override
