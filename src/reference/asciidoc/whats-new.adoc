@@ -19,6 +19,12 @@ In addition, `ListenerExecutionFailedException` has been moved from `org.springf
 
 JUnit (4) is now an optional dependency and will no longer appear as a transitive dependency.
 
+===== "Breaking" API Changes
+
+the JUnit (5) `RabbitAvailableCondition.getBrokerRunning()` now returns a `BrokerRunningSupport` instance instead of a `BrokerRunning`, which depends on JUnit 4.
+It has the same API so it's just a matter of changing the class name of any references.
+See <<junit5-conditions>> for more information.
+
 ===== ListenerContainer Changes
 
 Messages with fatal exceptions are now rejected and NOT requeued, by default, even if the acknowledge mode is manual.

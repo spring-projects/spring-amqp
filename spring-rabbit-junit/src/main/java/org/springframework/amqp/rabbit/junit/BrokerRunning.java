@@ -18,17 +18,7 @@ package org.springframework.amqp.rabbit.junit;
 
 import static org.junit.Assert.fail;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -37,13 +27,9 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import org.springframework.util.Base64Utils;
-import org.springframework.util.StringUtils;
+import org.springframework.amqp.rabbit.junit.BrokerRunningSupport.BrokerNotAliveException;
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.http.client.Client;
 
 /**
  * A rule that prevents integration tests from failing if the Rabbit broker application is
@@ -68,8 +54,8 @@ import com.rabbitmq.http.client.Client;
  * <p>Call {@link #removeTestQueues(String...)} from an {@code @After} method to remove
  * those queues (and optionally others).
  * <p>If you wish to enforce the broker being available, for example, on a CI server,
- * set the environment variable {@value #BROKER_REQUIRED} to {@code true} and the
- * tests will fail fast.
+ * set the environment variable {@value BrokerRunningSupport#BROKER_REQUIRED} to
+ * {@code true} and the tests will fail fast.
  *
  * @author Dave Syer
  * @author Gary Russell
@@ -80,95 +66,30 @@ import com.rabbitmq.http.client.Client;
  */
 public final class BrokerRunning extends TestWatcher {
 
-	private static final int SIXTEEN = 16;
+	private static final Log LOGGER = LogFactory.getLog(BrokerRunningSupport.class);
 
-	public static final String BROKER_ADMIN_URI = "RABBITMQ_TEST_ADMIN_URI";
-
-	public static final String BROKER_HOSTNAME = "RABBITMQ_TEST_HOSTNAME";
-
-	public static final String BROKER_PORT = "RABBITMQ_TEST_PORT";
-
-	public static final String BROKER_USER = "RABBITMQ_TEST_USER";
-
-	public static final String BROKER_PW = "RABBITMQ_TEST_PASSWORD";
-
-	public static final String BROKER_ADMIN_USER = "RABBITMQ_TEST_ADMIN_USER";
-
-	public static final String BROKER_ADMIN_PW = "RABBITMQ_TEST_ADMIN_PASSWORD";
-
-	public static final String BROKER_REQUIRED = "RABBITMQ_SERVER_REQUIRED";
-
-	private static final String DEFAULT_QUEUE_NAME = BrokerRunning.class.getName();
-
-	private static final String GUEST = "guest";
-
-	private static final Log logger = LogFactory.getLog(BrokerRunning.class); // NOSONAR - lower case
-
-	// Static so that we only test once on failure: speeds up test suite
-	private static final Map<Integer, Boolean> brokerOnline = new HashMap<Integer, Boolean>(); // NOSONAR - lower case
-
-	// Static so that we only test once on failure
-	private static final Map<Integer, Boolean> brokerOffline = new HashMap<Integer, Boolean>(); // NOSONAR - lower case
-
-	private static final Map<String, String> environmentOverrides = new HashMap<>(); // NOSONAR - lower case
+	private final BrokerRunningSupport brokerRunning;
 
 	private final boolean assumeOnline;
-
-	private final boolean purge;
-
-	private final boolean management;
-
-	private final String[] queues;
-
-	private final int defaultPort = fromEnvironment(BROKER_PORT, null) == null ? BrokerTestUtils.getPort()
-			: Integer.valueOf(fromEnvironment(BROKER_PORT, null));
-
-	private int port;
-
-	private String hostName = fromEnvironment(BROKER_HOSTNAME, "localhost");
-
-	private String adminUri = fromEnvironment(BROKER_ADMIN_URI, null);
-
-	private ConnectionFactory connectionFactory;
-
-	private String user = fromEnvironment(BROKER_USER, GUEST);
-
-	private String password = fromEnvironment(BROKER_PW, GUEST);
-
-	private String adminUser = fromEnvironment(BROKER_ADMIN_USER, GUEST);
-
-	private String adminPassword = fromEnvironment(BROKER_ADMIN_PW, GUEST);
-
-	private String fromEnvironment(String key, String defaultValue) {
-		String environmentValue = environmentOverrides.get(key);
-		if (!StringUtils.hasText(environmentValue)) {
-			environmentValue = System.getenv(key);
-		}
-		if (StringUtils.hasText(environmentValue)) {
-			return environmentValue;
-		}
-		else {
-			return defaultValue;
-		}
-	}
 
 	/**
 	 * Set environment variable overrides for host, port etc. Will override any real
 	 * environment variables, if present.
 	 * <p><b>The variables will only apply to rule instances that are created after this
 	 * method is called.</b>
-	 * The overrides will remain until
+	 * The overrides will remain until {@link #clearEnvironmentVariableOverrides()} is
+	 * called.
 	 * @param environmentVariables the variables.
 	 */
 	public static void setEnvironmentVariableOverrides(Map<String, String> environmentVariables) {
-		environmentOverrides.putAll(environmentVariables);
+		BrokerRunningSupport.setEnvironmentVariableOverrides(environmentVariables);
 	}
 
 	/**
 	 * Clear any environment variable overrides set in {@link #setEnvironmentVariableOverrides(Map)}.
 	 */
 	public static void clearEnvironmentVariableOverrides() {
-		environmentOverrides.clear();
+		BrokerRunningSupport.clearEnvironmentVariableOverrides();
 	}
 
 	/**
@@ -218,15 +139,7 @@ public final class BrokerRunning extends TestWatcher {
 
 	private BrokerRunning(boolean assumeOnline, boolean purge, boolean management, String... queues) {
 		this.assumeOnline = assumeOnline;
-		if (queues != null) {
-			this.queues = Arrays.copyOf(queues, queues.length);
-		}
-		else {
-			this.queues = null;
-		}
-		this.purge = purge;
-		this.management = management;
-		setPort(this.defaultPort);
+		this.brokerRunning = new BrokerRunningSupport(assumeOnline, purge, management, queues);
 	}
 
 	private BrokerRunning(boolean assumeOnline, String... queues) {
@@ -234,31 +147,25 @@ public final class BrokerRunning extends TestWatcher {
 	}
 
 	private BrokerRunning(boolean assumeOnline) {
-		this(assumeOnline, DEFAULT_QUEUE_NAME);
+		this(assumeOnline, BrokerRunningSupport.DEFAULT_QUEUE_NAME);
 	}
 
 	private BrokerRunning(boolean assumeOnline, boolean purge, boolean management) {
-		this(assumeOnline, purge, management, DEFAULT_QUEUE_NAME);
+		this(assumeOnline, purge, management, BrokerRunningSupport.DEFAULT_QUEUE_NAME);
 	}
 
 	/**
 	 * @param port the port to set
 	 */
 	public void setPort(int port) {
-		this.port = port;
-		if (!brokerOffline.containsKey(port)) {
-			brokerOffline.put(port, true);
-		}
-		if (!brokerOnline.containsKey(port)) {
-			brokerOnline.put(port, true);
-		}
+		this.brokerRunning.setPort(port);
 	}
 
 	/**
 	 * @param hostName the hostName to set
 	 */
 	public void setHostName(String hostName) {
-		this.hostName = hostName;
+		this.brokerRunning.setHostName(hostName);
 	}
 
 	/**
@@ -267,7 +174,7 @@ public final class BrokerRunning extends TestWatcher {
 	 * @since 1.7.2
 	 */
 	public void setUser(String user) {
-		this.user = user;
+		this.brokerRunning.setUser(user);
 	}
 
 	/**
@@ -276,7 +183,7 @@ public final class BrokerRunning extends TestWatcher {
 	 * @since 1.7.2
 	 */
 	public void setPassword(String password) {
-		this.password = password;
+		this.brokerRunning.setPassword(password);
 	}
 
 	/**
@@ -285,7 +192,7 @@ public final class BrokerRunning extends TestWatcher {
 	 * @since 1.7.2
 	 */
 	public void setAdminUri(String adminUri) {
-		this.adminUri = adminUri;
+		this.brokerRunning.setAdminUri(adminUri);
 	}
 
 	/**
@@ -294,7 +201,7 @@ public final class BrokerRunning extends TestWatcher {
 	 * @since 1.7.2
 	 */
 	public void setAdminUser(String user) {
-		this.adminUser = user;
+		this.brokerRunning.setAdminUser(user);
 	}
 
 	/**
@@ -303,7 +210,7 @@ public final class BrokerRunning extends TestWatcher {
 	 * @since 1.7.2
 	 */
 	public void setAdminPassword(String password) {
-		this.adminPassword = password;
+		this.brokerRunning.setAdminPassword(password);
 	}
 
 	/**
@@ -312,7 +219,7 @@ public final class BrokerRunning extends TestWatcher {
 	 * @since 1.7.2
 	 */
 	public int getPort() {
-		return this.port;
+		return this.brokerRunning.getPort();
 	}
 
 	/**
@@ -321,7 +228,7 @@ public final class BrokerRunning extends TestWatcher {
 	 * @since 1.7.2
 	 */
 	public String getHostName() {
-		return this.hostName;
+		return this.brokerRunning.getHostName();
 	}
 
 	/**
@@ -330,7 +237,7 @@ public final class BrokerRunning extends TestWatcher {
 	 * @since 1.7.2
 	 */
 	public String getUser() {
-		return this.user;
+		return this.brokerRunning.getUser();
 	}
 
 	/**
@@ -339,7 +246,7 @@ public final class BrokerRunning extends TestWatcher {
 	 * @since 1.7.2
 	 */
 	public String getPassword() {
-		return this.password;
+		return this.brokerRunning.getPassword();
 	}
 
 	/**
@@ -348,7 +255,7 @@ public final class BrokerRunning extends TestWatcher {
 	 * @since 1.7.2
 	 */
 	public String getAdminUser() {
-		return this.adminUser;
+		return this.brokerRunning.getAdminUser();
 	}
 
 	/**
@@ -357,30 +264,17 @@ public final class BrokerRunning extends TestWatcher {
 	 * @since 1.7.2
 	 */
 	public String getAdminPassword() {
-		return this.adminPassword;
+		return this.brokerRunning.getAdminPassword();
 	}
 
 	@Override
 	public Statement apply(Statement base, Description description) {
 
-		// Check at the beginning, so this can be used as a static field
-		if (this.assumeOnline) {
-			Assume.assumeTrue(brokerOnline.get(this.port));
-		}
-		else {
-			Assume.assumeTrue(brokerOffline.get(this.port));
-		}
-
-		Connection connection = null; // NOSONAR (closeResources())
-		Channel channel = null;
-
 		try {
-			connection = getConnection(getConnectionFactory());
-			channel = createQueues(connection);
+			this.brokerRunning.test();
 		}
-		catch (Exception e) {
-			logger.warn("Not executing tests because basic connectivity test failed: " + e.getMessage());
-			brokerOnline.put(this.port, false);
+		catch (BrokerNotAliveException e) {
+			LOGGER.warn("Not executing tests because basic connectivity test failed: " + e.getMessage());
 			if (this.assumeOnline) {
 				if (fatal()) {
 					fail("RabbitMQ Broker is required, but not available");
@@ -390,74 +284,16 @@ public final class BrokerRunning extends TestWatcher {
 				}
 			}
 		}
-		finally {
-			closeResources(connection, channel);
-		}
 
 		return super.apply(base, description);
 	}
 
-	public void isUp() throws IOException, TimeoutException, URISyntaxException {
-		Connection connection = getConnectionFactory().newConnection(); // NOSONAR - closeResources()
-		Channel channel = null;
-		try {
-			channel = createQueues(connection);
-		}
-		finally {
-			closeResources(connection, channel);
-		}
-	}
-
-	private Connection getConnection(ConnectionFactory connectionFactory) throws IOException, TimeoutException {
-		Connection connection = connectionFactory.newConnection();
-		connection.setId(generateId());
-		return connection;
-	}
-
-	private Channel createQueues(Connection connection) throws IOException, MalformedURLException, URISyntaxException {
-		Channel channel;
-		channel = connection.createChannel();
-
-		for (String queueName : this.queues) {
-
-			if (this.purge) {
-				logger.debug("Deleting queue: " + queueName);
-				// Delete completely - gets rid of consumers and bindings as well
-				channel.queueDelete(queueName);
-			}
-
-			if (isDefaultQueue(queueName)) {
-				// Just for test probe.
-				channel.queueDelete(queueName);
-			}
-			else {
-				channel.queueDeclare(queueName, true, false, false, null);
-			}
-		}
-		brokerOffline.put(this.port, false);
-		if (!this.assumeOnline) {
-			Assume.assumeTrue(brokerOffline.get(this.port));
-		}
-
-		if (this.management) {
-			Client client = new Client(getAdminUri(), this.adminUser, this.adminPassword);
-			if (!client.alivenessTest("/")) {
-				throw new BrokerNotAliveException("Aliveness test failed for localhost:15672 guest/quest; "
-						+ "management not available");
-			}
-		}
-		return channel;
+	public void isUp() {
+		this.brokerRunning.test();
 	}
 
 	public static boolean fatal() {
-		String serversRequired = System.getenv(BROKER_REQUIRED);
-		if (Boolean.parseBoolean(serversRequired)) {
-			logger.error("RABBITMQ IS REQUIRED BUT NOT AVAILABLE");
-			return true;
-		}
-		else {
-			return false;
-		}
+		return BrokerRunningSupport.fatal();
 	}
 
 	/**
@@ -466,15 +302,7 @@ public final class BrokerRunning extends TestWatcher {
 	 * @return the id.
 	 */
 	public String generateId() {
-		UUID uuid = UUID.randomUUID();
-		ByteBuffer bb = ByteBuffer.wrap(new byte[SIXTEEN]);
-		bb.putLong(uuid.getMostSignificantBits())
-		  .putLong(uuid.getLeastSignificantBits());
-		return "SpringBrokerRunning." + Base64Utils.encodeToUrlSafeString(bb.array()).replaceAll("=", "");
-	}
-
-	private boolean isDefaultQueue(String queue) {
-		return DEFAULT_QUEUE_NAME.equals(queue);
+		return this.brokerRunning.generateId();
 	}
 
 	/**
@@ -484,30 +312,7 @@ public final class BrokerRunning extends TestWatcher {
 	 * tests.
 	 */
 	public void removeTestQueues(String... additionalQueues) {
-		List<String> queuesToRemove = Arrays.asList(this.queues);
-		if (additionalQueues != null) {
-			queuesToRemove = new ArrayList<>(queuesToRemove);
-			queuesToRemove.addAll(Arrays.asList(additionalQueues));
-		}
-		logger.debug("deleting test queues: " + queuesToRemove);
-		Connection connection = null; // NOSONAR (closeResources())
-		Channel channel = null;
-
-		try {
-			connection = getConnection(getConnectionFactory());
-			connection.setId(generateId() + ".queueDelete");
-			channel = connection.createChannel();
-
-			for (String queue : queuesToRemove) {
-				channel.queueDelete(queue);
-			}
-		}
-		catch (Exception e) {
-			logger.warn("Failed to delete queues", e);
-		}
-		finally {
-			closeResources(connection, channel);
-		}
+		this.brokerRunning.removeTestQueues(additionalQueues);
 	}
 
 	/**
@@ -515,19 +320,7 @@ public final class BrokerRunning extends TestWatcher {
 	 * a test might leave stale data and multiple tests use the same queue.
 	 */
 	public void purgeTestQueues() {
-		removeTestQueues();
-		Connection connection = null; // NOSONAR (closeResources())
-		Channel channel = null;
-		try {
-			connection = getConnection(getConnectionFactory());
-			channel = createQueues(connection);
-		}
-		catch (Exception e) {
-			logger.warn("Failed to re-declare queues during purge: " + e.getMessage());
-		}
-		finally {
-			closeResources(connection, channel);
-		}
+		this.brokerRunning.purgeTestQueues();
 	}
 
 	/**
@@ -535,24 +328,7 @@ public final class BrokerRunning extends TestWatcher {
 	 * @param queuesToDelete the queues to delete.
 	 */
 	public void deleteQueues(String... queuesToDelete) {
-		Connection connection = null; // NOSONAR (closeResources())
-		Channel channel = null;
-
-		try {
-			connection = getConnection(getConnectionFactory());
-			connection.setId(generateId() + ".queueDelete");
-			channel = connection.createChannel();
-
-			for (String queue : queuesToDelete) {
-				channel.queueDelete(queue);
-			}
-		}
-		catch (Exception e) {
-			logger.warn("Failed to delete queues", e);
-		}
-		finally {
-			closeResources(connection, channel);
-		}
+		this.brokerRunning.deleteQueues(queuesToDelete);
 	}
 
 	/**
@@ -560,24 +336,7 @@ public final class BrokerRunning extends TestWatcher {
 	 * @param exchanges the exchanges to delete.
 	 */
 	public void deleteExchanges(String... exchanges) {
-		Connection connection = null; // NOSONAR (closeResources())
-		Channel channel = null;
-
-		try {
-			connection = getConnection(getConnectionFactory());
-			connection.setId(generateId() + ".exchangeDelete");
-			channel = connection.createChannel();
-
-			for (String exchange : exchanges) {
-				channel.exchangeDelete(exchange);
-			}
-		}
-		catch (Exception e) {
-			logger.warn("Failed to delete queues", e);
-		}
-		finally {
-			closeResources(connection, channel);
-		}
+		this.brokerRunning.deleteExchanges(exchanges);
 	}
 
 	/**
@@ -585,20 +344,7 @@ public final class BrokerRunning extends TestWatcher {
 	 * @return the connection factory.
 	 */
 	public ConnectionFactory getConnectionFactory() {
-		if (this.connectionFactory == null) {
-			this.connectionFactory = new ConnectionFactory();
-			if (StringUtils.hasText(this.hostName)) {
-				this.connectionFactory.setHost(this.hostName);
-			}
-			else {
-				this.connectionFactory.setHost("localhost");
-			}
-			this.connectionFactory.setPort(this.port);
-			this.connectionFactory.setUsername(this.user);
-			this.connectionFactory.setPassword(this.password);
-			this.connectionFactory.setAutomaticRecoveryEnabled(false);
-		}
-		return this.connectionFactory;
+		return this.brokerRunning.getConnectionFactory();
 	}
 
 	/**
@@ -607,48 +353,7 @@ public final class BrokerRunning extends TestWatcher {
 	 * @since 1.7.2
 	 */
 	public String getAdminUri() {
-		if (!StringUtils.hasText(this.adminUri)) {
-			if (!StringUtils.hasText(this.hostName)) {
-				this.adminUri = "http://localhost:15672/api/";
-			}
-			else {
-				this.adminUri = "http://" + this.hostName + ":15672/api/";
-			}
-		}
-		return this.adminUri;
-	}
-
-	private void closeResources(Connection connection, Channel channel) {
-		if (channel != null) {
-			try {
-				channel.close();
-			}
-			catch (@SuppressWarnings("unused") IOException | TimeoutException e) {
-				// Ignore
-			}
-		}
-		if (connection != null) {
-			try {
-				connection.close();
-			}
-			catch (@SuppressWarnings("unused") IOException e) {
-				// Ignore
-			}
-		}
-	}
-
-	/**
-	 * The {@link RuntimeException} thrown when broker is not available
-	 * on the provided host port.
-	 */
-	public static class BrokerNotAliveException extends RuntimeException {
-
-		private static final long serialVersionUID = 1L;
-
-		BrokerNotAliveException(String message) {
-			super(message);
-		}
-
+		return this.brokerRunning.getAdminUri();
 	}
 
 }

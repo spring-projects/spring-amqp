@@ -30,10 +30,8 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
-import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.rabbit.listener.BlockingQueueConsumer;
 import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
@@ -55,8 +53,6 @@ public class RabbitBindingIntegrationTests {
 
 	private RabbitTemplate template;
 
-	public BrokerRunning brokerIsRunning = RabbitAvailableCondition.getBrokerRunning();
-
 	@BeforeEach
 	public void setup() {
 		connectionFactory = new CachingConnectionFactory(BrokerTestUtils.getPort());
@@ -66,7 +62,6 @@ public class RabbitBindingIntegrationTests {
 
 	@AfterEach
 	public void cleanUp() {
-		this.brokerIsRunning.purgeTestQueues();
 		this.template.stop();
 		this.connectionFactory.destroy();
 	}

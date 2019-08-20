@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.concurrent.ExecutorService;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;

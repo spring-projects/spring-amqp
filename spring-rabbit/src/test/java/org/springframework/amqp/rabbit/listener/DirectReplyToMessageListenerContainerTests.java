@@ -22,14 +22,11 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
-import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.utils.test.TestUtils;
@@ -50,13 +47,6 @@ import com.rabbitmq.client.GetResponse;
 public class DirectReplyToMessageListenerContainerTests {
 
 	public static final String TEST_RELEASE_CONSUMER_Q = "test.release.consumer";
-
-	public BrokerRunning brokerRunning = RabbitAvailableCondition.getBrokerRunning();
-
-	@AfterEach
-	public void tearDown() {
-		this.brokerRunning.purgeTestQueues();
-	}
 
 	@Test
 	public void testReleaseConsumerRace() throws Exception {

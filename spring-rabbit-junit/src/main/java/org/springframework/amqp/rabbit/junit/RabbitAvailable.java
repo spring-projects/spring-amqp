@@ -62,4 +62,11 @@ public @interface RabbitAvailable {
 	 */
 	boolean management() default false;
 
+	/**
+	 * Purge the test queues after each test.
+	 * @return true to purge (default).
+	 * @since 2.2
+	 */
+	boolean purgeAfterEach() default true;
+
 }

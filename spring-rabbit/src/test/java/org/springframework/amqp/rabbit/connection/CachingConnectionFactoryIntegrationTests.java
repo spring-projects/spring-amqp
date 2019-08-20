@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -42,12 +43,10 @@ import javax.net.SocketFactory;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.logging.log4j.Level;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.AmqpApplicationContextClosedException;
 import org.springframework.amqp.AmqpAuthenticationException;
@@ -59,9 +58,10 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
-import org.springframework.amqp.rabbit.junit.LogLevelAdjuster;
+import org.springframework.amqp.rabbit.junit.LogLevels;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
+import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.context.ApplicationContext;
@@ -79,9 +79,12 @@ import com.rabbitmq.client.DefaultConsumer;
  * @since 1.0
  *
  */
+@RabbitAvailable(queues = CachingConnectionFactoryIntegrationTests.CF_INTEGRATION_TEST_QUEUE)
+@LogLevels(classes = { CachingConnectionFactoryIntegrationTests.class,
+		CachingConnectionFactory.class }, categories = "com.rabbitmq", level = "DEBUG")
 public class CachingConnectionFactoryIntegrationTests {
 
-	private static final String CF_INTEGRATION_TEST_QUEUE = "cfIntegrationTest";
+	public static final String CF_INTEGRATION_TEST_QUEUE = "cfIntegrationTest";
 
 	private static final String CF_INTEGRATION_CONNECTION_NAME = "cfIntegrationTestConnectionName";
 
@@ -89,15 +92,7 @@ public class CachingConnectionFactoryIntegrationTests {
 
 	private CachingConnectionFactory connectionFactory;
 
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(CF_INTEGRATION_TEST_QUEUE);
-
-	@Rule
-	public LogLevelAdjuster adjuster = new LogLevelAdjuster(Level.DEBUG,
-			CachingConnectionFactoryIntegrationTests.class, CachingConnectionFactory.class)
-		.categories("com.rabbitmq");
-
-	@Before
+	@BeforeEach
 	public void open() {
 		connectionFactory = new CachingConnectionFactory("localhost");
 		connectionFactory.setPort(BrokerTestUtils.getPort());
@@ -105,10 +100,10 @@ public class CachingConnectionFactoryIntegrationTests {
 		connectionFactory.setConnectionNameStrategy(cf -> CF_INTEGRATION_CONNECTION_NAME);
 	}
 
-	@After
+	@AfterEach
 	public void close() {
 		if (!this.connectionFactory.getVirtualHost().equals("non-existent")) {
-			this.brokerIsRunning.removeTestQueues();
+			RabbitAvailableCondition.getBrokerRunning().purgeTestQueues();
 		}
 		assertThat(connectionFactory.getRabbitConnectionFactory().getClientProperties().get("foo")).isEqualTo("bar");
 		connectionFactory.destroy();
@@ -404,7 +399,7 @@ public class CachingConnectionFactoryIntegrationTests {
 	}
 
 	@Test
-	@Ignore // Don't run this on the CI build server
+	@Disabled // Don't run this on the CI build server
 	public void hangOnClose() throws Exception {
 		final Socket proxy = SocketFactory.getDefault().createSocket("localhost", 5672);
 		final ServerSocket server = ServerSocketFactory.getDefault().createServerSocket(2765);
@@ -461,12 +456,13 @@ public class CachingConnectionFactoryIntegrationTests {
 		factory.destroy();
 	}
 
-	@Test(expected = AmqpResourceNotAvailableException.class)
+	@Test
 	public void testChannelMax() {
 		this.connectionFactory.getRabbitConnectionFactory().setRequestedChannelMax(1);
 		Connection connection = this.connectionFactory.createConnection();
 		connection.createChannel(true);
-		connection.createChannel(false);
+		assertThatExceptionOfType(AmqpResourceNotAvailableException.class)
+				.isThrownBy(() -> connection.createChannel(false));
 	}
 
 }
