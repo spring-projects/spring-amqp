@@ -91,7 +91,7 @@ public class RabbitAvailableCondition
 	}
 
 	@Override
-	public void afterEach(ExtensionContext context) throws Exception {
+	public void afterEach(ExtensionContext context) {
 		BrokerRunningSupport brokerRunning = BROKER_RUNNING_HOLDER.get();
 		if (brokerRunning != null && brokerRunning.isPurgeAfterEach()) {
 			brokerRunning.purgeTestQueues();

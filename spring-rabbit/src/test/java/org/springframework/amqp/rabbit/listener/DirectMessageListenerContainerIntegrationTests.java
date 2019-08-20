@@ -37,12 +37,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.apache.commons.logging.LogFactory;
-import org.apache.logging.log4j.Level;
-import org.junit.AfterClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.core.Queue;
@@ -52,7 +51,10 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
-import org.springframework.amqp.rabbit.junit.LogLevelAdjuster;
+import org.springframework.amqp.rabbit.junit.BrokerRunningSupport;
+import org.springframework.amqp.rabbit.junit.LogLevels;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
+import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
@@ -79,39 +81,46 @@ import com.rabbitmq.client.Consumer;
  * @since 2.0
  *
  */
+@RabbitAvailable(queues = { DirectMessageListenerContainerIntegrationTests.Q1,
+		DirectMessageListenerContainerIntegrationTests.Q2,
+		DirectMessageListenerContainerIntegrationTests.EQ1,
+		DirectMessageListenerContainerIntegrationTests.EQ2,
+		DirectMessageListenerContainerIntegrationTests.DLQ1 })
+@LogLevels(classes = { CachingConnectionFactory.class, DirectReplyToMessageListenerContainer.class,
+			DirectMessageListenerContainer.class, DirectMessageListenerContainerIntegrationTests.class,
+			BrokerRunning.class }, level = "DEBUG")
 public class DirectMessageListenerContainerIntegrationTests {
 
-	private static final String Q1 = "testQ1";
+	public static final String Q1 = "testQ1.DirectMessageListenerContainerIntegrationTests";
 
-	private static final String Q2 = "testQ2";
+	public static final String Q2 = "testQ2.DirectMessageListenerContainerIntegrationTests";
 
-	private static final String EQ1 = "eventTestQ1";
+	public static final String EQ1 = "eventTestQ1.DirectMessageListenerContainerIntegrationTests";
 
-	private static final String EQ2 = "eventTestQ2";
+	public static final String EQ2 = "eventTestQ2.DirectMessageListenerContainerIntegrationTests";
 
-	private static final String DLQ1 = "testDLQ1";
+	public static final String DLQ1 = "testDLQ1.DirectMessageListenerContainerIntegrationTests";
 
-	@ClassRule
-	public static BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(Q1, Q2, EQ1, EQ2, DLQ1);
+	private static CachingConnectionFactory adminCf;
 
-	private static CachingConnectionFactory adminCf =
-			new CachingConnectionFactory(brokerRunning.getConnectionFactory());
+	private static RabbitAdmin admin;
 
-	private static RabbitAdmin admin = new RabbitAdmin(adminCf);
+	private String testName;
 
-	@Rule
-	public LogLevelAdjuster adjuster = new LogLevelAdjuster(Level.DEBUG,
-			CachingConnectionFactory.class, DirectReplyToMessageListenerContainer.class,
-			DirectMessageListenerContainer.class, DirectMessageListenerContainerIntegrationTests.class,
-			BrokerRunning.class);
+	@BeforeAll
+	public static void setUp() {
+		adminCf = new CachingConnectionFactory(RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
+		admin = new RabbitAdmin(adminCf);
+	}
 
-	@Rule
-	public TestName testName = new TestName();
-
-	@AfterClass
+	@AfterAll
 	public static void tearDown() {
-		brokerRunning.removeTestQueues();
 		adminCf.destroy();
+	}
+
+	@BeforeEach
+	public void captureTestName(TestInfo info) {
+		this.testName = info.getDisplayName();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -342,7 +351,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 	}
 
 	@Test
-	public void testEvents() throws Exception {
+	public void testEvents(BrokerRunningSupport brokerRunning) throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
 		container.setQueueNames(EQ1, EQ2);
@@ -374,7 +383,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 
 	@SuppressWarnings("unchecked")
 	@Test
-	public void testErrorHandler() throws Exception {
+	public void testErrorHandler(BrokerRunningSupport brokerRunning) throws Exception {
 		brokerRunning.deleteQueues(Q1);
 		Queue q1 = new Queue(Q1, true, false, false, new ArgumentBuilder()
 				.put("x-dead-letter-exchange", "")
@@ -503,17 +512,17 @@ public class DirectMessageListenerContainerIntegrationTests {
 	}
 
 	@Test
-	public void testRecoverDeletedQueueAutoDeclare() throws Exception {
-		testRecoverDeletedQueueGuts(true);
+	public void testRecoverDeletedQueueAutoDeclare(BrokerRunningSupport brokerRunning) throws Exception {
+		testRecoverDeletedQueueGuts(true, brokerRunning);
 	}
 
 	@Test
-	public void testRecoverDeletedQueueNoAutoDeclare() throws Exception {
-		testRecoverDeletedQueueGuts(false);
+	public void testRecoverDeletedQueueNoAutoDeclare(BrokerRunningSupport brokerRunning) throws Exception {
+		testRecoverDeletedQueueGuts(false, brokerRunning);
 	}
 
 	@SuppressWarnings("unchecked")
-	private void testRecoverDeletedQueueGuts(boolean autoDeclare) throws Exception {
+	private void testRecoverDeletedQueueGuts(boolean autoDeclare, BrokerRunningSupport brokerRunning) throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
 		if (autoDeclare) {
@@ -719,7 +728,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 
 		@Override
 		public String createConsumerTag(String queue) {
-			return queue + "/" + DirectMessageListenerContainerIntegrationTests.this.testName.getMethodName() + n++;
+			return queue + "/" + DirectMessageListenerContainerIntegrationTests.this.testName + n++;
 		}
 
 	}

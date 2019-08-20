@@ -45,9 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.logging.log4j.Level;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
@@ -55,7 +53,7 @@ import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.junit.LogLevelAdjuster;
+import org.springframework.amqp.rabbit.junit.LogLevels;
 import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
@@ -78,10 +76,8 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
  * @since 1.0.1
  *
  */
+@LogLevels(classes = BlockingQueueConsumer.class, level = "ERROR")
 public class BlockingQueueConsumerTests {
-
-	@Rule
-	public LogLevelAdjuster adjuster = new LogLevelAdjuster(Level.ERROR, BlockingQueueConsumer.class);
 
 	@Test
 	public void testRequeue() throws Exception {

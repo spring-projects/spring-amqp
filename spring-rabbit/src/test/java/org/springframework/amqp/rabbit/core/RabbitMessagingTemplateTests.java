@@ -31,8 +31,8 @@ import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -66,7 +66,7 @@ public class RabbitMessagingTemplateTests {
 	private RabbitMessagingTemplate messagingTemplate;
 
 
-	@Before
+	@BeforeEach
 	public void setup() {
 		MockitoAnnotations.initMocks(this);
 		messagingTemplate = new RabbitMessagingTemplate(rabbitTemplate);

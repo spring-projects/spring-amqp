@@ -17,11 +17,12 @@
 package org.springframework.amqp.rabbit.listener;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import java.net.UnknownHostException;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -31,11 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.logging.log4j.Level;
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import org.springframework.amqp.AmqpIllegalStateException;
@@ -45,10 +42,10 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
-import org.springframework.amqp.rabbit.junit.LogLevelAdjuster;
-import org.springframework.amqp.rabbit.junit.LongRunningIntegrationTest;
+import org.springframework.amqp.rabbit.junit.LogLevels;
+import org.springframework.amqp.rabbit.junit.LongRunning;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
@@ -59,6 +56,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.test.context.junit.jupiter.DisabledIf;
 
 import com.rabbitmq.client.DnsRecordIpAddressResolver;
 
@@ -70,11 +68,18 @@ import com.rabbitmq.client.DnsRecordIpAddressResolver;
  * @since 1.0
  *
  */
+@RabbitAvailable(queues = MessageListenerContainerLifecycleIntegrationTests.TEST_QUEUE)
+@LongRunning
+@LogLevels(classes = { RabbitTemplate.class,
+			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class,
+			MessageListenerContainerLifecycleIntegrationTests.class }, level = "INFO")
 public class MessageListenerContainerLifecycleIntegrationTests {
+
+	public static final String TEST_QUEUE = "test.queue.MessageListenerContainerLifecycleIntegrationTests";
 
 	private static Log logger = LogFactory.getLog(MessageListenerContainerLifecycleIntegrationTests.class);
 
-	private static Queue queue = new Queue("test.queue");
+	private static Queue queue = new Queue(TEST_QUEUE);
 
 	private enum TransactionMode {
 		ON, OFF, PREFETCH, PREFETCH_NO_TX;
@@ -121,17 +126,6 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		}
 	}
 
-	@Rule
-	public LongRunningIntegrationTest longTests = new LongRunningIntegrationTest();
-
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue.getName());
-
-	@Rule
-	public LogLevelAdjuster logLevels = new LogLevelAdjuster(Level.INFO, RabbitTemplate.class,
-			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class,
-			MessageListenerContainerLifecycleIntegrationTests.class);
-
 	private RabbitTemplate createTemplate(int concurrentConsumers) {
 		RabbitTemplate template = new RabbitTemplate();
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
@@ -140,11 +134,6 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		template.setConnectionFactory(connectionFactory);
 		return template;
-	}
-
-	@After
-	public void tearDown() {
-		this.brokerIsRunning.removeTestQueues();
 	}
 
 	@Test
@@ -187,34 +176,31 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		doTest(MessageCount.HIGH, Concurrency.HIGH, TransactionMode.PREFETCH_NO_TX);
 	}
 
-	@Test
-	public void testBadCredentials() throws Exception {
+	/**
+	 * If localhost also resolves to an IPv6 address the client will try that
+	 * after a failure due to bad credentials and, if Rabbit is not listening there
+	 * we won't get a fatal startup exception because a connect exception is not
+	 * considered fatal.
+	 * @throws UnknownHostException unknown host
+	 */
+	public static boolean checkIpV6() throws UnknownHostException {
 		DnsRecordIpAddressResolver resolver = new DnsRecordIpAddressResolver("localhost");
-		if (resolver.getAddresses().size() > 1) {
-			/*
-			 * If localhost also resolves to an IPv6 address the client will try that
-			 * after a failure due to bad credentials and, if Rabbit is not listening there
-			 * we won't get a fatal startup exception because a connect exception is not
-			 * considered fatal.
-			 */
-			Assume.assumeNoException(
-					new RuntimeException("Resolver returned multiple addresses for localhost, ignoring test"));
-		}
+		return resolver.getAddresses().size() > 1;
+	}
+
+	@Test
+	@DisabledIf("#{T(org.springframework.amqp.rabbit.listener.MessageListenerContainerLifecycleIntegrationTests)"
+			+ ".checkIpV6()}")
+	public void testBadCredentials() throws Exception {
 		RabbitTemplate template = createTemplate(1);
 		com.rabbitmq.client.ConnectionFactory cf = new com.rabbitmq.client.ConnectionFactory();
 		cf.setAutomaticRecoveryEnabled(false);
 		cf.setUsername("foo");
 		final CachingConnectionFactory connectionFactory = new CachingConnectionFactory(cf);
-		try {
-			doTest(MessageCount.LOW, Concurrency.LOW, TransactionMode.OFF, template, connectionFactory);
-			fail("expected exception");
-		}
-		catch (AmqpIllegalStateException e) {
-			assertThat(e.getCause() instanceof FatalListenerStartupException).as("Expected FatalListenerStartupException").isTrue();
-		}
-		finally {
-			((DisposableBean) template.getConnectionFactory()).destroy();
-		}
+		assertThatExceptionOfType(AmqpIllegalStateException.class).isThrownBy(() ->
+			doTest(MessageCount.LOW, Concurrency.LOW, TransactionMode.OFF, template, connectionFactory))
+				.withCauseExactlyInstanceOf(FatalListenerStartupException.class);
+		((DisposableBean) template.getConnectionFactory()).destroy();
 	}
 
 	private void doTest(MessageCount level, Concurrency concurrency, TransactionMode transactionMode) throws Exception {

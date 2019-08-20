@@ -17,7 +17,6 @@
 package org.springframework.amqp.rabbit.junit;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -41,37 +40,19 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.http.client.Client;
 
 /**
- * A rule that prevents integration tests from failing if the Rabbit broker application is
+ * A class that can be used to prevent integration tests from failing if the Rabbit broker application is
  * not running or not accessible. If the Rabbit broker is not running in the background
  * all the tests here will simply be skipped (by default) because of a violated assumption
- * (showing as successful). Usage:
- *
- * <pre class="code">
- * &#064;Rule
- * public static BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
- *
- * &#064;Test
- * public void testSendAndReceive() throws Exception {
- * 	// ... test using RabbitTemplate etc.
- * }
- * </pre>
- *
- * The rule can be declared as static so that it only has to check once for all tests in
- * the enclosing test case, but there isn't a lot of overhead in making it non-static.
- * <p>Use {@link #isRunningWithEmptyQueues(String...)} to declare and/or purge test queue(s)
- * when the rule is run.
- * <p>Call {@link #removeTestQueues(String...)} from an {@code @After} method to remove
- * those queues (and optionally others).
- * <p>If you wish to enforce the broker being available, for example, on a CI server,
+ * (showing as successful).
+ * <p>
+ * If you wish to enforce the broker being available, for example, on a CI server,
  * set the environment variable {@value #BROKER_REQUIRED} to {@code true} and the
  * tests will fail fast.
  *
  * @author Dave Syer
  * @author Gary Russell
  *
- * @since 1.7
- * @see Assume
- * @see org.junit.internal.AssumptionViolatedException
+ * @since 2.2
  */
 public final class BrokerRunningSupport {
 
@@ -97,15 +78,15 @@ public final class BrokerRunningSupport {
 
 	private static final String GUEST = "guest";
 
-	private static final Log logger = LogFactory.getLog(BrokerRunningSupport.class); // NOSONAR - lower case
+	private static final Log LOGGER = LogFactory.getLog(BrokerRunningSupport.class);
 
 	// Static so that we only test once on failure: speeds up test suite
-	private static final Map<Integer, Boolean> brokerOnline = new HashMap<Integer, Boolean>(); // NOSONAR - lower case
+	private static final Map<Integer, Boolean> BROKER_ONLINE = new HashMap<>();
 
 	// Static so that we only test once on failure
-	private static final Map<Integer, Boolean> brokerOffline = new HashMap<Integer, Boolean>(); // NOSONAR - lower case
+	private static final Map<Integer, Boolean> BROKER_OFFLINE = new HashMap<>();
 
-	private static final Map<String, String> environmentOverrides = new HashMap<>(); // NOSONAR - lower case
+	private static final Map<String, String> ENVIRONMENT_OVERRIDES = new HashMap<>();
 
 	private final boolean assumeOnline;
 
@@ -136,8 +117,8 @@ public final class BrokerRunningSupport {
 
 	private boolean purgeAfterEach;
 
-	private String fromEnvironment(String key, String defaultValue) {
-		String environmentValue = environmentOverrides.get(key);
+	private static String fromEnvironment(String key, String defaultValue) {
+		String environmentValue = ENVIRONMENT_OVERRIDES.get(key);
 		if (!StringUtils.hasText(environmentValue)) {
 			environmentValue = System.getenv(key);
 		}
@@ -158,14 +139,14 @@ public final class BrokerRunningSupport {
 	 * @param environmentVariables the variables.
 	 */
 	public static void setEnvironmentVariableOverrides(Map<String, String> environmentVariables) {
-		environmentOverrides.putAll(environmentVariables);
+		ENVIRONMENT_OVERRIDES.putAll(environmentVariables);
 	}
 
 	/**
 	 * Clear any environment variable overrides set in {@link #setEnvironmentVariableOverrides(Map)}.
 	 */
 	public static void clearEnvironmentVariableOverrides() {
-		environmentOverrides.clear();
+		ENVIRONMENT_OVERRIDES.clear();
 	}
 
 	/**
@@ -243,11 +224,11 @@ public final class BrokerRunningSupport {
 	 */
 	public void setPort(int port) {
 		this.port = port;
-		if (!brokerOffline.containsKey(port)) {
-			brokerOffline.put(port, true);
+		if (!BROKER_OFFLINE.containsKey(port)) {
+			BROKER_OFFLINE.put(port, true);
 		}
-		if (!brokerOnline.containsKey(port)) {
-			brokerOnline.put(port, true);
+		if (!BROKER_ONLINE.containsKey(port)) {
+			BROKER_ONLINE.put(port, true);
 		}
 	}
 
@@ -261,7 +242,6 @@ public final class BrokerRunningSupport {
 	/**
 	 * Set the user for the amqp connection default "guest".
 	 * @param user the user.
-	 * @since 1.7.2
 	 */
 	public void setUser(String user) {
 		this.user = user;
@@ -270,7 +250,6 @@ public final class BrokerRunningSupport {
 	/**
 	 * Set the password for the amqp connection default "guest".
 	 * @param password the password.
-	 * @since 1.7.2
 	 */
 	public void setPassword(String password) {
 		this.password = password;
@@ -279,7 +258,6 @@ public final class BrokerRunningSupport {
 	/**
 	 * Set the uri for the REST API.
 	 * @param adminUri the uri.
-	 * @since 1.7.2
 	 */
 	public void setAdminUri(String adminUri) {
 		this.adminUri = adminUri;
@@ -288,7 +266,6 @@ public final class BrokerRunningSupport {
 	/**
 	 * Set the user for the management REST API connection default "guest".
 	 * @param user the user.
-	 * @since 1.7.2
 	 */
 	public void setAdminUser(String user) {
 		this.adminUser = user;
@@ -297,7 +274,6 @@ public final class BrokerRunningSupport {
 	/**
 	 * Set the password for the management REST API connection default "guest".
 	 * @param password the password.
-	 * @since 1.7.2
 	 */
 	public void setAdminPassword(String password) {
 		this.adminPassword = password;
@@ -306,7 +282,6 @@ public final class BrokerRunningSupport {
 	/**
 	 * Return the port.
 	 * @return the port.
-	 * @since 1.7.2
 	 */
 	public int getPort() {
 		return this.port;
@@ -315,7 +290,6 @@ public final class BrokerRunningSupport {
 	/**
 	 * Return the port.
 	 * @return the port.
-	 * @since 1.7.2
 	 */
 	public String getHostName() {
 		return this.hostName;
@@ -324,7 +298,6 @@ public final class BrokerRunningSupport {
 	/**
 	 * Return the user.
 	 * @return the user.
-	 * @since 1.7.2
 	 */
 	public String getUser() {
 		return this.user;
@@ -333,7 +306,6 @@ public final class BrokerRunningSupport {
 	/**
 	 * Return the password.
 	 * @return the password.
-	 * @since 1.7.2
 	 */
 	public String getPassword() {
 		return this.password;
@@ -342,7 +314,6 @@ public final class BrokerRunningSupport {
 	/**
 	 * Return the admin user.
 	 * @return the user.
-	 * @since 1.7.2
 	 */
 	public String getAdminUser() {
 		return this.adminUser;
@@ -351,7 +322,6 @@ public final class BrokerRunningSupport {
 	/**
 	 * Return the admin password.
 	 * @return the password.
-	 * @since 1.7.2
 	 */
 	public String getAdminPassword() {
 		return this.adminPassword;
@@ -365,7 +335,6 @@ public final class BrokerRunningSupport {
 	/**
 	 * Purge the test queues after each test (JUnit 5).
 	 * @param purgeAfterEach true to purge.
-	 * @since 2.2
 	 */
 	public void setPurgeAfterEach(boolean purgeAfterEach) {
 		this.purgeAfterEach = purgeAfterEach;
@@ -375,12 +344,12 @@ public final class BrokerRunningSupport {
 
 		// Check at the beginning, so this can be used as a static field
 		if (this.assumeOnline) {
-			if (Boolean.FALSE.equals(brokerOnline.get(this.port))) {
+			if (Boolean.FALSE.equals(BROKER_ONLINE.get(this.port))) {
 				throw new BrokerNotAliveException("Require broker online and it's not");
 			}
 		}
 		else {
-			if (Boolean.FALSE.equals(brokerOffline.get(this.port))) {
+			if (Boolean.FALSE.equals(BROKER_OFFLINE.get(this.port))) {
 				throw new BrokerNotAliveException("Require broker offline and it's not");
 			}
 		}
@@ -393,8 +362,8 @@ public final class BrokerRunningSupport {
 			channel = createQueues(connection);
 		}
 		catch (Exception e) {
-			logger.warn("Not executing tests because basic connectivity test failed: " + e.getMessage());
-			brokerOnline.put(this.port, false);
+			LOGGER.warn("Not executing tests because basic connectivity test failed: " + e.getMessage());
+			BROKER_ONLINE.put(this.port, false);
 			if (this.assumeOnline) {
 				if (fatal()) {
 					throw new BrokerNotAliveException("RabbitMQ Broker is required, but not available");
@@ -415,14 +384,14 @@ public final class BrokerRunningSupport {
 		return connection;
 	}
 
-	private Channel createQueues(Connection connection) throws IOException, MalformedURLException, URISyntaxException {
+	private Channel createQueues(Connection connection) throws IOException, URISyntaxException {
 		Channel channel;
 		channel = connection.createChannel();
 
 		for (String queueName : this.queues) {
 
 			if (this.purge) {
-				logger.debug("Deleting queue: " + queueName);
+				LOGGER.debug("Deleting queue: " + queueName);
 				// Delete completely - gets rid of consumers and bindings as well
 				channel.queueDelete(queueName);
 			}
@@ -435,9 +404,9 @@ public final class BrokerRunningSupport {
 				channel.queueDeclare(queueName, true, false, false, null);
 			}
 		}
-		brokerOffline.put(this.port, false);
+		BROKER_OFFLINE.put(this.port, false);
 		if (!this.assumeOnline) {
-			Assume.assumeTrue(brokerOffline.get(this.port));
+			Assume.assumeTrue(BROKER_OFFLINE.get(this.port));
 		}
 
 		if (this.management) {
@@ -453,7 +422,7 @@ public final class BrokerRunningSupport {
 	public static boolean fatal() {
 		String serversRequired = System.getenv(BROKER_REQUIRED);
 		if (Boolean.parseBoolean(serversRequired)) {
-			logger.error("RABBITMQ IS REQUIRED BUT NOT AVAILABLE");
+			LOGGER.error("RABBITMQ IS REQUIRED BUT NOT AVAILABLE");
 			return true;
 		}
 		else {
@@ -490,7 +459,7 @@ public final class BrokerRunningSupport {
 			queuesToRemove = new ArrayList<>(queuesToRemove);
 			queuesToRemove.addAll(Arrays.asList(additionalQueues));
 		}
-		logger.debug("deleting test queues: " + queuesToRemove);
+		LOGGER.debug("deleting test queues: " + queuesToRemove);
 		Connection connection = null; // NOSONAR (closeResources())
 		Channel channel = null;
 
@@ -504,7 +473,7 @@ public final class BrokerRunningSupport {
 			}
 		}
 		catch (Exception e) {
-			logger.warn("Failed to delete queues", e);
+			LOGGER.warn("Failed to delete queues", e);
 		}
 		finally {
 			closeResources(connection, channel);
@@ -524,7 +493,7 @@ public final class BrokerRunningSupport {
 			channel = createQueues(connection);
 		}
 		catch (Exception e) {
-			logger.warn("Failed to re-declare queues during purge: " + e.getMessage());
+			LOGGER.warn("Failed to re-declare queues during purge: " + e.getMessage());
 		}
 		finally {
 			closeResources(connection, channel);
@@ -549,7 +518,7 @@ public final class BrokerRunningSupport {
 			}
 		}
 		catch (Exception e) {
-			logger.warn("Failed to delete queues", e);
+			LOGGER.warn("Failed to delete queues", e);
 		}
 		finally {
 			closeResources(connection, channel);
@@ -574,7 +543,7 @@ public final class BrokerRunningSupport {
 			}
 		}
 		catch (Exception e) {
-			logger.warn("Failed to delete queues", e);
+			LOGGER.warn("Failed to delete queues", e);
 		}
 		finally {
 			closeResources(connection, channel);
@@ -605,7 +574,6 @@ public final class BrokerRunningSupport {
 	/**
 	 * Return the admin uri.
 	 * @return the uri.
-	 * @since 1.7.2
 	 */
 	public String getAdminUri() {
 		if (!StringUtils.hasText(this.adminUri)) {

@@ -31,10 +31,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.core.Address;
@@ -72,36 +71,35 @@ import com.rabbitmq.client.Channel;
  */
 public class MethodRabbitListenerEndpointTests {
 
-	@Rule
-	public final TestName name = new TestName();
-
 	private final DefaultMessageHandlerMethodFactory factory = new DefaultMessageHandlerMethodFactory();
 
 	private final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
 
 	private final RabbitEndpointSampleBean sample = new RabbitEndpointSampleBean();
 
+	public String testName;
 
-	@Before
-	public void setup() {
+	@BeforeEach
+	public void setup(TestInfo info) {
 		initializeFactory(factory);
+		this.testName = info.getTestMethod().get().getName();
 	}
 
 	@Test
-	public void createMessageListenerNoFactory() {
+	public void createMessageListenerNoFactory(TestInfo info) {
 		MethodRabbitListenerEndpoint endpoint = new MethodRabbitListenerEndpoint();
 		endpoint.setBean(this);
-		endpoint.setMethod(getTestMethod());
+		endpoint.setMethod(info.getTestMethod().get());
 
 		assertThatIllegalStateException()
 			.isThrownBy(() -> endpoint.createMessageListener(container));
 	}
 
 	@Test
-	public void createMessageListener() {
+	public void createMessageListener(TestInfo info) {
 		MethodRabbitListenerEndpoint endpoint = new MethodRabbitListenerEndpoint();
 		endpoint.setBean(this);
-		endpoint.setMethod(getTestMethod());
+		endpoint.setMethod(info.getTestMethod().get());
 		endpoint.setMessageHandlerMethodFactory(factory);
 
 		assertThat(endpoint.createMessageListener(container)).isNotNull();
@@ -418,11 +416,11 @@ public class MethodRabbitListenerEndpointTests {
 	}
 
 	private Method getDefaultListenerMethod(Class<?>... parameterTypes) {
-		return getListenerMethod(name.getMethodName(), parameterTypes);
+		return getListenerMethod(this.testName, parameterTypes);
 	}
 
 	private void assertDefaultListenerMethodInvocation() {
-		assertListenerMethodInvocation(sample, name.getMethodName());
+		assertListenerMethodInvocation(this.sample, this.testName);
 	}
 
 	private void assertListenerMethodInvocation(RabbitEndpointSampleBean bean, String methodName) {
@@ -449,10 +447,6 @@ public class MethodRabbitListenerEndpointTests {
 				}
 			}
 		};
-	}
-
-	private Method getTestMethod() {
-		return ReflectionUtils.findMethod(MethodRabbitListenerEndpointTests.class, name.getMethodName());
 	}
 
 	static class RabbitEndpointSampleBean {

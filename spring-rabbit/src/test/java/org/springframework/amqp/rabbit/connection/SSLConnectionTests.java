@@ -29,8 +29,8 @@ import java.util.Collections;
 import javax.net.ssl.SSLContext;
 
 import org.apache.commons.logging.Log;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
@@ -55,7 +55,7 @@ import com.rabbitmq.client.ConnectionFactory;
 public class SSLConnectionTests {
 
 	@Test
-	@Ignore
+	@Disabled
 	public void test() throws Exception {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
 		fb.setUseSSL(true);

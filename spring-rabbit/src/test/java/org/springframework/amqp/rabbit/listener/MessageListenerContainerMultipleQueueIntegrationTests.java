@@ -24,18 +24,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.logging.log4j.Level;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
-import org.springframework.amqp.rabbit.junit.LogLevelAdjuster;
+import org.springframework.amqp.rabbit.junit.LogLevels;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 
@@ -44,25 +41,21 @@ import org.springframework.amqp.support.converter.SimpleMessageConverter;
  * @author Gunnar Hillert
  * @author Gary Russell
  */
+@RabbitAvailable(queues = { MessageListenerContainerMultipleQueueIntegrationTests.TEST_QUEUE_1,
+		MessageListenerContainerMultipleQueueIntegrationTests.TEST_QUEUE_2 })
+@LogLevels(level = "INFO", classes = { RabbitTemplate.class,
+			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class })
 public class MessageListenerContainerMultipleQueueIntegrationTests {
+
+	public static final String TEST_QUEUE_1 = "test.queue.1.MessageListenerContainerMultipleQueueIntegrationTests";
+
+	public static final String TEST_QUEUE_2 = "test.queue.2.MessageListenerContainerMultipleQueueIntegrationTests";
 
 	private static Log logger = LogFactory.getLog(MessageListenerContainerMultipleQueueIntegrationTests.class);
 
-	private static Queue queue1 = new Queue("test.queue.1");
+	private static Queue queue1 = new Queue(TEST_QUEUE_1);
 
-	private static Queue queue2 = new Queue("test.queue.2");
-
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue1.getName(), queue2.getName());
-
-	@Rule
-	public LogLevelAdjuster logLevels = new LogLevelAdjuster(Level.INFO, RabbitTemplate.class,
-			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
-
-	@After
-	public void tearDown() {
-		this.brokerIsRunning.removeTestQueues();
-	}
+	private static Queue queue2 = new Queue(TEST_QUEUE_2);
 
 	@Test
 	public void testMultipleQueues() {
