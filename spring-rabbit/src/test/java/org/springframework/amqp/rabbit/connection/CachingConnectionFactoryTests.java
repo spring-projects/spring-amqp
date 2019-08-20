@@ -1852,10 +1852,13 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		CachingConnectionFactory cf = new CachingConnectionFactory(mock(ConnectionFactory.class));
 		cf.setSimplePublisherConfirms(false);
 		assertThat(cf.isSimplePublisherConfirms()).isFalse();
+		assertThat(cf.getPublisherConnectionFactory().isSimplePublisherConfirms()).isFalse();
 		cf.setSimplePublisherConfirms(true);
 		assertThat(cf.isSimplePublisherConfirms()).isTrue();
+		assertThat(cf.getPublisherConnectionFactory().isSimplePublisherConfirms()).isTrue();
 		cf.setSimplePublisherConfirms(false);
 		assertThat(cf.isSimplePublisherConfirms()).isFalse();
+		assertThat(cf.getPublisherConnectionFactory().isSimplePublisherConfirms()).isFalse();
 	}
 
 	@SuppressWarnings("deprecation")
@@ -1863,11 +1866,14 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	public void confirmsCorrelated() {
 		CachingConnectionFactory cf = new CachingConnectionFactory(mock(ConnectionFactory.class));
 		cf.setPublisherConfirms(false);
+		assertThat(cf.getPublisherConnectionFactory().isPublisherConfirms()).isFalse();
 		assertThat(cf.isPublisherConfirms()).isFalse();
 		cf.setPublisherConfirms(true);
+		assertThat(cf.getPublisherConnectionFactory().isPublisherConfirms()).isTrue();
 		assertThat(cf.isPublisherConfirms()).isTrue();
 		cf.setPublisherConfirms(false);
 		assertThat(cf.isPublisherConfirms()).isFalse();
+		assertThat(cf.getPublisherConnectionFactory().isPublisherConfirms()).isFalse();
 	}
 
 }

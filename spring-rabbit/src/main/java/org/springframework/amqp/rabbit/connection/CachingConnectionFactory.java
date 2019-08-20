@@ -412,7 +412,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			setPublisherConfirmType(ConfirmType.CORRELATED);
 		}
 		else if (this.confirmType.equals(ConfirmType.CORRELATED)) {
-			this.confirmType = ConfirmType.NONE;
+			setPublisherConfirmType(ConfirmType.NONE);
 		}
 	}
 
@@ -431,7 +431,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			setPublisherConfirmType(ConfirmType.SIMPLE);
 		}
 		else if (this.confirmType.equals(ConfirmType.SIMPLE)) {
-			this.confirmType = ConfirmType.NONE;
+			setPublisherConfirmType(ConfirmType.NONE);
 		}
 	}
 
