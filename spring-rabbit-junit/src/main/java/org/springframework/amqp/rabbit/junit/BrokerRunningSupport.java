@@ -617,6 +617,10 @@ public final class BrokerRunningSupport {
 			super(message);
 		}
 
+		BrokerNotAliveException(String message, Throwable throwable) {
+			super(message, throwable);
+		}
+
 	}
 
 }
