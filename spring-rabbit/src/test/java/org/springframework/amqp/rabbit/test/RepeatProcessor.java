@@ -34,6 +34,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.internal.runners.statements.RunAfters;
 import org.junit.internal.runners.statements.RunBefores;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.rules.MethodRule;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
@@ -46,10 +47,12 @@ import org.springframework.test.annotation.Repeat;
  * A JUnit method &#064;Rule that looks at Spring repeat annotations on methods and executes the test multiple times
  * (without re-initializing the test case if necessary). To avoid re-initializing use the {@link #isInitialized()}
  * method to protect the &#64;Before and &#64;After methods.
+ * @deprecated in favor of JUnit 5 {@link RepeatedTest}.
  *
  * @author Dave Syer
  *
  */
+@Deprecated
 public class RepeatProcessor implements MethodRule {
 
 	private static final Log logger = LogFactory.getLog(RepeatProcessor.class);

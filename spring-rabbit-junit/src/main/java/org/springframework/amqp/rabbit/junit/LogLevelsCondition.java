@@ -17,12 +17,17 @@
 package org.springframework.amqp.rabbit.junit;
 
 import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.logging.LogFactory;
 import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
@@ -33,6 +38,7 @@ import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.springframework.amqp.rabbit.junit.JUnitUtils.LevelsContainer;
 import org.springframework.core.annotation.MergedAnnotation;
 import org.springframework.core.annotation.MergedAnnotations;
+import org.springframework.core.log.LogAccessor;
 
 /**
  * JUnit condition that adjusts and reverts log levels before/after each test.
@@ -42,7 +48,9 @@ import org.springframework.core.annotation.MergedAnnotations;
  *
  */
 public class LogLevelsCondition
-		implements ExecutionCondition, BeforeEachCallback, AfterEachCallback, AfterAllCallback {
+		implements ExecutionCondition, BeforeEachCallback, AfterEachCallback, BeforeAllCallback, AfterAllCallback {
+
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(LogLevelsCondition.class));
 
 	private static final String STORE_ANNOTATION_KEY = "logLevelsAnnotation";
 
@@ -50,6 +58,8 @@ public class LogLevelsCondition
 
 	private static final ConditionEvaluationResult ENABLED =
 			ConditionEvaluationResult.enabled("@LogLevels always enabled");
+
+	private final Map<String, Boolean> loggedMethods = new ConcurrentHashMap<>();
 
 	@Override
 	public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
@@ -66,14 +76,9 @@ public class LogLevelsCondition
 	}
 
 	@Override
-	public void beforeEach(ExtensionContext context) {
+	public void beforeAll(ExtensionContext context) {
 		Store store = context.getStore(Namespace.create(getClass(), context));
 		LogLevels logLevels = store.get(STORE_ANNOTATION_KEY, LogLevels.class);
-		if (logLevels == null) {
-			ExtensionContext parent = context.getParent().get();
-			store = parent.getStore(Namespace.create(getClass(), parent));
-			logLevels = store.get(STORE_ANNOTATION_KEY, LogLevels.class);
-		}
 		if (logLevels != null) {
 			store.put(STORE_CONTAINER_KEY, JUnitUtils.adjustLogLevels(context.getDisplayName(),
 					Arrays.asList((logLevels.classes())),
@@ -83,21 +88,35 @@ public class LogLevelsCondition
 	}
 
 	@Override
+	public void beforeEach(ExtensionContext context) {
+		Store store = context.getStore(Namespace.create(getClass(), context));
+		LogLevels logLevels = store.get(STORE_ANNOTATION_KEY, LogLevels.class);
+		if (logLevels != null) { // Method level annotation
+			if (store.get(STORE_CONTAINER_KEY) == null) {
+				store.put(STORE_CONTAINER_KEY, JUnitUtils.adjustLogLevels(context.getDisplayName(),
+						Arrays.asList((logLevels.classes())),
+						Arrays.asList(logLevels.categories()),
+						Level.toLevel(logLevels.level())));
+			}
+		}
+		else {
+			Optional<Method> testMethod = context.getTestMethod();
+			if (testMethod.isPresent()
+					&& this.loggedMethods.putIfAbsent(testMethod.get().getName(), Boolean.TRUE) == null) {
+				logger.info(() -> "+++++++++++++++++++++++++++++ Begin " + testMethod.get().getName());
+			}
+		}
+	}
+
+	@Override
 	public void afterEach(ExtensionContext context) {
 		Store store = context.getStore(Namespace.create(getClass(), context));
 		LevelsContainer container = store.get(STORE_CONTAINER_KEY, LevelsContainer.class);
-		boolean parentStore = false;
-		if (container == null) {
-			ExtensionContext parent = context.getParent().get();
-			store = parent.getStore(Namespace.create(getClass(), parent));
-			container = store.get(STORE_CONTAINER_KEY, LevelsContainer.class);
-			parentStore = true;
-		}
 		if (container != null) {
-			JUnitUtils.revertLevels(context.getDisplayName(), container);
-			store.remove(STORE_CONTAINER_KEY);
-			if (!parentStore) {
-				store.remove(STORE_ANNOTATION_KEY);
+			LogLevels logLevels = store.get(STORE_ANNOTATION_KEY, LogLevels.class);
+			if (logLevels != null) {
+				JUnitUtils.revertLevels(context.getDisplayName(), container);
+				store.remove(STORE_CONTAINER_KEY);
 			}
 		}
 	}
@@ -105,7 +124,13 @@ public class LogLevelsCondition
 	@Override
 	public void afterAll(ExtensionContext context) {
 		Store store = context.getStore(Namespace.create(getClass(), context));
-		store.remove(STORE_ANNOTATION_KEY);
+		LogLevels logLevels = store.remove(STORE_ANNOTATION_KEY, LogLevels.class);
+		if (logLevels != null) {
+			LevelsContainer container = store.get(STORE_CONTAINER_KEY, LevelsContainer.class);
+			JUnitUtils.revertLevels(context.getDisplayName(), container);
+			store.remove(STORE_CONTAINER_KEY);
+		}
+		this.loggedMethods.clear();
 	}
 
 }
