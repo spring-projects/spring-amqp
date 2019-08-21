@@ -365,7 +365,7 @@ public final class BrokerRunningSupport {
 			BROKER_ONLINE.put(this.port, false);
 			if (this.assumeOnline) {
 				if (fatal()) {
-					throw new BrokerNotAliveException("RabbitMQ Broker is required, but not available");
+					throw new BrokerNotAliveException("RabbitMQ Broker is required, but not available", e);
 				}
 				else {
 					Assume.assumeNoException(e);
