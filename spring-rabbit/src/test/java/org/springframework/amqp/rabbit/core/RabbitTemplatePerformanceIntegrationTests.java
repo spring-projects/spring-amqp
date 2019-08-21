@@ -18,19 +18,24 @@ package org.springframework.amqp.rabbit.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.apache.logging.log4j.Level;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
-import org.springframework.amqp.rabbit.junit.LogLevelAdjuster;
-import org.springframework.amqp.rabbit.junit.LongRunningIntegrationTest;
-import org.springframework.amqp.rabbit.test.RepeatProcessor;
-import org.springframework.test.annotation.Repeat;
+import org.springframework.amqp.rabbit.junit.LogLevels;
+import org.springframework.amqp.rabbit.junit.LongRunning;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
@@ -44,87 +49,78 @@ import org.springframework.transaction.support.TransactionTemplate;
  * @since 1.0
  *
  */
+@RabbitAvailable(queues = RabbitTemplatePerformanceIntegrationTests.ROUTE)
+@LongRunning
+@LogLevels(level = "ERROR", classes = RabbitTemplate.class, lifecycle = Lifecycle.PER_CLASS)
 public class RabbitTemplatePerformanceIntegrationTests {
 
-	private static final String ROUTE = "test.queue";
+	public static final String ROUTE = "test.queue.RabbitTemplatePerformanceIntegrationTests";
 
-	private final RabbitTemplate template = new RabbitTemplate();
+	private static final RabbitTemplate template = new RabbitTemplate();
 
-	@Rule
-	public LongRunningIntegrationTest longTests = new LongRunningIntegrationTest();
+	private static final ExecutorService exec = Executors.newFixedThreadPool(4);
 
-	@Rule
-	public RepeatProcessor repeat = new RepeatProcessor(4);
+	private static CachingConnectionFactory connectionFactory;
 
-	@Rule
-	// After the repeat processor, so it only runs once
-	public LogLevelAdjuster logLevels = new LogLevelAdjuster(Level.ERROR, RabbitTemplate.class);
-
-	@Rule
-	// After the repeat processor, so it only runs once
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE);
-
-	private CachingConnectionFactory connectionFactory;
-
-	@Before
-	public void declareQueue() {
-		if (repeat.isInitialized()) {
-			// Important to prevent concurrent re-initialization
-			return;
-		}
+	@BeforeAll
+	public static void declareQueue() {
 		connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setHost("localhost");
-		connectionFactory.setChannelCacheSize(repeat.getConcurrency());
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		template.setConnectionFactory(connectionFactory);
 	}
 
-	@After
-	public void cleanUp() {
-		if (!repeat.isFinalizing()) {
-			return;
-		}
-		this.template.stop();
-		this.connectionFactory.destroy();
-		this.brokerIsRunning.removeTestQueues();
+	@AfterAll
+	public static void cleanUp() {
+		template.stop();
+		connectionFactory.destroy();
+		exec.shutdownNow();
 	}
 
-	@Test
-	@Repeat(200)
-	public void testSendAndReceive() throws Exception {
-		template.convertAndSend(ROUTE, "message");
-		String result = (String) template.receiveAndConvert(ROUTE);
-		int count = 5;
-		while (result == null && count-- > 0) {
-			/*
-			 * Retry for the purpose of non-transacted case because channel operations are async in that case
-			 */
-			Thread.sleep(10L);
-			result = (String) template.receiveAndConvert(ROUTE);
-		}
-		assertThat(result).isEqualTo("message");
-	}
-
-	@Test
-	@Repeat(200)
-	public void testSendAndReceiveTransacted() throws Exception {
-		template.setChannelTransacted(true);
-		template.convertAndSend(ROUTE, "message");
-		String result = (String) template.receiveAndConvert(ROUTE);
-		assertThat(result).isEqualTo("message");
-	}
-
-	@Test
-	@Repeat(200)
-	public void testSendAndReceiveExternalTransacted() throws Exception {
-		template.setChannelTransacted(true);
-		new TransactionTemplate(new TestTransactionManager()).execute(status -> {
+	@RepeatedTest(50)
+	public void testSendAndReceive() throws InterruptedException {
+		CountDownLatch latch = new CountDownLatch(4);
+		List<String> results = new ArrayList<>();
+		Stream.of(1, 2, 3, 4).forEach(i -> exec.execute(() -> {
 			template.convertAndSend(ROUTE, "message");
-			return null;
-		});
-		template.convertAndSend(ROUTE, "message");
-		String result = (String) template.receiveAndConvert(ROUTE);
-		assertThat(result).isEqualTo("message");
+			results.add((String) template.receiveAndConvert(ROUTE, 10_000L));
+			latch.countDown();
+		}));
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(results).contains("message", "message", "message", "message");
+	}
+
+	@RepeatedTest(50)
+	public void testSendAndReceiveTransacted() throws InterruptedException {
+		CountDownLatch latch = new CountDownLatch(4);
+		List<String> results = new ArrayList<>();
+		template.setChannelTransacted(true);
+		Stream.of(1, 2, 3, 4).forEach(i -> exec.execute(() -> {
+			template.convertAndSend(ROUTE, "message");
+			results.add((String) template.receiveAndConvert(ROUTE, 10_000L));
+			latch.countDown();
+		}));
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(results).contains("message", "message", "message", "message");
+	}
+
+	@RepeatedTest(50)
+	public void testSendAndReceiveExternalTransacted() throws InterruptedException {
+		template.setChannelTransacted(true);
+		CountDownLatch latch = new CountDownLatch(4);
+		List<String> results = new ArrayList<>();
+		template.setChannelTransacted(true);
+		Stream.of(1, 2, 3, 4).forEach(i -> exec.execute(() -> {
+			new TransactionTemplate(new TestTransactionManager()).execute(status -> {
+				template.convertAndSend(ROUTE, "message");
+				return null;
+			});
+			template.convertAndSend(ROUTE, "message");
+			results.add((String) template.receiveAndConvert(ROUTE, 10_000L));
+			latch.countDown();
+		}));
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(results).contains("message", "message", "message", "message");
 	}
 
 	@SuppressWarnings("serial")

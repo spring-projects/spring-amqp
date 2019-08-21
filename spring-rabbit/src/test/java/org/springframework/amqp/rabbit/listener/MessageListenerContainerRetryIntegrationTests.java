@@ -27,10 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.aopalliance.aop.Advice;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.logging.log4j.Level;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
@@ -39,18 +37,16 @@ import org.springframework.amqp.rabbit.config.StatefulRetryOperationsInterceptor
 import org.springframework.amqp.rabbit.config.StatelessRetryOperationsInterceptorFactoryBean;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
-import org.springframework.amqp.rabbit.junit.LogLevelAdjuster;
+import org.springframework.amqp.rabbit.junit.LogLevels;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
-import org.springframework.amqp.rabbit.test.RepeatProcessor;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.retry.policy.MapRetryContextCache;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.test.annotation.Repeat;
 
 /**
  * @author Dave Syer
@@ -61,25 +57,17 @@ import org.springframework.test.annotation.Repeat;
  * @since 1.0
  *
  */
+@RabbitAvailable(queues = MessageListenerContainerRetryIntegrationTests.TEST_QUEUE)
+@LogLevels(level = "ERROR", classes = {
+		RabbitTemplate.class, SimpleMessageListenerContainer.class, BlockingQueueConsumer.class,
+		StatefulRetryOperationsInterceptorFactoryBean.class, MessageListenerContainerRetryIntegrationTests.class })
 public class MessageListenerContainerRetryIntegrationTests {
+
+	public static final String TEST_QUEUE = "test.queue.MessageListenerContainerRetryIntegrationTests";
 
 	private static Log logger = LogFactory.getLog(MessageListenerContainerRetryIntegrationTests.class);
 
-	private static Queue queue = new Queue("test.queue");
-
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue.getName());
-
-	@Rule
-	public LogLevelAdjuster logLevels = new LogLevelAdjuster(Level.ERROR, RabbitTemplate.class,
-			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
-
-	@Rule
-	public LogLevelAdjuster traceLevels = new LogLevelAdjuster(Level.ERROR,
-			StatefulRetryOperationsInterceptorFactoryBean.class, MessageListenerContainerRetryIntegrationTests.class);
-
-	@Rule
-	public RepeatProcessor repeats = new RepeatProcessor();
+	private static Queue queue = new Queue(TEST_QUEUE);
 
 	private RetryTemplate retryTemplate;
 
@@ -93,19 +81,12 @@ public class MessageListenerContainerRetryIntegrationTests {
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		template.setConnectionFactory(connectionFactory);
 		if (messageConverter == null) {
-			SimpleMessageConverter messageConverter = new SimpleMessageConverter();
-			messageConverter.setCreateMessageIds(true);
-			this.messageConverter = messageConverter;
+			SimpleMessageConverter converter = new SimpleMessageConverter();
+			converter.setCreateMessageIds(true);
+			this.messageConverter = converter;
 		}
 		template.setMessageConverter(messageConverter);
 		return template;
-	}
-
-	@After
-	public void tearDown() {
-		if (this.repeats.isFinalizing()) {
-			this.brokerIsRunning.removeTestQueues();
-		}
 	}
 
 	@Test
@@ -153,8 +134,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 			.hasMessageContaining("but was not.");
 	}
 
-	@Test
-	@Repeat(10)
+	@RepeatedTest(10)
 	public void testStatefulRetryWithTxSizeAndIntermittentFailure() throws Exception {
 
 		int messageCount = 10;

@@ -21,8 +21,10 @@ import java.util.Arrays;
 import java.util.Optional;
 
 import org.apache.logging.log4j.Level;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
@@ -42,7 +44,7 @@ import org.springframework.core.annotation.MergedAnnotations;
  *
  */
 public class LogLevelsCondition
-		implements ExecutionCondition, BeforeEachCallback, AfterEachCallback, AfterAllCallback {
+		implements ExecutionCondition, BeforeEachCallback, AfterEachCallback, BeforeAllCallback, AfterAllCallback {
 
 	private static final String STORE_ANNOTATION_KEY = "logLevelsAnnotation";
 
@@ -65,20 +67,40 @@ public class LogLevelsCondition
 		return ENABLED;
 	}
 
+
+	@Override
+	public void beforeAll(ExtensionContext context) {
+		Store store = context.getStore(Namespace.create(getClass(), context));
+		LogLevels logLevels = store.get(STORE_ANNOTATION_KEY, LogLevels.class);
+		if (logLevels != null && logLevels.lifecycle().equals(Lifecycle.PER_CLASS)) {
+			store.put(STORE_CONTAINER_KEY, JUnitUtils.adjustLogLevels(context.getDisplayName(),
+					Arrays.asList((logLevels.classes())),
+					Arrays.asList(logLevels.categories()),
+					Level.toLevel(logLevels.level())));
+		}
+	}
+
+
 	@Override
 	public void beforeEach(ExtensionContext context) {
 		Store store = context.getStore(Namespace.create(getClass(), context));
 		LogLevels logLevels = store.get(STORE_ANNOTATION_KEY, LogLevels.class);
 		if (logLevels == null) {
-			ExtensionContext parent = context.getParent().get();
-			store = parent.getStore(Namespace.create(getClass(), parent));
-			logLevels = store.get(STORE_ANNOTATION_KEY, LogLevels.class);
+			Optional<ExtensionContext> parentOpt = context.getParent();
+			while (logLevels == null && parentOpt.isPresent()) {
+				ExtensionContext parent = parentOpt.get();
+				store = parent.getStore(Namespace.create(getClass(), parent));
+				logLevels = store.get(STORE_ANNOTATION_KEY, LogLevels.class);
+				parentOpt = parent.getParent();
+			}
 		}
-		if (logLevels != null) {
-			store.put(STORE_CONTAINER_KEY, JUnitUtils.adjustLogLevels(context.getDisplayName(),
-					Arrays.asList((logLevels.classes())),
-					Arrays.asList(logLevels.categories()),
-					Level.toLevel(logLevels.level())));
+		if (logLevels != null && logLevels.lifecycle().equals(Lifecycle.PER_METHOD)) {
+			if (store.get(STORE_CONTAINER_KEY) == null) {
+				store.put(STORE_CONTAINER_KEY, JUnitUtils.adjustLogLevels(context.getDisplayName(),
+						Arrays.asList((logLevels.classes())),
+						Arrays.asList(logLevels.categories()),
+						Level.toLevel(logLevels.level())));
+			}
 		}
 	}
 
@@ -88,16 +110,23 @@ public class LogLevelsCondition
 		LevelsContainer container = store.get(STORE_CONTAINER_KEY, LevelsContainer.class);
 		boolean parentStore = false;
 		if (container == null) {
-			ExtensionContext parent = context.getParent().get();
-			store = parent.getStore(Namespace.create(getClass(), parent));
-			container = store.get(STORE_CONTAINER_KEY, LevelsContainer.class);
+			Optional<ExtensionContext> parentOpt = context.getParent();
+			while (container == null && parentOpt.isPresent()) {
+				ExtensionContext parent = parentOpt.get();
+				store = parent.getStore(Namespace.create(getClass(), parent));
+				container = store.get(STORE_CONTAINER_KEY, LevelsContainer.class);
+				parentOpt = parent.getParent();
+			}
 			parentStore = true;
 		}
 		if (container != null) {
-			JUnitUtils.revertLevels(context.getDisplayName(), container);
-			store.remove(STORE_CONTAINER_KEY);
-			if (!parentStore) {
-				store.remove(STORE_ANNOTATION_KEY);
+			LogLevels logLevels = store.get(STORE_ANNOTATION_KEY, LogLevels.class);
+			if (logLevels != null && logLevels.lifecycle().equals(Lifecycle.PER_METHOD)) {
+				JUnitUtils.revertLevels(context.getDisplayName(), container);
+				store.remove(STORE_CONTAINER_KEY);
+				if (!parentStore) {
+					store.remove(STORE_ANNOTATION_KEY);
+				}
 			}
 		}
 	}
@@ -105,7 +134,12 @@ public class LogLevelsCondition
 	@Override
 	public void afterAll(ExtensionContext context) {
 		Store store = context.getStore(Namespace.create(getClass(), context));
-		store.remove(STORE_ANNOTATION_KEY);
+		LogLevels logLevels = store.remove(STORE_ANNOTATION_KEY, LogLevels.class);
+		if (logLevels != null && logLevels.lifecycle().equals(Lifecycle.PER_CLASS)) {
+			LevelsContainer container = store.get(STORE_CONTAINER_KEY, LevelsContainer.class);
+			JUnitUtils.revertLevels(context.getDisplayName(), container);
+			store.remove(STORE_CONTAINER_KEY);
+		}
 	}
 
 }
