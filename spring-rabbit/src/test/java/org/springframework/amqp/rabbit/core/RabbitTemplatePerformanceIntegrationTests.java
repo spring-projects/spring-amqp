@@ -29,12 +29,10 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.rabbit.junit.LogLevels;
-import org.springframework.amqp.rabbit.junit.LongRunning;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
@@ -50,8 +48,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  *
  */
 @RabbitAvailable(queues = RabbitTemplatePerformanceIntegrationTests.ROUTE)
-@LongRunning
-@LogLevels(level = "ERROR", classes = RabbitTemplate.class, lifecycle = Lifecycle.PER_CLASS)
+@LogLevels(level = "ERROR", classes = RabbitTemplate.class)
 public class RabbitTemplatePerformanceIntegrationTests {
 
 	public static final String ROUTE = "test.queue.RabbitTemplatePerformanceIntegrationTests";

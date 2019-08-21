@@ -22,7 +22,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
@@ -54,15 +53,8 @@ public @interface LogLevels {
 
 	/**
 	 * The Log4j level name to switch the categories to during the test.
-	 * @return the level (default DEBUG).
+	 * @return the level (default Log4j {@code Levels.toLevel()} - currently, DEBUG).
 	 */
-	String level() default "DEBUG";
-
-	/**
-	 * When used at the class level, set this to PER_CLASS to set/restore
-	 * the levels once only. Useful with {@code @RepeatedTest}.
-	 * @return the Lifecycle.
-	 */
-	TestInstance.Lifecycle lifecycle() default TestInstance.Lifecycle.PER_METHOD;
+	String level() default "";
 
 }

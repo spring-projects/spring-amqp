@@ -57,7 +57,7 @@ import com.rabbitmq.client.Channel;
  *
  */
 @RabbitAvailable(queues = MessageListenerRecoveryRepeatIntegrationTests.TEST_QUEUE, purgeAfterEach = false)
-@LogLevels(level = "ERROR", lifecycle = Lifecycle.PER_CLASS, classes = { RabbitTemplate.class,
+@LogLevels(level = "ERROR", classes = { RabbitTemplate.class,
 		ConditionalRejectingErrorHandler.class,
 		SimpleMessageListenerContainer.class, BlockingQueueConsumer.class,
 		MessageListenerRecoveryRepeatIntegrationTests.class })
