@@ -22,7 +22,6 @@ import static org.assertj.core.api.Assertions.fail;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Message;
@@ -32,9 +31,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.ShutDownChannelListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
-import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
 import org.springframework.context.ApplicationContext;
@@ -54,13 +51,6 @@ public class ContainerInitializationTests {
 	public static final String TEST_MISMATCH = "test.mismatch";
 
 	public static final String TEST_MISMATCH2 = "test.mismatch2";
-
-	public BrokerRunning brokerRunning = RabbitAvailableCondition.getBrokerRunning();
-
-	@AfterEach
-	public void tearDown() {
-		brokerRunning.purgeTestQueues();
-	}
 
 	@Test
 	public void testNoAdmin() {

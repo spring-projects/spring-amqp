@@ -72,8 +72,8 @@ public class BrokerRunningTests {
 		assertThat(connectionFactory.getUsername()).isEqualTo("FIZ");
 		assertThat(connectionFactory.getPassword()).isEqualTo("QUX");
 		DirectFieldAccessor dfa = new DirectFieldAccessor(brokerRunning);
-		assertThat(dfa.getPropertyValue("adminUser")).isEqualTo("BAR");
-		assertThat(dfa.getPropertyValue("adminPassword")).isEqualTo("FOO");
+		assertThat(dfa.getPropertyValue("brokerRunning.adminUser")).isEqualTo("BAR");
+		assertThat(dfa.getPropertyValue("brokerRunning.adminPassword")).isEqualTo("FOO");
 
 		BrokerRunning.clearEnvironmentVariableOverrides();
 	}

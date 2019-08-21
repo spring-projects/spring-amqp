@@ -522,10 +522,11 @@ Version 2.0.2 introduced support for JUnit5.
 This class-level annotation is similar to the `BrokerRunning` `@Rule` discussed in <<junit-rules>>.
 It is processed by the `RabbitAvailableCondition`.
 
-The annotation has two properties:
+The annotation has three properties:
 
 * `queues`: An array of queues that are declared (and purged) before each test and deleted when all tests are complete.
 * `management`: Set this to `true` if your tests also require the management plugin installed on the broker.
+* `purgeAfterEach`: (Since version 2.2) when `true` (default), the `queues` will be purged between tests.
 
 It is used to check whether the broker is available and skip the tests if not.
 As discussed in <<brokerRunning-configure>>, the environment variable called `RABBITMQ_SERVER_REQUIRED`, if `true`, causes the tests to fail fast if there is no broker.
@@ -534,8 +535,8 @@ You can configure the condition by using environment variables as discussed in <
 In addition, the `RabbitAvailableCondition` supports argument resolution for parameterized test constructors and methods.
 Two argument types are supported:
 
-* `BrokerRunning`: The instance
-* `ConnectionFactory`: The `BrokerRunning` instance's RabbitMQ connection factory
+* `BrokerRunningSupport`: The instance (before 2.2, this was a JUnit 4 `BrokerRunning` instance)
+* `ConnectionFactory`: The `BrokerRunningSupport` instance's RabbitMQ connection factory
 
 The following example shows both:
 
@@ -547,7 +548,7 @@ public class RabbitAvailableCTORInjectionTests {
 
     private final ConnectionFactory connectionFactory;
 
-    public RabbitAvailableCTORInjectionTests(BrokerRunning brokerRunning) {
+    public RabbitAvailableCTORInjectionTests(BrokerRunningSupport brokerRunning) {
         this.connectionFactory = brokerRunning.getConnectionFactory();
     }
 
@@ -578,7 +579,7 @@ public class RabbitAvailableCTORInjectionTests {
 
     private final CachingConnectionFactory connectionFactory;
 
-    public RabbitAvailableCTORInjectionTests(BrokerRunning brokerRunning) {
+    public RabbitAvailableCTORInjectionTests(BrokerRunningSupport brokerRunning) {
         this.connectionFactory =
             new CachingConnectionFactory(brokerRunning.getConnectionFactory());
     }
@@ -593,6 +594,10 @@ public class RabbitAvailableCTORInjectionTests {
 ====
 
 When you use a Spring annotation application context within a test class, you can get a reference to the condition's connection factory through a static method called `RabbitAvailableCondition.getBrokerRunning()`.
+
+IMPORTANT: Starting with version 2.2, `getBrokerRunning()` returns a `BrokerRunningSupport` object; previously, the JUnit 4 `BrokerRunnning` instance was returned.
+The new class has the same API as `BrokerRunning`.
+
 The following test comes from the framework and demonstrates the usage:
 
 ====

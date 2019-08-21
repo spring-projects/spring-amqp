@@ -20,8 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
@@ -41,7 +41,7 @@ public class RabbitListenerEndpointRegistrarTests {
 	private final RabbitListenerContainerTestFactory containerFactory = new RabbitListenerContainerTestFactory();
 
 
-	@Before
+	@BeforeEach
 	public void setup() {
 		registrar.setEndpointRegistry(registry);
 		registrar.setBeanFactory(new StaticListableBeanFactory());

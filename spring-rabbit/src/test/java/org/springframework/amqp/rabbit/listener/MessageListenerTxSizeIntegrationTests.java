@@ -23,20 +23,18 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.logging.log4j.Level;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
-import org.springframework.amqp.rabbit.junit.LogLevelAdjuster;
+import org.springframework.amqp.rabbit.junit.LogLevels;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.beans.factory.DisposableBean;
@@ -51,11 +49,16 @@ import com.rabbitmq.client.Channel;
  * @since 1.0
  *
  */
+@RabbitAvailable(queues = MessageListenerTxSizeIntegrationTests.TEST_QUEUE)
+@LogLevels(level = "ERROR", classes = { RabbitTemplate.class,
+		SimpleMessageListenerContainer.class, BlockingQueueConsumer.class })
 public class MessageListenerTxSizeIntegrationTests {
+
+	public static final String TEST_QUEUE = "test.queue.MessageListenerTxSizeIntegrationTests";
 
 	private static Log logger = LogFactory.getLog(MessageListenerTxSizeIntegrationTests.class);
 
-	private final Queue queue = new Queue("test.queue");
+	private final Queue queue = new Queue(TEST_QUEUE);
 
 	private final RabbitTemplate template = new RabbitTemplate();
 
@@ -69,14 +72,7 @@ public class MessageListenerTxSizeIntegrationTests {
 
 	private SimpleMessageListenerContainer container;
 
-	@Rule
-	public LogLevelAdjuster logLevels = new LogLevelAdjuster(Level.ERROR, RabbitTemplate.class,
-			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
-
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue.getName());
-
-	@Before
+	@BeforeEach
 	public void createConnectionFactory() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setHost("localhost");
@@ -85,7 +81,7 @@ public class MessageListenerTxSizeIntegrationTests {
 		template.setConnectionFactory(connectionFactory);
 	}
 
-	@After
+	@AfterEach
 	public void clear() throws Exception {
 		// Wait for broker communication to finish before trying to stop container
 		Thread.sleep(300L);
@@ -95,7 +91,6 @@ public class MessageListenerTxSizeIntegrationTests {
 		}
 
 		((DisposableBean) template.getConnectionFactory()).destroy();
-		this.brokerIsRunning.removeTestQueues();
 	}
 
 	@Test

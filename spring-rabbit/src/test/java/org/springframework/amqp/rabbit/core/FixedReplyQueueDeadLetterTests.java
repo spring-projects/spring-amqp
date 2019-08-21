@@ -38,7 +38,7 @@ import org.springframework.amqp.core.QueueBuilder.MasterLocator;
 import org.springframework.amqp.core.QueueBuilder.Overflow;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.BrokerRunningSupport;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
@@ -64,7 +64,7 @@ import com.rabbitmq.http.client.domain.QueueInfo;
 @RabbitAvailable(management = true)
 public class FixedReplyQueueDeadLetterTests {
 
-	private static BrokerRunning brokerRunning;
+	private static BrokerRunningSupport brokerRunning;
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;

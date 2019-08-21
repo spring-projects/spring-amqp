@@ -25,18 +25,15 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.logging.log4j.Level;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
-import org.springframework.amqp.rabbit.junit.LogLevelAdjuster;
+import org.springframework.amqp.rabbit.junit.LogLevels;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
@@ -48,24 +45,20 @@ import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter
  * @since 1.0
  *
  */
+@RabbitAvailable(queues = { BlockingQueueConsumerIntegrationTests.QUEUE1_NAME,
+		BlockingQueueConsumerIntegrationTests.QUEUE2_NAME })
+@LogLevels(classes = {RabbitTemplate.class,
+			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class,
+			BlockingQueueConsumerIntegrationTests.class }, level = "INFO")
 public class BlockingQueueConsumerIntegrationTests {
 
-	private static Queue queue1 = new Queue("test.queue1");
+	public static final String QUEUE1_NAME = "test.queue1.BlockingQueueConsumerIntegrationTests";
 
-	private static Queue queue2 = new Queue("test.queue2");
+	public static final String QUEUE2_NAME = "test.queue2.BlockingQueueConsumerIntegrationTests";
 
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue1.getName(), queue2.getName());
+	private static Queue queue1 = new Queue(QUEUE1_NAME);
 
-	@Rule
-	public LogLevelAdjuster logLevels = new LogLevelAdjuster(Level.INFO, RabbitTemplate.class,
-			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class,
-			BlockingQueueConsumerIntegrationTests.class);
-
-	@After
-	public void tearDown() {
-		this.brokerIsRunning.removeTestQueues();
-	}
+	private static Queue queue2 = new Queue(QUEUE2_NAME);
 
 	@Test
 	public void testTransactionalLowLevel() throws Exception {

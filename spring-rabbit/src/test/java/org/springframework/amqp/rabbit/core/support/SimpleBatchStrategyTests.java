@@ -18,8 +18,8 @@ package org.springframework.amqp.rabbit.core.support;
 
 import java.nio.ByteBuffer;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.util.StopWatch;
 
@@ -31,7 +31,7 @@ import org.springframework.util.StopWatch;
 public class SimpleBatchStrategyTests {
 
 	@Test
-	@Ignore
+	@Disabled
 	public void testBatchingPerf() { // used to compare ByteBuffer Vs. System.arrayCopy()
 		StopWatch watch = new StopWatch();
 		byte[] bbBuff = new byte[10000];

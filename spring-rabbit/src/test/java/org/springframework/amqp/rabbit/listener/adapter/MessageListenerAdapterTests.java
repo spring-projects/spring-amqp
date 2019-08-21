@@ -30,8 +30,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Address;
@@ -65,7 +65,7 @@ public class MessageListenerAdapterTests {
 
 	private final SimpleService simpleService = new SimpleService();
 
-	@Before
+	@BeforeEach
 	public void init() {
 		this.messageProperties = new MessageProperties();
 		this.messageProperties.setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN);

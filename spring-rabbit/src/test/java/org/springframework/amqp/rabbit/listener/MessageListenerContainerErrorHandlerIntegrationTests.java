@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -52,10 +51,8 @@ import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
-import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
@@ -90,19 +87,12 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 
 	private volatile CountDownLatch errorsHandled;
 
-	public BrokerRunning brokerIsRunning = RabbitAvailableCondition.getBrokerRunning();
-
 	@BeforeEach
 	public void setUp() {
 		doAnswer(invocation -> {
 			errorsHandled.countDown();
 			return null;
 		}).when(errorHandler).handleError(any(Throwable.class));
-	}
-
-	@AfterEach
-	public void tearDown() {
-		this.brokerIsRunning.purgeTestQueues();
 	}
 
 	@Test // AMQP-385
