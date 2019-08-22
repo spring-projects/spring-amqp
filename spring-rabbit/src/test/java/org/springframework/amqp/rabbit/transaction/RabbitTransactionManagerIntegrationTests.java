@@ -19,35 +19,33 @@ package org.springframework.amqp.rabbit.transaction;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * @author David Syer
  * @author Gunnar Hillert
+ * @author Gary Russell
  * @since 1.0
  *
  */
+@RabbitAvailable(queues = RabbitTransactionManagerIntegrationTests.ROUTE)
 public class RabbitTransactionManagerIntegrationTests {
 
-	private static final String ROUTE = "test.queue";
+	public static final String ROUTE = "test.queue.RabbitTransactionManagerIntegrationTests";
 
 	private RabbitTemplate template;
 
 	private TransactionTemplate transactionTemplate;
 
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE);
-
-	@Before
+	@BeforeEach
 	public void init() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setHost("localhost");
@@ -58,11 +56,10 @@ public class RabbitTransactionManagerIntegrationTests {
 		transactionTemplate = new TransactionTemplate(transactionManager);
 	}
 
-	@After
+	@AfterEach
 	public void cleanup() throws Exception {
 		this.template.stop();
 		((DisposableBean) this.template.getConnectionFactory()).destroy();
-		this.brokerIsRunning.removeTestQueues();
 	}
 
 	@Test

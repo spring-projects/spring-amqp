@@ -24,8 +24,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
@@ -57,7 +57,7 @@ public class RabbitListenerContainerFactoryIntegrationTests {
 	private final RabbitEndpointSampleBean sample = new RabbitEndpointSampleBean();
 
 
-	@Before
+	@BeforeEach
 	public void setup() {
 		initializeFactory(factory);
 	}

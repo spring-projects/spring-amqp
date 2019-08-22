@@ -20,15 +20,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Properties;
 
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
+import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.core.io.ClassPathResource;
@@ -40,14 +40,12 @@ import org.springframework.core.io.ClassPathResource;
  * @since 1.0
  *
  */
+@RabbitAvailable
 public final class QueueParserIntegrationTests {
-
-	@ClassRule
-	public static BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
 
 	private DefaultListableBeanFactory beanFactory;
 
-	@Before
+	@BeforeEach
 	public void setUpDefaultBeanFactory() throws Exception {
 		beanFactory = new DefaultListableBeanFactory();
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
@@ -60,7 +58,7 @@ public final class QueueParserIntegrationTests {
 		Queue queue = beanFactory.getBean("arguments", Queue.class);
 		assertThat(queue).isNotNull();
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory(
-				brokerIsRunning.getConnectionFactory());
+				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		RabbitAdmin rabbitAdmin = new RabbitAdmin(connectionFactory);
 		rabbitAdmin.deleteQueue(queue.getName());
@@ -79,7 +77,7 @@ public final class QueueParserIntegrationTests {
 		}
 
 		connectionFactory.destroy();
-		brokerIsRunning.deleteQueues("arguments");
+		RabbitAvailableCondition.getBrokerRunning().deleteQueues("arguments");
 	}
 
 }

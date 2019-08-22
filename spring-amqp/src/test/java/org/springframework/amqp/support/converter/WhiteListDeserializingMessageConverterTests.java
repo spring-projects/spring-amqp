@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.fail;
 import java.io.Serializable;
 import java.util.Collections;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;

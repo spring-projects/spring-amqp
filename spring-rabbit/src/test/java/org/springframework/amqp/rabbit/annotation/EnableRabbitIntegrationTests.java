@@ -43,11 +43,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
@@ -68,8 +66,12 @@ import org.springframework.amqp.rabbit.connection.ConnectionNameStrategy;
 import org.springframework.amqp.rabbit.connection.SimplePropertyValueConnectionNameStrategy;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.BrokerRunningSupport;
+import org.springframework.amqp.rabbit.junit.LogLevels;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
+import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.rabbit.listener.ConditionalRejectingErrorHandler;
+import org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
@@ -120,13 +122,8 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestContext;
-import org.springframework.test.context.TestExecutionListeners;
-import org.springframework.test.context.TestExecutionListeners.MergeMode;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.support.AbstractTestExecutionListener;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.Transactional;
@@ -145,32 +142,27 @@ import com.rabbitmq.http.client.domain.QueueInfo;
  *
  * @since 1.4
  */
-@ContextConfiguration(classes = EnableRabbitIntegrationTests.EnableRabbitConfig.class)
-@RunWith(SpringJUnit4ClassRunner.class)
+@SpringJUnitConfig(EnableRabbitIntegrationTests.EnableRabbitConfig.class)
 @DirtiesContext
-@TestExecutionListeners(mergeMode = MergeMode.MERGE_WITH_DEFAULTS,
-		listeners = EnableRabbitIntegrationTests.DeleteQueuesExecutionListener.class)
 @TestPropertySource(properties = "spring.application.name=testConnectionName")
+@RabbitAvailable(queues = { "test.manual.container", "test.no.listener.yet",
+		"test.simple", "test.header", "test.message", "test.reply", "test.sendTo", "test.sendTo.reply",
+		"test.sendTo.spel", "test.sendTo.reply.spel", "test.sendTo.runtimespel", "test.sendTo.reply.runtimespel",
+		"test.sendTo.runtimespelsource", "test.sendTo.runtimespelsource.reply",
+		"test.intercepted", "test.intercepted.withReply",
+		"test.invalidPojo", "differentTypes", "differentTypes2", "differentTypes3",
+		"test.inheritance", "test.inheritance.class",
+		"test.comma.1", "test.comma.2", "test.comma.3", "test.comma.4", "test,with,commas",
+		"test.converted", "test.converted.list", "test.converted.array", "test.converted.args1",
+		"test.converted.args2", "test.converted.message", "test.notconverted.message",
+		"test.notconverted.channel", "test.notconverted.messagechannel", "test.notconverted.messagingmessage",
+		"test.converted.foomessage", "test.notconverted.messagingmessagenotgeneric", "test.simple.direct",
+		"test.simple.direct2", "test.generic.list", "test.generic.map",
+		"amqp656dlq", "test.simple.declare", "test.return.exceptions", "test.pojo.errors", "test.pojo.errors2",
+		"test.messaging.message", "test.amqp.message", "test.bytes.to.string", "test.projection",
+		"manual.acks.1", "manual.acks.2", "erit.batch.1", "erit.batch.2", "erit.batch.3" },
+		purgeAfterEach = false)
 public class EnableRabbitIntegrationTests {
-
-	@ClassRule
-	public static final BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(
-			"test.manual.container", "test.no.listener.yet",
-			"test.simple", "test.header", "test.message", "test.reply", "test.sendTo", "test.sendTo.reply",
-			"test.sendTo.spel", "test.sendTo.reply.spel", "test.sendTo.runtimespel", "test.sendTo.reply.runtimespel",
-			"test.sendTo.runtimespelsource", "test.sendTo.runtimespelsource.reply",
-			"test.intercepted", "test.intercepted.withReply",
-			"test.invalidPojo", "differentTypes", "differentTypes2", "differentTypes3",
-			"test.inheritance", "test.inheritance.class",
-			"test.comma.1", "test.comma.2", "test.comma.3", "test.comma.4", "test,with,commas",
-			"test.converted", "test.converted.list", "test.converted.array", "test.converted.args1",
-			"test.converted.args2", "test.converted.message", "test.notconverted.message",
-			"test.notconverted.channel", "test.notconverted.messagechannel", "test.notconverted.messagingmessage",
-			"test.converted.foomessage", "test.notconverted.messagingmessagenotgeneric", "test.simple.direct",
-			"test.simple.direct2", "test.generic.list", "test.generic.map",
-			"amqp656dlq", "test.simple.declare", "test.return.exceptions", "test.pojo.errors", "test.pojo.errors2",
-			"test.messaging.message", "test.amqp.message", "test.bytes.to.string", "test.projection",
-			"manual.acks.1", "manual.acks.2", "erit.batch.1", "erit.batch.2", "erit.batch.3");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -217,15 +209,16 @@ public class EnableRabbitIntegrationTests {
 	@Autowired
 	private MyService myService;
 
-	@BeforeClass
+	@BeforeAll
 	public static void setUp() {
 		System.setProperty(RabbitListenerAnnotationBeanPostProcessor.RABBIT_EMPTY_STRING_ARGUMENTS_PROPERTY,
 				"test-empty");
 	}
 
-	@AfterClass
+	@AfterAll
 	public static void tearDown() {
 		System.getProperties().remove(RabbitListenerAnnotationBeanPostProcessor.RABBIT_EMPTY_STRING_ARGUMENTS_PROPERTY);
+		RabbitAvailableCondition.getBrokerRunning().removeTestQueues("sendTo.replies", "sendTo.replies.spel");
 	}
 
 	@Test
@@ -307,6 +300,7 @@ public class EnableRabbitIntegrationTests {
 	}
 
 	@Test
+	@LogLevels(classes = { DirectMessageListenerContainer.class, RabbitTemplate.class })
 	public void simpleDirectEndpointWithConcurrency() {
 		String reply = (String) rabbitTemplate.convertSendAndReceive("test.simple.direct2", "foo");
 		assertThat(reply).startsWith("FOOfoo");
@@ -1657,6 +1651,7 @@ public class EnableRabbitIntegrationTests {
 
 		@Bean
 		public ConnectionFactory rabbitConnectionFactory() {
+			BrokerRunningSupport brokerRunning = RabbitAvailableCondition.getBrokerRunning();
 			CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 			connectionFactory.setHost(brokerRunning.getHostName());
 			connectionFactory.setPort(brokerRunning.getPort());
@@ -1895,6 +1890,7 @@ public class EnableRabbitIntegrationTests {
 
 		@Bean
 		public ConnectionFactory rabbitConnectionFactory() {
+			BrokerRunningSupport brokerRunning = RabbitAvailableCondition.getBrokerRunning();
 			CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 			connectionFactory.setHost(brokerRunning.getHostName());
 			connectionFactory.setPort(brokerRunning.getPort());
@@ -1982,6 +1978,7 @@ public class EnableRabbitIntegrationTests {
 
 		@Bean
 		public ConnectionFactory rabbitConnectionFactory() {
+			BrokerRunningSupport brokerRunning = RabbitAvailableCondition.getBrokerRunning();
 			CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 			connectionFactory.setHost(brokerRunning.getHostName());
 			connectionFactory.setPort(brokerRunning.getPort());
@@ -2130,25 +2127,6 @@ public class EnableRabbitIntegrationTests {
 		public String projection(Sample in) {
 			return in.getUsername() + in.getName();
 		}
-	}
-
-	/**
-	 * Defer queue deletion until after the context has been stopped by the
-	 * {@link DirtiesContext}.
-	 *
-	 */
-	public static class DeleteQueuesExecutionListener extends AbstractTestExecutionListener {
-
-		@Override
-		public void afterTestClass(TestContext testContext) {
-			brokerRunning.removeTestQueues("sendTo.replies", "sendTo.replies.spel");
-		}
-
-		@Override
-		public int getOrder() {
-			return Ordered.HIGHEST_PRECEDENCE;
-		}
-
 	}
 
 	interface Sample {

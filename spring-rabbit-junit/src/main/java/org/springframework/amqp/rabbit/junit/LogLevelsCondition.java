@@ -50,7 +50,7 @@ import org.springframework.core.log.LogAccessor;
 public class LogLevelsCondition
 		implements ExecutionCondition, BeforeEachCallback, AfterEachCallback, BeforeAllCallback, AfterAllCallback {
 
-	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(LogLevelsCondition.class));
+	private static final LogAccessor LOGGER = new LogAccessor(LogFactory.getLog(LogLevelsCondition.class));
 
 	private static final String STORE_ANNOTATION_KEY = "logLevelsAnnotation";
 
@@ -103,7 +103,7 @@ public class LogLevelsCondition
 			Optional<Method> testMethod = context.getTestMethod();
 			if (testMethod.isPresent()
 					&& this.loggedMethods.putIfAbsent(testMethod.get().getName(), Boolean.TRUE) == null) {
-				logger.info(() -> "+++++++++++++++++++++++++++++ Begin " + testMethod.get().getName());
+				LOGGER.info(() -> "+++++++++++++++++++++++++++++ Begin " + testMethod.get().getName());
 			}
 		}
 	}

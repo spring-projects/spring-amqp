@@ -17,9 +17,7 @@
 package org.springframework.amqp.rabbit.repeatable;
 
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory;
@@ -36,9 +34,6 @@ import org.springframework.context.annotation.Configuration;
  *
  */
 public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
-
-	@Rule
-	public final ExpectedException thrown = ExpectedException.none();
 
 	@Override
 	@Test

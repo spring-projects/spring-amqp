@@ -124,24 +124,20 @@ subprojects { subproject ->
 	// dependencies that are common across all java projects
 	dependencies {
 		compileOnly "com.google.code.findbugs:jsr305:$googleJsr305Version"
-		testCompile ("junit:junit:$junit4Version") {
-			exclude group: 'org.hamcrest', module: 'hamcrest-core'
-		}
 		testCompile "org.apache.logging.log4j:log4j-core:$log4jVersion"
 		testCompile "org.hamcrest:hamcrest-all:$hamcrestVersion"
 		testCompile ("org.mockito:mockito-core:$mockitoVersion") {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
 		}
+		testCompile "org.mockito:mockito-junit-jupiter:$mockitoVersion"
 		testCompile "org.springframework:spring-test:$springVersion"
 
 		testRuntime "org.apache.logging.log4j:log4j-jcl:$log4jVersion"
 
 		testCompile "org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion"
+		testCompile "org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion"
 		testRuntime "org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion"
 		testRuntime "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
-
-		// To support JUnit 4 tests
-		testRuntime "org.junit.vintage:junit-vintage-engine:$junitJupiterVersion"
 
 		// To avoid compiler warnings about @API annotations in JUnit code
 		testCompileOnly 'org.apiguardian:apiguardian-api:1.0.0'
@@ -368,7 +364,11 @@ project('spring-rabbit-junit') {
 	dependencies { // no spring-amqp dependencies allowed
 
 		compile "org.springframework:spring-core:$springVersion"
-		compile ("junit:junit:$junit4Version", optional)
+		compile "org.springframework:spring-test:$springVersion"
+		compile ("junit:junit:$junit4Version") {
+			optional(it)
+			exclude group: 'org.hamcrest', module: 'hamcrest-core'
+		}
 		compile "com.rabbitmq:amqp-client:$rabbitmqVersion"
 		compile ("com.rabbitmq:http-client:$rabbitmqHttpClientVersion") {
 			exclude group: 'org.springframework', module: 'spring-web'
@@ -396,10 +396,6 @@ project('spring-rabbit-test') {
 	dependencies {
 
 		compile project(":spring-rabbit")
-		compile ("junit:junit:$junit4Version") {
-			optional(it)
-			exclude group: 'org.hamcrest', module: 'hamcrest-core'
-		}
 		compile "org.hamcrest:hamcrest-all:$hamcrestVersion"
 		compile ("org.mockito:mockito-core:$mockitoVersion") {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'

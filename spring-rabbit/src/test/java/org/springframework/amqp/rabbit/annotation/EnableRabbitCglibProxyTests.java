@@ -21,24 +21,21 @@ import static org.mockito.Mockito.mock;
 
 import java.io.Serializable;
 
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,13 +44,10 @@ import org.springframework.transaction.annotation.Transactional;
  * @author Artem Bilan
  * @since 1.5.5
  */
-@ContextConfiguration(classes = EnableRabbitCglibProxyTests.Config.class)
-@RunWith(SpringJUnit4ClassRunner.class)
+@SpringJUnitConfig
 @DirtiesContext
+@RabbitAvailable
 public class EnableRabbitCglibProxyTests {
-
-	@ClassRule
-	public static final BrokerRunning brokerRunning = BrokerRunning.isRunning();
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -63,7 +57,8 @@ public class EnableRabbitCglibProxyTests {
 		this.rabbitTemplate.setReplyTimeout(600000);
 		Foo foo = new Foo();
 		foo.field = "foo";
-		assertThat(this.rabbitTemplate.convertSendAndReceive("auto.exch.test", "auto.rk.test", foo)).isEqualTo("Reply: foo: AUTO.RK.TEST");
+		assertThat(this.rabbitTemplate.convertSendAndReceive("auto.exch.test", "auto.rk.test", foo))
+				.isEqualTo("Reply: foo: AUTO.RK.TEST");
 	}
 
 	@Configuration

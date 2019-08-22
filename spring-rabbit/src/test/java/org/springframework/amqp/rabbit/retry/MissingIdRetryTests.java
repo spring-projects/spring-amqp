@@ -34,12 +34,9 @@ import java.util.concurrent.TimeUnit;
 import org.aopalliance.aop.Advice;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.logging.log4j.Level;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.core.Message;
@@ -47,8 +44,9 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.config.StatefulRetryOperationsInterceptorFactoryBean;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
-import org.springframework.amqp.rabbit.junit.LogLevelAdjuster;
+import org.springframework.amqp.rabbit.junit.LogLevels;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
+import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.rabbit.listener.BlockingQueueConsumer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
@@ -67,25 +65,21 @@ import org.springframework.retry.support.RetryTemplate;
  * @since 1.1.2
  *
  */
+@RabbitAvailable
+@LogLevels(classes = {BlockingQueueConsumer.class,
+		MissingIdRetryTests.class,
+		RetryTemplate.class, SimpleRetryPolicy.class})
 public class MissingIdRetryTests {
 
 	private final Log logger = LogFactory.getLog(MissingIdRetryTests.class);
 
 	private volatile CountDownLatch latch;
 
-	@ClassRule
-	public static BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
-
-	@Rule
-	public LogLevelAdjuster adjuster = new LogLevelAdjuster(Level.DEBUG, BlockingQueueConsumer.class,
-			MissingIdRetryTests.class,
-			RetryTemplate.class, SimpleRetryPolicy.class);
-
-	@BeforeClass
-	@AfterClass
+	@BeforeAll
+	@AfterAll
 	public static void setupAndCleanUp() {
-		brokerIsRunning.deleteQueues("retry.test.queue");
-		brokerIsRunning.deleteExchanges("retry.test.exchange");
+		RabbitAvailableCondition.getBrokerRunning().deleteQueues("retry.test.queue");
+		RabbitAvailableCondition.getBrokerRunning().deleteExchanges("retry.test.exchange");
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })

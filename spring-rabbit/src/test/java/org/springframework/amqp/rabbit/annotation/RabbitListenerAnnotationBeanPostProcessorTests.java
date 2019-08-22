@@ -35,8 +35,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.CustomExchange;
@@ -265,7 +265,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	}
 
 	@Test
-	@Ignore("To slow and doesn't have 100% confirmation")
+	@Disabled("Too slow and doesn't have 100% confirmation")
 	public void concurrency() throws InterruptedException, ExecutionException {
 		final int concurrencyLevel = 8;
 		final ExecutorService executorService = Executors.newFixedThreadPool(concurrencyLevel);

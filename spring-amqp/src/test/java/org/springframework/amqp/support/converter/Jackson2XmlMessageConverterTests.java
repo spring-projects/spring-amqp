@@ -24,16 +24,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
@@ -44,8 +42,7 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
  *
  * @since 2.1
  */
-@ContextConfiguration
-@RunWith(SpringRunner.class)
+@SpringJUnitConfig
 public class Jackson2XmlMessageConverterTests {
 
 	public static final String TRUSTED_PACKAGE = Jackson2XmlMessageConverterTests.class.getPackage().getName();
@@ -57,7 +54,7 @@ public class Jackson2XmlMessageConverterTests {
 	@Autowired
 	private Jackson2XmlMessageConverter xmlConverterWithDefaultType;
 
-	@Before
+	@BeforeEach
 	public void before() {
 		converter = new Jackson2XmlMessageConverter(TRUSTED_PACKAGE);
 		trade = new SimpleTrade();

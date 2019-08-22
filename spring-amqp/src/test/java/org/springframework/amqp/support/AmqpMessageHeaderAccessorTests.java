@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import java.util.Date;
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;

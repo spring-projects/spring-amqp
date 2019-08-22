@@ -17,9 +17,10 @@
 package org.springframework.amqp.rabbit.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
@@ -41,7 +42,7 @@ public class QueueParserTests {
 
 	protected BeanFactory beanFactory;
 
-	@Before
+	@BeforeEach
 	public void setUpDefaultBeanFactory() throws Exception {
 		DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
@@ -176,16 +177,13 @@ public class QueueParserTests {
 		assertThat(queue.shouldDeclare()).isFalse();
 	}
 
-	@Test(expected = BeanDefinitionStoreException.class)
-	public void testIllegalAnonymousQueue() throws Exception {
-		DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
-		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
-		reader.loadBeanDefinitions(new ClassPathResource(getClass().getSimpleName()
-				+ "IllegalAnonymous-context.xml", getClass()));
-		Queue queue = beanFactory.getBean("anonymous", Queue.class);
-		assertThat(queue).isNotNull();
-		assertThat(queue.getName()).isNotSameAs("bucket");
-		assertThat(queue instanceof AnonymousQueue).isTrue();
+	@Test
+	public void testIllegalAnonymousQueue() {
+		DefaultListableBeanFactory bf = new DefaultListableBeanFactory();
+		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(bf);
+		assertThatExceptionOfType(BeanDefinitionStoreException.class).isThrownBy(() ->
+			reader.loadBeanDefinitions(new ClassPathResource(getClass().getSimpleName()
+				+ "IllegalAnonymous-context.xml", getClass())));
 	}
 
 }

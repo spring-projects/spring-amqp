@@ -22,8 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Dave Syer
