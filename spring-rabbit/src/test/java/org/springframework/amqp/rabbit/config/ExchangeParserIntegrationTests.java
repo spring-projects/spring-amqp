@@ -18,21 +18,20 @@ package org.springframework.amqp.rabbit.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
+import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 /**
  * @author Dave Syer
@@ -40,12 +39,10 @@ import org.springframework.test.context.junit4.SpringRunner;
  * @author Gunnar Hillert
  * @author Artem Bilan
  */
-@RunWith(SpringRunner.class)
+@SpringJUnitConfig
 @DirtiesContext
+@RabbitAvailable
 public final class ExchangeParserIntegrationTests {
-
-	@ClassRule
-	public static BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
 
 	@Autowired
 	private ConnectionFactory connectionFactory;
@@ -68,10 +65,11 @@ public final class ExchangeParserIntegrationTests {
 	@Qualifier("bucket.test")
 	private Queue queue3;
 
-	@BeforeClass
-	@AfterClass
+	@BeforeAll
+	@AfterAll
 	public static void clean() {
-		brokerIsRunning.deleteExchanges("fanoutTest", "directTest", "topicTest", "headersTest", "headersTestMulti");
+		RabbitAvailableCondition.getBrokerRunning().deleteExchanges("fanoutTest", "directTest", "topicTest",
+				"headersTest", "headersTestMulti");
 	}
 
 	@Test

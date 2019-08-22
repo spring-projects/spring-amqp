@@ -27,11 +27,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
@@ -40,13 +38,12 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import ch.qos.logback.classic.Logger;
 
@@ -57,16 +54,13 @@ import ch.qos.logback.classic.Logger;
  *
  * @since 1.4
  */
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = AmqpAppenderConfiguration.class)
+@SpringJUnitConfig(classes = AmqpAppenderConfiguration.class)
 @DirtiesContext
+@RabbitAvailable
 public class AmqpAppenderIntegrationTests {
 
 	/* logback will automatically find lockback-test.xml */
 	private static final Logger log = (Logger) LoggerFactory.getLogger(AmqpAppenderIntegrationTests.class);
-
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
 
 	@Autowired
 	private ApplicationContext applicationContext;
@@ -82,13 +76,13 @@ public class AmqpAppenderIntegrationTests {
 
 	private SimpleMessageListenerContainer listenerContainer;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		this.listenerContainer = this.applicationContext.getBean(SimpleMessageListenerContainer.class);
 		MDC.clear();
 	}
 
-	@After
+	@AfterEach
 	public void tearDown() {
 		MDC.clear();
 		listenerContainer.shutdown();

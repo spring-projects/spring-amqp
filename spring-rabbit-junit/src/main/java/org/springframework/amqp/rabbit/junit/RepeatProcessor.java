@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.test;
+package org.springframework.amqp.rabbit.junit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -86,7 +86,7 @@ public class RepeatProcessor implements MethodRule {
 
 		initializeIfNecessary(target);
 
-		if (concurrency <= 0) {
+		if (this.concurrency <= 0) {
 			return new Statement() {
 				@Override
 				public void evaluate() throws Throwable {
@@ -96,7 +96,8 @@ public class RepeatProcessor implements MethodRule {
 								base.evaluate();
 							}
 							catch (Throwable t) {
-								throw new IllegalStateException("Failed on iteration: " + i + " of " + repeats + " (started at 0)", t);
+								throw new IllegalStateException(
+										"Failed on iteration: " + i + " of " + repeats + " (started at 0)", t);
 							}
 						}
 					}
@@ -110,7 +111,7 @@ public class RepeatProcessor implements MethodRule {
 			@Override
 			public void evaluate() throws Throwable {
 				List<Future<Boolean>> results = new ArrayList<Future<Boolean>>();
-				ExecutorService executor = Executors.newFixedThreadPool(concurrency);
+				ExecutorService executor = Executors.newFixedThreadPool(RepeatProcessor.this.concurrency);
 				CompletionService<Boolean> completionService = new ExecutorCompletionService<Boolean>(executor);
 				try {
 					for (int i = 0; i < repeats; i++) {
@@ -142,7 +143,7 @@ public class RepeatProcessor implements MethodRule {
 	}
 
 	private void finalizeIfNecessary(Object target) {
-		finalizing = true;
+		this.finalizing = true;
 		List<FrameworkMethod> afters = new TestClass(target.getClass()).getAnnotatedMethods(After.class);
 		try {
 			if (!afters.isEmpty()) {
@@ -160,7 +161,7 @@ public class RepeatProcessor implements MethodRule {
 			}
 		}
 		finally {
-			finalizing = false;
+			this.finalizing = false;
 		}
 	}
 
@@ -179,22 +180,23 @@ public class RepeatProcessor implements MethodRule {
 			catch (Throwable e) {
 				fail("Unexpected throwable " + e);
 			}
-			initialized = true;
+			this.initialized = true;
 		}
 		if (!testClass.getAnnotatedMethods(After.class).isEmpty()) {
-			initialized = true;
+			this.initialized = true;
 		}
 	}
 
 	public boolean isInitialized() {
-		return initialized;
+		return this.initialized;
 	}
 
 	public boolean isFinalizing() {
-		return finalizing;
+		return this.finalizing;
 	}
 
 	public int getConcurrency() {
-		return concurrency > 0 ? concurrency : 1;
+		return this.concurrency > 0 ? this.concurrency : 1;
 	}
+
 }

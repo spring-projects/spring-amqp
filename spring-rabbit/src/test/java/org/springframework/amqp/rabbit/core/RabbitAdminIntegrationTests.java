@@ -22,7 +22,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.io.IOException;
 import java.util.UUID;
 
-import org.junit.Assume;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -381,14 +380,14 @@ public class RabbitAdminIntegrationTests {
 		catch (AmqpIOException e) {
 			if (RabbitUtils.isExchangeDeclarationFailure(e)
 					&& e.getCause().getCause().getMessage().contains("exchange type 'x-delayed-message'")) {
-				Assume.assumeTrue("Broker does not have the delayed message exchange plugin installed", false);
+				return;
 			}
 			else {
 				throw e;
 			}
 		}
 		catch (@SuppressWarnings("unused") AutoRecoverConnectionNotCurrentlyOpenException e) {
-			Assume.assumeTrue("Broker does not have the delayed message exchange plugin installed", false);
+			return;
 		}
 		this.rabbitAdmin.declareQueue(queue);
 		this.rabbitAdmin.declareBinding(binding);

@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -59,7 +59,7 @@ public class RabbitReconnectProblemTests {
 
 	final Queue myQueue = new Queue("my-queue");
 
-	@Before
+	@BeforeEach
 	public void setup() {
 		admin.declareQueue(myQueue);
 	}

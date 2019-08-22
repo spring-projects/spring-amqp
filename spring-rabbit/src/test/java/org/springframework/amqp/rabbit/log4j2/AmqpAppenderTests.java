@@ -34,10 +34,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.FanoutExchange;
@@ -48,7 +47,8 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.RabbitConnectionFactoryBean;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
+import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -68,27 +68,25 @@ import com.rabbitmq.client.impl.CRDemoMechanism;
  *
  * @since 1.6
  */
+@RabbitAvailable
 public class AmqpAppenderTests {
-
-	@ClassRule
-	public static BrokerRunning brokerRunning = BrokerRunning.isRunning();
 
 	private static final LoggerContext LOGGER_CONTEXT = (LoggerContext) LogManager.getContext(false);
 
 	private static final URI ORIGINAL_LOGGER_CONFIG = LOGGER_CONTEXT.getConfigLocation();
 
-	@BeforeClass
+	@BeforeAll
 	public static void setup() throws IOException {
 		LOGGER_CONTEXT.setConfigLocation(new ClassPathResource("log4j2-amqp-appender.xml").getURI());
 		LOGGER_CONTEXT.reconfigure();
 	}
 
-	@AfterClass
+	@AfterAll
 	public static void teardown() {
 		LOGGER_CONTEXT.setConfigLocation(ORIGINAL_LOGGER_CONFIG);
 		LOGGER_CONTEXT.reconfigure();
-		brokerRunning.deleteQueues("log4jTest", "log4j2Test");
-		brokerRunning.deleteExchanges("log4j2Test", "log4j2Test_uri");
+		RabbitAvailableCondition.getBrokerRunning().deleteQueues("log4jTest", "log4j2Test");
+		RabbitAvailableCondition.getBrokerRunning().deleteExchanges("log4j2Test", "log4j2Test_uri");
 	}
 
 	@Test

@@ -22,9 +22,9 @@ import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
@@ -49,13 +49,13 @@ public final class ListenerContainerPlaceholderParserTests {
 
 	private GenericApplicationContext context;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		this.context = new GenericXmlApplicationContext(
 				new ClassPathResource(getClass().getSimpleName() + "-context.xml", getClass()));
 	}
 
-	@After
+	@AfterEach
 	public void closeBeanFactory() throws Exception {
 		if (this.context != null) {
 			CachingConnectionFactory cf = this.context.getBean(CachingConnectionFactory.class);

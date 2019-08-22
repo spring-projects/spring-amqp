@@ -19,16 +19,15 @@ package org.springframework.amqp.rabbit.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.env.StandardEnvironment;
@@ -41,16 +40,14 @@ import com.rabbitmq.client.Channel;
  * @since 1.2
  *
  */
+@RabbitAvailable
 public class MismatchedQueueDeclarationTests {
-
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
 
 	private SingleConnectionFactory connectionFactory;
 
 	private RabbitAdmin admin;
 
-	@Before
+	@BeforeEach
 	public void setup() throws Exception {
 		connectionFactory = new SingleConnectionFactory();
 		connectionFactory.setHost("localhost");
@@ -58,7 +55,7 @@ public class MismatchedQueueDeclarationTests {
 		deleteQueues();
 	}
 
-	@After
+	@AfterEach
 	public void deleteQueues() throws Exception {
 		this.admin.deleteQueue("mismatch.foo");
 		this.admin.deleteQueue("mismatch.bar");
@@ -67,7 +64,7 @@ public class MismatchedQueueDeclarationTests {
 	}
 
 	@Test
-	@Ignore
+	@Disabled
 	public void testAdminFailsWithMismatchedQueue() throws Exception {
 		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext();
 		context.setConfigLocation("org/springframework/amqp/rabbit/config/MismatchedQueueDeclarationTests-context.xml");

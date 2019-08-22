@@ -132,11 +132,13 @@ subprojects { subproject ->
 		testCompile ("org.mockito:mockito-core:$mockitoVersion") {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
 		}
+		testCompile "org.mockito:mockito-junit-jupiter:$mockitoVersion"
 		testCompile "org.springframework:spring-test:$springVersion"
 
 		testRuntime "org.apache.logging.log4j:log4j-jcl:$log4jVersion"
 
 		testCompile "org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion"
+		testCompile "org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion"
 		testRuntime "org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion"
 		testRuntime "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
 
@@ -368,6 +370,7 @@ project('spring-rabbit-junit') {
 	dependencies { // no spring-amqp dependencies allowed
 
 		compile "org.springframework:spring-core:$springVersion"
+		compile "org.springframework:spring-test:$springVersion"
 		compile ("junit:junit:$junit4Version", optional)
 		compile "com.rabbitmq:amqp-client:$rabbitmqVersion"
 		compile ("com.rabbitmq:http-client:$rabbitmqHttpClientVersion") {

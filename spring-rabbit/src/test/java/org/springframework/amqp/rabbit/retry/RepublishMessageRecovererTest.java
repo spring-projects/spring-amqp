@@ -23,11 +23,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
@@ -41,7 +41,7 @@ import org.springframework.amqp.core.MessageProperties;
  *
  * @since 1.3
  */
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class RepublishMessageRecovererTest {
 
 	private final Message message = new Message("".getBytes(), new MessageProperties());
@@ -53,7 +53,7 @@ public class RepublishMessageRecovererTest {
 
 	private RepublishMessageRecoverer recoverer;
 
-	@Before
+	@BeforeEach
 	public void beforeEach() {
 		message.getMessageProperties().setReceivedRoutingKey("some.key");
 	}
@@ -119,6 +119,7 @@ public class RepublishMessageRecovererTest {
 		message.getMessageProperties().setReceivedDeliveryMode(MessageDeliveryMode.PERSISTENT);
 		recoverer = new RepublishMessageRecoverer(amqpTemplate, "error") {
 
+			@Override
 			protected Map<? extends String, ? extends Object> additionalHeaders(Message message, Throwable cause) {
 				message.getMessageProperties().setDeliveryMode(message.getMessageProperties().getReceivedDeliveryMode());
 				return null;

@@ -16,8 +16,8 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.GenericXmlApplicationContext;
@@ -30,13 +30,14 @@ import org.springframework.core.io.ClassPathResource;
  */
 public class QueueParserPlaceholderTests extends QueueParserTests {
 
-	@Before
+	@BeforeEach
 	@Override
 	public void setUpDefaultBeanFactory() {
-		beanFactory = new GenericXmlApplicationContext(new ClassPathResource(getClass().getSimpleName() + "-context.xml", getClass()));
+		beanFactory = new GenericXmlApplicationContext(
+				new ClassPathResource(getClass().getSimpleName() + "-context.xml", getClass()));
 	}
 
-	@After
+	@AfterEach
 	public void closeBeanFactory() {
 		if (beanFactory != null) {
 			((ConfigurableApplicationContext) beanFactory).close();
