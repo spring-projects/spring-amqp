@@ -73,5 +73,7 @@ class AdminParser extends AbstractSingleBeanDefinitionParser {
 		}
 
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, IGNORE_DECLARATION_EXCEPTIONS);
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, "explicit-declarations-only");
 	}
+
 }

@@ -124,6 +124,9 @@ The appenders now support the `SaslConfig` property.
 
 See <<logging>> for more information.
 
+The `RabbitAdmin` has a new property `explicitDeclarationsOnly`.
+See <<conditional-declaration>> for more information.
+
 ===== Connection Factory Changes
 
 The `CachingConnectionFactory` has a new property `shuffleAddresses`.

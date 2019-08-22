@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -273,16 +274,31 @@ public class RabbitAdminDeclarationTests {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Config.class);
 		Config.listener1.onCreate(Config.conn1);
 		verify(Config.channel1).queueDeclare("foo", true, false, false, new HashMap<>());
+		verify(Config.channel1, never()).queueDeclare("baz", true, false, false, new HashMap<>());
+		verify(Config.channel1).queueDeclare("qux", true, false, false, new HashMap<>());
 		verify(Config.channel1).exchangeDeclare("bar", "direct", true, false, true, new HashMap<String, Object>());
 		verify(Config.channel1).queueBind("foo", "bar", "foo", null);
 
 		Config.listener2.onCreate(Config.conn2);
 		verify(Config.channel2, never())
 				.queueDeclare(eq("foo"), anyBoolean(), anyBoolean(), anyBoolean(), isNull());
+		verify(Config.channel1, never()).queueDeclare("baz", true, false, false, new HashMap<>());
+		verify(Config.channel2).queueDeclare("qux", true, false, false, new HashMap<>());
 		verify(Config.channel2, never())
 				.exchangeDeclare(eq("bar"), eq("direct"), anyBoolean(), anyBoolean(),
 								anyBoolean(), anyMap());
 		verify(Config.channel2, never()).queueBind(eq("foo"), eq("bar"), eq("foo"), anyMap());
+
+		Config.listener3.onCreate(Config.conn3);
+		verify(Config.channel3, never())
+				.queueDeclare(eq("foo"), anyBoolean(), anyBoolean(), anyBoolean(), isNull());
+		verify(Config.channel3).queueDeclare("baz", true, false, false, new HashMap<>());
+		verify(Config.channel3, never()).queueDeclare("qux", true, false, false, new HashMap<>());
+		verify(Config.channel3, never())
+				.exchangeDeclare(eq("bar"), eq("direct"), anyBoolean(), anyBoolean(),
+								anyBoolean(), anyMap());
+		verify(Config.channel3, never()).queueBind(eq("foo"), eq("bar"), eq("foo"), anyMap());
+
 		context.close();
 	}
 
@@ -346,21 +362,28 @@ public class RabbitAdminDeclarationTests {
 
 		private static Connection conn2 = mock(Connection.class);
 
+		private static Connection conn3 = mock(Connection.class);
+
 		private static Channel channel1 = mock(Channel.class);
 
 		private static Channel channel2 = mock(Channel.class);
 
+		private static Channel channel3 = mock(Channel.class);
+
 		private static ConnectionListener listener1;
 
 		private static ConnectionListener listener2;
+
+		private static ConnectionListener listener3;
 
 		@Bean
 		public ConnectionFactory cf1() throws IOException {
 			ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 			when(connectionFactory.createConnection()).thenReturn(conn1);
 			when(conn1.createChannel(false)).thenReturn(channel1);
-			when(channel1.queueDeclare("foo", true, false, false, new HashMap<>()))
-					.thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
+			willAnswer(inv -> {
+				return new AMQImpl.Queue.DeclareOk(inv.getArgument(0), 0, 0);
+			}).given(channel1).queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), any());
 			doAnswer(invocation -> {
 				listener1 = invocation.getArgument(0);
 				return null;
@@ -373,8 +396,9 @@ public class RabbitAdminDeclarationTests {
 			ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 			when(connectionFactory.createConnection()).thenReturn(conn2);
 			when(conn2.createChannel(false)).thenReturn(channel2);
-			when(channel2.queueDeclare("foo", true, false, false, null))
-					.thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
+			willAnswer(inv -> {
+				return new AMQImpl.Queue.DeclareOk(inv.getArgument(0), 0, 0);
+			}).given(channel2).queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), any());
 			doAnswer(invocation -> {
 				listener2 = invocation.getArgument(0);
 				return null;
@@ -383,24 +407,56 @@ public class RabbitAdminDeclarationTests {
 		}
 
 		@Bean
+		public ConnectionFactory cf3() throws IOException {
+			ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+			when(connectionFactory.createConnection()).thenReturn(conn3);
+			when(conn3.createChannel(false)).thenReturn(channel3);
+			willAnswer(inv -> {
+				return new AMQImpl.Queue.DeclareOk(inv.getArgument(0), 0, 0);
+			}).given(channel3).queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), any());
+			doAnswer(invocation -> {
+				listener3 = invocation.getArgument(0);
+				return null;
+			}).when(connectionFactory).addConnectionListener(any(ConnectionListener.class));
+			return connectionFactory;
+		}
+
+		@Bean
 		public RabbitAdmin admin1() throws IOException {
 			RabbitAdmin rabbitAdmin = new RabbitAdmin(cf1());
-			rabbitAdmin.afterPropertiesSet();
 			return rabbitAdmin;
 		}
 
 		@Bean
 		public RabbitAdmin admin2() throws IOException {
 			RabbitAdmin rabbitAdmin = new RabbitAdmin(cf2());
-			rabbitAdmin.afterPropertiesSet();
 			return rabbitAdmin;
 		}
 
 		@Bean
-		public Queue queue() throws IOException {
+		public RabbitAdmin admin3() throws IOException {
+			RabbitAdmin rabbitAdmin = new RabbitAdmin(cf3());
+			rabbitAdmin.setExplicitDeclarationsOnly(true);
+			return rabbitAdmin;
+		}
+
+		@Bean
+		public Queue queueFoo() throws IOException {
 			Queue queue = new Queue("foo");
 			queue.setAdminsThatShouldDeclare(admin1());
 			return queue;
+		}
+
+		@Bean
+		public Queue queueBaz() throws IOException {
+			Queue queue = new Queue("baz");
+			queue.setAdminsThatShouldDeclare(admin3());
+			return queue;
+		}
+
+		@Bean
+		public Queue queueQux() {
+			return new Queue("qux");
 		}
 
 		@Bean

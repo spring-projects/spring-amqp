@@ -1069,6 +1069,19 @@
 					<xsd:union memberTypes="xsd:boolean xsd:string" />
 				</xsd:simpleType>
 			</xsd:attribute>
+			<xsd:attribute name="explicit-declarations-only" default="false">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	If automatic declaration is enabled (see 'auto-startup'), if this is set to 'true', only beans
+	(queues, exchanges, bindings) that are explicity configured to be declared by this admin (see
+	'declared-by') will be declared.
+	Default value is 'false' which means all beans with no explicit 'declared-by' will be declared.
+					]]></xsd:documentation>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:union memberTypes="xsd:boolean xsd:string" />
+				</xsd:simpleType>
+			</xsd:attribute>
 		</xsd:complexType>
 	</xsd:element>
 
