@@ -18,10 +18,10 @@ package org.springframework.amqp.rabbit.test.mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.spy;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Gary Russell
@@ -33,12 +33,12 @@ public class AnswerTests {
 	@Test
 	public void testLambda() {
 		Foo foo = spy(new Foo());
-		doAnswer(new LambdaAnswer<String>(true, (i, r) -> r + r)).when(foo).foo(anyString());
+		willAnswer(new LambdaAnswer<String>(true, (i, r) -> r + r)).given(foo).foo(anyString());
 		assertThat(foo.foo("foo")).isEqualTo("FOOFOO");
-		doAnswer(new LambdaAnswer<String>(true, (i, r) -> r + i.getArguments()[0])).when(foo).foo(anyString());
+		willAnswer(new LambdaAnswer<String>(true, (i, r) -> r + i.getArguments()[0])).given(foo).foo(anyString());
 		assertThat(foo.foo("foo")).isEqualTo("FOOfoo");
-		doAnswer(new LambdaAnswer<String>(false, (i, r) ->
-			"" + i.getArguments()[0] + i.getArguments()[0])).when(foo).foo(anyString());
+		willAnswer(new LambdaAnswer<String>(false, (i, r) ->
+			"" + i.getArguments()[0] + i.getArguments()[0])).given(foo).foo(anyString());
 		assertThat(foo.foo("foo")).isEqualTo("foofoo");
 	}
 

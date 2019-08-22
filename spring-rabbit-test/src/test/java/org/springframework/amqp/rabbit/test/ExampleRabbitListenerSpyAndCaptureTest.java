@@ -23,9 +23,7 @@ import static org.mockito.Mockito.verify;
 
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
@@ -35,7 +33,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.test.RabbitListenerTestHarness.InvocationData;
 import org.springframework.amqp.rabbit.test.mockito.LatchCountDownAndCallRealMethodAnswer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,21 +42,17 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 /**
  * @author Gary Russell
  * @since 1.6
  *
  */
-@ContextConfiguration
-@RunWith(SpringJUnit4ClassRunner.class)
+@SpringJUnitConfig
 @DirtiesContext
+@RabbitAvailable
 public class ExampleRabbitListenerSpyAndCaptureTest {
-
-	@Rule
-	public BrokerRunning brokerRunning = BrokerRunning.isRunning();
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
