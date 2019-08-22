@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.listener;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -261,11 +262,13 @@ public class SimpleMessageListenerContainerIntegrationTests {
 			boolean externalTx) throws InterruptedException {
 
 		loadParams(count, concurrency, ackMode, tx, txSz, externalTx);
-		AtomicReference<List<Message>> received = new AtomicReference<>();
+		AtomicReference<List<Message>> received = new AtomicReference<>(new ArrayList<>());
 		CountDownLatch latch = new CountDownLatch(1);
 		this.container = createContainer((BatchMessageListener) messages -> {
-			received.set(messages);
-			latch.countDown();
+			received.get().addAll(messages);
+			if (received.get().size() == this.messageCount) {
+				latch.countDown();
+			}
 		}, this.queue);
 		this.container.setConsumerBatchEnabled(true);
 		this.container.setBatchSize(this.messageCount);
