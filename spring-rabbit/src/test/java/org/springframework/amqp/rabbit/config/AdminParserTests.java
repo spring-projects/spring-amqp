@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.parsing.BeanDefinitionParsingException;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
@@ -56,20 +57,28 @@ public final class AdminParserTests {
 	private boolean initialisedWithTemplate;
 
 	@Test
-	public void testInvalid() throws Exception {
-		contextIndex = 1;
-		validContext = false;
-		doTest();
+	public void testValid0() throws Exception {
+		this.expectedAutoStartup = true;
+		this.contextIndex = 0;
+		this.validContext = true;
+		doTest(false);
 	}
 
 	@Test
-	public void testValid() throws Exception {
-		contextIndex = 2;
-		validContext = true;
-		doTest();
+	public void testInvalid1() throws Exception {
+		this.contextIndex = 1;
+		this.validContext = false;
+		doTest(false);
 	}
 
-	private void doTest() throws Exception {
+	@Test
+	public void testValid2() throws Exception {
+		this.contextIndex = 2;
+		this.validContext = true;
+		doTest(true);
+	}
+
+	private void doTest(boolean explicit) throws Exception {
 		// Create context
 		DefaultListableBeanFactory beanFactory = loadContext();
 		if (beanFactory == null) {
@@ -79,19 +88,20 @@ public final class AdminParserTests {
 
 		// Validate values
 		RabbitAdmin admin;
-		if (StringUtils.hasText(adminBeanName)) {
-			admin = beanFactory.getBean(adminBeanName, RabbitAdmin.class);
+		if (StringUtils.hasText(this.adminBeanName)) {
+			admin = beanFactory.getBean(this.adminBeanName, RabbitAdmin.class);
 		}
 		else {
 			admin = beanFactory.getBean(RabbitAdmin.class);
 		}
-		assertThat(admin.isAutoStartup()).isEqualTo(expectedAutoStartup);
-		assertThat(admin.getRabbitTemplate().getConnectionFactory()).isEqualTo(beanFactory.getBean(ConnectionFactory.class));
+		assertThat(admin.isAutoStartup()).isEqualTo(this.expectedAutoStartup);
+		assertThat(admin.getRabbitTemplate().getConnectionFactory())
+				.isEqualTo(beanFactory.getBean(ConnectionFactory.class));
 
-		if (initialisedWithTemplate) {
+		if (this.initialisedWithTemplate) {
 			assertThat(admin.getRabbitTemplate()).isEqualTo(beanFactory.getBean(RabbitTemplate.class));
 		}
-
+		assertThat(TestUtils.getPropertyValue(admin, "explicitDeclarationsOnly", Boolean.class)).isEqualTo(explicit);
 	}
 
 	/**
@@ -107,12 +117,12 @@ public final class AdminParserTests {
 			beanFactory = new DefaultListableBeanFactory();
 			XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
 			reader.loadBeanDefinitions(resource);
-			if (!validContext) {
+			if (!this.validContext) {
 				fail("Context " + resource + " failed to load");
 			}
 		}
 		catch (BeanDefinitionParsingException e) {
-			if (validContext) {
+			if (this.validContext) {
 				// Context expected to be valid - throw an exception up
 				throw e;
 			}

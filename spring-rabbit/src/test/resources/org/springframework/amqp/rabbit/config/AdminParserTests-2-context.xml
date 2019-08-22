@@ -8,6 +8,7 @@
 	<rabbit:connection-factory id="connectionFactory"  host="localhost" />
 
 	<!-- Valid configuration -->
-	<rabbit:admin id="admin-test" connection-factory="connectionFactory" auto-startup="false"/>
+	<rabbit:admin id="admin-test" connection-factory="connectionFactory" auto-startup="false"
+		explicit-declarations-only="true"/>
 
 </beans>

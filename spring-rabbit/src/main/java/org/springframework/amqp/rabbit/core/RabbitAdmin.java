@@ -138,6 +138,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	private TaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();
 
+	private boolean explicitDeclarationsOnly;
+
 	private volatile boolean running = false;
 
 	private volatile DeclarationExceptionEvent lastDeclarationExceptionEvent;
@@ -430,6 +432,17 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	}
 
 	/**
+	 * Set to true to only declare {@link Declarable} beans that are explicitly configured
+	 * to be declared by this admin.
+	 * @param explicitDeclarationsOnly true to ignore beans with no admin declaration
+	 * configuration.
+	 * @since 2.1.9
+	 */
+	public void setExplicitDeclarationsOnly(boolean explicitDeclarationsOnly) {
+		this.explicitDeclarationsOnly = explicitDeclarationsOnly;
+	}
+
+	/**
 	 * Set a retry template for auto declarations. There is a race condition with
 	 * auto-delete, exclusive queues in that the queue might still exist for a short time,
 	 * preventing the redeclaration. The default retry configuration will try 5 times with
@@ -622,10 +635,14 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 */
 	private <T extends Declarable> Collection<T> filterDeclarables(Collection<T> declarables) {
 		return declarables.stream()
-				.filter(d -> d.shouldDeclare() // NOSONAR boolean complexity
-						&& (d.getDeclaringAdmins().isEmpty() || d.getDeclaringAdmins().contains(this)
-								|| (this.beanName != null && d.getDeclaringAdmins().contains(this.beanName))))
+				.filter(dec -> dec.shouldDeclare() && declarableByMe(dec))
 				.collect(Collectors.toList());
+	}
+
+	private <T extends Declarable> boolean declarableByMe(T dec) {
+		return (dec.getDeclaringAdmins().isEmpty() && !this.explicitDeclarationsOnly) // NOSONAR boolean complexity
+				|| dec.getDeclaringAdmins().contains(this)
+				|| (this.beanName != null && dec.getDeclaringAdmins().contains(this.beanName));
 	}
 
 	// private methods for declaring Exchanges, Queues, and Bindings on a Channel

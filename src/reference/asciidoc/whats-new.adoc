@@ -75,6 +75,9 @@ See <<message-listener-adapter>> for more information.
 The `ExchangeBuilder` and `QueueBuilder` fluent APIs used to create `Exchange` and `Queue` objects for declaration by `RabbitAdmin` now support "well known" arguments.
 See <<builder-api>> for more information.
 
+The `RabbitAdmin` has a new property `explicitDeclarationsOnly`.
+See <<conditional-declaration>> for more information.
+
 ===== Connection Factory Changes
 
 The `CachingConnectionFactory` has a new property `shuffleAddresses`.
