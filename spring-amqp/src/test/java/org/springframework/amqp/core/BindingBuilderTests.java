@@ -20,8 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Collections;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Mark Fisher
@@ -31,7 +31,7 @@ public class BindingBuilderTests {
 
 	private static Queue queue;
 
-	@BeforeClass
+	@BeforeAll
 	public static void setUp() {
 		queue = new Queue("q");
 	}

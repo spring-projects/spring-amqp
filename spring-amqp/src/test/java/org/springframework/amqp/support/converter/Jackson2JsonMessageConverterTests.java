@@ -24,17 +24,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.web.JsonPath;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
@@ -47,8 +45,7 @@ import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
  * @author Andreas Asplund
  * @author Artem Bilan
  */
-@ContextConfiguration
-@RunWith(SpringJUnit4ClassRunner.class)
+@SpringJUnitConfig
 public class Jackson2JsonMessageConverterTests {
 
 	public static final String TRUSTED_PACKAGE = Jackson2JsonMessageConverterTests.class.getPackage().getName();
@@ -60,7 +57,7 @@ public class Jackson2JsonMessageConverterTests {
 	@Autowired
 	private Jackson2JsonMessageConverter jsonConverterWithDefaultType;
 
-	@Before
+	@BeforeEach
 	public void before() {
 		converter = new Jackson2JsonMessageConverter(TRUSTED_PACKAGE);
 		trade = new SimpleTrade();

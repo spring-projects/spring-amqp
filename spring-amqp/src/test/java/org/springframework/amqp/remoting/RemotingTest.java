@@ -17,11 +17,12 @@
 package org.springframework.amqp.remoting;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Address;
@@ -58,7 +59,7 @@ public class RemotingTest {
 	 * Set up a rig of directly wired-up proxy and service listener so that both can be tested together without needing
 	 * a running rabbit.
 	 */
-	@Before
+	@BeforeEach
 	public void initializeTestRig() {
 		// Set up the service
 		TestServiceInterface testService = new TestServiceImpl();
@@ -113,15 +114,15 @@ public class RemotingTest {
 		}
 	}
 
-	@Test(expected = RuntimeException.class)
+	@Test
 	public void testExceptionPropagation() {
-		riggedProxy.exceptionThrowingMethod();
+		assertThatExceptionOfType(AmqpException.class).isThrownBy(() -> riggedProxy.exceptionThrowingMethod());
 	}
 
-	@Test(expected = GeneralException.class)
-	@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+	@Test
 	public void testExceptionReturningMethod() {
-		riggedProxy.notReallyExceptionReturningMethod();
+		assertThatExceptionOfType(GeneralException.class)
+				.isThrownBy(() -> riggedProxy.notReallyExceptionReturningMethod());
 	}
 
 	@Test

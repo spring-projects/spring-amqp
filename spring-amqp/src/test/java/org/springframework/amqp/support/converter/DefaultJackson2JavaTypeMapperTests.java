@@ -24,11 +24,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Spy;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.amqp.core.MessageProperties;
 
@@ -45,7 +45,7 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
  * @author Artem Bilan
  */
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class DefaultJackson2JavaTypeMapperTests {
 
 	@Spy
@@ -59,7 +59,7 @@ public class DefaultJackson2JavaTypeMapperTests {
 	@SuppressWarnings("rawtypes")
 	private final Class<HashMap> mapClass = HashMap.class;
 
-	@Before
+	@BeforeEach
 	public void setup() {
 		this.javaTypeMapper.setTrustedPackages("org.springframework.amqp.support.converter");
 	}

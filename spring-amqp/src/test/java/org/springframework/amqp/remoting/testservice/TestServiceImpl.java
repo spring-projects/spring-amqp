@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.remoting.testservice;
 
+import org.springframework.amqp.AmqpException;
+
 /**
  * @author David Bilge
  * @author Gary Russell
@@ -34,7 +36,7 @@ public class TestServiceImpl implements TestServiceInterface {
 
 	@Override
 	public void exceptionThrowingMethod() {
-		throw new RuntimeException("This is an exception");
+		throw new AmqpException("This is an exception");
 	}
 
 	@Override
