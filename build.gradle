@@ -139,9 +139,6 @@ subprojects { subproject ->
 		testRuntime "org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion"
 		testRuntime "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
 
-		// To support JUnit 4 tests
-		testRuntime "org.junit.vintage:junit-vintage-engine:$junitJupiterVersion"
-
 		// To avoid compiler warnings about @API annotations in JUnit code
 		testCompileOnly 'org.apiguardian:apiguardian-api:1.0.0'
 
