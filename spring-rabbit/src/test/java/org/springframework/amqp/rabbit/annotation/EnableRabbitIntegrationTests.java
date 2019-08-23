@@ -1176,7 +1176,7 @@ public class EnableRabbitIntegrationTests {
 
 		@Bean
 		public org.springframework.amqp.core.Queue sendToReplies() {
-			return new org.springframework.amqp.core.Queue(sendToRepliesBean(), false, false, true);
+			return new org.springframework.amqp.core.Queue(sendToRepliesBean(), false, false, false);
 		}
 
 		@Bean
@@ -1497,7 +1497,7 @@ public class EnableRabbitIntegrationTests {
 	public static class DeleteQueuesExecutionListener extends AbstractTestExecutionListener {
 
 		@Override
-		public void afterTestClass(TestContext testContext) throws Exception {
+		public void afterTestClass(TestContext testContext) {
 			brokerRunning.removeTestQueues("sendTo.replies", "sendTo.replies.spel");
 		}
 
