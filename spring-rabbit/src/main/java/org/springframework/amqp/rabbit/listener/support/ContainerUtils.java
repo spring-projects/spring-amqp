@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.listener;
+package org.springframework.amqp.rabbit.listener.support;
 
 import org.apache.commons.logging.Log;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.ImmediateRequeueAmqpException;
+import org.springframework.amqp.rabbit.listener.exception.MessageRejectedWhileStoppingException;
 
 /**
  * Utility methods for listener containers.

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.ImmediateRequeueAmqpException;
+import org.springframework.amqp.rabbit.listener.support.ContainerUtils;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 
 /**

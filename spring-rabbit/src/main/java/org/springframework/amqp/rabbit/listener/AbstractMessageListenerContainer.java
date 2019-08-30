@@ -56,6 +56,8 @@ import org.springframework.amqp.rabbit.connection.RoutingConnectionFactory;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
+import org.springframework.amqp.rabbit.listener.exception.MessageRejectedWhileStoppingException;
+import org.springframework.amqp.rabbit.listener.support.ContainerUtils;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
