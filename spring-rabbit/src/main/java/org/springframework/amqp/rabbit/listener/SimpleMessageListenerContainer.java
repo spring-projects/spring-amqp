@@ -221,8 +221,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				int maxConcurrentConsumers = Integer.parseInt(concurrency.substring(separatorIndex + 1));
 				Assert.isTrue(maxConcurrentConsumers >= concurrentConsumers,
 						"'maxConcurrentConsumers' value must be at least 'concurrentConsumers'");
-				this.concurrentConsumers = concurrentConsumers;
-				this.maxConcurrentConsumers = maxConcurrentConsumers;
+				this.concurrentConsumers = 1;
+				this.maxConcurrentConsumers = null;
+				setConcurrentConsumers(concurrentConsumers);
+				setMaxConcurrentConsumers(maxConcurrentConsumers);
 			}
 			else {
 				setConcurrentConsumers(Integer.parseInt(concurrency));
