@@ -217,9 +217,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		try {
 			int separatorIndex = concurrency.indexOf('-');
 			if (separatorIndex != -1) {
+				setMaxConcurrentConsumers(Integer.parseInt(concurrency.substring(separatorIndex + 1)));
 				setConcurrentConsumers(Integer.parseInt(concurrency.substring(0, separatorIndex)));
-				setMaxConcurrentConsumers(
-						Integer.parseInt(concurrency.substring(separatorIndex + 1, concurrency.length())));
 			}
 			else {
 				setConcurrentConsumers(Integer.parseInt(concurrency));
