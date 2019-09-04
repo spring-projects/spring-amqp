@@ -14,6 +14,7 @@ buildscript {
 
 plugins {
 	id "org.sonarqube" version '2.7.1'
+	id "io.spring.dependency-management" version "1.0.8.RELEASE" apply false
 }
 
 description = 'Spring AMQP'
@@ -47,6 +48,25 @@ allprojects {
 }
 
 ext {
+	assertjVersion = '3.12.2'
+	assertkVersion = '0.17'
+	commonsHttpClientVersion = '4.5.9'
+	googleJsr305Version = '3.0.2'
+	hamcrestVersion = '1.3'
+	jackson2Version = '2.9.9.20190807'
+	junit4Version = '4.12'
+	junitJupiterVersion = '5.4.0'
+	junitPlatformVersion = '1.4.0'
+	log4jVersion = '2.11.2'
+	logbackVersion = '1.2.3'
+	mockitoVersion = '2.26.0'
+	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.4.3'
+	rabbitmqHttpClientVersion = '2.1.0.RELEASE'
+	reactorVersion = '3.2.11.RELEASE'
+
+	springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.1.9.RELEASE'
+
+	springRetryVersion = '1.2.4.RELEASE'
 	expandPlaceholders = '**/quick-tour.xml'
 	javadocLinks = [
 		"https://docs.oracle.com/javase/8/docs/api/",
@@ -64,31 +84,23 @@ subprojects { subproject ->
 	apply plugin: 'project-report'
 	apply plugin: 'jacoco'
 	apply plugin: 'checkstyle'
+	apply plugin: "io.spring.dependency-management"
+
+	dependencyManagement {
+		resolutionStrategy {
+			cacheChangingModulesFor 0, 'seconds'
+		}
+		applyMavenExclusions = false
+		generatedPomCustomization {
+			enabled = false
+		}
+		imports {
+			mavenBom "com.fasterxml.jackson:jackson-bom:$jackson2Version"
+		}
+	}
 
 	sourceCompatibility=1.8
 	targetCompatibility=1.8
-
-	ext {
-		assertjVersion = '3.12.2'
-		assertkVersion = '0.17'
-		commonsHttpClientVersion = '4.5.9'
-		googleJsr305Version = '3.0.2'
-		hamcrestVersion = '1.3'
-		jackson2Version = '2.9.9'
-		junit4Version = '4.12'
-		junitJupiterVersion = '5.4.0'
-		junitPlatformVersion = '1.4.0'
-		log4jVersion = '2.11.2'
-		logbackVersion = '1.2.3'
-		mockitoVersion = '2.26.0'
-		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.4.3'
-		rabbitmqHttpClientVersion = '2.1.0.RELEASE'
-		reactorVersion = '3.2.11.RELEASE'
-
-		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.1.9.RELEASE'
-
-		springRetryVersion = '1.2.4.RELEASE'
-	}
 
 	eclipse {
 		project {
@@ -237,9 +249,9 @@ project('spring-amqp') {
 		compile ("org.springframework:spring-context:$springVersion", optional)
 		compile "org.springframework.retry:spring-retry:$springRetryVersion"
 
-		compile ("com.fasterxml.jackson.core:jackson-core:$jackson2Version", optional)
-		compile ("com.fasterxml.jackson.core:jackson-databind:$jackson2Version", optional)
-		compile ("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jackson2Version", optional)
+		compile ("com.fasterxml.jackson.core:jackson-core", optional)
+		compile ("com.fasterxml.jackson.core:jackson-databind", optional)
+		compile ("com.fasterxml.jackson.dataformat:jackson-dataformat-xml", optional)
 
 		testCompile "org.assertj:assertj-core:$assertjVersion"
 		testRuntime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
@@ -278,7 +290,7 @@ project('spring-rabbit') {
 
 		testRuntime "org.springframework:spring-web:$springVersion"
 		testRuntime "org.apache.httpcomponents:httpclient:$commonsHttpClientVersion"
-		testRuntime "com.fasterxml.jackson.module:jackson-module-kotlin:$jackson2Version"
+		testRuntime "com.fasterxml.jackson.module:jackson-module-kotlin"
 	}
 
 	compileTestKotlin {
