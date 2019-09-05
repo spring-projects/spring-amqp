@@ -477,6 +477,16 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		((DisposableBean) template.getConnectionFactory()).destroy();
 	}
 
+	@Test
+	public void testConcurrencyConfiguration() {
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+		container.setConcurrentConsumers(1);
+		container.setMaxConcurrentConsumers(1);
+		container.setConcurrency("2-5");
+
+		assertEquals(2, TestUtils.getPropertyValue(container, "concurrentConsumers"));
+		assertEquals(5, TestUtils.getPropertyValue(container, "maxConcurrentConsumers"));
+	}
 
 	@Configuration
 	static class LongLiveConsumerConfig {
