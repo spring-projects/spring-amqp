@@ -176,9 +176,9 @@ public class Queue extends AbstractDeclarable implements Cloneable {
 	}
 
 	@Override
-	public Object clone() { // NOSONAR
-		Queue queue = new Queue(this.name, this.durable, this.exclusive, this.autoDelete,
-				new HashMap<>(this.arguments));
+	public Object clone() {
+		Queue queue = new Queue(this.name, this.durable, this.exclusive, // NOSONAR - doesn't need to call super.clone()
+				this.autoDelete, new HashMap<>(this.arguments));
 		queue.setActualName(this.actualName);
 		return queue;
 	}
