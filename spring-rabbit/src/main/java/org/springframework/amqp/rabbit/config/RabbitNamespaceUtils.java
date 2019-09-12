@@ -119,7 +119,8 @@ public final class RabbitNamespaceUtils {
 		super();
 	}
 
-	public static BeanDefinition parseContainer(Element containerEle, ParserContext parserContext) { // NOSONAR complexity
+	public static BeanDefinition parseContainer(Element containerEle, ParserContext parserContext) { // NOSONAR
+		// complexity
 		RootBeanDefinition containerDef = new RootBeanDefinition(ListenerContainerFactoryBean.class);
 		containerDef.setSource(parserContext.extractSource(containerEle));
 
@@ -135,7 +136,13 @@ public final class RabbitNamespaceUtils {
 			containerDef.getPropertyValues().add("connectionFactory",
 					new RuntimeBeanReference(connectionFactoryBeanName));
 		}
-		containerDef.getPropertyValues().add("type", new TypedStringValue(containerEle.getAttribute(TYPE)));
+
+		if (containerEle.hasAttribute(TYPE)) {
+			String type = containerEle.getAttribute(TYPE);
+			if (StringUtils.hasText(type)) {
+				containerDef.getPropertyValues().add("type", new TypedStringValue(type));
+			}
+		}
 
 		String taskExecutorBeanName = containerEle.getAttribute(TASK_EXECUTOR_ATTRIBUTE);
 		if (StringUtils.hasText(taskExecutorBeanName)) {
@@ -241,7 +248,7 @@ public final class RabbitNamespaceUtils {
 			if (StringUtils.hasText(recoveryBackOff)) {
 				parserContext.getReaderContext()
 						.error("'" + RECOVERY_INTERVAL + "' and '" + RECOVERY_BACK_OFF + "' are mutually exclusive",
-						containerEle);
+								containerEle);
 			}
 			containerDef.getPropertyValues().add("recoveryInterval", new TypedStringValue(recoveryInterval));
 		}
@@ -284,7 +291,7 @@ public final class RabbitNamespaceUtils {
 		String retryDeclarationInterval = containerEle.getAttribute(MISSING_QUEUE_RETRY_INTERVAL);
 		if (StringUtils.hasText(retryDeclarationInterval)) {
 			containerDef.getPropertyValues().add("retryDeclarationInterval",
-			new TypedStringValue(retryDeclarationInterval));
+					new TypedStringValue(retryDeclarationInterval));
 		}
 
 		String consumerTagStrategy = containerEle.getAttribute(CONSUMER_TAG_STRATEGY);
