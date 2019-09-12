@@ -2290,9 +2290,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		if (rKey == null) {
 			rKey = this.routingKey;
 		}
-		if (logger.isDebugEnabled()) {
-			logger.debug("Publishing message " + message
-					+ "on exchange [" + exch + "], routingKey = [" + rKey + "]");
+		if (logger.isTraceEnabled()) {
+			logger.trace("Original message " + message);
 		}
 
 		Message messageToUse = message;
@@ -2304,6 +2303,10 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			for (MessagePostProcessor processor : this.beforePublishPostProcessors) {
 				messageToUse = processor.postProcessMessage(messageToUse, correlationData);
 			}
+		}
+		if (logger.isDebugEnabled()) {
+			logger.debug("Publishing message " + messageToUse
+					+ " on exchange [" + exch + "], routingKey = [" + rKey + "]");
 		}
 		setupConfirm(channel, messageToUse, correlationData);
 		if (this.userIdExpression != null && messageProperties.getUserId() == null) {
