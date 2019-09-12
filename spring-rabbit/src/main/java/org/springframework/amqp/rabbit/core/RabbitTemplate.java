@@ -143,6 +143,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Ernest Sadykov
  * @author Mark Norkin
  * @author Mohammad Hewedy
+ * @author Alexey Platonov
  *
  * @since 1.0
  */
@@ -2290,9 +2291,9 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		if (rKey == null) {
 			rKey = this.routingKey;
 		}
-		if (logger.isDebugEnabled()) {
-			logger.debug("Publishing message " + message
-					+ "on exchange [" + exch + "], routingKey = [" + rKey + "]");
+
+		if (logger.isTraceEnabled()) {
+			logger.trace("Original message to publish: " + message);
 		}
 
 		Message messageToUse = message;
@@ -2311,6 +2312,10 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			if (userId != null) {
 				messageProperties.setUserId(userId);
 			}
+		}
+		if (logger.isDebugEnabled()) {
+			logger.debug("Publishing message [" + messageToUse
+					+ "] on exchange [" + exch + "], routingKey = [" + rKey + "]");
 		}
 		sendToRabbit(channel, exch, rKey, mandatory, messageToUse);
 		// Check if commit needed
