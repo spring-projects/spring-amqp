@@ -1820,7 +1820,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	private void checkPossibleAuthenticationFailureFatalFromProperty() {
-		if (!isPossibleAuthenticationFailureFatal()) {
+		if (!isPossibleAuthenticationFailureFatalSet()) {
 			try {
 				ApplicationContext context = getApplicationContext();
 				if (context != null) {
