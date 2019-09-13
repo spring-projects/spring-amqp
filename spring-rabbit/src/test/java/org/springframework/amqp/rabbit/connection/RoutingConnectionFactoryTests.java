@@ -319,12 +319,12 @@ public class RoutingConnectionFactoryTests {
 		container.afterPropertiesSet();
 		container.start();
 		ChannelHolder channelHolder = container.getChannelHolder();
-		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		container.releaseConsumerFor(channelHolder, true, "test");
 		container.stop();
-		assertThat(connectionMakerKey.get()).isEqualTo("xxx[amq.rabbitmq.reply-to]");
-		assertThat(connectionMakerKey2.get()).isEqualTo("xxx[amq.rabbitmq.reply-to]");
-		assertThat(SimpleResourceHolder.unbind(connectionFactory)).isEqualTo("foo");
+		assertThat(connectionMakerKey.get(), equalTo("xxx[amq.rabbitmq.reply-to]"));
+		assertThat(connectionMakerKey2.get(), equalTo("xxx[amq.rabbitmq.reply-to]"));
+		assertThat(SimpleResourceHolder.unbind(connectionFactory), equalTo("foo"));
 	}
 
 }
