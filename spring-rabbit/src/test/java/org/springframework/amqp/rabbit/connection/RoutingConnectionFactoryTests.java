@@ -41,6 +41,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 
 import com.rabbitmq.client.Channel;
@@ -274,6 +276,51 @@ public class RoutingConnectionFactoryTests {
 		container.stop();
 		assertThat(connectionMakerKey.get()).isEqualTo("xxx[foo]");
 		assertThat(connectionMakerKey2.get()).isEqualTo("xxx[foo]");
+	}
+
+	@Test
+	public void testWithDRTDMLCAndConnectionListenerExistingRFK() throws Exception {
+		ConnectionFactory connectionFactory1 = mock(ConnectionFactory.class);
+		Map<Object, ConnectionFactory> factories = new HashMap<Object, ConnectionFactory>(2);
+		factories.put("xxx[foo]", connectionFactory1);
+		factories.put("xxx[amq.rabbitmq.reply-to]", connectionFactory1);
+
+		final SimpleRoutingConnectionFactory connectionFactory = new SimpleRoutingConnectionFactory();
+		SimpleResourceHolder.bind(connectionFactory, "foo");
+
+		final Connection connection = mock(Connection.class);
+		Channel channel = mock(Channel.class);
+		given(channel.isOpen()).willReturn(true);
+		given(connection.createChannel(anyBoolean())).willReturn(channel);
+		final AtomicReference<Object> connectionMakerKey = new AtomicReference<>();
+		final CountDownLatch latch = new CountDownLatch(2); // early connection in Abstract container
+		willAnswer(i -> {
+			connectionMakerKey.set(connectionFactory.determineCurrentLookupKey());
+			latch.countDown();
+			return connection;
+		}).given(connectionFactory1).createConnection();
+		connectionFactory.setTargetConnectionFactories(factories);
+
+		final AtomicReference<Object> connectionMakerKey2 = new AtomicReference<>();
+		DirectReplyToMessageListenerContainer container = new DirectReplyToMessageListenerContainer(connectionFactory) {
+
+			@Override
+			protected synchronized void redeclareElementsIfNecessary() {
+				connectionMakerKey2.set(connectionFactory.determineCurrentLookupKey());
+			}
+
+		};
+		container.setLookupKeyQualifier("xxx");
+		container.setShutdownTimeout(10);
+		container.afterPropertiesSet();
+		container.start();
+		ChannelHolder channelHolder = container.getChannelHolder();
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		container.releaseConsumerFor(channelHolder, true, "test");
+		container.stop();
+		assertThat(connectionMakerKey.get()).isEqualTo("xxx[amq.rabbitmq.reply-to]");
+		assertThat(connectionMakerKey2.get()).isEqualTo("xxx[amq.rabbitmq.reply-to]");
+		assertThat(SimpleResourceHolder.unbind(connectionFactory)).isEqualTo("foo");
 	}
 
 }
