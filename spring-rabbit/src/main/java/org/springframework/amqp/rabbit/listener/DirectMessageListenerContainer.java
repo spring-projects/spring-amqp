@@ -582,7 +582,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	protected void doRedeclareElementsIfNecessary() {
 		String routingLookupKey = getRoutingLookupKey();
 		if (routingLookupKey != null) {
-			SimpleResourceHolder.bind(getRoutingConnectionFactory(), routingLookupKey); // NOSONAR both never null here
+			SimpleResourceHolder.push(getRoutingConnectionFactory(), routingLookupKey); // NOSONAR both never null here
 		}
 		try {
 			redeclareElementsIfNecessary();
@@ -592,7 +592,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		finally {
 			if (routingLookupKey != null) {
-				SimpleResourceHolder.unbind(getRoutingConnectionFactory()); // NOSONAR never null here
+				SimpleResourceHolder.pop(getRoutingConnectionFactory()); // NOSONAR never null here
 			}
 		}
 	}
@@ -658,7 +658,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		String routingLookupKey = getRoutingLookupKey();
 		if (routingLookupKey != null) {
-			SimpleResourceHolder.bind(getRoutingConnectionFactory(), routingLookupKey); // NOSONAR both never null here
+			SimpleResourceHolder.push(getRoutingConnectionFactory(), routingLookupKey); // NOSONAR both never null here
 		}
 		Connection connection = null; // NOSONAR (close)
 		try {
@@ -673,7 +673,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		finally {
 			if (routingLookupKey != null) {
-				SimpleResourceHolder.unbind(getRoutingConnectionFactory()); // NOSONAR never null here
+				SimpleResourceHolder.pop(getRoutingConnectionFactory()); // NOSONAR never null here
 			}
 		}
 		SimpleConsumer consumer = consume(queue, connection);
