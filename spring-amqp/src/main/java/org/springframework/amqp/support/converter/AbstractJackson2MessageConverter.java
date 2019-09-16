@@ -349,7 +349,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 			JavaType type = this.objectMapper.constructType(
 					genericType == null ? objectToConvert.getClass() : genericType);
 			if (genericType != null && !type.isContainerType()
-					&& (type.getRawClass().isInterface() || Modifier.isAbstract(type.getRawClass().getModifiers()))) {
+					&& Modifier.isAbstract(type.getRawClass().getModifiers())) {
 				type = this.objectMapper.constructType(objectToConvert.getClass());
 			}
 			getJavaTypeMapper().fromJavaType(type, messageProperties);
