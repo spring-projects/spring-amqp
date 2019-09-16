@@ -58,10 +58,10 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 		final RabbitTemplate template = new RabbitTemplate(cf);
 		final CountDownLatch confirmLatch = new CountDownLatch(2);
 		template.setConfirmCallback((cd, a, c) -> {
-			if (confirmLatch.getCount() == 2) {
+			confirmLatch.countDown();
+			if (confirmLatch.getCount() == 1) {
 				template.convertAndSend(QUEUE1, ((MyCD) cd).payload);
 			}
-			confirmLatch.countDown();
 		});
 		template.convertAndSend("bad.exchange", "junk", "foo", new MyCD("foo"));
 		assertThat(confirmLatch.await(10, TimeUnit.SECONDS)).isTrue();
