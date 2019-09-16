@@ -90,6 +90,10 @@ See <<template-confirms>> for more information.
 
 Also, the publisher confirm type is now specified with the `ConfirmType` enum instead of the two mutually exclusive setter methods.
 
+===== New MessagePostProcessor Classes
+
+Classes `DeflaterPostProcessor` and `InflaterPostProcessor` were added to support compression and decompression, respectively, when the message content-encoding is set to `deflate`.
+
 ===== Other Changes
 
 The `Declarables` object (for declaring multiple queues, exchanges, bindings) now has a filtered getter for each type.

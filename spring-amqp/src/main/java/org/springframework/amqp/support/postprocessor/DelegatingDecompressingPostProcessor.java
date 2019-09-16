@@ -26,9 +26,10 @@ import org.springframework.core.Ordered;
 
 /**
  * A {@link MessagePostProcessor} that delegates to one of its {@link MessagePostProcessor}s
- * depending on the content encoding. Supports {@code gzip, zip} by default.
+ * depending on the content encoding. Supports {@code gzip, zip, deflate} by default.
  *
  * @author Gary Russell
+ * @author David Diehl
  * @since 1.4.2
  */
 public class DelegatingDecompressingPostProcessor implements MessagePostProcessor, Ordered {
@@ -40,6 +41,7 @@ public class DelegatingDecompressingPostProcessor implements MessagePostProcesso
 	public DelegatingDecompressingPostProcessor() {
 		this.decompressors.put("gzip", new GUnzipPostProcessor());
 		this.decompressors.put("zip", new UnzipPostProcessor());
+		this.decompressors.put("deflate", new InflaterPostProcessor());
 	}
 
 	@Override

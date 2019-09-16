@@ -3689,7 +3689,7 @@ When using batching (see <<template-batching>>), this is invoked after the batch
 The second is invoked immediately after a message is received.
 
 These extension points are used for such features as compression and, for this purpose, several `MessagePostProcessor` implementations are provided.
-`GZipPostProcessor` and `ZipPostProcessor` compress messages before sending, and `GUnzipPostProcessor` and `UnzipPostProcessor` decompress received messages.
+`GZipPostProcessor`, `ZipPostProcessor` and `DeflaterPostProcessor` compress messages before sending, and `GUnzipPostProcessor`, `UnzipPostProcessor` and `InflaterPostProcessor` decompress received messages.
 
 NOTE: Starting with version 2.1.5, the `GZipPostProcessor` can be configured with the `copyProperties = true` option to make a  copy of the original message properties.
 By default, these properties are reused for performance reasons, and modified with compression content encoding and the optional `MessageProperties.SPRING_AUTO_DECOMPRESS` header.
