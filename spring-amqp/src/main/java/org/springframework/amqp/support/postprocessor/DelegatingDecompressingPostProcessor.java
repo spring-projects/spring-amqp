@@ -29,6 +29,7 @@ import org.springframework.core.Ordered;
  * depending on the content encoding. Supports {@code gzip, zip, deflate} by default.
  *
  * @author Gary Russell
+ * @author David Diehl
  * @since 1.4.2
  */
 public class DelegatingDecompressingPostProcessor implements MessagePostProcessor, Ordered {
