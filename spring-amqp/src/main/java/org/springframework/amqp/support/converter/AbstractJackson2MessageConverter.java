@@ -17,6 +17,7 @@
 package org.springframework.amqp.support.converter;
 
 import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -324,8 +325,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 
 	@Override
 	protected Message createMessage(Object objectToConvert, MessageProperties messageProperties,
-			@Nullable Type genericType)
-			throws MessageConversionException {
+			@Nullable Type genericType) throws MessageConversionException {
 
 		byte[] bytes;
 		try {
@@ -346,8 +346,13 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 		messageProperties.setContentLength(bytes.length);
 
 		if (getClassMapper() == null) {
-			getJavaTypeMapper().fromJavaType(this.objectMapper.constructType(
-					genericType == null ? objectToConvert.getClass() : genericType), messageProperties);
+			JavaType type = this.objectMapper.constructType(
+					genericType == null ? objectToConvert.getClass() : genericType);
+			if (genericType != null && !type.isContainerType()
+					&& (type.getRawClass().isInterface() || Modifier.isAbstract(type.getRawClass().getModifiers()))) {
+				type = this.objectMapper.constructType(objectToConvert.getClass());
+			}
+			getJavaTypeMapper().fromJavaType(type, messageProperties);
 		}
 		else {
 			getClassMapper().fromClass(objectToConvert.getClass(), messageProperties); // NOSONAR never null
