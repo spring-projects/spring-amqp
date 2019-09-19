@@ -245,7 +245,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	private boolean userCorrelationId;
 
-	private boolean usePublisherConnection;
+	private boolean usePublisherConnection = true;
 
 	private boolean noLocalReplyConsumer;
 
