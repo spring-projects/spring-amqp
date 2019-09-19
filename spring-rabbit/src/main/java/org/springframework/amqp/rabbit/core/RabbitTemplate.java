@@ -245,7 +245,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	private boolean userCorrelationId;
 
-	private boolean usePublisherConnection = true;
+	private boolean usePublisherConnection;
 
 	private boolean noLocalReplyConsumer;
 
@@ -794,8 +794,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	/**
 	 * To avoid deadlocked connections, it is generally recommended to use
 	 * a separate connection for publishers and consumers (except when a publisher
-	 * is participating in a consumer transaction). Default 'false'; will change
-	 * to 'true' in 2.1.
+	 * is participating in a consumer transaction). Default 'false'.
 	 * @param usePublisherConnection true to use a publisher connection.
 	 * @since 2.0.2
 	 */
