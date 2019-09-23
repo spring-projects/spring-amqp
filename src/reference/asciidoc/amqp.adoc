@@ -3168,7 +3168,7 @@ The timers can be disabled by setting the container property `micrometerEnabled`
 Two timers are maintained - one for successful calls to the listener and one for failures.
 With a simple `MessageListener`, there is a pair of timers for each configured queue.
 
-The timers are named `spring.kafka.listener` and have the following tags:
+The timers are named `spring.rabbitmq.listener` and have the following tags:
 
 * `listenerId` : (listener id or container bean name)
 * `queue` : (the queue name for a simple listener or list of configured queue names when `consumerBatchEnabled` is `true` - because a batch may contain messages from multiple queues)
