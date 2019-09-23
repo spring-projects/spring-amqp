@@ -47,6 +47,7 @@ ext {
 	junitJupiterVersion = '5.5.2'
 	log4jVersion = '2.12.1'
 	logbackVersion = '1.2.3'
+	micrometerVersion = '1.2.1'
 	mockitoVersion = '3.0.0'
 	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.7.3'
 	rabbitmqHttpClientVersion = '3.2.0.RELEASE'
@@ -333,6 +334,7 @@ project('spring-rabbit') {
 		compile ('io.projectreactor:reactor-core', optional)
 		compile ("ch.qos.logback:logback-classic:$logbackVersion", optional)
 		compile ('org.apache.logging.log4j:log4j-core', optional)
+		compile ("io.micrometer:micrometer-core:$micrometerVersion", optional)
 
 		testCompile project(':spring-rabbit-junit')
 		testCompile("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")

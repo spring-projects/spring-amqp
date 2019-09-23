@@ -30,6 +30,9 @@ See <<junit5-conditions>> for more information.
 Messages with fatal exceptions are now rejected and NOT requeued, by default, even if the acknowledge mode is manual.
 See <<exception-handling>> for more information.
 
+Listener performance can now be monitored using Micrometer `Timer` s.
+See <<micrometer>> for more information.
+
 ===== @RabbitListener Changes
 
 You can now configure an `executor` on each listener, overriding the factory configuration, to more easily identify threads associated with the listener.

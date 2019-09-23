@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
@@ -80,6 +82,7 @@ import org.springframework.transaction.interceptor.DefaultTransactionAttribute;
 import org.springframework.transaction.interceptor.TransactionAttribute;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.ErrorHandler;
 import org.springframework.util.StringUtils;
 import org.springframework.util.backoff.BackOff;
@@ -87,6 +90,10 @@ import org.springframework.util.backoff.FixedBackOff;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ShutdownSignalException;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.Timer.Builder;
+import io.micrometer.core.instrument.Timer.Sample;
 
 /**
  * @author Mark Pollack
@@ -119,11 +126,16 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	public static final long DEFAULT_SHUTDOWN_TIMEOUT = 5000;
 
+	private static final boolean MICROMETER_PRESENT = ClassUtils.isPresent(
+			"io.micrometer.core.instrument.MeterRegistry", AbstractMessageListenerContainer.class.getClassLoader());
+
 	private final ContainerDelegate delegate = this::actualInvokeListener;
 
 	protected final Object consumersMonitor = new Object(); //NOSONAR
 
 	private final Map<String, Object> consumerArgs = new HashMap<>();
+
+	private final Map<String, String> micrometerTags = new HashMap<>();
 
 	private ContainerDelegate proxy = this.delegate;
 
@@ -223,6 +235,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private String errorHandlerLoggerName = getClass().getName();
 
 	private BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(0, 0, 0L);
+
+	private MicrometerHolder micrometerHolder;
+
+	private boolean micrometerEnabled = true;
 
 	private volatile boolean lazyLoad;
 
@@ -631,10 +647,14 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	@Nullable
 	protected String getRoutingLookupKey() {
 		return super.getConnectionFactory() instanceof RoutingConnectionFactory
-				? this.lookupKeyQualifier + "[" + this.queues.stream()
-				.map(Queue::getName)
-				.collect(Collectors.joining(",")) + "]"
+				? this.lookupKeyQualifier + queuesAsListString()
 				: null;
+	}
+
+	private String queuesAsListString() {
+		return "[" + this.queues.stream()
+				.map(Queue::getName)
+				.collect(Collectors.joining(",")) + "]";
 	}
 
 	/**
@@ -1076,6 +1096,26 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
+	 * Set additional tags for the Micrometer listener timers.
+	 * @param tags the tags.
+	 * @since 2.2
+	 */
+	public void setMicrometerTags(Map<String, String> tags) {
+		if (tags != null) {
+			this.micrometerTags.putAll(tags);
+		}
+	}
+
+	/**
+	 * Set to false to disable micrometer listener timers.
+	 * @param micrometerEnabled false to disable.
+	 * @since 2.2
+	 */
+	public void setMicrometerEnabled(boolean micrometerEnabled) {
+		this.micrometerEnabled = micrometerEnabled;
+	}
+
+	/**
 	 * Delegates to {@link #validateConfiguration()} and {@link #initialize()}.
 	 */
 	@Override
@@ -1093,6 +1133,16 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 						"channelTransacted=false");
 		validateConfiguration();
 		initialize();
+		try {
+			if (this.micrometerHolder == null && MICROMETER_PRESENT && this.micrometerEnabled
+					&& this.applicationContext != null) {
+				this.micrometerHolder = new MicrometerHolder(this.applicationContext, getListenerId(),
+						this.micrometerTags);
+			}
+		}
+		catch (IllegalStateException e) {
+			this.logger.debug("Could not enable micrometer timers", e);
+		}
 	}
 
 	@Override
@@ -1128,6 +1178,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	@Override
 	public void destroy() {
 		shutdown();
+		if (this.micrometerHolder != null) {
+			this.micrometerHolder.destroy();
+		}
 	}
 
 	// -------------------------------------------------------------------------
@@ -1350,10 +1403,24 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			}
 			throw new MessageRejectedWhileStoppingException();
 		}
+		Object sample = null;
+		if (this.micrometerHolder != null) {
+			sample = this.micrometerHolder.start();
+		}
 		try {
 			doExecuteListener(channel, data);
+			if (sample != null) {
+				this.micrometerHolder.success(sample, data instanceof Message
+						? ((Message) data).getMessageProperties().getConsumerQueue()
+						: queuesAsListString());
+			}
 		}
 		catch (RuntimeException ex) {
+			if (sample != null) {
+				this.micrometerHolder.failure(sample, data instanceof Message
+						? ((Message) data).getMessageProperties().getConsumerQueue()
+						: queuesAsListString(), ex.getClass().getSimpleName());
+			}
 			Message message;
 			if (data instanceof Message) {
 				message = (Message) data;
@@ -1904,6 +1971,74 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 					logger.error("Unexpected invocation of " + getClass() + ", with message: " + message, t);
 				}
 			}
+		}
+
+	}
+
+	private static final class MicrometerHolder {
+
+		private final ConcurrentMap<String, Timer> timers = new ConcurrentHashMap<>();
+
+		private final MeterRegistry registry;
+
+		private final Map<String, String> tags;
+
+		private final String listenerId;
+
+		MicrometerHolder(@Nullable ApplicationContext context, String listenerId, Map<String, String> tags) {
+			if (context == null) {
+				throw new IllegalStateException("No micrometer registry present");
+			}
+			Map<String, MeterRegistry> registries = context.getBeansOfType(MeterRegistry.class, false, false);
+			if (registries.size() == 1) {
+				this.registry = registries.values().iterator().next();
+				this.listenerId = listenerId;
+				this.tags = tags;
+			}
+			else {
+				throw new IllegalStateException("No micrometer registry present");
+			}
+		}
+
+		Object start() {
+			return Timer.start(this.registry);
+		}
+
+		void success(Object sample, String queue) {
+			Timer timer = this.timers.get(queue + "none");
+			if (timer == null) {
+				timer = buildTimer(this.listenerId, "success", queue, "none");
+			}
+			((Sample) sample).stop(timer);
+		}
+
+		void failure(Object sample, String queue, String exception) {
+			Timer timer = this.timers.get(queue + exception);
+			if (timer == null) {
+				timer = buildTimer(this.listenerId, "failure", queue, exception);
+			}
+			((Sample) sample).stop(timer);
+		}
+
+		private Timer buildTimer(String aListenerId, String result, String queue, String exception) {
+
+			Builder builder = Timer.builder("spring.rabbitmq.listener")
+					.description("Spring RabbitMQ Listener")
+					.tag("listener.id", aListenerId)
+					.tag("queue", queue)
+					.tag("result", result)
+					.tag("exception", exception);
+			if (this.tags != null && !this.tags.isEmpty()) {
+				this.tags.forEach((key, value) -> builder.tag(key, value));
+			}
+			Timer registeredTimer = builder.register(this.registry);
+			this.timers.put(queue + exception, registeredTimer);
+			return registeredTimer;
+		}
+
+		void destroy() {
+			this.timers.values().forEach(this.registry::remove);
+			this.timers.clear();
 		}
 
 	}

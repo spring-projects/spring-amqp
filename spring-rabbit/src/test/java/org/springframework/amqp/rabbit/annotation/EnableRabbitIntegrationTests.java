@@ -132,6 +132,9 @@ import org.springframework.util.ErrorHandler;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.http.client.Client;
 import com.rabbitmq.http.client.domain.QueueInfo;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 /**
  *
@@ -208,6 +211,9 @@ public class EnableRabbitIntegrationTests {
 
 	@Autowired
 	private MyService myService;
+
+	@Autowired
+	private MeterRegistry meterRegistry;
 
 	@BeforeAll
 	public static void setUp() {
@@ -819,13 +825,31 @@ public class EnableRabbitIntegrationTests {
 	}
 
 	@Test
-	public void messagingMessageReturned() {
+	public void messagingMessageReturned() throws InterruptedException {
 		Message message = org.springframework.amqp.core.MessageBuilder.withBody("\"messaging\"".getBytes())
 			.andProperties(MessagePropertiesBuilder.newInstance().setContentType("application/json").build()).build();
 		message = this.rabbitTemplate.sendAndReceive("test.messaging.message", message);
 		assertThat(message).isNotNull();
 		assertThat(new String(message.getBody())).isEqualTo("{\"field\":\"MESSAGING\"}");
 		assertThat(message.getMessageProperties().getHeaders().get("foo")).isEqualTo("bar");
+		Timer timer = null;
+		int n = 0;
+		while (timer == null && n++ < 100) {
+			try {
+				timer = this.meterRegistry.get("spring.rabbitmq.listener")
+						.tag("listener.id", "list.of.messages")
+						.tag("queue", "test.messaging.message")
+						.tag("result", "success")
+						.tag("exception", "none")
+						.tag("extraTag", "foo")
+						.timer();
+			}
+			catch (@SuppressWarnings("unused") Exception e) {
+				Thread.sleep(100);
+			}
+		}
+		assertThat(timer).isNotNull();
+		assertThat(timer.count()).isEqualTo(1L);
 	}
 
 	@Test
@@ -1192,7 +1216,8 @@ public class EnableRabbitIntegrationTests {
 			return Collections.singletonMap("key", in);
 		}
 
-		@RabbitListener(queues = "test.messaging.message", containerFactory = "simpleJsonListenerContainerFactory")
+		@RabbitListener(id = "list.of.messages",
+				queues = "test.messaging.message", containerFactory = "simpleJsonListenerContainerFactory")
 		public org.springframework.messaging.Message<Bar> messagingMessage(String in) {
 			Bar bar = new Bar();
 			bar.field = in.toUpperCase();
@@ -1515,6 +1540,11 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@Bean
+		public MeterRegistry meterRegistry() {
+			return new SimpleMeterRegistry();
+		}
+
+		@Bean
 		public SimpleRabbitListenerContainerFactory simpleJsonListenerContainerFactory() {
 			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 			factory.setConnectionFactory(rabbitConnectionFactory());
@@ -1524,6 +1554,8 @@ public class EnableRabbitIntegrationTests {
 			messageConverter.getJavaTypeMapper().addTrustedPackages("*");
 			factory.setMessageConverter(messageConverter);
 			factory.setReceiveTimeout(10L);
+			factory.setContainerConfigurer(
+					container -> container.setMicrometerTags(Collections.singletonMap("extraTag", "foo")));
 			return factory;
 		}
 
@@ -1883,6 +1915,7 @@ public class EnableRabbitIntegrationTests {
 			factory.setConnectionFactory(rabbitConnectionFactory());
 			factory.setMessageConverter(jsonConverter());
 			factory.setReceiveTimeout(10L);
+			factory.setContainerConfigurer(container -> container.setMicrometerEnabled(false));
 			return factory;
 		}
 
@@ -1971,6 +2004,7 @@ public class EnableRabbitIntegrationTests {
 			factory.setConnectionFactory(rabbitConnectionFactory());
 			factory.setMessageConverter(xmlConverter());
 			factory.setReceiveTimeout(10L);
+			factory.setContainerConfigurer(container -> container.setMicrometerEnabled(false));
 			return factory;
 		}
 
