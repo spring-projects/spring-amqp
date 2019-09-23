@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -47,6 +48,9 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import com.rabbitmq.client.Channel;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 /**
  * @author Gary Russell
@@ -64,6 +68,9 @@ public class ConsumerBatchingTests {
 	@Autowired
 	private Listener listener;
 
+	@Autowired
+	private MeterRegistry meterRegistry;
+
 	@Test
 	public void replayWholeBatch() throws InterruptedException {
 		this.template.convertAndSend("c.batch.1", new Foo("foo"));
@@ -75,6 +82,33 @@ public class ConsumerBatchingTests {
 		assertThat(this.listener.foos)
 			.extracting(foo -> foo.getBar())
 			.contains("foo", "bar", "baz", "qux", "foo", "bar", "baz", "qux");
+		Timer timer = null;
+		int n = 0;
+		while (timer == null && n++ < 100) {
+			try {
+				timer = this.meterRegistry.get("spring.rabbitmq.listener")
+						.tag("listener.id", "batch.1")
+						.tag("queue", "[c.batch.1]")
+						.tag("result", "success")
+						.tag("exception", "none")
+						.tag("extraTag", "foo")
+						.timer();
+			}
+			catch (@SuppressWarnings("unused") Exception e) {
+				Thread.sleep(100);
+			}
+		}
+		assertThat(timer).isNotNull();
+		assertThat(timer.count()).isEqualTo(1L);
+		timer = this.meterRegistry.get("spring.rabbitmq.listener")
+				.tag("listener.id", "batch.1")
+				.tag("queue", "[c.batch.1]")
+				.tag("result", "failure")
+				.tag("exception", "ListenerExecutionFailedException")
+				.tag("extraTag", "foo")
+				.timer();
+		assertThat(timer).isNotNull();
+		assertThat(timer.count()).isEqualTo(1L);
 	}
 
 	@Test
@@ -138,12 +172,19 @@ public class ConsumerBatchingTests {
 	public static class Config {
 
 		@Bean
+		public MeterRegistry meterRegistry() {
+			return new SimpleMeterRegistry();
+		}
+
+		@Bean
 		public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
 			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 			factory.setConnectionFactory(connectionFactory());
 			factory.setBatchListener(true);
 			factory.setConsumerBatchEnabled(true);
 			factory.setBatchSize(4);
+			factory.setContainerConfigurer(
+					container -> container.setMicrometerTags(Collections.singletonMap("extraTag", "foo")));
 			return factory;
 		}
 
@@ -250,7 +291,7 @@ public class ConsumerBatchingTests {
 
 		volatile boolean first = true;
 
-		@RabbitListener(queues = "c.batch.1")
+		@RabbitListener(id = "batch.1", queues = "c.batch.1")
 		public void listen1(List<Foo> in) {
 			this.foos.addAll(in);
 			if (this.first) {
