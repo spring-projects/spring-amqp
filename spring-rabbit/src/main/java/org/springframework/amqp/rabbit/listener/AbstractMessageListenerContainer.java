@@ -1428,19 +1428,23 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			else {
 				message = ((List<Message>) data).get(0);
 			}
-			if (message.getMessageProperties().isFinalRetryForMessageWithNoId()) {
-				if (this.statefulRetryFatalWithNullMessageId) {
-					throw new FatalListenerExecutionException(
-							"Illegal null id in message. Failed to manage retry for message: " + message, ex);
-				}
-				else {
-					throw new ListenerExecutionFailedException("Cannot retry message more than once without an ID",
-							new AmqpRejectAndDontRequeueException("Not retryable; rejecting and not requeuing", ex),
-							message);
-				}
-			}
+			checkStatefulRetry(ex, message);
 			handleListenerException(ex);
 			throw ex;
+		}
+	}
+
+	private void checkStatefulRetry(RuntimeException ex, Message message) {
+		if (message.getMessageProperties().isFinalRetryForMessageWithNoId()) {
+			if (this.statefulRetryFatalWithNullMessageId) {
+				throw new FatalListenerExecutionException(
+						"Illegal null id in message. Failed to manage retry for message: " + message, ex);
+			}
+			else {
+				throw new ListenerExecutionFailedException("Cannot retry message more than once without an ID",
+						new AmqpRejectAndDontRequeueException("Not retryable; rejecting and not requeuing", ex),
+						message);
+			}
 		}
 	}
 
