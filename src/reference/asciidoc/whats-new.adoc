@@ -1,11 +1,11 @@
 [[whats-new]]
-=== What's New
+== What's New
 
-==== Changes in 2.2 Since 2.1
+=== Changes in 2.2 Since 2.1
 
 This section describes the changes between version 2.1 and version 2.2.
 
-===== Package Changes
+==== Package Changes
 
 The following classes/interfaces have been moved from `org.springframework.amqp.rabbit.core.support` to `org.springframework.amqp.rabbit.batch`:
 
@@ -15,17 +15,17 @@ The following classes/interfaces have been moved from `org.springframework.amqp.
 
 In addition, `ListenerExecutionFailedException` has been moved from `org.springframework.amqp.rabbit.listener.exception` to `org.springframework.amqp.rabbit.support`.
 
-===== Dependency Changes
+==== Dependency Changes
 
 JUnit (4) is now an optional dependency and will no longer appear as a transitive dependency.
 
-===== "Breaking" API Changes
+==== "Breaking" API Changes
 
 the JUnit (5) `RabbitAvailableCondition.getBrokerRunning()` now returns a `BrokerRunningSupport` instance instead of a `BrokerRunning`, which depends on JUnit 4.
 It has the same API so it's just a matter of changing the class name of any references.
 See <<junit5-conditions>> for more information.
 
-===== ListenerContainer Changes
+==== ListenerContainer Changes
 
 Messages with fatal exceptions are now rejected and NOT requeued, by default, even if the acknowledge mode is manual.
 See <<exception-handling>> for more information.
@@ -33,7 +33,7 @@ See <<exception-handling>> for more information.
 Listener performance can now be monitored using Micrometer `Timer` s.
 See <<micrometer>> for more information.
 
-===== @RabbitListener Changes
+==== @RabbitListener Changes
 
 You can now configure an `executor` on each listener, overriding the factory configuration, to more easily identify threads associated with the listener.
 You can now override the container factory's `acknowledgeMode` property with the annotation's `ackMode` property.
@@ -57,7 +57,7 @@ See <<Jackson2JsonMessageConverter-from-message>> for more information.
 Similarly. the `Jackson2XmlMessageConverter` now assumes the content is XML if there is no `contentType` property, or it is the default (`application/octet-string`).
 See <<jackson2xml>> for more information.
 
-===== AMQP Logging Appenders Changes
+==== AMQP Logging Appenders Changes
 
 The Log4J and Logback `AmqpAppender` s now support a `verifyHostname` SSL option.
 
@@ -68,12 +68,12 @@ The appenders now support the `SaslConfig` property.
 
 See <<logging>> for more information.
 
-===== MessageListenerAdapter Changes
+==== MessageListenerAdapter Changes
 
 The `MessageListenerAdapter` provides now a new `buildListenerArguments(Object, Channel, Message)` method  to build an array of arguments to be passed into target listener and an old one is deprecated.
 See <<message-listener-adapter>> for more information.
 
-===== Exchange/Queue Declaration Changes
+==== Exchange/Queue Declaration Changes
 
 The `ExchangeBuilder` and `QueueBuilder` fluent APIs used to create `Exchange` and `Queue` objects for declaration by `RabbitAdmin` now support "well known" arguments.
 See <<builder-api>> for more information.
@@ -81,7 +81,7 @@ See <<builder-api>> for more information.
 The `RabbitAdmin` has a new property `explicitDeclarationsOnly`.
 See <<conditional-declaration>> for more information.
 
-===== Connection Factory Changes
+==== Connection Factory Changes
 
 The `CachingConnectionFactory` has a new property `shuffleAddresses`.
 When providing a list of broker node addresses, the list will be shuffled before creating a connection so that the order in which the connections are attempted is random.
@@ -93,11 +93,11 @@ See <<template-confirms>> for more information.
 
 Also, the publisher confirm type is now specified with the `ConfirmType` enum instead of the two mutually exclusive setter methods.
 
-===== New MessagePostProcessor Classes
+==== New MessagePostProcessor Classes
 
 Classes `DeflaterPostProcessor` and `InflaterPostProcessor` were added to support compression and decompression, respectively, when the message content-encoding is set to `deflate`.
 
-===== Other Changes
+==== Other Changes
 
 The `Declarables` object (for declaring multiple queues, exchanges, bindings) now has a filtered getter for each type.
 See <<collection-declaration>> for more information.

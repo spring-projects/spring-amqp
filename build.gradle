@@ -383,13 +383,11 @@ project('spring-rabbit-test') {
 	dependencies {
 
 		compile project(':spring-rabbit')
+		compile project(':spring-rabbit-junit')
 		compile "org.hamcrest:hamcrest-library:$hamcrestVersion"
 		compile "org.hamcrest:hamcrest-core:$hamcrestVersion"
-		compile ("org.mockito:mockito-core:$mockitoVersion") {
-			exclude group: 'org.hamcrest', module: 'hamcrest-core'
-		}
+		compile "org.mockito:mockito-core:$mockitoVersion"
 		testCompile project(':spring-rabbit').sourceSets.test.output
-		testCompile project(':spring-rabbit-junit')
 	}
 
 }

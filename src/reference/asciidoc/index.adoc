@@ -23,14 +23,14 @@ Copies of this document may be made for your own use and for distribution to oth
 
 include::preface.adoc[]
 
+include::whats-new.adoc[]
+
 == Introduction
 
 This first part of the reference documentation is a high-level overview of Spring AMQP and the underlying concepts.
 It includes some code snippets to get you up and running as quickly as possible.
 
 include::quick-tour.adoc[]
-
-include::whats-new.adoc[]
 
 == Reference
 
