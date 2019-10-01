@@ -19,6 +19,8 @@ In addition, `ListenerExecutionFailedException` has been moved from `org.springf
 
 JUnit (4) is now an optional dependency and will no longer appear as a transitive dependency.
 
+A `spring-rabbit-junit` module is now a *compile* dependency in the `spring-rabbit-test` module for better target application development experience when with only a single `spring-rabbit-test` we get a full stack of testing utilities for AMQP components.
+
 ==== "Breaking" API Changes
 
 the JUnit (5) `RabbitAvailableCondition.getBrokerRunning()` now returns a `BrokerRunningSupport` instance instead of a `BrokerRunning`, which depends on JUnit 4.
