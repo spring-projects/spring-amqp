@@ -63,7 +63,7 @@ See <<jackson2xml>> for more information.
 
 The Log4J and Logback `AmqpAppender` s now support a `verifyHostname` SSL option.
 
-Also these appendes now can be configured to not add MDC entries as headers.
+Also these appenders now can be configured to not add MDC entries as headers.
 The `addMdcAsHeaders` boolean option has been introduces to configure such a behavior.
 
 The appenders now support the `SaslConfig` property.
