@@ -2149,8 +2149,10 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		RabbitResourceHolder resourceHolder = null;
 		Connection connection = null; // NOSONAR (close)
 		Channel channel;
+		ConnectionFactory connectionFactory = getConnectionFactory();
 		if (isChannelTransacted()) {
-			resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(getConnectionFactory(), true);
+			resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, true,
+					this.usePublisherConnection);
 			channel = resourceHolder.getChannel();
 			if (channel == null) {
 				ConnectionFactoryUtils.releaseResources(resourceHolder);
@@ -2158,7 +2160,10 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			}
 		}
 		else {
-			connection = getConnectionFactory().createConnection(); // NOSONAR - RabbitUtils
+			if (this.usePublisherConnection && connectionFactory.getPublisherConnectionFactory() != null) {
+				connectionFactory = connectionFactory.getPublisherConnectionFactory();
+			}
+			connection = connectionFactory.createConnection(); // NOSONAR - RabbitUtils
 			if (connection == null) {
 				throw new IllegalStateException("Connection factory returned a null connection");
 			}
@@ -2167,7 +2172,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				if (channel == null) {
 					throw new IllegalStateException("Connection returned a null channel");
 				}
-				if (!getConnectionFactory().isPublisherConfirms()) {
+				if (!connectionFactory.isPublisherConfirms()) {
 					RabbitUtils.setPhysicalCloseRequired(channel, true);
 				}
 				this.dedicatedChannels.set(channel);

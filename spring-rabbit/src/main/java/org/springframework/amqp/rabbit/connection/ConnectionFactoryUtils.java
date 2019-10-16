@@ -205,6 +205,7 @@ public final class ConnectionFactoryUtils {
 	 */
 	public static Connection createConnection(final ConnectionFactory connectionFactory,
 			final boolean publisherConnectionIfPossible) {
+
 		if (publisherConnectionIfPossible) {
 			ConnectionFactory publisherFactory = connectionFactory.getPublisherConnectionFactory();
 			if (publisherFactory != null) {
