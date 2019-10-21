@@ -208,8 +208,8 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		catch (BeanCreationException e) {
 			assertThat(e.getCause(), instanceOf(IllegalArgumentException.class));
 			assertThat(e.getMessage(), allOf(
-					containsString("@RabbitListener can't resolve"),
-					containsString("as either a String or a Queue")
+					containsString("@RabbitListener.queues can't resolve"),
+					containsString("as a String[] or a String or a Queue")
 					));
 		}
 	}
@@ -233,10 +233,11 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		assertThat(context.getBeansOfType(org.springframework.amqp.core.Exchange.class).values(), hasSize(1));
 
 		final List<Binding> bindings = new ArrayList<>(context.getBeansOfType(Binding.class).values());
-		assertThat(bindings, hasSize(2));
+		assertThat(bindings, hasSize(3));
 		bindings.sort(Comparator.comparing(Binding::getRoutingKey));
-		assertEquals("Binding [destination=my_queue, exchange=my_exchange, routingKey=red]", bindings.get(0).toString());
-		assertEquals("Binding [destination=my_queue, exchange=my_exchange, routingKey=yellow]", bindings.get(1).toString());
+		assertEquals("Binding [destination=my_queue, exchange=my_exchange, routingKey=green]", bindings.get(0).toString());
+		assertEquals("Binding [destination=my_queue, exchange=my_exchange, routingKey=red]", bindings.get(1).toString());
+		assertEquals("Binding [destination=my_queue, exchange=my_exchange, routingKey=yellow]", bindings.get(2).toString());
 
 		context.close();
 	}
@@ -394,8 +395,9 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	static class MultipleRoutingKeysTestBean {
 
 		@RabbitListener(bindings = @QueueBinding(exchange = @Exchange("my_exchange"),
-				value = @org.springframework.amqp.rabbit.annotation.Queue(value = "my_queue", arguments = @Argument(name = "foo", value = "bar")),
-				key = {"${xxxxxxx:red}", "yellow"}))
+				value = @org.springframework.amqp.rabbit.annotation.Queue(value = "my_queue",
+					arguments = @Argument(name = "foo", value = "bar")),
+				key = {"${xxxxxxx:red}", "#{'yellow,green'.split(',')}"}))
 		public void handleIt(String body) {
 		}
 	}
