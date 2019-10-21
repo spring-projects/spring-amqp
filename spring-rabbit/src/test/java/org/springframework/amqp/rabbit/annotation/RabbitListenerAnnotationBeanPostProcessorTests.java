@@ -197,7 +197,8 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		}
 		catch (BeanCreationException e) {
 			assertThat(e.getCause()).isInstanceOf(IllegalArgumentException.class);
-			assertThat(e.getMessage()).contains("@RabbitListener can't resolve").contains("as either a String or a Queue");
+			assertThat(e.getMessage()).contains("@RabbitListener.queuesToDeclare can't resolve")
+					.contains("as a String[] or a String or a Queue");
 		}
 	}
 
@@ -209,19 +210,25 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
 		assertThat(factory.getListenerContainers()).as("one container should have been registered").hasSize(1);
 		RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
-		assertThat(((AbstractRabbitListenerEndpoint) endpoint).getQueueNames()).isEqualTo(Collections.singletonList("my_queue"));
+		assertThat(((AbstractRabbitListenerEndpoint) endpoint).getQueueNames())
+				.isEqualTo(Collections.singletonList("my_queue"));
 		final List<Queue> queues = new ArrayList<>(context.getBeansOfType(Queue.class).values());
 		queues.sort(Comparator.comparing(Queue::getName));
-		assertThat(queues.stream().map(Queue::getName).collect(Collectors.toList())).containsExactly("my_queue", "secondQueue", "testQueue");
+		assertThat(queues.stream().map(Queue::getName).collect(Collectors.toList())).containsExactly("my_queue",
+				"secondQueue", "testQueue");
 		assertThat(queues.get(0).getArguments()).isEqualTo(Collections.singletonMap("foo", "bar"));
 
 		assertThat(context.getBeansOfType(org.springframework.amqp.core.Exchange.class).values()).hasSize(1);
 
 		final List<Binding> bindings = new ArrayList<>(context.getBeansOfType(Binding.class).values());
-		assertThat(bindings).hasSize(2);
+		assertThat(bindings).hasSize(3);
 		bindings.sort(Comparator.comparing(Binding::getRoutingKey));
-		assertThat(bindings.get(0).toString()).isEqualTo("Binding [destination=my_queue, exchange=my_exchange, routingKey=red]");
-		assertThat(bindings.get(1).toString()).isEqualTo("Binding [destination=my_queue, exchange=my_exchange, routingKey=yellow]");
+		assertThat(bindings.get(0).toString())
+				.isEqualTo("Binding [destination=my_queue, exchange=my_exchange, routingKey=green]");
+		assertThat(bindings.get(1).toString())
+				.isEqualTo("Binding [destination=my_queue, exchange=my_exchange, routingKey=red]");
+		assertThat(bindings.get(2).toString())
+				.isEqualTo("Binding [destination=my_queue, exchange=my_exchange, routingKey=yellow]");
 
 		context.close();
 	}
@@ -379,8 +386,9 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	static class MultipleRoutingKeysTestBean {
 
 		@RabbitListener(bindings = @QueueBinding(exchange = @Exchange("my_exchange"),
-				value = @org.springframework.amqp.rabbit.annotation.Queue(value = "my_queue", arguments = @Argument(name = "foo", value = "bar")),
-				key = {"${xxxxxxx:red}", "yellow"}))
+				value = @org.springframework.amqp.rabbit.annotation.Queue(value = "my_queue",
+					arguments = @Argument(name = "foo", value = "bar")),
+				key = {"${xxxxxxx:red}", "#{'yellow,green'.split(',')}"}))
 		public void handleIt(String body) {
 		}
 	}

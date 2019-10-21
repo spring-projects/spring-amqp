@@ -562,7 +562,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		List<String> result = new ArrayList<String>();
 		if (queues.length > 0) {
 			for (int i = 0; i < queues.length; i++) {
-				resolveAsString(resolveExpression(queues[i]), result);
+				resolveAsString(resolveExpression(queues[i]), result, true, "queues");
 			}
 		}
 		if (queuesToDeclare.length > 0) {
@@ -585,12 +585,12 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	}
 
 	@SuppressWarnings("unchecked")
-	private void resolveAsString(Object resolvedValue, List<String> result) {
+	private void resolveAsString(Object resolvedValue, List<String> result, boolean canBeQueue, String what) {
 		Object resolvedValueToUse = resolvedValue;
 		if (resolvedValue instanceof String[]) {
 			resolvedValueToUse = Arrays.asList((String[]) resolvedValue);
 		}
-		if (resolvedValueToUse instanceof Queue) {
+		if (canBeQueue && resolvedValueToUse instanceof Queue) {
 			result.add(((Queue) resolvedValueToUse).getName());
 		}
 		else if (resolvedValueToUse instanceof String) {
@@ -598,12 +598,15 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 		else if (resolvedValueToUse instanceof Iterable) {
 			for (Object object : (Iterable<Object>) resolvedValueToUse) {
-				resolveAsString(object, result);
+				resolveAsString(object, result, canBeQueue, what);
 			}
 		}
 		else {
 			throw new IllegalArgumentException(String.format(
-					"@RabbitListener can't resolve '%s' as either a String or a Queue",
+					"@RabbitListener."
+					+ what
+					+ " can't resolve '%s' as a String[] or a String "
+					+ (canBeQueue ? "or a Queue" : ""),
 					resolvedValue));
 		}
 	}
@@ -691,15 +694,15 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	}
 
 	private void registerBindings(QueueBinding binding, String queueName, String exchangeName, String exchangeType) {
-		final String[] routingKeys;
+		final List<String> routingKeys;
 		if (exchangeType.equals(ExchangeTypes.FANOUT) || binding.key().length == 0) {
-			routingKeys = new String[] { "" };
+			routingKeys = Collections.singletonList("");
 		}
 		else {
 			final int length = binding.key().length;
-			routingKeys = new String[length];
+			routingKeys = new ArrayList<>();
 			for (int i = 0; i < length; ++i) {
-				routingKeys[i] = resolveExpressionAsString(binding.key()[i], "@QueueBinding.key");
+				resolveAsString(resolveExpression(binding.key()[i]), routingKeys, false, "@QueueBinding.key");
 			}
 		}
 		final Map<String, Object> bindingArguments = resolveArguments(binding.arguments());
