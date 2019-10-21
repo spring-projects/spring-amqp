@@ -197,7 +197,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		}
 		catch (BeanCreationException e) {
 			assertThat(e.getCause()).isInstanceOf(IllegalArgumentException.class);
-			assertThat(e.getMessage()).contains("@RabbitListener.queuesToDeclare can't resolve")
+			assertThat(e.getMessage()).contains("@RabbitListener.queues can't resolve")
 					.contains("as a String[] or a String or a Queue");
 		}
 	}
