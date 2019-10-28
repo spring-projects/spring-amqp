@@ -67,7 +67,6 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.backoff.BackOffExecution;
 
 import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
@@ -403,20 +402,8 @@ public class BlockingQueueConsumer {
 	protected void basicCancel(boolean expected) {
 		this.normalCancel = expected;
 		getConsumerTags().forEach(consumerTag -> {
-			try {
-				if (this.channel.isOpen()) {
-					this.channel.basicCancel(consumerTag);
-				}
-			}
-			catch (IOException | IllegalStateException e) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Error performing 'basicCancel'", e);
-				}
-			}
-			catch (AlreadyClosedException e) {
-				if (logger.isTraceEnabled()) {
-					logger.trace(this.channel + " is already closed");
-				}
+			if (this.channel.isOpen()) {
+				RabbitUtils.cancel(this.channel, consumerTag);
 			}
 		});
 		this.cancelled.set(true);
@@ -911,7 +898,7 @@ public class BlockingQueueConsumer {
 						// Defensive - should never happen
 						BlockingQueueConsumer.this.queue.clear();
 						if (!this.canceled) {
-							getChannel().basicCancel(consumerTag);
+							RabbitUtils.cancel(channelToClose, consumerTag);
 						}
 						try {
 							channelToClose.close();
