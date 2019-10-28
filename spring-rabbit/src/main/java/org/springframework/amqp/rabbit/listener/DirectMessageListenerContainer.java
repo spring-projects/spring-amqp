@@ -819,13 +819,15 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			synchronized (consumer) {
 				consumer.setCanceled(true);
 				if (this.messagesPerAck > 1) {
-					consumer.ackIfNecessary(0L);
+					try {
+						consumer.ackIfNecessary(0L);
+					}
+					catch (IOException e) {
+						this.logger.error("Exception while sending delayed ack", e);
+					}
 				}
 			}
-			consumer.getChannel().basicCancel(consumer.getConsumerTag());
-		}
-		catch (IOException e) {
-			this.logger.error("Failed to cancel consumer: " + consumer, e);
+			RabbitUtils.cancel(consumer.getChannel(), consumer.getConsumerTag());
 		}
 		finally {
 			this.consumers.remove(consumer);

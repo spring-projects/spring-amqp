@@ -1858,14 +1858,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	private void cancelConsumerQuietly(Channel channel, DefaultConsumer consumer) {
-		try {
-			channel.basicCancel(consumer.getConsumerTag());
-		}
-		catch (Exception e) {
-			if (this.logger.isDebugEnabled()) {
-				this.logger.debug("Failed to cancel consumer: " + consumer, e);
-			}
-		}
+		RabbitUtils.cancel(channel, consumer.getConsumerTag());
 	}
 
 	@Nullable

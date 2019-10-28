@@ -182,18 +182,18 @@ public abstract class RabbitUtils {
 		}
 	}
 
-	private static void cancel(Channel channel, String consumerTag) {
+	public static void cancel(Channel channel, String consumerTag) {
 		try {
 			channel.basicCancel(consumerTag);
 		}
-		catch (IOException e) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Error performing 'basicCancel'", e);
-			}
-		}
 		catch (AlreadyClosedException e) {
 			if (logger.isTraceEnabled()) {
-				logger.trace(channel + " is already closed");
+				logger.trace(channel + " is already closed", e);
+			}
+		}
+		catch (Exception e) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Error performing 'basicCancel'", e);
 			}
 		}
 	}
