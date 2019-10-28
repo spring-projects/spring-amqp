@@ -81,7 +81,7 @@ public abstract class RabbitUtils {
 	 */
 	public static final int CHANNEL_PROTOCOL_CLASS_ID_20 = 20;
 
-	private static final Log logger = LogFactory.getLog(RabbitUtils.class); // NOSONAR - lower case
+	private static final Log LOGGER = LogFactory.getLog(RabbitUtils.class);
 
 	private static final ThreadLocal<Boolean> physicalCloseRequired = new ThreadLocal<>(); // NOSONAR - lower case
 
@@ -99,7 +99,7 @@ public abstract class RabbitUtils {
 				// empty
 			}
 			catch (Exception ex) {
-				logger.debug("Ignoring Connection exception - assuming already closed: " + ex.getMessage(), ex);
+				LOGGER.debug("Ignoring Connection exception - assuming already closed: " + ex.getMessage(), ex);
 			}
 		}
 	}
@@ -118,15 +118,15 @@ public abstract class RabbitUtils {
 				// empty
 			}
 			catch (IOException ex) {
-				logger.debug("Could not close RabbitMQ Channel", ex);
+				LOGGER.debug("Could not close RabbitMQ Channel", ex);
 			}
 			catch (ShutdownSignalException sig) {
 				if (!isNormalShutdown(sig)) {
-					logger.debug("Unexpected exception on closing RabbitMQ Channel", sig);
+					LOGGER.debug("Unexpected exception on closing RabbitMQ Channel", sig);
 				}
 			}
 			catch (Exception ex) {
-				logger.debug("Unexpected exception on closing RabbitMQ Channel", ex);
+				LOGGER.debug("Unexpected exception on closing RabbitMQ Channel", ex);
 			}
 		}
 	}
@@ -187,13 +187,13 @@ public abstract class RabbitUtils {
 			channel.basicCancel(consumerTag);
 		}
 		catch (AlreadyClosedException e) {
-			if (logger.isTraceEnabled()) {
-				logger.trace(channel + " is already closed", e);
+			if (LOGGER.isTraceEnabled()) {
+				LOGGER.trace(channel + " is already closed", e);
 			}
 		}
 		catch (Exception e) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Error performing 'basicCancel'", e);
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("Error performing 'basicCancel' on " + channel, e);
 			}
 		}
 	}
