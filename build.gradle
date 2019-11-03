@@ -64,7 +64,7 @@ ext {
 	rabbitmqHttpClientVersion = '2.1.0.RELEASE'
 	reactorVersion = '3.2.12.RELEASE'
 	springRetryVersion = '1.2.4.RELEASE'
-	springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.1.11.BUILD-SNAPSHOT'
+	springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.1.11.RELEASE'
 
 
 	expandPlaceholders = '**/quick-tour.xml'
