@@ -23,6 +23,7 @@ import org.springframework.amqp.AmqpResourceNotAvailableException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.util.ObjectUtils;
 
+import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.BlockedListener;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.impl.NetworkConnection;
@@ -75,6 +76,9 @@ public class SimpleConnection implements Connection, NetworkConnection {
 			this.explicitlyClosed = true;
 			// let the physical close time out if necessary
 			this.delegate.close(this.closeTimeout);
+		}
+		catch (AlreadyClosedException e) {
+			// Ignore
 		}
 		catch (IOException e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
