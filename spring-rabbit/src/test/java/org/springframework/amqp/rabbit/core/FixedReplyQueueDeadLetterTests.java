@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Binding;
@@ -175,7 +174,6 @@ public class FixedReplyQueueDeadLetterTests {
 	 * Does not require a 3.8 broker - they are just arbitrary arguments.
 	 */
 	@Test
-	@Disabled("Until the quorum_queue feature flag is enabled on Bamboo")
 	void testQuorumArgs() throws MalformedURLException, URISyntaxException, InterruptedException {
 		Client client = new Client(brokerRunning.getAdminUri(), brokerRunning.getAdminUser(),
 				brokerRunning.getAdminPassword());
@@ -291,9 +289,9 @@ public class FixedReplyQueueDeadLetterTests {
 		@Bean
 		public Queue replyQueue() {
 			return QueueBuilder.nonDurable("dlx.test.replyQ")
-					.autoDelete()
-					.withArgument("x-dead-letter-exchange", "reply.dlx")
-					.build();
+				    .autoDelete()
+				    .withArgument("x-dead-letter-exchange", "reply.dlx")
+				    .build();
 		}
 
 		/**
@@ -354,13 +352,13 @@ public class FixedReplyQueueDeadLetterTests {
 					.build();
 		}
 
-//		@Bean
-//		public Queue quorum() {
-//			return QueueBuilder.durable("test.quorum")
-//					.quorum()
-//					.deliveryLimit(10)
-//					.build();
-//		}
+		@Bean
+		public Queue quorum() {
+			return QueueBuilder.durable("test.quorum")
+					.quorum()
+					.deliveryLimit(10)
+					.build();
+		}
 
 		@Bean
 		public DeadListener deadListener() {
@@ -398,7 +396,6 @@ public class FixedReplyQueueDeadLetterTests {
 	}
 
 	public static class DeadListener {
-
 		private final CountDownLatch latch = new CountDownLatch(1);
 
 		public void handleMessage(@SuppressWarnings("unused") String foo) {
