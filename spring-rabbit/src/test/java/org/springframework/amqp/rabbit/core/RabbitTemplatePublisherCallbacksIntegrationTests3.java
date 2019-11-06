@@ -100,6 +100,10 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 		template.convertAndSend("", QUEUE2 + "junk", "foo", new MyCD("foo"));
 		assertThat(returnLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(confirmLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		int n = 0;
+		while (n++ < 100 && cacheCount.get() != 1) {
+			Thread.sleep(100);
+		}
 		assertThat(cacheCount.get()).isEqualTo(1);
 		assertThat(returnCalledFirst.get()).isTrue();
 		cf.destroy();
