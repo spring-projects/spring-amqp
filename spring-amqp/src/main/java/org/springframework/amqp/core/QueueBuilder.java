@@ -234,6 +234,26 @@ public final class QueueBuilder extends AbstractBuilder {
 	}
 
 	/**
+	 * Set the queue argument to declare a queue of type 'quorum' instead of 'classic'.
+	 * @return the builder.
+	 * @since 2.2.2
+	 */
+	public QueueBuilder quorum() {
+		return withArgument("x-queue-type", "quorum");
+	}
+
+	/**
+	 * Set the delivery limit; only applies to quorum queues.
+	 * @param limit the limit.
+	 * @return the builder.
+	 * @since 2.2.2
+	 * @see #quorum()
+	 */
+	public QueueBuilder deliveryLimit(int limit) {
+		return withArgument("x-delivery-limit", limit);
+	}
+
+	/**
 	 * Builds a final queue.
 	 * @return the Queue instance.
 	 */

@@ -79,7 +79,7 @@ public class FixedReplyQueueDeadLetterTests {
 
 	@AfterAll
 	static void tearDown() {
-		brokerRunning.deleteQueues("all.args.1", "all.args.2", "all.args.3");
+		brokerRunning.deleteQueues("all.args.1", "all.args.2", "all.args.3", "test.quorum");
 	}
 
 	/**
@@ -90,13 +90,13 @@ public class FixedReplyQueueDeadLetterTests {
 	 * @throws Exception the exception.
 	 */
 	@Test
-	public void test() throws Exception {
+	void test() throws Exception {
 		assertThat(this.rabbitTemplate.convertSendAndReceive("foo")).isNull();
 		assertThat(this.deadListener.latch.await(10, TimeUnit.SECONDS)).isTrue();
 	}
 
 	@Test
-	public void testQueueArgs1() throws MalformedURLException, URISyntaxException, InterruptedException {
+	void testQueueArgs1() throws MalformedURLException, URISyntaxException, InterruptedException {
 		Client client = new Client(brokerRunning.getAdminUri(), brokerRunning.getAdminUser(),
 				brokerRunning.getAdminPassword());
 		QueueInfo queue = client.getQueue("/", "all.args.1");
@@ -105,6 +105,7 @@ public class FixedReplyQueueDeadLetterTests {
 			Thread.sleep(100);
 			queue = client.getQueue("/", "all.args.1");
 		}
+		assertThat(n).isLessThan(100);
 		Map<String, Object> arguments = queue.getArguments();
 		assertThat(arguments.get("x-message-ttl")).isEqualTo(1000);
 		assertThat(arguments.get("x-expires")).isEqualTo(200_000);
@@ -119,7 +120,7 @@ public class FixedReplyQueueDeadLetterTests {
 	}
 
 	@Test
-	public void testQueueArgs2() throws MalformedURLException, URISyntaxException, InterruptedException {
+	void testQueueArgs2() throws MalformedURLException, URISyntaxException, InterruptedException {
 		Client client = new Client(brokerRunning.getAdminUri(), brokerRunning.getAdminUser(),
 				brokerRunning.getAdminPassword());
 		QueueInfo queue = client.getQueue("/", "all.args.2");
@@ -128,6 +129,7 @@ public class FixedReplyQueueDeadLetterTests {
 			Thread.sleep(100);
 			queue = client.getQueue("/", "all.args.1");
 		}
+		assertThat(n).isLessThan(100);
 		Map<String, Object> arguments = queue.getArguments();
 		assertThat(arguments.get("x-message-ttl")).isEqualTo(1000);
 		assertThat(arguments.get("x-expires")).isEqualTo(200_000);
@@ -142,7 +144,7 @@ public class FixedReplyQueueDeadLetterTests {
 	}
 
 	@Test
-	public void testQueueArgs3() throws MalformedURLException, URISyntaxException, InterruptedException {
+	void testQueueArgs3() throws MalformedURLException, URISyntaxException, InterruptedException {
 		Client client = new Client(brokerRunning.getAdminUri(), brokerRunning.getAdminUser(),
 				brokerRunning.getAdminPassword());
 		QueueInfo queue = client.getQueue("/", "all.args.3");
@@ -151,6 +153,7 @@ public class FixedReplyQueueDeadLetterTests {
 			Thread.sleep(100);
 			queue = client.getQueue("/", "all.args.1");
 		}
+		assertThat(n).isLessThan(100);
 		Map<String, Object> arguments = queue.getArguments();
 		assertThat(arguments.get("x-message-ttl")).isEqualTo(1000);
 		assertThat(arguments.get("x-expires")).isEqualTo(200_000);
@@ -165,7 +168,26 @@ public class FixedReplyQueueDeadLetterTests {
 
 		ExchangeInfo exchange = client.getExchange("/", "dlx.test.requestEx");
 		assertThat(exchange.getArguments().get("alternate-exchange")).isEqualTo("alternate");
-}
+	}
+
+	/*
+	 * Does not require a 3.8 broker - they are just arbitrary arguments.
+	 */
+	@Test
+	void testQuorumArgs() throws MalformedURLException, URISyntaxException, InterruptedException {
+		Client client = new Client(brokerRunning.getAdminUri(), brokerRunning.getAdminUser(),
+				brokerRunning.getAdminPassword());
+		QueueInfo queue = client.getQueue("/", "test.quorum");
+		int n = 0;
+		while (n++ < 100 && queue == null) {
+			Thread.sleep(100);
+			queue = client.getQueue("/", "test.quorum");
+		}
+		assertThat(n).isLessThan(100);
+		Map<String, Object> arguments = queue.getArguments();
+		assertThat(arguments.get("x-queue-type")).isEqualTo("quorum");
+		assertThat(arguments.get("x-delivery-limit")).isEqualTo(10);
+	}
 
 	@Configuration
 	public static class FixedReplyQueueDeadLetterConfig {
@@ -327,6 +349,14 @@ public class FixedReplyQueueDeadLetterTests {
 					.maxPriority(4)
 					.lazy()
 					.masterLocator(MasterLocator.random)
+					.build();
+		}
+
+		@Bean
+		public Queue quorum() {
+			return QueueBuilder.durable("test.quorum")
+					.quorum()
+					.deliveryLimit(10)
 					.build();
 		}
 
