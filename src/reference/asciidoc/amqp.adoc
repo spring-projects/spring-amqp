@@ -644,17 +644,13 @@ CAUTION: This connection factory is intended for long-lived connections, such as
 It is not intended for short connection use, such as with a `RabbitTemplate` because of the overhead of invoking the REST API before making the connection.
 Also, for publish operations, the queue is unknown, and the message is published to all cluster members anyway, so the logic of looking up the node has little value.
 
-The following example configuration shows how to use Spring Boot's RabbitProperties to configure the factories:
+The following example configuration shows how to configure the factories:
 
 ====
 [source, java]
 ----
 @Autowired
-private RabbitProperties props;
-
-private final String[] adminUris = { "https://host1:15672", "https://host2:15672" };
-
-private final String[] nodes = { "rabbit@host1", "rabbit@host2" };
+private ConfigurationProperties props;
 
 @Bean
 public ConnectionFactory defaultConnectionFactory() {
@@ -671,7 +667,8 @@ public ConnectionFactory queueAffinityCF(
         @Qualifier("defaultConnectionFactory") ConnectionFactory defaultCF) {
     return new LocalizedQueueConnectionFactory(defaultCF,
             StringUtils.commaDelimitedListToStringArray(this.props.getAddresses()),
-            this.adminUris, this.nodes,
+            StringUtils.commaDelimitedListToStringArray(this.props.getAdminUris()),
+            StringUtils.commaDelimitedListToStringArray(this.props.getNodes()),
             this.props.getVirtualHost(), this.props.getUsername(), this.props.getPassword(),
             false, null);
 }
@@ -679,8 +676,8 @@ public ConnectionFactory queueAffinityCF(
 ====
 
 Notice that the first three parameters are arrays of `addresses`, `adminUris`, and `nodes`.
-These are positional in that, when a container attempts to connect to a queue, it determines on which node the queue is
-mastered and connects to the address in the same array position.
+These are positional in that, when a container attempts to connect to a queue, it uses the admin API to determine on which node the queue is
+mastered and connects to the address in the same array position as that node.
 
 [[cf-pub-conf-ret]]
 ===== Publisher Confirms and Returns
