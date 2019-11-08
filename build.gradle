@@ -36,11 +36,11 @@ ext {
 	modifiedFiles =
 			files(grgit.status().unstaged.modified).filter{ f -> f.name.endsWith('.java') || f.name.endsWith('.kt') }
 
-	assertjVersion = '3.13.2'
+	assertjVersion = '3.14.0'
 	assertkVersion = '0.20'
 	commonsHttpClientVersion = '4.5.10'
 	googleJsr305Version = '3.0.2'
-	hamcrestVersion = '2.1'
+	hamcrestVersion = '2.2'
 	jacksonVersion = '2.10.0'
 	jaywayJsonPathVersion = '2.4.0'
 	junit4Version = '4.12'
