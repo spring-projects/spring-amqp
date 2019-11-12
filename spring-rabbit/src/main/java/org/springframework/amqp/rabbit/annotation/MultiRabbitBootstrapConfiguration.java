@@ -26,8 +26,8 @@ import org.springframework.core.type.AnnotationMetadata;
 /**
  * An {@link ImportBeanDefinitionRegistrar} class that registers a
  * {@link MultiRabbitListenerAnnotationBeanPostProcessor} (overwriting the regular
- * {@link RabbitListenerAnnotationBeanPostProcessor}) bean capable of processing Spring's @{@link RabbitListener}
- * annotations.
+ * {@link RabbitListenerAnnotationBeanPostProcessor}) bean capable of processing
+ * Spring's @{@link RabbitListener} annotations.
  * <p>
  * This configuration must be imported manually.
  *

@@ -24,27 +24,38 @@ import org.springframework.amqp.core.Declarable;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.BeanFactoryAware;
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.lang.NonNull;
 
 /**
- * An extension of {@link RabbitListenerAnnotationBeanPostProcessor} that associates the proper RabbitAdmin
- * to the beans of Exchanges, Queues, and Bindings after they are created.
+ * An extension of {@link RabbitListenerAnnotationBeanPostProcessor} that associates the
+ * proper RabbitAdmin to the beans of Exchanges, Queues, and Bindings after they are
+ * created.
  * <p>
- * This processing restricts the {@link RabbitAdmin} according to the related configuration, preventing the server
- * from automatic binding non-related structures.
+ * This processing restricts the {@link RabbitAdmin} according to the related
+ * configuration, preventing the server from automatic binding non-related structures.
  *
  * @author Wander Costa
  * @see RabbitListenerAnnotationBeanPostProcessor
  */
 public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListenerAnnotationBeanPostProcessor
-		implements ApplicationContextAware, BeanFactoryAware {
+		implements ApplicationContextAware {
 
 	private ApplicationContext applicationContext;
+
 	private BeanFactory beanFactory;
+
+	@Override
+	public void setBeanFactory(@NonNull BeanFactory beanFactory) {
+		this.beanFactory = beanFactory;
+		super.setBeanFactory(beanFactory);
+	}
+
+	@Override
+	public void setApplicationContext(@NonNull ApplicationContext applicationContext) {
+		this.applicationContext = applicationContext;
+	}
 
 	@Override
 	protected void processAmqpListener(RabbitListener rabbitListener, Method method, Object bean, String beanName) {
@@ -53,7 +64,8 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 	}
 
 	/**
-	 * Enhance beans with related RabbitAdmin, so as to be filtered when being processed by the RabbitAdmin.
+	 * Enhance beans with related RabbitAdmin, so as to be filtered when being processed
+	 * by the RabbitAdmin.
 	 *
 	 * @param rabbitListener the RabbitListener to enhance its bean.
 	 */

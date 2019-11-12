@@ -29,7 +29,7 @@ import org.springframework.beans.factory.support.RootBeanDefinition;
 /**
  * @author Wander Costa
  */
-class MultiRabbitBootstrapConfigurationTest {
+class MultiRabbitBootstrapConfigurationTests {
 
 	private MultiRabbitBootstrapConfiguration configuration = new MultiRabbitBootstrapConfiguration();
 

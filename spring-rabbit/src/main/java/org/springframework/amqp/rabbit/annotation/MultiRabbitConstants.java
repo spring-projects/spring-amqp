@@ -24,12 +24,15 @@ package org.springframework.amqp.rabbit.annotation;
 public final class MultiRabbitConstants {
 
 	public static final String CONNECTION_FACTORY_BEAN_NAME = "multiRabbitConnectionFactory";
+
 	public static final String CONNECTION_FACTORY_CREATOR_BEAN_NAME = "rabbitConnectionFactoryCreator";
-    static final String DEFAULT_RABBIT_ADMIN_BEAN_NAME = "defaultRabbitAdmin";
-    static final String RABBIT_ADMIN_SUFFIX = "-admin";
+
+	static final String DEFAULT_RABBIT_ADMIN_BEAN_NAME = "defaultRabbitAdmin";
+
+	static final String RABBIT_ADMIN_SUFFIX = "-admin";
 
 
-    private MultiRabbitConstants() {
+	private MultiRabbitConstants() {
 		throw new UnsupportedOperationException("Construction not supported.");
 	}
 

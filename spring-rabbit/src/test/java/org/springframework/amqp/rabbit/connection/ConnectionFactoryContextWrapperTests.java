@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 /**
  * @author Wander Costa
  */
-class ConnectionFactoryContextWrapperTest {
+class ConnectionFactoryContextWrapperTests {
 
 	@Test
 	@DisplayName("Test execution of callable in context wrapper")

@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 /**
  * @author Wander Costa
  */
-class MultiRabbitAdminNameResolverTest {
+class MultiRabbitAdminNameResolverTests {
 
 	private static final String DUMMY_ADMIN = "dummy-admin";
 	private static final String DUMMY_CONTAINER_FACTORY = "dummy-container-factory";
