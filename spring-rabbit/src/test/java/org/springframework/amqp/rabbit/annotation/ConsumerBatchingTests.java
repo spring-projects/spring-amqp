@@ -183,7 +183,7 @@ public class ConsumerBatchingTests {
 			factory.setBatchListener(true);
 			factory.setConsumerBatchEnabled(true);
 			factory.setBatchSize(4);
-			factory.setContainerConfigurer(
+			factory.setContainerCustomizer(
 					container -> container.setMicrometerTags(Collections.singletonMap("extraTag", "foo")));
 			return factory;
 		}

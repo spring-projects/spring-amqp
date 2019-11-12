@@ -1554,7 +1554,7 @@ public class EnableRabbitIntegrationTests {
 			messageConverter.getJavaTypeMapper().addTrustedPackages("*");
 			factory.setMessageConverter(messageConverter);
 			factory.setReceiveTimeout(10L);
-			factory.setContainerConfigurer(
+			factory.setContainerCustomizer(
 					container -> container.setMicrometerTags(Collections.singletonMap("extraTag", "foo")));
 			return factory;
 		}
@@ -1915,7 +1915,7 @@ public class EnableRabbitIntegrationTests {
 			factory.setConnectionFactory(rabbitConnectionFactory());
 			factory.setMessageConverter(jsonConverter());
 			factory.setReceiveTimeout(10L);
-			factory.setContainerConfigurer(container -> container.setMicrometerEnabled(false));
+			factory.setContainerCustomizer(container -> container.setMicrometerEnabled(false));
 			return factory;
 		}
 
@@ -2004,7 +2004,7 @@ public class EnableRabbitIntegrationTests {
 			factory.setConnectionFactory(rabbitConnectionFactory());
 			factory.setMessageConverter(xmlConverter());
 			factory.setReceiveTimeout(10L);
-			factory.setContainerConfigurer(container -> container.setMicrometerEnabled(false));
+			factory.setContainerCustomizer(container -> container.setMicrometerEnabled(false));
 			return factory;
 		}
 

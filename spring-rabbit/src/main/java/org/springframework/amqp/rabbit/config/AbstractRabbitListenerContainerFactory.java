@@ -119,7 +119,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 	private RecoveryCallback<?> recoveryCallback;
 
-	private Consumer<C> containerConfigurer;
+	private ContainerCustomizer<C> containerCustomizer;
 
 	private boolean batchListener;
 
@@ -351,9 +351,21 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	 * exposed  by this container factory.
 	 * @param configurer the configurer;
 	 * @since 2.1.1
+	 * @deprecated in favor of {@link #setContainerCustomizer(ContainerCustomizer)}.
 	 */
+	@Deprecated
 	public void setContainerConfigurer(Consumer<C> configurer) {
-		this.containerConfigurer = configurer;
+		this.containerCustomizer = container -> configurer.accept(container);
+	}
+
+	/**
+	 * Set a {@link ContainerCustomizer} that is invoked after a container is created and
+	 * configured to enable further customization of the container.
+	 * @param containerCustomizer the customizer.
+	 * @since 2.2.2
+	 */
+	public void setContainerCustomizer(ContainerCustomizer<C> containerCustomizer) {
+		this.containerCustomizer = containerCustomizer;
 	}
 
 	/**
@@ -447,8 +459,8 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		}
 		initializeContainer(instance, endpoint);
 
-		if (this.containerConfigurer != null) {
-			this.containerConfigurer.accept(instance);
+		if (this.containerCustomizer != null) {
+			this.containerCustomizer.configure(instance);
 		}
 
 		return instance;
