@@ -70,17 +70,20 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 	 * @param rabbitListener the RabbitListener to enhance its bean.
 	 */
 	private void enhanceBeansWithReferenceToRabbitAdmin(RabbitListener rabbitListener) {
-		RabbitAdmin rabbitAdmin = getRabbitAdminBean(rabbitListener);
+		RabbitAdmin rabbitAdmin = resolveRabbitAdminBean(rabbitListener);
 		// Enhance Exchanges
-		this.applicationContext.getBeansOfType(AbstractExchange.class).values().stream().filter(this::isNotProcessed)
+		this.applicationContext.getBeansOfType(AbstractExchange.class, false, false).values().stream()
+				.filter(this::isNotProcessed)
 				.forEach(exchange -> exchange.setAdminsThatShouldDeclare(rabbitAdmin));
 
 		// Enhance Queues
-		this.applicationContext.getBeansOfType(Queue.class).values().stream().filter(this::isNotProcessed)
+		this.applicationContext.getBeansOfType(Queue.class, false, false).values().stream()
+				.filter(this::isNotProcessed)
 				.forEach(queue -> queue.setAdminsThatShouldDeclare(rabbitAdmin));
 
 		// Enhance Bindings
-		this.applicationContext.getBeansOfType(Binding.class).values().stream().filter(this::isNotProcessed)
+		this.applicationContext.getBeansOfType(Binding.class, false, false).values().stream()
+				.filter(this::isNotProcessed)
 				.forEach(binding -> binding.setAdminsThatShouldDeclare(rabbitAdmin));
 	}
 
@@ -90,37 +93,20 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 	 * @param rabbitListener the RabbitListener to retrieve its bean.
 	 * @return the bean found.
 	 */
-	private RabbitAdmin getRabbitAdminBean(RabbitListener rabbitListener) {
+	private RabbitAdmin resolveRabbitAdminBean(RabbitListener rabbitListener) {
 		String name = MultiRabbitAdminNameResolver.resolve(rabbitListener);
-		try {
-			return this.beanFactory.getBean(name, RabbitAdmin.class);
-		}
-		catch (NoSuchBeanDefinitionException ex) {
-			throw new IllegalStateException(String.format("Bean '%s' for RabbitAdmin not found.", name));
-		}
+		return this.beanFactory.getBean(name, RabbitAdmin.class);
 	}
 
 	/**
-	 * Verifies the presence of an instance of RabbitAdmin or this object, as fallback.
+	 * Verifies the presence of an instance of RabbitAdmin or the name of the bean.
 	 *
 	 * @param declarable the declarable to be verified.
 	 * @return true is the declarable was not processed.
 	 */
 	private boolean isNotProcessed(Declarable declarable) {
-		return declarable.getDeclaringAdmins() == null || (
-				declarable.getDeclaringAdmins().stream().noneMatch(item -> item == this) && declarable
-						.getDeclaringAdmins().stream().noneMatch(item -> item instanceof RabbitAdmin));
-	}
-
-	@Override
-	public void setBeanFactory(@NonNull BeanFactory beanFactory) {
-		this.beanFactory = beanFactory;
-		super.setBeanFactory(beanFactory);
-	}
-
-	@Override
-	public void setApplicationContext(@NonNull ApplicationContext applicationContext) {
-		this.applicationContext = applicationContext;
+		return declarable.getDeclaringAdmins().stream()
+				.noneMatch(admin -> admin instanceof String || admin instanceof RabbitAdmin);
 	}
 
 }
