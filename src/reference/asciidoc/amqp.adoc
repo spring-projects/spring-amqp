@@ -1562,9 +1562,9 @@ Object receiveAndConvert() throws AmqpException;
 
 Object receiveAndConvert(String queueName) throws AmqpException;
 
-Message receiveAndConvert(long timeoutMillis) throws AmqpException;
+Object receiveAndConvert(long timeoutMillis) throws AmqpException;
 
-Message receiveAndConvert(String queueName, long timeoutMillis) throws AmqpException;
+Object receiveAndConvert(String queueName, long timeoutMillis) throws AmqpException;
 ----
 ====
 
