@@ -66,10 +66,14 @@ import org.springframework.stereotype.Component;
  */
 public class RabbitListenerAnnotationBeanPostProcessorTests {
 
+	protected Class<?> getConfigClass() {
+		return Config.class;
+	}
+
 	@Test
 	public void simpleMessageListener() {
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
-				Config.class, SimpleMessageListenerTestBean.class);
+				getConfigClass(), SimpleMessageListenerTestBean.class);
 
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
 		assertThat(factory.getListenerContainers().size()).as("One container should have been registered").isEqualTo(1);
@@ -93,7 +97,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	@Test
 	public void simpleMessageListenerWithMixedAnnotations() {
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
-				Config.class, SimpleMessageListenerWithMixedAnnotationsTestBean.class);
+				getConfigClass(), SimpleMessageListenerWithMixedAnnotationsTestBean.class);
 
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
 		assertThat(factory.getListenerContainers().size()).as("One container should have been registered").isEqualTo(1);
@@ -121,7 +125,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	@Test
 	public void metaAnnotationIsDiscovered() {
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
-				Config.class, MetaAnnotationTestBean.class);
+				getConfigClass(), MetaAnnotationTestBean.class);
 
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
 		assertThat(factory.getListenerContainers().size()).as("one container should have been registered").isEqualTo(2);
@@ -163,7 +167,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	@Test
 	public void multipleQueueNamesTestBean() {
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
-				Config.class, MultipleQueueNamesTestBean.class);
+				getConfigClass(), MultipleQueueNamesTestBean.class);
 
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
 		assertThat(factory.getListenerContainers().size()).as("one container should have been registered").isEqualTo(1);
@@ -178,7 +182,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	@Test
 	public void multipleQueuesTestBean() {
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
-				Config.class, MultipleQueuesTestBean.class);
+				getConfigClass(), MultipleQueuesTestBean.class);
 
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
 		assertThat(factory.getListenerContainers().size()).as("one container should have been registered").isEqualTo(1);
@@ -193,7 +197,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	@Test
 	public void mixedQueuesAndQueueNamesTestBean() {
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
-				Config.class, MixedQueuesAndQueueNamesTestBean.class);
+				getConfigClass(), MixedQueuesAndQueueNamesTestBean.class);
 
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
 		assertThat(factory.getListenerContainers().size()).as("one container should have been registered").isEqualTo(1);
@@ -209,7 +213,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	@Test
 	public void propertyResolvingToExpressionTestBean() {
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
-				Config.class, PropertyResolvingToExpressionTestBean.class);
+				getConfigClass(), PropertyResolvingToExpressionTestBean.class);
 
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
 		assertThat(factory.getListenerContainers().size()).as("one container should have been registered").isEqualTo(1);
@@ -224,7 +228,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	@Test
 	public void invalidValueInAnnotationTestBean() {
 		try {
-			new AnnotationConfigApplicationContext(Config.class, InvalidValueInAnnotationTestBean.class).close();
+			new AnnotationConfigApplicationContext(getConfigClass(), InvalidValueInAnnotationTestBean.class).close();
 		}
 		catch (BeanCreationException e) {
 			assertThat(e.getCause()).isInstanceOf(IllegalArgumentException.class);
@@ -235,7 +239,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 
 	@Test
 	public void multipleRoutingKeysTestBean() {
-		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(Config.class,
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(getConfigClass(),
 				MultipleRoutingKeysTestBean.class);
 
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
@@ -266,7 +270,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 
 	@Test
 	public void customExchangeTestBean() {
-		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(Config.class,
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(getConfigClass(),
 				CustomExchangeTestBean.class);
 
 		final Collection<CustomExchange> exchanges = context.getBeansOfType(CustomExchange.class).values();
@@ -280,7 +284,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 
 	@Test
 	public void queuesToDeclare() {
-		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(Config.class,
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(getConfigClass(),
 				QueuesToDeclareTestBean.class);
 
 		final List<Queue> queues = new ArrayList<>(context.getBeansOfType(Queue.class).values());
@@ -309,7 +313,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		final ExecutorService executorService = Executors.newFixedThreadPool(concurrencyLevel);
 		try {
 			for (int i = 0; i < 1000; ++i) {
-				final ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(Config.class);
+				final ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(getConfigClass());
 				try {
 					final Callable<?> task = () -> context.getBeanFactory().createBean(BeanForConcurrencyTesting.class);
 					final List<? extends Future<?>> futures = executorService
