@@ -1,5 +1,5 @@
 buildscript {
-	ext.kotlinVersion = '1.3.50'
+	ext.kotlinVersion = '1.3.60'
 	repositories {
 		maven { url 'https://repo.spring.io/plugins-release' }
 	}
@@ -131,26 +131,26 @@ subprojects { subproject ->
 	// dependencies that are common across all java projects
 	dependencies {
 		compileOnly "com.google.code.findbugs:jsr305:$googleJsr305Version"
-		testCompile 'org.apache.logging.log4j:log4j-core'
-		testCompile "org.hamcrest:hamcrest-core:$hamcrestVersion"
-		testCompile ("org.mockito:mockito-core:$mockitoVersion") {
+		testImplementation 'org.apache.logging.log4j:log4j-core'
+		testImplementation "org.hamcrest:hamcrest-core:$hamcrestVersion"
+		testImplementation ("org.mockito:mockito-core:$mockitoVersion") {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
 		}
-		testCompile "org.mockito:mockito-junit-jupiter:$mockitoVersion"
-		testCompile 'org.springframework:spring-test'
+		testImplementation "org.mockito:mockito-junit-jupiter:$mockitoVersion"
+		testImplementation 'org.springframework:spring-test'
 
-		testRuntime 'org.apache.logging.log4j:log4j-jcl'
+		testRuntimeOnly 'org.apache.logging.log4j:log4j-jcl'
 
-		testCompile 'org.junit.jupiter:junit-jupiter-api'
-		testCompile 'org.junit.jupiter:junit-jupiter-params'
-		testRuntime 'org.junit.jupiter:junit-jupiter-engine'
-		testRuntime 'org.junit.platform:junit-platform-launcher'
+		testImplementation 'org.junit.jupiter:junit-jupiter-api'
+		testImplementation 'org.junit.jupiter:junit-jupiter-params'
+		testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+		testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
 		// To avoid compiler warnings about @API annotations in JUnit code
 		testCompileOnly 'org.apiguardian:apiguardian-api:1.0.0'
 
-		testCompile 'org.jetbrains.kotlin:kotlin-reflect'
-		testCompile 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+		testImplementation 'org.jetbrains.kotlin:kotlin-reflect'
+		testImplementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 
 
 	}
@@ -216,7 +216,6 @@ subprojects { subproject ->
 
 	test {
 		jacoco {
-			append = false
 			destinationFile = file("$buildDir/jacoco.exec")
 		}
 		if (isTravisBuild) {
@@ -267,7 +266,7 @@ subprojects { subproject ->
 	jar {
 		manifest {
 			attributes(
-					'Implementation-Version': version,
+					'Implementation-Version': archiveVersion,
 					'Created-By': "JDK ${System.properties['java.version']} (${System.properties['java.specification.vendor']})",
 					'Implementation-Title': subproject.name,
 					'Implementation-Vendor-Id': subproject.group,
@@ -295,26 +294,26 @@ project('spring-amqp') {
 
 	dependencies {
 
-		compile 'org.springframework:spring-core'
-		compile ('org.springframework:spring-messaging', optional)
-		compile ('org.springframework:spring-oxm', optional)
-		compile ('org.springframework:spring-context', optional)
-		compile ("org.springframework.retry:spring-retry:$springRetryVersion") {
+		api 'org.springframework:spring-core'
+		implementation ('org.springframework:spring-messaging', optional)
+		implementation ('org.springframework:spring-oxm', optional)
+		implementation ('org.springframework:spring-context', optional)
+		api ("org.springframework.retry:spring-retry:$springRetryVersion") {
 			exclude group: 'org.springframework'
 		}
 
-		compile ('com.fasterxml.jackson.core:jackson-core', optional)
-		compile ('com.fasterxml.jackson.core:jackson-databind', optional)
-		compile ('com.fasterxml.jackson.dataformat:jackson-dataformat-xml', optional)
+		implementation ('com.fasterxml.jackson.core:jackson-core', optional)
+		implementation ('com.fasterxml.jackson.core:jackson-databind', optional)
+		implementation ('com.fasterxml.jackson.dataformat:jackson-dataformat-xml', optional)
 
 		// Spring Data projection message binding support
-		compile ("org.springframework.data:spring-data-commons:$springDataCommonsVersion") {
+		implementation ("org.springframework.data:spring-data-commons:$springDataCommonsVersion") {
 			optional(it)
 			exclude group: 'org.springframework'
 		}
-		compile ("com.jayway.jsonpath:json-path:$jaywayJsonPathVersion", optional)
+		implementation ("com.jayway.jsonpath:json-path:$jaywayJsonPathVersion", optional)
 
-		testCompile "org.assertj:assertj-core:$assertjVersion"
+		testImplementation "org.assertj:assertj-core:$assertjVersion"
 	}
 
 }
@@ -324,23 +323,26 @@ project('spring-rabbit') {
 
 	dependencies {
 
-		compile project(':spring-amqp')
-		compile "com.rabbitmq:amqp-client:$rabbitmqVersion"
-		compile ("com.rabbitmq:http-client:$rabbitmqHttpClientVersion", optional)
-		compile ('org.springframework:spring-aop', optional)
-		compile 'org.springframework:spring-context'
-		compile 'org.springframework:spring-messaging'
-		compile 'org.springframework:spring-tx'
-		compile ('io.projectreactor:reactor-core', optional)
-		compile ("ch.qos.logback:logback-classic:$logbackVersion", optional)
-		compile ('org.apache.logging.log4j:log4j-core', optional)
-		compile ("io.micrometer:micrometer-core:$micrometerVersion", optional)
+		api project(':spring-amqp')
+		api "com.rabbitmq:amqp-client:$rabbitmqVersion"
+		implementation ("com.rabbitmq:http-client:$rabbitmqHttpClientVersion", optional)
+		implementation ('org.springframework:spring-aop', optional)
+		api 'org.springframework:spring-context'
+		api 'org.springframework:spring-messaging'
+		api 'org.springframework:spring-tx'
+		implementation ('io.projectreactor:reactor-core', optional)
+		implementation ("ch.qos.logback:logback-classic:$logbackVersion", optional)
+		implementation ('org.apache.logging.log4j:log4j-core', optional)
+		implementation ("io.micrometer:micrometer-core:$micrometerVersion", optional)
 
-		testCompile project(':spring-rabbit-junit')
-		testCompile("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
-		testRuntime 'org.springframework:spring-web'
-		testRuntime "org.apache.httpcomponents:httpclient:$commonsHttpClientVersion"
-		testRuntime 'com.fasterxml.jackson.module:jackson-module-kotlin'
+		testImplementation project(':spring-rabbit-junit')
+		testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
+		testImplementation ("org.springframework.data:spring-data-commons:$springDataCommonsVersion") {
+			exclude group: 'org.springframework'
+		}
+		testRuntimeOnly 'org.springframework:spring-web'
+		testRuntimeOnly "org.apache.httpcomponents:httpclient:$commonsHttpClientVersion"
+		testRuntimeOnly 'com.fasterxml.jackson.module:jackson-module-kotlin'
 	}
 
 	compileTestKotlin {
@@ -356,21 +358,21 @@ project('spring-rabbit-junit') {
 
 	dependencies { // no spring-amqp dependencies allowed
 
-		compile 'org.springframework:spring-core'
-		compile 'org.springframework:spring-test'
-		compile ("junit:junit:$junit4Version") {
+		api 'org.springframework:spring-core'
+		api 'org.springframework:spring-test'
+		implementation ("junit:junit:$junit4Version") {
 			optional(it)
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
 		}
-		compile "com.rabbitmq:amqp-client:$rabbitmqVersion"
-		compile ("com.rabbitmq:http-client:$rabbitmqHttpClientVersion") {
+		api "com.rabbitmq:amqp-client:$rabbitmqVersion"
+		api ("com.rabbitmq:http-client:$rabbitmqHttpClientVersion") {
 			exclude group: 'org.springframework', module: 'spring-web'
 		}
-		compile 'org.springframework:spring-web'
-		compile ('org.junit.jupiter:junit-jupiter-api', optional)
-		compile "org.assertj:assertj-core:$assertjVersion"
-		compile ("ch.qos.logback:logback-classic:$logbackVersion", optional)
-		compile ('org.apache.logging.log4j:log4j-core', optional)
+		api 'org.springframework:spring-web'
+		implementation ('org.junit.jupiter:junit-jupiter-api', optional)
+		api "org.assertj:assertj-core:$assertjVersion"
+		implementation ("ch.qos.logback:logback-classic:$logbackVersion", optional)
+		implementation ('org.apache.logging.log4j:log4j-core', optional)
 		compileOnly 'org.apiguardian:apiguardian-api:1.0.0'
 
 	}
@@ -382,12 +384,12 @@ project('spring-rabbit-test') {
 
 	dependencies {
 
-		compile project(':spring-rabbit')
-		compile project(':spring-rabbit-junit')
-		compile "org.hamcrest:hamcrest-library:$hamcrestVersion"
-		compile "org.hamcrest:hamcrest-core:$hamcrestVersion"
-		compile "org.mockito:mockito-core:$mockitoVersion"
-		testCompile project(':spring-rabbit').sourceSets.test.output
+		api project(':spring-rabbit')
+		api project(':spring-rabbit-junit')
+		api "org.hamcrest:hamcrest-library:$hamcrestVersion"
+		api "org.hamcrest:hamcrest-core:$hamcrestVersion"
+		api "org.mockito:mockito-core:$mockitoVersion"
+		testImplementation project(':spring-rabbit').sourceSets.test.output
 	}
 
 }
@@ -483,8 +485,8 @@ task api(type: Javadoc) {
 
 task schemaZip(type: Zip) {
 	group = 'Distribution'
-	classifier = 'schema'
-	description = "Builds -${classifier} archive containing all " +
+	archiveClassifier = 'schema'
+	description = "Builds -${archiveClassifier} archive containing all " +
 		"XSDs for deployment at static.springframework.org/schema."
 
 	subprojects.each { subproject ->
