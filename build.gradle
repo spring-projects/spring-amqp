@@ -19,6 +19,7 @@ plugins {
 	id 'org.ajoberstar.grgit' version '3.1.1'
 	id 'io.spring.nohttp' version '0.0.3.RELEASE'
 	id 'io.spring.dependency-management' version '1.0.8.RELEASE' apply false
+	id 'com.jfrog.artifactory' version '4.9.8' apply false
 }
 
 description = 'Spring AMQP'
@@ -117,6 +118,11 @@ subprojects { subproject ->
 
 	sourceCompatibility=1.8
 	targetCompatibility=1.8
+
+	java {
+		withJavadocJar()
+		withSourcesJar()
+	}
 
 	eclipse {
 		project {
@@ -243,19 +249,9 @@ subprojects { subproject ->
 		useJUnitPlatform()
 	}
 
-	task sourcesJar(type: Jar) {
-		classifier = 'sources'
-		from sourceSets.main.allJava
-	}
-
-	task javadocJar(type: Jar) {
-		classifier = 'javadoc'
-		from javadoc
-	}
-
 	checkstyle {
 		configFile = file("${rootDir}/src/checkstyle/checkstyle.xml")
-		toolVersion = '8.24'
+		toolVersion = '8.26'
 	}
 
 	artifacts {
@@ -295,23 +291,22 @@ project('spring-amqp') {
 	dependencies {
 
 		api 'org.springframework:spring-core'
-		implementation ('org.springframework:spring-messaging', optional)
-		implementation ('org.springframework:spring-oxm', optional)
-		implementation ('org.springframework:spring-context', optional)
+		implementation 'org.springframework:spring-messaging'
+		implementation 'org.springframework:spring-oxm'
+		implementation'org.springframework:spring-context'
 		api ("org.springframework.retry:spring-retry:$springRetryVersion") {
 			exclude group: 'org.springframework'
 		}
 
-		implementation ('com.fasterxml.jackson.core:jackson-core', optional)
-		implementation ('com.fasterxml.jackson.core:jackson-databind', optional)
-		implementation ('com.fasterxml.jackson.dataformat:jackson-dataformat-xml', optional)
+		implementation 'com.fasterxml.jackson.core:jackson-core'
+		implementation 'com.fasterxml.jackson.core:jackson-databind'
+		implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
 
 		// Spring Data projection message binding support
 		implementation ("org.springframework.data:spring-data-commons:$springDataCommonsVersion") {
-			optional(it)
 			exclude group: 'org.springframework'
 		}
-		implementation ("com.jayway.jsonpath:json-path:$jaywayJsonPathVersion", optional)
+		implementation "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
 
 		testImplementation "org.assertj:assertj-core:$assertjVersion"
 	}
@@ -325,15 +320,15 @@ project('spring-rabbit') {
 
 		api project(':spring-amqp')
 		api "com.rabbitmq:amqp-client:$rabbitmqVersion"
-		implementation ("com.rabbitmq:http-client:$rabbitmqHttpClientVersion", optional)
-		implementation ('org.springframework:spring-aop', optional)
+		implementation "com.rabbitmq:http-client:$rabbitmqHttpClientVersion"
+		implementation 'org.springframework:spring-aop'
 		api 'org.springframework:spring-context'
 		api 'org.springframework:spring-messaging'
 		api 'org.springframework:spring-tx'
-		implementation ('io.projectreactor:reactor-core', optional)
-		implementation ("ch.qos.logback:logback-classic:$logbackVersion", optional)
-		implementation ('org.apache.logging.log4j:log4j-core', optional)
-		implementation ("io.micrometer:micrometer-core:$micrometerVersion", optional)
+		implementation 'io.projectreactor:reactor-core'
+		implementation "ch.qos.logback:logback-classic:$logbackVersion"
+		implementation 'org.apache.logging.log4j:log4j-core'
+		implementation "io.micrometer:micrometer-core:$micrometerVersion"
 
 		testImplementation project(':spring-rabbit-junit')
 		testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
@@ -361,7 +356,6 @@ project('spring-rabbit-junit') {
 		api 'org.springframework:spring-core'
 		api 'org.springframework:spring-test'
 		implementation ("junit:junit:$junit4Version") {
-			optional(it)
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
 		}
 		api "com.rabbitmq:amqp-client:$rabbitmqVersion"
@@ -369,10 +363,10 @@ project('spring-rabbit-junit') {
 			exclude group: 'org.springframework', module: 'spring-web'
 		}
 		api 'org.springframework:spring-web'
-		implementation ('org.junit.jupiter:junit-jupiter-api', optional)
+		implementation 'org.junit.jupiter:junit-jupiter-api'
 		api "org.assertj:assertj-core:$assertjVersion"
-		implementation ("ch.qos.logback:logback-classic:$logbackVersion", optional)
-		implementation ('org.apache.logging.log4j:log4j-core', optional)
+		implementation "ch.qos.logback:logback-classic:$logbackVersion"
+		implementation 'org.apache.logging.log4j:log4j-core'
 		compileOnly 'org.apiguardian:apiguardian-api:1.0.0'
 
 	}
@@ -515,8 +509,8 @@ task schemaZip(type: Zip) {
 
 task docsZip(type: Zip, dependsOn: [reference]) {
 		group = 'Distribution'
-		classifier = 'docs'
-		description = "Builds -${classifier} archive containing api and reference " +
+		archiveClassifier = 'docs'
+		description = "Builds -${archiveClassifier} archive containing api and reference " +
 			"for deployment at static.springframework.org/spring-integration/docs."
 
 		from('src/dist') {
@@ -539,8 +533,8 @@ task docsZip(type: Zip, dependsOn: [reference]) {
 
 task distZip(type: Zip, dependsOn: [docsZip, schemaZip]) {
 	group = 'Distribution'
-	classifier = 'dist'
-	description = "Builds -${classifier} archive, containing all jars and docs, " +
+	archiveClassifier = 'dist'
+	description = "Builds -${archiveClassifier} archive, containing all jars and docs, " +
 		"suitable for community download page."
 
 	ext.baseDir = "${project.name}-${project.version}";
@@ -574,11 +568,11 @@ task distZip(type: Zip, dependsOn: [docsZip, schemaZip]) {
 // Not published by default; only for use when building from source.
 task depsZip(type: Zip, dependsOn: distZip) { zipTask ->
 	group = 'Distribution'
-	classifier = 'dist-with-deps'
-	description = "Builds -${classifier} archive, containing everything " +
-		"in the -${distZip.classifier} archive plus all dependencies."
+	archiveClassifier = 'dist-with-deps'
+	description = "Builds -${archiveClassifier} archive, containing everything " +
+		"in the -${distZip.archiveClassifier} archive plus all dependencies."
 
-	from zipTree(distZip.archivePath)
+	from zipTree(distZip.archiveFile)
 
 	gradle.taskGraph.whenReady { taskGraph ->
 		if (taskGraph.hasTask(":${zipTask.name}")) {
