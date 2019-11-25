@@ -35,13 +35,17 @@ import org.springframework.util.Assert;
  */
 public abstract class AbstractDeclarable implements Declarable {
 
-	private volatile boolean shouldDeclare = true;
+	private boolean shouldDeclare = true;
 
-	private volatile Collection<Object> declaringAdmins = new ArrayList<Object>();
+	private Collection<Object> declaringAdmins = new ArrayList<Object>();
 
 	private boolean ignoreDeclarationExceptions;
 
 	private final Map<String, Object> arguments;
+
+	public AbstractDeclarable() {
+		this(null);
+	}
 
 	/**
 	 * Construct an instance with the supplied arguments, or an empty map if null.
@@ -50,7 +54,7 @@ public abstract class AbstractDeclarable implements Declarable {
 	 */
 	public AbstractDeclarable(@Nullable Map<String, Object> arguments) {
 		if (arguments != null) {
-			this.arguments = arguments;
+			this.arguments = new HashMap<>(arguments);
 		}
 		else {
 			this.arguments = new HashMap<String, Object>();

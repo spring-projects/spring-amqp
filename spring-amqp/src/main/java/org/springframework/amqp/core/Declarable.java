@@ -69,7 +69,7 @@ public interface Declarable {
 	 * @since 2.2.2
 	 */
 	default @Nullable Object removeArgument(String name) {
-		return false;
+		return null;
 	}
 
 }

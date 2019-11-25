@@ -37,7 +37,7 @@ public abstract class AbstractExchange extends AbstractDeclarable implements Exc
 
 	private final boolean autoDelete;
 
-	private volatile boolean delayed;
+	private boolean delayed;
 
 	private boolean internal;
 
