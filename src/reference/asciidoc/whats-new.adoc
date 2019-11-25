@@ -104,5 +104,11 @@ Classes `DeflaterPostProcessor` and `InflaterPostProcessor` were added to suppor
 The `Declarables` object (for declaring multiple queues, exchanges, bindings) now has a filtered getter for each type.
 See <<collection-declaration>> for more information.
 
+You can now customize each `Declarable` bean before the `RabbitAdmin` processes the declaration thereof.
+See <<automatic-declaration>> for more information.
+
+`singleActiveConsumer()` has been added to the `QueueBuilder` to set the `x-single-active-consumer` queue argument.
+See <<builder-api>> for more information.
+
 Outbound headers with values of type `Class<?>` are now mapped using `getName()` instead of `toString()`.
 See <<message-properties-converters>> for more information.

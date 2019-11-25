@@ -47,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
+import org.springframework.amqp.core.DeclarableCustomizer;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
@@ -102,7 +103,7 @@ public class RabbitAdminDeclarationTests {
 
 		verify(channel).queueDeclare("foo", true, false, false, new HashMap<>());
 		verify(channel).exchangeDeclare("bar", "direct", true, false, false, new HashMap<String, Object>());
-		verify(channel).queueBind("foo", "bar", "foo", null);
+		verify(channel).queueBind("foo", "bar", "foo", new HashMap<>());
 	}
 
 	@Test
@@ -179,7 +180,7 @@ public class RabbitAdminDeclarationTests {
 
 		verify(channel).queueDeclare("foo", true, false, false, new HashMap<>());
 		verify(channel).exchangeDeclare("bar", "direct", true, false, false, new HashMap<String, Object>());
-		verify(channel).queueBind("foo", "bar", "foo", null);
+		verify(channel).queueBind("foo", "bar", "foo", new HashMap<>());
 	}
 
 	@SuppressWarnings("unchecked")
@@ -265,7 +266,7 @@ public class RabbitAdminDeclarationTests {
 		verify(Config.channel1, never()).queueDeclare("baz", true, false, false, new HashMap<>());
 		verify(Config.channel1).queueDeclare("qux", true, false, false, new HashMap<>());
 		verify(Config.channel1).exchangeDeclare("bar", "direct", true, false, true, new HashMap<String, Object>());
-		verify(Config.channel1).queueBind("foo", "bar", "foo", null);
+		verify(Config.channel1).queueBind("foo", "bar", "foo", new HashMap<>());
 
 		Config.listener2.onCreate(Config.conn2);
 		verify(Config.channel2, never())
@@ -280,7 +281,10 @@ public class RabbitAdminDeclarationTests {
 		Config.listener3.onCreate(Config.conn3);
 		verify(Config.channel3, never())
 				.queueDeclare(eq("foo"), anyBoolean(), anyBoolean(), anyBoolean(), isNull());
-		verify(Config.channel3).queueDeclare("baz", true, false, false, new HashMap<>());
+		Map<String, Object> args = new HashMap<>();
+		args.put("added.by.customizer.1", true);
+		args.put("added.by.customizer.2", true);
+		verify(Config.channel3).queueDeclare("baz", true, false, false, args);
 		verify(Config.channel3, never()).queueDeclare("qux", true, false, false, new HashMap<>());
 		verify(Config.channel3, never())
 				.exchangeDeclare(eq("bar"), eq("direct"), anyBoolean(), anyBoolean(),
@@ -461,5 +465,27 @@ public class RabbitAdminDeclarationTests {
 			binding.setAdminsThatShouldDeclare(admin1());
 			return binding;
 		}
+
+		@Bean
+		public DeclarableCustomizer customizer1() {
+			return dec -> {
+				if (dec instanceof Queue && ((Queue) dec).getName().equals("baz")) {
+					dec.addArgument("added.by.customizer.1", true);
+				}
+				return dec;
+			};
+		}
+
+		@Bean
+		public DeclarableCustomizer customizer2() {
+			return dec -> {
+				if (dec instanceof Queue && ((Queue) dec).getName().equals("baz")) {
+					dec.addArgument("added.by.customizer.2", true);
+				}
+				return dec;
+			};
+		}
+
 	}
+
 }

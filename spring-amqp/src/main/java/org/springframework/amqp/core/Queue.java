@@ -46,8 +46,6 @@ public class Queue extends AbstractDeclarable implements Cloneable {
 
 	private final boolean autoDelete;
 
-	private final Map<String, Object> arguments;
-
 	private volatile String actualName;
 
 	/**
@@ -90,7 +88,10 @@ public class Queue extends AbstractDeclarable implements Cloneable {
 	 * @param autoDelete true if the server should delete the queue when it is no longer in use
 	 * @param arguments the arguments used to declare the queue
 	 */
-	public Queue(String name, boolean durable, boolean exclusive, boolean autoDelete, Map<String, Object> arguments) {
+	public Queue(String name, boolean durable, boolean exclusive, boolean autoDelete,
+			@Nullable Map<String, Object> arguments) {
+
+		super(arguments);
 		Assert.notNull(name, "'name' cannot be null");
 		this.name = name;
 		this.actualName = StringUtils.hasText(name) ? name
@@ -98,7 +99,6 @@ public class Queue extends AbstractDeclarable implements Cloneable {
 		this.durable = durable;
 		this.exclusive = exclusive;
 		this.autoDelete = autoDelete;
-		this.arguments = arguments != null ? arguments : new HashMap<>();
 	}
 
 	/**
@@ -138,10 +138,6 @@ public class Queue extends AbstractDeclarable implements Cloneable {
 		return this.autoDelete;
 	}
 
-	public java.util.Map<java.lang.String, java.lang.Object> getArguments() {
-		return this.arguments;
-	}
-
 	/**
 	 * Set the name from the DeclareOk.
 	 * @param name the name.
@@ -168,17 +164,17 @@ public class Queue extends AbstractDeclarable implements Cloneable {
 	 */
 	public final void setMasterLocator(@Nullable String locator) {
 		if (locator == null) {
-			this.arguments.remove(X_QUEUE_MASTER_LOCATOR);
+			removeArgument(X_QUEUE_MASTER_LOCATOR);
 		}
 		else {
-			this.arguments.put(X_QUEUE_MASTER_LOCATOR, locator);
+			addArgument(X_QUEUE_MASTER_LOCATOR, locator);
 		}
 	}
 
 	@Override
 	public Object clone() {  // NOSONAR - doesn't throw CloneNotSupportedException
 		Queue queue = new Queue(this.name, this.durable, this.exclusive, // NOSONAR - doesn't need to call super.clone()
-				this.autoDelete, new HashMap<>(this.arguments));
+				this.autoDelete, new HashMap<>(getArguments()));
 		queue.setActualName(this.actualName);
 		return queue;
 	}
@@ -186,7 +182,7 @@ public class Queue extends AbstractDeclarable implements Cloneable {
 	@Override
 	public String toString() {
 		return "Queue [name=" + this.name + ", durable=" + this.durable + ", autoDelete=" + this.autoDelete
-				+ ", exclusive=" + this.exclusive + ", arguments=" + this.arguments
+				+ ", exclusive=" + this.exclusive + ", arguments=" + getArguments()
 				+ ", actualName=" + this.actualName + "]";
 	}
 

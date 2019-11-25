@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.core;
 
-import java.util.HashMap;
 import java.util.Map;
 
 
@@ -38,9 +37,7 @@ public abstract class AbstractExchange extends AbstractDeclarable implements Exc
 
 	private final boolean autoDelete;
 
-	private final Map<String, Object> arguments;
-
-	private volatile boolean delayed;
+	private boolean delayed;
 
 	private boolean internal;
 
@@ -75,16 +72,10 @@ public abstract class AbstractExchange extends AbstractDeclarable implements Exc
 	 * @param arguments the arguments used to declare the exchange
 	 */
 	public AbstractExchange(String name, boolean durable, boolean autoDelete, Map<String, Object> arguments) {
-		super();
+		super(arguments);
 		this.name = name;
 		this.durable = durable;
 		this.autoDelete = autoDelete;
-		if (arguments != null) {
-			this.arguments = arguments;
-		}
-		else {
-			this.arguments = new HashMap<String, Object>();
-		}
 	}
 
 	@Override
@@ -103,20 +94,6 @@ public abstract class AbstractExchange extends AbstractDeclarable implements Exc
 	@Override
 	public boolean isAutoDelete() {
 		return this.autoDelete;
-	}
-
-	/**
-	 * Add an argument to the arguments.
-	 * @param argName the argument name.
-	 * @param argValue the argument value.
-	 */
-	protected synchronized void addArgument(String argName, Object argValue) {
-		this.arguments.put(argName, argValue);
-	}
-
-	@Override
-	public Map<String, Object> getArguments() {
-		return this.arguments;
 	}
 
 	@Override
@@ -156,7 +133,7 @@ public abstract class AbstractExchange extends AbstractDeclarable implements Exc
 						 ", durable=" + this.durable +
 						 ", autoDelete=" + this.autoDelete +
 						 ", internal=" + this.internal +
-						 ", arguments="	+ this.arguments + "]";
+						 ", arguments="	+ getArguments() + "]";
 	}
 
 }

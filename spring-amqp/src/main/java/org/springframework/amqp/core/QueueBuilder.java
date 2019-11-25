@@ -234,6 +234,15 @@ public final class QueueBuilder extends AbstractBuilder {
 	}
 
 	/**
+	 * Set the 'x-single-active-consumer' queue argument.
+	 * @return the builder.
+	 * @since 2.2.2
+	 */
+	public QueueBuilder singleActiveConsumer() {
+		return withArgument("x-single-active-consumer", true);
+	}
+
+	/**
 	 * Set the queue argument to declare a queue of type 'quorum' instead of 'classic'.
 	 * @return the builder.
 	 * @since 2.2.2

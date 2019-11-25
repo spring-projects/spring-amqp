@@ -20,7 +20,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -32,11 +35,31 @@ import org.springframework.util.Assert;
  */
 public abstract class AbstractDeclarable implements Declarable {
 
-	private volatile boolean shouldDeclare = true;
+	private boolean shouldDeclare = true;
 
-	private volatile Collection<Object> declaringAdmins = new ArrayList<Object>();
+	private Collection<Object> declaringAdmins = new ArrayList<Object>();
 
 	private boolean ignoreDeclarationExceptions;
+
+	private final Map<String, Object> arguments;
+
+	public AbstractDeclarable() {
+		this(null);
+	}
+
+	/**
+	 * Construct an instance with the supplied arguments, or an empty map if null.
+	 * @param arguments the arguments.
+	 * @since 2.2.2
+	 */
+	public AbstractDeclarable(@Nullable Map<String, Object> arguments) {
+		if (arguments != null) {
+			this.arguments = new HashMap<>(arguments);
+		}
+		else {
+			this.arguments = new HashMap<String, Object>();
+		}
+	}
 
 	@Override
 	public boolean shouldDeclare() {
@@ -91,6 +114,20 @@ public abstract class AbstractDeclarable implements Declarable {
 			}
 		}
 		this.declaringAdmins = admins;
+	}
+
+	@Override
+	public synchronized void addArgument(String argName, Object argValue) {
+		this.arguments.put(argName, argValue);
+	}
+
+	@Override
+	public synchronized Object removeArgument(String name) {
+		return this.arguments.remove(name);
+	}
+
+	public Map<String, Object> getArguments() {
+		return this.arguments;
 	}
 
 }
