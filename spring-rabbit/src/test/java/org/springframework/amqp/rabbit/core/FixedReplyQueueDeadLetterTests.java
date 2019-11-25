@@ -117,6 +117,7 @@ public class FixedReplyQueueDeadLetterTests {
 		assertThat(arguments.get("x-max-priority")).isEqualTo(4);
 		assertThat(arguments.get("x-queue-mode")).isEqualTo("lazy");
 		assertThat(arguments.get("x-queue-master-locator")).isEqualTo("min-masters");
+		assertThat(arguments.get("x-single-active-consumer")).isEqualTo(Boolean.TRUE);
 	}
 
 	@Test
@@ -317,6 +318,7 @@ public class FixedReplyQueueDeadLetterTests {
 					.maxPriority(4)
 					.lazy()
 					.masterLocator(MasterLocator.minMasters)
+					.singleActiveConsumer()
 					.build();
 		}
 

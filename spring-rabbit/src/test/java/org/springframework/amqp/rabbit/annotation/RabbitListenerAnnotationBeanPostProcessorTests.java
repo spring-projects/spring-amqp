@@ -224,11 +224,11 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		assertThat(bindings).hasSize(3);
 		bindings.sort(Comparator.comparing(Binding::getRoutingKey));
 		assertThat(bindings.get(0).toString())
-				.isEqualTo("Binding [destination=my_queue, exchange=my_exchange, routingKey=green]");
+				.isEqualTo("Binding [destination=my_queue, exchange=my_exchange, routingKey=green, arguments={}]");
 		assertThat(bindings.get(1).toString())
-				.isEqualTo("Binding [destination=my_queue, exchange=my_exchange, routingKey=red]");
+				.isEqualTo("Binding [destination=my_queue, exchange=my_exchange, routingKey=red, arguments={}]");
 		assertThat(bindings.get(2).toString())
-				.isEqualTo("Binding [destination=my_queue, exchange=my_exchange, routingKey=yellow]");
+				.isEqualTo("Binding [destination=my_queue, exchange=my_exchange, routingKey=yellow, arguments={}]");
 
 		context.close();
 	}
