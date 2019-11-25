@@ -5830,6 +5830,23 @@ This limitation exists because exclusive and auto-delete queues are bound to the
 Starting with version 2.2.2, the `RabbitAdmin` will detect beans of type `DeclarationCustomizer` and apply the function before actually processing the declaration.
 This is useful, for example, to set a new argument (property) before it has first class support within the framework.
 
+====
+[source, java]
+----
+@Bean
+public DeclarableCustomizer customizer() {
+    return dec -> {
+        if (dec instanceof Queue && ((Queue) dec).getName().equals("my.queue")) {
+            dec.addArgument("some.new.queue.argument", true);
+        }
+        return dec;
+    };
+}
+----
+====
+
+It is also useful in projects that don't provide direct access to the `Declarable` bean definitions.
+
 See also <<auto-recovery>>.
 
 [[retry]]
