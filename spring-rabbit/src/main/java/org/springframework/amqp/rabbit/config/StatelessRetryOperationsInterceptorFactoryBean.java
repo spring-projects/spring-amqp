@@ -16,12 +16,16 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import java.util.List;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.rabbit.retry.MessageBatchRecoverer;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.retry.RetryOperations;
+import org.springframework.retry.interceptor.MethodInvocationRecoverer;
 import org.springframework.retry.interceptor.RetryOperationsInterceptor;
 import org.springframework.retry.support.RetryTemplate;
 
@@ -53,21 +57,27 @@ public class StatelessRetryOperationsInterceptorFactoryBean extends AbstractRetr
 			retryTemplate = new RetryTemplate();
 		}
 		retryInterceptor.setRetryOperations(retryTemplate);
-
-		final MessageRecoverer messageRecoverer = getMessageRecoverer();
-		retryInterceptor.setRecoverer((args, cause) -> {
-			Message message = (Message) args[1];
-			if (messageRecoverer == null) {
-				logger.warn("Message dropped on recovery: " + message, cause);
-			}
-			else {
-				messageRecoverer.recover(message, cause);
-			}
-			return null;
-		});
-
+		retryInterceptor.setRecoverer(createRecoverer());
 		return retryInterceptor;
 
+	}
+
+	@SuppressWarnings("unchecked")
+	private MethodInvocationRecoverer<?> createRecoverer() {
+		return (args, cause) -> {
+			MessageRecoverer messageRecoverer = getMessageRecoverer();
+			Object arg = args[1];
+			if (messageRecoverer == null) {
+				logger.warn("Message(s) dropped on recovery: " + arg, cause);
+			}
+			else if (arg instanceof Message) {
+				messageRecoverer.recover((Message) arg, cause);
+			}
+			else if (arg instanceof List && messageRecoverer instanceof MessageBatchRecoverer) {
+				((MessageBatchRecoverer) messageRecoverer).recover((List<Message>) arg, cause);
+			}
+			return null;
+		};
 	}
 
 	@Override

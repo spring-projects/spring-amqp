@@ -16,15 +16,21 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import java.util.List;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.rabbit.retry.MessageBatchRecoverer;
 import org.springframework.amqp.rabbit.retry.MessageKeyGenerator;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbit.retry.NewMessageIdentifier;
 import org.springframework.retry.RetryOperations;
+import org.springframework.retry.interceptor.MethodArgumentsKeyGenerator;
+import org.springframework.retry.interceptor.MethodInvocationRecoverer;
+import org.springframework.retry.interceptor.NewMethodArgumentsIdentifier;
 import org.springframework.retry.interceptor.StatefulRetryOperationsInterceptor;
 import org.springframework.retry.support.RetryTemplate;
 
@@ -71,34 +77,49 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 			retryTemplate = new RetryTemplate();
 		}
 		retryInterceptor.setRetryOperations(retryTemplate);
+		retryInterceptor.setNewItemIdentifier(createNewItemIdentifier());
+		retryInterceptor.setRecoverer(createRecoverer());
+		retryInterceptor.setKeyGenerator(createKeyGenerator());
+		return retryInterceptor;
 
-		retryInterceptor.setNewItemIdentifier(args -> {
-			Message message = (Message) args[1];
+	}
+
+	private NewMethodArgumentsIdentifier createNewItemIdentifier() {
+		return args -> {
+			Message message = argToMessage(args);
 			if (StatefulRetryOperationsInterceptorFactoryBean.this.newMessageIdentifier == null) {
 				return !message.getMessageProperties().isRedelivered();
 			}
 			else {
 				return StatefulRetryOperationsInterceptorFactoryBean.this.newMessageIdentifier.isNew(message);
 			}
-		});
+		};
+	}
 
-		final MessageRecoverer messageRecoverer = getMessageRecoverer();
-		retryInterceptor.setRecoverer((args, cause) -> {
-			Message message = (Message) args[1];
+	@SuppressWarnings("unchecked")
+	private MethodInvocationRecoverer<?> createRecoverer() {
+		return (args, cause) -> {
+			MessageRecoverer messageRecoverer = getMessageRecoverer();
+			Object arg = args[1];
 			if (messageRecoverer == null) {
-				logger.warn("Message dropped on recovery: " + message, cause);
+				logger.warn("Message(s) dropped on recovery: " + arg, cause);
 			}
-			else {
-				messageRecoverer.recover(message, cause);
+			else if (arg instanceof Message) {
+				messageRecoverer.recover((Message) arg, cause);
+			}
+			else if (arg instanceof List && messageRecoverer instanceof MessageBatchRecoverer) {
+				((MessageBatchRecoverer) messageRecoverer).recover((List<Message>) arg, cause);
 			}
 			// This is actually a normal outcome. It means the recovery was successful, but we don't want to consume
 			// any more messages until the acks and commits are sent for this (problematic) message...
 			throw new ImmediateAcknowledgeAmqpException("Recovered message forces ack (if ack mode requires it): "
-					+ message, cause);
-		});
+					+ arg, cause);
+		};
+	}
 
-		retryInterceptor.setKeyGenerator(args -> {
-			Message message = (Message) args[1];
+	private MethodArgumentsKeyGenerator createKeyGenerator() {
+		return args -> {
+			Message message = argToMessage(args);
 			if (StatefulRetryOperationsInterceptorFactoryBean.this.messageKeyGenerator == null) {
 				String messageId = message.getMessageProperties().getMessageId();
 				if (messageId == null && message.getMessageProperties().isRedelivered()) {
@@ -109,10 +130,20 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 			else {
 				return StatefulRetryOperationsInterceptorFactoryBean.this.messageKeyGenerator.getKey(message);
 			}
-		});
+		};
+	}
 
-		return retryInterceptor;
-
+	@SuppressWarnings("unchecked")
+	private Message argToMessage(Object[] args) {
+		Object arg = args[1];
+		Message message = null;
+		if (arg instanceof Message) {
+			message = (Message) arg;
+		}
+		else if (arg instanceof List) {
+			message = ((List<Message>) arg).get(0);
+		}
+		return message;
 	}
 
 	@Override
