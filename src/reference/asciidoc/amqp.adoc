@@ -5984,6 +5984,16 @@ RepublishMessageRecoverer recoverer = new RepublishMessageRecoverer(amqpTemplate
 ----
 ====
 
+Starting with version 2.0.5, the stack trace may be truncated if it is too large; this is because all headers have to fit in a single frame.
+By default, if the stack trace would cause less than 20,000 bytes ('headroom') to be available for other headers, it will be truncated.
+This can be adjusted by setting the recoverer's `frameMaxHeadroom` property, if you need more or less space for other headers.
+Starting with versions 2.1.13, 2.2.3, the exception message is included in this calculation, and the amount of stack trace will be maximized using the following algorithm:
+
+* if the stack trace alone would exceed the limit, the exception message header will be truncated to 97 bytes plus `...` and the stack trace is truncated too.
+* if the stack trace is small, the message will be truncated (plus `...`) to fit in the available bytes (but the message within the stack trace itself is truncated to 97 bytes plus `...`).
+
+Whenever a truncation of any kind occurs, the original exception will be logged to retain the complete information.
+
 Starting with version 2.1, an `ImmediateRequeueMessageRecoverer` is  added to throw an `ImmediateRequeueAmqpException`, which notifies a listener container to requeue the current failed message.
 
 ===== Exception Classification for Spring Retry
