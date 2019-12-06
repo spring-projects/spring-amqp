@@ -49,6 +49,8 @@ import org.springframework.util.Assert;
  */
 public class RepublishMessageRecoverer implements MessageRecoverer {
 
+	private static final int ELIPSIS_LENGTH = 3;
+
 	public static final String X_EXCEPTION_STACKTRACE = "x-exception-stacktrace";
 
 	public static final String X_EXCEPTION_MESSAGE = "x-exception-message";
@@ -58,6 +60,8 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 	public static final String X_ORIGINAL_ROUTING_KEY = "x-original-routingKey";
 
 	public static final int DEFAULT_FRAME_MAX_HEADROOM = 20_000;
+
+	private static final int MAX_EXCEPTION_MESSAGE_SIZE_IN_TRACE = 100 - ELIPSIS_LENGTH;
 
 	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR
 
@@ -150,9 +154,15 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 	public void recover(Message message, Throwable cause) {
 		MessageProperties messageProperties = message.getMessageProperties();
 		Map<String, Object> headers = messageProperties.getHeaders();
-		String stackTraceAsString = processStackTrace(cause);
+		String exceptionMessage = cause.getCause() != null ? cause.getCause().getMessage() : cause.getMessage();
+		String[] processed = processStackTrace(cause, exceptionMessage);
+		String stackTraceAsString = processed[0];
+		String truncatedExceptionMessage = processed[1];
+		if (truncatedExceptionMessage != null) {
+			exceptionMessage = truncatedExceptionMessage;
+		}
 		headers.put(X_EXCEPTION_STACKTRACE, stackTraceAsString);
-		headers.put(X_EXCEPTION_MESSAGE, cause.getCause() != null ? cause.getCause().getMessage() : cause.getMessage());
+		headers.put(X_EXCEPTION_MESSAGE, exceptionMessage);
 		headers.put(X_ORIGINAL_EXCHANGE, messageProperties.getReceivedExchange());
 		headers.put(X_ORIGINAL_ROUTING_KEY, messageProperties.getReceivedRoutingKey());
 		Map<? extends String, ? extends Object> additionalHeaders = additionalHeaders(message, cause);
@@ -183,7 +193,7 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 		}
 	}
 
-	private String processStackTrace(Throwable cause) {
+	private String[] processStackTrace(Throwable cause, String exceptionMessage) {
 		String stackTraceAsString = getStackTraceAsString(cause);
 		if (this.maxStackTraceLength < 0) {
 			int maxStackTraceLen = RabbitUtils
@@ -193,12 +203,39 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 				this.maxStackTraceLength = maxStackTraceLen;
 			}
 		}
-		if (this.maxStackTraceLength > 0 && stackTraceAsString.length() > this.maxStackTraceLength) {
-			stackTraceAsString = stackTraceAsString.substring(0, this.maxStackTraceLength);
-			this.logger.warn("Stack trace in republished message header truncated due to frame_max limitations; "
-					+ "consider increasing frame_max on the broker or reduce the stack trace depth", cause);
+		boolean truncated = false;
+		String truncatedExceptionMessage = exceptionMessage.length() <= MAX_EXCEPTION_MESSAGE_SIZE_IN_TRACE
+				? exceptionMessage
+				: (exceptionMessage.substring(0, MAX_EXCEPTION_MESSAGE_SIZE_IN_TRACE) + "...");
+		if (this.maxStackTraceLength > 0) {
+			if (stackTraceAsString.length() + exceptionMessage.length() > this.maxStackTraceLength) {
+				if (!exceptionMessage.equals(truncatedExceptionMessage)) {
+					int start = stackTraceAsString.indexOf(exceptionMessage);
+					stackTraceAsString = stackTraceAsString.substring(0, start)
+							+ truncatedExceptionMessage
+							+ stackTraceAsString.substring(start + exceptionMessage.length());
+				}
+				int adjustedStackTraceLen = this.maxStackTraceLength - truncatedExceptionMessage.length();
+				if (adjustedStackTraceLen > 0) {
+					if (stackTraceAsString.length() > adjustedStackTraceLen) {
+						stackTraceAsString = stackTraceAsString.substring(0, adjustedStackTraceLen);
+						this.logger.warn("Stack trace in republished message header truncated due to frame_max "
+								+ "limitations; "
+								+ "consider increasing frame_max on the broker or reduce the stack trace depth", cause);
+						truncated = true;
+					}
+					else if (stackTraceAsString.length() + exceptionMessage.length() > this.maxStackTraceLength) {
+						this.logger.warn("Exception message in republished message header truncated due to frame_max "
+								+ "limitations; consider increasing frame_max on the broker or reduce the exception "
+								+ "message size", cause);
+						truncatedExceptionMessage = exceptionMessage.substring(0,
+								this.maxStackTraceLength - stackTraceAsString.length() - ELIPSIS_LENGTH) + "...";
+						truncated = true;
+					}
+				}
+			}
 		}
-		return stackTraceAsString;
+		return new String[] { stackTraceAsString, truncated ? truncatedExceptionMessage : null };
 	}
 
 	/**
