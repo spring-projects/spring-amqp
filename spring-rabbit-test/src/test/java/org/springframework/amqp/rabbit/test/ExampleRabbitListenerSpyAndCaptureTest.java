@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
@@ -122,6 +123,10 @@ public class ExampleRabbitListenerSpyAndCaptureTest {
 		assertThat((String) args[0]).isEqualTo("ex");
 		assertThat((String) args[1]).isEqualTo(queue2.getName());
 		assertThat(invocationData.getThrowable()).isNull();
+
+		Collection<Exception> exceptions = answer.getExceptions();
+		assertThat(exceptions).hasSize(1);
+		assertThat(exceptions.iterator().next()).isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Configuration
@@ -177,10 +182,10 @@ public class ExampleRabbitListenerSpyAndCaptureTest {
 		}
 
 		@RabbitListener(id = "bar", queues = "#{queue2.name}")
-		public void foo(@Payload String foo, @Header("amqp_receivedRoutingKey") String rk) {
+		public void foo(@Payload String foo, @SuppressWarnings("unused") @Header("amqp_receivedRoutingKey") String rk) {
 			if (!failed && foo.equals("ex")) {
 				failed = true;
-				throw new RuntimeException(foo);
+				throw new IllegalArgumentException(foo);
 			}
 			failed = false;
 		}

@@ -73,19 +73,9 @@ assertEquals("thingthing", thing.thing("thing"));
 ----
 ====
 
-The following example shows how to test the `Thing` POJO with Java 7 or earlier:
+Starting with version 2.2.3, the answers capture any exceptions thrown by the method under test.
+Use `answer.getExceptions()` to get a reference to them.
 
-====
-[source, java]
-----
-doAnswer(new LambdaAnswer<String>(true, new ValueToReturn<String>() {
-    @Override
-    public String apply(InvocationOnMock i, String r) {
-        return r + r;
-    }
-})).when(thing).thing(anyString());
-----
-====
 
 [[test-harness]]
 ==== `@RabbitListenerTest` and `RabbitListenerTestHarness`
