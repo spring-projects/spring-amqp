@@ -38,9 +38,9 @@ import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
  *
  */
 @RabbitAvailable(queues = RepublishMessageRecovererIntegrationTests.BIG_HEADER_QUEUE)
-public class RepublishMessageRecovererIntegrationTests {
+class RepublishMessageRecovererIntegrationTests {
 
-	public static final String BIG_HEADER_QUEUE = "big.header.queue";
+	static final String BIG_HEADER_QUEUE = "big.header.queue";
 
 	private static final String BIG_EXCEPTION_MESSAGE1 = new String(new byte[10_000]).replace("\u0000", "x");
 
@@ -49,7 +49,7 @@ public class RepublishMessageRecovererIntegrationTests {
 	private int maxHeaderSize;
 
 	@Test
-	public void testBigHeader() {
+	void testBigHeader() {
 		CachingConnectionFactory ccf = new CachingConnectionFactory(
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
 		RabbitTemplate template = new RabbitTemplate(ccf);
@@ -74,7 +74,7 @@ public class RepublishMessageRecovererIntegrationTests {
 	}
 
 	@Test
-	public void testSmallException() {
+	void testSmallException() {
 		CachingConnectionFactory ccf = new CachingConnectionFactory(
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
 		RabbitTemplate template = new RabbitTemplate(ccf);
@@ -95,7 +95,7 @@ public class RepublishMessageRecovererIntegrationTests {
 	}
 
 	@Test
-	public void testBigMessageSmallTrace() {
+	void testBigMessageSmallTrace() {
 		CachingConnectionFactory ccf = new CachingConnectionFactory(
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
 		RabbitTemplate template = new RabbitTemplate(ccf);
