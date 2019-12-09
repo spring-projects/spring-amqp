@@ -19,3 +19,4 @@ erl_crash.dump
 nohup.out
 src/ant/.ant-targets-upload-dist.xml
 target
+.sts4-cache

@@ -16,12 +16,17 @@
 
 package org.springframework.amqp.rabbit.test.mockito;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 /**
- * An Answer to optionally call the real method and allow returning a
- * custom result.
+ * An {@link Answer} to optionally call the real method and allow returning a
+ * custom result. Captures any exceptions thrown.
  *
  * @author Gary Russell
  * @since 1.6
@@ -33,6 +38,8 @@ public class LambdaAnswer<T> implements Answer<T> {
 
 	private final ValueToReturn<T> callback;
 
+	private final Set<Exception> exceptions = Collections.synchronizedSet(new LinkedHashSet<>());
+
 	public LambdaAnswer(boolean callRealMethod, ValueToReturn<T> callback) {
 		this.callRealMethod = callRealMethod;
 		this.callback = callback;
@@ -42,12 +49,28 @@ public class LambdaAnswer<T> implements Answer<T> {
 	@Override
 	public T answer(InvocationOnMock invocation) throws Throwable {
 		T result = null;
-		if (this.callRealMethod) {
-			result = (T) invocation.callRealMethod();
+		try {
+			if (this.callRealMethod) {
+				result = (T) invocation.callRealMethod();
+			}
+			return this.callback.apply(invocation, result);
 		}
-		return this.callback.apply(invocation, result);
+		catch (Exception e) {
+			this.exceptions.add(e);
+			throw e;
+		}
 	}
 
+	/**
+	 * Return the exceptions thrown, if any.
+	 * @return the exceptions.
+	 * @since 2.2.3
+	 */
+	public Collection<Exception> getExceptions() {
+		return Collections.unmodifiableCollection(this.exceptions);
+	}
+
+	@FunctionalInterface
 	public interface ValueToReturn<T> {
 
 		T apply(InvocationOnMock invocation, T result);

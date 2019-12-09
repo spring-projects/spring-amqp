@@ -16,14 +16,20 @@
 
 package org.springframework.amqp.rabbit.test.mockito;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.springframework.lang.Nullable;
+
 /**
- * An Answer for void returning methods that calls the real method and
- * counts down a latch.
+ * An {@link Answer} for void returning methods that calls the real method and counts down
+ * a latch. Captures any exceptions thrown.
  *
  * @author Gary Russell
  * @since 1.6
@@ -32,6 +38,8 @@ import org.mockito.stubbing.Answer;
 public class LatchCountDownAndCallRealMethodAnswer implements Answer<Void> {
 
 	private final CountDownLatch latch;
+
+	private final Set<Exception> exceptions = Collections.synchronizedSet(new LinkedHashSet<>());
 
 	/**
 	 * @param count to set in a {@link CountDownLatch}.
@@ -42,14 +50,32 @@ public class LatchCountDownAndCallRealMethodAnswer implements Answer<Void> {
 
 	@Override
 	public Void answer(InvocationOnMock invocation) throws Throwable {
-		invocation.callRealMethod();
-		this.latch.countDown();
+		try {
+			invocation.callRealMethod();
+		}
+		catch (Exception e) {
+			this.exceptions.add(e);
+			throw e;
+		}
+		finally {
+			this.latch.countDown();
+		}
 		return null;
 	}
 
 
 	public CountDownLatch getLatch() {
 		return latch;
+	}
+
+	/**
+	 * Return the exceptions thrown.
+	 * @return the exceptions.
+	 * @since 2.2.3
+	 */
+	@Nullable
+	public Collection<Exception> getExceptions() {
+		return Collections.unmodifiableCollection(this.exceptions);
 	}
 
 }
