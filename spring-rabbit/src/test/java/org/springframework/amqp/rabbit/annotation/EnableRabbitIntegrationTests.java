@@ -410,6 +410,25 @@ public class EnableRabbitIntegrationTests {
 	}
 
 	@Test
+	public void endpointWithHeaderReplyMPP() {
+		MessageProperties properties = new MessageProperties();
+		properties.setHeader("prefix", "prefix-");
+		Message request = MessageTestUtils.createTextMessage("foo", properties);
+		AtomicReference<Message> replyRef = new AtomicReference<>();
+		rabbitTemplate.setAfterReceivePostProcessors(msg -> {
+			replyRef.set(msg);
+			return msg;
+		});
+		rabbitTemplate.convertSendAndReceive("", "test.header", "", msg -> {
+			return request;
+		});
+		Message reply = replyRef.get();
+		assertNotNull(reply);
+		assertEquals("prefix-FOO", MessageTestUtils.extractText(reply));
+		assertEquals(reply.getMessageProperties().getHeaders().get("replyMPPApplied"), Boolean.TRUE);
+	}
+
+	@Test
 	public void endpointWithMessage() {
 		MessageProperties properties = new MessageProperties();
 		properties.setHeader("prefix", "prefix-");
