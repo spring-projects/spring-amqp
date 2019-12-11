@@ -27,6 +27,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -215,6 +216,9 @@ public class EnableRabbitIntegrationTests {
 	@Autowired
 	private MeterRegistry meterRegistry;
 
+	@Autowired
+	private MultiListenerBean multi;
+
 	@BeforeAll
 	public static void setUp() {
 		System.setProperty(RabbitListenerAnnotationBeanPostProcessor.RABBIT_EMPTY_STRING_ARGUMENTS_PROPERTY,
@@ -339,7 +343,8 @@ public class EnableRabbitIntegrationTests {
 	public void multiListener() {
 		Foo foo = new Foo();
 		foo.field = "foo";
-		assertThat(rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", foo)).isEqualTo("FOO: foo handled by default handler");
+		assertThat(rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", foo))
+				.isEqualTo("FOO: foo handled by default handler");
 		Bar bar = new Bar();
 		bar.field = "bar";
 		rabbitTemplate.convertAndSend("multi.exch", "multi.rk", bar);
@@ -348,16 +353,31 @@ public class EnableRabbitIntegrationTests {
 		bar.field = "crash";
 		rabbitTemplate.convertAndSend("multi.exch", "multi.rk", bar);
 		assertThat(this.rabbitTemplate.receiveAndConvert("sendTo.replies"))
-			.isEqualTo("CRASHCRASH Test reply from error handler");
+				.isEqualTo("CRASHCRASH Test reply from error handler");
 		bar.field = "bar";
 		Baz baz = new Baz();
 		baz.field = "baz";
 		assertThat(rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", baz)).isEqualTo("BAZ: baz");
 		Qux qux = new Qux();
 		qux.field = "qux";
+		List<String> beanMethodHeaders = new ArrayList<>();
+		MessagePostProcessor mpp = msg -> {
+			beanMethodHeaders.add(msg.getMessageProperties().getHeader("bean"));
+			beanMethodHeaders.add(msg.getMessageProperties().getHeader("method"));
+			return msg;
+		};
+		this.rabbitTemplate.setAfterReceivePostProcessors(mpp);
 		assertThat(rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", qux)).isEqualTo("QUX: qux: multi.rk");
+		assertThat(beanMethodHeaders).hasSize(2);
+		assertThat(beanMethodHeaders.get(0)).isEqualTo("MultiListenerBean");
+		assertThat(beanMethodHeaders.get(1)).isEqualTo("qux");
+		this.rabbitTemplate.removeAfterReceivePostProcessor(mpp);
 		assertThat(rabbitTemplate.convertSendAndReceive("multi.exch.tx", "multi.rk.tx", bar)).isEqualTo("BAR: barbar");
-		assertThat(rabbitTemplate.convertSendAndReceive("multi.exch.tx", "multi.rk.tx", baz)).isEqualTo("BAZ: bazbaz: multi.rk.tx");
+		assertThat(rabbitTemplate.convertSendAndReceive("multi.exch.tx", "multi.rk.tx", baz))
+				.isEqualTo("BAZ: bazbaz: multi.rk.tx");
+		assertThat(this.multi.bean).isInstanceOf(MultiListenerBean.class);
+		assertThat(this.multi.method).isNotNull();
+		assertThat(this.multi.method.getName()).isEqualTo("baz");
 		assertThat(AopUtils.isJdkDynamicProxy(this.txClassLevel)).isTrue();
 	}
 
@@ -392,7 +412,11 @@ public class EnableRabbitIntegrationTests {
 		Message request = MessageTestUtils.createTextMessage("foo", properties);
 		Message reply = rabbitTemplate.sendAndReceive("test.header", request);
 		assertThat(MessageTestUtils.extractText(reply)).isEqualTo("prefix-FOO");
-		assertThat(Boolean.TRUE).isEqualTo(reply.getMessageProperties().getHeaders().get("replyMPPApplied"));
+		assertThat(reply.getMessageProperties().getHeaders().get("replyMPPApplied")).isEqualTo(Boolean.TRUE);
+		assertThat((String) reply.getMessageProperties().getHeader("bean"))
+				.isEqualTo("MyService");
+		assertThat((String) reply.getMessageProperties().getHeader("method"))
+				.isEqualTo("capitalizeWithHeader");
 	}
 
 	@Test
@@ -560,18 +584,32 @@ public class EnableRabbitIntegrationTests {
 		assertThat(returned).isInstanceOf(byte[].class);
 		assertThat(new String((byte[]) returned)).isEqualTo("\"bar=baztest.converted.args2\"");
 
+		List<String> beanMethodHeaders = new ArrayList<>();
+		MessagePostProcessor mpp = msg -> {
+			beanMethodHeaders.add(msg.getMessageProperties().getHeader("bean"));
+			beanMethodHeaders.add(msg.getMessageProperties().getHeader("method"));
+			return msg;
+		};
+		template.setAfterReceivePostProcessors(mpp);
 		returned = template.convertSendAndReceive("", "test.converted.message", "{ \"bar\" : \"baz\" }",
 				messagePostProcessor);
 		assertThat(returned).isInstanceOf(byte[].class);
 		assertThat(new String((byte[]) returned)).isEqualTo("\"bar=bazfoo2MessageFoo2Service\"");
+		assertThat(beanMethodHeaders).hasSize(2);
+		assertThat(beanMethodHeaders.get(0)).isEqualTo("Foo2Service");
+		assertThat(beanMethodHeaders.get(1)).isEqualTo("foo2Message");
+		template.removeAfterReceivePostProcessor(mpp);
+		Foo2Service foo2Service = ctx.getBean(Foo2Service.class);
+		assertThat(foo2Service.bean).isInstanceOf(Foo2Service.class);
+		assertThat(foo2Service.method).isNotNull();
+		assertThat(foo2Service.method.getName()).isEqualTo("foo2Message");
 
 		returned = template.convertSendAndReceive("", "test.notconverted.message", "{ \"bar\" : \"baz\" }",
 				messagePostProcessor);
 		assertThat(returned).isInstanceOf(byte[].class);
 		assertThat(new String((byte[]) returned)).isEqualTo("\"fooMessage\"");
-		Foo2Service foo2service = ctx.getBean(Foo2Service.class);
-		assertThat(foo2service.stringHeader).isEqualTo("string");
-		assertThat(foo2service.intHeader).isEqualTo(42);
+		assertThat(foo2Service.stringHeader).isEqualTo("string");
+		assertThat(foo2Service.intHeader).isEqualTo(42);
 
 		returned = template.convertSendAndReceive("", "test.notconverted.channel", "{ \"bar\" : \"baz\" }",
 				messagePostProcessor);
@@ -1467,6 +1505,9 @@ public class EnableRabbitIntegrationTests {
 			factory.setReceiveTimeout(10L);
 			factory.setBeforeSendReplyPostProcessors(m -> {
 				m.getMessageProperties().getHeaders().put("replyMPPApplied", true);
+				m.getMessageProperties().setHeader("bean",
+						m.getMessageProperties().getTargetBean().getClass().getSimpleName());
+				m.getMessageProperties().setHeader("method", m.getMessageProperties().getTargetMethod().getName());
 				return m;
 			});
 			factory.setRetryTemplate(new RetryTemplate());
@@ -1774,6 +1815,10 @@ public class EnableRabbitIntegrationTests {
 					key = "multi.rk"), errorHandler = "upcaseAndRepeatErrorHandler")
 	static class MultiListenerBean {
 
+		volatile Object bean;
+
+		volatile Method method;
+
 		@RabbitHandler
 		@SendTo("${foo.bar:#{sendToRepliesBean}}")
 		public String bar(@NonNull Bar bar) {
@@ -1784,7 +1829,9 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@RabbitHandler
-		public String baz(Baz baz) {
+		public String baz(Baz baz, Message message) {
+			this.bean = message.getMessageProperties().getTargetBean();
+			this.method = message.getMessageProperties().getTargetMethod();
 			return "BAZ: " + baz.field;
 		}
 
@@ -1915,6 +1962,12 @@ public class EnableRabbitIntegrationTests {
 			factory.setConnectionFactory(rabbitConnectionFactory());
 			factory.setMessageConverter(jsonConverter());
 			factory.setReceiveTimeout(10L);
+			factory.setBeforeSendReplyPostProcessors(m -> {
+				m.getMessageProperties().setHeader("bean",
+						m.getMessageProperties().getTargetBean().getClass().getSimpleName());
+				m.getMessageProperties().setHeader("method", m.getMessageProperties().getTargetMethod().getName());
+				return m;
+			});
 			factory.setContainerCustomizer(container -> container.setMicrometerEnabled(false));
 			return factory;
 		}
@@ -2083,9 +2136,13 @@ public class EnableRabbitIntegrationTests {
 
 	public static class Foo2Service {
 
-		String stringHeader;
+		volatile String stringHeader;
 
-		Integer intHeader;
+		volatile Integer intHeader;
+
+		volatile Object bean;
+
+		volatile Method method;
 
 		@RabbitListener(queues = "test.converted")
 		public Foo2 foo2(Foo2 foo2) {
@@ -2118,6 +2175,8 @@ public class EnableRabbitIntegrationTests {
 
 		@RabbitListener(queues = "test.converted.message")
 		public String foo2Message(@Payload Foo2 foo2, Message message) {
+			this.bean = message.getMessageProperties().getTargetBean();
+			this.method = message.getMessageProperties().getTargetMethod();
 			return foo2.toString() + message.getMessageProperties().getTargetMethod().getName()
 					+ message.getMessageProperties().getTargetBean().getClass().getSimpleName();
 		}

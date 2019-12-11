@@ -16,6 +16,9 @@
 
 package org.springframework.amqp.rabbit.listener.adapter;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+
 import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
@@ -48,7 +51,9 @@ public class HandlerAdapter {
 	public InvocationResult invoke(Message<?> message, Object... providedArgs) throws Exception { // NOSONAR
 		if (this.invokerHandlerMethod != null) {
 			return new InvocationResult(this.invokerHandlerMethod.invoke(message, providedArgs),
-					null, this.invokerHandlerMethod.getMethod().getGenericReturnType());
+					null, this.invokerHandlerMethod.getMethod().getGenericReturnType(),
+					this.invokerHandlerMethod.getBean(),
+					this.invokerHandlerMethod.getMethod());
 		}
 		else if (this.delegatingHandler.hasDefaultHandler()) {
 			// Needed to avoid returning raw Message which matches Object
@@ -71,13 +76,39 @@ public class HandlerAdapter {
 		}
 	}
 
+	public Method getMethodFor(Object payload) {
+		if (this.invokerHandlerMethod != null) {
+			return this.invokerHandlerMethod.getMethod();
+		}
+		else {
+			return this.delegatingHandler.getMethodFor(payload);
+		}
+	}
+
 	/**
 	 * Return the return type for the method that will be chosen for this payload.
 	 * @param payload the payload.
 	 * @return the return type, or null if no handler found.
 	 * @since 2.0
+	 * @deprecated in favor of {@link #getReturnTypeFor(Object)}.
 	 */
+	@Deprecated
 	public Object getReturnType(Object payload) {
+		if (this.invokerHandlerMethod != null) {
+			return this.invokerHandlerMethod.getMethod().getReturnType();
+		}
+		else {
+			return this.delegatingHandler.getMethodFor(payload).getReturnType();
+		}
+	}
+
+	/**
+	 * Return the return type for the method that will be chosen for this payload.
+	 * @param payload the payload.
+	 * @return the return type, or null if no handler found.
+	 * @since 2.2.3
+	 */
+	public Type getReturnTypeFor(Object payload) {
 		if (this.invokerHandlerMethod != null) {
 			return this.invokerHandlerMethod.getMethod().getReturnType();
 		}
@@ -98,7 +129,8 @@ public class HandlerAdapter {
 	@Nullable
 	public InvocationResult getInvocationResultFor(Object result, Object inboundPayload) {
 		if (this.invokerHandlerMethod != null) {
-			return new InvocationResult(result, null, this.invokerHandlerMethod.getMethod().getGenericReturnType());
+			return new InvocationResult(result, null, this.invokerHandlerMethod.getMethod().getGenericReturnType(),
+					this.invokerHandlerMethod.getBean(), this.invokerHandlerMethod.getMethod());
 		}
 		else {
 			return this.delegatingHandler.getInvocationResultFor(result, inboundPayload);

@@ -2213,6 +2213,8 @@ See the https://docs.spring.io/spring-amqp/docs/latest-ga/api/org/springframewor
 
 The container factories provide methods for adding `MessagePostProcessor` instances that are applied after receiving messages (before invoking the listener) and before sending replies.
 
+See <<async-annotation-driven-reply>> for information about replies.
+
 Starting with version 2.0.6, you can add a `RetryTemplate` and `RecoveryCallback` to the listener container factory.
 It is used when sending replies.
 The `RecoveryCallback` is invoked when retries are exhausted.
@@ -2544,7 +2546,7 @@ Each queue needed a separate property.
 ====== Reply Management
 
 The existing support in `MessageListenerAdapter` already lets your method have a non-void return type.
-When that is the case, the result of the invocation is encapsulated in a message sent either in the address specified in the `ReplyToAddress` header of the original message or in the default address configured on the listener.
+When that is the case, the result of the invocation is encapsulated in a message sent to the the address specified in the `ReplyToAddress` header of the original message, or to the default address configured on the listener.
 You can set that default address by using the `@SendTo` annotation of the messaging abstraction.
 
 Assuming our `processOrder` method should now return an `OrderStatus`, we can write it as follows to automatically send a reply:
@@ -2578,6 +2580,24 @@ public Message<OrderStatus> processOrder(Order order) {
 }
 ----
 ====
+
+Alternatively, you can use a `MessagePostProcessor` in the `beforeSendReplyMessagePostProcessors` container factory property to add more headers.
+Starting with version 2.2.3, the called bean/method is made avaiable in the reply message, which can be used in a message post processor to communicate the information back to the caller:
+
+====
+[source, java]
+----
+factory.setBeforeSendReplyPostProcessors(msg -> {
+    msg.getMessageProperties().setHeader("calledBean",
+            msg.getMessageProperties().getTargetBean().getClass().getSimpleName());
+    msg.getMessageProperties().setHeader("calledMethod",
+            msg.getMessageProperties().getTargetMethod().getName());
+    return m;
+});
+----
+====
+
+
 
 The `@SendTo` value is assumed as a reply `exchange` and `routingKey` pair that follws the `exchange/routingKey` pattern,
 where one of those parts can be omitted.

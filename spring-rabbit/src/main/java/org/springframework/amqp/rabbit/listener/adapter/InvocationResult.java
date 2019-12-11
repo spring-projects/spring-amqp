@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener.adapter;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 
 import org.springframework.expression.Expression;
@@ -37,10 +38,31 @@ public final class InvocationResult {
 	@Nullable
 	private final Type returnType;
 
-	public InvocationResult(Object result, Expression sendTo, @Nullable Type returnType) {
+	@Nullable
+	private final Object bean;
+
+	@Nullable
+	private final Method method;
+
+	/**
+	 * @deprecated in favor of {@link #InvocationResult(Object, Expression, Type, Object, Method)}.
+	 * @param result the result.
+	 * @param sendTo the sendTo expression.
+	 * @param returnType the return type.
+	 */
+	@Deprecated
+	public InvocationResult(Object result, @Nullable Expression sendTo, @Nullable Type returnType) {
+		this(result, sendTo, returnType, null, null);
+	}
+
+	public InvocationResult(Object result, @Nullable Expression sendTo, @Nullable Type returnType,
+			@Nullable Object bean, @Nullable Method method) {
+
 		this.returnValue = result;
 		this.sendTo = sendTo;
 		this.returnType = returnType;
+		this.bean = bean;
+		this.method = method;
 	}
 
 	public Object getReturnValue() {
@@ -56,11 +78,24 @@ public final class InvocationResult {
 		return this.returnType;
 	}
 
+	@Nullable
+	public Object getBean() {
+		return this.bean;
+	}
+
+	@Nullable
+	public Method getMethod() {
+		return this.method;
+	}
+
 	@Override
 	public String toString() {
 		return "InvocationResult [returnValue=" + this.returnValue
 				+ (this.sendTo != null ? ", sendTo=" + this.sendTo : "")
-				+ ", returnType=" + this.returnType + "]";
+				+ ", returnType=" + this.returnType
+				+ ", bean=" + this.bean
+				+ ", method=" + this.method
+				+ "]";
 	}
 
 }

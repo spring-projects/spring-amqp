@@ -292,7 +292,7 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 		Object[] listenerArguments = buildListenerArguments(convertedMessage, channel, message);
 		Object result = invokeListenerMethod(methodName, listenerArguments, message);
 		if (result != null) {
-			handleResult(new InvocationResult(result, null, null), message, channel);
+			handleResult(new InvocationResult(result, null, null, null, null), message, channel);
 		}
 		else {
 			logger.trace("No result object given - no result to handle");

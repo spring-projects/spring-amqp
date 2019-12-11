@@ -59,6 +59,10 @@ See <<Jackson2JsonMessageConverter-from-message>> for more information.
 Similarly. the `Jackson2XmlMessageConverter` now assumes the content is XML if there is no `contentType` property, or it is the default (`application/octet-string`).
 See <<jackson2xml>> for more information.
 
+When a `@RabbitListener` method returns a result, the bean and `Method` are now available in the reply message properties.
+This allows configuration of a `beforeSendReplyMessagePostProcessor` to, for example, set a header in the reply to indicate which method was invoked on the server.
+See <<async-annotation-driven-reply>> for more information.
+
 ==== AMQP Logging Appenders Changes
 
 The Log4J and Logback `AmqpAppender` s now support a `verifyHostname` SSL option.
