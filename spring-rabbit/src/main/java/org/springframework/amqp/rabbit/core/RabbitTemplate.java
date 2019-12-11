@@ -1952,7 +1952,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		try {
 			reply = exchangeMessages(exchange, routingKey, message, correlationData, channel, pendingReply,
 					messageTag);
-			if (this.afterReceivePostProcessors != null) {
+			if (reply != null && this.afterReceivePostProcessors != null) {
 				for (MessagePostProcessor processor : this.afterReceivePostProcessors) {
 					reply = processor.postProcessMessage(reply);
 				}
