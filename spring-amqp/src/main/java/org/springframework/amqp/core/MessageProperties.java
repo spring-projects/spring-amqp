@@ -499,7 +499,7 @@ public class MessageProperties implements Serializable {
 	}
 
 	/**
-	 * The target method when using a method-level {@code @RabbitListener}.
+	 * The target method when using a {@code @RabbitListener}.
 	 * @return the method.
 	 * @since 1.6
 	 */
@@ -508,7 +508,7 @@ public class MessageProperties implements Serializable {
 	}
 
 	/**
-	 * Set the target method when using a method-level {@code @RabbitListener}.
+	 * Set the target method when using a {@code @RabbitListener}.
 	 * @param targetMethod the target method.
 	 * @since 1.6
 	 */

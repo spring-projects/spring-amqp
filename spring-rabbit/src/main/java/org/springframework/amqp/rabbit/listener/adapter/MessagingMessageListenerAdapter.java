@@ -140,6 +140,10 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		}
 		InvocationResult result = null;
 		try {
+			if (this.messagingMessageConverter.method == null) {
+				amqpMessage.getMessageProperties()
+						.setTargetMethod(this.handlerAdapter.getMethodFor(message.getPayload()));
+			}
 			result = invokeHandler(amqpMessage, channel, message);
 			if (result.getReturnValue() != null) {
 				handleResult(result, amqpMessage, channel, message);
@@ -175,15 +179,19 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 	private void returnOrThrow(org.springframework.amqp.core.Message amqpMessage, Channel channel, Message<?> message,
 			Throwable throwableToReturn, Exception exceptionToThrow) throws Exception { // NOSONAR
+
 		if (!this.returnExceptions) {
 			throw exceptionToThrow;
 		}
 		try {
-			handleResult(new InvocationResult(new RemoteInvocationResult(throwableToReturn), null, null),
+			handleResult(new InvocationResult(new RemoteInvocationResult(throwableToReturn), null,
+						this.handlerAdapter.getReturnTypeFor(message.getPayload()),
+						this.handlerAdapter.getBean(),
+						this.handlerAdapter.getMethodFor(message.getPayload())),
 					amqpMessage, channel, message);
 		}
 		catch (ReplyFailureException rfe) {
-			if (void.class.equals(this.handlerAdapter.getReturnType(message.getPayload()))) {
+			if (void.class.equals(this.handlerAdapter.getReturnTypeFor(message.getPayload()))) {
 				throw exceptionToThrow;
 			}
 			else {
@@ -267,7 +275,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 		private final Object bean;
 
-		private final Method method;
+		final Method method;
 
 		private final Type inferredArgumentType;
 

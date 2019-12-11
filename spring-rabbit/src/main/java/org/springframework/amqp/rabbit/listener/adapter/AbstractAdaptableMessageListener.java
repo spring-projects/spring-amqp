@@ -375,8 +375,10 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 					}
 				}
 			}
-			doHandleResult(new InvocationResult(deferredResult, resultArg.getSendTo(), returnType), request, channel,
-					source);
+			doHandleResult(
+					new InvocationResult(deferredResult, resultArg.getSendTo(), returnType, resultArg.getBean(),
+							resultArg.getMethod()),
+					request, channel, source);
 		}
 	}
 
@@ -407,6 +409,9 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 		}
 		try {
 			Message response = buildMessage(channel, resultArg.getReturnValue(), resultArg.getReturnType());
+			MessageProperties props = response.getMessageProperties();
+			props.setTargetBean(resultArg.getBean());
+			props.setTargetMethod(resultArg.getMethod());
 			postProcessResponse(request, response);
 			Address replyTo = getReplyToAddress(request, source, resultArg);
 			sendResponse(channel, replyTo, response);
