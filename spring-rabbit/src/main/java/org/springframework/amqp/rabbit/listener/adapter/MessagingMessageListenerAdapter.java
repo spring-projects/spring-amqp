@@ -275,7 +275,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 		private final Object bean;
 
-		final Method method;
+		final Method method; // NOSONAR visibility
 
 		private final Type inferredArgumentType;
 
