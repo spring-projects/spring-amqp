@@ -800,7 +800,6 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	private final class CorrelationMessagePostProcessor<C> implements MessagePostProcessor {
 
 		CorrelationMessagePostProcessor() {
-			super();
 		}
 
 		@Override

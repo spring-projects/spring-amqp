@@ -34,7 +34,6 @@ import org.springframework.amqp.rabbit.listener.exception.MessageRejectedWhileSt
 public final class ContainerUtils {
 
 	private ContainerUtils() {
-		super();
 	}
 
 	/**

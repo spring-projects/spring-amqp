@@ -1546,7 +1546,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	private static class DefaultChannelCloseLogger implements ConditionalExceptionLogger {
 
 		DefaultChannelCloseLogger() {
-			super();
 		}
 
 		@Override

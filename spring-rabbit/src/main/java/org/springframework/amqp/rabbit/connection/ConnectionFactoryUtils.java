@@ -43,7 +43,6 @@ import com.rabbitmq.client.Channel;
 public final class ConnectionFactoryUtils {
 
 	private ConnectionFactoryUtils() {
-		super();
 	}
 
 	/**

@@ -34,7 +34,6 @@ import org.springframework.util.Assert;
 public final class BindingBuilder {
 
 	private BindingBuilder() {
-		super();
 	}
 
 	public static DestinationConfigurer bind(Queue queue) {

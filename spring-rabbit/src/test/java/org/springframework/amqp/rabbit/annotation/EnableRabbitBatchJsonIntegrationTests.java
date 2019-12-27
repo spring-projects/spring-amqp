@@ -147,7 +147,6 @@ public class EnableRabbitBatchJsonIntegrationTests {
 		private String bar;
 
 		public Foo() {
-			super();
 		}
 
 		public Foo(String bar) {

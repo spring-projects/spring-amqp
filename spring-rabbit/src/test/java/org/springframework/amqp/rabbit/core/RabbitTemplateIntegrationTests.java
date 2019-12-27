@@ -1708,7 +1708,6 @@ public class RabbitTemplateIntegrationTests {
 	private static class Foo {
 
 		Foo() {
-			super();
 		}
 
 		@Override

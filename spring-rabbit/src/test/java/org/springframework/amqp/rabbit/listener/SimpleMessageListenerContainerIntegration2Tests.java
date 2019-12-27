@@ -757,7 +757,6 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	private static final class Foo implements Serializable {
 
 		Foo() {
-			super();
 		}
 
 	}
@@ -766,7 +765,6 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	private static final class Bar implements Serializable {
 
 		Bar() {
-			super();
 		}
 
 	}

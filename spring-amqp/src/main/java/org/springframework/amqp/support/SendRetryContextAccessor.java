@@ -40,7 +40,6 @@ public final class SendRetryContextAccessor {
 	public static final String ADDRESS = "address";
 
 	private SendRetryContextAccessor() {
-		super();
 	}
 
 	/**

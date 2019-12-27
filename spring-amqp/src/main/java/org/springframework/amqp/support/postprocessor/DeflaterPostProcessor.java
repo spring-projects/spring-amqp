@@ -31,7 +31,6 @@ import java.util.zip.DeflaterOutputStream;
 public class DeflaterPostProcessor extends AbstractDeflaterPostProcessor {
 
 	public DeflaterPostProcessor() {
-		super();
 	}
 
 	public DeflaterPostProcessor(boolean autoDecompress) {

@@ -30,7 +30,6 @@ import java.util.zip.GZIPInputStream;
 public class GUnzipPostProcessor extends AbstractDecompressingPostProcessor {
 
 	public GUnzipPostProcessor() {
-		super();
 	}
 
 	public GUnzipPostProcessor(boolean alwaysDecompress) {

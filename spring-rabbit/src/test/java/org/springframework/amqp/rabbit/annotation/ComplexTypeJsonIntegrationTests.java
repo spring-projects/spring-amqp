@@ -258,7 +258,6 @@ public class ComplexTypeJsonIntegrationTests {
 		private String baz;
 
 		Baz() {
-			super();
 		}
 
 		public Baz(String string) {
@@ -285,7 +284,6 @@ public class ComplexTypeJsonIntegrationTests {
 		private Integer qux;
 
 		Qux() {
-			super();
 		}
 
 		public Qux(int i) {

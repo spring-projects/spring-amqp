@@ -30,7 +30,6 @@ import org.springframework.util.Assert;
 public final class TestUtils {
 
 	private TestUtils() {
-		super();
 	}
 
 	/**

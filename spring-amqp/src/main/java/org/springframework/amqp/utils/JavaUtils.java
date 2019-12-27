@@ -37,7 +37,6 @@ public final class JavaUtils {
 	public static final JavaUtils INSTANCE = new JavaUtils();
 
 	private JavaUtils() {
-		super();
 	}
 
 	/**

@@ -33,7 +33,6 @@ import org.springframework.util.Assert;
 public class UnzipPostProcessor extends AbstractDecompressingPostProcessor {
 
 	public UnzipPostProcessor() {
-		super();
 	}
 
 	public UnzipPostProcessor(boolean alwaysDecompress) {

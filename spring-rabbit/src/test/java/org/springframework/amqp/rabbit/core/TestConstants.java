@@ -30,7 +30,6 @@ public final class TestConstants {
 	public static int NUM_MESSAGES = 500;
 
 	private TestConstants() {
-		super();
 	}
 
 }

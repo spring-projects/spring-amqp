@@ -54,7 +54,6 @@ public final class MessagePropertiesBuilder extends MessageBuilderSupport<Messag
 	}
 
 	private MessagePropertiesBuilder() {
-		super();
 	}
 
 	private MessagePropertiesBuilder(MessageProperties properties) {

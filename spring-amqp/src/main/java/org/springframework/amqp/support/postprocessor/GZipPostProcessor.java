@@ -31,7 +31,6 @@ import java.util.zip.GZIPOutputStream;
 public class GZipPostProcessor extends AbstractDeflaterPostProcessor {
 
 	public GZipPostProcessor() {
-		super();
 	}
 
 	public GZipPostProcessor(boolean autoDecompress) {

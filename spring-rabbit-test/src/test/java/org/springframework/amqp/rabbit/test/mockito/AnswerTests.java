@@ -54,7 +54,6 @@ public class AnswerTests {
 	private static class Foo {
 
 		Foo() {
-			super();
 		}
 
 		public String foo(String foo) {

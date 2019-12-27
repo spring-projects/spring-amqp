@@ -866,7 +866,6 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		private MessageHandlerMethodFactory factory;
 
 		RabbitHandlerMethodFactoryAdapter() {
-			super();
 		}
 
 		public void setMessageHandlerMethodFactory(MessageHandlerMethodFactory rabbitHandlerMethodFactory1) {

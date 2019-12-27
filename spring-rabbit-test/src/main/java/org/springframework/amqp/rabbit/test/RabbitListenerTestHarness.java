@@ -119,7 +119,6 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 		private final BlockingQueue<InvocationData> invocationData = new LinkedBlockingQueue<>();
 
 		CaptureAdvice() {
-			super();
 		}
 
 		@Override

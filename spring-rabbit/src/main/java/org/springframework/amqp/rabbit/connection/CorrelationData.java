@@ -45,7 +45,6 @@ public class CorrelationData implements Correlation {
 	 * @since 1.6.7
 	 */
 	public CorrelationData() {
-		super();
 	}
 
 	/**

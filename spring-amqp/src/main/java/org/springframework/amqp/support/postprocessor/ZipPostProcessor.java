@@ -32,7 +32,6 @@ import java.util.zip.ZipOutputStream;
 public class ZipPostProcessor extends AbstractDeflaterPostProcessor {
 
 	public ZipPostProcessor() {
-		super();
 	}
 
 	public ZipPostProcessor(boolean autoDecompress) {

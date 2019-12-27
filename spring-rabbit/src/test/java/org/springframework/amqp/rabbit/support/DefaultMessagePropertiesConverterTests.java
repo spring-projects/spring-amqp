@@ -204,7 +204,6 @@ public class DefaultMessagePropertiesConverterTests {
 	private static class Foo {
 
 		Foo() {
-			super();
 		}
 
 		@Override

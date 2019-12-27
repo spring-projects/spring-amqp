@@ -215,7 +215,6 @@ public class RabbitTransactionManager extends AbstractPlatformTransactionManager
 		private RabbitResourceHolder resourceHolder;
 
 		RabbitTransactionObject() {
-			super();
 		}
 
 		public void setResourceHolder(RabbitResourceHolder resourceHolder) {

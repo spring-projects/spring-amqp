@@ -30,7 +30,6 @@ public abstract class AbstractDeflaterPostProcessor extends AbstractCompressingP
 	private int level = Deflater.BEST_SPEED;
 
 	public AbstractDeflaterPostProcessor() {
-		super();
 	}
 
 	public AbstractDeflaterPostProcessor(boolean autoDecompress) {

@@ -28,7 +28,6 @@ public final class BrokerTestUtils {
 	public static final int DEFAULT_PORT = 5672;
 
 	private BrokerTestUtils() {
-		super();
 	}
 
 	/**

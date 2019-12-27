@@ -42,7 +42,6 @@ public final class ConsumerChannelRegistry {
 		= new ThreadLocal<ChannelHolder>();
 
 	private ConsumerChannelRegistry() {
-		super();
 	}
 
 	/**

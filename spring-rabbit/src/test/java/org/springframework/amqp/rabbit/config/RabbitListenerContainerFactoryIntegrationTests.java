@@ -130,7 +130,6 @@ public class RabbitListenerContainerFactoryIntegrationTests {
 	private static class UpperCaseMessageConverter implements MessageConverter {
 
 		UpperCaseMessageConverter() {
-			super();
 		}
 
 		@Override

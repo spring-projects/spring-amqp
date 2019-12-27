@@ -223,7 +223,6 @@ public abstract class RetryInterceptorBuilder<B extends RetryInterceptorBuilder<
 		private NewMessageIdentifier newMessageIdentifier;
 
 		StatefulRetryInterceptorBuilder() {
-			super();
 		}
 
 		/**
@@ -272,7 +271,6 @@ public abstract class RetryInterceptorBuilder<B extends RetryInterceptorBuilder<
 				new StatelessRetryOperationsInterceptorFactoryBean();
 
 		StatelessRetryInterceptorBuilder() {
-			super();
 		}
 
 		@Override

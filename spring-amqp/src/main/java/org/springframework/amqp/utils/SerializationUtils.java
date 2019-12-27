@@ -39,7 +39,6 @@ import org.springframework.util.PatternMatchUtils;
 public final class SerializationUtils {
 
 	private SerializationUtils() {
-		super();
 	}
 
 	/**

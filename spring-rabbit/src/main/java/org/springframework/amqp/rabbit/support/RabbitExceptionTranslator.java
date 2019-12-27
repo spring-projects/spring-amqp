@@ -47,7 +47,6 @@ import com.rabbitmq.client.ShutdownSignalException;
 public final class RabbitExceptionTranslator {
 
 	private RabbitExceptionTranslator() {
-		super();
 	}
 
 	public static RuntimeException convertRabbitAccessException(Throwable ex) {

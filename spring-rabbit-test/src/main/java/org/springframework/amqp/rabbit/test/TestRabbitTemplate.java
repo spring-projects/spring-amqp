@@ -191,7 +191,6 @@ public class TestRabbitTemplate extends RabbitTemplate
 		private volatile Iterator<Object> iterator;
 
 		Listeners() {
-			super();
 		}
 
 		private synchronized Object next() {

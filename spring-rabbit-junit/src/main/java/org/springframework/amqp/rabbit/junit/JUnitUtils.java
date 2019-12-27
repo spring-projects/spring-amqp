@@ -45,7 +45,6 @@ public final class JUnitUtils {
 	private static final Log LOGGER = LogFactory.getLog(JUnitUtils.class);
 
 	private JUnitUtils() {
-		super();
 	}
 
 	/**

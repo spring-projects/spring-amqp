@@ -474,7 +474,6 @@ public class SimpleMessageListenerContainerIntegrationTests {
 	private class TestTransactionManager extends AbstractPlatformTransactionManager {
 
 		TestTransactionManager() {
-			super();
 		}
 
 		@Override

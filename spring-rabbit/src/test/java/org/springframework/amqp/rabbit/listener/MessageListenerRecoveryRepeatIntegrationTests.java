@@ -168,7 +168,6 @@ public class MessageListenerRecoveryRepeatIntegrationTests {
 		private CountDownLatch latch;
 
 		CloseConnectionListener() {
-			super();
 		}
 
 		public void setLatch(CountDownLatch latch) {

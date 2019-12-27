@@ -256,7 +256,6 @@ public class MessagingMessageListenerAdapterTests {
 		private Object payload;
 
 		SampleBean() {
-			super();
 		}
 
 		@SuppressWarnings("unused")

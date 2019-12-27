@@ -29,7 +29,6 @@ import java.util.Map;
 public final class ConnectionFactoryConfigurationUtils {
 
 	private ConnectionFactoryConfigurationUtils() {
-		super();
 	}
 
 	/**

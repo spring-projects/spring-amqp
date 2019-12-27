@@ -116,7 +116,6 @@ public final class RabbitNamespaceUtils {
 
 
 	private RabbitNamespaceUtils() {
-		super();
 	}
 
 	public static BeanDefinition parseContainer(Element containerEle, ParserContext parserContext) { // NOSONAR

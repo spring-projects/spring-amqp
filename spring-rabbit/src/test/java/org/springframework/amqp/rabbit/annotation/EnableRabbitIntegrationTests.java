@@ -1319,7 +1319,6 @@ public class EnableRabbitIntegrationTests {
 		private String bar;
 
 		public JsonObject() {
-			super();
 		}
 
 		public JsonObject(String bar) {

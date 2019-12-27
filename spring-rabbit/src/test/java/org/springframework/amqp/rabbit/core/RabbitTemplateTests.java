@@ -563,7 +563,6 @@ public class RabbitTemplateTests {
 	private class TestTransactionManager extends AbstractPlatformTransactionManager {
 
 		TestTransactionManager() {
-			super();
 		}
 
 		@Override

@@ -234,7 +234,6 @@ public final class SimpleResourceHolder {
 	}
 
 	private SimpleResourceHolder() {
-		super();
 	}
 
 }

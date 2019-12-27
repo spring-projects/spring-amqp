@@ -86,7 +86,6 @@ public class MarshallingMessageConverterTests {
 	private static class TestMarshaller implements Marshaller, Unmarshaller {
 
 		TestMarshaller() {
-			super();
 		}
 
 		@Override

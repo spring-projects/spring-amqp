@@ -42,7 +42,6 @@ public final class SimpleMessageListenerWithRabbitMQ {
 
 
 	private SimpleMessageListenerWithRabbitMQ() {
-		super();
 	}
 
 
@@ -113,7 +112,6 @@ public final class SimpleMessageListenerWithRabbitMQ {
 	private static class SimpleAdapter {
 
 		SimpleAdapter() {
-			super();
 		}
 
 		@SuppressWarnings("unused")

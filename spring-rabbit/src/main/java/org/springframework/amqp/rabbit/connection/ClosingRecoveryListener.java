@@ -47,7 +47,6 @@ public final class ClosingRecoveryListener implements RecoveryListener {
 		= new ConcurrentHashMap<>();
 
 	private ClosingRecoveryListener() {
-		super();
 	}
 
 	@Override
