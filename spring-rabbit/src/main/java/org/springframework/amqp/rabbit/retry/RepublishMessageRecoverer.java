@@ -203,7 +203,13 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 				this.maxStackTraceLength = maxStackTraceLen;
 			}
 		}
+		return truncateIfNecessary(cause, exceptionMessage, stackTraceAsString);
+	}
+
+	private String[] truncateIfNecessary(Throwable cause, String exception, String stackTrace) {
 		boolean truncated = false;
+		String stackTraceAsString = stackTrace;
+		String exceptionMessage = exception;
 		String truncatedExceptionMessage = exceptionMessage.length() <= MAX_EXCEPTION_MESSAGE_SIZE_IN_TRACE
 				? exceptionMessage
 				: (exceptionMessage.substring(0, MAX_EXCEPTION_MESSAGE_SIZE_IN_TRACE) + "...");
