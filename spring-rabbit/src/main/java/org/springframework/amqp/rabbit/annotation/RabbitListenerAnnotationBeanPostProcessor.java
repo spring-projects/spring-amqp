@@ -71,6 +71,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.annotation.MergedAnnotation;
 import org.springframework.core.annotation.MergedAnnotations;
+import org.springframework.core.annotation.MergedAnnotations.SearchStrategy;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.DefaultConversionService;
@@ -434,13 +435,13 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		 */
 		if (endpoint instanceof MultiMethodRabbitListenerEndpoint) {
 			if (AnnotationUtils.findAnnotation((Class<?>) target, RabbitListeners.class) == null) {
-				mergedAnnotation = MergedAnnotations.from((Class<?>) target)
+				mergedAnnotation = MergedAnnotations.from((Class<?>) target, SearchStrategy.TYPE_HIERARCHY)
 						.get(RabbitListener.class);
 			}
 		}
 		else {
 			if (AnnotationUtils.findAnnotation(endpoint.getMethod(), RabbitListeners.class) == null) {
-				mergedAnnotation = MergedAnnotations.from(endpoint.getMethod())
+				mergedAnnotation = MergedAnnotations.from(endpoint.getMethod(), SearchStrategy.TYPE_HIERARCHY)
 						.get(RabbitListener.class);
 			}
 		}
