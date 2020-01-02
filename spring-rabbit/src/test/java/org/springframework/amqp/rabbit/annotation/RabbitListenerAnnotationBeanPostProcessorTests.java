@@ -55,6 +55,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
+import org.springframework.core.annotation.AliasFor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -124,7 +125,10 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
 		assertThat(factory.getListenerContainers().size()).as("one container should have been registered").isEqualTo(1);
 		RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
-		assertThat(((AbstractRabbitListenerEndpoint) endpoint).getQueueNames().iterator().next()).isEqualTo("metaTestQueue");
+		assertThat(((AbstractRabbitListenerEndpoint) endpoint).getQueueNames()
+				.iterator()
+				.next())
+				.isEqualTo("metaTestQueue");
 
 		context.close();
 	}
@@ -330,16 +334,20 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	@Component
 	static class MetaAnnotationTestBean {
 
-		@FooListener
+		@FooListener("metaTestQueue")
 		public void handleIt(String body) {
 		}
 	}
 
 
-	@RabbitListener(queues = "metaTestQueue")
+	@RabbitListener
 	@Target(ElementType.METHOD)
 	@Retention(RetentionPolicy.RUNTIME)
 	static @interface FooListener {
+
+		@AliasFor(annotation = RabbitListener.class, attribute = "queues")
+		String[] value() default {};
+
 	}
 
 	@Component

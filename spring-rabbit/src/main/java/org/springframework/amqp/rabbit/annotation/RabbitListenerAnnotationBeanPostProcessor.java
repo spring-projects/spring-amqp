@@ -69,6 +69,9 @@ import org.springframework.context.EnvironmentAware;
 import org.springframework.context.expression.StandardBeanExpressionResolver;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.core.annotation.MergedAnnotation;
+import org.springframework.core.annotation.MergedAnnotations;
+import org.springframework.core.annotation.MergedAnnotations.SearchStrategy;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.DefaultConversionService;
@@ -421,9 +424,30 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		return method;
 	}
 
-	protected void processListener(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener, Object bean,
+	protected void processListener(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListenerArg, Object bean,
 			Object target, String beanName) {
 
+		RabbitListener rabbitListener = rabbitListenerArg;
+		MergedAnnotation<RabbitListener> mergedAnnotation = MergedAnnotation.missing();
+		/*
+		 * Synthesize the actual annotation to handle meta-annotations and aliasing. Note
+		 * that only single @RabbitListener annotations can be meta-annotated.
+		 */
+		if (endpoint instanceof MultiMethodRabbitListenerEndpoint) {
+			if (AnnotationUtils.findAnnotation((Class<?>) target, RabbitListeners.class) == null) {
+				mergedAnnotation = MergedAnnotations.from((Class<?>) target, SearchStrategy.TYPE_HIERARCHY)
+						.get(RabbitListener.class);
+			}
+		}
+		else {
+			if (AnnotationUtils.findAnnotation(endpoint.getMethod(), RabbitListeners.class) == null) {
+				mergedAnnotation = MergedAnnotations.from(endpoint.getMethod(), SearchStrategy.TYPE_HIERARCHY)
+						.get(RabbitListener.class);
+			}
+		}
+		if (!MergedAnnotation.missing().equals(mergedAnnotation)) {
+			rabbitListener = mergedAnnotation.synthesize();
+		}
 		endpoint.setBean(bean);
 		endpoint.setMessageHandlerMethodFactory(this.messageHandlerMethodFactory);
 		endpoint.setId(getEndpointId(rabbitListener));
