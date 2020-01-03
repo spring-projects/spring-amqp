@@ -427,27 +427,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	protected void processListener(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListenerArg, Object bean,
 			Object target, String beanName) {
 
-		RabbitListener rabbitListener = rabbitListenerArg;
-		MergedAnnotation<RabbitListener> mergedAnnotation = MergedAnnotation.missing();
-		/*
-		 * Synthesize the actual annotation to handle meta-annotations and aliasing. Note
-		 * that only single @RabbitListener annotations can be meta-annotated.
-		 */
-		if (endpoint instanceof MultiMethodRabbitListenerEndpoint) {
-			if (AnnotationUtils.findAnnotation((Class<?>) target, RabbitListeners.class) == null) {
-				mergedAnnotation = MergedAnnotations.from((Class<?>) target, SearchStrategy.TYPE_HIERARCHY)
-						.get(RabbitListener.class);
-			}
-		}
-		else {
-			if (AnnotationUtils.findAnnotation(endpoint.getMethod(), RabbitListeners.class) == null) {
-				mergedAnnotation = MergedAnnotations.from(endpoint.getMethod(), SearchStrategy.TYPE_HIERARCHY)
-						.get(RabbitListener.class);
-			}
-		}
-		if (!MergedAnnotation.missing().equals(mergedAnnotation)) {
-			rabbitListener = mergedAnnotation.synthesize();
-		}
+		RabbitListener rabbitListener = synthesizeIfPossible(endpoint, rabbitListenerArg, target);
 		endpoint.setBean(bean);
 		endpoint.setMessageHandlerMethodFactory(this.messageHandlerMethodFactory);
 		endpoint.setId(getEndpointId(rabbitListener));
@@ -499,6 +479,33 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		RabbitListenerContainerFactory<?> factory = resolveContainerFactory(rabbitListener, target, beanName);
 
 		this.registrar.registerEndpoint(endpoint, factory);
+	}
+
+	private RabbitListener synthesizeIfPossible(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListenerArg,
+			Object target) {
+
+		RabbitListener rabbitListener = rabbitListenerArg;
+		MergedAnnotation<RabbitListener> mergedAnnotation = MergedAnnotation.missing();
+		/*
+		 * Synthesize the actual annotation to handle meta-annotations and aliasing. Note
+		 * that only single @RabbitListener annotations can be meta-annotated.
+		 */
+		if (endpoint instanceof MultiMethodRabbitListenerEndpoint) {
+			if (AnnotationUtils.findAnnotation((Class<?>) target, RabbitListeners.class) == null) {
+				mergedAnnotation = MergedAnnotations.from((Class<?>) target, SearchStrategy.TYPE_HIERARCHY)
+						.get(RabbitListener.class);
+			}
+		}
+		else {
+			if (AnnotationUtils.findAnnotation(endpoint.getMethod(), RabbitListeners.class) == null) {
+				mergedAnnotation = MergedAnnotations.from(endpoint.getMethod(), SearchStrategy.TYPE_HIERARCHY)
+						.get(RabbitListener.class);
+			}
+		}
+		if (!MergedAnnotation.missing().equals(mergedAnnotation)) {
+			rabbitListener = mergedAnnotation.synthesize();
+		}
+		return rabbitListener;
 	}
 
 	private void resolveAckMode(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener) {
