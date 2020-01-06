@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.annotation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -123,12 +124,38 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 				Config.class, MetaAnnotationTestBean.class);
 
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
-		assertThat(factory.getListenerContainers().size()).as("one container should have been registered").isEqualTo(1);
+		assertThat(factory.getListenerContainers().size()).as("one container should have been registered").isEqualTo(2);
 		RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
 		assertThat(((AbstractRabbitListenerEndpoint) endpoint).getQueueNames()
 				.iterator()
 				.next())
-				.isEqualTo("metaTestQueue");
+				.isEqualTo("metaTestQueue1");
+		endpoint = factory.getListenerContainers().get(1).getEndpoint();
+		assertThat(((AbstractRabbitListenerEndpoint) endpoint).getQueueNames()
+				.iterator()
+				.next())
+				.isEqualTo("metaTestQueue2");
+
+		context.close();
+	}
+
+	@Test
+	public void metaAnnotationIsDiscoveredClassLevel() {
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
+				Config.class, MetaAnnotationTestBean2.class);
+
+		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
+		assertThat(factory.getListenerContainers().size()).as("one container should have been registered").isEqualTo(2);
+		RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
+		assertThat(((AbstractRabbitListenerEndpoint) endpoint).getQueueNames()
+				.iterator()
+				.next())
+				.isEqualTo("metaTestQueue3");
+		endpoint = factory.getListenerContainers().get(1).getEndpoint();
+		assertThat(((AbstractRabbitListenerEndpoint) endpoint).getQueueNames()
+				.iterator()
+				.next())
+				.isEqualTo("metaTestQueue4");
 
 		context.close();
 	}
@@ -334,19 +361,41 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	@Component
 	static class MetaAnnotationTestBean {
 
-		@FooListener("metaTestQueue")
+		@FooListener("metaTestQueue1")
+		@FooListener("metaTestQueue2")
 		public void handleIt(String body) {
 		}
+
+	}
+
+	@Component
+	@FooListener("metaTestQueue3")
+	@FooListener("metaTestQueue4")
+	static class MetaAnnotationTestBean2 {
+
+		@RabbitHandler
+		public void handleIt(String body) {
+		}
+
 	}
 
 
-	@RabbitListener
-	@Target(ElementType.METHOD)
+	@RabbitListener(autoStartup = "false")
+	@Target({ ElementType.METHOD, ElementType.TYPE })
 	@Retention(RetentionPolicy.RUNTIME)
+	@Repeatable(FooListeners.class)
 	static @interface FooListener {
 
 		@AliasFor(annotation = RabbitListener.class, attribute = "queues")
 		String[] value() default {};
+
+	}
+
+	@Target({ ElementType.METHOD, ElementType.TYPE })
+	@Retention(RetentionPolicy.RUNTIME)
+	static @interface FooListeners {
+
+		FooListener[] value();
 
 	}
 

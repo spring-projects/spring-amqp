@@ -2166,9 +2166,44 @@ public class MetaListener {
 
 In the preceding example, each listener created by the `@MyAnonFanoutListener` annotation binds an anonymous, auto-delete
 queue to the fanout exchange, `metaFanout`.
-The meta-annotation mechanism is simple because attributes on the user-defined annotation are *not* examined - so
-you cannot override settings from the meta-annotation.
-You can use normal `@Bean` definitions when you need more advanced configuration.
+Starting with version 2.2.3, `@AliasFor` is supported to allow overriding properties on the meta-annotated annotation.
+Also, user annotations can now be `@Repeatable`, allowing multiple containers to be created for a method.
+
+====
+[source, java]
+----
+@Component
+static class MetaAnnotationTestBean {
+
+    @MyListener("queue1")
+    @MyListener("queue2")
+    public void handleIt(String body) {
+    }
+
+}
+
+
+@RabbitListener
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+@Repeatable(MyListeners.class)
+static @interface MyListener {
+
+    @AliasFor(annotation = RabbitListener.class, attribute = "queues")
+    String[] value() default {};
+
+}
+
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+static @interface MyListeners {
+
+    MyListener[] value();
+
+}
+----
+====
+
 
 [[async-annotation-driven-enable]]
 ====== Enable Listener Endpoint Annotations
