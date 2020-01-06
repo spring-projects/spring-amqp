@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.annotation;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -31,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -69,7 +71,6 @@ import org.springframework.context.EnvironmentAware;
 import org.springframework.context.expression.StandardBeanExpressionResolver;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.core.annotation.MergedAnnotation;
 import org.springframework.core.annotation.MergedAnnotations;
 import org.springframework.core.annotation.MergedAnnotations.SearchStrategy;
 import org.springframework.core.convert.ConversionService;
@@ -331,36 +332,11 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				classLevelListeners.toArray(new RabbitListener[classLevelListeners.size()]));
 	}
 
-	/*
-	 * AnnotationUtils.getRepeatableAnnotations does not look at interfaces
-	 */
-	private Collection<RabbitListener> findListenerAnnotations(Class<?> clazz) {
-		Set<RabbitListener> listeners = new HashSet<>();
-		RabbitListener ann = AnnotationUtils.findAnnotation(clazz, RabbitListener.class);
-		if (ann != null) {
-			listeners.add(ann);
-		}
-		RabbitListeners anns = AnnotationUtils.findAnnotation(clazz, RabbitListeners.class);
-		if (anns != null) {
-			Collections.addAll(listeners, anns.value());
-		}
-		return listeners;
-	}
-
-	/*
-	 * AnnotationUtils.getRepeatableAnnotations does not look at interfaces
-	 */
-	private Collection<RabbitListener> findListenerAnnotations(Method method) {
-		Set<RabbitListener> listeners = new HashSet<RabbitListener>();
-		RabbitListener ann = AnnotationUtils.findAnnotation(method, RabbitListener.class);
-		if (ann != null) {
-			listeners.add(ann);
-		}
-		RabbitListeners anns = AnnotationUtils.findAnnotation(method, RabbitListeners.class);
-		if (anns != null) {
-			Collections.addAll(listeners, anns.value());
-		}
-		return listeners;
+	private Collection<RabbitListener> findListenerAnnotations(AnnotatedElement element) {
+		return MergedAnnotations.from(element, SearchStrategy.TYPE_HIERARCHY)
+				.stream(RabbitListener.class)
+				.map(ann -> ann.synthesize())
+				.collect(Collectors.toList());
 	}
 
 	private void processMultiMethodListeners(RabbitListener[] classLevelListeners, Method[] multiMethods,
@@ -424,10 +400,9 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		return method;
 	}
 
-	protected void processListener(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListenerArg, Object bean,
+	protected void processListener(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener, Object bean,
 			Object target, String beanName) {
 
-		RabbitListener rabbitListener = synthesizeIfPossible(endpoint, rabbitListenerArg, target);
 		endpoint.setBean(bean);
 		endpoint.setMessageHandlerMethodFactory(this.messageHandlerMethodFactory);
 		endpoint.setId(getEndpointId(rabbitListener));
@@ -479,33 +454,6 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		RabbitListenerContainerFactory<?> factory = resolveContainerFactory(rabbitListener, target, beanName);
 
 		this.registrar.registerEndpoint(endpoint, factory);
-	}
-
-	private RabbitListener synthesizeIfPossible(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListenerArg,
-			Object target) {
-
-		RabbitListener rabbitListener = rabbitListenerArg;
-		MergedAnnotation<RabbitListener> mergedAnnotation = MergedAnnotation.missing();
-		/*
-		 * Synthesize the actual annotation to handle meta-annotations and aliasing. Note
-		 * that only single @RabbitListener annotations can be meta-annotated.
-		 */
-		if (endpoint instanceof MultiMethodRabbitListenerEndpoint) {
-			if (AnnotationUtils.findAnnotation((Class<?>) target, RabbitListeners.class) == null) {
-				mergedAnnotation = MergedAnnotations.from((Class<?>) target, SearchStrategy.TYPE_HIERARCHY)
-						.get(RabbitListener.class);
-			}
-		}
-		else {
-			if (AnnotationUtils.findAnnotation(endpoint.getMethod(), RabbitListeners.class) == null) {
-				mergedAnnotation = MergedAnnotations.from(endpoint.getMethod(), SearchStrategy.TYPE_HIERARCHY)
-						.get(RabbitListener.class);
-			}
-		}
-		if (!MergedAnnotation.missing().equals(mergedAnnotation)) {
-			rabbitListener = mergedAnnotation.synthesize();
-		}
-		return rabbitListener;
 	}
 
 	private void resolveAckMode(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener) {
