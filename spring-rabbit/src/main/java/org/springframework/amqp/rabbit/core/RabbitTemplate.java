@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.BeanNameAware;
-import org.springframework.context.Lifecycle;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.context.expression.MapAccessor;
 import org.springframework.core.ParameterizedTypeReference;
@@ -149,7 +149,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  */
 public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		implements BeanFactoryAware, RabbitOperations, MessageListener,
-		ListenerContainerAware, PublisherCallbackChannel.Listener, Lifecycle, BeanNameAware {
+		ListenerContainerAware, PublisherCallbackChannel.Listener, BeanNameAware, DisposableBean {
 
 	private static final String UNCHECKED = "unchecked";
 
@@ -879,7 +879,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public final void start() {
+	public void start() {
 		doStart();
 	}
 
@@ -892,7 +892,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public final void stop() {
+	public void stop() {
 		synchronized (this.directReplyToContainers) {
 			this.directReplyToContainers.values()
 					.stream()
@@ -918,6 +918,11 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 					.stream()
 					.anyMatch(AbstractMessageListenerContainer::isRunning);
 		}
+	}
+
+	@Override
+	public void destroy() {
+		stop();
 	}
 
 	private void evaluateFastReplyTo() {
