@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration packages="org.springframework.amqp.rabbit.log4j2" status="DEBUG">
+	<Appenders>
+		<Console name="STDOUT" target="SYSTEM_OUT">
+			<PatternLayout pattern="%m%n"/>
+		</Console>
+		<TestRabbitMQ name="rabbitmq"
+				  addresses="localhost:5672"
+				  host="localhost" port="5672" user="guest" password="guest" virtualHost="/"
+				  exchange="log4j2Test" exchangeType="fanout" declareExchange="true" durable="true" autoDelete="false"
+				  applicationId="testAppId" routingKeyPattern="%X{applicationId}.%c.%p"
+				  contentType="text/plain" contentEncoding="UTF-8" generateId="true" deliveryMode="NON_PERSISTENT"
+				  charset="UTF-8"
+				  connectionName="log4j2Appender"
+				  clientConnectionProperties="foo:bar,baz:qux"
+				  async="false"
+				  senderPoolSize="3" maxSenderRetries="5"
+				  bufferSize="10"
+				  foo="foo" bar="bar">
+			<ArrayBlockingQueue/>
+		</TestRabbitMQ>
+		<TestRabbitMQ name="rabbitmq_default_queue"
+				  addresses="localhost:5672"
+				  host="localhost" port="5672" user="guest" password="guest" applicationId="testAppId" charset="UTF-8"
+				  routingKeyPattern="%X{applicationId}.%c.%p"
+				  exchange="log4j2Test_default_queue" deliveryMode="NON_PERSISTENT"
+				  addMdcAsHeaders="true">
+		</TestRabbitMQ>
+		<TestRabbitMQ name="rabbitmq_uri"
+				  uri="amqp://guest:guest@localhost:5672/"
+				  exchange="log4j2Test_uri" exchangeType="fanout" declareExchange="true" durable="true"
+				  autoDelete="false"
+				  applicationId="testAppId" routingKeyPattern="%X{applicationId}.%c.%p"
+				  contentType="text/plain" contentEncoding="UTF-8" generateId="true" deliveryMode="NON_PERSISTENT"
+				  charset="UTF-8"
+				  clientConnectionProperties="bar:foo,baz:qux"
+				  senderPoolSize="3" maxSenderRetries="5"
+				  addMdcAsHeaders="false"
+				  foo="foo_uri" bar="bar_uri">
+		</TestRabbitMQ>
+	</Appenders>
+	<Loggers>
+		<Logger name="foo" level="info">
+			<AppenderRef ref="rabbitmq"/>
+		</Logger>
+		<Logger name="default_queue_logger" level="info">
+			<AppenderRef ref="rabbitmq_default_queue"/>
+		</Logger>
+		<Logger name="bar" level="info">
+			<AppenderRef ref="rabbitmq_uri"/>
+		</Logger>
+		<Root>
+			<AppenderRef ref="STDOUT"/>
+		</Root>
+	</Loggers>
+</Configuration>

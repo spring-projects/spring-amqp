@@ -49,6 +49,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginConfiguration;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
+import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.apache.logging.log4j.core.util.Integers;
 
@@ -147,6 +148,7 @@ public class AmqpAppender extends AbstractAppender {
 	}
 
 	@Deprecated // For backward compatibility
+	@PluginFactory
 	public static AmqpAppender createAppender(// NOSONAR NCSS line count
 			@PluginConfiguration final Configuration configuration,
 			@PluginAttribute("name") String name,

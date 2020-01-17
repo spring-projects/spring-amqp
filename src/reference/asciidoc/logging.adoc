@@ -270,35 +270,37 @@ public class MyEnhancedAppender extends AmqpAppender {
 ----
 ====
 
-Starting with <BACKLOG VERSION>, the log4j2 `AmqpAppender` can be extended using `@PluginBuilderFactory` and extending also
-`AmqpAppender.Builder`
+Starting with 2.2.4, the log4j2 `AmqpAppender` can be extended using `@PluginBuilderFactory` and extending also `AmqpAppender.Builder`
 
 
-.log4j2
 ====
 [source, java]
 ----
 public class MyEnhancedAppender extends AmqpAppender {
 
-    @Override
-    public Message postProcessMessageBeforeSend(Message message, Event event) {
-        message.getMessageProperties().setHeader("foo", "bar");
-        return message;
-    }
+	public MyEnhancedAppender(String name, Filter filter, Layout<? extends Serializable> layout,
+			boolean ignoreExceptions, AmqpManager manager, BlockingQueue<Event> eventQueue, String foo, String bar) {
+		super(name, filter, layout, ignoreExceptions, manager, eventQueue);
 
-    @PluginBuilderFactory
-    public static Builder newBuilder() {
-        return new Builder();
-    }
+	@Override
+	public Message postProcessMessageBeforeSend(Message message, Event event) {
+			message.getMessageProperties().setHeader("foo", "bar");
+		return message;
+	}
 
-    protected static class Builder extends AmqpAppender.Builder {
+	@PluginBuilderFactory
+	public static Builder newBuilder() {
+		return new Builder();
+	}
 
-        @Override
-        protected AmqpAppender buildInstance(String name, Filter filter, Layout<? extends Serializable> layout,
-                boolean ignoreExceptions, AmqpManager manager, BlockingQueue<Event> eventQueue) {
-            return new MyEnhancedAppender(name, filter, layout, ignoreExceptions, manager, eventQueue);
-        }
-    }
+	protected static class Builder extends AmqpAppender.Builder {
+
+		@Override
+		protected AmqpAppender buildInstance(String name, Filter filter, Layout<? extends Serializable> layout,
+				boolean ignoreExceptions, AmqpManager manager, BlockingQueue<Event> eventQueue) {
+			return new MyEnhancedAppender(name, filter, layout, ignoreExceptions, manager, eventQueue);
+		}
+	}
 
 }
 ----
