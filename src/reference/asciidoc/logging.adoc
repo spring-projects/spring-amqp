@@ -276,6 +276,7 @@ Starting with 2.2.4, the log4j2 `AmqpAppender` can be extended using `@PluginBui
 ====
 [source, java]
 ----
+@Plugin(name = "MyEnhancedAppender", category = "Core", elementType = "appender", printObject = true)
 public class MyEnhancedAppender extends AmqpAppender {
 
 	public MyEnhancedAppender(String name, Filter filter, Layout<? extends Serializable> layout,
