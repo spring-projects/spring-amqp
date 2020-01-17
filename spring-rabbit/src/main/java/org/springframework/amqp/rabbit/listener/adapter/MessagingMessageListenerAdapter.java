@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -381,7 +381,8 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 				if (parameterizedType.getRawType().equals(Message.class)) {
 					genericParameterType = ((ParameterizedType) genericParameterType).getActualTypeArguments()[0];
 				}
-				else if (parameterizedType.getRawType().equals(List.class)
+				else if (this.isBatch
+						&& parameterizedType.getRawType().equals(List.class)
 						&& parameterizedType.getActualTypeArguments().length == 1) {
 
 					Type paramType = parameterizedType.getActualTypeArguments()[0];
@@ -392,7 +393,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 					if (messageHasGeneric) {
 						genericParameterType = ((ParameterizedType) paramType).getActualTypeArguments()[0];
 					}
-					if (this.isBatch) {
+					else {
 						// when decoding batch messages we convert to the List's generic type
 						genericParameterType = paramType;
 					}

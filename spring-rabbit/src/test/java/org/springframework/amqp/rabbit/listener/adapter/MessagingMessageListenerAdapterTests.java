@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,10 @@ import static org.mockito.Mockito.verify;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,6 +53,7 @@ import com.rabbitmq.client.Channel;
  * @author Stephane Nicoll
  * @author Artem Bilan
  * @author Gary Russell
+ * @author Kai Stapel
  */
 public class MessagingMessageListenerAdapterTests {
 
@@ -212,6 +215,54 @@ public class MessagingMessageListenerAdapterTests {
 		assertThat(this.sample.payload.getClass()).isEqualTo(LinkedHashMap.class);
 	}
 
+	@Test
+	public void batchAmqpMessagesTest() {
+		// given
+		org.springframework.amqp.core.Message message1 = MessageTestUtils.createTextMessage("{ \"foo1\" : \"bar1\" }");
+		message1.getMessageProperties().setContentType("application/json");
+		Channel channel = mock(Channel.class);
+		BatchMessagingMessageListenerAdapter listener = getBatchInstance("withAmqpMessageBatch");
+		listener.setMessageConverter(new Jackson2JsonMessageConverter());
+
+		// when
+		listener.onMessageBatch(Arrays.asList(message1), channel);
+
+		// then
+		assertThat(this.sample.batchPayloads.get(0).getClass()).isEqualTo(String.class);
+	}
+
+	@Test
+	public void batchTypedMessagesTest() {
+		// given
+		org.springframework.amqp.core.Message message1 = MessageTestUtils.createTextMessage("{ \"foo1\" : \"bar1\" }");
+		message1.getMessageProperties().setContentType("application/json");
+		Channel channel = mock(Channel.class);
+		BatchMessagingMessageListenerAdapter listener = getBatchInstance("withTypedMessageBatch");
+		listener.setMessageConverter(new Jackson2JsonMessageConverter());
+
+		// when
+		listener.onMessageBatch(Arrays.asList(message1), channel);
+
+		// then
+		assertThat(this.sample.batchPayloads.get(0).getClass()).isEqualTo(Foo.class);
+	}
+
+	@Test
+	public void batchTypedObjectTest() {
+		// given
+		org.springframework.amqp.core.Message message1 = MessageTestUtils.createTextMessage("{ \"foo1\" : \"bar1\" }");
+		message1.getMessageProperties().setContentType("application/json");
+		Channel channel = mock(Channel.class);
+		BatchMessagingMessageListenerAdapter listener = getBatchInstance("withFooBatch");
+		listener.setMessageConverter(new Jackson2JsonMessageConverter());
+
+		// when
+		listener.onMessageBatch(Arrays.asList(message1), channel);
+
+		// then
+		assertThat(this.sample.batchPayloads.get(0).getClass()).isEqualTo(Foo.class);
+	}
+
 	protected MessagingMessageListenerAdapter getSimpleInstance(String methodName, Class<?>... parameterTypes) {
 		Method m = ReflectionUtils.findMethod(SampleBean.class, methodName, parameterTypes);
 		return createInstance(m, false);
@@ -246,6 +297,17 @@ public class MessagingMessageListenerAdapterTests {
 		return adapter;
 	}
 
+	protected BatchMessagingMessageListenerAdapter getBatchInstance(String methodName) {
+		Method m = ReflectionUtils.findMethod(SampleBean.class, methodName, List.class);
+		return createBatchInstance(m);
+	}
+
+	protected BatchMessagingMessageListenerAdapter createBatchInstance(Method m) {
+		BatchMessagingMessageListenerAdapter adapter = new BatchMessagingMessageListenerAdapter(null, m, false, null, null);
+		adapter.setHandlerAdapter(new HandlerAdapter(factory.createInvocableHandlerMethod(sample, m)));
+		return adapter;
+	}
+
 	private void initializeFactory(DefaultMessageHandlerMethodFactory factory) {
 		factory.setBeanFactory(new StaticListableBeanFactory());
 		factory.afterPropertiesSet();
@@ -254,6 +316,7 @@ public class MessagingMessageListenerAdapterTests {
 	private static class SampleBean {
 
 		private Object payload;
+		private List<Object> batchPayloads;
 
 		SampleBean() {
 		}
@@ -293,6 +356,21 @@ public class MessagingMessageListenerAdapterTests {
 		@SuppressWarnings("unused")
 		public void withNonGenericMessage(@SuppressWarnings("rawtypes") Message message) {
 			this.payload = message.getPayload();
+		}
+
+		@SuppressWarnings("unused")
+		public void withAmqpMessageBatch(List<org.springframework.amqp.core.Message> messageBatch) {
+			this.batchPayloads = messageBatch.stream().map(m -> new String(m.getBody())).collect(Collectors.toList());
+		}
+
+		@SuppressWarnings("unused")
+		public void withTypedMessageBatch(List<Message<Foo>> messageBatch) {
+			this.batchPayloads = messageBatch.stream().map(Message::getPayload).collect(Collectors.toList());
+		}
+
+		@SuppressWarnings("unused")
+		public void withFooBatch(List<Foo> messageBatch) {
+			this.batchPayloads = new ArrayList<>(messageBatch);
 		}
 
 		@SuppressWarnings("unused")
