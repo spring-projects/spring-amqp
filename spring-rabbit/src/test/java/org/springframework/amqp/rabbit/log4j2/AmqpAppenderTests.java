@@ -116,6 +116,7 @@ public class AmqpAppenderTests {
 		assertThat(threadName).isNotNull();
 		assertThat(threadName).isInstanceOf(String.class);
 		assertThat(threadName).isEqualTo(Thread.currentThread().getName());
+		ccf.destroy();
 	}
 
 	@Test

@@ -111,6 +111,7 @@ public class ExtendAmqpAppenderTests {
 		assertThat(foo).isNotNull();
 		assertThat(foo).isInstanceOf(String.class);
 		assertThat(foo).isEqualTo("bar");
+		ccf.destroy();
 	}
 
 	@Test
