@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 the original author or authors.
+ * Copyright 2019-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,14 @@ package org.springframework.amqp.rabbit.annotation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.batch.SimpleBatchingStrategy;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -32,6 +34,7 @@ import org.springframework.amqp.rabbit.core.BatchingRabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -58,21 +61,27 @@ public class EnableRabbitBatchJsonIntegrationTests {
 	private Listener listener;
 
 	@Test
-	public void testSimpleList() throws InterruptedException {
-		this.template.convertAndSend("json.batch.1", new Foo("foo"));
-		this.template.convertAndSend("json.batch.1", new Foo("bar"));
+	public void testSimpleList() throws Exception {
+		this.template.send("json.batch.1", msg("{\"bar\":\"foo\"}"));
+		this.template.send("json.batch.1", msg("{\"bar\":\"bar\"}"));
 		assertThat(this.listener.foosLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.listener.foos.get(0).getBar()).isEqualTo("foo");
 		assertThat(this.listener.foos.get(1).getBar()).isEqualTo("bar");
 	}
 
 	@Test
-	public void testMessageList() throws InterruptedException {
-		this.template.convertAndSend("json.batch.2", new Foo("foo"));
-		this.template.convertAndSend("json.batch.2", new Foo("bar"));
+	public void testMessageList() throws Exception {
+		this.template.send("json.batch.2", msg("{\"bar\":\"foo\"}"));
+		this.template.send("json.batch.2", msg("{\"bar\":\"bar\"}"));
 		assertThat(this.listener.fooMessagesLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.listener.fooMessages.get(0).getPayload().getBar()).isEqualTo("foo");
 		assertThat(this.listener.fooMessages.get(1).getPayload().getBar()).isEqualTo("bar");
+	}
+
+	private org.springframework.amqp.core.Message msg(String body) throws UnsupportedEncodingException {
+		MessageProperties properties = new MessageProperties();
+		properties.setContentType("application/json");
+		return new org.springframework.amqp.core.Message(body.getBytes(SimpleMessageConverter.DEFAULT_CHARSET), properties);
 	}
 
 	@Configuration
@@ -84,6 +93,8 @@ public class EnableRabbitBatchJsonIntegrationTests {
 			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 			factory.setConnectionFactory(connectionFactory());
 			factory.setBatchListener(true);
+			factory.setConsumerBatchEnabled(true);
+			factory.setBatchSize(2);
 			factory.setMessageConverter(converter());
 			return factory;
 		}
