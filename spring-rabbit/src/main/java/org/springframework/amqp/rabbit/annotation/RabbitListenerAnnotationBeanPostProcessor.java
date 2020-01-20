@@ -41,6 +41,7 @@ import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Base64UrlNamingStrategy;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
+import org.springframework.amqp.core.Declarable;
 import org.springframework.amqp.core.ExchangeBuilder;
 import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.Queue;
@@ -362,11 +363,12 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 	}
 
-	protected void processAmqpListener(RabbitListener rabbitListener, Method method, Object bean, String beanName) {
+	protected Collection<Declarable> processAmqpListener(RabbitListener rabbitListener, Method method, Object bean,
+			String beanName) {
 		Method methodToUse = checkProxy(method, bean);
 		MethodRabbitListenerEndpoint endpoint = new MethodRabbitListenerEndpoint();
 		endpoint.setMethod(methodToUse);
-		processListener(endpoint, rabbitListener, bean, methodToUse, beanName);
+		return processListener(endpoint, rabbitListener, bean, methodToUse, beanName);
 	}
 
 	private Method checkProxy(Method methodArg, Object bean) {
@@ -401,13 +403,14 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		return method;
 	}
 
-	protected void processListener(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener, Object bean,
-			Object target, String beanName) {
+	protected Collection<Declarable> processListener(MethodRabbitListenerEndpoint endpoint,
+			RabbitListener rabbitListener, Object bean, Object target, String beanName) {
 
+		final List<Declarable> declarables = new ArrayList<>();
 		endpoint.setBean(bean);
 		endpoint.setMessageHandlerMethodFactory(this.messageHandlerMethodFactory);
 		endpoint.setId(getEndpointId(rabbitListener));
-		endpoint.setQueueNames(resolveQueues(rabbitListener));
+		endpoint.setQueueNames(resolveQueues(rabbitListener, declarables));
 		endpoint.setConcurrency(resolveExpressionAsStringOrInteger(rabbitListener.concurrency(), "concurrency"));
 		endpoint.setBeanFactory(this.beanFactory);
 		endpoint.setReturnExceptions(resolveExpressionAsBoolean(rabbitListener.returnExceptions()));
@@ -456,6 +459,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		RabbitListenerContainerFactory<?> factory = resolveContainerFactory(rabbitListener, target, beanName);
 
 		this.registrar.registerEndpoint(endpoint, factory);
+		return declarables;
 	}
 
 	private void resolveAckMode(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener) {
@@ -562,7 +566,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 	}
 
-	private String[] resolveQueues(RabbitListener rabbitListener) {
+	private String[] resolveQueues(RabbitListener rabbitListener, Collection<Declarable> declarables) {
 		String[] queues = rabbitListener.queues();
 		QueueBinding[] bindings = rabbitListener.bindings();
 		org.springframework.amqp.rabbit.annotation.Queue[] queuesToDeclare = rabbitListener.queuesToDeclare();
@@ -578,7 +582,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 						"@RabbitListener can have only one of 'queues', 'queuesToDeclare', or 'bindings'");
 			}
 			for (int i = 0; i < queuesToDeclare.length; i++) {
-				result.add(declareQueue(queuesToDeclare[i]));
+				result.add(declareQueue(queuesToDeclare[i], declarables));
 			}
 		}
 		if (bindings.length > 0) {
@@ -586,7 +590,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				throw new BeanInitializationException(
 						"@RabbitListener can have only one of 'queues', 'queuesToDeclare', or 'bindings'");
 			}
-			return registerBeansForDeclaration(rabbitListener);
+			return registerBeansForDeclaration(rabbitListener, declarables);
 		}
 		return result.toArray(new String[result.size()]);
 	}
@@ -618,19 +622,20 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 	}
 
-	private String[] registerBeansForDeclaration(RabbitListener rabbitListener) {
+	private String[] registerBeansForDeclaration(RabbitListener rabbitListener, Collection<Declarable> declarables) {
 		List<String> queues = new ArrayList<String>();
 		if (this.beanFactory instanceof ConfigurableBeanFactory) {
 			for (QueueBinding binding : rabbitListener.bindings()) {
-				String queueName = declareQueue(binding.value());
+				String queueName = declareQueue(binding.value(), declarables);
 				queues.add(queueName);
-				declareExchangeAndBinding(binding, queueName);
+				declareExchangeAndBinding(binding, queueName, declarables);
 			}
 		}
 		return queues.toArray(new String[queues.size()]);
 	}
 
-	private String declareQueue(org.springframework.amqp.rabbit.annotation.Queue bindingQueue) {
+	private String declareQueue(org.springframework.amqp.rabbit.annotation.Queue bindingQueue,
+			Collection<Declarable> declarables) {
 		String queueName = (String) resolveExpression(bindingQueue.value());
 		boolean isAnonymous = false;
 		if (!StringUtils.hasText(queueName)) {
@@ -649,10 +654,11 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			queue.setAdminsThatShouldDeclare((Object[]) bindingQueue.admins());
 		}
 		queue.setShouldDeclare(resolveExpressionAsBoolean(bindingQueue.declare()));
+		declarables.add(queue);
 		return queueName;
 	}
 
-	private void declareExchangeAndBinding(QueueBinding binding, String queueName) {
+	private void declareExchangeAndBinding(QueueBinding binding, String queueName, Collection<Declarable> declarables) {
 		org.springframework.amqp.rabbit.annotation.Exchange bindingExchange = binding.exchange();
 		String exchangeName = resolveExpressionAsString(bindingExchange.value(), "@Exchange.exchange");
 		Assert.isTrue(StringUtils.hasText(exchangeName), () -> "Exchange name required; binding queue " + queueName);
@@ -697,10 +703,12 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 		((ConfigurableBeanFactory) this.beanFactory)
 				.registerSingleton(exchangeName + ++this.increment, exchange);
-		registerBindings(binding, queueName, exchangeName, exchangeType);
+		registerBindings(binding, queueName, exchangeName, exchangeType, declarables);
+		declarables.add(exchange);
 	}
 
-	private void registerBindings(QueueBinding binding, String queueName, String exchangeName, String exchangeType) {
+	private void registerBindings(QueueBinding binding, String queueName, String exchangeName, String exchangeType,
+			Collection<Declarable> declarables) {
 		final List<String> routingKeys;
 		if (exchangeType.equals(ExchangeTypes.FANOUT) || binding.key().length == 0) {
 			routingKeys = Collections.singletonList("");
@@ -725,6 +733,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			}
 			((ConfigurableBeanFactory) this.beanFactory)
 					.registerSingleton(exchangeName + "." + queueName + ++this.increment, actualBinding);
+			declarables.add(actualBinding);
 		}
 	}
 

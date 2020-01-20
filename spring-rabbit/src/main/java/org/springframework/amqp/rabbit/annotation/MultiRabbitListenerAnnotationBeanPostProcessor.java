@@ -17,15 +17,12 @@
 package org.springframework.amqp.rabbit.annotation;
 
 import java.lang.reflect.Method;
+import java.util.Collection;
 
-import org.springframework.amqp.core.AbstractExchange;
-import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.AbstractDeclarable;
 import org.springframework.amqp.core.Declarable;
-import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.beans.factory.BeanFactory;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.lang.NonNull;
 
 /**
@@ -39,10 +36,7 @@ import org.springframework.lang.NonNull;
  * @author Wander Costa
  * @see RabbitListenerAnnotationBeanPostProcessor
  */
-public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListenerAnnotationBeanPostProcessor
-		implements ApplicationContextAware {
-
-	private ApplicationContext applicationContext;
+public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListenerAnnotationBeanPostProcessor {
 
 	private BeanFactory beanFactory;
 
@@ -53,38 +47,16 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 	}
 
 	@Override
-	public void setApplicationContext(@NonNull ApplicationContext applicationContext) {
-		this.applicationContext = applicationContext;
-	}
-
-	@Override
-	protected void processAmqpListener(RabbitListener rabbitListener, Method method, Object bean, String beanName) {
-		super.processAmqpListener(rabbitListener, method, bean, beanName);
-		enhanceBeansWithReferenceToRabbitAdmin(rabbitListener);
-	}
-
-	/**
-	 * Enhance beans with related RabbitAdmin, so as to be filtered when being processed
-	 * by the RabbitAdmin.
-	 *
-	 * @param rabbitListener the RabbitListener to enhance its bean.
-	 */
-	private void enhanceBeansWithReferenceToRabbitAdmin(RabbitListener rabbitListener) {
-		RabbitAdmin rabbitAdmin = resolveRabbitAdminBean(rabbitListener);
-		// Enhance Exchanges
-		this.applicationContext.getBeansOfType(AbstractExchange.class, false, false).values().stream()
-				.filter(this::isNotProcessed)
-				.forEach(exchange -> exchange.setAdminsThatShouldDeclare(rabbitAdmin));
-
-		// Enhance Queues
-		this.applicationContext.getBeansOfType(Queue.class, false, false).values().stream()
-				.filter(this::isNotProcessed)
-				.forEach(queue -> queue.setAdminsThatShouldDeclare(rabbitAdmin));
-
-		// Enhance Bindings
-		this.applicationContext.getBeansOfType(Binding.class, false, false).values().stream()
-				.filter(this::isNotProcessed)
-				.forEach(binding -> binding.setAdminsThatShouldDeclare(rabbitAdmin));
+	protected Collection<Declarable> processAmqpListener(RabbitListener rabbitListener, Method method,
+			Object bean, String beanName) {
+		final Collection<Declarable> declarables = super.processAmqpListener(rabbitListener, method, bean, beanName);
+		final RabbitAdmin rabbitAdmin = resolveRabbitAdminBean(rabbitListener);
+		declarables.stream()
+				.filter(dec -> dec.getDeclaringAdmins().isEmpty())
+				.filter(dec -> dec instanceof AbstractDeclarable)
+				.map(dec -> (AbstractDeclarable) dec)
+				.forEach(dec -> dec.setAdminsThatShouldDeclare(rabbitAdmin));
+		return declarables;
 	}
 
 	/**
@@ -94,19 +66,7 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 	 * @return the bean found.
 	 */
 	private RabbitAdmin resolveRabbitAdminBean(RabbitListener rabbitListener) {
-		String name = MultiRabbitAdminNameResolver.resolve(rabbitListener);
+		final String name = MultiRabbitAdminNameResolver.resolve(rabbitListener);
 		return this.beanFactory.getBean(name, RabbitAdmin.class);
 	}
-
-	/**
-	 * Verifies the presence of an instance of RabbitAdmin or the name of the bean.
-	 *
-	 * @param declarable the declarable to be verified.
-	 * @return true is the declarable was not processed.
-	 */
-	private boolean isNotProcessed(Declarable declarable) {
-		return declarable.getDeclaringAdmins().stream()
-				.noneMatch(admin -> admin instanceof String || admin instanceof RabbitAdmin);
-	}
-
 }

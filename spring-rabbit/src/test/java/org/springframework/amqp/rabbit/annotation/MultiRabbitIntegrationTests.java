@@ -16,20 +16,28 @@
 
 package org.springframework.amqp.rabbit.annotation;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import org.springframework.amqp.core.AbstractExchange;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Declarable;
+import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.rabbit.config.MessageListenerTestContainer;
 import org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory;
-import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
+import org.springframework.amqp.rabbit.connection.Connection;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.SimpleResourceHolder;
+import org.springframework.amqp.rabbit.connection.SimpleRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
@@ -42,12 +50,15 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.stereotype.Component;
 
+import com.rabbitmq.client.Channel;
+
 /**
  * @author Wander Costa
  */
 class MultiRabbitIntegrationTests {
 
 	@Test
+	@DisplayName("Test instantiation of multiple message listeners")
 	void multipleSimpleMessageListeners() {
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(MultiConfig.class,
 				SimpleMessageListenerTestBean.class);
@@ -77,6 +88,7 @@ class MultiRabbitIntegrationTests {
 	}
 
 	@Test
+	@DisplayName("Test declarables matching the proper declaring admin")
 	void testDeclarablesMatchProperRabbitAdmin() {
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(MultiConfig.class,
 				AutoBindingListenerTestBeans.class);
@@ -111,6 +123,58 @@ class MultiRabbitIntegrationTests {
 		Assertions.assertThat(declares.apply(MultiConfig.DEFAULT_RABBIT_ADMIN, bindings.get("testKey"))).isTrue();
 		Assertions.assertThat(declares.apply(MultiConfig.RABBIT_ADMIN_BROKER_B, bindings.get("testKeyB"))).isTrue();
 		Assertions.assertThat(declares.apply(MultiConfig.RABBIT_ADMIN_BROKER_C, bindings.get("testKeyC"))).isTrue();
+
+		context.close(); // Close and stop the listeners
+	}
+
+	@Test
+	@DisplayName("Test stand-alone declarable not associated to any declaring admin")
+	void testStandAloneDeclarablesNotEnhancedWithSpecificDeclaringAdmin() {
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(MultiConfig.class,
+				StandAloneDeclarablesConfig.class, AutoBindingListenerTestBeans.class);
+
+		Declarable exchange = context.getBean(StandAloneDeclarablesConfig.EXCHANGE, AbstractExchange.class);
+		Assertions.assertThat(exchange.getDeclaringAdmins()).isEmpty();
+
+		Declarable queue = context.getBean(StandAloneDeclarablesConfig.QUEUE,
+				org.springframework.amqp.core.Queue.class);
+		Assertions.assertThat(queue.getDeclaringAdmins()).isEmpty();
+
+		Declarable binding = context.getBean(StandAloneDeclarablesConfig.BINDING, Binding.class);
+		Assertions.assertThat(binding.getDeclaringAdmins()).isEmpty();
+
+		context.close(); // Close and stop the listeners
+	}
+
+	@Test
+	@DisplayName("Test creation of connections at the proper brokers")
+	void testCreationOfConnections() {
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(MultiConfig.class,
+				AutoBindingListenerTestBeans.class);
+
+		final RabbitTemplate rabbitTemplate = new RabbitTemplate(MultiConfig.ROUTING_CONNECTION_FACTORY);
+
+		Mockito.verify(MultiConfig.DEFAULT_CONNECTION_FACTORY, Mockito.never()).createConnection();
+		Mockito.verify(MultiConfig.DEFAULT_CONNECTION, Mockito.never()).createChannel(false);
+		rabbitTemplate.convertAndSend("messageDefaultBroker");
+		Mockito.verify(MultiConfig.DEFAULT_CONNECTION_FACTORY).createConnection();
+		Mockito.verify(MultiConfig.DEFAULT_CONNECTION).createChannel(false);
+
+		Mockito.verify(MultiConfig.CONNECTION_FACTORY_BROKER_B, Mockito.never()).createConnection();
+		Mockito.verify(MultiConfig.CONNECTION_BROKER_B, Mockito.never()).createChannel(false);
+		SimpleResourceHolder.bind(MultiConfig.ROUTING_CONNECTION_FACTORY, "brokerB");
+		rabbitTemplate.convertAndSend("messageToBrokerB");
+		SimpleResourceHolder.unbind(MultiConfig.ROUTING_CONNECTION_FACTORY);
+		Mockito.verify(MultiConfig.CONNECTION_FACTORY_BROKER_B).createConnection();
+		Mockito.verify(MultiConfig.CONNECTION_BROKER_B).createChannel(false);
+
+		Mockito.verify(MultiConfig.CONNECTION_FACTORY_BROKER_C, Mockito.never()).createConnection();
+		Mockito.verify(MultiConfig.CONNECTION_BROKER_C, Mockito.never()).createChannel(false);
+		SimpleResourceHolder.bind(MultiConfig.ROUTING_CONNECTION_FACTORY, "brokerC");
+		rabbitTemplate.convertAndSend("messageToBrokerC");
+		SimpleResourceHolder.unbind(MultiConfig.ROUTING_CONNECTION_FACTORY);
+		Mockito.verify(MultiConfig.CONNECTION_FACTORY_BROKER_C).createConnection();
+		Mockito.verify(MultiConfig.CONNECTION_BROKER_C).createChannel(false);
 
 		context.close(); // Close and stop the listeners
 	}
@@ -160,9 +224,38 @@ class MultiRabbitIntegrationTests {
 	@PropertySource("classpath:/org/springframework/amqp/rabbit/annotation/queue-annotation.properties")
 	static class MultiConfig {
 
-		static final RabbitAdmin DEFAULT_RABBIT_ADMIN = new RabbitAdmin(new SingleConnectionFactory());
-		static final RabbitAdmin RABBIT_ADMIN_BROKER_B = new RabbitAdmin(new SingleConnectionFactory());
-		static final RabbitAdmin RABBIT_ADMIN_BROKER_C = new RabbitAdmin(new SingleConnectionFactory());
+		static final SimpleRoutingConnectionFactory ROUTING_CONNECTION_FACTORY = new SimpleRoutingConnectionFactory();
+		static final ConnectionFactory DEFAULT_CONNECTION_FACTORY = Mockito.mock(ConnectionFactory.class);
+		static final ConnectionFactory CONNECTION_FACTORY_BROKER_B = Mockito.spy(ConnectionFactory.class);
+		static final ConnectionFactory CONNECTION_FACTORY_BROKER_C = Mockito.mock(ConnectionFactory.class);
+
+		static final Connection DEFAULT_CONNECTION = Mockito.mock(Connection.class);
+		static final Connection CONNECTION_BROKER_B = Mockito.mock(Connection.class);
+		static final Connection CONNECTION_BROKER_C = Mockito.mock(Connection.class);
+
+		static final Channel DEFAULT_CHANNEL = Mockito.mock(Channel.class);
+		static final Channel CHANNEL_BROKER_B = Mockito.mock(Channel.class);
+		static final Channel CHANNEL_BROKER_C = Mockito.mock(Channel.class);
+
+		static {
+			final Map<Object, ConnectionFactory> targetConnectionFactories = new HashMap<>();
+			targetConnectionFactories.put("brokerB", CONNECTION_FACTORY_BROKER_B);
+			targetConnectionFactories.put("brokerC", CONNECTION_FACTORY_BROKER_C);
+			ROUTING_CONNECTION_FACTORY.setDefaultTargetConnectionFactory(DEFAULT_CONNECTION_FACTORY);
+			ROUTING_CONNECTION_FACTORY.setTargetConnectionFactories(targetConnectionFactories);
+
+			Mockito.when(DEFAULT_CONNECTION_FACTORY.createConnection()).thenReturn(DEFAULT_CONNECTION);
+			Mockito.when(CONNECTION_FACTORY_BROKER_B.createConnection()).thenReturn(CONNECTION_BROKER_B);
+			Mockito.when(CONNECTION_FACTORY_BROKER_C.createConnection()).thenReturn(CONNECTION_BROKER_C);
+
+			Mockito.when(DEFAULT_CONNECTION.createChannel(false)).thenReturn(DEFAULT_CHANNEL);
+			Mockito.when(CONNECTION_BROKER_B.createChannel(false)).thenReturn(CHANNEL_BROKER_B);
+			Mockito.when(CONNECTION_BROKER_C.createChannel(false)).thenReturn(CHANNEL_BROKER_C);
+		}
+
+		static final RabbitAdmin DEFAULT_RABBIT_ADMIN = new RabbitAdmin(DEFAULT_CONNECTION_FACTORY);
+		static final RabbitAdmin RABBIT_ADMIN_BROKER_B = new RabbitAdmin(CONNECTION_FACTORY_BROKER_B);
+		static final RabbitAdmin RABBIT_ADMIN_BROKER_C = new RabbitAdmin(CONNECTION_FACTORY_BROKER_C);
 
 		@Bean
 		public RabbitListenerAnnotationBeanPostProcessor postProcessor() {
@@ -211,6 +304,29 @@ class MultiRabbitIntegrationTests {
 		@Bean
 		public static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
 			return new PropertySourcesPlaceholderConfigurer();
+		}
+	}
+
+	@Configuration
+	static class StandAloneDeclarablesConfig {
+
+		static final String EXCHANGE = "standAloneExchange";
+		static final String QUEUE = "standAloneQueue";
+		static final String BINDING = "standAloneBinding";
+
+		@Bean(name = EXCHANGE)
+		public AbstractExchange exchange() {
+			return new DirectExchange(EXCHANGE);
+		}
+
+		@Bean(name = QUEUE)
+		public org.springframework.amqp.core.Queue queue() {
+			return new org.springframework.amqp.core.Queue(QUEUE);
+		}
+
+		@Bean(name = BINDING)
+		public Binding binding() {
+			return new Binding(QUEUE, Binding.DestinationType.QUEUE, EXCHANGE, BINDING, null);
 		}
 	}
 }
