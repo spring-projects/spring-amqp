@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,7 @@
 package org.springframework.amqp.rabbit.log4j2;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -53,23 +50,13 @@ import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.DefaultSaslConfig;
-import com.rabbitmq.client.JDKSaslConfig;
-import com.rabbitmq.client.impl.CRDemoMechanism;
-
 /**
- * @author Gary Russell
- * @author Stephen Oakey
- * @author Artem Bilan
- * @author Dominique Villard
- * @author Nicolas Ristock
- * @author Eugene Gusev
+ * @author Francesco Scipioni
  *
- * @since 1.6
+ * @since 2.2.4
  */
 @RabbitAvailable
-public class AmqpAppenderTests {
+public class ExtendAmqpAppenderTests {
 
 	private static final LoggerContext LOGGER_CONTEXT = (LoggerContext) LogManager.getContext(false);
 
@@ -77,7 +64,7 @@ public class AmqpAppenderTests {
 
 	@BeforeAll
 	public static void setup() throws IOException {
-		LOGGER_CONTEXT.setConfigLocation(new ClassPathResource("log4j2-amqp-appender.xml").getURI());
+		LOGGER_CONTEXT.setConfigLocation(new ClassPathResource("log4j2-extend-amqp-appender.xml").getURI());
 		LOGGER_CONTEXT.reconfigure();
 	}
 
@@ -106,6 +93,10 @@ public class AmqpAppenderTests {
 		Message received = template.receive(queue.getName());
 		assertThat(received).isNotNull();
 		assertThat(received.getMessageProperties().getReceivedRoutingKey()).isEqualTo("testAppId.foo.INFO");
+		Object foo = received.getMessageProperties().getHeader("foo");
+		assertThat(foo).isNotNull();
+		assertThat(foo).isInstanceOf(String.class);
+		assertThat(foo).isEqualTo("bar");
 		// Cross-platform string comparison. Windows expects \n\r in the end of line
 		assertThat(new String(received.getBody())).startsWith("foo");
 		received = template.receive(queue.getName());
@@ -116,6 +107,10 @@ public class AmqpAppenderTests {
 		assertThat(threadName).isNotNull();
 		assertThat(threadName).isInstanceOf(String.class);
 		assertThat(threadName).isEqualTo(Thread.currentThread().getName());
+		foo = received.getMessageProperties().getHeaders().get("foo");
+		assertThat(foo).isNotNull();
+		assertThat(foo).isInstanceOf(String.class);
+		assertThat(foo).isEqualTo("bar");
 		ccf.destroy();
 	}
 
@@ -135,7 +130,9 @@ public class AmqpAppenderTests {
 		// deliveryMode="NON_PERSISTENT"
 		// charset="UTF-8"
 		// async="false"
-		// senderPoolSize="3" maxSenderRetries="5">
+		// senderPoolSize="3" maxSenderRetries="5"
+		// foo="foo"
+		// bar="bar">
 		// </RabbitMQ>
 		assertThat(TestUtils.getPropertyValue(manager, "addresses")).isEqualTo("localhost:5672");
 		assertThat(TestUtils.getPropertyValue(manager, "host")).isEqualTo("localhost");
@@ -164,35 +161,11 @@ public class AmqpAppenderTests {
 
 		assertThat(TestUtils.getPropertyValue(appender, "events.items", Object[].class).length).isEqualTo(10);
 
+		assertThat(TestUtils.getPropertyValue(appender, "foo")).isEqualTo("foo");
+		assertThat(TestUtils.getPropertyValue(appender, "bar")).isEqualTo("bar");
+
 		Object events = TestUtils.getPropertyValue(appender, "events");
 		assertThat(events.getClass()).isEqualTo(ArrayBlockingQueue.class);
-	}
-
-	@Test
-	public void testSaslConfig() {
-		Logger logger = LogManager.getLogger("sasl");
-		AmqpAppender appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
-				Map.class).get("sasl1");
-		assertThat(TestUtils.getPropertyValue(appender, "manager.connectionFactory.rabbitConnectionFactory",
-				ConnectionFactory.class).getSaslConfig())
-			.isInstanceOf(DefaultSaslConfig.class)
-			.hasFieldOrPropertyWithValue("mechanism", "PLAIN");
-		appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
-				Map.class).get("sasl2");
-		assertThat(TestUtils.getPropertyValue(appender, "manager.connectionFactory.rabbitConnectionFactory",
-				ConnectionFactory.class).getSaslConfig())
-			.isInstanceOf(DefaultSaslConfig.class)
-			.hasFieldOrPropertyWithValue("mechanism", "EXTERNAL");
-		appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
-				Map.class).get("sasl3");
-		assertThat(TestUtils.getPropertyValue(appender, "manager.connectionFactory.rabbitConnectionFactory",
-				ConnectionFactory.class).getSaslConfig())
-			.isInstanceOf(JDKSaslConfig.class);
-		appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
-				Map.class).get("sasl4");
-		assertThat(TestUtils.getPropertyValue(appender, "manager.connectionFactory.rabbitConnectionFactory",
-				ConnectionFactory.class).getSaslConfig())
-			.isInstanceOf(CRDemoMechanism.CRDemoSaslConfig.class);
 	}
 
 	@Test
@@ -202,6 +175,9 @@ public class AmqpAppenderTests {
 				Map.class).get("rabbitmq_default_queue");
 
 		Object events = TestUtils.getPropertyValue(appender, "events");
+
+		assertThat(TestUtils.getPropertyValue(appender, "foo")).isEqualTo("defaultFoo");
+		assertThat(TestUtils.getPropertyValue(appender, "bar")).isEqualTo("defaultBar");
 
 		Object manager = TestUtils.getPropertyValue(appender, "manager");
 		assertThat(TestUtils.getPropertyValue(manager, "addMdcAsHeaders", Boolean.class)).isTrue();
@@ -224,12 +200,15 @@ public class AmqpAppenderTests {
 		assertThat(TestUtils.getPropertyValue(manager, "password")).isNull();
 		assertThat(TestUtils.getPropertyValue(manager, "virtualHost")).isNull();
 		assertThat(TestUtils.getPropertyValue(manager, "addMdcAsHeaders", Boolean.class)).isFalse();
+
+		assertThat(TestUtils.getPropertyValue(appender, "foo")).isEqualTo("foo_uri");
+		assertThat(TestUtils.getPropertyValue(appender, "bar")).isEqualTo("bar_uri");
 	}
 
 	@Test
 	public void testDefaultConfiguration() {
 		@SuppressWarnings("resource")
-		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager(LOGGER_CONTEXT, "test");
+		AmqpAppender.AmqpManager manager = new ExtendAmqpAppender.AmqpManager(LOGGER_CONTEXT, "test");
 
 		RabbitConnectionFactoryBean bean = mock(RabbitConnectionFactoryBean.class);
 		manager.configureRabbitConnectionFactory(bean);
@@ -240,7 +219,7 @@ public class AmqpAppenderTests {
 
 	@Test
 	public void testCustomHostInformation() {
-		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager(LOGGER_CONTEXT, "test");
+		AmqpAppender.AmqpManager manager = new ExtendAmqpAppender.AmqpManager(LOGGER_CONTEXT, "test");
 
 		String host = "rabbitmq.com";
 		int port = 5671;
@@ -264,103 +243,6 @@ public class AmqpAppenderTests {
 		verify(bean).setVirtualHost(virtualHost);
 	}
 
-	@Test
-	public void testDefaultSslConfiguration() {
-		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager(LOGGER_CONTEXT, "test");
-		ReflectionTestUtils.setField(manager, "useSsl", true);
-
-		RabbitConnectionFactoryBean bean = mock(RabbitConnectionFactoryBean.class);
-		manager.configureRabbitConnectionFactory(bean);
-
-		verifyDefaultHostProperties(bean);
-		verify(bean).setUseSSL(eq(true));
-		verify(bean, never()).setSslAlgorithm(anyString());
-	}
-
-	@Test
-	public void testSslConfigurationWithAlgorithm() {
-		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager(LOGGER_CONTEXT, "test");
-		ReflectionTestUtils.setField(manager, "useSsl", true);
-		String sslAlgorithm = "TLSv2";
-		ReflectionTestUtils.setField(manager, "sslAlgorithm", sslAlgorithm);
-
-		RabbitConnectionFactoryBean bean = mock(RabbitConnectionFactoryBean.class);
-		manager.configureRabbitConnectionFactory(bean);
-
-		verifyDefaultHostProperties(bean);
-		verify(bean).setUseSSL(eq(true));
-		verify(bean).setSslAlgorithm(eq(sslAlgorithm));
-	}
-
-	@Test
-	public void testSslConfigurationWithSslPropertiesResource() {
-		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager(LOGGER_CONTEXT, "test");
-		ReflectionTestUtils.setField(manager, "useSsl", true);
-
-		String path = "ssl.properties";
-		ReflectionTestUtils.setField(manager, "sslPropertiesLocation", "classpath:" + path);
-
-		RabbitConnectionFactoryBean bean = mock(RabbitConnectionFactoryBean.class);
-		manager.configureRabbitConnectionFactory(bean);
-
-		verifyDefaultHostProperties(bean);
-		verify(bean).setUseSSL(eq(true));
-		verify(bean).setSslPropertiesLocation(eq(new ClassPathResource(path)));
-		verify(bean, never()).setKeyStore(anyString());
-		verify(bean, never()).setKeyStorePassphrase(anyString());
-		verify(bean, never()).setKeyStoreType(anyString());
-		verify(bean, never()).setTrustStore(anyString());
-		verify(bean, never()).setTrustStorePassphrase(anyString());
-		verify(bean, never()).setTrustStoreType(anyString());
-	}
-
-	@Test
-	public void testSslConfigurationWithKeyAndTrustStore() {
-		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager(LOGGER_CONTEXT, "test");
-		ReflectionTestUtils.setField(manager, "useSsl", true);
-
-		String keyStore = "file:/path/to/client/keycert.p12";
-		String keyStorePassphrase = "secret";
-		String keyStoreType = "foo";
-		String trustStore = "file:/path/to/client/truststore";
-		String trustStorePassphrase = "secret2";
-		String trustStoreType = "bar";
-
-		ReflectionTestUtils.setField(manager, "keyStore", keyStore);
-		ReflectionTestUtils.setField(manager, "keyStorePassphrase", keyStorePassphrase);
-		ReflectionTestUtils.setField(manager, "keyStoreType", keyStoreType);
-		ReflectionTestUtils.setField(manager, "trustStore", trustStore);
-		ReflectionTestUtils.setField(manager, "trustStorePassphrase", trustStorePassphrase);
-		ReflectionTestUtils.setField(manager, "trustStoreType", trustStoreType);
-
-		RabbitConnectionFactoryBean bean = mock(RabbitConnectionFactoryBean.class);
-		manager.configureRabbitConnectionFactory(bean);
-
-		verifyDefaultHostProperties(bean);
-		verify(bean).setUseSSL(eq(true));
-		verify(bean, never()).setSslPropertiesLocation(any());
-		verify(bean).setKeyStore(keyStore);
-		verify(bean).setKeyStorePassphrase(keyStorePassphrase);
-		verify(bean).setKeyStoreType(keyStoreType);
-		verify(bean).setTrustStore(trustStore);
-		verify(bean).setTrustStorePassphrase(trustStorePassphrase);
-		verify(bean).setTrustStoreType(trustStoreType);
-	}
-
-	@Test
-	public void testSslConfigurationWithKeyAndTrustStoreDefaultTypes() {
-		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager(LOGGER_CONTEXT, "test");
-		ReflectionTestUtils.setField(manager, "useSsl", true);
-
-		RabbitConnectionFactoryBean bean = mock(RabbitConnectionFactoryBean.class);
-		manager.configureRabbitConnectionFactory(bean);
-
-		verifyDefaultHostProperties(bean);
-		verify(bean).setUseSSL(eq(true));
-		verify(bean).setKeyStoreType("JKS");
-		verify(bean).setTrustStoreType("JKS");
-	}
-
 	private void verifyDefaultHostProperties(RabbitConnectionFactoryBean bean) {
 		verify(bean, never()).setHost("localhost");
 		verify(bean, never()).setPort(5672);
@@ -368,5 +250,4 @@ public class AmqpAppenderTests {
 		verify(bean, never()).setPassword("guest");
 		verify(bean, never()).setVirtualHost("/");
 	}
-
 }
