@@ -57,6 +57,7 @@ import com.rabbitmq.client.Channel;
  * @author Stephane Nicoll
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Kai Stapel
  *
  * @since 1.4
  */

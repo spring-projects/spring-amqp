@@ -46,6 +46,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 /**
  * @author Gary Russell
+ * @author Kai Stapel
  * @since 2.2
  *
  */
