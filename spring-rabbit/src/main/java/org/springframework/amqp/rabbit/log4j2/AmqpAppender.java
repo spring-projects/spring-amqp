@@ -362,7 +362,7 @@ public class AmqpAppender extends AbstractAppender {
 				message = new Message(msgBody.toString().getBytes(), amqpProps); //NOSONAR (default charset)
 			}
 			message = postProcessMessageBeforeSend(message, event);
-			this.rabbitTemplate.send(this.manager.exchangeName, routingKey, message);
+			this.rabbitTemplate.send(this.manager.exchangeName, routingKey, message); // NOSONAR (sync)
 		}
 		catch (AmqpException e) {
 			int retries = event.incrementRetries();
