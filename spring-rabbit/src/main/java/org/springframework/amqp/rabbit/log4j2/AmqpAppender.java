@@ -123,7 +123,7 @@ public class AmqpAppender extends AbstractAppender {
 	/**
 	 * The template.
 	 */
-	private final RabbitTemplate rabbitTemplate = new RabbitTemplate();
+	private RabbitTemplate rabbitTemplate;
 
 	/**
 	 * Where LoggingEvents are queued to send.
@@ -256,17 +256,11 @@ public class AmqpAppender extends AbstractAppender {
 	 * Submit the required number of senders into the pool.
 	 */
 	private void startSenders() {
-		this.rabbitTemplate.setConnectionFactory(this.manager.connectionFactory);
 		if (this.manager.async) {
+			this.manager.senderPool = Executors.newCachedThreadPool();
 			for (int i = 0; i < this.manager.senderPoolSize; i++) {
 				this.manager.senderPool.submit(new EventSender());
 			}
-		}
-		else if (this.manager.maxSenderRetries > 0) {
-			RetryTemplate retryTemplate = new RetryTemplate();
-			RetryPolicy retryPolicy = new SimpleRetryPolicy(this.manager.maxSenderRetries);
-			retryTemplate.setRetryPolicy(retryPolicy);
-			this.rabbitTemplate.setRetryTemplate(retryTemplate);
 		}
 	}
 
@@ -293,6 +287,22 @@ public class AmqpAppender extends AbstractAppender {
 	}
 
 	protected void sendEvent(Event event, Map<?, ?> properties) {
+		synchronized (this) {
+			if (this.rabbitTemplate == null) {
+				if (this.manager.activateOptions()) {
+					this.rabbitTemplate = new RabbitTemplate(this.manager.connectionFactory);
+					if (!this.manager.async && this.manager.maxSenderRetries > 0) {
+						RetryTemplate retryTemplate = new RetryTemplate();
+						RetryPolicy retryPolicy = new SimpleRetryPolicy(this.manager.maxSenderRetries);
+						retryTemplate.setRetryPolicy(retryPolicy);
+						this.rabbitTemplate.setRetryTemplate(retryTemplate);
+					}
+				}
+				else {
+					throw new AmqpException("Cannot create template");
+				}
+			}
+		}
 		LogEvent logEvent = event.getEvent();
 		String name = logEvent.getLoggerName();
 		Level level = logEvent.getLevel();
@@ -358,7 +368,7 @@ public class AmqpAppender extends AbstractAppender {
 				message = new Message(msgBody.toString().getBytes(), amqpProps); //NOSONAR (default charset)
 			}
 			message = postProcessMessageBeforeSend(message, event);
-			this.rabbitTemplate.send(this.manager.exchangeName, routingKey, message);
+			this.rabbitTemplate.send(this.manager.exchangeName, routingKey, message); // NOSONAR (sync)
 		}
 		catch (AmqpException e) {
 			int retries = event.incrementRetries();
@@ -651,7 +661,7 @@ public class AmqpAppender extends AbstractAppender {
 			super(loggerContext, name);
 		}
 
-		private boolean activateOptions() {
+		boolean activateOptions() {
 			ConnectionFactory rabbitConnectionFactory = createRabbitConnectionFactory();
 			if (rabbitConnectionFactory != null) {
 				Assert.state(this.applicationId != null, "applicationId is required");
@@ -673,7 +683,6 @@ public class AmqpAppender extends AbstractAppender {
 							this.clientConnectionProperties);
 				}
 				setUpExchangeDeclaration();
-				this.senderPool = Executors.newCachedThreadPool();
 				return true;
 			}
 			return false;

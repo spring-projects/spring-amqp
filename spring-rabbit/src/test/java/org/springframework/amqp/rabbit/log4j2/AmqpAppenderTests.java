@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.log4j2;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
@@ -37,6 +38,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.logging.log4j.LogManager;
@@ -54,6 +56,7 @@ import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.RabbitConnectionFactoryBean;
+import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
@@ -179,8 +182,40 @@ public class AmqpAppenderTests {
 	}
 
 	@Test
-	public void testAmqpAppenderEventQueueTypeDefaultsToLinkedBlockingQueue() throws Exception {
+	public void testSaslConfig() {
+		Logger logger = LogManager.getLogger("sasl");
+		AmqpAppender appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
+				Map.class).get("sasl1");
+		SaslConfig saslConfig = RabbitUtils.stringToSaslConfig(
+				TestUtils.getPropertyValue(appender, "manager.saslConfig", String.class),
+				mock(ConnectionFactory.class));
+		assertThat(saslConfig, instanceOf(DefaultSaslConfig.class));
+		assertEquals("PLAIN", TestUtils.getPropertyValue(saslConfig, "mechanism"));
+		appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
+				Map.class).get("sasl2");
+		saslConfig = RabbitUtils.stringToSaslConfig(
+				TestUtils.getPropertyValue(appender, "manager.saslConfig", String.class),
+				mock(ConnectionFactory.class));
+		assertThat(saslConfig, instanceOf(DefaultSaslConfig.class));
+		assertEquals("EXTERNAL", TestUtils.getPropertyValue(saslConfig, "mechanism"));
+		appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
+				Map.class).get("sasl3");
+		saslConfig = RabbitUtils.stringToSaslConfig(
+				TestUtils.getPropertyValue(appender, "manager.saslConfig", String.class),
+				mock(ConnectionFactory.class));
+		assertThat(saslConfig, instanceOf(JDKSaslConfig.class));
+		appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
+				Map.class).get("sasl4");
+		saslConfig = RabbitUtils.stringToSaslConfig(
+				TestUtils.getPropertyValue(appender, "manager.saslConfig", String.class),
+				mock(ConnectionFactory.class));
+		assertThat(saslConfig, instanceOf(CRDemoMechanism.CRDemoSaslConfig.class));
+	}
+
+	@Test
+	public void testAmqpAppenderEventQueueTypeDefaultsToLinkedBlockingQueue() throws InterruptedException {
 		Logger logger = LogManager.getLogger("default_queue_logger");
+		logger.info("test");
 		AmqpAppender appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
 				Map.class).get("rabbitmq_default_queue");
 
@@ -189,42 +224,13 @@ public class AmqpAppenderTests {
 		Object manager = TestUtils.getPropertyValue(appender, "manager");
 		assertTrue(TestUtils.getPropertyValue(manager, "addMdcAsHeaders", Boolean.class));
 
-		assertThat(events, instanceOf(LinkedBlockingQueue.class));
-	}
-
-	@Test
-	public void testSaslConfig() {
-		Logger logger = LogManager.getLogger("sasl");
-		AmqpAppender appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
-				Map.class).get("sasl1");
-		SaslConfig saslConfig =
-				TestUtils.getPropertyValue(appender, "manager.connectionFactory.rabbitConnectionFactory",
-						ConnectionFactory.class)
-						.getSaslConfig();
-		assertThat(saslConfig, instanceOf(DefaultSaslConfig.class));
-		assertEquals("PLAIN", TestUtils.getPropertyValue(saslConfig, "mechanism"));
-		appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
-				Map.class).get("sasl2");
-		saslConfig =
-				TestUtils.getPropertyValue(appender, "manager.connectionFactory.rabbitConnectionFactory",
-						ConnectionFactory.class)
-						.getSaslConfig();
-		assertThat(saslConfig, instanceOf(DefaultSaslConfig.class));
-		assertEquals("EXTERNAL", TestUtils.getPropertyValue(saslConfig, "mechanism"));
-		appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
-				Map.class).get("sasl3");
-		saslConfig =
-				TestUtils.getPropertyValue(appender, "manager.connectionFactory.rabbitConnectionFactory",
-						ConnectionFactory.class)
-						.getSaslConfig();
-		assertThat(saslConfig, instanceOf(JDKSaslConfig.class));
-		appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
-				Map.class).get("sasl4");
-		saslConfig =
-				TestUtils.getPropertyValue(appender, "manager.connectionFactory.rabbitConnectionFactory",
-						ConnectionFactory.class)
-						.getSaslConfig();
-		assertThat(saslConfig, instanceOf(CRDemoMechanism.CRDemoSaslConfig.class));
+		assertThat(events.getClass(), equalTo(LinkedBlockingQueue.class));
+		BlockingQueue<?> queue = (BlockingQueue<?>) events;
+		int n = 0;
+		while (n++ < 100 && queue.size() > 0) {
+			Thread.sleep(100);
+		}
+		assertThat(queue.size(), equalTo(0));
 	}
 
 	@Test
