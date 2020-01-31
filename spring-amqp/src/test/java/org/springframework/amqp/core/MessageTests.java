@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Date;
 
@@ -42,6 +43,15 @@ public class MessageTests {
 	public void toStringForEmptyMessageBody() {
 		Message message = new Message(new byte[0], new MessageProperties());
 		assertThat(message.toString()).isNotNull();
+	}
+
+	@Test
+	public void properEncoding() {
+		Message message = new Message("ÁRVÍZTŰRŐ TÜKÖRFÚRÓGÉP".getBytes(StandardCharsets.UTF_16),
+				new MessageProperties());
+		message.getMessageProperties().setContentType(MessageProperties.CONTENT_TYPE_JSON);
+		message.getMessageProperties().setContentEncoding("UTF-16");
+		assertThat(message.toString()).contains("ÁRVÍZTŰRŐ TÜKÖRFÚRÓGÉP");
 	}
 
 	@Test
