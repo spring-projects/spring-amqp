@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,10 +46,12 @@ public class Message implements Serializable {
 
 	private static final long serialVersionUID = -7177590352110605597L;
 
-	private static final String ENCODING = Charset.defaultCharset().name();
+	private static final String DEFAULT_ENCODING = Charset.defaultCharset().name();
 
 	private static final Set<String> whiteListPatterns = // NOSONAR lower case static
 			new LinkedHashSet<>(Arrays.asList("java.util.*", "java.lang.*"));
+
+	private static String bodyEncoding = DEFAULT_ENCODING;
 
 	private final MessageProperties messageProperties;
 
@@ -75,6 +77,17 @@ public class Message implements Serializable {
 	public static void addWhiteListPatterns(String... patterns) {
 		Assert.notNull(patterns, "'patterns' cannot be null");
 		whiteListPatterns.addAll(Arrays.asList(patterns));
+	}
+
+	/**
+	 * Set the encoding to use in {@link #toString()} when converting the body if
+	 * there is no {@link MessageProperties#getContentEncoding() contentEncoding} message property present.
+	 * @param encoding the encoding to use.
+	 * @since 2.2.4
+	 */
+	public static void setDefaultEncoding(String encoding) {
+		Assert.notNull(encoding, "'encoding' cannot be null");
+		bodyEncoding = encoding;
 	}
 
 	public byte[] getBody() {
@@ -107,11 +120,15 @@ public class Message implements Serializable {
 				return SerializationUtils.deserialize(new ByteArrayInputStream(this.body), whiteListPatterns,
 						ClassUtils.getDefaultClassLoader()).toString();
 			}
+			String encoding = this.messageProperties.getContentEncoding();
+			if (encoding == null) {
+				encoding = bodyEncoding;
+			}
 			if (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)
 					|| MessageProperties.CONTENT_TYPE_JSON.equals(contentType)
 					|| MessageProperties.CONTENT_TYPE_JSON_ALT.equals(contentType)
 					|| MessageProperties.CONTENT_TYPE_XML.equals(contentType)) {
-				return new String(this.body, ENCODING);
+				return new String(this.body, encoding);
 			}
 		}
 		catch (Exception e) {
