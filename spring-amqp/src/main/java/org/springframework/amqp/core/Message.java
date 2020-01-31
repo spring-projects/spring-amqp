@@ -115,12 +115,13 @@ public class Message implements Serializable {
 			return null;
 		}
 		try {
-			String contentType = (this.messageProperties != null) ? this.messageProperties.getContentType() : null;
+			boolean nullProps = this.messageProperties == null;
+			String contentType = nullProps ? null : this.messageProperties.getContentType();
 			if (MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT.equals(contentType)) {
 				return SerializationUtils.deserialize(new ByteArrayInputStream(this.body), whiteListPatterns,
 						ClassUtils.getDefaultClassLoader()).toString();
 			}
-			String encoding = this.messageProperties.getContentEncoding();
+			String encoding = nullProps ? null : this.messageProperties.getContentEncoding();
 			if (encoding == null) {
 				encoding = bodyEncoding;
 			}
