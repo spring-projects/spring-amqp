@@ -121,10 +121,7 @@ public class Message implements Serializable {
 				return SerializationUtils.deserialize(new ByteArrayInputStream(this.body), whiteListPatterns,
 						ClassUtils.getDefaultClassLoader()).toString();
 			}
-			String encoding = nullProps ? null : this.messageProperties.getContentEncoding();
-			if (encoding == null) {
-				encoding = bodyEncoding;
-			}
+			String encoding = encoding(nullProps);
 			if (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)
 					|| MessageProperties.CONTENT_TYPE_JSON.equals(contentType)
 					|| MessageProperties.CONTENT_TYPE_JSON_ALT.equals(contentType)
@@ -137,6 +134,14 @@ public class Message implements Serializable {
 		}
 		// Comes out as '[B@....b' (so harmless)
 		return this.body.toString() + "(byte[" + this.body.length + "])"; //NOSONAR
+	}
+
+	private String encoding(boolean nullProps) {
+		String encoding = nullProps ? null : this.messageProperties.getContentEncoding();
+		if (encoding == null) {
+			encoding = bodyEncoding;
+		}
+		return encoding;
 	}
 
 	@Override
