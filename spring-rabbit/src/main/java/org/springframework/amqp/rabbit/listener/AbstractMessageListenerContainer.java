@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -449,8 +449,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	/**
 	 * Set an ErrorHandler to be invoked in case of any uncaught exceptions thrown while processing a Message. By
-	 * default default a {@link ConditionalRejectingErrorHandler} with its default list of fatal exceptions will
-	 * be used.
+	 * default a {@link ConditionalRejectingErrorHandler} with its default list of fatal exceptions will be used.
 	 *
 	 * @param errorHandler The error handler.
 	 */
