@@ -449,7 +449,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	/**
 	 * Set an ErrorHandler to be invoked in case of any uncaught exceptions thrown while processing a Message. By
-	 * default there will be <b>no</b> ErrorHandler so that error-level logging is the only result.
+	 * default default a {@link ConditionalRejectingErrorHandler} with its default list of fatal exceptions will
+	 * be used.
 	 *
 	 * @param errorHandler The error handler.
 	 */
