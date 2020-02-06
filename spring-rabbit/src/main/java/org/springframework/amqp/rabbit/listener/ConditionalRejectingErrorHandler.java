@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -161,18 +161,12 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 		public boolean isFatal(Throwable t) {
 			Throwable cause = t.getCause();
 			while (cause instanceof MessagingException
-					&& !(cause instanceof
-					org.springframework.messaging.converter.MessageConversionException)
+					&& !(cause instanceof org.springframework.messaging.converter.MessageConversionException)
 					&& !(cause instanceof MethodArgumentResolutionException)) {
 				cause = cause.getCause();
 			}
 			if (t instanceof ListenerExecutionFailedException && isCauseFatal(cause)) {
-				if (this.logger.isWarnEnabled()) {
-					this.logger.warn(
-							"Fatal message conversion error; message rejected; "
-									+ "it will be dropped or routed to a dead letter exchange, if so configured: "
-									+ ((ListenerExecutionFailedException) t).getFailedMessage());
-				}
+				logFatalException((ListenerExecutionFailedException) t, cause);
 				return true;
 			}
 			return false;
@@ -185,6 +179,22 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 					|| cause instanceof NoSuchMethodException
 					|| cause instanceof ClassCastException
 					|| isUserCauseFatal(cause);
+		}
+
+		/**
+		 * Log the fatal ListenerExecutionFailedException at WARN level, excluding stack
+		 * trace. Subclasses can override this behavior.
+		 * @param t the {@link ListenerExecutionFailedException}.
+		 * @param cause the root cause (skipping any general {@link MessagingException}s).
+		 * @since 2.2.4
+		 */
+		protected void logFatalException(ListenerExecutionFailedException t, Throwable cause) {
+			if (this.logger.isWarnEnabled()) {
+				this.logger.warn(
+						"Fatal message conversion error; message rejected; "
+								+ "it will be dropped or routed to a dead letter exchange, if so configured: "
+								+ t.getFailedMessage());
+			}
 		}
 
 		/**
