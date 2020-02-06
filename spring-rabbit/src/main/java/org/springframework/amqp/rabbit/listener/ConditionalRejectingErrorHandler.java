@@ -167,12 +167,7 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 				cause = cause.getCause();
 			}
 			if (t instanceof ListenerExecutionFailedException && isCauseFatal(cause)) {
-				if (this.logger.isWarnEnabled()) {
-					this.logger.warn(
-							"Fatal message conversion error; message rejected; "
-									+ "it will be dropped or routed to a dead letter exchange, if so configured: "
-									+ ((ListenerExecutionFailedException) t).getFailedMessage());
-				}
+				logFatalException((ListenerExecutionFailedException) t, cause);
 				return true;
 			}
 			return false;
@@ -185,6 +180,22 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 					|| cause instanceof NoSuchMethodException
 					|| cause instanceof ClassCastException
 					|| isUserCauseFatal(cause);
+		}
+
+		/**
+		 * Log the fatal ListenerExecutionFailedException at WARN level, excluding stack trace.
+		 * Subclasses can override this behavior.
+		 * @param t the {@link ListenerExecutionFailedException}.
+		 * @param cause the cause
+		 * @since 2.2.4
+		 */
+		protected void logFatalException(ListenerExecutionFailedException t, Throwable cause) {
+			if (this.logger.isWarnEnabled()) {
+				this.logger.warn(
+						"Fatal message conversion error; message rejected; "
+								+ "it will be dropped or routed to a dead letter exchange, if so configured: "
+								+ t.getFailedMessage());
+			}
 		}
 
 		/**
