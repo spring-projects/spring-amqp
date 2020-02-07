@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,16 @@ public interface MessageListenerContainer extends SmartLifecycle {
 	 */
 	default void lazyLoad() {
 		// no-op
+	}
+
+	/**
+	 * Return true if this container is capable of (and configured to) create batches
+	 * of consumed messages.
+	 * @return true if enabled.
+	 * @since 2.2.4
+	 */
+	default boolean isConsumerBatchEnabled() {
+		return false;
 	}
 
 }
