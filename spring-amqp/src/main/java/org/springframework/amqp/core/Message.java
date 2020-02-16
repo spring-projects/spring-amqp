@@ -142,7 +142,7 @@ public class Message implements Serializable {
                     || MessageProperties.CONTENT_TYPE_XML.equals(contentType)) {
                 return new String(this.body, encoding);
             }
-        } 
+        }
 		catch (Exception e) {
             // ignore
         }
