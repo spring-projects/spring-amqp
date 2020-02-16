@@ -116,12 +116,14 @@ public class Message implements Serializable {
             return null;
         }
         if (content instanceof String) {
-            return (String) content;
-        } else if (content == body) {
+            return (String) content; 
+		} 
+		else if (content == this.body) {
             return this.body.toString() + "(byte[" + this.body.length + "])";
-        } else {
+		} 
+		else {
             return content.toString();
-        }
+		}
     }
 
     public Object getBodyContent() {
