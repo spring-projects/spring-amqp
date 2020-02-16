@@ -111,6 +111,20 @@ public class Message implements Serializable {
 	}
 
 	private String getBodyContentAsString() {
+		Object content = getBodyContent();
+		if (content == null) {
+			return null;
+		}
+		if (content instanceof String) {
+			return (String)content;
+		}else if(content == body){
+			return this.body.toString() + "(byte[" + this.body.length + "])";
+		}else {
+			return content.toString();
+		}
+	}
+	
+	public Object getBodyContent() {
 		if (this.body == null) {
 			return null;
 		}
@@ -119,7 +133,7 @@ public class Message implements Serializable {
 			String contentType = nullProps ? null : this.messageProperties.getContentType();
 			if (MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT.equals(contentType)) {
 				return SerializationUtils.deserialize(new ByteArrayInputStream(this.body), whiteListPatterns,
-						ClassUtils.getDefaultClassLoader()).toString();
+						ClassUtils.getDefaultClassLoader());
 			}
 			String encoding = encoding(nullProps);
 			if (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)
@@ -132,8 +146,7 @@ public class Message implements Serializable {
 		catch (Exception e) {
 			// ignore
 		}
-		// Comes out as '[B@....b' (so harmless)
-		return this.body.toString() + "(byte[" + this.body.length + "])"; //NOSONAR
+		return body;
 	}
 
 	private String encoding(boolean nullProps) {
