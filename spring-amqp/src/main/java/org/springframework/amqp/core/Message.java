@@ -111,43 +111,42 @@ public class Message implements Serializable {
 	}
 
 	private String getBodyContentAsString() {
-		Object content = getBodyContent();
-		if (content == null) {
-			return null;
-		}
-		if (content instanceof String) {
-			return (String)content;
-		}else if(content == body){
-			return this.body.toString() + "(byte[" + this.body.length + "])";
-		}else {
-			return content.toString();
-		}
-	}
-	
-	public Object getBodyContent() {
-		if (this.body == null) {
-			return null;
-		}
-		try {
-			boolean nullProps = this.messageProperties == null;
-			String contentType = nullProps ? null : this.messageProperties.getContentType();
-			if (MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT.equals(contentType)) {
-				return SerializationUtils.deserialize(new ByteArrayInputStream(this.body), whiteListPatterns,
-						ClassUtils.getDefaultClassLoader());
-			}
-			String encoding = encoding(nullProps);
-			if (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)
-					|| MessageProperties.CONTENT_TYPE_JSON.equals(contentType)
-					|| MessageProperties.CONTENT_TYPE_JSON_ALT.equals(contentType)
-					|| MessageProperties.CONTENT_TYPE_XML.equals(contentType)) {
-				return new String(this.body, encoding);
-			}
-		}
-		catch (Exception e) {
-			// ignore
-		}
-		return body;
-	}
+        Object content = getBodyContent();
+        if (content == null) {
+            return null;
+        }
+        if (content instanceof String) {
+            return (String) content;
+        } else if (content == body) {
+            return this.body.toString() + "(byte[" + this.body.length + "])";
+        } else {
+            return content.toString();
+        }
+    }
+
+    public Object getBodyContent() {
+        if (this.body == null) {
+            return null;
+        }
+        try {
+            boolean nullProps = this.messageProperties == null;
+            String contentType = nullProps ? null : this.messageProperties.getContentType();
+            if (MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT.equals(contentType)) {
+                return SerializationUtils.deserialize(new ByteArrayInputStream(this.body), whiteListPatterns,
+                        ClassUtils.getDefaultClassLoader());
+            }
+            String encoding = encoding(nullProps);
+            if (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)
+                    || MessageProperties.CONTENT_TYPE_JSON.equals(contentType)
+                    || MessageProperties.CONTENT_TYPE_JSON_ALT.equals(contentType)
+                    || MessageProperties.CONTENT_TYPE_XML.equals(contentType)) {
+                return new String(this.body, encoding);
+            }
+        } catch (Exception e) {
+            // ignore
+        }
+        return body;
+    }
 
 	private String encoding(boolean nullProps) {
 		String encoding = nullProps ? null : this.messageProperties.getContentEncoding();
