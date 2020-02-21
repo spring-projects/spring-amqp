@@ -93,7 +93,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private static final String TRUST_STORE_TYPE = "trustStore.type";
 
-	private static final String TLS_V1_1 = "TLSv1.1";
+	private static final String TLS_V1_2 = "TLSv1.2";
 
 	private static final String KEY_STORE_DEFAULT_TYPE = "PKCS12";
 
@@ -125,7 +125,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private String trustStoreType;
 
-	private String sslAlgorithm = TLS_V1_1;
+	private String sslAlgorithm = TLS_V1_2;
 
 	private boolean sslAlgorithmSet;
 
