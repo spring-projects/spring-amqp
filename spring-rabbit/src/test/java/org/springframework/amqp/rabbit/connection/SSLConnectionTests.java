@@ -102,6 +102,9 @@ public class SSLConnectionTests {
 		fb.afterPropertiesSet();
 		fb.getObject();
 		verify(rabbitCf, never()).useSslProtocol();
+		ArgumentCaptor<SSLContext> captor = ArgumentCaptor.forClass(SSLContext.class);
+		verify(rabbitCf).useSslProtocol(captor.capture());
+		assertThat(captor.getValue().getProtocol()).isEqualTo("TLSv1.2");
 	}
 
 	@Test
@@ -123,11 +126,11 @@ public class SSLConnectionTests {
 		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
 		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
 		fb.setUseSSL(true);
-		fb.setSslAlgorithm("TLSv1.2");
+		fb.setSslAlgorithm("TLSv1.1");
 		fb.setSkipServerCertificateValidation(true);
 		fb.afterPropertiesSet();
 		fb.getObject();
-		verify(rabbitCf).useSslProtocol("TLSv1.2");
+		verify(rabbitCf).useSslProtocol("TLSv1.1");
 	}
 
 

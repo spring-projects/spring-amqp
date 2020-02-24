@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,7 +93,24 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private static final String TRUST_STORE_TYPE = "trustStore.type";
 
-	private static final String TLS_V1_1 = "TLSv1.1";
+	private static final String DEFAULT_PROTOCOL;
+
+	static {
+		String protocol = "TLSv1.1";
+		try {
+			String[] protocols = SSLContext.getDefault().getSupportedSSLParameters().getProtocols();
+			for (String prot : protocols) {
+				if ("TLSv1.2".equals(prot)) {
+					protocol = "TLSv1.2";
+					break;
+				}
+			}
+		}
+		catch (NoSuchAlgorithmException e) {
+			// nothing
+		}
+		DEFAULT_PROTOCOL = protocol;
+	}
 
 	private static final String KEY_STORE_DEFAULT_TYPE = "PKCS12";
 
@@ -125,7 +142,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private String trustStoreType;
 
-	private String sslAlgorithm = TLS_V1_1;
+	private String sslAlgorithm = DEFAULT_PROTOCOL;
 
 	private boolean sslAlgorithmSet;
 

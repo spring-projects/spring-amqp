@@ -523,6 +523,9 @@ If you wish to skip this validation for some reason, set the factory bean's `ski
 Starting with version 2.1, the `RabbitConnectionFactoryBean` now calls `enableHostnameVerification()` by default.
 To revert to the previous behavior, set the `enableHostnameVerification` property to `false`.
 
+IMPORTANT: Starting with version 2.2.5, the factory bean will always use TLS v1.2 by default; previously, it used v1.1 in some cases and v1.2 in others (depending on other properties).
+If you need to use v1.1 for some reason, set the `sslAlgorithm` property: `setSslAlgorithm("TLSv1.1")`.
+
 [[cluster]]
 ===== Connecting to a Cluster
 
