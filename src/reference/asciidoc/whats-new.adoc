@@ -99,6 +99,9 @@ See <<template-confirms>> for more information.
 
 Also, the publisher confirm type is now specified with the `ConfirmType` enum instead of the two mutually exclusive setter methods.
 
+The `RabbitConnectionFactoryBean` now uses TLS 1.2 by default when SSL is enabled.
+See <<rabbitconnectionfactorybean-configuring-ssl>> for more information.
+
 ==== New MessagePostProcessor Classes
 
 Classes `DeflaterPostProcessor` and `InflaterPostProcessor` were added to support compression and decompression, respectively, when the message content-encoding is set to `deflate`.
