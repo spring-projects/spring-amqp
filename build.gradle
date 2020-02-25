@@ -53,7 +53,7 @@ ext {
 	rabbitmqHttpClientVersion = '3.2.0.RELEASE'
 	reactorVersion = 'Dysprosium-SR4'
 	springDataCommonsVersion = '2.2.4.RELEASE'
-	springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.2.3.RELEASE'
+	springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.2.4.RELEASE'
 	springRetryVersion = '1.2.5.RELEASE'
 }
 
