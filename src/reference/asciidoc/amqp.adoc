@@ -2635,7 +2635,25 @@ factory.setBeforeSendReplyPostProcessors(msg -> {
 ----
 ====
 
+Starting with version 2.2.5, you can configure a `ReplyPostProcessor` to modify the reply message before it is sent; it is called after the `correlationId` header has been set up to match the request.
 
+====
+[source, java]
+----
+@RabbitListener(queues = "test.header", group = "testGroup", replyPostProcessor = "echoCustomHeader")
+public String capitalizeWithHeader(String in) {
+    return in.toUpperCase();
+}
+
+@Bean
+public ReplyPostProcessor echoCustomHeader() {
+    return (req, resp) -> {
+        resp.getMessageProperties().setHeader("myHeader", req.getMessageProperties().getHeader("myHeader"));
+        return resp;
+    };
+}
+----
+====
 
 The `@SendTo` value is assumed as a reply `exchange` and `routingKey` pair that follws the `exchange/routingKey` pattern,
 where one of those parts can be omitted.

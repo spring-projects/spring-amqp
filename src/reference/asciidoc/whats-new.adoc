@@ -63,6 +63,9 @@ When a `@RabbitListener` method returns a result, the bean and `Method` are now 
 This allows configuration of a `beforeSendReplyMessagePostProcessor` to, for example, set a header in the reply to indicate which method was invoked on the server.
 See <<async-annotation-driven-reply>> for more information.
 
+You can now configure a `ReplyPostProcessor` to make modifications to a reply message before it is sent.
+See <<async-annotation-driven-reply>> for more information.
+
 ==== AMQP Logging Appenders Changes
 
 The Log4J and Logback `AmqpAppender` s now support a `verifyHostname` SSL option.
