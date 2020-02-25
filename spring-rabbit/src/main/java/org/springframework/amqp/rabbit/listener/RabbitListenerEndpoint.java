@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.listener;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
+import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.lang.Nullable;
@@ -133,6 +134,17 @@ public interface RabbitListenerEndpoint {
 	 */
 	@Nullable
 	default AcknowledgeMode getAckMode() {
+		return null;
+	}
+
+	/**
+	 * Return a {@link ReplyPostProcessor} to post process a reply message before it is
+	 * sent.
+	 * @return the post processor.
+	 * @since 2.2.5
+	 */
+	@Nullable
+	default ReplyPostProcessor getReplyPostProcessor() {
 		return null;
 	}
 

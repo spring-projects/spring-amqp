@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -262,5 +262,15 @@ public @interface RabbitListener {
 	 * @since 2.2
 	 */
 	String ackMode() default "";
+
+	/**
+	 * The bean name of a
+	 * {@link org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor} to post
+	 * process a response before it is sent.
+	 * @return the bean name.
+	 * @since 2.2.5
+	 * @see org.springframework.amqp.rabbit.listener.adapter.AbstractAdaptableMessageListener#setReplyPostProcessor(org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor)
+	 */
+	String replyPostProcessor() default "";
 
 }

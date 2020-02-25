@@ -51,6 +51,7 @@ import org.springframework.amqp.rabbit.listener.MultiMethodRabbitListenerEndpoin
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
+import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.aop.framework.Advised;
 import org.springframework.aop.support.AopUtils;
@@ -451,6 +452,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		resolveExecutor(endpoint, rabbitListener, target, beanName);
 		resolveAdmin(endpoint, rabbitListener, target);
 		resolveAckMode(endpoint, rabbitListener);
+		resolvePostProcessor(endpoint, rabbitListener, target, beanName);
 		RabbitListenerContainerFactory<?> factory = resolveContainerFactory(rabbitListener, target, beanName);
 
 		this.registrar.registerEndpoint(endpoint, factory);
@@ -519,8 +521,26 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			}
 			catch (NoSuchBeanDefinitionException ex) {
 				throw new BeanInitializationException("Could not register rabbit listener endpoint on ["
-						+ execTarget + "] for bean " + beanName + ", no " + TaskExecutor.class.getSimpleName()
-						+ " with id '" + execBeanName + "' was found in the application context", ex);
+						+ execTarget + "] for bean " + beanName + ", no 'TaskExecutor' with id '"
+						+ execBeanName + "' was found in the application context", ex);
+			}
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private void resolvePostProcessor(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener,
+			Object target, String beanName) {
+
+		String ppBeanName = resolve(rabbitListener.replyPostProcessor());
+		if (StringUtils.hasText(ppBeanName)) {
+			Assert.state(this.beanFactory != null, "BeanFactory must be set to obtain container factory by bean name");
+			try {
+				endpoint.setReplyPostProcessor(this.beanFactory.getBean(ppBeanName, ReplyPostProcessor.class));
+			}
+			catch (NoSuchBeanDefinitionException ex) {
+				throw new BeanInitializationException("Could not register rabbit listener endpoint on ["
+						+ target + "] for bean " + beanName + ", no 'ReplyPostProcessor' with id '"
+						+ ppBeanName + "' was found in the application context", ex);
 			}
 		}
 	}

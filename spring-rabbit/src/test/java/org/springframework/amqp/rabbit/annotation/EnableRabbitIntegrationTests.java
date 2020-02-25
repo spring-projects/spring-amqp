@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,6 +77,7 @@ import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
@@ -417,6 +418,7 @@ public class EnableRabbitIntegrationTests {
 				.isEqualTo("MyService");
 		assertThat((String) reply.getMessageProperties().getHeader("method"))
 				.isEqualTo("capitalizeWithHeader");
+		assertThat((String) reply.getMessageProperties().getHeader("prefix")).isEqualTo("prefix-");
 	}
 
 	@Test
@@ -1089,7 +1091,7 @@ public class EnableRabbitIntegrationTests {
 			return foo.toUpperCase() + foo;
 		}
 
-		@RabbitListener(queues = "test.header", group = "testGroup")
+		@RabbitListener(queues = "test.header", group = "testGroup", replyPostProcessor = "echoPrefixHeader")
 		public String capitalizeWithHeader(@Payload String content, @Header String prefix) {
 			return prefix + content.toUpperCase();
 		}
@@ -1804,6 +1806,14 @@ public class EnableRabbitIntegrationTests {
 			DirectExchange directExchange = new DirectExchange("auto.internal", true, true);
 			directExchange.setInternal(true);
 			return directExchange;
+		}
+
+		@Bean
+		public ReplyPostProcessor echoPrefixHeader() {
+			return (req, resp) -> {
+				resp.getMessageProperties().setHeader("prefix", req.getMessageProperties().getHeader("prefix"));
+				return resp;
+			};
 		}
 
 	}
