@@ -496,15 +496,14 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		RabbitListenerContainerFactory<?> factory = null;
 		String containerFactoryBeanName = resolve(rabbitListener.containerFactory());
 		if (StringUtils.hasText(containerFactoryBeanName)) {
-			Assert.state(this.beanFactory != null, "BeanFactory must be set to obtain container factory by bean name");
+			assertBeanFactory();
 			try {
 				factory = this.beanFactory.getBean(containerFactoryBeanName, RabbitListenerContainerFactory.class);
 			}
 			catch (NoSuchBeanDefinitionException ex) {
-				throw new BeanInitializationException("Could not register rabbit listener endpoint on ["
-						+ factoryTarget + "] for bean " + beanName + ", no "
-						+ RabbitListenerContainerFactory.class.getSimpleName() + " with id '"
-						+ containerFactoryBeanName + "' was found in the application context", ex);
+				throw new BeanInitializationException(
+						noBeanFoundMessage(factoryTarget, beanName, containerFactoryBeanName,
+								RabbitListenerContainerFactory.class), ex);
 			}
 		}
 		return factory;
@@ -515,34 +514,42 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 		String execBeanName = resolve(rabbitListener.executor());
 		if (StringUtils.hasText(execBeanName)) {
-			Assert.state(this.beanFactory != null, "BeanFactory must be set to obtain container factory by bean name");
+			assertBeanFactory();
 			try {
 				endpoint.setTaskExecutor(this.beanFactory.getBean(execBeanName, TaskExecutor.class));
 			}
 			catch (NoSuchBeanDefinitionException ex) {
-				throw new BeanInitializationException("Could not register rabbit listener endpoint on ["
-						+ execTarget + "] for bean " + beanName + ", no 'TaskExecutor' with id '"
-						+ execBeanName + "' was found in the application context", ex);
+				throw new BeanInitializationException(
+						noBeanFoundMessage(execTarget, beanName, execBeanName, TaskExecutor.class), ex);
 			}
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	private void resolvePostProcessor(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener,
 			Object target, String beanName) {
 
 		String ppBeanName = resolve(rabbitListener.replyPostProcessor());
 		if (StringUtils.hasText(ppBeanName)) {
-			Assert.state(this.beanFactory != null, "BeanFactory must be set to obtain container factory by bean name");
+			assertBeanFactory();
 			try {
 				endpoint.setReplyPostProcessor(this.beanFactory.getBean(ppBeanName, ReplyPostProcessor.class));
 			}
 			catch (NoSuchBeanDefinitionException ex) {
-				throw new BeanInitializationException("Could not register rabbit listener endpoint on ["
-						+ target + "] for bean " + beanName + ", no 'ReplyPostProcessor' with id '"
-						+ ppBeanName + "' was found in the application context", ex);
+				throw new BeanInitializationException(
+						noBeanFoundMessage(target, beanName, ppBeanName, ReplyPostProcessor.class), ex);
 			}
 		}
+	}
+
+	protected void assertBeanFactory() {
+		Assert.state(this.beanFactory != null, "BeanFactory must be set to obtain container factory by bean name");
+	}
+
+	protected String noBeanFoundMessage(Object target, String listenerBeanName, String requestedBeanName,
+			Class<?> expectedClass) {
+		return "Could not register rabbit listener endpoint on ["
+				+ target + "] for bean " + listenerBeanName + ", no '" + expectedClass.getSimpleName() + "' with id '"
+				+ requestedBeanName + "' was found in the application context";
 	}
 
 	private String getEndpointId(RabbitListener rabbitListener) {
