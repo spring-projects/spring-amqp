@@ -98,7 +98,7 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 		else {
 			logger.info("The test harness can only proxy @RabbitListeners with an 'id' attribute");
 		}
-		super.processListener(endpoint, rabbitListener, proxy, target, beanName);
+		super.processListener(endpoint, rabbitListener, proxy, target, beanName); // NOSONAR proxy is not null
 	}
 
 	public InvocationData getNextInvocationDataFor(String id, long wait, TimeUnit unit) throws InterruptedException {
