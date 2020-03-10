@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -338,31 +338,13 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	 * This can be overridden to treat special message content such as arrays differently, for example passing in each
 	 * element of the message array as distinct method argument.
 	 * @param extractedMessage the content of the message
-	 * @return the array of arguments to be passed into the listener method (each element of the array corresponding to
-	 * a distinct method argument)
-	 * @deprecated use @{@link #buildListenerArguments(Object, Channel, Message)} to get complete arguments
-	 */
-	@Deprecated
-	protected Object[] buildListenerArguments(Object extractedMessage) {
-		return new Object[] { extractedMessage };
-	}
-
-	/**
-	 * Build an array of arguments to be passed into the target listener method. Allows for multiple method arguments to
-	 * be built from message object with channel, More detail about {@code extractedMessage} in the method
-	 * {@link #buildListenerArguments(java.lang.Object)}.
-	 * This can be overridden to treat special message content such as arrays differently, and add argument in case of
-	 * receiving Channel and original Message object to invoke basicAck method in the listener by manual acknowledge
-	 * mode.
-	 * @param extractedMessage the content of the message
 	 * @param channel the Rabbit channel to operate on
 	 * @param message the incoming Rabbit message
 	 * @return the array of arguments to be passed into the listener method (each element of the array corresponding to
 	 * a distinct method argument)
 	 */
-	@SuppressWarnings("deprecation")
 	protected Object[] buildListenerArguments(Object extractedMessage, Channel channel, Message message) {
-		return buildListenerArguments(extractedMessage);
+		return new Object[] { extractedMessage };
 	}
 
 	/**

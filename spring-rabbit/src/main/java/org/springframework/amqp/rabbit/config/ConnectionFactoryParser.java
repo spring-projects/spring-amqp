@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 
 	private static final String EXECUTOR_ATTRIBUTE = "executor";
 
-	private static final String PUBLISHER_CONFIRMS = "publisher-confirms";
+	private static final String CONFIRM_TYPE = "confirm-type";
 
 	private static final String PUBLISHER_RETURNS = "publisher-returns";
 
@@ -101,7 +101,6 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, EXECUTOR_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, ADDRESSES);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, SHUFFLE_ADDRESSES);
-		NamespaceUtils.setValueIfAttributeDefined(builder, element, PUBLISHER_CONFIRMS);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, PUBLISHER_RETURNS);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, REQUESTED_HEARTBEAT, "requestedHeartBeat");
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, CONNECTION_TIMEOUT);
@@ -111,7 +110,7 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, FACTORY_TIMEOUT, "channelCheckoutTimeout");
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, CONNECTION_LIMIT);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, "connection-name-strategy");
-		NamespaceUtils.setValueIfAttributeDefined(builder, element, "confirm-type", "publisherConfirmType");
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, CONFIRM_TYPE, "publisherConfirmType");
 	}
 
 }

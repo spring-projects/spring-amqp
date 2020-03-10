@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -397,16 +397,6 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 	}
 
 	/**
-	 * Set the txSize.
-	 * @param txSize the txSize.
-	 * @deprecated in favor of {@link #setBatchSize(int)}.
-	 */
-	@Deprecated
-	public void setTxSize(int txSize) {
-		setBatchSize(txSize);
-	}
-
-	/**
 	 * Set to true to present a list of messages based on the {@link #setBatchSize(int)},
 	 * if the container and listener support it.
 	 * @param consumerBatchEnabled true to create message batches in the container.
@@ -432,7 +422,6 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 				: this.listenerContainer.getClass();
 	}
 
-	@SuppressWarnings("deprecation")
 	@Override
 	protected AbstractMessageListenerContainer createInstance() { // NOSONAR complexity
 		if (this.listenerContainer == null) {

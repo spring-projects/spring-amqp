@@ -354,20 +354,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * Tells the container how many messages to process in a single transaction (if the
-	 * channel is transactional). For best results it should be less than or equal to
-	 * {@link #setPrefetchCount(int) the prefetch count}. Also affects how often acks are
-	 * sent when using {@link org.springframework.amqp.core.AcknowledgeMode#AUTO} - one
-	 * ack per txSize. Default is 1.
-	 * @param txSize the transaction size
-	 * @deprecated since 2.2 in favor of {@link #setBatchSize(int)}.
-	 */
-	@Deprecated
-	public void setTxSize(int txSize) {
-		setBatchSize(txSize);
-	}
-
-	/**
 	 * Set to true to present a list of messages based on the {@link #setBatchSize(int)},
 	 * if the listener supports it.
 	 * @param consumerBatchEnabled true to create message batches in the container.

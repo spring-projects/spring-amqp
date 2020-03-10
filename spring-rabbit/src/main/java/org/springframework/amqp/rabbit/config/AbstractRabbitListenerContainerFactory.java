@@ -20,7 +20,6 @@ package org.springframework.amqp.rabbit.config;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 import org.aopalliance.aop.Advice;
 import org.apache.commons.logging.Log;
@@ -344,18 +343,6 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	 */
 	public void setReplyRecoveryCallback(RecoveryCallback<?> recoveryCallback) {
 		this.recoveryCallback = recoveryCallback;
-	}
-
-	/**
-	 * A {@link Consumer} that is invoked to enable setting other container properties not
-	 * exposed  by this container factory.
-	 * @param configurer the configurer;
-	 * @since 2.1.1
-	 * @deprecated in favor of {@link #setContainerCustomizer(ContainerCustomizer)}.
-	 */
-	@Deprecated
-	public void setContainerConfigurer(Consumer<C> configurer) {
-		this.containerCustomizer = container -> configurer.accept(container);
 	}
 
 	/**
