@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,6 +73,10 @@ public final class RabbitNamespaceUtils {
 	private static final String CHANNEL_TRANSACTED_ATTRIBUTE = "channel-transacted";
 
 	private static final String TRANSACTION_SIZE_ATTRIBUTE = "transaction-size";
+
+	private static final String CONSUMER_BATCH_ENABLED_ATTRIBUTE = "consumer-batch-enabled";
+
+	private static final String BATCH_SIZE_ATTRIBUTE = "batch-size";
 
 	private static final String PHASE_ATTRIBUTE = "phase";
 
@@ -216,9 +220,23 @@ public final class RabbitNamespaceUtils {
 			containerDef.getPropertyValues().add("channelTransacted", new TypedStringValue(channelTransacted));
 		}
 
+		String consumerBatch = containerEle.getAttribute(CONSUMER_BATCH_ENABLED_ATTRIBUTE);
+		if (StringUtils.hasText(consumerBatch)) {
+			containerDef.getPropertyValues().add("consumerBatchEnabled", new TypedStringValue(consumerBatch));
+		}
+
+		String batchSize = containerEle.getAttribute(BATCH_SIZE_ATTRIBUTE);
+		if (StringUtils.hasText(batchSize)) {
+			containerDef.getPropertyValues().add("batchSize", new TypedStringValue(batchSize));
+		}
+
 		String transactionSize = containerEle.getAttribute(TRANSACTION_SIZE_ATTRIBUTE);
 		if (StringUtils.hasText(transactionSize)) {
-			containerDef.getPropertyValues().add("txSize", new TypedStringValue(transactionSize));
+			if (StringUtils.hasText(batchSize)) {
+				parserContext.getReaderContext().error(
+						"Listener Container - cannot have both 'batch-size' and 'transaction-size'", containerEle);
+			}
+			containerDef.getPropertyValues().add("batchSize", new TypedStringValue(transactionSize));
 		}
 
 		String requeueRejected = containerEle.getAttribute(REQUEUE_REJECTED_ATTRIBUTE);

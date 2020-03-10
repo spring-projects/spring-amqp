@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1844,36 +1844,6 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 			.sorted()
 			.collect(Collectors.toList());
 		assertThat(firstAddress).containsExactly("host1", "host2", "host3");
-	}
-
-	@SuppressWarnings("deprecation")
-	@Test
-	public void confirmsSimple() {
-		CachingConnectionFactory cf = new CachingConnectionFactory(mock(ConnectionFactory.class));
-		cf.setSimplePublisherConfirms(false);
-		assertThat(cf.isSimplePublisherConfirms()).isFalse();
-		assertThat(cf.getPublisherConnectionFactory().isSimplePublisherConfirms()).isFalse();
-		cf.setSimplePublisherConfirms(true);
-		assertThat(cf.isSimplePublisherConfirms()).isTrue();
-		assertThat(cf.getPublisherConnectionFactory().isSimplePublisherConfirms()).isTrue();
-		cf.setSimplePublisherConfirms(false);
-		assertThat(cf.isSimplePublisherConfirms()).isFalse();
-		assertThat(cf.getPublisherConnectionFactory().isSimplePublisherConfirms()).isFalse();
-	}
-
-	@SuppressWarnings("deprecation")
-	@Test
-	public void confirmsCorrelated() {
-		CachingConnectionFactory cf = new CachingConnectionFactory(mock(ConnectionFactory.class));
-		cf.setPublisherConfirms(false);
-		assertThat(cf.getPublisherConnectionFactory().isPublisherConfirms()).isFalse();
-		assertThat(cf.isPublisherConfirms()).isFalse();
-		cf.setPublisherConfirms(true);
-		assertThat(cf.getPublisherConnectionFactory().isPublisherConfirms()).isTrue();
-		assertThat(cf.isPublisherConfirms()).isTrue();
-		cf.setPublisherConfirms(false);
-		assertThat(cf.isPublisherConfirms()).isFalse();
-		assertThat(cf.getPublisherConnectionFactory().isPublisherConfirms()).isFalse();
 	}
 
 }

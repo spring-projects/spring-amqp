@@ -21,6 +21,7 @@ import java.util.concurrent.BlockingQueue;
 
 import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.Layout;
+import org.apache.logging.log4j.core.config.Property;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
@@ -36,12 +37,12 @@ import org.springframework.amqp.core.Message;
 @Plugin(name = "TestRabbitMQ", category = "Core", elementType = "appender", printObject = true)
 public class ExtendAmqpAppender extends AmqpAppender {
 
-	private String foo;
-	private String bar;
+	private final String foo;
+	private final String bar;
 
 	public ExtendAmqpAppender(String name, Filter filter, Layout<? extends Serializable> layout,
 			boolean ignoreExceptions, AmqpManager manager, BlockingQueue<Event> eventQueue, String foo, String bar) {
-		super(name, filter, layout, ignoreExceptions, manager, eventQueue);
+		super(name, filter, layout, ignoreExceptions, Property.EMPTY_ARRAY, manager, eventQueue);
 		this.foo = foo;
 		this.bar = bar;
 	}

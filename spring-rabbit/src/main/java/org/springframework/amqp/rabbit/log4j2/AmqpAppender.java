@@ -43,13 +43,12 @@ import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.appender.AbstractManager;
 import org.apache.logging.log4j.core.async.BlockingQueueFactory;
 import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.Property;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
-import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginConfiguration;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
-import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.apache.logging.log4j.core.util.Integers;
 
@@ -138,109 +137,28 @@ public class AmqpAppender extends AbstractAppender {
 	 */
 	private final Object layoutMutex = new Object();
 
-	@SuppressWarnings("deprecation") // For backward compatibility
+	/**
+	 * Construct an instance with the provided properties.
+	 * @param name the name.
+	 * @param filter the filter.
+	 * @param layout the layout.
+	 * @param ignoreExceptions true to ignore exceptions.
+	 * @param manager the manager.
+	 * @param eventQueue the event queue.
+	 * @param properties the properties.
+	 */
 	public AmqpAppender(String name, Filter filter, Layout<? extends Serializable> layout, boolean ignoreExceptions,
-			AmqpManager manager, BlockingQueue<Event> eventQueue) {
+			Property[] properties, AmqpManager manager, BlockingQueue<Event> eventQueue) {
 
-		super(name, filter, layout, ignoreExceptions);
+		super(name, filter, layout, ignoreExceptions, properties);
 		this.manager = manager;
 		this.events = eventQueue;
 	}
 
-	@Deprecated // For backward compatibility
-	@PluginFactory
-	public static AmqpAppender createAppender(// NOSONAR NCSS line count
-			@PluginConfiguration final Configuration configuration,
-			@PluginAttribute("name") String name,
-			@PluginElement("Layout") Layout<? extends Serializable> layout,
-			@PluginElement("Filter") Filter filter,
-			@PluginAttribute("ignoreExceptions") boolean ignoreExceptions,
-			@PluginAttribute("uri") URI uri,
-			@PluginAttribute("host") String host,
-			@PluginAttribute("port") String port,
-			@PluginAttribute("addresses") String addresses,
-			@PluginAttribute("user") String user,
-			@PluginAttribute("password") String password,
-			@PluginAttribute("virtualHost") String virtualHost,
-			@PluginAttribute("useSsl") boolean useSsl,
-			@PluginAttribute("verifyHostname") boolean verifyHostname,
-			@PluginAttribute("sslAlgorithm") String sslAlgorithm,
-			@PluginAttribute("sslPropertiesLocation") String sslPropertiesLocation,
-			@PluginAttribute("keyStore") String keyStore,
-			@PluginAttribute("keyStorePassphrase") String keyStorePassphrase,
-			@PluginAttribute("keyStoreType") String keyStoreType,
-			@PluginAttribute("trustStore") String trustStore,
-			@PluginAttribute("trustStorePassphrase") String trustStorePassphrase,
-			@PluginAttribute("trustStoreType") String trustStoreType,
-			@PluginAttribute("saslConfig") String saslConfig,
-			@PluginAttribute("senderPoolSize") int senderPoolSize,
-			@PluginAttribute("maxSenderRetries") int maxSenderRetries,
-			@PluginAttribute("applicationId") String applicationId,
-			@PluginAttribute("routingKeyPattern") String routingKeyPattern,
-			@PluginAttribute("generateId") boolean generateId,
-			@PluginAttribute("deliveryMode") String deliveryMode,
-			@PluginAttribute("exchange") String exchange,
-			@PluginAttribute("exchangeType") String exchangeType,
-			@PluginAttribute("declareExchange") boolean declareExchange,
-			@PluginAttribute("durable") boolean durable,
-			@PluginAttribute("autoDelete") boolean autoDelete,
-			@PluginAttribute("contentType") String contentType,
-			@PluginAttribute("contentEncoding") String contentEncoding,
-			@PluginAttribute("connectionName") String connectionName,
-			@PluginAttribute("clientConnectionProperties") String clientConnectionProperties,
-			@PluginAttribute("async") boolean async,
-			@PluginAttribute("charset") String charset,
-			@PluginAttribute(value = "bufferSize", defaultInt = Integer.MAX_VALUE) int bufferSize,
-			@PluginElement(BlockingQueueFactory.ELEMENT_TYPE) BlockingQueueFactory<Event> blockingQueueFactory,
-			@PluginAttribute(value = "addMdcAsHeaders", defaultBoolean = true) boolean addMdcAsHeaders) {
-
-		return new Builder()
-				.setConfiguration(configuration)
-				.setName(name)
-				.setLayout(layout)
-				.setFilter(filter)
-				.setIgnoreExceptions(ignoreExceptions)
-				.setUri(uri)
-				.setHost(host)
-				.setPort(port)
-				.setAddresses(addresses)
-				.setUser(user)
-				.setPassword(password)
-				.setVirtualHost(virtualHost)
-				.setUseSsl(useSsl)
-				.setVerifyHostname(verifyHostname)
-				.setSslAlgorithm(sslAlgorithm)
-				.setSslPropertiesLocation(sslPropertiesLocation)
-				.setKeyStore(keyStore)
-				.setKeyStorePassphrase(keyStorePassphrase)
-				.setKeyStoreType(keyStoreType)
-				.setTrustStore(trustStore)
-				.setTrustStorePassphrase(trustStorePassphrase)
-				.setTrustStoreType(trustStoreType)
-				.setSaslConfig(saslConfig)
-				.setSenderPoolSize(senderPoolSize)
-				.setMaxSenderRetries(maxSenderRetries)
-				.setApplicationId(applicationId)
-				.setRoutingKeyPattern(routingKeyPattern)
-				.setGenerateId(generateId)
-				.setDeliveryMode(deliveryMode)
-				.setExchange(exchange)
-				.setExchangeType(exchangeType)
-				.setDeclareExchange(declareExchange)
-				.setDurable(durable)
-				.setAutoDelete(autoDelete)
-				.setContentType(contentType)
-				.setContentEncoding(contentEncoding)
-				.setConnectionName(connectionName)
-				.setClientConnectionProperties(clientConnectionProperties)
-				.setAsync(async)
-				.setCharset(charset)
-				.setBufferSize(bufferSize)
-				.setBlockingQueueFactory(blockingQueueFactory)
-				.setAddMdcAsHeaders(addMdcAsHeaders)
-				.build();
-	}
-
+	/**
+	 * Create a new builder.
+	 * @return the builder.
+	 */
 	@PluginBuilderFactory
 	public static Builder newBuilder() {
 		return new Builder();
@@ -1203,7 +1121,8 @@ public class AmqpAppender extends AbstractAppender {
 		 */
 		protected AmqpAppender buildInstance(String name, Filter filter, Layout<? extends Serializable> layout,
 				boolean ignoreExceptions, AmqpManager manager, BlockingQueue<Event> eventQueue) {
-			return new AmqpAppender(name, filter, layout, ignoreExceptions, manager, eventQueue);
+
+			return new AmqpAppender(name, filter, layout, ignoreExceptions, Property.EMPTY_ARRAY, manager, eventQueue);
 		}
 
 	}
