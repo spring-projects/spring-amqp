@@ -42,7 +42,7 @@ ext {
 	commonsHttpClientVersion = '4.5.10'
 	googleJsr305Version = '3.0.2'
 	hamcrestVersion = '2.2'
-	jacksonVersion = '2.10.2.20200130'
+	jacksonVersion = '2.10.3'
 	jaywayJsonPathVersion = '2.4.0'
 	junit4Version = '4.12'
 	junitJupiterVersion = '5.6.0'
