@@ -34,7 +34,7 @@ In addition, the beans associated with `@EnableRabbit` (to support `@RabbitListe
 ----
 @SpringJunitConfig
 @SpringRabbitTest
-public class SpringRabbitTestTests {
+public class MyRabbitTests {
 
 	@Autowired
 	private RabbitTemplate template;
