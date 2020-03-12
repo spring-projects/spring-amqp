@@ -396,7 +396,7 @@ project('spring-rabbit-junit') {
 			exclude group: 'org.springframework', module: 'spring-web'
 		}
 		api 'org.springframework:spring-web'
-		optionalApi 'org.junit.jupiter:junit-jupiter-api'
+		api 'org.junit.jupiter:junit-jupiter-api'
 		api "org.assertj:assertj-core:$assertjVersion"
 		optionalApi "ch.qos.logback:logback-classic:$logbackVersion"
 		optionalApi 'org.apache.logging.log4j:log4j-core'
