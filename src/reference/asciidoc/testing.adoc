@@ -13,6 +13,56 @@ Spring AMQP version 1.6 introduced the `spring-rabbit-test` jar, which provides 
 It is anticipated that this project will expand over time, but we need community feedback to make suggestions for the features needed to help with testing.
 Please use https://jira.spring.io/browse/AMQP[JIRA] or https://github.com/spring-projects/spring-amqp/issues[GitHub Issues] to provide such feedback.
 
+[[spring-rabbit-test]]
+==== @SpringRabbitTest
+
+Use this annotation to add infrastructure beans to the Spring test `ApplicationContext`.
+This is not necessary when using, for example `@SpringBootTest` since Spring Boot's auto configuration will add the beans.
+
+Beans that are registered are:
+
+* `CachingConnectionFactory` (`autoConnectionFactory`). If `@RabbitEnabled` is present, its connectionn factory is used.
+* `RabbitTemplate` (`autoRabbitTemplate`)
+* `RabbitAdmin` (`autoRabbitAdmin`)
+* `RabbitListenerContainerFactory` (`autoContainerFactory`)
+
+In addition, the beans associated with `@EnableRabbit` (to support `@RabbitListener`) are added.
+
+.Junit5 example
+====
+[source, java]
+----
+@SpringJunitConfig
+@SpringRabbitTest
+public class MyRabbitTests {
+
+	@Autowired
+	private RabbitTemplate template;
+
+	@Autowired
+	private RabbitAdmin admin;
+
+	@Autowired
+	private RabbitListenerEndpointRegistry registry;
+
+	@Test
+	void test() {
+        ...
+	}
+
+	@Configuration
+	public static class Config {
+
+        ...
+
+	}
+
+}
+----
+====
+
+With JUnit4, replace `@SpringJunitConfig` with `@RunWith(SpringRunnner.class)`.
+
 [[mockito-answer]]
 ==== Mockito `Answer<?>` Implementations
 
