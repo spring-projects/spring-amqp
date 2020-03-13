@@ -61,7 +61,7 @@ public class MyRabbitTests {
 ----
 ====
 
-With JUnit4, replace `@SpringJunitConfig` with `@RunWith(SpringRunnner.class)` and `@ContextConfiguration`.
+With JUnit4, replace `@SpringJunitConfig` with `@RunWith(SpringRunnner.class)`.
 
 [[mockito-answer]]
 ==== Mockito `Answer<?>` Implementations
