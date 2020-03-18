@@ -527,6 +527,7 @@ task schemaZip(type: Zip) {
 		"XSDs for deployment at static.springframework.org/schema."
 
 	subprojects.each { subproject ->
+		def Set files = new HashSet()
 		def Properties schemas = new Properties();
 		def shortName = subproject.name.replaceFirst("${rootProject.name}-", '')
 
@@ -543,8 +544,11 @@ task schemaZip(type: Zip) {
 				it.path.replaceAll('\\\\', '/').endsWith(schemas.get(key))
 			}
 			assert xsdFile != null
-			into ("${shortName}") {
-				from xsdFile.path
+			if (!files.contains(xsdFile.path)) {
+				into ("${shortName}") {
+					from xsdFile.path
+				}
+				files.add(xsdFile.path)
 			}
 		}
 	}
