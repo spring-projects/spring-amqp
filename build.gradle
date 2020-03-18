@@ -173,30 +173,6 @@ subprojects { subproject ->
 	ext.xLintArg = '-Xlint:all,-options,-processing'
 	[compileJava, compileTestJava]*.options*.compilerArgs = [xLintArg]
 
-	task checkTestConfigs {
-		inputs.files(
-				sourceSets.test.java.srcDirs.collect {
-					fileTree(it)
-							.include('**/*.xml')
-							.exclude('**/log4j2-test.xml')
-				})
-		outputs.dir('build/resources')
-
-		doLast {
-			def wrongConfigs = inputs.files.filter {
-				new XmlParser(false, false)
-						.parse(it)
-						.@'xsi:schemaLocation' ==~ /.*spring-[a-z-]*\d\.\d\.xsd.*/
-			}
-			if (!wrongConfigs.empty) {
-				throw new InvalidUserDataException('Hardcoded XSD version in the config files:\n' +
-						wrongConfigs.collect { relativePath(it) }.join('\n') +
-						'\nPlease, use versionless schemaLocations for Spring XSDs to avoid issues with builds ' +
-						'on different versions of dependencies.')
-			}
-		}
-	}
-
 	publishing {
 		publications {
 			mavenJava(MavenPublication) {
@@ -270,7 +246,6 @@ subprojects { subproject ->
 	tasks.withType(Test).all {
 		// suppress all console output during testing unless running `gradle -i`
 		logging.captureStandardOutput(LogLevel.INFO)
-		dependsOn checkTestConfigs
 
 		if (name ==~ /(testAll)/) {
 			systemProperty 'RUN_LONG_INTEGRATION_TESTS', 'true'
@@ -527,6 +502,7 @@ task schemaZip(type: Zip) {
 		"XSDs for deployment at static.springframework.org/schema."
 
 	subprojects.each { subproject ->
+		def Set files = new HashSet()
 		def Properties schemas = new Properties();
 		def shortName = subproject.name.replaceFirst("${rootProject.name}-", '')
 
@@ -543,8 +519,15 @@ task schemaZip(type: Zip) {
 				it.path.replaceAll('\\\\', '/').endsWith(schemas.get(key))
 			}
 			assert xsdFile != null
-			into ("${shortName}") {
-				from xsdFile.path
+			if (!files.contains(xsdFile.path)) {
+				into ("${shortName}") {
+					from xsdFile.path
+					rename { String fileName ->
+						String[] versionNumbers = project.version.split(/\./, 3)
+						fileName.replace('.xsd', "-${versionNumbers[0]}.${versionNumbers[1]}.xsd")
+					}
+				}
+				files.add(xsdFile.path)
 			}
 		}
 	}
