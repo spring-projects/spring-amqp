@@ -5201,7 +5201,7 @@ Some properties are not exposed by the namespace.
 These are indicated by `N/A` for the attribute.
 
 .Configuration options for a message listener container
-[cols="8l,16,3,3", options="header"]
+[cols="6l,16,1,1", options="header"]
 |===
 |Property
 (Attribute)
@@ -5257,7 +5257,8 @@ If a post processor returns `null`, the message is discarded (and acknowledged, 
 a|image::images/tickmark.png[]
 a|image::images/tickmark.png[]
 
-|alwaysRequeueWithTxManagerRollback
+|alwaysRequeueWith
+TxManagerRollback
 (N/A)
 
 |Set to `true` to always requeue messages on rollback when a transaction manager is configured.
@@ -5469,9 +5470,10 @@ By default, this is logged at the `WARN` level.
 a|image::images/tickmark.png[]
 a|image::images/tickmark.png[]
 
-|failedDeclarationRetryInterval
-(failed-declaration-retry-
-interval)
+|failedDeclaration
+RetryInterval
+(failed-declaration
+-retry-interval)
 
 |The interval between passive queue declaration retry attempts.
 Passive queue declaration occurs when the consumer starts or, when consuming from multiple queues, when not all queues were available during initialization.
@@ -5626,7 +5628,8 @@ a|image::images/tickmark.png[]
 
 |possibleAuthentication
 FailureFatal
-(possible-authentication-failure-fatal)
+(possible-authentication-
+failure-fatal)
 
 a|When set to `true` (default), if a `PossibleAuthenticationFailureException` is thrown during connection, it is considered fatal.
 This causes the application context to fail to initialize during startup.
@@ -5723,7 +5726,8 @@ a|image::images/tickmark.png[]
 a|image::images/tickmark.png[]
 
 |retryDeclarationInterval
-(missing-queue-retry-interval)
+(missing-queue-
+retry-interval)
 
 |If a subset of the configured queues are available during consumer initialization, the consumer starts consuming from those queues.
 The consumer tries to passively declare the missing queues by using this interval.
@@ -5755,7 +5759,8 @@ Default: 10000 (10 seconds).
 a|image::images/tickmark.png[]
 a|
 
-|statefulRetryFatalWithNullMessageId
+|statefulRetryFatal
+WithNullMessageId
 (N/A)
 
 |When using a stateful retry advice, if a message with a missing `messageId` property is received, it is considered
