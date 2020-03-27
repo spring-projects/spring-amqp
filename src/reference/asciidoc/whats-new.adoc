@@ -8,5 +8,5 @@ See <<change-history>> for changes in previous versions.
 
 ==== Testing Changes
 
-A new annotation `@SpringBootTest` is provided to automatically configure some infrastructure beans for when you are not using `SpringBootTest`.
+A new annotation `@SpringRabbitTest` is provided to automatically configure some infrastructure beans for when you are not using `SpringBootTest`.
 See <<spring-rabbit-test>> for more information.
