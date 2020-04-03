@@ -85,7 +85,7 @@ public interface Exchange {
 ----
 
 As you can see, an `Exchange` also has a 'type' represented by constants defined in `ExchangeTypes`.
-The basic types are: `direct`, `topic`, fanout`, and `headers`.
+The basic types are: `direct`, `topic`, `fanout`, and `headers`.
 In the core package, you can find implementations of the `Exchange` interface for each of those types.
 The behavior varies across these `Exchange` types in terms of how they handle bindings to queues.
 For example, a `Direct` exchange lets a queue be bound by a fixed routing key (often the queue's name).
