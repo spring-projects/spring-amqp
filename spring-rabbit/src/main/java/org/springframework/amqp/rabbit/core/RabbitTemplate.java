@@ -1929,25 +1929,19 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	private Message doSendAndReceiveAsListener(final String exchange, final String routingKey, final Message message,
 			final CorrelationData correlationData, Channel channel) throws Exception { // NOSONAR
 		final PendingReply pendingReply = new PendingReply();
-		String messageTag = String.valueOf(this.messageTagProvider.incrementAndGet());
+		String messageTag = null;
 		if (this.userCorrelationId) {
-			String correlationId;
 			if (this.correlationKey != null) {
-				correlationId = (String) message.getMessageProperties().getHeaders().get(this.correlationKey);
+				messageTag = (String) message.getMessageProperties().getHeaders().get(this.correlationKey);
 			}
 			else {
-				correlationId = message.getMessageProperties().getCorrelationId();
-			}
-			if (correlationId == null) {
-				this.replyHolder.put(messageTag, pendingReply);
-			}
-			else {
-				this.replyHolder.put(correlationId, pendingReply);
+				messageTag = message.getMessageProperties().getCorrelationId();
 			}
 		}
-		else {
-			this.replyHolder.put(messageTag, pendingReply);
+		if (messageTag == null) {
+			messageTag = String.valueOf(this.messageTagProvider.incrementAndGet());
 		}
+		this.replyHolder.put(messageTag, pendingReply);
 		saveAndSetProperties(message, pendingReply, messageTag);
 
 		if (logger.isDebugEnabled()) {

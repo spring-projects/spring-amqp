@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -659,6 +659,7 @@ public class RabbitTemplateIntegrationTests {
 		assertThat(result).isEqualTo(null);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testAtomicSendAndReceive() throws Exception {
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
@@ -689,10 +690,12 @@ public class RabbitTemplateIntegrationTests {
 		// Message was consumed so nothing left on queue
 		reply = template.receive();
 		assertThat(reply).isEqualTo(null);
+		assertThat(TestUtils.getPropertyValue(template, "replyHolder", Map.class)).hasSize(0);
 		template.stop();
 		cachingConnectionFactory.destroy();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testAtomicSendAndReceiveUserCorrelation() throws Exception {
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
@@ -732,6 +735,7 @@ public class RabbitTemplateIntegrationTests {
 		// Message was consumed so nothing left on queue
 		reply = template.receive();
 		assertThat(reply).isEqualTo(null);
+		assertThat(TestUtils.getPropertyValue(template, "replyHolder", Map.class)).hasSize(0);
 		template.stop();
 		container.stop();
 		cachingConnectionFactory.destroy();
@@ -1330,6 +1334,7 @@ public class RabbitTemplateIntegrationTests {
 		sendAndReceiveFastGuts(true, true, false);
 	}
 
+	@SuppressWarnings("unchecked")
 	private void sendAndReceiveFastGuts(boolean tempQueue, boolean setDirectReplyToExplicitly, boolean expectUsedTemp) {
 		RabbitTemplate template = createSendAndReceiveRabbitTemplate(this.connectionFactory);
 		try {
@@ -1368,6 +1373,7 @@ public class RabbitTemplateIntegrationTests {
 			else {
 				assertThat(replyToWas.get()).startsWith(Address.AMQ_RABBITMQ_REPLY_TO);
 			}
+			assertThat(TestUtils.getPropertyValue(template, "replyHolder", Map.class)).hasSize(0);
 		}
 		catch (Exception e) {
 			assertThat(e.getCause().getCause().getMessage()).contains("404");
@@ -1378,6 +1384,7 @@ public class RabbitTemplateIntegrationTests {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testReplyCompressionWithContainer() {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(
@@ -1406,6 +1413,7 @@ public class RabbitTemplateIntegrationTests {
 			GUnzipPostProcessor unzipper = new GUnzipPostProcessor();
 			reply = unzipper.postProcessMessage(reply);
 			assertThat(new String(reply.getBody())).isEqualTo("FOO");
+			assertThat(TestUtils.getPropertyValue(template, "replyHolder", Map.class)).hasSize(0);
 		}
 		finally {
 			template.stop();
@@ -1420,7 +1428,7 @@ public class RabbitTemplateIntegrationTests {
 	}
 
 	@Test
-	public void testDegugLogOnPassiveDeclaration() {
+	public void testDebugLogOnPassiveDeclaration() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
 		Log logger = spy(TestUtils.getPropertyValue(connectionFactory, "logger", Log.class));
 		doReturn(true).when(logger).isDebugEnabled();
