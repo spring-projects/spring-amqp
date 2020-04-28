@@ -14,7 +14,7 @@ buildscript {
 
 plugins {
 	id "org.sonarqube" version '2.7.1'
-	id "io.spring.dependency-management" version "1.0.8.RELEASE" apply false
+	id "io.spring.dependency-management" version "1.0.9.RELEASE" apply false
 }
 
 description = 'Spring AMQP'
@@ -48,23 +48,23 @@ allprojects {
 }
 
 ext {
-	assertjVersion = '3.12.2'
-	assertkVersion = '0.17'
-	commonsHttpClientVersion = '4.5.9'
+	assertjVersion = '3.15.0'
+	assertkVersion = '0.22'
+	commonsHttpClientVersion = '4.5.12'
 	googleJsr305Version = '3.0.2'
 	hamcrestVersion = '1.3'
-	jackson2Version = '2.9.9.20190807'
+	jackson2Version = '2.9.10.20200411'
 	junit4Version = '4.12'
 	junitJupiterVersion = '5.4.0'
 	junitPlatformVersion = '1.4.0'
-	log4jVersion = '2.11.2'
+	log4jVersion = '2.13.2'
 	logbackVersion = '1.2.3'
 	mockitoVersion = '2.26.0'
 	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.4.3'
 	rabbitmqHttpClientVersion = '2.1.0.RELEASE'
-	reactorVersion = '3.2.12.RELEASE'
-	springRetryVersion = '1.2.4.RELEASE'
-	springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.1.14.BUILD-SNAPSHOT'
+	reactorVersion = '3.2.17.RELEASE'
+	springRetryVersion = '1.2.5.RELEASE'
+	springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.1.15.RELEASE'
 
 
 	expandPlaceholders = '**/quick-tour.xml'
