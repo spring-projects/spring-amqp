@@ -76,7 +76,7 @@ public final class RabbitExceptionTranslator {
 			return new org.springframework.amqp.rabbit.support.ConsumerCancelledException(ex);
 		}
 		if (ex instanceof org.springframework.amqp.rabbit.support.ConsumerCancelledException) {
-			throw (org.springframework.amqp.rabbit.support.ConsumerCancelledException) ex;
+			return (org.springframework.amqp.rabbit.support.ConsumerCancelledException) ex;
 		}
 		// fallback
 		return new UncategorizedAmqpException(ex);

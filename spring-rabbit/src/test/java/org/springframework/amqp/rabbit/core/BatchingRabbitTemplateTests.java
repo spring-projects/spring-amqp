@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.batch.SimpleBatchingStrategy;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ThreadChannelConnectionFactory;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
@@ -70,6 +70,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StopWatch;
 
+import com.rabbitmq.client.ConnectionFactory;
+
 /**
  * @author Gary Russell
  * @author Artem Bilan
@@ -84,14 +86,15 @@ public class BatchingRabbitTemplateTests {
 
 	public static final String ROUTE = "test.queue.BatchingRabbitTemplateTests";
 
-	private CachingConnectionFactory connectionFactory;
+	private ThreadChannelConnectionFactory connectionFactory;
 
 	private ThreadPoolTaskScheduler scheduler;
 
 	@BeforeEach
 	public void setup() {
-		this.connectionFactory = new CachingConnectionFactory();
-		this.connectionFactory.setHost("localhost");
+		ConnectionFactory rabbitConnectionFactory = new ConnectionFactory();
+		rabbitConnectionFactory.setHost("localhost");
+		this.connectionFactory = new ThreadChannelConnectionFactory(rabbitConnectionFactory);
 		this.connectionFactory.setPort(BrokerTestUtils.getPort());
 		scheduler = new ThreadPoolTaskScheduler();
 		scheduler.setPoolSize(1);

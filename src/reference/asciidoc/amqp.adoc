@@ -201,7 +201,61 @@ Therefore, in this section, we focus on code that exists only within our "`sprin
 
 The central component for managing a connection to the RabbitMQ broker is the `ConnectionFactory` interface.
 The responsibility of a `ConnectionFactory` implementation is to provide an instance of `org.springframework.amqp.rabbit.connection.Connection`, which is a wrapper for `com.rabbitmq.client.Connection`.
-The only concrete implementation we provide is `CachingConnectionFactory`, which, by default, establishes a single connection proxy that can be shared by the application.
+
+[[choosing-factory]]
+===== Choosing a Connection Factory
+
+There are three connection factories to chose from
+
+* `PooledChannelConnectionFactory`
+* `ThreadChannelConnectionFactory`
+* `CachingConnectionFactory`
+
+The first two were added in version 2.3.
+
+For most use cases, the `PooledChannelConnectionFactory` should be used.
+The `ThreadChannelConnectionFactory` can be used if you want to ensure string message ordering without the need to use <<scoped-operations>>.
+The `CachingConnectionFactory` should be used if you want to use correlated publisher confirmations or if you wish to open multiple connections, via its `CacheMode`.
+
+Simple publisher confirmations are supported by all three factories.
+
+====== `PooledChannelConnectionFactory`
+
+This factory manages a single connection and two pools of channels, based on the Apache Pool2.
+One pool is for transactional channels, the other is for non-transactional channels.
+The pools are `GenericObjectPool` s with default configuration; a callback is provided to configure the pools; refer to the Apache documentation for more information.
+
+====
+[source, java]
+----
+@Bean
+PooledChannelConnectionFactory pcf() throws Exception {
+    ConnectionFactory rabbitConnectionFactory = new ConnectionFactory();
+    rabbitConnectionFactory.setHost("localhost");
+    PooledChannelConnectionFactory pcf = new PooledChannelConnectionFactory(rabbitConnectionFactory);
+    pcf.setPoolConfigurer((pool, tx) -> {
+        if (tx) {
+            // configure the transactional pool
+        }
+        else {
+            // configure the non-transactional pool
+        }
+    });
+    return pcf;
+}
+----
+====
+
+====== `ThreadChannelConnectionFactory`
+
+This factory manages a single connection and two `ThreadLocal` s, one for transactional channels, the other for non-transactional channels.
+This factory ensures that all operations on the same thread use the same channel (as long as it remains open).
+This facilitates <<strict-ordering>> without the need for <<scoped-operations>>.
+To avoid memory leaks, if your application uses many short-lived threads, you must call the factory's `closeThreadChannel()` to release the channel resource.
+
+====== `CachingConnectionFactory`
+
+The third implementation provided is the `CachingConnectionFactory`, which, by default, establishes a single connection proxy that can be shared by the application.
 Sharing of the connection is possible since the "`unit of work`" for messaging with AMQP is actually a "`channel`" (in some ways, this is similar to the relationship between a connection and a session in JMS).
 The connection instance provides a `createChannel` method.
 The `CachingConnectionFactory` implementation supports caching of those channels, and it maintains separate caches for channels based on whether they are transactional.
@@ -1038,7 +1092,7 @@ To detect the exception on the sending thread, you can `setChannelTransacted(tru
 However, *transactions significantly impede performance*, so consider this carefully before enabling transactions for just this one use case.
 
 [[template-confirms]]
-===== Publisher Confirms and Returns
+===== Correlated Publisher Confirms and Returns
 
 The `RabbitTemplate` implementation of `AmqpTemplate` supports publisher confirms and returns.
 

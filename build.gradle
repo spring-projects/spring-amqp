@@ -41,6 +41,7 @@ ext {
 	assertjVersion = '3.15.0'
 	assertkVersion = '0.20'
 	commonsHttpClientVersion = '4.5.10'
+	commonsPoolVersion = '2.8.0'
 	googleJsr305Version = '3.0.2'
 	hamcrestVersion = '2.2'
 	jacksonVersion = '2.10.3'
@@ -334,6 +335,7 @@ project('spring-rabbit') {
 			exclude group: 'org.springframework'
 		}
 		optionalApi "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
+		optionalApi "org.apache.commons:commons-pool2:$commonsPoolVersion"
 
 		testApi project(':spring-rabbit-junit')
 		testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
