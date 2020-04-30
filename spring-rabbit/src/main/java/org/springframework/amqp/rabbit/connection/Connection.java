@@ -88,4 +88,10 @@ public interface Connection extends AutoCloseable {
 		return null;
 	}
 
+	/**
+	 * Close any channel associated with the current thread.
+	 */
+	default void closeThreadChannel() {
+	}
+
 }

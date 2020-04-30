@@ -62,6 +62,7 @@ import org.springframework.amqp.rabbit.connection.PublisherCallbackChannel;
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
+import org.springframework.amqp.rabbit.connection.ThreadChannelConnectionFactory;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
@@ -269,7 +270,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 */
 	public RabbitTemplate() {
 		initDefaultStrategies(); // NOSONAR - intentionally overridable; other assertions will check
-
 	}
 
 	/**
@@ -286,6 +286,14 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 */
 	protected void initDefaultStrategies() {
 		setMessageConverter(new SimpleMessageConverter());
+	}
+
+	@Override
+	public final void setConnectionFactory(ConnectionFactory connectionFactory) {
+		super.setConnectionFactory(connectionFactory);
+		if (connectionFactory instanceof ThreadChannelConnectionFactory) {
+			this.usePublisherConnection = true;
+		}
 	}
 
 	/**

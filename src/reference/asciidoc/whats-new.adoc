@@ -6,6 +6,11 @@
 This section describes the changes between version 2.2 and version 2.3.
 See <<change-history>> for changes in previous versions.
 
+==== Connection Factory Changes
+
+Two additional connection factories are now provided.
+See <<choosing-factory>> for more information.
+
 ==== Testing Changes
 
 A new annotation `@SpringRabbitTest` is provided to automatically configure some infrastructure beans for when you are not using `SpringBootTest`.
