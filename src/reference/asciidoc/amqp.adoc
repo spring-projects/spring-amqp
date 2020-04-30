@@ -252,7 +252,7 @@ PooledChannelConnectionFactory pcf() throws Exception {
 
 This factory manages a single connection and two `ThreadLocal` s, one for transactional channels, the other for non-transactional channels.
 This factory ensures that all operations on the same thread use the same channel (as long as it remains open).
-This facilitates <<strict-ordering>> without the need for <<scoped-operations>>.
+This facilitates strict message ordering without the need for <<scoped-operations>>.
 To avoid memory leaks, if your application uses many short-lived threads, you must call the factory's `closeThreadChannel()` to release the channel resource.
 
 ====== `CachingConnectionFactory`

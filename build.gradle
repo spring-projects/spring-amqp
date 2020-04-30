@@ -424,7 +424,7 @@ asciidoctorPdf {
 		sourceDir "$buildDir/asciidoc"
 		inputs.dir(sourceDir)
 		sources {
-			include 'index-single.adoc'
+			include 'index.adoc'
 		}
 		options doctype: 'book'
 		attributes 'icons': 'font',
@@ -556,11 +556,11 @@ task docsZip(type: Zip, dependsOn: [reference]) {
 			into 'api'
 		}
 
-		from ('build/asciidoc/html5') {
+		from ('build/docs/asciidoc') {
 			into 'reference/html'
 		}
 
-		from ('build/asciidoc/pdf') {
+		from ('build/docs/asciidocPdf') {
 			include 'index.pdf'
 			rename  'index.pdf', 'spring-amqp-reference.pdf'
 			into 'reference/pdf'

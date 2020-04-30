@@ -112,7 +112,7 @@ See <<template-confirms>> for more information.
 Also, the publisher confirm type is now specified with the `ConfirmType` enum instead of the two mutually exclusive setter methods.
 
 The `RabbitConnectionFactoryBean` now uses TLS 1.2 by default when SSL is enabled.
-See <<rabbitconnectionfactorybean-configuring-ssl>> for more information.
+See <<rabbitconnectionfactorybean-and-configuring-ssl>> for more information.
 
 ===== New MessagePostProcessor Classes
 
@@ -203,7 +203,7 @@ See `setReplyErrorHandler` on the `RabbitTemplate`.
 ===== Message Conversion
 
 We introduced a new `Jackson2XmlMessageConverter` to support converting messages from and to XML format.
-See <<Jackson2XmlMessageConverter>> for more information.
+See <<jackson2xml>> for more information.
 
 ===== Management REST API
 
