@@ -214,7 +214,7 @@ There are three connection factories to chose from
 The first two were added in version 2.3.
 
 For most use cases, the `PooledChannelConnectionFactory` should be used.
-The `ThreadChannelConnectionFactory` can be used if you want to ensure string message ordering without the need to use <<scoped-operations>>.
+The `ThreadChannelConnectionFactory` can be used if you want to ensure strict message ordering without the need to use <<scoped-operations>>.
 The `CachingConnectionFactory` should be used if you want to use correlated publisher confirmations or if you wish to open multiple connections, via its `CacheMode`.
 
 Simple publisher confirmations are supported by all three factories.
@@ -224,6 +224,8 @@ Simple publisher confirmations are supported by all three factories.
 This factory manages a single connection and two pools of channels, based on the Apache Pool2.
 One pool is for transactional channels, the other is for non-transactional channels.
 The pools are `GenericObjectPool` s with default configuration; a callback is provided to configure the pools; refer to the Apache documentation for more information.
+
+The Apache `commons-pool2` jar must be on the class path to use this factory.
 
 ====
 [source, java]

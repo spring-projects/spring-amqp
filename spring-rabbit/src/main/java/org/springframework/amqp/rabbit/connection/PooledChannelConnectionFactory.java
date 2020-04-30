@@ -42,8 +42,8 @@ import com.rabbitmq.client.ConnectionFactory;
 /**
  * A very simple connection factory that caches channels using Apache Pool2
  * {@link GenericObjectPool}s (one for transactional and one for non-transactional
- * channels). The pools have default configuration but you can further configure
- * them using callbacks.
+ * channels). The pools have default configuration but they can be configured using
+ * a callback.
  *
  * @author Gary Russell
  * @since 2.3
