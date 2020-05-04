@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,8 +70,6 @@ public final class BrokerRunning extends TestWatcher {
 
 	private final BrokerRunningSupport brokerRunning;
 
-	private final boolean assumeOnline;
-
 	/**
 	 * Set environment variable overrides for host, port etc. Will override any real
 	 * environment variables, if present.
@@ -100,7 +98,7 @@ public final class BrokerRunning extends TestWatcher {
 	 * @return a new rule that assumes an existing running broker
 	 */
 	public static BrokerRunning isRunningWithEmptyQueues(String... names) {
-		return new BrokerRunning(true, true, names);
+		return new BrokerRunning(true, names);
 	}
 
 	/**
@@ -121,7 +119,7 @@ public final class BrokerRunning extends TestWatcher {
 	 * @return a new rule that assumes an existing broker with the management plugin
 	 */
 	public static BrokerRunning isBrokerAndManagementRunning() {
-		return new BrokerRunning(true, false, true);
+		return new BrokerRunning(false, true);
 	}
 
 	/**
@@ -130,28 +128,27 @@ public final class BrokerRunning extends TestWatcher {
 	 * the provided queues declared (and emptied if needed)..
 	 */
 	public static BrokerRunning isBrokerAndManagementRunningWithEmptyQueues(String...queues) {
-		return new BrokerRunning(true, false, true, queues);
+		return new BrokerRunning(true, true, queues);
 	}
 
-	private BrokerRunning(boolean assumeOnline, boolean purge, String... queues) {
-		this(assumeOnline, purge, false, queues);
+	private BrokerRunning(boolean purge, String... queues) {
+		this(purge, false, queues);
 	}
 
-	private BrokerRunning(boolean assumeOnline, boolean purge, boolean management, String... queues) {
-		this.assumeOnline = assumeOnline;
-		this.brokerRunning = new BrokerRunningSupport(assumeOnline, purge, management, queues);
+	private BrokerRunning(boolean purge, boolean management, String... queues) {
+		this.brokerRunning = new BrokerRunningSupport(purge, management, queues);
 	}
 
-	private BrokerRunning(boolean assumeOnline, String... queues) {
-		this(assumeOnline, false, queues);
+	private BrokerRunning(String... queues) {
+		this(false, queues);
 	}
 
-	private BrokerRunning(boolean assumeOnline) {
-		this(assumeOnline, BrokerRunningSupport.DEFAULT_QUEUE_NAME);
+	private BrokerRunning() {
+		this(BrokerRunningSupport.DEFAULT_QUEUE_NAME);
 	}
 
-	private BrokerRunning(boolean assumeOnline, boolean purge, boolean management) {
-		this(assumeOnline, purge, management, BrokerRunningSupport.DEFAULT_QUEUE_NAME);
+	private BrokerRunning(boolean purge, boolean management) {
+		this(purge, management, BrokerRunningSupport.DEFAULT_QUEUE_NAME);
 	}
 
 	/**
@@ -269,22 +266,15 @@ public final class BrokerRunning extends TestWatcher {
 
 	@Override
 	public Statement apply(Statement base, Description description) {
-
 		try {
 			this.brokerRunning.test();
 		}
 		catch (BrokerNotAliveException e) {
 			LOGGER.warn("Not executing tests because basic connectivity test failed: " + e.getMessage());
-			if (this.assumeOnline) {
-				if (fatal()) {
-					fail("RabbitMQ Broker is required, but not available");
-				}
-				else {
-					Assume.assumeNoException(e);
-				}
+			if (fatal()) {
+				fail("RabbitMQ Broker is required, but not available");
 			}
 		}
-
 		return super.apply(base, description);
 	}
 
