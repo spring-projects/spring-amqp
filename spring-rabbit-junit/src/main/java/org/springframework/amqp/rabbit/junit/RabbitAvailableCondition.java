@@ -84,7 +84,7 @@ public class RabbitAvailableCondition
 				if (BrokerRunningSupport.fatal()) {
 					throw new IllegalStateException("Required RabbitMQ is not available", e);
 				}
-				return ConditionEvaluationResult.disabled("RabbitMQ is not available");
+				return ConditionEvaluationResult.disabled("Tests Ignored: RabbitMQ is not available");
 			}
 		}
 		return ENABLED;

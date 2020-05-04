@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.junit.Assume;
 
 import org.springframework.util.Base64Utils;
 import org.springframework.util.StringUtils;
@@ -83,12 +82,7 @@ public final class BrokerRunningSupport {
 	// Static so that we only test once on failure: speeds up test suite
 	private static final Map<Integer, Boolean> BROKER_ONLINE = new HashMap<>();
 
-	// Static so that we only test once on failure
-	private static final Map<Integer, Boolean> BROKER_OFFLINE = new HashMap<>();
-
 	private static final Map<String, String> ENVIRONMENT_OVERRIDES = new HashMap<>();
-
-	private final boolean assumeOnline;
 
 	private final boolean purge;
 
@@ -154,7 +148,7 @@ public final class BrokerRunningSupport {
 	 * @return a new rule that assumes an existing running broker
 	 */
 	public static BrokerRunningSupport isRunningWithEmptyQueues(String... names) {
-		return new BrokerRunningSupport(true, true, names);
+		return new BrokerRunningSupport(true, names);
 	}
 
 	/**
@@ -175,7 +169,7 @@ public final class BrokerRunningSupport {
 	 * @return a new rule that assumes an existing broker with the management plugin
 	 */
 	public static BrokerRunningSupport isBrokerAndManagementRunning() {
-		return new BrokerRunningSupport(true, false, true);
+		return new BrokerRunningSupport(false, true);
 	}
 
 	/**
@@ -184,15 +178,14 @@ public final class BrokerRunningSupport {
 	 * the provided queues declared (and emptied if needed)..
 	 */
 	public static BrokerRunningSupport isBrokerAndManagementRunningWithEmptyQueues(String...queues) {
-		return new BrokerRunningSupport(true, false, true, queues);
+		return new BrokerRunningSupport(true, true, queues);
 	}
 
-	private BrokerRunningSupport(boolean assumeOnline, boolean purge, String... queues) {
-		this(assumeOnline, purge, false, queues);
+	private BrokerRunningSupport(boolean purge, String... queues) {
+		this(purge, false, queues);
 	}
 
-	BrokerRunningSupport(boolean assumeOnline, boolean purge, boolean management, String... queues) {
-		this.assumeOnline = assumeOnline;
+	BrokerRunningSupport(boolean purge, boolean management, String... queues) {
 		if (queues != null) {
 			this.queues = Arrays.copyOf(queues, queues.length);
 		}
@@ -206,16 +199,8 @@ public final class BrokerRunningSupport {
 				: Integer.valueOf(fromEnvironment(BROKER_PORT, null)));
 	}
 
-	private BrokerRunningSupport(boolean assumeOnline, String... queues) {
-		this(assumeOnline, false, queues);
-	}
-
 	private BrokerRunningSupport(boolean assumeOnline) {
 		this(assumeOnline, DEFAULT_QUEUE_NAME);
-	}
-
-	private BrokerRunningSupport(boolean assumeOnline, boolean purge, boolean management) {
-		this(assumeOnline, purge, management, DEFAULT_QUEUE_NAME);
 	}
 
 	/**
@@ -223,12 +208,6 @@ public final class BrokerRunningSupport {
 	 */
 	public void setPort(int port) {
 		this.port = port;
-		if (!BROKER_OFFLINE.containsKey(port)) {
-			BROKER_OFFLINE.put(port, true);
-		}
-		if (!BROKER_ONLINE.containsKey(port)) {
-			BROKER_ONLINE.put(port, true);
-		}
 	}
 
 	/**
@@ -339,18 +318,15 @@ public final class BrokerRunningSupport {
 		this.purgeAfterEach = purgeAfterEach;
 	}
 
-	public void test() {
+	/**
+	 * Check connectivity to the broker and create any queues.
+	 * @throws BrokerNotAliveException if the broker is not available.
+	 */
+	public void test() throws BrokerNotAliveException {
 
 		// Check at the beginning, so this can be used as a static field
-		if (this.assumeOnline) {
-			if (Boolean.FALSE.equals(BROKER_ONLINE.get(this.port))) {
-				throw new BrokerNotAliveException("Require broker online and it's not");
-			}
-		}
-		else {
-			if (Boolean.FALSE.equals(BROKER_OFFLINE.get(this.port))) {
-				throw new BrokerNotAliveException("Require broker offline and it's not");
-			}
+		if (Boolean.FALSE.equals(BROKER_ONLINE.get(this.port))) {
+			throw new BrokerNotAliveException("Require broker online and it's not");
 		}
 
 		Connection connection = null; // NOSONAR (closeResources())
@@ -361,16 +337,8 @@ public final class BrokerRunningSupport {
 			channel = createQueues(connection);
 		}
 		catch (Exception e) {
-			LOGGER.warn("Not executing tests because basic connectivity test failed: " + e.getMessage());
 			BROKER_ONLINE.put(this.port, false);
-			if (this.assumeOnline) {
-				if (fatal()) {
-					throw new BrokerNotAliveException("RabbitMQ Broker is required, but not available", e);
-				}
-				else {
-					Assume.assumeNoException(e);
-				}
-			}
+			throw new BrokerNotAliveException("RabbitMQ Broker is required, but not available", e);
 		}
 		finally {
 			closeResources(connection, channel);
@@ -403,11 +371,6 @@ public final class BrokerRunningSupport {
 				channel.queueDeclare(queueName, true, false, false, null);
 			}
 		}
-		BROKER_OFFLINE.put(this.port, false);
-		if (!this.assumeOnline) {
-			Assume.assumeTrue(BROKER_OFFLINE.get(this.port));
-		}
-
 		if (this.management) {
 			Client client = new Client(getAdminUri(), this.adminUser, this.adminPassword);
 			if (!client.alivenessTest("/")) {

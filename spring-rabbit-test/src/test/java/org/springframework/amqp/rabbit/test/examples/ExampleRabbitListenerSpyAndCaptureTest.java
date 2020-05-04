@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.test;
+package org.springframework.amqp.rabbit.test.examples;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.verify;
 
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
@@ -32,30 +35,27 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
+import org.springframework.amqp.rabbit.test.RabbitListenerTest;
+import org.springframework.amqp.rabbit.test.RabbitListenerTestHarness;
 import org.springframework.amqp.rabbit.test.RabbitListenerTestHarness.InvocationData;
+import org.springframework.amqp.rabbit.test.mockito.LatchCountDownAndCallRealMethodAnswer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.context.support.AnnotationConfigContextLoader;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 /**
  * @author Gary Russell
- * @author Artem Bilan
- *
  * @since 1.6
  *
  */
-@ContextConfiguration(loader = ExampleRabbitListenerCaptureTest.NoBeansOverrideAnnotationConfigContextLoader.class)
-@ExtendWith(SpringExtension.class)
+@SpringJUnitConfig
 @DirtiesContext
 @RabbitAvailable
-public class ExampleRabbitListenerCaptureTest {
+public class ExampleRabbitListenerSpyAndCaptureTest {
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -73,6 +73,10 @@ public class ExampleRabbitListenerCaptureTest {
 	public void testTwoWay() throws Exception {
 		assertThat(this.rabbitTemplate.convertSendAndReceive(this.queue1.getName(), "foo")).isEqualTo("FOO");
 
+		Listener listener = this.harness.getSpy("foo");
+		assertThat(listener).isNotNull();
+		verify(listener).foo("foo");
+
 		InvocationData invocationData = this.harness.getNextInvocationDataFor("foo", 10, TimeUnit.SECONDS);
 		assertThat(invocationData).isNotNull();
 		assertThat((String) invocationData.getArguments()[0]).isEqualTo("foo");
@@ -81,9 +85,19 @@ public class ExampleRabbitListenerCaptureTest {
 
 	@Test
 	public void testOneWay() throws Exception {
+		Listener listener = this.harness.getSpy("bar");
+		assertThat(listener).isNotNull();
+
+		LatchCountDownAndCallRealMethodAnswer answer = new LatchCountDownAndCallRealMethodAnswer(2);
+		doAnswer(answer).when(listener).foo(anyString(), anyString());
+
 		this.rabbitTemplate.convertAndSend(this.queue2.getName(), "bar");
 		this.rabbitTemplate.convertAndSend(this.queue2.getName(), "baz");
 		this.rabbitTemplate.convertAndSend(this.queue2.getName(), "ex");
+
+		assertThat(answer.getLatch().await(10, TimeUnit.SECONDS)).isTrue();
+		verify(listener).foo("bar", this.queue2.getName());
+		verify(listener).foo("baz", this.queue2.getName());
 
 		InvocationData invocationData = this.harness.getNextInvocationDataFor("bar", 10, TimeUnit.SECONDS);
 		assertThat(invocationData).isNotNull();
@@ -111,10 +125,14 @@ public class ExampleRabbitListenerCaptureTest {
 		assertThat((String) args[0]).isEqualTo("ex");
 		assertThat((String) args[1]).isEqualTo(queue2.getName());
 		assertThat(invocationData.getThrowable()).isNull();
+
+		Collection<Exception> exceptions = answer.getExceptions();
+		assertThat(exceptions).hasSize(1);
+		assertThat(exceptions.iterator().next()).isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Configuration
-	@RabbitListenerTest(spy = false, capture = true)
+	@RabbitListenerTest(capture = true)
 	public static class Config {
 
 		@Bean
@@ -166,25 +184,14 @@ public class ExampleRabbitListenerCaptureTest {
 		}
 
 		@RabbitListener(id = "bar", queues = "#{queue2.name}")
-		public void foo(@Payload String foo, @Header("amqp_receivedRoutingKey") String rk) {
+		public void foo(@Payload String foo, @SuppressWarnings("unused") @Header("amqp_receivedRoutingKey") String rk) {
 			if (!failed && foo.equals("ex")) {
 				failed = true;
-				throw new RuntimeException(foo);
+				throw new IllegalArgumentException(foo);
 			}
 			failed = false;
 		}
 
 	}
 
-
-	public static class NoBeansOverrideAnnotationConfigContextLoader extends AnnotationConfigContextLoader {
-
-		@Override
-		protected void customizeBeanFactory(DefaultListableBeanFactory beanFactory) {
-			beanFactory.setAllowBeanDefinitionOverriding(false);
-		}
-
-	}
-
 }
-
