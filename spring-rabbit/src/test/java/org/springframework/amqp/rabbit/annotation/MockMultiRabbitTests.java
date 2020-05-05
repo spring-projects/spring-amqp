@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ import com.rabbitmq.client.Channel;
 /**
  * @author Wander Costa
  */
-class MultiRabbitIntegrationTests {
+class MockMultiRabbitTests {
 
 	@Test
 	@DisplayName("Test instantiation of multiple message listeners")
@@ -226,7 +226,7 @@ class MultiRabbitIntegrationTests {
 
 		static final SimpleRoutingConnectionFactory ROUTING_CONNECTION_FACTORY = new SimpleRoutingConnectionFactory();
 		static final ConnectionFactory DEFAULT_CONNECTION_FACTORY = Mockito.mock(ConnectionFactory.class);
-		static final ConnectionFactory CONNECTION_FACTORY_BROKER_B = Mockito.spy(ConnectionFactory.class);
+		static final ConnectionFactory CONNECTION_FACTORY_BROKER_B = Mockito.mock(ConnectionFactory.class);
 		static final ConnectionFactory CONNECTION_FACTORY_BROKER_C = Mockito.mock(ConnectionFactory.class);
 
 		static final Connection DEFAULT_CONNECTION = Mockito.mock(Connection.class);

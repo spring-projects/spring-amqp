@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.springframework.amqp.core.Declarable;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.lang.NonNull;
+import org.springframework.util.StringUtils;
 
 /**
  * An extension of {@link RabbitListenerAnnotationBeanPostProcessor} that associates the
@@ -34,9 +35,16 @@ import org.springframework.lang.NonNull;
  * configuration, preventing the server from automatic binding non-related structures.
  *
  * @author Wander Costa
- * @see RabbitListenerAnnotationBeanPostProcessor
  */
 public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListenerAnnotationBeanPostProcessor {
+
+	public static final String CONNECTION_FACTORY_BEAN_NAME = "multiRabbitConnectionFactory";
+
+	public static final String CONNECTION_FACTORY_CREATOR_BEAN_NAME = "rabbitConnectionFactoryCreator";
+
+	private static final String DEFAULT_RABBIT_ADMIN_BEAN_NAME = "defaultRabbitAdmin";
+
+	private static final String RABBIT_ADMIN_SUFFIX = "-admin";
 
 	private BeanFactory beanFactory;
 
@@ -51,11 +59,12 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 			Object bean, String beanName) {
 		final Collection<Declarable> declarables = super.processAmqpListener(rabbitListener, method, bean, beanName);
 		final RabbitAdmin rabbitAdmin = resolveRabbitAdminBean(rabbitListener);
-		declarables.stream()
-				.filter(dec -> dec.getDeclaringAdmins().isEmpty())
-				.filter(dec -> dec instanceof AbstractDeclarable)
-				.map(dec -> (AbstractDeclarable) dec)
-				.forEach(dec -> dec.setAdminsThatShouldDeclare(rabbitAdmin));
+		for (final Declarable declarable : declarables) {
+			if (declarable.getDeclaringAdmins().isEmpty() && declarable instanceof AbstractDeclarable) {
+				final AbstractDeclarable abstractDeclarable = (AbstractDeclarable) declarable;
+				abstractDeclarable.setAdminsThatShouldDeclare(rabbitAdmin);
+			}
+		}
 		return declarables;
 	}
 
@@ -66,7 +75,25 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 	 * @return the bean found.
 	 */
 	private RabbitAdmin resolveRabbitAdminBean(RabbitListener rabbitListener) {
-		final String name = MultiRabbitAdminNameResolver.resolve(rabbitListener);
+		final String name = resolveAdminName(rabbitListener);
 		return this.beanFactory.getBean(name, RabbitAdmin.class);
+	}
+
+	/**
+	 * Resolves the name of the RabbitAdmin bean based on the RabbitListener.
+	 *
+	 * @param rabbitListener The RabbitListener to process the name from.
+	 * @return The name of the RabbitAdmin bean.
+	 */
+	public static String resolveAdminName(RabbitListener rabbitListener) {
+		String admin = rabbitListener.admin();
+		if (!StringUtils.hasText(admin) && StringUtils.hasText(rabbitListener.containerFactory())) {
+			admin = rabbitListener.containerFactory()
+					+ MultiRabbitListenerAnnotationBeanPostProcessor.RABBIT_ADMIN_SUFFIX;
+		}
+		if (!StringUtils.hasText(admin)) {
+			admin = MultiRabbitListenerAnnotationBeanPostProcessor.DEFAULT_RABBIT_ADMIN_BEAN_NAME;
+		}
+		return admin;
 	}
 }
