@@ -22,7 +22,6 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.junit.Assume;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -61,7 +60,6 @@ import com.rabbitmq.client.ConnectionFactory;
  * @author Gary Russell
  *
  * @since 1.7
- * @see Assume
  * @see org.junit.internal.AssumptionViolatedException
  */
 public final class BrokerRunning extends TestWatcher {
