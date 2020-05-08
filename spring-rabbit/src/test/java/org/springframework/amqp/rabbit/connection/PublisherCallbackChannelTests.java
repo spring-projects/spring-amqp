@@ -32,7 +32,6 @@ import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
@@ -74,7 +73,7 @@ public class PublisherCallbackChannelTests {
 	void testNotCached() throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory(
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
-		cf.setPublisherConfirmType(ConfirmType.CORRELATED);
+		cf.setPublisherConfirms(true);
 		cf.setChannelCacheSize(2);
 		cf.afterPropertiesSet();
 		RabbitTemplate template = new RabbitTemplate(cf);
