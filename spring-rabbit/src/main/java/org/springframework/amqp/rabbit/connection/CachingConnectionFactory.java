@@ -1136,16 +1136,14 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 			else if (methodName.equals("close")) {
 				// Handle close method: don't pass the call on.
-				if (CachingConnectionFactory.this.active) {
-					if (!RabbitUtils.isPhysicalCloseRequired()) {
-						logicalClose((ChannelProxy) proxy);
-						return null;
-					}
+				if (CachingConnectionFactory.this.active && !RabbitUtils.isPhysicalCloseRequired()) {
+					logicalClose((ChannelProxy) proxy);
+					return null;
 				}
-
-				// If we get here, we're supposed to shut down.
-				physicalClose(proxy);
-				return null;
+				else {
+					physicalClose(proxy);
+					return null;
+				}
 			}
 			else if (methodName.equals("getTargetChannel")) {
 				// Handle getTargetChannel method: return underlying Channel.
@@ -1287,25 +1285,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				synchronized (this.channelList) {
 					// Allow for multiple close calls...
 					if (CachingConnectionFactory.this.active) {
-						boolean alreadyCached = this.channelList.contains(proxy);
-						if (this.channelList.size() >= getChannelCacheSize() && !alreadyCached) {
-							if (logger.isTraceEnabled()) {
-								logger.trace("Cache limit reached: " + this.target);
-							}
-							try {
-								physicalClose(proxy);
-							}
-							catch (@SuppressWarnings(UNUSED) Exception e) {
-							}
-						}
-						else if (!alreadyCached) {
-							if (logger.isTraceEnabled()) {
-								logger.trace("Returning cached Channel: " + this.target);
-							}
-							releasePermitIfNecessary(proxy);
-							this.channelList.addLast((ChannelProxy) proxy);
-							setHighWaterMark();
-						}
+						cacheOrClose(proxy);
 					}
 					else {
 						if (proxy.isOpen()) {
@@ -1317,6 +1297,28 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 						}
 					}
 				}
+			}
+		}
+
+		private void cacheOrClose(Channel proxy) {
+			boolean alreadyCached = this.channelList.contains(proxy);
+			if (this.channelList.size() >= getChannelCacheSize() && !alreadyCached) {
+				if (logger.isTraceEnabled()) {
+					logger.trace("Cache limit reached: " + this.target);
+				}
+				try {
+					physicalClose(proxy);
+				}
+				catch (@SuppressWarnings(UNUSED) Exception e) {
+				}
+			}
+			else if (!alreadyCached) {
+				if (logger.isTraceEnabled()) {
+					logger.trace("Returning cached Channel: " + this.target);
+				}
+				releasePermitIfNecessary(proxy);
+				this.channelList.addLast((ChannelProxy) proxy);
+				setHighWaterMark();
 			}
 		}
 
