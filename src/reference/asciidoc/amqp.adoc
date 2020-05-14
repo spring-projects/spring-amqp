@@ -2851,7 +2851,6 @@ This means that the annotation can appear on the same annotated element (method 
 In this case, a separate listener container is created for each annotation, each of which invokes the same listener
 `@Bean`.
 Repeatable annotations can be used with Java 8 or above.
-When using Java 7 or earlier, you can achieve the same effect by using the `@RabbitListeners` "`container`" annotation, with an array of `@RabbitListener` annotations.
 
 ====== Proxy `@RabbitListener` and Generics
 

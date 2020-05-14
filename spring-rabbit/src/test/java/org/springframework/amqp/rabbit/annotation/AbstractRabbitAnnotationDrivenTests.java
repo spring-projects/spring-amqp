@@ -323,20 +323,16 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	@Component
 	static class RabbitListenersBean {
 
-		@RabbitListeners({
-				@RabbitListener(id = "first", queues = "myQueue"),
-				@RabbitListener(id = "second", queues = "anotherQueue")
-		})
+		@RabbitListener(id = "first", queues = "myQueue")
+		@RabbitListener(id = "second", queues = "anotherQueue")
 		public void repeatableHandle(String msg) {
 		}
 
 	}
 
 	@Component
-	@RabbitListeners({
-		@RabbitListener(id = "third", queues = "class1"),
-		@RabbitListener(id = "fourth", queues = "class2")
-	})
+	@RabbitListener(id = "third", queues = "class1")
+	@RabbitListener(id = "fourth", queues = "class2")
 	static class ClassLevelListenersBean {
 
 		@RabbitHandler
