@@ -327,6 +327,7 @@ project('spring-rabbit-test') {
 
 	dependencies {
 
+		compile "org.springframework:spring-test:$springVersion"
 		compile project(":spring-rabbit")
 		compile ("junit:junit:$junit4Version") {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
