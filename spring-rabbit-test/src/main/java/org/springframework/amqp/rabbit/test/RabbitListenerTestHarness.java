@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.mockito.AdditionalAnswers;
 import org.mockito.Mockito;
 
 import org.springframework.amqp.AmqpException;
@@ -37,6 +38,7 @@ import org.springframework.aop.framework.ProxyFactoryBean;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.type.AnnotationMetadata;
+import org.springframework.test.util.AopTestUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -77,7 +79,7 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 		String id = rabbitListener.id();
 		if (StringUtils.hasText(id)) {
 			if (this.attributes.getBoolean("spy")) {
-				proxy = Mockito.spy(proxy);
+				proxy = Mockito.mock(AopTestUtils.getUltimateTargetObject(proxy).getClass(), AdditionalAnswers.delegatesTo(proxy));
 				this.listeners.put(id, proxy);
 			}
 			if (this.attributes.getBoolean("capture")) {
