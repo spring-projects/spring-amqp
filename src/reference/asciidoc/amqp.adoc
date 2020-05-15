@@ -378,6 +378,11 @@ The following example with a custom thread factory that prefixes thread names wi
 ----
 ====
 
+===== AddressResolver
+
+Starting with version 2.1.15, you can now use an `AddressResover` to resolve the connection address(es).
+This will override any settings of the `addresses` and `host/port` properties.
+
 ===== Naming Connections
 
 Starting with version 1.7, a `ConnectionNameStrategy` is provided for the injection into the `AbstractionConnectionFactory`.
