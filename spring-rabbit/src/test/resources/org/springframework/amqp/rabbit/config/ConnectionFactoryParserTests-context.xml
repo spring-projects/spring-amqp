@@ -20,7 +20,15 @@
 
 	<rabbit:connection-factory id="native" connection-factory="connectionFactory" channel-cache-size="10" />
 
-	<bean id="connectionFactory" class="com.rabbitmq.client.ConnectionFactory"/>
+
+	<rabbit:connection-factory id="resolved" connection-factory="connectionFactory"
+		address-resolver="resolver"/>
+
+	<bean id="resolver" class="com.rabbitmq.client.ListAddressResolver">
+		<constructor-arg value="null"/>
+	</bean>
+
+	<bean id="connectionFactory" class="org.springframework.amqp.rabbit.connection.RabbitConnectionFactoryBean"/>
 
 	<rabbit:connection-factory id="withExecutor" host="foo" virtual-host="/bar"
 		connection-cache-size="10" port="6888" username="user" password="password"

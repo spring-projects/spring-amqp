@@ -42,6 +42,8 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 
 	private static final String SHUFFLE_ADDRESSES = "shuffle-addresses";
 
+	private static final String ADDRESS_RESOLVER = "address-resolver";
+
 	private static final String VIRTUAL_HOST_ATTRIBUTE = "virtual-host";
 
 	private static final String USER_ATTRIBUTE = "username";
@@ -101,6 +103,7 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, EXECUTOR_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, ADDRESSES);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, SHUFFLE_ADDRESSES);
+		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, ADDRESS_RESOLVER);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, PUBLISHER_RETURNS);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, REQUESTED_HEARTBEAT, "requestedHeartBeat");
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, CONNECTION_TIMEOUT);
