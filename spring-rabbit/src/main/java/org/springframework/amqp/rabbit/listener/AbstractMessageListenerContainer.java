@@ -42,6 +42,7 @@ import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AmqpAdmin;
+import org.springframework.amqp.core.BatchMessageListener;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -1918,6 +1919,17 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				logger.debug("No global properties bean");
 			}
 		}
+	}
+
+	@Nullable
+	protected List<Message> debatch(Message message) {
+		if (isDeBatchingEnabled() && getBatchingStrategy().canDebatch(message.getMessageProperties())
+				&& getMessageListener() instanceof BatchMessageListener) {
+			final List<Message> messageList = new ArrayList<>();
+			getBatchingStrategy().deBatch(message, fragment -> messageList.add(fragment));
+			return messageList;
+		}
+		return null;
 	}
 
 	@FunctionalInterface

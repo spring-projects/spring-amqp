@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -974,9 +974,14 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				this.logger.debug(this + " received " + message);
 			}
 			updateLastReceive();
+			Object data = message;
+			List<Message> debatched = debatch(message);
+			if (debatched != null) {
+				data = debatched;
+			}
 			if (this.transactionManager != null) {
 				try {
-					executeListenerInTransaction(message, deliveryTag);
+					executeListenerInTransaction(data, deliveryTag);
 				}
 				catch (WrappedTransactionException e) {
 					if (e.getCause() instanceof Error) {
@@ -994,7 +999,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			else {
 				try {
-					callExecuteListener(message, deliveryTag);
+					callExecuteListener(data, deliveryTag);
 				}
 				catch (Exception e) {
 					// NOSONAR
@@ -1002,7 +1007,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 
-		private void executeListenerInTransaction(Message message, long deliveryTag) {
+		private void executeListenerInTransaction(Object data, long deliveryTag) {
 			if (this.isRabbitTxManager) {
 				ConsumerChannelRegistry.registerConsumerChannel(getChannel(), this.connectionFactory);
 			}
@@ -1018,7 +1023,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				}
 				// unbound in ResourceHolderSynchronization.beforeCompletion()
 				try {
-					callExecuteListener(message, deliveryTag);
+					callExecuteListener(data, deliveryTag);
 				}
 				catch (RuntimeException e1) {
 					prepareHolderForRollback(resourceHolder, e1);
@@ -1031,10 +1036,10 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			});
 		}
 
-		private void callExecuteListener(Message message, long deliveryTag) {
+		private void callExecuteListener(Object data, long deliveryTag) {
 			boolean channelLocallyTransacted = isChannelLocallyTransacted();
 			try {
-				executeListener(getChannel(), message);
+				executeListener(getChannel(), data);
 				handleAck(deliveryTag, channelLocallyTransacted);
 			}
 			catch (ImmediateAcknowledgeAmqpException e) {

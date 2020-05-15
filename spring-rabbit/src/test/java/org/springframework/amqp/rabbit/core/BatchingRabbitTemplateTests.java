@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.BatchMessageListener;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageListener;
@@ -53,7 +54,9 @@ import org.springframework.amqp.rabbit.connection.ThreadChannelConnectionFactory
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
+import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.ConditionalRejectingErrorHandler;
+import org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.postprocessor.AbstractCompressingPostProcessor;
@@ -228,20 +231,47 @@ public class BatchingRabbitTemplateTests {
 	}
 
 	@Test
-	public void testDebatchByContainer() throws Exception {
-		final List<Message> received = new ArrayList<Message>();
-		final CountDownLatch latch = new CountDownLatch(2);
+	void testDebatchSMLCSplit() throws Exception {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactory);
+		container.setReceiveTimeout(100);
+		testDebatchByContainer(container, false);
+	}
+
+	@Test
+	void testDebatchSMLC() throws Exception {
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactory);
+		container.setReceiveTimeout(100);
+		testDebatchByContainer(container, true);
+	}
+
+	@Test
+	void testDebatchDMLC() throws Exception {
+		testDebatchByContainer(new DirectMessageListenerContainer(this.connectionFactory), true);
+	}
+
+	private void testDebatchByContainer(AbstractMessageListenerContainer container, boolean asList) throws Exception {
+		final List<Message> received = new ArrayList<Message>();
+		final CountDownLatch latch = new CountDownLatch(asList ? 1 : 2);
 		container.setQueueNames(ROUTE);
 		List<Boolean> lastInBatch = new ArrayList<>();
 		AtomicInteger batchSize = new AtomicInteger();
-		container.setMessageListener((MessageListener) message -> {
-			received.add(message);
-			lastInBatch.add(message.getMessageProperties().isLastInBatch());
-			batchSize.set(message.getMessageProperties().getHeader(AmqpHeaders.BATCH_SIZE));
-			latch.countDown();
-		});
-		container.setReceiveTimeout(100);
+		if (asList) {
+			container.setMessageListener((BatchMessageListener) messages -> {
+				received.addAll(messages);
+				lastInBatch.add(false);
+				lastInBatch.add(true);
+				batchSize.set(messages.size());
+				latch.countDown();
+			});
+		}
+		else {
+			container.setMessageListener((MessageListener) message -> {
+				received.add(message);
+				lastInBatch.add(message.getMessageProperties().isLastInBatch());
+				batchSize.set(message.getMessageProperties().getHeader(AmqpHeaders.BATCH_SIZE));
+				latch.countDown();
+			});
+		}
 		container.afterPropertiesSet();
 		container.start();
 		try {
