@@ -81,6 +81,7 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.rabbitmq.client.Address;
+import com.rabbitmq.client.AddressResolver;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConfirmListener;
 import com.rabbitmq.client.ConnectionFactory;
@@ -1844,6 +1845,29 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 			.sorted()
 			.collect(Collectors.toList());
 		assertThat(firstAddress).containsExactly("host1", "host2", "host3");
+	}
+
+	@Test
+	void testResolver() throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		Channel mockChannel = mock(Channel.class);
+
+		AddressResolver resolver = () -> Collections.singletonList(Address.parseAddress("foo:5672"));
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), eq(resolver), anyString()))
+				.thenReturn(mockConnection);
+		when(mockConnection.createChannel()).thenReturn(mockChannel);
+		when(mockChannel.isOpen()).thenReturn(true);
+		when(mockConnection.isOpen()).thenReturn(true);
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setExecutor(mock(ExecutorService.class));
+		ccf.setAddressResolver(resolver);
+		Connection con = ccf.createConnection();
+		assertThat(con).isNotNull();
+		assertThat(TestUtils.getPropertyValue(con, "target", SimpleConnection.class).getDelegate())
+				.isEqualTo(mockConnection);
+		verify(mockConnectionFactory).newConnection(any(ExecutorService.class), eq(resolver), anyString());
 	}
 
 }
