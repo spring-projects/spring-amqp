@@ -130,9 +130,9 @@ public final class ConnectionFactoryParserTests {
 	}
 
 	@Test
-	void testResolver() {
+	public void testResolver() {
 		CachingConnectionFactory connectionFactory = beanFactory.getBean("resolved", CachingConnectionFactory.class);
-		assertThat(TestUtils.getPropertyValue(connectionFactory, "addressResolver"))
-				.isSameAs(this.beanFactory.getBean("resolver"));
+		assertSame(this.beanFactory.getBean("resolver"),
+				TestUtils.getPropertyValue(connectionFactory, "addressResolver")));
 	}
 }
