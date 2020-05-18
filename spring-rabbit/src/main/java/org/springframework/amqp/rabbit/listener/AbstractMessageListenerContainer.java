@@ -56,6 +56,7 @@ import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.RoutingConnectionFactory;
+import org.springframework.amqp.rabbit.listener.api.ChannelAwareBatchMessageListener;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
@@ -243,6 +244,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private volatile boolean lazyLoad;
 
+	private boolean isBatchListener;
+
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
 		this.applicationEventPublisher = applicationEventPublisher;
@@ -424,6 +427,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	public void setMessageListener(MessageListener messageListener) {
 		this.messageListener = messageListener;
+		this.isBatchListener = messageListener instanceof BatchMessageListener
+				|| messageListener instanceof ChannelAwareBatchMessageListener;
 	}
 
 	/**
@@ -1923,8 +1928,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	@Nullable
 	protected List<Message> debatch(Message message) {
-		if (isDeBatchingEnabled() && getBatchingStrategy().canDebatch(message.getMessageProperties())
-				&& getMessageListener() instanceof BatchMessageListener) {
+		if (this.isBatchListener && isDeBatchingEnabled()
+				&& getBatchingStrategy().canDebatch(message.getMessageProperties())) {
 			final List<Message> messageList = new ArrayList<>();
 			getBatchingStrategy().deBatch(message, fragment -> messageList.add(fragment));
 			return messageList;

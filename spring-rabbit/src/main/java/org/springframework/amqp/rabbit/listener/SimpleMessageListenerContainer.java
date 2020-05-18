@@ -56,8 +56,10 @@ import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.ListenerContainerAware;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
+import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.jmx.export.annotation.ManagedMetric;
 import org.springframework.jmx.support.MetricType;
+import org.springframework.lang.Nullable;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -833,8 +835,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		if (this.retryDeclarationInterval != null) {
 			consumer.setRetryDeclarationInterval(this.retryDeclarationInterval);
 		}
-		if (getConsumerTagStrategy() != null) {
-			consumer.setTagStrategy(getConsumerTagStrategy()); // NOSONAR never null here
+		ConsumerTagStrategy consumerTagStrategy = getConsumerTagStrategy();
+		if (consumerTagStrategy != null) {
+			consumer.setTagStrategy(consumerTagStrategy);
 		}
 		consumer.setBackOffExecution(getRecoveryBackOff().start());
 		consumer.setShutdownTimeout(getShutdownTimeout());
@@ -1098,7 +1101,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	@Override
-	protected void publishConsumerFailedEvent(String reason, boolean fatal, Throwable t) {
+	protected void publishConsumerFailedEvent(String reason, boolean fatal, @Nullable Throwable t) {
 		if (!fatal || !isRunning()) {
 			super.publishConsumerFailedEvent(reason, fatal, t);
 		}
