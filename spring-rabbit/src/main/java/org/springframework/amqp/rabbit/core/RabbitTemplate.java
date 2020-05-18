@@ -2631,6 +2631,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			future.completeExceptionally(
 					new ConsumeOkNotReceivedException("Blocking receive, consumer failed to consume within "
 							+ timeoutMillis + " ms: " + consumer));
+			RabbitUtils.setPhysicalCloseRequired(channel, true);
 		}
 		return consumer;
 	}

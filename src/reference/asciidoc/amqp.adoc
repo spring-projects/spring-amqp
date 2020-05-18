@@ -2001,11 +2001,12 @@ Batched messages (created by a producer) are automatically de-batched by listene
 Rejecting any message from a batch causes the entire batch to be rejected.
 See <<template-batching>> for more information about batching.
 
-Starting with version 2.2, the `SimpleMessageListeneContainer` can be use to create batches on the consumer side (where the producer sent discrete messages).
+Starting with version 2.2, the `SimpleMessageListenerContainer` can be use to create batches on the consumer side (where the producer sent discrete messages).
 
 Set the container property `consumerBatchEnabled` to enable this feature.
 `deBatchingEnabled` must also be true so that the container is responsible for processing batches of both types.
 Implement `BatchMessageListener` or `ChannelAwareBatchMessageListener` when `consumerBatchEnabled` is true.
+Starting with version 2.2.7 both the `SimpleMessageListenerContainer` and `DirectMessageListenerContainer` can debatch <<template-batching,producer created batches>> as `List<Message>`.
 See <<receiving-batch>> for information about using this feature with `@RabbitListener`.
 
 [[consumer-events]]
@@ -5472,6 +5473,8 @@ a|image::images/tickmark.png[]
 (N/A)
 
 |When true, the listener container will debatch batched messages and invoke the listener with each message from the batch.
+Starting with version 2.2.7, <<template-batching,producer created batches>> will be debatched as a `List<Message>` if the listener is a `BatchMessageListener` or `ChannelAwareBatchMessageListener`.
+Otherwise messages from the batch are presented one-at-a-time.
 Default true.
 See <<template-batching>> and <<receiving-batch>>.
 
