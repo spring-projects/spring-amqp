@@ -959,6 +959,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			else {
+				messages = debatch(message);
+				if (messages != null) {
+					break;
+				}
 				try {
 					executeListener(channel, message);
 				}
@@ -1008,7 +1012,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 		}
-		if (this.consumerBatchEnabled && messages != null) {
+		if (messages != null) {
 			executeWithList(channel, messages, deliveryTag, consumer);
 		}
 
