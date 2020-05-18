@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 the original author or authors.
+ * Copyright 2019-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import org.springframework.amqp.rabbit.core.BatchingRabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.support.AmqpHeaders;
+import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -50,7 +51,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
  */
 @SpringJUnitConfig
 @DirtiesContext
-@RabbitAvailable(queues = { "batch.1", "batch.2", "batch.3" })
+@RabbitAvailable(queues = { "batch.1", "batch.2", "batch.3", "batch.4" })
 public class EnableRabbitBatchIntegrationTests {
 
 	@Autowired
@@ -99,6 +100,20 @@ public class EnableRabbitBatchIntegrationTests {
 		assertThat(this.listener.foosConsumerBatchToo.get(3).getBar()).isEqualTo("qux");
 	}
 
+	@Test
+	public void nativeMessageList() throws InterruptedException {
+		this.template.convertAndSend("batch.4", new Foo("foo"));
+		this.template.convertAndSend("batch.4", new Foo("bar"));
+		assertThat(this.listener.nativeMessagesLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.listener.nativeMessages).hasSize(2);
+		Foo payload = (Foo) new SimpleMessageConverter().fromMessage(this.listener.nativeMessages.get(0));
+		assertThat(payload.getBar()).isEqualTo("foo");
+		assertThat(this.listener.nativeMessages.get(1).getMessageProperties()
+				.getHeaders()
+				.get(AmqpHeaders.BATCH_SIZE))
+				.isEqualTo(2);
+	}
+
 	@Configuration
 	@EnableRabbit
 	public static class Config {
@@ -116,6 +131,11 @@ public class EnableRabbitBatchIntegrationTests {
 			DirectRabbitListenerContainerFactory factory = new DirectRabbitListenerContainerFactory();
 			factory.setConnectionFactory(connectionFactory());
 			factory.setBatchListener(true);
+			factory.setContainerCustomizer(container -> {
+				if (container.getQueueNames()[0].equals("batch.4")) {
+					container.setDeBatchingEnabled(true);
+				}
+			});
 			return factory;
 		}
 
@@ -166,6 +186,10 @@ public class EnableRabbitBatchIntegrationTests {
 
 		CountDownLatch fooConsumerBatchTooLatch = new CountDownLatch(1);
 
+		private List<org.springframework.amqp.core.Message> nativeMessages;
+
+		private final CountDownLatch nativeMessagesLatch = new CountDownLatch(1);
+
 		@RabbitListener(queues = "batch.1")
 		public void listen1(List<Foo> in) {
 			this.foos = in;
@@ -182,6 +206,12 @@ public class EnableRabbitBatchIntegrationTests {
 		public void listen3(List<Foo> in) {
 			this.foosConsumerBatchToo = in;
 			this.fooConsumerBatchTooLatch.countDown();
+		}
+
+		@RabbitListener(queues = "batch.4", containerFactory = "directListenerContainerFactory")
+		public void listen4(List<org.springframework.amqp.core.Message> in) {
+			this.nativeMessages = in;
+			this.nativeMessagesLatch.countDown();
 		}
 
 	}
