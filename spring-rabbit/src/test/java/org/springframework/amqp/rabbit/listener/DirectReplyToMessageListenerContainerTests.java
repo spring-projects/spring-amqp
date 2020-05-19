@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,9 @@
 package org.springframework.amqp.rabbit.listener;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -83,12 +85,9 @@ public class DirectReplyToMessageListenerContainerTests {
 		BasicProperties props = new BasicProperties().builder().replyTo(Address.AMQ_RABBITMQ_REPLY_TO).build();
 		channel1.getChannel().basicPublish("", TEST_RELEASE_CONSUMER_Q, props, "foo".getBytes());
 		Channel replyChannel = connectionFactory.createConnection().createChannel(false);
-		GetResponse request = replyChannel.basicGet(TEST_RELEASE_CONSUMER_Q, true);
-		int n = 0;
-		while (n++ < 100 && request == null) {
-			Thread.sleep(100);
-			request = replyChannel.basicGet(TEST_RELEASE_CONSUMER_Q, true);
-		}
+		GetResponse request = await()
+				.pollDelay(Duration.ZERO)
+				.until(() -> replyChannel.basicGet(TEST_RELEASE_CONSUMER_Q, true), req -> req != null);
 		assertThat(request).isNotNull();
 		replyChannel.basicPublish("", request.getProps().getReplyTo(), new BasicProperties(), "bar".getBytes());
 		replyChannel.close();

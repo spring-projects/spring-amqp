@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.log4j2;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -211,11 +212,7 @@ public class AmqpAppenderTests {
 
 		assertThat(events.getClass()).isEqualTo(LinkedBlockingQueue.class);
 		BlockingQueue<?> queue = (BlockingQueue<?>) events;
-		int n = 0;
-		while (n++ < 100 && queue.size() > 0) {
-			Thread.sleep(100);
-		}
-		assertThat(queue).hasSize(0);
+		await().until(() -> queue.size() == 0);
 	}
 
 	@Test

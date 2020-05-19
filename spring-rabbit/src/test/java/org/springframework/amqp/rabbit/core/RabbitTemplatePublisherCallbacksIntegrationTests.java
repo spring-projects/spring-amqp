@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -199,13 +200,9 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertThat(confirmCorrelation.get().getId()).isEqualTo("abc");
 		assertThat(templateWithConfirmsEnabled.getUnconfirmed(-1)).isNull();
 		this.templateWithConfirmsEnabled.execute(channel -> {
-			Map<?, ?> listenerMap = TestUtils.getPropertyValue(((ChannelProxy) channel).getTargetChannel(), "listenerForSeq",
-					Map.class);
-			int n = 0;
-			while (n++ < 100 && listenerMap.size() > 0) {
-				Thread.sleep(100);
-			}
-			assertThat(listenerMap).hasSize(0);
+			Map<?, ?> listenerMap = TestUtils.getPropertyValue(((ChannelProxy) channel).getTargetChannel(),
+					"listenerForSeq", Map.class);
+			await().until(() -> listenerMap.size() == 0);
 			return null;
 		});
 
@@ -415,11 +412,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		exec.shutdown();
 		assertThat(exec.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
 		ccf.destroy();
-		int n = 0;
-		while (n++ < 100 && pendingConfirms.size() > 0) {
-			Thread.sleep(100);
-		}
-		assertThat(pendingConfirms).hasSize(0);
+		await().until(() -> pendingConfirms.size() == 0);
 	}
 
 	@Test
@@ -827,12 +820,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 
-		int n = 0;
-		while (n++ < 100 && TestUtils.getPropertyValue(channel, "pendingConfirms", Map.class).size() > 0) {
-			Thread.sleep(100);
-		}
-		assertThat(TestUtils.getPropertyValue(channel, "pendingConfirms", Map.class)).hasSize(0);
-
+		Map<?, ?> pending = TestUtils.getPropertyValue(channel, "pendingConfirms", Map.class);
+		await().until(() -> pending.size() == 0);
 	}
 
 	@Test

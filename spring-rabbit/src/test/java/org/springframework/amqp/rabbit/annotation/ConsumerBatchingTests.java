@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 the original author or authors.
+ * Copyright 2019-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.annotation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -82,11 +83,9 @@ public class ConsumerBatchingTests {
 		assertThat(this.listener.foos)
 			.extracting(foo -> foo.getBar())
 			.contains("foo", "bar", "baz", "qux", "foo", "bar", "baz", "qux");
-		Timer timer = null;
-		int n = 0;
-		while (timer == null && n++ < 100) {
+		Timer timer = await().until(() -> {
 			try {
-				timer = this.meterRegistry.get("spring.rabbitmq.listener")
+				return this.meterRegistry.get("spring.rabbitmq.listener")
 						.tag("listener.id", "batch.1")
 						.tag("queue", "[c.batch.1]")
 						.tag("result", "success")
@@ -95,9 +94,9 @@ public class ConsumerBatchingTests {
 						.timer();
 			}
 			catch (@SuppressWarnings("unused") Exception e) {
-				Thread.sleep(100);
+				return null;
 			}
-		}
+		}, tim -> tim != null);
 		assertThat(timer).isNotNull();
 		assertThat(timer.count()).isEqualTo(1L);
 		timer = this.meterRegistry.get("spring.rabbitmq.listener")

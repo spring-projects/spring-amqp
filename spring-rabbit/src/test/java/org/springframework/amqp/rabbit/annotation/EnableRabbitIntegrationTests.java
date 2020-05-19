@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.annotation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
@@ -872,11 +873,9 @@ public class EnableRabbitIntegrationTests {
 		assertThat(message).isNotNull();
 		assertThat(new String(message.getBody())).isEqualTo("{\"field\":\"MESSAGING\"}");
 		assertThat(message.getMessageProperties().getHeaders().get("foo")).isEqualTo("bar");
-		Timer timer = null;
-		int n = 0;
-		while (timer == null && n++ < 100) {
+		Timer timer = await().until(() -> {
 			try {
-				timer = this.meterRegistry.get("spring.rabbitmq.listener")
+				return this.meterRegistry.get("spring.rabbitmq.listener")
 						.tag("listener.id", "list.of.messages")
 						.tag("queue", "test.messaging.message")
 						.tag("result", "success")
@@ -885,10 +884,9 @@ public class EnableRabbitIntegrationTests {
 						.timer();
 			}
 			catch (@SuppressWarnings("unused") Exception e) {
-				Thread.sleep(100);
+				return null;
 			}
-		}
-		assertThat(timer).isNotNull();
+		}, tim -> tim != null);
 		assertThat(timer.count()).isEqualTo(1L);
 	}
 

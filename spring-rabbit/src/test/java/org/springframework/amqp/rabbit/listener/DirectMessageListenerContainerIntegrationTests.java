@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.listener;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -26,9 +27,9 @@ import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -36,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.aopalliance.intercept.MethodInterceptor;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -431,11 +431,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 
 		// Since backOff exhausting makes listenerContainer as invalid (calls stop()),
 		// it is enough to check the listenerContainer activity
-		int n = 0;
-		while (container.isActive() && n++ < 100) {
-			Thread.sleep(100);
-		}
-		assertThat(container.isActive()).isFalse();
+		await().until(() -> !container.isActive());
 	}
 
 	@Test
@@ -636,11 +632,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.afterPropertiesSet();
 		container.start();
 
-		int n = 0;
-		while (n++ < 100 && container.isRunning()) {
-			Thread.sleep(100);
-		}
-		assertThat(container.isRunning()).isFalse();
+		await().until(() -> !container.isActive());
 	}
 
 	@Test
@@ -663,11 +655,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 		cf.onApplicationEvent(new ContextClosedEvent(context));
 		cf.destroy();
-		int n = 0;
-		while (n++ < 100 && container.isRunning()) {
-			Thread.sleep(100);
-		}
-		assertThat(container.isRunning()).isFalse();
+		await().until(() -> !container.isActive());
 	}
 
 	@Test
@@ -692,34 +680,24 @@ public class DirectMessageListenerContainerIntegrationTests {
 	}
 
 	private boolean consumersOnQueue(String queue, int expected) throws Exception {
-		int n = 0;
-		Properties queueProperties = admin.getQueueProperties(queue);
-		LogFactory.getLog(getClass()).debug(queue + " waiting for " + expected + " : " + queueProperties);
-		while (n++ < 600
-				&& (queueProperties == null || !queueProperties.get(RabbitAdmin.QUEUE_CONSUMER_COUNT).equals(expected))) {
-			Thread.sleep(100);
-			queueProperties = admin.getQueueProperties(queue);
-			LogFactory.getLog(getClass()).debug(queue + " waiting for " + expected + " : " + queueProperties);
-		}
-		return queueProperties.get(RabbitAdmin.QUEUE_CONSUMER_COUNT).equals(expected);
+		await().with().pollDelay(Duration.ZERO).atMost(Duration.ofSeconds(60))
+				.until(() -> admin.getQueueProperties(queue),
+						props -> props != null && props.get(RabbitAdmin.QUEUE_CONSUMER_COUNT).equals(expected));
+		return true;
 	}
 
 	private boolean activeConsumerCount(AbstractMessageListenerContainer container, int expected) throws Exception {
-		int n = 0;
 		List<?> consumers = TestUtils.getPropertyValue(container, "consumers", List.class);
-		while (n++ < 600 && consumers.size() != expected) {
-			Thread.sleep(100);
-		}
-		return consumers.size() == expected;
+		await().with().pollDelay(Duration.ZERO).atMost(Duration.ofSeconds(60))
+				.until(() -> consumers.size() == expected);
+		return true;
 	}
 
 	private boolean restartConsumerCount(AbstractMessageListenerContainer container, int expected) throws Exception {
-		int n = 0;
 		List<?> consumers = TestUtils.getPropertyValue(container, "consumersToRestart", List.class);
-		while (n++ < 600 && consumers.size() != expected) {
-			Thread.sleep(100);
-		}
-		return consumers.size() == expected;
+		await().with().pollDelay(Duration.ZERO).atMost(Duration.ofSeconds(60))
+				.until(() -> consumers.size() == expected);
+		return true;
 	}
 
 	public class Tag implements ConsumerTagStrategy {

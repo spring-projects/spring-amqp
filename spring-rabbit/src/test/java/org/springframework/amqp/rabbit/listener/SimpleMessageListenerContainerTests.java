@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.springframework.amqp.rabbit.listener;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.fail;
+import static org.awaitility.Awaitility.await;
+import static org.awaitility.Awaitility.with;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -38,6 +40,7 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -528,11 +531,7 @@ public class SimpleMessageListenerContainerTests {
 
 		// Since backOff exhausting makes listenerContainer as invalid (calls stop()),
 		// it is enough to check the listenerContainer activity
-		int n = 0;
-		while (container.isActive() && n++ < 100) {
-			Thread.sleep(100);
-		}
-		assertThat(n).isLessThanOrEqualTo(100);
+		await().until(() -> !container.isActive());
 	}
 
 	@Test
@@ -664,16 +663,10 @@ public class SimpleMessageListenerContainerTests {
 	}
 
 	private void waitForConsumersToStop(Set<?> consumers) throws Exception {
-		int n = 0;
-		boolean stillUp = true;
-		while (stillUp && n++ < 1000) {
-			stillUp = false;
-			for (Object consumer : consumers) {
-				stillUp |= TestUtils.getPropertyValue(consumer, "consumer") != null;
-			}
-			Thread.sleep(10);
-		}
-		assertThat(stillUp).isFalse();
+		with().pollInterval(Duration.ofMillis(10)).atMost(Duration.ofSeconds(10))
+				.until(() -> consumers.stream()
+						.map(consumer -> TestUtils.getPropertyValue(consumer, "consumer"))
+						.allMatch(c -> c == null));
 	}
 
 	@SuppressWarnings("serial")

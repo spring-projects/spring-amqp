@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.listener;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -251,11 +252,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 			assertThat(container.getActiveConsumerCount()).isEqualTo(concurrentConsumers);
 			container.stop();
-			int n = 0;
-			while (n++ < 100 && container.getActiveConsumerCount() > 0) {
-				Thread.sleep(100);
-			}
-			assertThat(container.getActiveConsumerCount()).isEqualTo(0);
+			await().until(() -> container.getActiveConsumerCount() == 0);
 			if (!transactional) {
 
 				int messagesReceivedAfterStop = listener.getCount();
@@ -308,11 +305,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 			container.shutdown();
 		}
 
-		int n = 0;
-		while (n++ < 100 && container.getActiveConsumerCount() > 0) {
-			Thread.sleep(100);
-		}
-		assertThat(container.getActiveConsumerCount()).isEqualTo(0);
+		await().until(() -> container.getActiveConsumerCount() == 0);
 		assertThat(template.receiveAndConvert(queue.getName())).isNull();
 
 		((DisposableBean) template.getConnectionFactory()).destroy();
@@ -369,40 +362,32 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		@SuppressWarnings("unchecked")
 		Set<BlockingQueueConsumer> consumers = (Set<BlockingQueueConsumer>) TestUtils
 				.getPropertyValue(container, "consumers");
-		int n = 0;
-		while (n++ < 100) {
-			if (consumers.size() > 0) {
-				if (TestUtils.getPropertyValue(consumers.iterator().next(), "queue", BlockingQueue.class)
-						.size() > 3) {
-					prefetched.countDown();
-					break;
-				}
+		await().until(() -> {
+			if (consumers.size() > 0
+				&& TestUtils.getPropertyValue(consumers.iterator().next(), "queue", BlockingQueue.class).size() > 3) {
+				prefetched.countDown();
+				return true;
 			}
-			Thread.sleep(100);
-		}
+			else {
+				return false;
+			}
+		});
 		Executors.newSingleThreadExecutor().execute(() -> container.stop());
-		n = 0;
-		while (container.isActive() && n++ < 100) {
-			Thread.sleep(100);
-		}
-		assertThat(n < 100).isTrue();
-
+		await().until(() -> !container.isActive());
 		awaitStop.countDown();
 
-		assertThat(awaitConsumeFirst.await(10, TimeUnit.SECONDS)).as("awaitConsumeFirst.count=" + awaitConsumeFirst.getCount()).isTrue();
-		n = 0;
+		assertThat(awaitConsumeFirst.await(10, TimeUnit.SECONDS))
+				.as("awaitConsumeFirst.count=" + awaitConsumeFirst.getCount()).isTrue();
 		DirectFieldAccessor dfa = new DirectFieldAccessor(container);
-		while (dfa.getPropertyValue("consumers") != null && n++ < 100) {
-			Thread.sleep(100);
-		}
-		assertThat(n < 100).isTrue();
+		await().until(() -> dfa.getPropertyValue("consumers") == null);
 		// make sure we stopped receiving after the prefetch was consumed
 		assertThat(received.get()).isEqualTo(5);
 		assertThat(awaitStart2.getCount()).isEqualTo(1);
 
 		container.start();
 		assertThat(awaitStart2.await(10, TimeUnit.SECONDS)).isTrue();
-		assertThat(awaitConsumeSecond.await(10, TimeUnit.SECONDS)).as("awaitConsumeSecond.count=" + awaitConsumeSecond.getCount()).isTrue();
+		assertThat(awaitConsumeSecond.await(10, TimeUnit.SECONDS))
+				.as("awaitConsumeSecond.count=" + awaitConsumeSecond.getCount()).isTrue();
 		container.stop();
 		((DisposableBean) template.getConnectionFactory()).destroy();
 	}
@@ -464,11 +449,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		ActiveObjectCounter counter = TestUtils.getPropertyValue(container, "cancellationLock", ActiveObjectCounter.class);
 		assertThat(counter.getCount() > 0).isTrue();
 
-		int n = 0;
-		while (counter.getCount() > 0 && n++ < 10) {
-			Thread.sleep(500);
-		}
-		assertThat(n < 10).isTrue();
+		await().until(() -> counter.getCount() == 0);
 		((DisposableBean) template.getConnectionFactory()).destroy();
 	}
 

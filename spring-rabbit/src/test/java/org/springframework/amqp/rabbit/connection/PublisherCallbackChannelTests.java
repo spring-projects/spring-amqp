@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
@@ -130,12 +131,10 @@ public class PublisherCallbackChannelTests {
 		assertThat(confirmLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(closedLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		cacheProperties = cf.getCacheProperties();
-		int n = 0;
-		while (n++ < 100 && Integer.parseInt(cacheProperties.getProperty("idleChannelsNotTx")) < 2) {
-			Thread.sleep(100);
-			cacheProperties = cf.getCacheProperties();
-		}
-		assertThat(cacheProperties.getProperty("idleChannelsNotTx")).isEqualTo("2");
+		await().until(() -> {
+			Properties props = cf.getCacheProperties();
+			return Integer.parseInt(props.getProperty("idleChannelsNotTx")) == 2;
+		});
 	}
 
 }
