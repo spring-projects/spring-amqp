@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.verify;
 
 import java.io.OutputStream;
 import java.lang.reflect.Method;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -69,6 +71,7 @@ import org.springframework.amqp.support.postprocessor.UnzipPostProcessor;
 import org.springframework.amqp.support.postprocessor.ZipPostProcessor;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
+import org.springframework.lang.Nullable;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StopWatch;
@@ -615,15 +618,10 @@ public class BatchingRabbitTemplateTests {
 		assertThat(new String(message.getBody())).isEqualTo("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar");
 	}
 
+	@Nullable
 	private Message receive(BatchingRabbitTemplate template) throws InterruptedException {
-		Message message = template.receive(ROUTE);
-		int n = 0;
-		while (n++ < 200 && message == null) {
-			Thread.sleep(50);
-			message = template.receive(ROUTE);
-		}
-		assertThat(message).isNotNull();
-		return message;
+		return await().with().pollInterval(Duration.ofMillis(50))
+				.until(() -> template.receive(ROUTE), msg -> msg != null);
 	}
 
 	@Test

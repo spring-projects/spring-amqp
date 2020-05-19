@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.core;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -205,11 +206,7 @@ public class RabbitTemplateIntegrationTests {
 			this.template.setChannelTransacted(true);
 			this.template.convertAndSend(ROUTE, "foo");
 			this.template.convertAndSend(UUID.randomUUID().toString(), ROUTE, "xxx"); // force channel close
-			int n = 0;
-			while (n++ < 100 && channel.isOpen()) {
-				Thread.sleep(100);
-			}
-			assertThat(channel.isOpen()).isFalse();
+			await().until(() -> !channel.isOpen());
 			try {
 				this.template.convertAndSend(ROUTE, "bar");
 				fail("Expected Exception");
@@ -265,13 +262,7 @@ public class RabbitTemplateIntegrationTests {
 	@Test
 	public void testReceiveNonBlocking() throws Exception {
 		this.template.convertAndSend(ROUTE, "nonblock");
-		int n = 0;
-		String out = (String) this.template.receiveAndConvert(ROUTE);
-		while (n++ < 100 && out == null) {
-			Thread.sleep(100);
-			out = (String) this.template.receiveAndConvert(ROUTE);
-		}
-		assertThat(out).isNotNull();
+		String out = await().until(() -> (String) this.template.receiveAndConvert(ROUTE), str -> str != null);
 		assertThat(out).isEqualTo("nonblock");
 		assertThat(this.template.receive(ROUTE)).isNull();
 	}
@@ -1095,13 +1086,7 @@ public class RabbitTemplateIntegrationTests {
 		this.template.convertAndSend(ROUTE, "test");
 		template.setReceiveTimeout(timeout);
 
-		boolean received = receiveAndReply();
-		int n = 0;
-		while (timeout == 0 && !received && n++ < 100) {
-			Thread.sleep(100);
-			received = receiveAndReply();
-		}
-		assertThat(received).isTrue();
+		boolean received = await().until(() -> receiveAndReply(), b -> b);
 
 		Message receive = this.template.receive();
 		assertThat(receive).isNotNull();

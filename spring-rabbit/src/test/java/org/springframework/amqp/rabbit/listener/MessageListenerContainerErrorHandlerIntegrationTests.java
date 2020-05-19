@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.listener;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.doAnswer;
@@ -247,15 +248,10 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 				.build();
 		template.send("", testQueueName, message);
 
-		Message rejected = template.receive(dlq.getName()); // can't use timed receive, queue will be deleted
-		int n = 0;
-		while (n++ < 100 && rejected == null) {
-			Thread.sleep(100);
-			rejected = template.receive(dlq.getName());
-		}
-		assertThat(n < 100).as("Message did not arrive in DLQ").isTrue();
+		// can't use timed receive, queue will be deleted
+		Message rejected = await("Message did not arrive in DLQ")
+				.until(() -> template.receive(dlq.getName()), msg -> msg != null);
 		assertThat(new String(rejected.getBody())).isEqualTo("foo");
-
 
 		// Verify that the exception strategy has access to the message
 		final AtomicReference<Message> failed = new AtomicReference<Message>();
@@ -270,13 +266,8 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 
 		template.send("", testQueueName, message);
 
-		rejected = template.receive(dlq.getName());
-		n = 0;
-		while (n++ < 100 && rejected == null) {
-			Thread.sleep(100);
-			rejected = template.receive(dlq.getName());
-		}
-		assertThat(n < 100).as("Message did not arrive in DLQ").isTrue();
+		rejected = await("Message did not arrive in DLQ")
+				.until(() -> template.receive(dlq.getName()), msg -> msg != null);
 		assertThat(new String(rejected.getBody())).isEqualTo("foo");
 		assertThat(failed.get()).isNotNull();
 
