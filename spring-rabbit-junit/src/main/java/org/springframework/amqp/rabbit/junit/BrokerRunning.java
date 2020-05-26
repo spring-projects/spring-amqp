@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.junit;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeNoException;
 
 import java.util.Map;
 
@@ -58,9 +59,10 @@ import com.rabbitmq.client.ConnectionFactory;
  *
  * @author Dave Syer
  * @author Gary Russell
+ * @author Artem Bilan
  *
  * @since 1.7
- * @see org.junit.internal.AssumptionViolatedException
+ *
  */
 public final class BrokerRunning extends TestWatcher {
 
@@ -125,7 +127,7 @@ public final class BrokerRunning extends TestWatcher {
 	 * @return a new rule that assumes an existing broker with the management plugin with
 	 * the provided queues declared (and emptied if needed)..
 	 */
-	public static BrokerRunning isBrokerAndManagementRunningWithEmptyQueues(String...queues) {
+	public static BrokerRunning isBrokerAndManagementRunningWithEmptyQueues(String... queues) {
 		return new BrokerRunning(true, true, queues);
 	}
 
@@ -271,6 +273,9 @@ public final class BrokerRunning extends TestWatcher {
 			LOGGER.warn("Not executing tests because basic connectivity test failed: " + e.getMessage());
 			if (fatal()) {
 				fail("RabbitMQ Broker is required, but not available");
+			}
+			else {
+				assumeNoException(e);
 			}
 		}
 		return super.apply(base, description);
