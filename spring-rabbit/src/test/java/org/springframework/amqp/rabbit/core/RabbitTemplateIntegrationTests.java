@@ -113,7 +113,6 @@ import org.springframework.transaction.support.AbstractPlatformTransactionManage
 import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationAdapter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionSynchronizationUtils;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -1510,7 +1509,7 @@ public class RabbitTemplateIntegrationTests {
 			template.convertAndSend(ROUTE, "message");
 
 			if (rollback) {
-				TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter() {
+				TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
 
 					@Override
 					public void afterCommit() {
