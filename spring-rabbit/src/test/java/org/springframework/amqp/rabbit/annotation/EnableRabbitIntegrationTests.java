@@ -1091,7 +1091,7 @@ public class EnableRabbitIntegrationTests {
 			return foo.toUpperCase() + foo;
 		}
 
-		@RabbitListener(queues = "test.header", group = "testGroup", replyPostProcessor = "echoPrefixHeader")
+		@RabbitListener(queues = "test.header", group = "testGroup", replyPostProcessor = "#{'echoPrefixHeader'}")
 		public String capitalizeWithHeader(@Payload String content, @Header String prefix) {
 			return prefix + content.toUpperCase();
 		}
