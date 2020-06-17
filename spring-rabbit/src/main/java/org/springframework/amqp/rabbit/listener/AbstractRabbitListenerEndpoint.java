@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbit.listener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.amqp.core.AcknowledgeMode;
@@ -359,7 +358,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 
 		container.setExclusive(isExclusive());
 		if (getPriority() != null) {
-			Map<String, Object> args = new HashMap<String, Object>();
+			Map<String, Object> args = container.getConsumerArguments();
 			args.put("x-priority", getPriority());
 			container.setConsumerArguments(args);
 		}
