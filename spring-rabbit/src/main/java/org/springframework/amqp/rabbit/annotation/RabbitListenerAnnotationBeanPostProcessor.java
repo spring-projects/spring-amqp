@@ -438,7 +438,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 
 		endpoint.setExclusive(rabbitListener.exclusive());
-		String priority = resolve(rabbitListener.priority());
+		String priority = resolveExpressionAsString(rabbitListener.priority(), "priority");
 		if (StringUtils.hasText(priority)) {
 			try {
 				endpoint.setPriority(Integer.valueOf(priority));
@@ -475,7 +475,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	}
 
 	private void resolveAdmin(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener, Object adminTarget) {
-		String rabbitAdmin = resolve(rabbitListener.admin());
+		String rabbitAdmin = resolveExpressionAsString(rabbitListener.admin(), "admin");
 		if (StringUtils.hasText(rabbitAdmin)) {
 			Assert.state(this.beanFactory != null, "BeanFactory must be set to resolve RabbitAdmin by bean name");
 			try {
@@ -494,7 +494,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			Object factoryTarget, String beanName) {
 
 		RabbitListenerContainerFactory<?> factory = null;
-		String containerFactoryBeanName = resolve(rabbitListener.containerFactory());
+		String containerFactoryBeanName = resolveExpressionAsString(rabbitListener.containerFactory(),
+				"containerFactory");
 		if (StringUtils.hasText(containerFactoryBeanName)) {
 			assertBeanFactory();
 			try {
@@ -512,7 +513,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	private void resolveExecutor(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener,
 			Object execTarget, String beanName) {
 
-		String execBeanName = resolve(rabbitListener.executor());
+		String execBeanName = resolveExpressionAsString(rabbitListener.executor(), "executor");
 		if (StringUtils.hasText(execBeanName)) {
 			assertBeanFactory();
 			try {
@@ -528,7 +529,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	private void resolvePostProcessor(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener,
 			Object target, String beanName) {
 
-		String ppBeanName = resolve(rabbitListener.replyPostProcessor());
+		String ppBeanName = resolveExpressionAsString(rabbitListener.replyPostProcessor(), "replyPostProcessor");
 		if (StringUtils.hasText(ppBeanName)) {
 			assertBeanFactory();
 			try {
@@ -554,7 +555,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	private String getEndpointId(RabbitListener rabbitListener) {
 		if (StringUtils.hasText(rabbitListener.id())) {
-			return resolve(rabbitListener.id());
+			return resolveExpressionAsString(rabbitListener.id(), "id");
 		}
 		else {
 			return "org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#" + this.counter.getAndIncrement();

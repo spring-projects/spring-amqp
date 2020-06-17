@@ -726,8 +726,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @return the arguments.
 	 * @since 2.0
 	 */
-	protected Map<String, Object> getConsumerArguments() {
-		return this.consumerArgs;
+	public Map<String, Object> getConsumerArguments() {
+		synchronized (this.consumersMonitor) {
+			return new HashMap<>(this.consumerArgs);
+		}
 	}
 
 	/**
