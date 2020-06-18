@@ -141,7 +141,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		}
 		InvocationResult result = null;
 		try {
-			if (this.messagingMessageConverter.method == null) {
+			if (this.messagingMessageConverter.method == null && amqpMessage != null) {
 				amqpMessage.getMessageProperties()
 						.setTargetMethod(this.handlerAdapter.getMethodFor(message.getPayload()));
 			}
