@@ -34,7 +34,7 @@ import org.springframework.amqp.core.MessageProperties;
  * @author Mark Fisher
  * @author Gary Russell
  */
-public class SimpleMessageConverterTests extends WhiteListDeserializingMessageConverterTests {
+public class SimpleMessageConverterTests extends AllowedListDeserializingMessageConverterTests {
 
 	@Test
 	public void bytesAsDefaultMessageBodyType() throws Exception {

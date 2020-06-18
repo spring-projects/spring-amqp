@@ -92,13 +92,13 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 	 */
 	public void setTrustedPackages(@Nullable String... trustedPackages) {
 		if (trustedPackages != null) {
-			for (String whiteListClass : trustedPackages) {
-				if ("*".equals(whiteListClass)) {
+			for (String trusted : trustedPackages) {
+				if ("*".equals(trusted)) {
 					this.trustedPackages.clear();
 					break;
 				}
 				else {
-					this.trustedPackages.add(whiteListClass);
+					this.trustedPackages.add(trusted);
 				}
 			}
 		}

@@ -693,8 +693,8 @@ factory.
 
 ===== Java Deserialization
 
-You can now configure a "`white list`" of allowable classes when you use Java deserialization.
-You should consider creating a white list if you accept messages with serialized java objects from
+You can now configure a "`allowed list`" of allowable classes when you use Java deserialization.
+You should consider creating an allowed list if you accept messages with serialized java objects from
 untrusted sources.
 See <<java-deserialization>> for more information.
 
