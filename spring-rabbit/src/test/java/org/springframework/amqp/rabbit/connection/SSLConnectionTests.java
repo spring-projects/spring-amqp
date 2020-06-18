@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.connection;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -41,6 +42,8 @@ import org.springframework.core.io.ClassPathResource;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.impl.CredentialsProvider;
+import com.rabbitmq.client.impl.CredentialsRefreshService;
 
 
 
@@ -256,5 +259,19 @@ public class SSLConnectionTests {
 			assertThat(fb.getTrustStoreType()).isEqualTo("bob");
 		}
 	}
+
+	@Test
+	public void credentials() {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		CredentialsProvider provider = mock(CredentialsProvider.class);
+		fb.setCredentialsProvider(provider);
+		CredentialsRefreshService service = mock(CredentialsRefreshService.class);
+		fb.setCredentialsRefreshService(service);
+		assertThat(TestUtils.getPropertyValue(fb.getRabbitConnectionFactory(), "credentialsProvider"))
+				.isSameAs(provider);
+		assertThat(TestUtils.getPropertyValue(fb.getRabbitConnectionFactory(), "credentialsRefreshService"))
+				.isSameAs(service);
+	}
+
 
 }
