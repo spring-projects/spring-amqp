@@ -48,7 +48,7 @@ public class Message implements Serializable {
 
 	private static final String DEFAULT_ENCODING = Charset.defaultCharset().name();
 
-	private static final Set<String> whiteListPatterns = // NOSONAR lower case static
+	private static final Set<String> ALLOWED_LIST_PATTERNS =
 			new LinkedHashSet<>(Arrays.asList("java.util.*", "java.lang.*"));
 
 	private static String bodyEncoding = DEFAULT_ENCODING;
@@ -63,7 +63,7 @@ public class Message implements Serializable {
 	}
 
 	/**
-	 * Add patterns to the white list of permissable package/class name patterns for
+	 * Add patterns to the allowed list of permissible package/class name patterns for
 	 * deserialization in {@link #toString()}.
 	 * The patterns will be applied in order until a match is found.
 	 * A class can be fully qualified or a wildcard '*' is allowed at the
@@ -74,9 +74,9 @@ public class Message implements Serializable {
 	 * @param patterns the patterns.
 	 * @since 1.5.7
 	 */
-	public static void addWhiteListPatterns(String... patterns) {
+	public static void addAllowedListPatterns(String... patterns) {
 		Assert.notNull(patterns, "'patterns' cannot be null");
-		whiteListPatterns.addAll(Arrays.asList(patterns));
+		ALLOWED_LIST_PATTERNS.addAll(Arrays.asList(patterns));
 	}
 
 	/**
@@ -118,7 +118,7 @@ public class Message implements Serializable {
 			boolean nullProps = this.messageProperties == null;
 			String contentType = nullProps ? null : this.messageProperties.getContentType();
 			if (MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT.equals(contentType)) {
-				return SerializationUtils.deserialize(new ByteArrayInputStream(this.body), whiteListPatterns,
+				return SerializationUtils.deserialize(new ByteArrayInputStream(this.body), ALLOWED_LIST_PATTERNS,
 						ClassUtils.getDefaultClassLoader()).toString();
 			}
 			String encoding = encoding(nullProps);

@@ -57,7 +57,7 @@ You can also extend those properties with user-defined 'headers' by calling the 
 IMPORTANT: Starting with versions `1.5.7`, `1.6.11`, `1.7.4`, and `2.0.0`, if a message body is a serialized `Serializable` java object, it is no longer deserialized (by default) when performing `toString()` operations (such as in log messages).
 This is to prevent unsafe deserialization.
 By default, only `java.util` and `java.lang` classes are deserialized.
-To revert to the previous behavior, you can add allowable class/package patterns by invoking `Message.addWhiteListPatterns(...)`.
+To revert to the previous behavior, you can add allowable class/package patterns by invoking `Message.addAllowedListPatterns(...)`.
 A simple `*` wildcard is supported, for example `com.something.*, *.MyClass`.
 Bodies that cannot be deserialized are represented by `byte[<size>]` in log messages.
 
@@ -3753,14 +3753,14 @@ consider configuring which packages and classes are allowed to be deserialized.
 This applies to both the `SimpleMessageConverter` and `SerializerMessageConverter` when it is configured to use a
 `DefaultDeserializer` either implicitly or via configuration.
 
-By default, the white list is empty, meaning all classes are deserialized.
+By default, the allowed list is empty, meaning all classes are deserialized.
 
 You can set a list of patterns, such as `thing1.*`, `thing1.thing2.Cat` or `*.MySafeClass`.
 
 The patterns are checked in order until a match is found.
 If there is no match, a `SecurityException` is thrown.
 
-You can set the patterns using the `whiteListPatterns` property on these converters.
+You can set the patterns using the `allowedListPatterns` property on these converters.
 ====
 
 [[message-properties-converters]]

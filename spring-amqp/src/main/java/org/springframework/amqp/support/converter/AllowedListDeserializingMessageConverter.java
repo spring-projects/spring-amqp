@@ -30,9 +30,9 @@ import org.springframework.amqp.utils.SerializationUtils;
  * @since 1.5.5
  *
  */
-public abstract class WhiteListDeserializingMessageConverter extends AbstractMessageConverter {
+public abstract class AllowedListDeserializingMessageConverter extends AbstractMessageConverter {
 
-	private final Set<String> whiteListPatterns = new LinkedHashSet<String>();
+	private final Set<String> allowedListPatterns = new LinkedHashSet<String>();
 
 	/**
 	 * Set simple patterns for allowable packages/classes for deserialization.
@@ -40,25 +40,25 @@ public abstract class WhiteListDeserializingMessageConverter extends AbstractMes
 	 * A class can be fully qualified or a wildcard '*' is allowed at the
 	 * beginning or end of the class name.
 	 * Examples: {@code com.foo.*}, {@code *.MyClass}.
-	 * @param whiteListPatterns the patterns.
+	 * @param patterns the patterns.
 	 */
-	public void setWhiteListPatterns(List<String> whiteListPatterns) {
-		this.whiteListPatterns.clear();
-		this.whiteListPatterns.addAll(whiteListPatterns);
+	public void setAllowedListPatterns(List<String> patterns) {
+		this.allowedListPatterns.clear();
+		this.allowedListPatterns.addAll(patterns);
 	}
 
 	/**
-	 * Add package/class patterns to the white list.
+	 * Add package/class patterns to the allowed list.
 	 * @param patterns the patterns to add.
 	 * @since 1.5.7
-	 * @see #setWhiteListPatterns(List)
+	 * @see #setAllowedListPatterns(List)
 	 */
-	public void addWhiteListPatterns(String... patterns) {
-		Collections.addAll(this.whiteListPatterns, patterns);
+	public void addAllowedListPatterns(String... patterns) {
+		Collections.addAll(this.allowedListPatterns, patterns);
 	}
 
-	protected void checkWhiteList(Class<?> clazz) {
-		SerializationUtils.checkWhiteList(clazz, this.whiteListPatterns);
+	protected void checkAllowedList(Class<?> clazz) {
+		SerializationUtils.checkAllowedList(clazz, this.allowedListPatterns);
 	}
 
 }

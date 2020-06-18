@@ -41,7 +41,7 @@ import org.springframework.core.serializer.Deserializer;
  * @author Mark Fisher
  * @author Gary Russell
  */
-public class SerializerMessageConverterTests extends WhiteListDeserializingMessageConverterTests {
+public class SerializerMessageConverterTests extends AllowedListDeserializingMessageConverterTests {
 
 	@Test
 	public void bytesAsDefaultMessageBodyType() throws Exception {

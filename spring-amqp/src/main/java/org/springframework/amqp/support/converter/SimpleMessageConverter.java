@@ -42,7 +42,7 @@ import org.springframework.util.ClassUtils;
  * @author Oleg Zhurakousky
  * @author Gary Russell
  */
-public class SimpleMessageConverter extends WhiteListDeserializingMessageConverter implements BeanClassLoaderAware {
+public class SimpleMessageConverter extends AllowedListDeserializingMessageConverter implements BeanClassLoaderAware {
 
 	public static final String DEFAULT_CHARSET = "UTF-8";
 
@@ -176,7 +176,7 @@ public class SimpleMessageConverter extends WhiteListDeserializingMessageConvert
 			@Override
 			protected Class<?> resolveClass(ObjectStreamClass classDesc) throws IOException, ClassNotFoundException {
 				Class<?> clazz = super.resolveClass(classDesc);
-				checkWhiteList(clazz);
+				checkAllowedList(clazz);
 				return clazz;
 			}
 
