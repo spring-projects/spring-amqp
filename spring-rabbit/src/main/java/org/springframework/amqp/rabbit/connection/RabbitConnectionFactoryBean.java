@@ -51,6 +51,8 @@ import com.rabbitmq.client.ExceptionHandler;
 import com.rabbitmq.client.MetricsCollector;
 import com.rabbitmq.client.SaslConfig;
 import com.rabbitmq.client.SocketConfigurator;
+import com.rabbitmq.client.impl.CredentialsProvider;
+import com.rabbitmq.client.impl.CredentialsRefreshService;
 import com.rabbitmq.client.impl.nio.NioParams;
 
 /**
@@ -448,6 +450,24 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 */
 	public void setPassword(String password) {
 		this.connectionFactory.setPassword(password);
+	}
+
+	/**
+	 * Set a credentials provider (e.g. OAUTH2).
+	 * @param provider the provider.
+	 * @since 2.3
+	 */
+	public void setCredentialsProvider(CredentialsProvider provider) {
+		this.connectionFactory.setCredentialsProvider(provider);
+	}
+
+	/**
+	 * Set a refresh service.
+	 * @param service the service.
+	 * @since 2.3
+	 */
+	public void setCredentialsRefreshService(CredentialsRefreshService service) {
+		this.connectionFactory.setCredentialsRefreshService(service);
 	}
 
 	/**
