@@ -824,7 +824,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 	}
 
-	private String resolveExpressionAsString(String value, String attribute) {
+	protected String resolveExpressionAsString(String value, String attribute) {
 		Object resolved = resolveExpression(value);
 		if (resolved instanceof String) {
 			return (String) resolved;

@@ -19,11 +19,8 @@ package org.springframework.amqp.rabbit.annotation;
 import java.lang.reflect.Method;
 import java.util.Collection;
 
-import org.springframework.amqp.core.AbstractDeclarable;
 import org.springframework.amqp.core.Declarable;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.lang.NonNull;
 import org.springframework.util.StringUtils;
 
 /**
@@ -46,19 +43,11 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 
 	private static final String RABBIT_ADMIN_SUFFIX = "-admin";
 
-	private BeanFactory beanFactory;
-
-	@Override
-	public void setBeanFactory(@NonNull BeanFactory beanFactory) {
-		this.beanFactory = beanFactory;
-		super.setBeanFactory(beanFactory);
-	}
-
 	@Override
 	protected Collection<Declarable> processAmqpListener(RabbitListener rabbitListener, Method method,
 			Object bean, String beanName) {
 		final Collection<Declarable> declarables = super.processAmqpListener(rabbitListener, method, bean, beanName);
-		final RabbitAdmin rabbitAdmin = resolveRabbitAdminBean(rabbitListener);
+		final String rabbitAdmin = resolveMultiRabbitAdminName(rabbitListener);
 		for (final Declarable declarable : declarables) {
 			if (declarable.getDeclaringAdmins().isEmpty()) {
 				declarable.setAdminsThatShouldDeclare(rabbitAdmin);
@@ -68,24 +57,14 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 	}
 
 	/**
-	 * Returns the RabbitAdmin bean of the requested name or the default one.
-	 *
-	 * @param rabbitListener the RabbitListener to retrieve its bean.
-	 * @return the bean found.
-	 */
-	private RabbitAdmin resolveRabbitAdminBean(RabbitListener rabbitListener) {
-		final String name = resolveAdminName(rabbitListener);
-		return this.beanFactory.getBean(name, RabbitAdmin.class);
-	}
-
-	/**
-	 * Resolves the name of the RabbitAdmin bean based on the RabbitListener.
+	 * Resolves the name of the RabbitAdmin bean based on the RabbitListener, or falls back to
+	 * the default RabbitAdmin name provided by MultiRabbit.
 	 *
 	 * @param rabbitListener The RabbitListener to process the name from.
 	 * @return The name of the RabbitAdmin bean.
 	 */
-	public static String resolveAdminName(RabbitListener rabbitListener) {
-		String admin = rabbitListener.admin();
+	protected String resolveMultiRabbitAdminName(RabbitListener rabbitListener) {
+		String admin = super.resolveExpressionAsString(rabbitListener.admin(), "admin");
 		if (!StringUtils.hasText(admin) && StringUtils.hasText(rabbitListener.containerFactory())) {
 			admin = rabbitListener.containerFactory()
 					+ MultiRabbitListenerAnnotationBeanPostProcessor.RABBIT_ADMIN_SUFFIX;

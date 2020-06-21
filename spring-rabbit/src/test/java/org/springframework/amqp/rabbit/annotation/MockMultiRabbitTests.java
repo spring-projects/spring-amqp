@@ -98,7 +98,7 @@ class MockMultiRabbitTests {
 		Assertions.assertThat(factories).hasSize(3);
 
 		BiFunction<RabbitAdmin, Declarable, Boolean> declares = (admin, dec) -> dec.getDeclaringAdmins().size() == 1
-				&& dec.getDeclaringAdmins().contains(admin);
+				&& dec.getDeclaringAdmins().contains(admin.getBeanName());
 
 		Map<String, AbstractExchange> exchanges = context.getBeansOfType(AbstractExchange.class, false, false)
 				.values().stream().collect(Collectors.toMap(AbstractExchange::getName, v -> v));
