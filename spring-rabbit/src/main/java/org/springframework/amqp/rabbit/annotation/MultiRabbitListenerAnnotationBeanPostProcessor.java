@@ -60,9 +60,8 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 		final Collection<Declarable> declarables = super.processAmqpListener(rabbitListener, method, bean, beanName);
 		final RabbitAdmin rabbitAdmin = resolveRabbitAdminBean(rabbitListener);
 		for (final Declarable declarable : declarables) {
-			if (declarable.getDeclaringAdmins().isEmpty() && declarable instanceof AbstractDeclarable) {
-				final AbstractDeclarable abstractDeclarable = (AbstractDeclarable) declarable;
-				abstractDeclarable.setAdminsThatShouldDeclare(rabbitAdmin);
+			if (declarable.getDeclaringAdmins().isEmpty()) {
+				declarable.setAdminsThatShouldDeclare(rabbitAdmin);
 			}
 		}
 		return declarables;
