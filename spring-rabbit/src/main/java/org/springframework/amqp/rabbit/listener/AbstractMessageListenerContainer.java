@@ -1144,7 +1144,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		try {
 			if (this.micrometerHolder == null && MICROMETER_PRESENT && this.micrometerEnabled
 					&& this.applicationContext != null) {
-				this.micrometerHolder = new MicrometerHolder(this.applicationContext, getListenerId(),
+				String id = getListenerId();
+				if (id == null) {
+					id = "no_id_or_beanName";
+				}
+				this.micrometerHolder = new MicrometerHolder(this.applicationContext, id,
 						this.micrometerTags);
 			}
 		}
