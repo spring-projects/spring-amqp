@@ -11,6 +11,11 @@ See <<change-history>> for changes in previous versions.
 Two additional connection factories are now provided.
 See <<choosing-factory>> for more information.
 
+==== Message Converter Changes
+
+The `Jackson2JMessageConverter` s can now deserialize abstract classes (including interfaces) if the `ObjectMapper` is configured with a custom deserializer.
+See <<jackson-abstract>> for more information.
+
 ==== Testing Changes
 
 A new annotation `@SpringRabbitTest` is provided to automatically configure some infrastructure beans for when you are not using `SpringBootTest`.
