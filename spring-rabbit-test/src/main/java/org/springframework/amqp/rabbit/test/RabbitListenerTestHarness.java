@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.test;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -30,6 +31,7 @@ import org.mockito.AdditionalAnswers;
 import org.mockito.Mockito;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.Declarable;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.annotation.RabbitListenerAnnotationBeanPostProcessor;
@@ -73,8 +75,8 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 	}
 
 	@Override
-	protected void processListener(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener, Object bean,
-			Object target, String beanName) {
+	protected Collection<Declarable> processListener(MethodRabbitListenerEndpoint endpoint,
+			RabbitListener rabbitListener, Object bean, Object target, String beanName) {
 
 		Object proxy = bean;
 		String id = rabbitListener.id();
@@ -102,7 +104,7 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 		else {
 			logger.info("The test harness can only proxy @RabbitListeners with an 'id' attribute");
 		}
-		super.processListener(endpoint, rabbitListener, proxy, target, beanName); // NOSONAR proxy is not null
+		return super.processListener(endpoint, rabbitListener, proxy, target, beanName); // NOSONAR proxy is not null
 	}
 
 	public InvocationData getNextInvocationDataFor(String id, long wait, TimeUnit unit) throws InterruptedException {
