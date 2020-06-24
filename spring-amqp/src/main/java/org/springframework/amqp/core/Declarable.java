@@ -61,9 +61,7 @@ public interface Declarable {
 	 * the behavior such that all admins will declare the object.
 	 * @param adminArgs The admins.
 	 */
-	default void setAdminsThatShouldDeclare(Object... adminArgs) {
-		// default no-op
-	}
+	void setAdminsThatShouldDeclare(Object... adminArgs);
 
 	/**
 	 * Add an argument to the declarable.
