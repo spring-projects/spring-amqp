@@ -736,9 +736,28 @@
 		<xsd:attribute name="transaction-size" type="xsd:string">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
+	Deprecated. Synonym to 'batch-size'.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="consumer-batch-enabled" default="false">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	Enable consumer-side batching according to 'batch-size' and 'receive-timeout'.
+	Only applies when the container type is 'simple'.
+				]]></xsd:documentation>
+			</xsd:annotation>
+			<xsd:simpleType>
+				<xsd:union memberTypes="xsd:boolean xsd:string" />
+			</xsd:simpleType>
+		</xsd:attribute>
+		<xsd:attribute name="batch-size" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
 	Tells the container how many messages to process in a single transaction (if the channel is transactional). For
-	best results it should be less than or equal to the prefetch count. Also used to determine how often acks
-	are sent when using AUTO acknowledge mode.
+	best results it should be less than or equal to the prefetch count.
+	Also used to determine how often acks are sent when using AUTO acknowledge mode.
+	Also used to determine the batch size when 'consumer-batch-enabled' is 'true'.
 	Only applies when the container type is 'simple'.
 				]]></xsd:documentation>
 			</xsd:annotation>
@@ -746,10 +765,11 @@
 		<xsd:attribute name="receive-timeout" type="xsd:string">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
-	The time for which a consumer waits for a message; used together with 'transaction-size' to determine whether
-	or not a consumer is idle, why dynamic concurrency is enabled using 'max-concurrency'. When 'transaction-size'
-	is greater than 1 (default), acks for processed message(s) can be delayed up to ('transaction-size' - 1) *
-	this value because the ack is sent after `transaction-size` attempts to receive a message have occurred.
+	The time for which a consumer waits for a message; used together with 'batch-size' to determine whether
+	or not a consumer is idle, why dynamic concurrency is enabled using 'max-concurrency'. When 'batch-size'
+	is greater than 1 (default), acks for processed message(s) can be delayed up to ('batch-size' - 1) *
+	this value because the ack is sent after 'batch-size' attempts to receive a message have occurred.
+	Also used to deliver a short batch when 'consumer-batch-enabled' is 'true'.
 	Only applies when the container type is 'simple'.
 				]]></xsd:documentation>
 			</xsd:annotation>
