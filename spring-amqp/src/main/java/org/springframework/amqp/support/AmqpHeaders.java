@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,8 @@ public abstract class AmqpHeaders {
 	public static final String CONTENT_LENGTH = PREFIX + "contentLength";
 
 	public static final String CONTENT_TYPE = MessageHeaders.CONTENT_TYPE;
+
+	public static final String CONTENT_TYPE_CONVERTER_WINS = PREFIX + "contentTypeConverterWins";
 
 	public static final String CORRELATION_ID = PREFIX + "correlationId";
 
