@@ -1297,7 +1297,8 @@ public class EnableRabbitIntegrationTests {
 	@Retention(RetentionPolicy.RUNTIME)
 	@RabbitListener(bindings = @QueueBinding(
 			value = @Queue,
-			exchange = @Exchange(value = "test.metaFanout", type = ExchangeTypes.FANOUT, autoDelete = "true")))
+			exchange = @Exchange(value = "test.metaFanout", type = ExchangeTypes.FANOUT, autoDelete = "true",
+					durable = "true")))
 	public @interface MyAnonFanoutListener {
 	}
 
