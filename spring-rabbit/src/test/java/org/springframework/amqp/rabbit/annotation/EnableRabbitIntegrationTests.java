@@ -1268,7 +1268,7 @@ public class EnableRabbitIntegrationTests {
 
 	@RabbitListener(bindings = @QueueBinding
 			(value = @Queue,
-			exchange = @Exchange(value = "multi.exch.tx", autoDelete = "true"),
+			exchange = @Exchange(value = "multi.exch.tx", autoDelete = "true", durable = "true"),
 			key = "multi.rk.tx"))
 	static class TxClassLevelImpl implements TxClassLevel {
 
