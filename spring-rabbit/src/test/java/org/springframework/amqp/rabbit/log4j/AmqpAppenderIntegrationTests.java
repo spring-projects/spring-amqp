@@ -20,7 +20,6 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -106,7 +105,7 @@ public class AmqpAppenderIntegrationTests {
 		listenerContainer.start();
 
 		AmqpAppender appender = (AmqpAppender) log.getParent().getAllAppenders().nextElement();
-		assertFalse(appender.isDurable());
+		assertTrue(appender.isDurable());
 		assertEquals(MessageDeliveryMode.NON_PERSISTENT.toString(), appender.getDeliveryMode());
 
 		Logger log = Logger.getLogger(getClass());
