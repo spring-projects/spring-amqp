@@ -91,7 +91,7 @@ public class TestRabbitTemplateTests {
 		public String smlc1In = "smlc1:";
 
 		@Bean
-		public TestRabbitTemplate template() {
+		public TestRabbitTemplate template() throws IOException {
 			return new TestRabbitTemplate(connectionFactory());
 		}
 
@@ -110,7 +110,7 @@ public class TestRabbitTemplateTests {
 		}
 
 		@Bean
-		public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
+		public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() throws IOException {
 			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 			factory.setConnectionFactory(connectionFactory());
 			return factory;
@@ -132,7 +132,7 @@ public class TestRabbitTemplateTests {
 		}
 
 		@Bean
-		public SimpleMessageListenerContainer smlc1() {
+		public SimpleMessageListenerContainer smlc1() throws IOException {
 			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
 			container.setQueueNames("foo", "bar");
 			container.setMessageListener(new MessageListenerAdapter(new Object() {
