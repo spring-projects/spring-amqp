@@ -37,6 +37,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
+import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 
 
@@ -95,11 +96,18 @@ public class TestRabbitTemplateTests {
 			ConnectionFactory factory = mock(ConnectionFactory.class);
 			Connection connection = mock(Connection.class);
 			Channel channel = mock(Channel.class);
+			AMQP.Queue.DeclareOk declareOk = mock(AMQP.Queue.DeclareOk.class);
 			willReturn(connection).given(factory).createConnection();
 			willReturn(channel).given(connection).createChannel(anyBoolean());
 			given(channel.isOpen()).willReturn(true);
-			return factory;
-		}
+			try {
+				given(channel.queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), anyMap()))
+						.willReturn(declareOk);
+			} catch (IOException e) {
+				throw new RuntimeException("Should never happen since we mocked the connection");
+			}
+				return factory;
+			}
 
 		@Bean
 		public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
