@@ -17,10 +17,12 @@
 package org.springframework.amqp.rabbit.test.examples;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.mock;
+
+import java.io.IOException;
 
 import org.junit.jupiter.api.Test;
 
