@@ -17,7 +17,9 @@
 package org.springframework.amqp.rabbit.test.examples;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.mock;
@@ -108,8 +110,8 @@ public class TestRabbitTemplateTests {
 			} catch (IOException e) {
 				throw new RuntimeException("Should never happen since we mocked the connection");
 			}
-				return factory;
-			}
+			return factory;
+		}
 
 		@Bean
 		public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
