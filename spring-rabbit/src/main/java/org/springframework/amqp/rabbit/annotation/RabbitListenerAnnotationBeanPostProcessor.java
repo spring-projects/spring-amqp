@@ -565,7 +565,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 	}
 
-	private void resolveReplyContenntType(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener) {
+	private void resolveReplyContentType(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener) {
 		String contentType = resolveExpressionAsString(rabbitListener.replyContentType(), "replyContentType");
 		if (StringUtils.hasText(contentType)) {
 			endpoint.setReplyContentType(contentType);
