@@ -443,6 +443,33 @@ public final class BrokerRunningSupport {
 	}
 
 	/**
+	 * Remove exchanges from the broker.
+	 * @param exchanges the exchanges.
+	 * @since 2.3
+	 */
+	public void removeExchanges(String... exchanges) {
+		LOGGER.debug("deleting test exchanges: " + Arrays.toString(exchanges));
+		Connection connection = null; // NOSONAR (closeResources())
+		Channel channel = null;
+
+		try {
+			connection = getConnection(getConnectionFactory());
+			connection.setId(generateId() + ".exchangeDelete");
+			channel = connection.createChannel();
+
+			for (String exchange : exchanges) {
+				channel.exchangeDelete(exchange);
+			}
+		}
+		catch (Exception e) {
+			LOGGER.warn("Failed to delete exchanges", e);
+		}
+		finally {
+			closeResources(connection, channel);
+		}
+	}
+
+	/**
 	 * Delete and re-declare all the configured queues. Can be used between tests when
 	 * a test might leave stale data and multiple tests use the same queue.
 	 */
