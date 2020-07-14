@@ -42,8 +42,10 @@ import javax.net.ssl.TrustManagerFactory;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.ConnectionFactory;
@@ -122,7 +124,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private final Properties sslProperties = new Properties();
 
-	private final PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+	private ResourceLoader resourceLoader = new PathMatchingResourcePatternResolver();
 
 	private boolean useSSL;
 
@@ -696,6 +698,27 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	}
 
 	/**
+	 * Get the resource loader; used to resolve the key store and trust store {@link Resource}s
+	 * to input streams.
+	 * @return the resource loader.
+	 * @since 2.3
+	 */
+	protected ResourceLoader getResourceLoader() {
+		return this.resourceLoader;
+	}
+
+	/**
+	 * Set the resource loader; used to resolve the key store and trust store {@link Resource}s
+	 * to input streams.
+	 * @param resourceLoader the resource loader.
+	 * @since 2.3
+	 */
+	public void setResourceLoader(ResourceLoader resourceLoader) {
+		Assert.notNull(resourceLoader, "'resourceLoader' cannot be null");
+		this.resourceLoader = resourceLoader;
+	}
+
+	/**
 	 * Access the connection factory to set any other properties not supported by
 	 * this factory bean.
 	 * @return the connection factory.
@@ -791,7 +814,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		KeyManager[] keyManagers = null;
 		if (StringUtils.hasText(keyStoreName) || this.keyStoreResource != null) {
 			Resource resource = this.keyStoreResource != null ? this.keyStoreResource
-					: this.resolver.getResource(keyStoreName);
+					: this.resourceLoader.getResource(keyStoreName);
 			KeyStore ks = KeyStore.getInstance(storeType);
 			ks.load(resource.getInputStream(), keyPassphrase);
 			KeyManagerFactory kmf = KeyManagerFactory.getInstance(this.keyStoreAlgorithm);
@@ -814,7 +837,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		TrustManager[] trustManagers = null;
 		if (StringUtils.hasText(trustStoreName) || this.trustStoreResource != null) {
 			Resource resource = this.trustStoreResource != null ? this.trustStoreResource
-					: this.resolver.getResource(trustStoreName);
+					: this.resourceLoader.getResource(trustStoreName);
 			KeyStore tks = KeyStore.getInstance(storeType);
 			tks.load(resource.getInputStream(), trustPassphrase);
 			TrustManagerFactory tmf = TrustManagerFactory.getInstance(this.trustStoreAlgorithm);
