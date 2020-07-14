@@ -54,6 +54,7 @@ import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.aop.framework.Advised;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
@@ -456,6 +457,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		resolveAdmin(endpoint, rabbitListener, target);
 		resolveAckMode(endpoint, rabbitListener);
 		resolvePostProcessor(endpoint, rabbitListener, target, beanName);
+		resolveMessageConverter(endpoint, rabbitListener, target, beanName);
+		resolveReplyContentType(endpoint, rabbitListener);
 		RabbitListenerContainerFactory<?> factory = resolveContainerFactory(rabbitListener, target, beanName);
 
 		this.registrar.registerEndpoint(endpoint, factory);
@@ -543,6 +546,30 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				throw new BeanInitializationException(
 						noBeanFoundMessage(target, beanName, ppBeanName, ReplyPostProcessor.class), ex);
 			}
+		}
+	}
+
+	private void resolveMessageConverter(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener,
+			Object target, String beanName) {
+
+		String mcBeanName = resolveExpressionAsString(rabbitListener.messageConverter(), "messageConverter");
+		if (StringUtils.hasText(mcBeanName)) {
+			assertBeanFactory();
+			try {
+				endpoint.setMessageConverter(this.beanFactory.getBean(mcBeanName, MessageConverter.class));
+			}
+			catch (NoSuchBeanDefinitionException ex) {
+				throw new BeanInitializationException(
+						noBeanFoundMessage(target, beanName, mcBeanName, MessageConverter.class), ex);
+			}
+		}
+	}
+
+	private void resolveReplyContentType(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener) {
+		String contentType = resolveExpressionAsString(rabbitListener.replyContentType(), "replyContentType");
+		if (StringUtils.hasText(contentType)) {
+			endpoint.setReplyContentType(contentType);
+			endpoint.setConverterWinsContentType(resolveExpressionAsBoolean(rabbitListener.converterWinsContentType()));
 		}
 	}
 

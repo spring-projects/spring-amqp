@@ -395,7 +395,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 				JavaUtils.INSTANCE
 						.acceptIfNotNull(this.connectionFactory, instance::setConnectionFactory)
 						.acceptIfNotNull(this.errorHandler, instance::setErrorHandler);
-		if (this.messageConverter != null && endpoint != null) {
+		if (this.messageConverter != null && endpoint != null && endpoint.getMessageConverter() == null) {
 			endpoint.setMessageConverter(this.messageConverter);
 		}
 		javaUtils
@@ -443,7 +443,9 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 					.acceptIfCondition(this.retryTemplate != null && this.recoveryCallback != null,
 							this.recoveryCallback, messageListener::setRecoveryCallback)
 					.acceptIfNotNull(this.defaultRequeueRejected, messageListener::setDefaultRequeueRejected)
-					.acceptIfNotNull(endpoint.getReplyPostProcessor(), messageListener::setReplyPostProcessor);
+					.acceptIfNotNull(endpoint.getReplyPostProcessor(), messageListener::setReplyPostProcessor)
+					.acceptIfNotNull(endpoint.getReplyContentType(), messageListener::setReplyContentType);
+			messageListener.setConverterWinsContentType(endpoint.isConverterWinsContentType());
 		}
 		initializeContainer(instance, endpoint);
 

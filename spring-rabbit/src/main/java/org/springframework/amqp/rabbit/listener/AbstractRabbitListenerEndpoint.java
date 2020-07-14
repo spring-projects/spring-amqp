@@ -92,6 +92,10 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 
 	private ReplyPostProcessor replyPostProcessor;
 
+	private String replyContentType;
+
+	private boolean converterWinsContentType = true;
+
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
 		this.beanFactory = beanFactory;
@@ -336,6 +340,34 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	 */
 	public void setReplyPostProcessor(ReplyPostProcessor replyPostProcessor) {
 		this.replyPostProcessor = replyPostProcessor;
+	}
+
+	@Override
+	public String getReplyContentType() {
+		return this.replyContentType;
+	}
+
+	/**
+	 * Set the reply content type.
+	 * @param replyContentType the content type.
+	 * @since 2.3
+	 */
+	public void setReplyContentType(String replyContentType) {
+		this.replyContentType = replyContentType;
+	}
+
+	@Override
+	public boolean isConverterWinsContentType() {
+		return this.converterWinsContentType;
+	}
+
+	/**
+	 * Set whether the content type set by a converter prevails or not.
+	 * @param converterWinsContentType false to always apply the reply content type.
+	 * @since 2.3
+	 */
+	public void setConverterWinsContentType(boolean converterWinsContentType) {
+		this.converterWinsContentType = converterWinsContentType;
 	}
 
 	@Override

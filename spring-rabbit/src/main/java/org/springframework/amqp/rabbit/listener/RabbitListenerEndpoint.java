@@ -148,4 +148,22 @@ public interface RabbitListenerEndpoint {
 		return null;
 	}
 
+	/**
+	 * Get the reply content type.
+	 * @return the content type.
+	 * @since 2.3
+	 */
+	default String getReplyContentType() {
+		return null;
+	}
+
+	/**
+	 * Return whether the content type set by a converter prevails or not.
+	 * @return false to always apply the reply content type.
+	 * @since 2.3
+	 */
+	default boolean isConverterWinsContentType() {
+		return true;
+	}
+
 }
