@@ -458,7 +458,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		resolveAckMode(endpoint, rabbitListener);
 		resolvePostProcessor(endpoint, rabbitListener, target, beanName);
 		resolveMessageConverter(endpoint, rabbitListener, target, beanName);
-		resolveReplyContenntType(endpoint, rabbitListener);
+		resolveReplyContentType(endpoint, rabbitListener);
 		RabbitListenerContainerFactory<?> factory = resolveContainerFactory(rabbitListener, target, beanName);
 
 		this.registrar.registerEndpoint(endpoint, factory);
