@@ -101,7 +101,9 @@ public class MessagingMessageConverter implements MessageConverter, Initializing
 	}
 
 	@Override
-	public org.springframework.amqp.core.Message toMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
+	public org.springframework.amqp.core.Message toMessage(Object object, MessageProperties messageProperties)
+			throws MessageConversionException {
+
 		if (!(object instanceof Message)) {
 			throw new IllegalArgumentException("Could not convert [" + object + "] - only [" +
 					Message.class.getName() + "] is handled by this converter");

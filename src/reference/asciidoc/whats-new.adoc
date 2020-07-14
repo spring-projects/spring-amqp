@@ -11,6 +11,11 @@ See <<change-history>> for changes in previous versions.
 Two additional connection factories are now provided.
 See <<choosing-factory>> for more information.
 
+==== `@RabbitListener` Changes
+
+You can now specify a reply content type.
+See <<reply-content-type>> for more information.
+
 ==== Message Converter Changes
 
 The `Jackson2JMessageConverter` s can now deserialize abstract classes (including interfaces) if the `ObjectMapper` is configured with a custom deserializer.

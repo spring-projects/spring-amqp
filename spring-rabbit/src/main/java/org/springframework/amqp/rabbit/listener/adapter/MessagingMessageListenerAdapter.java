@@ -252,7 +252,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 				return this.messagingMessageConverter.toMessage(result, new MessageProperties());
 			}
 			else {
-				return converter.toMessage(result, new MessageProperties(), genericType);
+				return convert(result, genericType, converter);
 			}
 		}
 		else {

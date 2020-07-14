@@ -2436,6 +2436,25 @@ This configures a Jackson2 converter that expects header information to be prese
 
 You can also use a `ContentTypeDelegatingMessageConverter`, which can handle conversion of different content types.
 
+Starting with version 2.3, you can override the factory converter by specifying a bean name in the `messageConverter` property.
+
+====
+[source, java]
+----
+@Bean
+public MessageConverter jsonConverter() {
+    return new Jackson2JsonMessageConverter();
+}
+
+@RabbitListener(..., messageConverter = "jsonConverter")
+public void listen(String in) {
+    ...
+}
+----
+====
+
+This avoids having to declare a different container factory just to change the converter.
+
 In most cases, it is not necessary to customize the method argument converter unless, for example, you want to use
 a custom `ConversionService`.
 
@@ -2800,14 +2819,49 @@ public String listen(Message in) {
 ----
 ====
 
+[[reply-content-type]]
 ====== Reply ContentType
 
-If you are using a sophisticated message converter, such as the `ContentTypeDelegatingMessageConverter`, you can control the content type of the reply by returning a `spring-messaging` `Message<?>`:
+If you are using a sophisticated message converter, such as the `ContentTypeDelegatingMessageConverter`, you can control the content type of the reply by setting the `replyContentType` property on the listener.
+This allows the converter to select the appropriate delegate converter for the reply.
 
 ====
 [source, java]
 ----
-@RabbitListener(queues = "q1")
+@RabbitListener(queues = "q1", messageConverter = "delegating",
+        replyContentType = "application/json")
+public Thing2 listen(Thing1 in) {
+    ...
+}
+----
+====
+
+By default, for backwards compatibility, any content type property set by the converter will be overwritten by this value after conversion.
+Converters such as the `SimpleMessageConverter` use the reply type rather than the content type to determine the conversion needed and sets the content type in the reply message appropriately.
+This may not be the desired action and can be overridden by setting the `converterWinsContentType` property to `false`.
+For example, if you return a `String` containing JSON, the `SimpleMessageConverter` will set the content type in the reply to `text/plain`.
+The following configuration will ensure the content type is set properly, even if the `SimpleMessageConverter` is used.
+
+====
+[source, java]
+----
+@RabbitListener(queues = "q1", replyContentType = "application/json",
+        converterWinsContentType = "false")
+public String listen(Thing in) {
+    ...
+    return someJsonString;
+}
+----
+====
+
+These properties (`replyContentType` and `converterWinsContentType`) do not apply when the return type is a Spring AMQP `Message` or a Spring Messaging `Message<?>`.
+In the first case, there is no conversion involved; simply set the `contentType` message property.
+In the second case, the behavior is controlled using message headers:
+
+====
+[source, java]
+----
+@RabbitListener(queues = "q1", messageConverter = "delegating")
 @SendTo("q2")
 public Message<String> listen(String in) {
     ...

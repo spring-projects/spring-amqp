@@ -119,6 +119,10 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 
 	private ReplyPostProcessor replyPostProcessor;
 
+	private String replyContentType;
+
+	private boolean converterWinsContentType = true;
+
 	/**
 	 * Set the routing key to use when sending response messages.
 	 * This will be applied in case of a request message that
@@ -253,6 +257,42 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	 */
 	public void setReplyPostProcessor(ReplyPostProcessor replyPostProcessor) {
 		this.replyPostProcessor = replyPostProcessor;
+	}
+
+	/**
+	 * Get the reply content type.
+	 * @return the content type.
+	 * @since 2.3
+	 */
+	protected String getReplyContentType() {
+		return this.replyContentType;
+	}
+
+	/**
+	 * Set the reply content type.
+	 * @param replyContentType the content type.
+	 * @since 2.3
+	 */
+	public void setReplyContentType(String replyContentType) {
+		this.replyContentType = replyContentType;
+	}
+
+	/**
+	 * Return whether the content type set by a converter prevails or not.
+	 * @return false to always apply the reply content type.
+	 * @since 2.3
+	 */
+	protected boolean isConverterWinsContentType() {
+		return this.converterWinsContentType;
+	}
+
+	/**
+	 * Set whether the content type set by a converter prevails or not.
+	 * @param converterWinsContentType false to always apply the reply content type.
+	 * @since 2.3
+	 */
+	public void setConverterWinsContentType(boolean converterWinsContentType) {
+		this.converterWinsContentType = converterWinsContentType;
 	}
 
 	/**
@@ -452,7 +492,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	protected Message buildMessage(Channel channel, Object result, Type genericType) {
 		MessageConverter converter = getMessageConverter();
 		if (converter != null && !(result instanceof Message)) {
-			return converter.toMessage(result, new MessageProperties(), genericType);
+			return convert(result, genericType, converter);
 		}
 		else {
 			if (!(result instanceof Message)) {
@@ -461,6 +501,26 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 			}
 			return (Message) result;
 		}
+	}
+
+	/**
+	 * Convert to a message, with reply content type based on settings.
+	 * @param result the result.
+	 * @param genericType the type.
+	 * @param converter the converter.
+	 * @return the message.
+	 * @since 2.3
+	 */
+	protected Message convert(Object result, Type genericType, MessageConverter converter) {
+		MessageProperties messageProperties = new MessageProperties();
+		if (this.replyContentType != null) {
+			messageProperties.setContentType(this.replyContentType);
+		}
+		Message message = converter.toMessage(result, messageProperties, genericType);
+		if (this.replyContentType != null && !this.converterWinsContentType) {
+			message.getMessageProperties().setContentType(this.replyContentType);
+		}
+		return message;
 	}
 
 	/**
