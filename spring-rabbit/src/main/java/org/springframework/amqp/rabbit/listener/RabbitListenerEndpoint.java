@@ -153,6 +153,7 @@ public interface RabbitListenerEndpoint {
 	 * @return the content type.
 	 * @since 2.3
 	 */
+	@Nullable
 	default String getReplyContentType() {
 		return null;
 	}
