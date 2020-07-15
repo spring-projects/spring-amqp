@@ -298,7 +298,7 @@ public class AmqpAppender extends AbstractAppender {
 	@Override
 	protected boolean stop(long timeout, TimeUnit timeUnit, boolean changeLifeCycleState) {
 		boolean stopped = super.stop(timeout, timeUnit, changeLifeCycleState);
-		return this.manager.stop(timeout, timeUnit) || stopped ;
+		return this.manager.stop(timeout, timeUnit) || stopped;
 	}
 
 	/**
