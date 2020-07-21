@@ -21,8 +21,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.AnonymousQueue;
@@ -68,13 +66,14 @@ public class RabbitListenerProxyTest {
 		Listener listener = this.harness.getSpy("foo");
 		assertThat(listener).isNotNull();
 
-		LatchCountDownAndCallRealMethodAnswer answer = new LatchCountDownAndCallRealMethodAnswer(1);
+		LatchCountDownAndCallRealMethodAnswer answer = this.harness.getLatchAnswerFor("foo", 1);
 		doAnswer(answer).when(listener).foo(anyString());
 
 		this.rabbitTemplate.convertAndSend(this.queue.getName(), "foo");
 
-		assertThat(answer.getLatch().await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(answer.await(10)).isTrue();
 		verify(listener).foo("foo");
+		assertThat(answer.getExceptions()).isEmpty();
 	}
 
 	@Configuration
@@ -84,7 +83,7 @@ public class RabbitListenerProxyTest {
 
 		@Bean
 		public Listener listener() {
-			return (Listener) new ProxyFactory(new Listener()).getProxy();
+			return (Listener) new ProxyFactory(new Listener(dependency())).getProxy();
 		}
 
 		@Bean
@@ -113,12 +112,26 @@ public class RabbitListenerProxyTest {
 			containerFactory.setConnectionFactory(cf);
 			return containerFactory;
 		}
+
+		@Bean
+		public String dependency() {
+			return "dependency";
+		}
+
 	}
 
 	public static class Listener {
 
+		private final String dependency;
+
+		public Listener(String dependency) {
+			this.dependency = dependency;
+		}
+
 		@RabbitListener(id = "foo", queues = "#{queue.name}")
 		public void foo(String foo) {
+			this.dependency.substring(0);
 		}
 	}
+
 }

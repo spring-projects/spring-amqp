@@ -21,8 +21,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.AnonymousQueue;
@@ -84,13 +82,13 @@ public class ExampleRabbitListenerSpyTest {
 		Listener listener = this.harness.getSpy("bar");
 		assertThat(listener).isNotNull();
 
-		LatchCountDownAndCallRealMethodAnswer answer = new LatchCountDownAndCallRealMethodAnswer(2);
+		LatchCountDownAndCallRealMethodAnswer answer = this.harness.getLatchAnswerFor("bar", 2);
 		doAnswer(answer).when(listener).foo(anyString(), anyString());
 
 		this.rabbitTemplate.convertAndSend(this.queue2.getName(), "bar");
 		this.rabbitTemplate.convertAndSend(this.queue2.getName(), "baz");
 
-		assertThat(answer.getLatch().await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(answer.await(10)).isTrue();
 		verify(listener).foo("bar", this.queue2.getName());
 		verify(listener).foo("baz", this.queue2.getName());
 	}

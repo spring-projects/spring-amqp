@@ -74,13 +74,13 @@ The following example shows how to use `LatchCountDownAndCallRealMethodAnswer`:
 ====
 [source, java]
 ----
-LatchCountDownAndCallRealMethodAnswer answer = new LatchCountDownAndCallRealMethodAnswer(2);
+LatchCountDownAndCallRealMethodAnswer answer = this.harness.getLatchAnswerFor("myListener", 2);
 doAnswer(answer)
     .when(listener).foo(anyString(), anyString());
 
 ...
 
-assertTrue(answer.getLatch().await(10, TimeUnit.SECONDS));
+assertThat(answer.await(10)).isTrue();
 ----
 ====
 
@@ -126,6 +126,7 @@ assertEquals("thingthing", thing.thing("thing"));
 Starting with version 2.2.3, the answers capture any exceptions thrown by the method under test.
 Use `answer.getExceptions()` to get a reference to them.
 
+When used in conjunction with the <<test-harness>> use `harness.getLambdaAnswerFor("listenerId", true, ...)` to get a properly constructed answer for the listener.
 
 [[test-harness]]
 ==== `@RabbitListenerTest` and `RabbitListenerTestHarness`
@@ -197,13 +198,13 @@ public class MyTests {
         Listener listener = this.harness.getSpy("bar");
         assertNotNull(listener);
 
-        LatchCountDownAndCallRealMethodAnswer answer = new LatchCountDownAndCallRealMethodAnswer(2); <3>
+        LatchCountDownAndCallRealMethodAnswer answer = this.harness.getLatchAnswerFor("bar", 2); <3>
         doAnswer(answer).when(listener).foo(anyString(), anyString()); <4>
 
         this.rabbitTemplate.convertAndSend(this.queue2.getName(), "bar");
         this.rabbitTemplate.convertAndSend(this.queue2.getName(), "baz");
 
-        assertTrue(answer.getLatch().await(10, TimeUnit.SECONDS));
+        assertTrue(answer.await(10));
         verify(listener).foo("bar", this.queue2.getName());
         verify(listener).foo("baz", this.queue2.getName());
     }
@@ -220,6 +221,7 @@ suspended in the `RabbitTemplate` waiting for the reply.
 <3> In this case, we're only using a send operation so we need a latch to wait for the asynchronous call to the listener
 on the container thread.
 We use one of the link:#mockito-answer[Answer<?>] implementations to help with that.
+IMPORTANT: Due to the way the listener is spied, it is important to use `harness.getLatchAnswerFor()` to get a properly configured answer for the spy.
 
 <4> Configure the spy to invoke the `Answer`.
 ====
@@ -310,6 +312,9 @@ to suspend the test thread.
 
 <5> When the listener throws an exception, it is available in the `throwable` property of the invocation data.
 ====
+
+IMPORTANT: When using custom `Answer<?>` s with the harness, in order to operate properly, such answers should subclass `ForwardsInvocation` and get the actual listener (not the spy) from the harness (`getDelegate("myListener")`) and call `super.answer(invocation)`.
+See the provided <<mockito-answer>> source code for examples.
 
 [[test-template]]
 ==== Using `TestRabbitTemplate`
