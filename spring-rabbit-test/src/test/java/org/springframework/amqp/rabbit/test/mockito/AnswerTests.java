@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.test.mockito;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
@@ -32,14 +33,17 @@ public class AnswerTests {
 
 	@Test
 	public void testLambda() {
-		Foo foo = spy(new Foo());
-		doAnswer(new LambdaAnswer<String>(true, (i, r) -> r + r)).when(foo).foo(anyString());
+		Foo delegate = new Foo();
+		Foo foo = spy(delegate);
+		willAnswer(new LambdaAnswer<String>(true, (i, r) -> r + r, delegate)).given(foo).foo(anyString());
 		assertEquals("FOOFOO", foo.foo("foo"));
-		doAnswer(new LambdaAnswer<String>(true, (i, r) -> r + i.getArguments()[0])).when(foo).foo(anyString());
+		willAnswer(new LambdaAnswer<String>(true, (i, r) -> r + i.getArguments()[0], delegate))
+				.given(foo).foo(anyString());
 		assertEquals("FOOfoo", foo.foo("foo"));
-		doAnswer(new LambdaAnswer<String>(false, (i, r) ->
-			"" + i.getArguments()[0] + i.getArguments()[0])).when(foo).foo(anyString());
+		willAnswer(new LambdaAnswer<String>(false, (i, r) ->
+			"" + i.getArguments()[0] + i.getArguments()[0], delegate)).given(foo).foo(anyString());
 		assertEquals("foofoo", foo.foo("foo"));
+
 	}
 
 	private static class Foo {
