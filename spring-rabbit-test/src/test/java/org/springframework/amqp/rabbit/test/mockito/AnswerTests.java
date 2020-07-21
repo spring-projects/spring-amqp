@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,15 +35,17 @@ public class AnswerTests {
 
 	@Test
 	public void testLambda() {
-		Foo foo = spy(new Foo());
-		willAnswer(new LambdaAnswer<String>(true, (i, r) -> r + r)).given(foo).foo(anyString());
+		Foo delegate = new Foo();
+		Foo foo = spy(delegate);
+		willAnswer(new LambdaAnswer<String>(true, (i, r) -> r + r, delegate)).given(foo).foo(anyString());
 		assertThat(foo.foo("foo")).isEqualTo("FOOFOO");
-		willAnswer(new LambdaAnswer<String>(true, (i, r) -> r + i.getArguments()[0])).given(foo).foo(anyString());
+		willAnswer(new LambdaAnswer<String>(true, (i, r) -> r + i.getArguments()[0], delegate))
+				.given(foo).foo(anyString());
 		assertThat(foo.foo("foo")).isEqualTo("FOOfoo");
 		willAnswer(new LambdaAnswer<String>(false, (i, r) ->
-			"" + i.getArguments()[0] + i.getArguments()[0])).given(foo).foo(anyString());
+			"" + i.getArguments()[0] + i.getArguments()[0], delegate)).given(foo).foo(anyString());
 		assertThat(foo.foo("foo")).isEqualTo("foofoo");
-		LambdaAnswer<String> answer = new LambdaAnswer<>(true, (inv, result) -> result);
+		LambdaAnswer<String> answer = new LambdaAnswer<>(true, (inv, result) -> result, delegate);
 		willAnswer(answer).given(foo).foo("fail");
 		assertThatIllegalArgumentException().isThrownBy(() -> foo.foo("fail"));
 		Collection<Exception> exceptions = answer.getExceptions();
