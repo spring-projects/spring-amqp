@@ -19,7 +19,7 @@ package org.springframework.amqp.rabbit.annotation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
@@ -1666,7 +1666,7 @@ public class EnableRabbitIntegrationTests {
 		@Bean
 		public ErrorHandler errorHandler() {
 			ErrorHandler handler = Mockito.spy(new ConditionalRejectingErrorHandler());
-			doAnswer(invocation -> {
+			willAnswer(invocation -> {
 				try {
 					return invocation.callRealMethod();
 				}
@@ -1675,7 +1675,7 @@ public class EnableRabbitIntegrationTests {
 					errorHandlerLatch().countDown();
 					throw e;
 				}
-			}).when(handler).handleError(Mockito.any(Throwable.class));
+			}).given(handler).handleError(Mockito.any(Throwable.class));
 			return handler;
 		}
 

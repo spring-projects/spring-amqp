@@ -34,7 +34,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -184,12 +183,12 @@ public class RabbitAdminTests {
 			queues.put("adQ", new Queue("testq.ad", true, false, true));
 			queues.put("exclQ", new Queue("testq.excl", true, true, false));
 			queues.put("allQ", new Queue("testq.all", false, true, true));
-			when(ctx.getBeansOfType(Queue.class)).thenReturn(queues);
+			given(ctx.getBeansOfType(Queue.class)).willReturn(queues);
 			Map<String, Exchange> exchanges = new HashMap<String, Exchange>();
 			exchanges.put("nonDurEx", new DirectExchange("testex.nonDur", false, false));
 			exchanges.put("adEx", new DirectExchange("testex.ad", true, true));
 			exchanges.put("allEx", new DirectExchange("testex.all", false, true));
-			when(ctx.getBeansOfType(Exchange.class)).thenReturn(exchanges);
+			given(ctx.getBeansOfType(Exchange.class)).willReturn(exchanges);
 			rabbitAdmin.setApplicationContext(ctx);
 			rabbitAdmin.afterPropertiesSet();
 			Log logger = spy(TestUtils.getPropertyValue(rabbitAdmin, "logger", Log.class));

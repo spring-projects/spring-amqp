@@ -23,14 +23,14 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -179,8 +179,8 @@ public class RabbitTemplateIntegrationTests {
 		this.template.setSendConnectionFactorySelectorExpression(new LiteralExpression("foo"));
 		BeanFactory bf = mock(BeanFactory.class);
 		ConnectionFactory cf = mock(ConnectionFactory.class);
-		when(cf.getUsername()).thenReturn("guest");
-		when(bf.getBean("cf")).thenReturn(cf);
+		given(cf.getUsername()).willReturn("guest");
+		given(bf.getBean("cf")).willReturn(cf);
 		this.template.setBeanFactory(bf);
 		this.template.setBeanName(info.getDisplayName() + ".RabbitTemplate");
 		this.testName = info.getDisplayName();
@@ -333,7 +333,7 @@ public class RabbitTemplateIntegrationTests {
 		}
 
 		Connection connection = spy(connectionFactory.createConnection());
-		when(connection.createChannel(anyBoolean())).then(
+		given(connection.createChannel(anyBoolean())).willAnswer(
 				invocation -> new MockChannel((Channel) invocation.callRealMethod()));
 
 		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory);
@@ -746,17 +746,17 @@ public class RabbitTemplateIntegrationTests {
 			fields[0] = field;
 		}, field -> field.getName().equals("logger"));
 		Log logger = Mockito.mock(Log.class);
-		when(logger.isTraceEnabled()).thenReturn(true);
+		given(logger.isTraceEnabled()).willReturn(true);
 
 		final AtomicBoolean execConfiguredOk = new AtomicBoolean();
 
-		doAnswer(invocation -> {
+		willAnswer(invocation -> {
 			String log = invocation.getArgument(0);
 			if (log.startsWith("Message received") && Thread.currentThread().getName().startsWith(execName)) {
 				execConfiguredOk.set(true);
 			}
 			return null;
-		}).when(logger).trace(anyString());
+		}).given(logger).trace(anyString());
 		final RabbitTemplate template = createSendAndReceiveRabbitTemplate(connectionFactory);
 		ReflectionUtils.setField(fields[0], template, logger);
 		template.setRoutingKey(ROUTE);
@@ -1415,7 +1415,7 @@ public class RabbitTemplateIntegrationTests {
 	public void testDebugLogOnPassiveDeclaration() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
 		Log logger = spy(TestUtils.getPropertyValue(connectionFactory, "logger", Log.class));
-		doReturn(true).when(logger).isDebugEnabled();
+		willReturn(true).given(logger).isDebugEnabled();
 		new DirectFieldAccessor(connectionFactory).setPropertyValue("logger", logger);
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		final String queueName = UUID.randomUUID().toString();
@@ -1464,9 +1464,9 @@ public class RabbitTemplateIntegrationTests {
 	@Test
 	public void testRouting() throws Exception {
 		Connection connection1 = mock(Connection.class);
-		when(this.cf1.createConnection()).thenReturn(connection1);
+		given(this.cf1.createConnection()).willReturn(connection1);
 		Channel channel1 = mock(Channel.class);
-		when(connection1.createChannel(false)).thenReturn(channel1);
+		given(connection1.createChannel(false)).willReturn(channel1);
 		this.routingTemplate.convertAndSend("exchange", "routingKey", "xyz", message -> {
 			message.getMessageProperties().setHeader("cfKey", "foo");
 			return message;
@@ -1475,9 +1475,9 @@ public class RabbitTemplateIntegrationTests {
 				any(byte[].class));
 
 		Connection connection2 = mock(Connection.class);
-		when(this.cf2.createConnection()).thenReturn(connection2);
+		given(this.cf2.createConnection()).willReturn(connection2);
 		Channel channel2 = mock(Channel.class);
-		when(connection2.createChannel(false)).thenReturn(channel2);
+		given(connection2.createChannel(false)).willReturn(channel2);
 		this.routingTemplate.convertAndSend("exchange", "routingKey", "xyz", message -> {
 			message.getMessageProperties().setHeader("cfKey", "bar");
 			return message;

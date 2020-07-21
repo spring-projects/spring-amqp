@@ -21,8 +21,8 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -90,10 +90,10 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 
 	@BeforeEach
 	public void setUp() {
-		doAnswer(invocation -> {
+		willAnswer(invocation -> {
 			errorsHandled.countDown();
 			return null;
-		}).when(errorHandler).handleError(any(Throwable.class));
+		}).given(errorHandler).handleError(any(Throwable.class));
 	}
 
 	@Test // AMQP-385
@@ -121,14 +121,14 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		container.setReceiveTimeout(50);
 		container.start();
 		Log logger = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
-		doReturn(true).when(logger).isWarnEnabled();
+		willReturn(true).given(logger).isWarnEnabled();
 		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
 		template.convertAndSend(QUEUE.getName(), "baz");
 		assertThat(messageReceived.await(10, TimeUnit.SECONDS)).isTrue();
 		Object consumer = TestUtils.getPropertyValue(container, "consumers", Set.class)
 				.iterator().next();
 		Log qLogger = spy(TestUtils.getPropertyValue(consumer, "logger", Log.class));
-		doReturn(true).when(qLogger).isDebugEnabled();
+		willReturn(true).given(qLogger).isDebugEnabled();
 		new DirectFieldAccessor(consumer).setPropertyValue("logger", qLogger);
 		spiedQLogger.countDown();
 		assertThat(errorHandled.await(10, TimeUnit.SECONDS)).isTrue();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.util.concurrent.ExecutorService;
 
@@ -44,14 +44,14 @@ public class ClientRecoveryCompatibilityTests {
 	@Test
 	public void testDefeatRecovery() throws Exception {
 		final Channel channel1 = mock(Channel.class);
-		when(channel1.isOpen()).thenReturn(true);
+		given(channel1.isOpen()).willReturn(true);
 		final Channel channel2 = mock(Channel.class);
-		when(channel2.isOpen()).thenReturn(true);
+		given(channel2.isOpen()).willReturn(true);
 		final com.rabbitmq.client.Connection rabbitConn = mock(AutorecoveringConnection.class);
-		when(rabbitConn.isOpen()).thenReturn(true);
+		given(rabbitConn.isOpen()).willReturn(true);
 		com.rabbitmq.client.ConnectionFactory cf = mock(com.rabbitmq.client.ConnectionFactory.class);
-		doAnswer(invocation -> rabbitConn).when(cf).newConnection(any(ExecutorService.class), anyString());
-		when(rabbitConn.createChannel()).thenReturn(channel1).thenReturn(channel2);
+		willAnswer(invocation -> rabbitConn).given(cf).newConnection(any(ExecutorService.class), anyString());
+		given(rabbitConn.createChannel()).willReturn(channel1).willReturn(channel2);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(cf);
 		ccf.setExecutor(mock(ExecutorService.class));
@@ -67,8 +67,8 @@ public class ClientRecoveryCompatibilityTests {
 		channel.close();
 		conn2.close();
 
-		when(rabbitConn.isOpen()).thenReturn(false).thenReturn(true);
-		when(channel1.isOpen()).thenReturn(false);
+		given(rabbitConn.isOpen()).willReturn(false).willReturn(true);
+		given(channel1.isOpen()).willReturn(false);
 		conn2 = ccf.createConnection();
 		try {
 			conn2.createChannel(false);

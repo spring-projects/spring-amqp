@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2019 the original author or authors.
+ * Copyright 2010-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willCallRealMethod;
+import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doCallRealMethod;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.concurrent.ExecutorService;
@@ -62,7 +62,7 @@ public abstract class AbstractConnectionFactoryTests {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 
-		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 
 		final AtomicInteger called = new AtomicInteger(0);
 		AbstractConnectionFactory connectionFactory = createConnectionFactory(mockConnectionFactory);
@@ -81,7 +81,7 @@ public abstract class AbstractConnectionFactoryTests {
 		}));
 
 		Log logger = spy(TestUtils.getPropertyValue(connectionFactory, "logger", Log.class));
-		doReturn(true).when(logger).isInfoEnabled();
+		willReturn(true).given(logger).isInfoEnabled();
 		new DirectFieldAccessor(connectionFactory).setPropertyValue("logger", logger);
 		Connection con = connectionFactory.createConnection();
 		assertThat(called.get()).isEqualTo(1);
@@ -122,7 +122,7 @@ public abstract class AbstractConnectionFactoryTests {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 
-		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 
 		final AtomicInteger called = new AtomicInteger(0);
 		AbstractConnectionFactory connectionFactory = createConnectionFactory(mockConnectionFactory);
@@ -166,11 +166,11 @@ public abstract class AbstractConnectionFactoryTests {
 		com.rabbitmq.client.Connection mockConnection1 = mock(com.rabbitmq.client.Connection.class);
 		com.rabbitmq.client.Connection mockConnection2 = mock(com.rabbitmq.client.Connection.class);
 
-		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString()))
-				.thenReturn(mockConnection1, mockConnection2);
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString()))
+				.willReturn(mockConnection1, mockConnection2);
 		// simulate a dead connection
-		when(mockConnection1.isOpen()).thenReturn(false);
-		when(mockConnection2.createChannel()).thenReturn(mock(Channel.class));
+		given(mockConnection1.isOpen()).willReturn(false);
+		given(mockConnection2.createChannel()).willReturn(mock(Channel.class));
 
 		AbstractConnectionFactory connectionFactory = createConnectionFactory(mockConnectionFactory);
 
@@ -199,9 +199,9 @@ public abstract class AbstractConnectionFactoryTests {
 	@Test
 	public void testCreatesConnectionWithGivenFactory() {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
-		doCallRealMethod().when(mockConnectionFactory).params(any(ExecutorService.class));
-		doCallRealMethod().when(mockConnectionFactory).setThreadFactory(any(ThreadFactory.class));
-		doCallRealMethod().when(mockConnectionFactory).getThreadFactory();
+		willCallRealMethod().given(mockConnectionFactory).params(any(ExecutorService.class));
+		willCallRealMethod().given(mockConnectionFactory).setThreadFactory(any(ThreadFactory.class));
+		willCallRealMethod().given(mockConnectionFactory).getThreadFactory();
 
 		AbstractConnectionFactory connectionFactory = createConnectionFactory(mockConnectionFactory);
 		ThreadFactory connectionThreadFactory = new CustomizableThreadFactory("connection-thread-");
