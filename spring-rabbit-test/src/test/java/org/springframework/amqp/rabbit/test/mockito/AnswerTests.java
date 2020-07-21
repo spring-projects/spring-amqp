@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbit.test.mockito;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.willAnswer;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
 import org.junit.Test;
@@ -41,7 +40,7 @@ public class AnswerTests {
 				.given(foo).foo(anyString());
 		assertEquals("FOOfoo", foo.foo("foo"));
 		willAnswer(new LambdaAnswer<String>(false, (i, r) ->
-			"" + i.getArguments()[0] + i.getArguments()[0], delegate)).given(foo).foo(anyString());
+				"" + i.getArguments()[0] + i.getArguments()[0], delegate)).given(foo).foo(anyString());
 		assertEquals("foofoo", foo.foo("foo"));
 
 	}

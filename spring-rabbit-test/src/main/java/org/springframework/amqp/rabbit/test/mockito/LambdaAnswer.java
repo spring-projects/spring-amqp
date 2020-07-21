@@ -18,7 +18,6 @@ package org.springframework.amqp.rabbit.test.mockito;
 
 import org.mockito.internal.stubbing.defaultanswers.ForwardsInvocations;
 import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.springframework.lang.Nullable;
 
