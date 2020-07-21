@@ -20,8 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.BDDMockito.willDoNothing;
+import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -351,8 +351,8 @@ public class BatchingRabbitTemplateTests {
 		container.afterPropertiesSet();
 		container.start();
 		Log logger = spy(TestUtils.getPropertyValue(errorHandler, "logger", Log.class));
-		doReturn(true).when(logger).isWarnEnabled();
-		doNothing().when(logger).warn(anyString(), any(Throwable.class));
+		willReturn(true).given(logger).isWarnEnabled();
+		willDoNothing().given(logger).warn(anyString(), any(Throwable.class));
 		new DirectFieldAccessor(errorHandler).setPropertyValue("logger", logger);
 		try {
 			RabbitTemplate template = new RabbitTemplate();

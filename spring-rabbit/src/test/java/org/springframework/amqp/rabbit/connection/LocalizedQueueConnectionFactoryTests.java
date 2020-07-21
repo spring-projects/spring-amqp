@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 the original author or authors.
+ * Copyright 2015-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,13 +21,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.util.HashMap;
 import java.util.List;
@@ -103,9 +103,9 @@ public class LocalizedQueueConnectionFactoryTests {
 		String[] admins = TestUtils.getPropertyValue(lqcf, "adminUris", String[].class);
 		assertThat(admins).containsExactly(adminUris);
 		Log logger = spy(TestUtils.getPropertyValue(lqcf, "logger", Log.class));
-		doReturn(true).when(logger).isInfoEnabled();
+		willReturn(true).given(logger).isInfoEnabled();
 		new DirectFieldAccessor(lqcf).setPropertyValue("logger", logger);
-		doAnswer(new CallsRealMethods()).when(logger).debug(anyString());
+		willAnswer(new CallsRealMethods()).given(logger).debug(anyString());
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(lqcf);
 		container.setQueueNames("q");
@@ -148,7 +148,7 @@ public class LocalizedQueueConnectionFactoryTests {
 		Client client = mock(Client.class);
 		QueueInfo queueInfo = new QueueInfo();
 		queueInfo.setNode(node);
-		when(client.getQueue("/", "q")).thenReturn(queueInfo);
+		given(client.getQueue("/", "q")).willReturn(queueInfo);
 		return client;
 	}
 
@@ -176,11 +176,11 @@ public class LocalizedQueueConnectionFactoryTests {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 		Connection connection = mock(Connection.class);
 		Channel channel = mock(Channel.class);
-		when(connectionFactory.createConnection()).thenReturn(connection);
-		when(connection.createChannel(false)).thenReturn(channel);
-		when(connection.isOpen()).thenReturn(true, false);
-		when(channel.isOpen()).thenReturn(true, false);
-		doAnswer(invocation -> {
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(false)).willReturn(channel);
+		given(connection.isOpen()).willReturn(true, false);
+		given(channel.isOpen()).willReturn(true, false);
+		willAnswer(invocation -> {
 			String tag = UUID.randomUUID().toString();
 			consumers.put(address, invocation.getArgument(6));
 			consumerTags.put(address, tag);
@@ -188,9 +188,9 @@ public class LocalizedQueueConnectionFactoryTests {
 				latch.countDown();
 			}
 			return tag;
-		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
+		}).given(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
 				any(Consumer.class));
-		when(connectionFactory.getHost()).thenReturn(address);
+		given(connectionFactory.getHost()).willReturn(address);
 		this.channels.put(address, channel);
 		return connectionFactory;
 	}

@@ -21,11 +21,11 @@ import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.with;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -333,7 +333,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	@Test
 	public void testExclusive() throws Exception {
 		Log logger = spy(TestUtils.getPropertyValue(this.template.getConnectionFactory(), "logger", Log.class));
-		doReturn(true).when(logger).isInfoEnabled();
+		willReturn(true).given(logger).isInfoEnabled();
 		new DirectFieldAccessor(this.template.getConnectionFactory()).setPropertyValue("logger", logger);
 		CountDownLatch latch1 = new CountDownLatch(1000);
 		SimpleMessageListenerContainer container1 =
@@ -374,7 +374,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		});
 		container2.afterPropertiesSet();
 		Log containerLogger = spy(TestUtils.getPropertyValue(container2, "logger", Log.class));
-		doReturn(true).when(containerLogger).isWarnEnabled();
+		willReturn(true).given(containerLogger).isWarnEnabled();
 		new DirectFieldAccessor(container2).setPropertyValue("logger", containerLogger);
 		container2.start();
 		for (int i = 0; i < 1000; i++) {
@@ -430,8 +430,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		}
 
 		Connection connection = spy(connectionFactory.createConnection());
-		when(connection.createChannel(anyBoolean()))
-			.then(invocation -> new MockChannel((Channel) invocation.callRealMethod()));
+		given(connection.createChannel(anyBoolean()))
+			.willAnswer(invocation -> new MockChannel((Channel) invocation.callRealMethod()));
 
 		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory);
 		dfa.setPropertyValue("connection", connection);
@@ -480,8 +480,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		}
 
 		Connection connection = spy(connectionFactory.createConnection());
-		when(connection.createChannel(anyBoolean()))
-				.then(invocation -> new MockChannel((Channel) invocation.callRealMethod()));
+		given(connection.createChannel(anyBoolean()))
+				.willAnswer(invocation -> new MockChannel((Channel) invocation.callRealMethod()));
 
 		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory);
 		dfa.setPropertyValue("connection", connection);

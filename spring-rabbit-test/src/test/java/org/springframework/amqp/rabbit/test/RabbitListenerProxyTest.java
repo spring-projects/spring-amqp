@@ -18,7 +18,7 @@ package org.springframework.amqp.rabbit.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
 
 import org.junit.jupiter.api.Test;
@@ -67,7 +67,7 @@ public class RabbitListenerProxyTest {
 		assertThat(listener).isNotNull();
 
 		LatchCountDownAndCallRealMethodAnswer answer = this.harness.getLatchAnswerFor("foo", 1);
-		doAnswer(answer).when(listener).foo(anyString());
+		willAnswer(answer).given(listener).foo(anyString());
 
 		this.rabbitTemplate.convertAndSend(this.queue.getName(), "foo");
 

@@ -19,9 +19,9 @@ package org.springframework.amqp.rabbit.listener;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.awaitility.Awaitility.await;
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 import java.net.UnknownHostException;
 import java.util.Set;
@@ -401,12 +401,12 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		Log log = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
 		final CountDownLatch latch = new CountDownLatch(1);
-		when(log.isDebugEnabled()).thenReturn(true);
-		doAnswer(invocation -> {
+		given(log.isDebugEnabled()).willReturn(true);
+		willAnswer(invocation -> {
 			latch.countDown();
 			invocation.callRealMethod();
 			return null;
-		}).when(log).debug(
+		}).given(log).debug(
 				Mockito.contains("Consumer received Shutdown Signal, processing stopped"));
 		DirectFieldAccessor dfa = new DirectFieldAccessor(container);
 		dfa.setPropertyValue("logger", log);
