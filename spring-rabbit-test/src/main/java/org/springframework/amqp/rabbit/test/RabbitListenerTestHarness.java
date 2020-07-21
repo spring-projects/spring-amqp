@@ -34,6 +34,9 @@ import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.annotation.RabbitListenerAnnotationBeanPostProcessor;
 import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.test.mockito.LambdaAnswer;
+import org.springframework.amqp.rabbit.test.mockito.LambdaAnswer.ValueToReturn;
+import org.springframework.amqp.rabbit.test.mockito.LatchCountDownAndCallRealMethodAnswer;
 import org.springframework.aop.framework.ProxyFactoryBean;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -63,6 +66,8 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 
 	private final Map<String, Object> listeners = new HashMap<>();
 
+	private final Map<String, Object> delegates = new HashMap<>();
+
 	private final AnnotationAttributes attributes;
 
 	public RabbitListenerTestHarness(AnnotationMetadata importMetadata) {
@@ -80,6 +85,7 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 		String id = rabbitListener.id();
 		if (StringUtils.hasText(id)) {
 			if (this.attributes.getBoolean("spy")) {
+				this.delegates.put(id, proxy);
 				proxy = Mockito.mock(AopTestUtils.getUltimateTargetObject(proxy).getClass(),
 						AdditionalAnswers.delegatesTo(proxy));
 				this.listeners.put(id, proxy);
@@ -105,6 +111,31 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 		super.processListener(endpoint, rabbitListener, proxy, target, beanName);
 	}
 
+	/**
+	 * Return a {@link LatchCountDownAndCallRealMethodAnswer} that is properly configured
+	 * to invoke the listener.
+	 * @param id the listener id.
+	 * @param count the count.
+	 * @return the answer.
+	 * @since 2.1.16
+	 */
+	public LatchCountDownAndCallRealMethodAnswer getLatchAnswerFor(String id, int count) {
+		return new LatchCountDownAndCallRealMethodAnswer(count, this.delegates.get(id));
+	}
+
+	/**
+	 * Return a {@link LambdaAnswer} that is properly configured to invoke the listener.
+	 * @param <T> the return type.
+	 * @param id the listener id.
+	 * @param callRealMethod true to call the real method.
+	 * @param callback the callback.
+	 * @return the answer.
+	 * @since 2.1.16
+	 */
+	public <T> LambdaAnswer<T> getLambdaAnswerFor(String id, boolean callRealMethod, ValueToReturn<T> callback) {
+		return new LambdaAnswer<>(callRealMethod, callback, this.delegates.get(id));
+	}
+
 	public InvocationData getNextInvocationDataFor(String id, long wait, TimeUnit unit) throws InterruptedException {
 		CaptureAdvice advice = this.listenerCapture.get(id);
 		if (advice != null) {
@@ -116,6 +147,18 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 	@SuppressWarnings("unchecked")
 	public <T> T getSpy(String id) {
 		return (T) this.listeners.get(id);
+	}
+
+	/**
+	 * Get the actual listener object (not the spy).
+	 * @param <T> the type.
+	 * @param id the id.
+	 * @return the listener.
+	 * @since 2.1.16
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> T getDelegate(String id) {
+		return (T) this.delegates.get(id);
 	}
 
 	private static final class CaptureAdvice implements MethodInterceptor {

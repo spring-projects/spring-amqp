@@ -88,14 +88,14 @@ public class ExampleRabbitListenerSpyAndCaptureTest {
 		Listener listener = this.harness.getSpy("bar");
 		assertThat(listener).isNotNull();
 
-		LatchCountDownAndCallRealMethodAnswer answer = new LatchCountDownAndCallRealMethodAnswer(2);
+		LatchCountDownAndCallRealMethodAnswer answer = this.harness.getLatchAnswerFor("bar", 3);
 		doAnswer(answer).when(listener).foo(anyString(), anyString());
 
 		this.rabbitTemplate.convertAndSend(this.queue2.getName(), "bar");
 		this.rabbitTemplate.convertAndSend(this.queue2.getName(), "baz");
 		this.rabbitTemplate.convertAndSend(this.queue2.getName(), "ex");
 
-		assertThat(answer.getLatch().await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(answer.await(10)).isTrue();
 		verify(listener).foo("bar", this.queue2.getName());
 		verify(listener).foo("baz", this.queue2.getName());
 
