@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,12 +38,14 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.TopicExchange;
-import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.DeclareExchangeConnectionListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.support.LogAppenderUtils;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.support.GenericApplicationContext;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.PatternLayout;
@@ -104,6 +106,8 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 */
 	public static final String THREAD_NAME = "thread";
 
+	private final ApplicationContext context = new GenericApplicationContext();
+
 	/**
 	 * Name of the exchange to publish log events to.
 	 */
@@ -162,7 +166,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	/**
 	 * RabbitMQ ConnectionFactory.
 	 */
-	private AbstractConnectionFactory connectionFactory;
+	private CachingConnectionFactory connectionFactory;
 
 	/**
 	 * Additional client connection properties added to the rabbit connection, with the form
@@ -472,6 +476,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.connectionFactory.setUsername(this.username);
 		this.connectionFactory.setPassword(this.password);
 		this.connectionFactory.setVirtualHost(this.virtualHost);
+		this.connectionFactory.setApplicationContext(this.context);
 		LogAppenderUtils.updateClientConnectionProperties(this.connectionFactory, this.clientConnectionProperties);
 		updateConnectionClientProperties(this.connectionFactory.getRabbitConnectionFactory().getClientProperties());
 		setUpExchangeDeclaration();
@@ -502,6 +507,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		}
 		if (null != this.connectionFactory) {
 			this.connectionFactory.destroy();
+			this.connectionFactory.onApplicationEvent(new ContextClosedEvent(this.context));
 		}
 		this.retryTimer.cancel();
 		this.routingKeyLayout.stop();
@@ -639,6 +645,9 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 						message = postProcessMessageBeforeSend(message, event);
 						rabbitTemplate.send(AmqpAppender.this.exchangeName, routingKey, message);
+					}
+					catch (IllegalStateException e) {
+						addError("Could not send log message " + logEvent.getMessage() + " appender is stopped");
 					}
 					catch (AmqpException e) {
 						int retries = event.incrementRetries();
