@@ -53,6 +53,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.apache.logging.log4j.core.util.Integers;
 
+import org.springframework.amqp.AmqpApplicationContextClosedException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
@@ -72,6 +73,9 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.utils.JavaUtils;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.retry.RetryPolicy;
@@ -354,6 +358,9 @@ public class AmqpAppender extends AbstractAppender {
 			message = postProcessMessageBeforeSend(message, event);
 			this.rabbitTemplate.send(this.manager.exchangeName, routingKey, message);
 		}
+		catch (AmqpApplicationContextClosedException e) {
+			getHandler().error("Could not send log message " + logEvent.getMessage() + " appender is stopped");
+		}
 		catch (AmqpException e) {
 			int retries = event.incrementRetries();
 			if (this.manager.async && retries < this.manager.maxSenderRetries) {
@@ -380,7 +387,7 @@ public class AmqpAppender extends AbstractAppender {
 	@Override
 	protected boolean stop(long timeout, TimeUnit timeUnit, boolean changeLifeCycleState) {
 		boolean stopped = super.stop(timeout, timeUnit, changeLifeCycleState);
-		return stopped || this.manager.stop(timeout, timeUnit);
+		return this.manager.stop(timeout, timeUnit) || stopped;
 	}
 
 	/**
@@ -448,6 +455,8 @@ public class AmqpAppender extends AbstractAppender {
 	protected static class AmqpManager extends AbstractManager {
 
 		private static final int DEFAULT_MAX_SENDER_RETRIES = 30;
+
+		private final ApplicationContext context = new GenericApplicationContext();
 
 		/**
 		 * True to send events on separate threads.
@@ -656,6 +665,7 @@ public class AmqpAppender extends AbstractAppender {
 						.withNoConsoleNoAnsi(true)
 						.build();
 				this.connectionFactory = new CachingConnectionFactory(rabbitConnectionFactory);
+				this.connectionFactory.setApplicationContext(this.context);
 				if (StringUtils.hasText(this.connectionName)) {
 					this.connectionFactory.setConnectionNameStrategy(cf -> this.connectionName);
 				}
@@ -745,6 +755,7 @@ public class AmqpAppender extends AbstractAppender {
 			this.retryTimer.cancel();
 			this.senderPool.shutdownNow();
 			this.connectionFactory.destroy();
+			this.connectionFactory.onApplicationEvent(new ContextClosedEvent(this.context));
 			try {
 				return this.senderPool.awaitTermination(timeout, timeUnit);
 			}
