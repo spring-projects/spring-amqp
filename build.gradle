@@ -62,9 +62,9 @@ ext {
 	mockitoVersion = '2.26.0'
 	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.4.3'
 	rabbitmqHttpClientVersion = '2.1.0.RELEASE'
-	reactorVersion = '3.2.17.RELEASE'
+	reactorVersion = '3.2.19.RELEASE'
 	springRetryVersion = '1.2.5.RELEASE'
-	springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.1.15.RELEASE'
+	springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.1.17.RELEASE'
 
 
 	expandPlaceholders = '**/quick-tour.xml'
