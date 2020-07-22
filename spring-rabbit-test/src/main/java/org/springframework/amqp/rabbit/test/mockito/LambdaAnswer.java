@@ -23,13 +23,12 @@ import java.util.Set;
 
 import org.mockito.internal.stubbing.defaultanswers.ForwardsInvocations;
 import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.springframework.lang.Nullable;
 
 /**
- * An {@link Answer} to optionally call the real method and allow returning a
- * custom result. Captures any exceptions thrown.
+ * An {@link org.mockito.stubbing.Answer} to optionally call the real method and allow
+ * returning a custom result. Captures any exceptions thrown.
  *
  * @param <T> the return type.
  *

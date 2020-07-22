@@ -25,13 +25,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.mockito.internal.stubbing.defaultanswers.ForwardsInvocations;
 import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.springframework.lang.Nullable;
 
 /**
- * An {@link Answer} for void returning methods that calls the real method and counts down
- * a latch. Captures any exceptions thrown.
+ * An {@link org.mockito.stubbing.Answer} for void returning methods that calls the real
+ * method and counts down a latch. Captures any exceptions thrown.
  *
  * @author Gary Russell
  * @since 1.6
@@ -40,7 +39,7 @@ import org.springframework.lang.Nullable;
 @SuppressWarnings("serial")
 public class LatchCountDownAndCallRealMethodAnswer extends ForwardsInvocations {
 
-	private final CountDownLatch latch;
+	private final transient CountDownLatch latch;
 
 	private final Set<Exception> exceptions = Collections.synchronizedSet(new LinkedHashSet<>());
 
