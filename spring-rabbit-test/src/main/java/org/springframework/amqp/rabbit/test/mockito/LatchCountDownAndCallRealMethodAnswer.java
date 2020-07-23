@@ -36,8 +36,9 @@ import org.springframework.lang.Nullable;
  * @since 1.6
  *
  */
-@SuppressWarnings("serial")
 public class LatchCountDownAndCallRealMethodAnswer extends ForwardsInvocations {
+
+	private static final long serialVersionUID = 1L;
 
 	private final transient CountDownLatch latch;
 
