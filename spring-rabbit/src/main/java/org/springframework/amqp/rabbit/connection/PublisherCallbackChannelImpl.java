@@ -32,9 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
@@ -96,8 +94,6 @@ public class PublisherCallbackChannelImpl
 
 	private static final MessagePropertiesConverter CONVERTER  = new DefaultMessagePropertiesConverter();
 
-	private static final long RETURN_CALLBACK_TIMEOUT = 60;
-
 	private final Log logger = LogFactory.getLog(this.getClass());
 
 	private final Channel delegate;
@@ -112,11 +108,7 @@ public class PublisherCallbackChannelImpl
 
 	private final ExecutorService executor;
 
-	private final CountDownLatch returnLatch = new CountDownLatch(1);
-
 	private volatile java.util.function.Consumer<Channel> afterAckCallback;
-
-	private boolean hasReturned;
 
 	/**
 	 * Create a {@link PublisherCallbackChannelImpl} instance based on the provided
@@ -1016,9 +1008,9 @@ public class PublisherCallbackChannelImpl
 		this.executor.execute(() -> {
 			try {
 				if (listener.isConfirmListener()) {
-					if (this.hasReturned && !this.returnLatch.await(RETURN_CALLBACK_TIMEOUT, TimeUnit.SECONDS)) {
-						this.logger
-								.error("Return callback failed to execute in " + RETURN_CALLBACK_TIMEOUT + " seconds");
+					if (pendingConfirm.isReturned() && !pendingConfirm.waitForReturnIfNeeded()) {
+						this.logger.error("Return callback failed to execute in "
+								+ PendingConfirm.RETURN_CALLBACK_TIMEOUT + " seconds");
 					}
 					if (this.logger.isDebugEnabled()) {
 						this.logger.debug("Sending confirm " + pendingConfirm);
@@ -1067,9 +1059,11 @@ public class PublisherCallbackChannelImpl
 			String routingKey,
 			AMQP.BasicProperties properties,
 			byte[] body) {
+
 		LongString returnCorrelation = (LongString) properties.getHeaders().get(RETURNED_MESSAGE_CORRELATION_KEY);
+		PendingConfirm confirm = null;
 		if (returnCorrelation != null) {
-			PendingConfirm confirm = this.pendingReturns.remove(returnCorrelation.toString());
+			confirm = this.pendingReturns.remove(returnCorrelation.toString());
 			if (confirm != null) {
 				MessageProperties messageProperties = CONVERTER.toMessageProperties(properties,
 						new Envelope(0L, false, exchange, routingKey), StandardCharsets.UTF_8.name());
@@ -1096,8 +1090,11 @@ public class PublisherCallbackChannelImpl
 			}
 		}
 		else {
-			this.hasReturned = true;
+			if (confirm != null) {
+				confirm.setReturned(true);
+			}
 			Listener listenerToInvoke = listener;
+			PendingConfirm toCountDown = confirm;
 			this.executor.execute(() -> {
 				try {
 					listenerToInvoke.handleReturn(replyCode, replyText, exchange, routingKey, properties, body);
@@ -1106,7 +1103,9 @@ public class PublisherCallbackChannelImpl
 					this.logger.error("Exception delivering returned message ", e);
 				}
 				finally {
-					this.returnLatch.countDown();
+					if (toCountDown != null) {
+						toCountDown.countDown();
+					}
 				}
 			});
 		}

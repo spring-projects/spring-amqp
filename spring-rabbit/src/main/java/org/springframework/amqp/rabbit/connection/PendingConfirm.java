@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.lang.Nullable;
 
 /**
@@ -29,12 +32,18 @@ import org.springframework.lang.Nullable;
  */
 public class PendingConfirm {
 
+	static final long RETURN_CALLBACK_TIMEOUT = 60;
+
 	@Nullable
 	private final CorrelationData correlationData;
 
 	private final long timestamp;
 
+	private final CountDownLatch latch = new CountDownLatch(1);
+
 	private String cause;
+
+	private boolean returned;
 
 	/**
 	 * @param correlationData The correlation data.
@@ -78,6 +87,43 @@ public class PendingConfirm {
 	@Nullable
 	public String getCause() {
 		return this.cause;
+	}
+
+	/**
+	 * True if a returned message has been received.
+	 * @return true if there is a return.
+	 * @since 2.2.10
+	 */
+	public boolean isReturned() {
+		return this.returned;
+	}
+
+	/**
+	 * Indicate that a returned message has been received.
+	 * @param isReturned true if there is a return.
+	 * @since 2.2.10
+	 */
+	public void setReturned(boolean isReturned) {
+		this.returned = isReturned;
+	}
+
+	/**
+	 * Return true if a return has been passed to the listener or if no return has been
+	 * received.
+	 * @return false if an expected returned message has not been passed to the listener.
+	 * @throws InterruptedException if interrupted.
+	 * @since 2.2.10
+	 */
+	public boolean waitForReturnIfNeeded() throws InterruptedException {
+		return this.returned ? this.latch.await(RETURN_CALLBACK_TIMEOUT, TimeUnit.SECONDS) : true;
+	}
+
+	/**
+	 * Count down the returned message latch; call after the listener has been called.
+	 * @since 2.2.10
+	 */
+	public void countDown() {
+		this.latch.countDown();
 	}
 
 	@Override
