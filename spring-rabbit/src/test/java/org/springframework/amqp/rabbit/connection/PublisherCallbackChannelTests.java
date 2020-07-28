@@ -18,13 +18,20 @@ package org.springframework.amqp.rabbit.connection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,12 +40,15 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
+import org.springframework.amqp.rabbit.connection.PublisherCallbackChannel.Listener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 
+import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.LongString;
 import com.rabbitmq.client.Method;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
@@ -136,6 +146,84 @@ public class PublisherCallbackChannelTests {
 			cacheProperties = cf.getCacheProperties();
 		}
 		assertThat(cacheProperties.getProperty("idleChannelsNotTx")).isEqualTo("2");
+	}
+
+	@Test
+	void confirmAlwaysAfterReturn() throws InterruptedException {
+		Channel delegate = mock(Channel.class);
+		ExecutorService executor = Executors.newCachedThreadPool();
+		PublisherCallbackChannelImpl channel = new PublisherCallbackChannelImpl(delegate, executor);
+		TheListener listener = new TheListener();
+		channel.addListener(listener);
+		channel.addPendingConfirm(listener, 1, new PendingConfirm(new CorrelationData("1"), 0L));
+		HashMap<String, Object> headers = new HashMap<>();
+		LongString correlation = mock(LongString.class);
+		given(correlation.getBytes()).willReturn("1".getBytes());
+		given(correlation.toString()).willReturn("1");
+		headers.put(PublisherCallbackChannelImpl.RETURNED_MESSAGE_CORRELATION_KEY, correlation);
+		headers.put(PublisherCallbackChannelImpl.RETURN_LISTENER_CORRELATION_KEY, listener.getUUID());
+		BasicProperties properties = new BasicProperties.Builder().headers(headers).build();
+		channel.handleReturn(0, "", "", "", properties, new byte[0]);
+		channel.handleAck(1, false);
+		assertThat(listener.latch1.await(10, TimeUnit.SECONDS)).isTrue();
+		channel.addPendingConfirm(listener, 2, new PendingConfirm(new CorrelationData("1"), 0L));
+		channel.handleReturn(0, "", "", "", properties, new byte[0]);
+		channel.handleAck(2, false);
+		assertThat(listener.latch2.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(listener.calls).containsExactly("return", "confirm", "return", "confirm");
+	}
+
+	private static class TheListener implements Listener {
+
+		private final UUID uuid = UUID.randomUUID();
+
+		final List<String> calls = Collections.synchronizedList(new ArrayList<>());
+
+		final CountDownLatch latch1 = new CountDownLatch(2);
+
+		final CountDownLatch latch2 = new CountDownLatch(4);
+
+		@Override
+		public void handleConfirm(PendingConfirm pendingConfirm, boolean ack) {
+			this.calls.add("confirm");
+			this.latch1.countDown();
+			this.latch2.countDown();
+		}
+
+		@Override
+		public void handleReturn(int replyCode, String replyText, String exchange, String routingKey,
+				BasicProperties properties, byte[] body) throws IOException {
+
+			try {
+				Thread.sleep(500);
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+			this.calls.add("return");
+			this.latch1.countDown();
+			this.latch2.countDown();
+		}
+
+		@Override
+		public void revoke(Channel channel) {
+		}
+
+		@Override
+		public String getUUID() {
+			return this.uuid.toString();
+		}
+
+		@Override
+		public boolean isConfirmListener() {
+			return true;
+		}
+
+		@Override
+		public boolean isReturnListener() {
+			return true;
+		}
+
 	}
 
 }
