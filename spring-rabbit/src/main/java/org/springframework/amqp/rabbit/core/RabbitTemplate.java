@@ -50,6 +50,7 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
 import org.springframework.amqp.core.ReceiveAndReplyMessageCallback;
 import org.springframework.amqp.core.ReplyToAddressCallback;
+import org.springframework.amqp.core.ReturnedMessage;
 import org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.ClosingRecoveryListener;
@@ -104,6 +105,7 @@ import com.rabbitmq.client.ConfirmListener;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
+import com.rabbitmq.client.Return;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
 
@@ -217,7 +219,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	@Nullable
 	private ConfirmCallback confirmCallback;
 
-	private ReturnCallback returnCallback;
+	private ReturnsCallback returnCallback;
 
 	private Expression mandatoryExpression = new ValueExpression<Boolean>(false);
 
@@ -457,7 +459,32 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		this.confirmCallback = confirmCallback;
 	}
 
+	/**
+	 * Set a callback to receive returned messages.
+	 * @param returnCallback the callback.
+	 * @deprecated in favor of {@link #setReturnsCallback(ReturnsCallback)}.
+	 */
+	@Deprecated
 	public void setReturnCallback(ReturnCallback returnCallback) {
+		Assert.state(this.returnCallback == null || this.returnCallback.delegate() == returnCallback,
+				"Only one ReturnCallback is supported by each RabbitTemplate");
+		this.returnCallback = new ReturnsCallback() {
+
+			@Override
+			public void returnedMessage(ReturnedMessage returned) {
+				returnedMessage(returned.getMessage(), returned.getReplyCode(), returned.getReplyText(),
+						returned.getExchange(), returned.getRoutingKey());
+			}
+
+			@Override
+			public ReturnCallback delegate() {
+				return returnCallback;
+			}
+
+		};
+	}
+
+	public void setReturnsCallback(ReturnsCallback returnCallback) {
 		Assert.state(this.returnCallback == null || this.returnCallback == returnCallback,
 				"Only one ReturnCallback is supported by each RabbitTemplate");
 		this.returnCallback = returnCallback;
@@ -465,7 +492,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	/**
 	 * Set the mandatory flag when sending messages; only applies if a
-	 * {@link #setReturnCallback(ReturnCallback) returnCallback} had been provided.
+	 * {@link #setReturnsCallback(ReturnsCallback) returnCallback} had been provided.
 	 * @param mandatory the mandatory to set.
 	 */
 	public void setMandatory(boolean mandatory) {
@@ -474,7 +501,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	/**
 	 * @param mandatoryExpression a SpEL {@link Expression} to evaluate against each
-	 * request message, if a {@link #setReturnCallback(ReturnCallback) returnCallback} has
+	 * request message, if a {@link #setReturnsCallback(ReturnsCallback) returnCallback} has
 	 * been provided. The result of the evaluation must be a {@code boolean} value.
 	 * @since 1.4
 	 */
@@ -485,7 +512,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	/**
 	 * @param mandatoryExpression a SpEL {@link Expression} to evaluate against each
-	 * request message, if a {@link #setReturnCallback(ReturnCallback) returnCallback} has
+	 * request message, if a {@link #setReturnsCallback(ReturnsCallback) returnCallback} has
 	 * been provided. The result of the evaluation must be a {@code boolean} value.
 	 * @since 2.0
 	 */
@@ -2484,6 +2511,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
+	@SuppressWarnings("deprecation")
 	public void handleReturn(int replyCode,
 			String replyText,
 			String exchange,
@@ -2491,16 +2519,20 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			BasicProperties properties,
 			byte[] body) {
 
-		ReturnCallback callback = this.returnCallback;
+		handleReturn(new Return(replyCode, replyText, exchange, routingKey, properties, body));
+	}
+
+	@Override
+	public void handleReturn(Return returned) {
+		ReturnsCallback callback = this.returnCallback;
 		if (callback == null) {
-			Object messageTagHeader = properties.getHeaders().remove(RETURN_CORRELATION_KEY);
+			Object messageTagHeader = returned.getProperties().getHeaders().remove(RETURN_CORRELATION_KEY);
 			if (messageTagHeader != null) {
 				String messageTag = messageTagHeader.toString();
 				final PendingReply pendingReply = this.replyHolder.get(messageTag);
 				if (pendingReply != null) {
-					callback = (message, replyCode1, replyText1, exchange1, routingKey1) ->
-							pendingReply.returned(new AmqpMessageReturnedException("Message returned",
-									message, replyCode1, replyText1, exchange1, routingKey1));
+					callback = (returnedMsg) ->
+							pendingReply.returned(new AmqpMessageReturnedException("Message returned", returnedMsg));
 				}
 				else if (logger.isWarnEnabled()) {
 					logger.warn("Returned request message but caller has timed out");
@@ -2511,12 +2543,12 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			}
 		}
 		if (callback != null) {
-			properties.getHeaders().remove(PublisherCallbackChannel.RETURN_LISTENER_CORRELATION_KEY);
+			returned.getProperties().getHeaders().remove(PublisherCallbackChannel.RETURN_LISTENER_CORRELATION_KEY);
 			MessageProperties messageProperties = this.messagePropertiesConverter.toMessageProperties(
-					properties, null, this.encoding);
-			Message returnedMessage = new Message(body, messageProperties);
-			callback.returnedMessage(returnedMessage,
-					replyCode, replyText, exchange, routingKey);
+					returned.getProperties(), null, this.encoding);
+			Message returnedMessage = new Message(returned.getBody(), messageProperties);
+			callback.returnedMessage(new ReturnedMessage(returnedMessage, returned.getReplyCode(),
+					returned.getReplyText(), returned.getExchange(), returned.getRoutingKey()));
 		}
 	}
 
@@ -2737,7 +2769,10 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	/**
 	 * A callback for returned messages.
 	 *
+	 * @deprecated in favor of {@link #returnedMessage(ReturnedMessage)} which is
+	 * easier to use with lambdas.
 	 */
+	@Deprecated
 	@FunctionalInterface
 	public interface ReturnCallback {
 
@@ -2751,6 +2786,61 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		 */
 		void returnedMessage(Message message, int replyCode, String replyText, String exchange, String routingKey);
 
+		/**
+		 * Returned message callback.
+		 * @param returned the returned message and metadata.
+		 */
+		@SuppressWarnings("deprecation")
+		default void returnedMessage(ReturnedMessage returned) {
+			returnedMessage(returned.getMessage(), returned.getReplyCode(), returned.getReplyText(),
+					returned.getExchange(), returned.getRoutingKey());
+		}
+
 	}
 
+	/**
+	 * A callback for returned messages.
+	 *
+	 * @since 2.3
+	 */
+	@FunctionalInterface
+	public interface ReturnsCallback extends ReturnCallback {
+
+		/**
+		 * Returned message callback.
+		 * @param message the returned message.
+		 * @param replyCode the reply code.
+		 * @param replyText the reply text.
+		 * @param exchange the exchange.
+		 * @param routingKey the routing key.
+		 * @deprecated in favor of {@link #returnedMessage(ReturnedMessage)} which is
+		 * easier to use with lambdas.
+		 */
+		@Override
+		@Deprecated
+		default void returnedMessage(Message message, int replyCode, String replyText, String exchange,
+				String routingKey) {
+
+			throw new UnsupportedOperationException(
+					"This should never be called, please open a GitHub issue with a stack trace");
+		};
+
+		/**
+		 * Returned message callback.
+		 * @param returned the returned message and metadata.
+		 */
+		@Override
+		void returnedMessage(ReturnedMessage returned);
+
+		/**
+		 * Internal use only; transisitional during deprecation.
+		 * @return the legacy delegate.
+		 * @deprecated - will be removed with {@link ReturnCallback}.
+		 */
+		@Deprecated
+		default ReturnCallback delegate() {
+			return null;
+		}
+
+	}
 }

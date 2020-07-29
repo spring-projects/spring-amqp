@@ -283,8 +283,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	public void testPublisherReturns() throws Exception {
 		final CountDownLatch latch = new CountDownLatch(1);
 		final List<Message> returns = new ArrayList<Message>();
-		templateWithReturnsEnabled.setReturnCallback((message, replyCode, replyText, exchange, routingKey) -> {
-			returns.add(message);
+		templateWithReturnsEnabled.setReturnsCallback((returned) -> {
+			returns.add(returned.getMessage());
 			latch.countDown();
 		});
 		templateWithReturnsEnabled.setMandatory(true);
@@ -299,8 +299,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	public void testPublisherReturnsWithMandatoryExpression() throws Exception {
 		final CountDownLatch latch = new CountDownLatch(1);
 		final List<Message> returns = new ArrayList<Message>();
-		templateWithReturnsEnabled.setReturnCallback((message, replyCode, replyText, exchange, routingKey) -> {
-			returns.add(message);
+		templateWithReturnsEnabled.setReturnsCallback((returned) -> {
+			returns.add(returned.getMessage());
 			latch.countDown();
 		});
 		Expression mandatoryExpression = new SpelExpressionParser().parseExpression("'message'.bytes == body");
@@ -848,8 +848,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		AtomicBoolean resent = new AtomicBoolean();
 		AtomicReference<String> callbackThreadName = new AtomicReference<>();
 		CountDownLatch callbackLatch = new CountDownLatch(1);
-		this.templateWithConfirmsAndReturnsEnabled.setReturnCallback((m, r, rt, e, rk) -> {
-			this.templateWithConfirmsAndReturnsEnabled.send(ROUTE, m);
+		this.templateWithConfirmsAndReturnsEnabled.setReturnsCallback((returned) -> {
+			this.templateWithConfirmsAndReturnsEnabled.send(ROUTE, returned.getMessage());
 			callbackThreadName.set(Thread.currentThread().getName());
 			resent.set(true);
 			callbackLatch.countDown();

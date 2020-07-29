@@ -72,6 +72,7 @@ import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
 import com.rabbitmq.client.LongString;
 import com.rabbitmq.client.Method;
+import com.rabbitmq.client.Return;
 import com.rabbitmq.client.ReturnCallback;
 import com.rabbitmq.client.ReturnListener;
 import com.rabbitmq.client.ShutdownListener;
@@ -90,7 +91,7 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
  *
  */
 public class PublisherCallbackChannelImpl
-		implements PublisherCallbackChannel, ConfirmListener, ReturnListener, ShutdownListener {
+		implements PublisherCallbackChannel, ConfirmListener, ReturnCallback, ShutdownListener {
 
 	private static final MessagePropertiesConverter CONVERTER  = new DefaultMessagePropertiesConverter();
 
@@ -1053,26 +1054,23 @@ public class PublisherCallbackChannelImpl
 //  ReturnListener
 
 	@Override
-	public void handleReturn(int replyCode,
-			String replyText,
-			String exchange,
-			String routingKey,
-			AMQP.BasicProperties properties,
-			byte[] body) {
+	public void handle(Return returned) {
 
-		LongString returnCorrelation = (LongString) properties.getHeaders().get(RETURNED_MESSAGE_CORRELATION_KEY);
+		LongString returnCorrelation = (LongString) returned.getProperties().getHeaders()
+				.get(RETURNED_MESSAGE_CORRELATION_KEY);
 		PendingConfirm confirm = null;
 		if (returnCorrelation != null) {
 			confirm = this.pendingReturns.remove(returnCorrelation.toString());
 			if (confirm != null) {
-				MessageProperties messageProperties = CONVERTER.toMessageProperties(properties,
-						new Envelope(0L, false, exchange, routingKey), StandardCharsets.UTF_8.name());
+				MessageProperties messageProperties = CONVERTER.toMessageProperties(returned.getProperties(),
+						new Envelope(0L, false, returned.getExchange(), returned.getRoutingKey()),
+						StandardCharsets.UTF_8.name());
 				if (confirm.getCorrelationData() != null) {
-					confirm.getCorrelationData().setReturnedMessage(new Message(body, messageProperties)); // NOSONAR never null
+					confirm.getCorrelationData().setReturnedMessage(new Message(returned.getBody(), messageProperties)); // NOSONAR never null
 				}
 			}
 		}
-		Listener listener = findListener(properties);
+		Listener listener = findListener(returned.getProperties());
 		if (listener == null || !listener.isReturnListener()) {
 			if (this.logger.isWarnEnabled()) {
 				this.logger.warn("No Listener for returned message");
@@ -1086,7 +1084,7 @@ public class PublisherCallbackChannelImpl
 			PendingConfirm toCountDown = confirm;
 			this.executor.execute(() -> {
 				try {
-					listenerToInvoke.handleReturn(replyCode, replyText, exchange, routingKey, properties, body);
+					listenerToInvoke.handleReturn(returned);
 				}
 				catch (Exception e) {
 					this.logger.error("Exception delivering returned message ", e);
