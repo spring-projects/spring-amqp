@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,12 +35,13 @@ import org.springframework.amqp.core.Correlation;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.core.ReturnedMessage;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.connection.PublisherCallbackChannel;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ConfirmCallback;
-import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnCallback;
+import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnsCallback;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
@@ -89,7 +90,7 @@ import com.rabbitmq.client.Channel;
  *
  * @since 1.6
  */
-public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessageListener, ReturnCallback,
+public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessageListener, ReturnsCallback,
 		ConfirmCallback, BeanNameAware, SmartLifecycle {
 
 	public static final int DEFAULT_RECEIVE_TIMEOUT = 30000;
@@ -268,7 +269,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	 * @param mandatory true to enable returns.
 	 */
 	public void setMandatory(boolean mandatory) {
-		this.template.setReturnCallback(this);
+		this.template.setReturnsCallback(this);
 		this.template.setMandatory(mandatory);
 	}
 
@@ -278,7 +279,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	 * @since 2.0
 	 */
 	public void setMandatoryExpression(Expression mandatoryExpression) {
-		this.template.setReturnCallback(this);
+		this.template.setReturnsCallback(this);
 		this.template.setMandatoryExpression(mandatoryExpression);
 	}
 
@@ -288,7 +289,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	 * @since 2.0
 	 */
 	public void setMandatoryExpressionString(String mandatoryExpression) {
-		this.template.setReturnCallback(this);
+		this.template.setReturnsCallback(this);
 		this.template.setMandatoryExpressionString(mandatoryExpression);
 	}
 
@@ -599,18 +600,18 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	}
 
 	@Override
-	public void returnedMessage(Message message, int replyCode, String replyText, String exchange, String routingKey) {
-		MessageProperties messageProperties = message.getMessageProperties();
+	public void returnedMessage(ReturnedMessage returned) {
+		MessageProperties messageProperties = returned.getMessage().getMessageProperties();
 		String correlationId = messageProperties.getCorrelationId();
 		if (StringUtils.hasText(correlationId)) {
 			RabbitFuture<?> future = this.pending.remove(correlationId);
 			if (future != null) {
-				future.setException(new AmqpMessageReturnedException("Message returned", message, replyCode, replyText,
-						exchange, routingKey));
+				future.setException(new AmqpMessageReturnedException("Message returned", returned));
 			}
 			else {
 				if (this.logger.isWarnEnabled()) {
-					this.logger.warn("No pending reply - perhaps timed out? Message returned: " + message);
+					this.logger
+							.warn("No pending reply - perhaps timed out? Message returned: " + returned.getMessage());
 				}
 			}
 		}

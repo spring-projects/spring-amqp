@@ -1106,18 +1106,25 @@ The `RabbitTemplate` implementation of `AmqpTemplate` supports publisher confirm
 For returned messages, the template's `mandatory` property must be set to `true` or the `mandatory-expression`
 must evaluate to `true` for a particular message.
 This feature requires a `CachingConnectionFactory` that has its `publisherReturns` property set to `true` (see <<cf-pub-conf-ret>>).
-Returns are sent to the client by it registering a `RabbitTemplate.ReturnCallback` by calling `setReturnCallback(ReturnCallback callback)`.
+Returns are sent to the client by it registering a `RabbitTemplate.ReturnsCallback` by calling `setReturnsCallback(ReturnsCallback callback)`.
 The callback must implement the following method:
 
 ====
 [source,java]
 ----
-void returnedMessage(Message message, int replyCode, String replyText,
-          String exchange, String routingKey);
+void returnedMessage(ReturnedMessage returned);
 ----
 ====
 
-Only one `ReturnCallback` is supported by each `RabbitTemplate`.
+The `ReturnedMessage` has the following properties:
+
+- `message` - the returned message itself
+- `replyCode` - a code indicating the reason for the return
+- `replyText` - a textual reason for the return - e.g. `NO_ROUTE`
+- `exchange` - the exchange to which the message was sent
+- `routingKey` - the routing key that was used
+
+Only one `ReturnsCallback` is supported by each `RabbitTemplate`.
 See also <<reply-timeout>>.
 
 For publisher confirms (also known as publisher acknowledgements), the template requires a `CachingConnectionFactory` that has its `publisherConfirm` property set to `ConfirmType.CORRELATED`.

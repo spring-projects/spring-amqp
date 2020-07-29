@@ -51,6 +51,7 @@ import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.LongString;
 import com.rabbitmq.client.Method;
+import com.rabbitmq.client.Return;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
 
@@ -162,11 +163,11 @@ public class PublisherCallbackChannelTests {
 		headers.put(PublisherCallbackChannelImpl.RETURNED_MESSAGE_CORRELATION_KEY, correlation);
 		headers.put(PublisherCallbackChannelImpl.RETURN_LISTENER_CORRELATION_KEY, listener.getUUID());
 		BasicProperties properties = new BasicProperties.Builder().headers(headers).build();
-		channel.handleReturn(0, "", "", "", properties, new byte[0]);
+		channel.handle(new Return(0, "", "", "", properties, new byte[0]));
 		channel.handleAck(1, false);
 		assertThat(listener.latch1.await(10, TimeUnit.SECONDS)).isTrue();
 		channel.addPendingConfirm(listener, 2, new PendingConfirm(new CorrelationData("1"), 0L));
-		channel.handleReturn(0, "", "", "", properties, new byte[0]);
+		channel.handle(new Return(0, "", "", "", properties, new byte[0]));
 		channel.handleAck(2, false);
 		assertThat(listener.latch2.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(listener.calls).containsExactly("return", "confirm", "return", "confirm");
@@ -190,9 +191,7 @@ public class PublisherCallbackChannelTests {
 		}
 
 		@Override
-		public void handleReturn(int replyCode, String replyText, String exchange, String routingKey,
-				BasicProperties properties, byte[] body) throws IOException {
-
+		public void handleReturn(Return returned) {
 			try {
 				Thread.sleep(500);
 			}
