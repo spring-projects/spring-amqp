@@ -1072,18 +1072,7 @@ public class PublisherCallbackChannelImpl
 				}
 			}
 		}
-		Object returnListenerHeader = properties.getHeaders().get(RETURN_LISTENER_CORRELATION_KEY);
-		String uuidObject = null;
-		if (returnListenerHeader != null) {
-			uuidObject = returnListenerHeader.toString();
-		}
-		Listener listener = null;
-		if (uuidObject != null) {
-			listener = this.listeners.get(uuidObject);
-		}
-		else {
-			this.logger.error("No '" + RETURN_LISTENER_CORRELATION_KEY + "' header in returned message");
-		}
+		Listener listener = findListener(properties);
 		if (listener == null || !listener.isReturnListener()) {
 			if (this.logger.isWarnEnabled()) {
 				this.logger.warn("No Listener for returned message");
@@ -1109,6 +1098,22 @@ public class PublisherCallbackChannelImpl
 				}
 			});
 		}
+	}
+
+	private Listener findListener(AMQP.BasicProperties properties) {
+		Listener listener = null;
+		Object returnListenerHeader = properties.getHeaders().get(RETURN_LISTENER_CORRELATION_KEY);
+		String uuidObject = null;
+		if (returnListenerHeader != null) {
+			uuidObject = returnListenerHeader.toString();
+		}
+		if (uuidObject != null) {
+			listener = this.listeners.get(uuidObject);
+		}
+		else {
+			this.logger.error("No '" + RETURN_LISTENER_CORRELATION_KEY + "' header in returned message");
+		}
+		return listener;
 	}
 
 // ShutdownListener
