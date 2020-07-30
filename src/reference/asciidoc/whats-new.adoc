@@ -25,3 +25,8 @@ See <<jackson-abstract>> for more information.
 
 A new annotation `@SpringRabbitTest` is provided to automatically configure some infrastructure beans for when you are not using `SpringBootTest`.
 See <<spring-rabbit-test>> for more information.
+
+==== RabbitTemplate Changes
+
+The template's `ReturnListener` has been refactored as `ReturnsListener` for simpler use in lambda expressions.
+See <<>> for more information.
