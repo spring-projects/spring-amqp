@@ -197,9 +197,9 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	@Override
 	protected void doSend(String destination, Message<?> message) {
 		try {
-			if (message.getHeaders().get(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION) instanceof CorrelationData) {
-				this.rabbitTemplate.send(destination, createMessage(message),
-						message.getHeaders().get(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION, CorrelationData.class));
+			Object correlation = message.getHeaders().get(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION);
+			if (correlation instanceof CorrelationData) {
+				this.rabbitTemplate.send(destination, createMessage(message), (CorrelationData) correlation);
 			}
 			else {
 				this.rabbitTemplate.send(destination, createMessage(message));
@@ -212,9 +212,9 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 
 	protected void doSend(String exchange, String routingKey, Message<?> message) {
 		try {
-			if (message.getHeaders().get(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION) instanceof CorrelationData) {
-				this.rabbitTemplate.send(exchange, routingKey, createMessage(message),
-						message.getHeaders().get(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION, CorrelationData.class));
+			Object correlation = message.getHeaders().get(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION);
+			if (correlation instanceof CorrelationData) {
+				this.rabbitTemplate.send(exchange, routingKey, createMessage(message), (CorrelationData) correlation);
 			}
 			else {
 				this.rabbitTemplate.send(exchange, routingKey, createMessage(message));
