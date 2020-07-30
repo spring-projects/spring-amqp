@@ -89,6 +89,12 @@ public abstract class AmqpHeaders {
 
 	public static final String SPRING_REPLY_TO_STACK = PREFIX + "springReplyToStack";
 
+	/**
+	 * A CorrelationData instance for publisher confirms (not mapped).
+	 * @since 2.3
+	 */
+	public static final String PUBLISH_CONFIRM_CORRELATION = PREFIX + "publishConfirmCorrelation";
+
 	public static final String PUBLISH_CONFIRM = PREFIX + "publishConfirm";
 
 	public static final String PUBLISH_CONFIRM_NACK_CAUSE = PREFIX + "publishConfirmNackCause";

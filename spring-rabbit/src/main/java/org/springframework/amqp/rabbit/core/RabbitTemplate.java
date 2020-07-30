@@ -1033,6 +1033,11 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
+	public void send(String routingKey, Message message, CorrelationData correlationData) throws AmqpException {
+		send(this.exchange, routingKey, message, correlationData);
+	}
+
+	@Override
 	public void send(final String exchange, final String routingKey, final Message message) throws AmqpException {
 		send(exchange, routingKey, message, null);
 	}
@@ -1045,8 +1050,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			doSend(channel, exchange, routingKey, message,
 					(RabbitTemplate.this.returnsCallback != null
 							|| (correlationData != null && StringUtils.hasText(correlationData.getId())))
-							&& RabbitTemplate.this.mandatoryExpression.getValue(
-							RabbitTemplate.this.evaluationContext, message, Boolean.class),
+							&& isMandatoryFor(message),
 					correlationData);
 			return null;
 		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));

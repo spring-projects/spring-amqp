@@ -109,6 +109,21 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	ConnectionFactory getConnectionFactory();
 
 	/**
+	 * Send a message to the default exchange with a specific routing key.
+	 *
+	 * @param routingKey the routing key
+	 * @param message a message to send
+	 * @param correlationData data to correlate publisher confirms.
+	 * @throws AmqpException if there is a problem
+	 * @since 2.3
+	 */
+	default void send(String routingKey, Message message, CorrelationData correlationData)
+			throws AmqpException {
+
+		throw new UnsupportedOperationException("This implementation does not support this method");
+	}
+
+	/**
 	 * Send a message to a specific exchange with a specific routing key.
 	 *
 	 * @param exchange the name of the exchange

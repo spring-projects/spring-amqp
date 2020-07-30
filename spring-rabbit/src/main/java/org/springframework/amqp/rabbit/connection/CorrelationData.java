@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,14 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.concurrent.SettableListenableFuture;
 
 /**
- * Base class for correlating publisher confirms to sent messages.
- * Use the {@link org.springframework.amqp.rabbit.core.RabbitTemplate}
- * methods that include one of
- * these as a parameter; when the publisher confirm is received,
- * the CorrelationData is returned with the ack/nack.
+ * Base class for correlating publisher confirms to sent messages. Use the
+ * {@link org.springframework.amqp.rabbit.core.RabbitTemplate} methods that include one of
+ * these as a parameter; when the publisher confirm is received, the CorrelationData is
+ * returned with the ack/nack. When returns are also enabled, the
+ * {@link #setReturnedMessage(Message) returnedMessage} property will be populated when a
+ * message can't be delivered - the return always arrives before the confirmation. In this
+ * case the {@code #id} property must be set to a unique value.
+ *
  * @author Gary Russell
  * @since 1.0.1
  *
