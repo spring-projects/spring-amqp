@@ -50,6 +50,7 @@ public class MessagingTemplateConfirmsTests {
 		rmt.send("messaging.confirms",
 				new GenericMessage<>("foo", Collections.singletonMap(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION, data)));
 		assertThat(data.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
+		ccf.destroy();
 	}
 
 	@Test
@@ -66,6 +67,7 @@ public class MessagingTemplateConfirmsTests {
 				new GenericMessage<>("foo", Collections.singletonMap(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION, data)));
 		assertThat(data.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
 		assertThat(data.getReturnedMessage()).isNotNull();
+		ccf.destroy();
 	}
 
 }
