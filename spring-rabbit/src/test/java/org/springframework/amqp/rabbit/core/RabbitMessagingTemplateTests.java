@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.io.Writer;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,7 +41,9 @@ import org.mockito.MockitoAnnotations;
 
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.test.MessageTestUtils;
+import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.MessagingMessageConverter;
@@ -48,6 +51,7 @@ import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.converter.GenericMessageConverter;
+import org.springframework.messaging.support.GenericMessage;
 import org.springframework.messaging.support.MessageBuilder;
 
 
@@ -83,7 +87,8 @@ public class RabbitMessagingTemplateTests {
 		RabbitTemplate template = new RabbitTemplate(mock(ConnectionFactory.class));
 		RabbitMessagingTemplate rmt = new RabbitMessagingTemplate(template);
 		rmt.afterPropertiesSet();
-		assertThat(TestUtils.getPropertyValue(rmt, "amqpMessageConverter.payloadConverter")).isSameAs(template.getMessageConverter());
+		assertThat(TestUtils.getPropertyValue(rmt, "amqpMessageConverter.payloadConverter"))
+				.isSameAs(template.getMessageConverter());
 
 		rmt = new RabbitMessagingTemplate(template);
 		MessagingMessageConverter amqpMessageConverter = new MessagingMessageConverter();
@@ -92,6 +97,20 @@ public class RabbitMessagingTemplateTests {
 		rmt.setAmqpMessageConverter(amqpMessageConverter);
 		rmt.afterPropertiesSet();
 		assertThat(TestUtils.getPropertyValue(rmt, "amqpMessageConverter.payloadConverter")).isSameAs(payloadConverter);
+	}
+
+	@Test
+	void correlation() {
+		this.messagingTemplate.setDefaultDestination("defRk");
+		this.messagingTemplate.send(new GenericMessage<>("foo",
+				Collections.singletonMap(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION, new CorrelationData())));
+		verify(this.rabbitTemplate).send(eq("defRk"), any(), any(CorrelationData.class));
+		this.messagingTemplate.send("rk", new GenericMessage<>("foo",
+				Collections.singletonMap(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION, new CorrelationData())));
+		verify(this.rabbitTemplate).send(eq("rk"), any(), any(CorrelationData.class));
+		this.messagingTemplate.send("ex", "rk", new GenericMessage<>("foo",
+				Collections.singletonMap(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION, new CorrelationData())));
+		verify(this.rabbitTemplate).send(eq("ex"), eq("rk"), any(), any(CorrelationData.class));
 	}
 
 	@Test
