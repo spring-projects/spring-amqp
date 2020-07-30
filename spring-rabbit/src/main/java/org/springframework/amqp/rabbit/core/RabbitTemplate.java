@@ -219,7 +219,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	@Nullable
 	private ConfirmCallback confirmCallback;
 
-	private ReturnsCallback returnCallback;
+	private ReturnsCallback returnsCallback;
 
 	private Expression mandatoryExpression = new ValueExpression<Boolean>(false);
 
@@ -466,13 +466,13 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 */
 	@Deprecated
 	public void setReturnCallback(ReturnCallback returnCallback) {
-		Assert.state(this.returnCallback == null || this.returnCallback.delegate() == returnCallback,
+		Assert.state(this.returnsCallback == null || this.returnsCallback.delegate() == returnCallback,
 				"Only one ReturnCallback is supported by each RabbitTemplate");
-		this.returnCallback = new ReturnsCallback() {
+		this.returnsCallback = new ReturnsCallback() {
 
 			@Override
 			public void returnedMessage(ReturnedMessage returned) {
-				returnedMessage(returned.getMessage(), returned.getReplyCode(), returned.getReplyText(),
+				returnCallback.returnedMessage(returned.getMessage(), returned.getReplyCode(), returned.getReplyText(),
 						returned.getExchange(), returned.getRoutingKey());
 			}
 
@@ -485,9 +485,9 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	public void setReturnsCallback(ReturnsCallback returnCallback) {
-		Assert.state(this.returnCallback == null || this.returnCallback == returnCallback,
+		Assert.state(this.returnsCallback == null || this.returnsCallback == returnCallback,
 				"Only one ReturnCallback is supported by each RabbitTemplate");
-		this.returnCallback = returnCallback;
+		this.returnsCallback = returnCallback;
 	}
 
 	/**
@@ -1043,7 +1043,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			throws AmqpException {
 		execute(channel -> {
 			doSend(channel, exchange, routingKey, message,
-					(RabbitTemplate.this.returnCallback != null
+					(RabbitTemplate.this.returnsCallback != null
 							|| (correlationData != null && StringUtils.hasText(correlationData.getId())))
 							&& RabbitTemplate.this.mandatoryExpression.getValue(
 							RabbitTemplate.this.evaluationContext, message, Boolean.class),
@@ -1516,7 +1516,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				replyTo.getExchangeName(),
 				replyTo.getRoutingKey(),
 				replyMessage,
-				RabbitTemplate.this.returnCallback != null && isMandatoryFor(replyMessage),
+				RabbitTemplate.this.returnsCallback != null && isMandatoryFor(replyMessage),
 				null);
 	}
 
@@ -2037,7 +2037,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 		Message reply;
 		boolean mandatory = isMandatoryFor(message);
-		if (mandatory && this.returnCallback == null) {
+		if (mandatory && this.returnsCallback == null) {
 			message.getMessageProperties().getHeaders().put(RETURN_CORRELATION_KEY, messageTag);
 		}
 		doSend(channel, exchange, routingKey, message, mandatory, correlationData);
@@ -2524,7 +2524,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	@Override
 	public void handleReturn(Return returned) {
-		ReturnsCallback callback = this.returnCallback;
+		ReturnsCallback callback = this.returnsCallback;
 		if (callback == null) {
 			Object messageTagHeader = returned.getProperties().getHeaders().remove(RETURN_CORRELATION_KEY);
 			if (messageTagHeader != null) {
