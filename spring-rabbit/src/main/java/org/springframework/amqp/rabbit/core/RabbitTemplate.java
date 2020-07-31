@@ -2842,6 +2842,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		 * @deprecated - will be removed with {@link ReturnCallback}.
 		 */
 		@Deprecated
+		@Nullable
 		default ReturnCallback delegate() {
 			return null;
 		}

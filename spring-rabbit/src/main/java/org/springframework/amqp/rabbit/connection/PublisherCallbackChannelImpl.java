@@ -43,6 +43,7 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CorrelationData.Confirm;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -1072,8 +1073,8 @@ public class PublisherCallbackChannelImpl
 		}
 		Listener listener = findListener(returned.getProperties());
 		if (listener == null || !listener.isReturnListener()) {
-			if (this.logger.isWarnEnabled()) {
-				this.logger.warn("No Listener for returned message");
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("No Listener for returned message");
 			}
 		}
 		else {
@@ -1098,6 +1099,7 @@ public class PublisherCallbackChannelImpl
 		}
 	}
 
+	@Nullable
 	private Listener findListener(AMQP.BasicProperties properties) {
 		Listener listener = null;
 		Object returnListenerHeader = properties.getHeaders().get(RETURN_LISTENER_CORRELATION_KEY);
