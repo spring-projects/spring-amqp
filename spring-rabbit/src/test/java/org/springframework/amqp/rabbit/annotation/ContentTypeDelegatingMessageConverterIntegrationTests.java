@@ -45,6 +45,7 @@ import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.util.MimeType;
 
 /**
  * @author Gary Russell
@@ -166,7 +167,7 @@ public class ContentTypeDelegatingMessageConverterIntegrationTests {
 		@SendTo("#{@queue2.name}")
 		public org.springframework.messaging.Message<String> listen1(String in) {
 			MessageBuilder<String> builder = MessageBuilder.withPayload(in)
-					.setHeader(MessageHeaders.CONTENT_TYPE, "baz/qux");
+					.setHeader(MessageHeaders.CONTENT_TYPE, MimeType.valueOf("baz/qux"));
 			if ("bar".equals(in)) {
 				builder.setHeader(AmqpHeaders.CONTENT_TYPE_CONVERTER_WINS, true);
 			}
