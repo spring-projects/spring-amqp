@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyManagementException;
@@ -756,7 +757,9 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 			Resource resource = this.keyStoreResource != null ? this.keyStoreResource
 					: this.resolver.getResource(keyStoreName);
 			KeyStore ks = KeyStore.getInstance(storeType);
-			ks.load(resource.getInputStream(), keyPassphrase);
+			try (InputStream inputStream = resource.getInputStream()) {
+				ks.load(inputStream, keyPassphrase);
+			}
 			KeyManagerFactory kmf = KeyManagerFactory.getInstance(this.keyStoreAlgorithm);
 			kmf.init(ks, keyPassphrase);
 			keyManagers = kmf.getKeyManagers();
@@ -779,7 +782,9 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 			Resource resource = this.trustStoreResource != null ? this.trustStoreResource
 					: this.resolver.getResource(trustStoreName);
 			KeyStore tks = KeyStore.getInstance(storeType);
-			tks.load(resource.getInputStream(), trustPassphrase);
+			try (InputStream inputStream = resource.getInputStream()) {
+				tks.load(inputStream, trustPassphrase);
+			}
 			TrustManagerFactory tmf = TrustManagerFactory.getInstance(this.trustStoreAlgorithm);
 			tmf.init(tks);
 			trustManagers = tmf.getTrustManagers();
