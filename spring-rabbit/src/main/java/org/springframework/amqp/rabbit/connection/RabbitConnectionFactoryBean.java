@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -72,7 +73,7 @@ import com.rabbitmq.client.impl.nio.NioParams;
  *
  * @author Gary Russell
  * @author Heath Abelson
- * @author Arnaud Cogoluègnes
+ * @author Arnaud Cogoluegnes
  * @author Hareendran
  * @author Artem Bilan
  * @author Zachary DeLuca
@@ -731,7 +732,13 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 				Resource keyStoreResource = this.keyStoreResource != null ? this.keyStoreResource
 						: resolver.getResource(keyStoreName);
 				KeyStore ks = KeyStore.getInstance(keyStoreType);
-				ks.load(keyStoreResource.getInputStream(), keyPassphrase);
+				InputStream inputStream = keyStoreResource.getInputStream();
+				try {
+					ks.load(inputStream, keyPassphrase);
+				}
+				finally {
+					inputStream.close();
+				}
 				KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
 				kmf.init(ks, keyPassphrase);
 				keyManagers = kmf.getKeyManagers();
@@ -740,7 +747,13 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 				Resource trustStoreResource = this.trustStoreResource != null ? this.trustStoreResource
 						: resolver.getResource(trustStoreName);
 				KeyStore tks = KeyStore.getInstance(trustStoreType);
-				tks.load(trustStoreResource.getInputStream(), trustPassphrase);
+				InputStream inputStream = trustStoreResource.getInputStream();
+				try {
+					tks.load(inputStream, trustPassphrase);
+				}
+				finally {
+					inputStream.close();
+				}
 				TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
 				tmf.init(tks);
 				trustManagers = tmf.getTrustManagers();
