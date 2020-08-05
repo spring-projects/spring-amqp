@@ -108,9 +108,9 @@ public class MessagingMessageConverter implements MessageConverter, Initializing
 				input.getPayload(), messageProperties);
 		// Default previous behavior of mapper wins for backwards compatibility.
 		if (!Boolean.TRUE.equals(input.getHeaders().get(AmqpHeaders.CONTENT_TYPE_CONVERTER_WINS))) {
-			String contentType = input.getHeaders().get(MessageHeaders.CONTENT_TYPE, String.class);
+			Object contentType = input.getHeaders().get(MessageHeaders.CONTENT_TYPE);
 			if (contentType != null) {
-				messageProperties.setContentType(contentType);
+				messageProperties.setContentType(contentType.toString());
 			}
 		}
 		return amqpMessage;
