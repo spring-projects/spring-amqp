@@ -72,7 +72,7 @@ public class RabbitMessagingTemplateTests {
 
 	@BeforeEach
 	public void setup() {
-		MockitoAnnotations.initMocks(this);
+		MockitoAnnotations.openMocks(this);
 		messagingTemplate = new RabbitMessagingTemplate(rabbitTemplate);
 	}
 

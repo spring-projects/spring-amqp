@@ -33,7 +33,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -336,7 +336,7 @@ public class RabbitAdminTests {
 		verify(connection, times(1)).createChannel(false);
 		verify(channel1, times(4)).queueDeclare();
 		verify(channel1, times(1)).close();
-		verifyZeroInteractions(channel2);
+		verifyNoInteractions(channel2);
 	}
 
 	@Test
