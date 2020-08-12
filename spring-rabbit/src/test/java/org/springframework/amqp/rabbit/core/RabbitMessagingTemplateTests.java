@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -69,11 +70,17 @@ public class RabbitMessagingTemplateTests {
 
 	private RabbitMessagingTemplate messagingTemplate;
 
+	private AutoCloseable openMocks;
 
 	@BeforeEach
 	public void setup() {
-		MockitoAnnotations.openMocks(this);
+		this.openMocks = MockitoAnnotations.openMocks(this);
 		messagingTemplate = new RabbitMessagingTemplate(rabbitTemplate);
+	}
+
+	@AfterEach
+	public void tearDown() throws Exception {
+		this.openMocks.close();
 	}
 
 	@Test
