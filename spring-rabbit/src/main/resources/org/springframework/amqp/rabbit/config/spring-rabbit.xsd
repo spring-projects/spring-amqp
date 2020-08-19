@@ -1417,7 +1417,7 @@
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 	List of addresses; e.g. host1,host2:4567,host3 - overrides host/port if supplied.
-	Connection will be attempted in order unless 'shuffle-addresses' is 'true'.
+	Connection will be attempted in order unless 'address-shuffle-mode' is set to other than 'NONE'.
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
@@ -1425,8 +1425,22 @@
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 	Set to true when 'addresses' has more than one address to shuffle the list into a random order.
+	DEPRECATED: use 'address-shuffle-mode' instead.
 					]]></xsd:documentation>
 				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="address-shuffle-mode" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	When multiple addresses are provided, determines whether or not the addresses are shuffled before
+	or after creating a connection. NONE means no shuffling is performed. RANDOM means that the
+	addresses are randomly shuffled before each connection is created. INORDER means that the first
+	address is moved to the end after each connection is created.
+					]]></xsd:documentation>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:union memberTypes="shuffleModes xsd:string"/>
+				</xsd:simpleType>
 			</xsd:attribute>
 			<xsd:attribute name="address-resolver" type="xsd:string" use="optional">
 				<xsd:annotation>
@@ -1639,6 +1653,14 @@
 		<xsd:restriction base="xsd:token">
 			<xsd:enumeration value="CHANNEL"/>
 			<xsd:enumeration value="CONNECTION"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="shuffleModes">
+		<xsd:restriction base="xsd:token">
+			<xsd:enumeration value="NONE"/>
+			<xsd:enumeration value="RANDOM"/>
+			<xsd:enumeration value="INORDER"/>
 		</xsd:restriction>
 	</xsd:simpleType>
 

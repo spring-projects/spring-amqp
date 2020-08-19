@@ -70,6 +70,7 @@ import org.mockito.InOrder;
 
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpTimeoutException;
+import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.AddressShuffleMode;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -1817,7 +1818,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 	@SuppressWarnings("unchecked")
 	@Test
-	public void testShuffle() throws IOException, TimeoutException {
+	public void testShuffleRandom() throws IOException, TimeoutException {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel = mock(Channel.class);
@@ -1831,7 +1832,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setCacheMode(CacheMode.CONNECTION);
 		ccf.setAddresses("host1:5672,host2:5672,host3:5672");
-		ccf.setShuffleAddresses(true);
+		ccf.setAddressShuffleMode(AddressShuffleMode.RANDOM);
 		IntStream.range(0, 100).forEach(i -> ccf.createConnection());
 		ccf.destroy();
 		ArgumentCaptor<List<Address>> captor = ArgumentCaptor.forClass(List.class);
@@ -1843,6 +1844,34 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 			.sorted()
 			.collect(Collectors.toList());
 		assertThat(firstAddress).containsExactly("host1", "host2", "host3");
+	}
+
+	@SuppressWarnings("unchecked")
+	@Test
+	public void testShuffleInOrder() throws IOException, TimeoutException {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		Channel mockChannel = mock(Channel.class);
+
+		given(mockConnectionFactory.newConnection((ExecutorService) isNull(), any(List.class), anyString()))
+			.willReturn(mockConnection);
+		given(mockConnection.createChannel()).willReturn(mockChannel);
+		given(mockChannel.isOpen()).willReturn(true);
+		given(mockConnection.isOpen()).willReturn(true);
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setCacheMode(CacheMode.CONNECTION);
+		ccf.setAddresses("host1:5672,host2:5672,host3:5672");
+		ccf.setAddressShuffleMode(AddressShuffleMode.INORDER);
+		IntStream.range(0, 3).forEach(i -> ccf.createConnection());
+		ccf.destroy();
+		ArgumentCaptor<List<Address>> captor = ArgumentCaptor.forClass(List.class);
+		verify(mockConnectionFactory, times(3)).newConnection(isNull(), captor.capture(), anyString());
+		List<String> connectAddresses = captor.getAllValues()
+			.stream()
+			.map(addresses -> addresses.get(0).getHost())
+			.collect(Collectors.toList());
+		assertThat(connectAddresses).containsExactly("host1", "host2", "host3");
 	}
 
 	@Test

@@ -45,7 +45,7 @@
 	<bean id="execService" class="java.util.concurrent.Executors" factory-method="newSingleThreadExecutor" />
 
 	<rabbit:connection-factory id="multiHost" virtual-host="/bar" addresses="host1:1234,host2,host3:4567"
-		thread-factory="tf" shuffle-addresses="true"
+		thread-factory="tf" address-shuffle-mode="INORDER"
 		channel-cache-size="10" username="user" password="password" />
 
 	<bean id="tf" class="org.springframework.scheduling.concurrent.CustomizableThreadFactory">
