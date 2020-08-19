@@ -25,6 +25,7 @@ import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -68,6 +69,30 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
 public abstract class AbstractConnectionFactory implements ConnectionFactory, DisposableBean, BeanNameAware,
 		ApplicationContextAware, ApplicationEventPublisherAware, ApplicationListener<ContextClosedEvent> {
 
+	/**
+	 * The mode used to shuffle the addresses.
+	 */
+	public enum AddressShuffleMode {
+
+		/**
+		 * Do not shuffle the addresses before or after opening a connection; attempt
+		 * connections in a fixed order.
+		 */
+		NONE,
+
+		/**
+		 * Randomly shuffle the addresses before opening a connection; attempt connections
+		 * in the new order.
+		 */
+		RANDOM,
+
+		/**
+		 * Shuffle the addresses after opening a connection, moving the first address to the end.
+		 */
+		INORDER
+
+	}
+
 	private static final String PUBLISHER_SUFFIX = ".publisher";
 
 	public static final int DEFAULT_CLOSE_TIMEOUT = 30000;
@@ -108,7 +133,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	private List<Address> addresses;
 
-	private boolean shuffleAddresses;
+	private AddressShuffleMode addressShuffleMode = AddressShuffleMode.NONE;
 
 	private int closeTimeout = DEFAULT_CLOSE_TIMEOUT;
 
@@ -294,11 +319,11 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	 * This property overrides the host+port properties if not empty.
 	 * @param addresses list of addresses with form "host[:port],..."
 	 */
-	public void setAddresses(String addresses) {
+	public synchronized void setAddresses(String addresses) {
 		if (StringUtils.hasText(addresses)) {
 			Address[] addressArray = Address.parseAddresses(addresses);
 			if (addressArray.length > 0) {
-				this.addresses = Arrays.asList(addressArray);
+				this.addresses = new LinkedList<>(Arrays.asList(addressArray));
 				if (this.publisherConnectionFactory != null) {
 					this.publisherConnectionFactory.setAddresses(addresses);
 				}
@@ -466,9 +491,23 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	 * @param shuffleAddresses true to shuffle the list.
 	 * @since 2.1.8
 	 * @see Collections#shuffle(List)
+	 * @deprecated since 2.3 in favor of
+	 * {@link #setAddressShuffleMode(AddressShuffleMode)}.
 	 */
+	@Deprecated
 	public void setShuffleAddresses(boolean shuffleAddresses) {
-		this.shuffleAddresses = shuffleAddresses;
+		setAddressShuffleMode(AddressShuffleMode.RANDOM);
+	}
+
+	/**
+	 * Set the mode for shuffling addresses.
+	 * @param addressShuffleMode the address shuffle mode.
+	 * @since 2.3
+	 * @see Collections#shuffle(List)
+	 */
+	public void setAddressShuffleMode(AddressShuffleMode addressShuffleMode) {
+		Assert.notNull(addressShuffleMode, "'addressShuffleMode' cannot be null");
+		this.addressShuffleMode = addressShuffleMode;
 	}
 
 	public boolean hasPublisherConnectionFactory() {
@@ -525,7 +564,9 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		}
 	}
 
-	private com.rabbitmq.client.Connection connect(String connectionName) throws IOException, TimeoutException {
+	private synchronized com.rabbitmq.client.Connection connect(String connectionName)
+			throws IOException, TimeoutException {
+
 		if (this.addressResolver != null) {
 			return connectResolver(connectionName);
 		}
@@ -545,20 +586,22 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 				connectionName);
 	}
 
-	private com.rabbitmq.client.Connection connectAddresses(String connectionName)
+	private synchronized com.rabbitmq.client.Connection connectAddresses(String connectionName)
 			throws IOException, TimeoutException {
 
-		List<Address> addressesToConnect = this.addresses;
-		if (this.shuffleAddresses && addressesToConnect.size() > 1) {
-			List<Address> list = new ArrayList<>(addressesToConnect);
-			Collections.shuffle(list);
-			addressesToConnect = list;
+		List<Address> addressesToConnect = new ArrayList<>(this.addresses);
+		if (addressesToConnect.size() > 1 && AddressShuffleMode.RANDOM.equals(this.addressShuffleMode)) {
+			Collections.shuffle(addressesToConnect);
 		}
 		if (this.logger.isInfoEnabled()) {
 			this.logger.info("Attempting to connect to: " + addressesToConnect);
 		}
-		return this.rabbitConnectionFactory.newConnection(this.executorService, addressesToConnect,
-				connectionName);
+		com.rabbitmq.client.Connection connection = this.rabbitConnectionFactory.newConnection(this.executorService,
+				addressesToConnect, connectionName);
+		if (addressesToConnect.size() > 1 && AddressShuffleMode.INORDER.equals(this.addressShuffleMode)) {
+			this.addresses.add(this.addresses.remove(0));
+		}
+		return connection;
 	}
 
 	private com.rabbitmq.client.Connection connectHostPort(String connectionName) throws IOException, TimeoutException {

@@ -42,6 +42,8 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 
 	private static final String SHUFFLE_ADDRESSES = "shuffle-addresses";
 
+	private static final String SHUFFLE_MODE = "address-shuffle-mode";
+
 	private static final String ADDRESS_RESOLVER = "address-resolver";
 
 	private static final String VIRTUAL_HOST_ATTRIBUTE = "virtual-host";
@@ -103,6 +105,11 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, EXECUTOR_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, ADDRESSES);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, SHUFFLE_ADDRESSES);
+		if (element.hasAttribute(SHUFFLE_ADDRESSES) && element.hasAttribute(SHUFFLE_MODE)) {
+			parserContext.getReaderContext()
+					.error("You must not specify both '" + SHUFFLE_ADDRESSES + "' and '" + SHUFFLE_MODE + "'", element);
+		}
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, SHUFFLE_MODE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, ADDRESS_RESOLVER);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, PUBLISHER_RETURNS);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, REQUESTED_HEARTBEAT, "requestedHeartBeat");

@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.AddressShuffleMode;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
 import org.springframework.amqp.rabbit.connection.ConnectionNameStrategy;
@@ -123,7 +124,7 @@ public final class ConnectionFactoryParserTests {
 		assertThat(addresses.get(1).getPort()).isEqualTo(-1);
 		assertThat(addresses.get(2).getHost()).isEqualTo("host3");
 		assertThat(addresses.get(2).getPort()).isEqualTo(4567);
-		assertThat(dfa.getPropertyValue("shuffleAddresses")).isEqualTo(Boolean.TRUE);
+		assertThat(dfa.getPropertyValue("addressShuffleMode")).isEqualTo(AddressShuffleMode.INORDER);
 		assertThat(TestUtils.getPropertyValue(connectionFactory,
 				"rabbitConnectionFactory.threadFactory")).isSameAs(beanFactory.getBean("tf"));
 	}

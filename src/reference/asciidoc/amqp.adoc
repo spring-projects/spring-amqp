@@ -412,11 +412,11 @@ Alternatively, if running in a clustered environment, you can use the addresses 
 [source,xml]
 ----
 <rabbit:connection-factory
-    id="connectionFactory" addresses="host1:5672,host2:5672" shuffle-addresses="true"/>
+    id="connectionFactory" addresses="host1:5672,host2:5672" address-shuffle-mode="RANDOM"/>
 ----
 ====
 
-See <<cluster>> for information about `shuffle-addresses`.
+See <<cluster>> for information about `address-shuffle-mode`.
 
 The following example with a custom thread factory that prefixes thread names with `rabbitmq-`:
 
@@ -605,7 +605,9 @@ public CachingConnectionFactory ccf() {
 ====
 
 The underlying connection factory will attempt to connect to each host, in order, whenever a new connection is established.
-Starting with version 2.1.8, the connection order can be made random by setting the `shuffleAddresses` property to true; the shuffle will be applied before creating any new connection.
+Starting with version 2.1.8, the connection order can be made random by setting the `addressShuffleMode` property to `RANDOM`; the shuffle will be applied before creating any new connection.
+Starting with version 2.6, the `INORDER` shuffle mode was added, which means the first address is moved to the end after a connection is created.
+You may wish to use this mode with the https://github.com/rabbitmq/rabbitmq-sharding[RabbitMQ Sharding Plugin] with `CacheMode.CONNECTION` and suitable concurrency if you wish to consume from all shards on all nodes.
 
 ====
 [source, java]
@@ -614,7 +616,7 @@ Starting with version 2.1.8, the connection order can be made random by setting 
 public CachingConnectionFactory ccf() {
     CachingConnectionFactory ccf = new CachingConnectionFactory();
     ccf.setAddresses("host1:5672,host2:5672,host3:5672");
-    ccf.setShuffleAddresses(true);
+    ccf.setAddressShuffleMode(AddressShuffleMode.RANDOM);
     return ccf;
 }
 ----
