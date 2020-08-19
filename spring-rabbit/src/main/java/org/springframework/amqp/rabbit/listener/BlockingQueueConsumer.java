@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -157,6 +157,8 @@ public class BlockingQueueConsumer {
 	private boolean locallyTransacted;
 
 	private ApplicationEventPublisher applicationEventPublisher;
+
+	private long consumeDelay;
 
 	private volatile long abortStarted;
 
@@ -373,6 +375,17 @@ public class BlockingQueueConsumer {
 	}
 
 	/**
+	 * Set the consumeDelay - a time to wait before consuming in ms. This is useful when
+	 * using the sharding plugin with {@code concurrency > 1}, to avoid uneven distribution of
+	 * consumers across the shards. See the plugin README for more information.
+	 * @param consumeDelay the consume delay.
+	 * @since 2.3
+	 */
+	public void setConsumeDelay(long consumeDelay) {
+		this.consumeDelay = consumeDelay;
+	}
+
+	/**
 	 * Clear the delivery tags when rolling back with an external transaction
 	 * manager.
 	 * @since 1.6.6
@@ -569,7 +582,7 @@ public class BlockingQueueConsumer {
 		this.activeObjectCounter.add(this);
 
 		passiveDeclarations();
-		setQosAndreateConsumers();
+		setQosAndCreateConsumers();
 	}
 
 	private void passiveDeclarations() {
@@ -595,7 +608,15 @@ public class BlockingQueueConsumer {
 		this.declaring = false;
 	}
 
-	private void setQosAndreateConsumers() {
+	private void setQosAndCreateConsumers() {
+		if (this.consumeDelay > 0) {
+			try {
+				Thread.sleep(this.consumeDelay);
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		}
 		if (!this.acknowledgeMode.isAutoAck() && !cancelled()) {
 			// Set basicQos before calling basicConsume (otherwise if we are not acking the broker
 			// will send blocks of 100 messages)

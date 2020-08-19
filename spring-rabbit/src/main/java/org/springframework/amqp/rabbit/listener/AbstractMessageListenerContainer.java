@@ -242,9 +242,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private boolean micrometerEnabled = true;
 
-	private volatile boolean lazyLoad;
-
 	private boolean isBatchListener;
+
+	private long consumeDelay;
+
+	private volatile boolean lazyLoad;
 
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
@@ -1121,6 +1123,26 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	public void setMicrometerEnabled(boolean micrometerEnabled) {
 		this.micrometerEnabled = micrometerEnabled;
+	}
+
+	/**
+	 * Get the consumeDelay - a time to wait before consuming in ms.
+	 * @return the consume delay.
+	 * @since 2.3
+	 */
+	protected long getConsumeDelay() {
+		return this.consumeDelay;
+	}
+
+	/**
+	 * Set the consumeDelay - a time to wait before consuming in ms. This is useful when
+	 * using the sharding plugin with {@code concurrency > 1}, to avoid uneven distribution of
+	 * consumers across the shards. See the plugin README for more information.
+	 * @param consumeDelay the consume delay.
+	 * @since 2.3
+	 */
+	public void setConsumeDelay(long consumeDelay) {
+		this.consumeDelay = consumeDelay;
 	}
 
 	/**

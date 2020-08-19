@@ -28,5 +28,10 @@ See <<spring-rabbit-test>> for more information.
 
 ==== RabbitTemplate Changes
 
-The template's `ReturnListener` has been refactored as `ReturnsListener` for simpler use in lambda expressions.
-See <<>> for more information.
+The template's `ReturnCallback` has been refactored as `ReturnsCallback` for simpler use in lambda expressions.
+See <<template-confirms>> for more information.
+
+==== Listener Container Changes
+
+A new listener container property `consumeDelay` is now available; it is helpful when using the https://github.com/rabbitmq/rabbitmq-sharding[RabbitMQ Sharding Plugin].
+See <<containerAttributes>> for more information.

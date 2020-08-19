@@ -673,8 +673,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			if (this.consumers == null) {
 				this.cancellationLock.reset();
 				this.consumers = new HashSet<BlockingQueueConsumer>(this.concurrentConsumers);
-				for (int i = 0; i < this.concurrentConsumers; i++) {
+				for (int i = 1; i <= this.concurrentConsumers; i++) {
 					BlockingQueueConsumer consumer = createBlockingQueueConsumer();
+					if (getConsumeDelay() > 0) {
+						consumer.setConsumeDelay(getConsumeDelay() * i);
+					}
 					this.consumers.add(consumer);
 					count++;
 				}
