@@ -699,6 +699,14 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		Channel channel = null;
 		SimpleConsumer consumer = null;
 		try {
+			if (getConsumeDelay() > 0) {
+				try {
+					Thread.sleep(getConsumeDelay());
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+			}
 			channel = connection.createChannel(isChannelTransacted());
 			channel.basicQos(getPrefetchCount());
 			consumer = new SimpleConsumer(connection, channel, queue);

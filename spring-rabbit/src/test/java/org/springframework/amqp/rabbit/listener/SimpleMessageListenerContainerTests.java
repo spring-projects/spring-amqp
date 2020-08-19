@@ -43,6 +43,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -443,6 +445,7 @@ public class SimpleMessageListenerContainerTests {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(ccf);
 		container.setConcurrentConsumers(2);
 		container.setQueueNames("foo");
+		container.setConsumeDelay(100);
 		container.afterPropertiesSet();
 
 		CountDownLatch latch1 = new CountDownLatch(2);
@@ -459,6 +462,16 @@ public class SimpleMessageListenerContainerTests {
 		container.start();
 		assertThat(latch1.await(10, TimeUnit.SECONDS)).isTrue();
 		Set<?> consumers = TestUtils.getPropertyValue(container, "consumers", Set.class);
+		Iterator<?> iterator = consumers.iterator();
+		Set<Long> delays = new HashSet<>();
+		delays.add(100L);
+		delays.add(200L);
+		Long consumerDelay1 = TestUtils.getPropertyValue(iterator.next(), "consumeDelay", Long.class);
+		Long consumerDelay2 = TestUtils.getPropertyValue(iterator.next(), "consumeDelay", Long.class);
+		assertThat(delays).contains(consumerDelay1);
+		delays.remove(consumerDelay1);
+		assertThat(delays).contains(consumerDelay2);
+
 		container.stop();
 		assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
 
