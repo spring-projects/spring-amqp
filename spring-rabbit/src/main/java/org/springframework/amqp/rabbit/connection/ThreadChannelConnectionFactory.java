@@ -21,7 +21,6 @@ import java.util.concurrent.TimeoutException;
 
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInterceptor;
-import org.aopalliance.intercept.MethodInvocation;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
@@ -37,6 +36,7 @@ import com.rabbitmq.client.ConnectionFactory;
  * {@link #closeThreadChannel()}.
  *
  * @author Gary Russell
+ *
  * @since 2.3
  *
  */
@@ -48,7 +48,6 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory {
 
 	/**
 	 * Construct an instance.
-	 *
 	 * @param rabbitConnectionFactory the rabbitmq connection factory.
 	 */
 	public ThreadChannelConnectionFactory(ConnectionFactory rabbitConnectionFactory) {
@@ -57,7 +56,6 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory {
 
 	/**
 	 * Construct an instance.
-	 *
 	 * @param rabbitConnectionFactory the rabbitmq connection factory.
 	 * @param isPublisher true if we are creating a publisher connection factory.
 	 */
@@ -84,7 +82,7 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory {
 	@Override
 	public synchronized Connection createConnection() throws AmqpException {
 		if (this.connection == null || !this.connection.isOpen()) {
-			Connection bareConnection = createBareConnection();
+			Connection bareConnection = createBareConnection(); // NOSONAR - see destroy()
 			this.connection = new ConnectionWrapper(bareConnection.getDelegate(), getCloseTimeout());
 		}
 		return this.connection;
@@ -156,19 +154,15 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory {
 
 		private Channel createProxy(Channel channel) {
 			ProxyFactory pf = new ProxyFactory(channel);
-			Advice advice = new MethodInterceptor() {
-
-				@Override
-				public Object invoke(MethodInvocation invocation) throws Throwable {
-					if (ConnectionWrapper.this.channels.get() == null) {
-						return invocation.proceed();
-					}
-					else {
-						return null;
-					}
-				}
-
-			};
+			Advice advice =
+					(MethodInterceptor) invocation -> {
+						if (ConnectionWrapper.this.channels.get() == null) {
+							return invocation.proceed();
+						}
+						else {
+							return null;
+						}
+					};
 			NameMatchMethodPointcutAdvisor advisor = new NameMatchMethodPointcutAdvisor(advice);
 			advisor.addMethodName("close");
 			pf.addAdvisor(advisor);

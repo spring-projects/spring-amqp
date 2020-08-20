@@ -22,8 +22,6 @@ import java.util.function.BiConsumer;
 
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInterceptor;
-import org.aopalliance.intercept.MethodInvocation;
-import org.apache.commons.logging.Log;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
@@ -46,6 +44,7 @@ import com.rabbitmq.client.ConnectionFactory;
  * a callback.
  *
  * @author Gary Russell
+ *
  * @since 2.3
  *
  */
@@ -59,7 +58,6 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 
 	/**
 	 * Construct an instance.
-	 *
 	 * @param rabbitConnectionFactory the rabbitmq connection factory.
 	 */
 	public PooledChannelConnectionFactory(ConnectionFactory rabbitConnectionFactory) {
@@ -68,7 +66,6 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 
 	/**
 	 * Construct an instance.
-	 *
 	 * @param rabbitConnectionFactory the rabbitmq connection factory.
 	 * @param isPublisher true if we are creating a publisher connection factory.
 	 */
@@ -86,7 +83,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 	 */
 	public void setPoolConfigurer(BiConsumer<GenericObjectPool<Channel>, Boolean> poolConfigurer) {
 		Assert.notNull(poolConfigurer, "'poolConfigurer' cannot be null");
-		this.poolConfigurer = poolConfigurer;
+		this.poolConfigurer = poolConfigurer; // NOSONAR - sync inconsistency
 	}
 
 	@Override
@@ -105,9 +102,9 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 	@Override
 	public synchronized Connection createConnection() throws AmqpException {
 		if (this.connection == null || !this.connection.isOpen()) {
-			Connection bareConnection = createBareConnection();
+			Connection bareConnection = createBareConnection(); // NOSONAR - see destroy()
 			this.connection = new ConnectionWrapper(bareConnection.getDelegate(), getCloseTimeout(),
-					this.simplePublisherConfirms, this.logger, this.poolConfigurer);
+					this.simplePublisherConfirms, this.poolConfigurer);
 		}
 		return this.connection;
 	}
@@ -123,8 +120,6 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 
 	private final static class ConnectionWrapper extends SimpleConnection {
 
-		private final Log logger;
-
 		private final ObjectPool<Channel> channels;
 
 		private final ObjectPool<Channel> txChannels;
@@ -132,7 +127,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 		private final boolean simplePublisherConfirms;
 
 		ConnectionWrapper(com.rabbitmq.client.Connection delegate, int closeTimeout, boolean simplePublisherConfirms,
-				Log logger, BiConsumer<GenericObjectPool<Channel>, Boolean> configurer) {
+				BiConsumer<GenericObjectPool<Channel>, Boolean> configurer) {
 
 			super(delegate, closeTimeout);
 			GenericObjectPool<Channel> pool = new GenericObjectPool<>(new ChannelFactory());
@@ -142,7 +137,6 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 			configurer.accept(pool, true);
 			this.txChannels = pool;
 			this.simplePublisherConfirms = simplePublisherConfirms;
-			this.logger = logger;
 		}
 
 		@Override
@@ -158,20 +152,16 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 		private Channel createProxy(Channel channel, boolean transacted) {
 			ProxyFactory pf = new ProxyFactory(channel);
 			AtomicReference<Channel> proxy = new AtomicReference<>();
-			Advice advice = new MethodInterceptor() {
-
-				@Override
-				public Object invoke(MethodInvocation invocation) throws Throwable {
-					if (transacted) {
-						ConnectionWrapper.this.txChannels.returnObject(proxy.get());
-					}
-					else {
-						ConnectionWrapper.this.channels.returnObject(proxy.get());
-					}
-					return null;
-				}
-
-			};
+			Advice advice =
+					(MethodInterceptor) invocation -> {
+						if (transacted) {
+							ConnectionWrapper.this.txChannels.returnObject(proxy.get());
+						}
+						else {
+							ConnectionWrapper.this.channels.returnObject(proxy.get());
+						}
+						return null;
+					};
 			NameMatchMethodPointcutAdvisor advisor = new NameMatchMethodPointcutAdvisor(advice);
 			advisor.addMethodName("close");
 			pf.addAdvisor(advisor);
@@ -192,7 +182,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 		private class ChannelFactory implements PooledObjectFactory<Channel> {
 
 			@Override
-			public PooledObject<Channel> makeObject() throws Exception {
+			public PooledObject<Channel> makeObject() {
 				Channel channel = ConnectionWrapper.super.createChannel(false);
 				if (ConnectionWrapper.this.simplePublisherConfirms) {
 					try {
@@ -228,7 +218,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 		private final class TxChannelFactory extends ChannelFactory {
 
 			@Override
-			public PooledObject<Channel> makeObject() throws Exception {
+			public PooledObject<Channel> makeObject() {
 				Channel channel = ConnectionWrapper.super.createChannel(true);
 				try {
 					channel.txSelect();

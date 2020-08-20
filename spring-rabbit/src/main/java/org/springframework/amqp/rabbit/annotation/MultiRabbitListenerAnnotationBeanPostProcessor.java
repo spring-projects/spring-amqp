@@ -20,7 +20,6 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 
 import org.springframework.amqp.core.Declarable;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.util.StringUtils;
 
 /**
@@ -28,10 +27,12 @@ import org.springframework.util.StringUtils;
  * proper RabbitAdmin to the beans of Exchanges, Queues, and Bindings after they are
  * created.
  * <p>
- * This processing restricts the {@link RabbitAdmin} according to the related
+ * This processing restricts the {@link org.springframework.amqp.rabbit.core.RabbitAdmin} according to the related
  * configuration, preventing the server from automatic binding non-related structures.
  *
  * @author Wander Costa
+ *
+ * @since 2.3
  */
 public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListenerAnnotationBeanPostProcessor {
 
@@ -59,7 +60,6 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 	/**
 	 * Resolves the name of the RabbitAdmin bean based on the RabbitListener, or falls back to
 	 * the default RabbitAdmin name provided by MultiRabbit.
-	 *
 	 * @param rabbitListener The RabbitListener to process the name from.
 	 * @return The name of the RabbitAdmin bean.
 	 */
@@ -74,4 +74,5 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 		}
 		return admin;
 	}
+
 }

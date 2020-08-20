@@ -252,7 +252,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	 * @since 2.1.15
 	 */
 	public void setAddressResolver(AddressResolver addressResolver) {
-		this.addressResolver = addressResolver;
+		this.addressResolver = addressResolver; // NOSONAR - sync inconsistency
 	}
 
 	/**
@@ -507,7 +507,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	 */
 	public void setAddressShuffleMode(AddressShuffleMode addressShuffleMode) {
 		Assert.notNull(addressShuffleMode, "'addressShuffleMode' cannot be null");
-		this.addressShuffleMode = addressShuffleMode;
+		this.addressShuffleMode = addressShuffleMode; // NOSONAR - sync inconsistency
 	}
 
 	public boolean hasPublisherConnectionFactory() {

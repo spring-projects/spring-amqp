@@ -18,46 +18,51 @@ package org.springframework.amqp.rabbit.connection;
 
 import java.util.concurrent.Callable;
 
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
  * Helper class to handle {@link ConnectionFactory} context binding and unbinding when executing instructions.
  *
  * @author Wander Costa
+ * @author Artem Bilan
+ *
+ * @since 2.3
  */
 public class ConnectionFactoryContextWrapper {
 
 	private final ConnectionFactory connectionFactory;
 
 	public ConnectionFactoryContextWrapper(ConnectionFactory connectionFactory) {
+		Assert.notNull(connectionFactory, "'connectionFactory' must not be null");
 		this.connectionFactory = connectionFactory;
 	}
 
 	/**
-	 * Executes a {@link Callable} binding to the default {@link ConnectionFactory} and finally unbinding it.
-	 *
+	 * Execute a {@link Callable} binding to the default {@link ConnectionFactory} and finally unbinding it.
 	 * @param callable the {@link Callable} object to be executed.
 	 * @param <T>      the return type.
 	 * @return the result of the {@link Callable}.
-	 * @throws Exception when an Exception is thrown by the {@link Callable}.
 	 */
-	public <T> T call(final Callable<T> callable) throws Exception {
+	public <T> T call(final Callable<T> callable) {
 		return call(null, callable);
 	}
 
 	/**
-	 * Executes a {@link Callable} binding the given {@link ConnectionFactory} and finally unbinding it.
-	 *
+	 * Execute a {@link Callable} binding the given {@link ConnectionFactory} and finally unbinding it.
 	 * @param contextName the name of the context. In null, empty or blank, default context is bound.
 	 * @param callable    the {@link Callable} object to be executed.
 	 * @param <T>         the return type.
 	 * @return the result of the {@link Callable}.
-	 * @throws Exception when an Exception is thrown by the {@link Callable}.
 	 */
-	public <T> T call(final String contextName, final Callable<T> callable) throws Exception {
+	public <T> T call(@Nullable String contextName, Callable<T> callable) {
 		try {
 			bind(contextName);
 			return callable.call();
+		}
+		catch (Exception ex) {
+			throw new IllegalStateException(ex);
 		}
 		finally {
 			unbind(contextName);
@@ -65,23 +70,21 @@ public class ConnectionFactoryContextWrapper {
 	}
 
 	/**
-	 * Executes a {@link Runnable} binding to the default {@link ConnectionFactory} and finally unbinding it.
-	 *
+	 * Execute a {@link Runnable} binding to the default {@link ConnectionFactory} and finally unbinding it.
 	 * @param runnable the {@link Runnable} object to be executed.
 	 * @throws RuntimeException when a RuntimeException is thrown by the {@link Runnable}.
 	 */
-	public void run(final Runnable runnable) {
+	public void run(Runnable runnable) {
 		run(null, runnable);
 	}
 
 	/**
-	 * Executes a {@link Runnable} binding the given {@link ConnectionFactory} and finally unbinding it.
-	 *
+	 * Execute a {@link Runnable} binding the given {@link ConnectionFactory} and finally unbinding it.
 	 * @param contextName the name of the context. In null, empty or blank, default context is bound.
 	 * @param runnable    the {@link Runnable} object to be executed.
 	 * @throws RuntimeException when a RuntimeException is thrown by the {@link Runnable}.
 	 */
-	public void run(final String contextName, final Runnable runnable) {
+	public void run(@Nullable String contextName, Runnable runnable) {
 		try {
 			bind(contextName);
 			runnable.run();
@@ -92,22 +95,20 @@ public class ConnectionFactoryContextWrapper {
 	}
 
 	/**
-	 * Binds the context.
-	 *
+	 * Bind the context.
 	 * @param contextName the name of the context for the connection factory.
 	 */
-	private void bind(final String contextName) {
+	private void bind(@Nullable String contextName) {
 		if (StringUtils.hasText(contextName)) {
 			SimpleResourceHolder.bind(this.connectionFactory, contextName);
 		}
 	}
 
 	/**
-	 * Unbinds the context.
-	 *
+	 * Unbind the context.
 	 * @param contextName the name of the context for the connection factory.
 	 */
-	private void unbind(final String contextName) {
+	private void unbind(@Nullable String contextName) {
 		if (StringUtils.hasText(contextName)) {
 			SimpleResourceHolder.unbind(this.connectionFactory);
 		}
