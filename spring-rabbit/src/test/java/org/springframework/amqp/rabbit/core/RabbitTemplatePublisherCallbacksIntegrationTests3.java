@@ -30,6 +30,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
+import org.springframework.amqp.rabbit.junit.LogLevels;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.utils.test.TestUtils;
@@ -70,6 +71,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 		assertThat(template.receive(QUEUE1, 10_000)).isNotNull();
 	}
 
+	@LogLevels(categories = "org.springframework.amqp.rabbit")
 	@Test
 	public void testDeferredChannelCacheNack() throws Exception {
 		final CachingConnectionFactory cf = new CachingConnectionFactory(
@@ -100,10 +102,6 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 		template.convertAndSend("", QUEUE2 + "junk", "foo", new MyCD("foo"));
 		assertThat(returnLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(confirmLatch.await(10, TimeUnit.SECONDS)).isTrue();
-		int n = 0;
-		while (n++ < 100 && cacheCount.get() != 1) {
-			Thread.sleep(100);
-		}
 		assertThat(cacheCount.get()).isEqualTo(1);
 		assertThat(returnCalledFirst.get()).isTrue();
 		cf.destroy();
