@@ -479,7 +479,7 @@ task reference(dependsOn: asciidoctor) {
 
 sonarqube {
 	properties {
-		property 'sonar.coverage.jacoco.xmlReportPaths', "${buildDir.name}/jacoco.exec"
+		property 'sonar.jacoco.reportPath', "${buildDir.name}/jacoco.exec"
 		property 'sonar.links.homepage', linkHomepage
 		property 'sonar.links.ci', linkCi
 		property 'sonar.links.issue', linkIssue
