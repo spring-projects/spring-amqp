@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
 import org.springframework.amqp.rabbit.connection.PublisherCallbackChannel.Listener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.junit.LogLevels;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
@@ -83,6 +84,7 @@ public class PublisherCallbackChannelTests {
 	}
 
 	@Test
+	@LogLevels(categories = "org.springframework.amqp.rabbit", level = "debug")
 	void testNotCached() throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory(
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
@@ -137,7 +139,10 @@ public class PublisherCallbackChannelTests {
 		chan1.close();
 		chan2.close();
 		Properties cacheProperties = cf.getCacheProperties();
-		assertThat(cacheProperties.getProperty("idleChannelsNotTx")).isEqualTo("2");
+		await().until(() -> {
+			Properties props = cf.getCacheProperties();
+			return Integer.parseInt(props.getProperty("idleChannelsNotTx")) == 2;
+		});
 		closeLatch.countDown();
 		assertThat(confirmLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(closedLatch.await(10, TimeUnit.SECONDS)).isTrue();
