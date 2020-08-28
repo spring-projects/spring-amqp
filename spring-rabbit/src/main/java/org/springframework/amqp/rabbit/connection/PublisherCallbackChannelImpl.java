@@ -1057,6 +1057,9 @@ public class PublisherCallbackChannelImpl
 	@Override
 	public void handle(Return returned) {
 
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug("Return " + this.toString());
+		}
 		LongString returnCorrelation = (LongString) returned.getProperties().getHeaders()
 				.get(RETURNED_MESSAGE_CORRELATION_KEY);
 		PendingConfirm confirm = null;
