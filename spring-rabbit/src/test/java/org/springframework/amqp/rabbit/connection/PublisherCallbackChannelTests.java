@@ -138,7 +138,6 @@ public class PublisherCallbackChannelTests {
 		Channel chan2 = conn.createChannel(false);
 		chan1.close();
 		chan2.close();
-		Properties cacheProperties = cf.getCacheProperties();
 		await().until(() -> {
 			Properties props = cf.getCacheProperties();
 			return Integer.parseInt(props.getProperty("idleChannelsNotTx")) == 2;
@@ -146,7 +145,6 @@ public class PublisherCallbackChannelTests {
 		closeLatch.countDown();
 		assertThat(confirmLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(closedLatch.await(10, TimeUnit.SECONDS)).isTrue();
-		cacheProperties = cf.getCacheProperties();
 		await().until(() -> {
 			Properties props = cf.getCacheProperties();
 			return Integer.parseInt(props.getProperty("idleChannelsNotTx")) == 2;
