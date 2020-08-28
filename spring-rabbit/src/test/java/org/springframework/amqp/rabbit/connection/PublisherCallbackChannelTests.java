@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
 import org.springframework.amqp.rabbit.connection.PublisherCallbackChannel.Listener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.junit.LogLevels;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
@@ -83,6 +84,8 @@ public class PublisherCallbackChannelTests {
 	}
 
 	@Test
+	@LogLevels(classes = { CachingConnectionFactory.class, AbstractConnectionFactory.class,
+			PublisherCallbackChannelImpl.class })
 	void testNotCached() throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory(
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
