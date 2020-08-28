@@ -26,13 +26,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
-import org.springframework.amqp.rabbit.connection.PublisherCallbackChannelImpl;
-import org.springframework.amqp.rabbit.junit.LogLevels;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.utils.test.TestUtils;
@@ -73,8 +70,6 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 		assertThat(template.receive(QUEUE1, 10_000)).isNotNull();
 	}
 
-	@LogLevels(classes = { CachingConnectionFactory.class, AbstractConnectionFactory.class,
-			PublisherCallbackChannelImpl.class, RabbitTemplate.class })
 	@Test
 	public void testDeferredChannelCacheNack() throws Exception {
 		final CachingConnectionFactory cf = new CachingConnectionFactory(
