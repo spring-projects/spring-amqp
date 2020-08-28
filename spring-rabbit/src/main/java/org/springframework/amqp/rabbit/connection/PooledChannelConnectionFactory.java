@@ -103,7 +103,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 	public synchronized Connection createConnection() throws AmqpException {
 		if (this.connection == null || !this.connection.isOpen()) {
 			Connection bareConnection = createBareConnection(); // NOSONAR - see destroy()
-			this.connection = new ConnectionWrapper(bareConnection.getDelegate(), getCloseTimeout(),
+			this.connection = new ConnectionWrapper(bareConnection.getDelegate(), getCloseTimeout(), // NOSONAR
 					this.simplePublisherConfirms, this.poolConfigurer);
 		}
 		return this.connection;
@@ -118,7 +118,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 		}
 	}
 
-	private final static class ConnectionWrapper extends SimpleConnection {
+	private static final class ConnectionWrapper extends SimpleConnection {
 
 		private final ObjectPool<Channel> channels;
 

@@ -23,8 +23,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.springframework.amqp.rabbit.junit.RabbitAvailable;
-
 /**
  * Adds infrastructure beans to a Spring test context; do not use with Spring Boot since
  * it has its own auto configuration mechanism.
@@ -47,25 +45,29 @@ public @interface SpringRabbitTest {
 	}
 
 	/**
-	 * Set the host when not using {@link RabbitAvailable}.
+	 * Set the host when not using
+	 * {@link org.springframework.amqp.rabbit.junit.RabbitAvailable}.
 	 * @return the host.
 	 */
 	String host() default "localhost";
 
 	/**
-	 * Set the port when not using {@link RabbitAvailable}.
+	 * Set the port when not using
+	 * {@link org.springframework.amqp.rabbit.junit.RabbitAvailable}.
 	 * @return the port.
 	 */
 	int port() default 5672;
 
 	/**
-	 * Set the user when not using {@link RabbitAvailable}.
+	 * Set the user when not using
+	 * {@link org.springframework.amqp.rabbit.junit.RabbitAvailable}.
 	 * @return the user.
 	 */
 	String user() default "guest";
 
 	/**
-	 * Set the password when not using {@link RabbitAvailable}.
+	 * Set the password when not using
+	 * {@link org.springframework.amqp.rabbit.junit.RabbitAvailable}.
 	 * @return the password.
 	 */
 	String password() default "guest";
