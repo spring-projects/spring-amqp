@@ -1060,20 +1060,7 @@ public class PublisherCallbackChannelImpl
 		if (this.logger.isDebugEnabled()) {
 			this.logger.debug("Return " + this.toString());
 		}
-		LongString returnCorrelation = (LongString) returned.getProperties().getHeaders()
-				.get(RETURNED_MESSAGE_CORRELATION_KEY);
-		PendingConfirm confirm = null;
-		if (returnCorrelation != null) {
-			confirm = this.pendingReturns.remove(returnCorrelation.toString());
-			if (confirm != null) {
-				MessageProperties messageProperties = CONVERTER.toMessageProperties(returned.getProperties(),
-						new Envelope(0L, false, returned.getExchange(), returned.getRoutingKey()),
-						StandardCharsets.UTF_8.name());
-				if (confirm.getCorrelationData() != null) {
-					confirm.getCorrelationData().setReturnedMessage(new Message(returned.getBody(), messageProperties)); // NOSONAR never null
-				}
-			}
-		}
+		PendingConfirm confirm = findConfirm(returned);
 		Listener listener = findListener(returned.getProperties());
 		if (listener == null || !listener.isReturnListener()) {
 			if (this.logger.isDebugEnabled()) {
@@ -1100,6 +1087,24 @@ public class PublisherCallbackChannelImpl
 				}
 			});
 		}
+	}
+
+	private PendingConfirm findConfirm(Return returned) {
+		LongString returnCorrelation = (LongString) returned.getProperties().getHeaders()
+				.get(RETURNED_MESSAGE_CORRELATION_KEY);
+		PendingConfirm confirm = null;
+		if (returnCorrelation != null) {
+			confirm = this.pendingReturns.remove(returnCorrelation.toString());
+			if (confirm != null) {
+				MessageProperties messageProperties = CONVERTER.toMessageProperties(returned.getProperties(),
+						new Envelope(0L, false, returned.getExchange(), returned.getRoutingKey()),
+						StandardCharsets.UTF_8.name());
+				if (confirm.getCorrelationData() != null) {
+					confirm.getCorrelationData().setReturnedMessage(new Message(returned.getBody(), messageProperties)); // NOSONAR never null
+				}
+			}
+		}
+		return confirm;
 	}
 
 	@Nullable
