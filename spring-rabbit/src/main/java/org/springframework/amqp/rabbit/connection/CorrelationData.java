@@ -16,9 +16,12 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import java.util.UUID;
+
 import org.springframework.amqp.core.Correlation;
 import org.springframework.amqp.core.Message;
 import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 import org.springframework.util.concurrent.SettableListenableFuture;
 
 /**
@@ -28,7 +31,8 @@ import org.springframework.util.concurrent.SettableListenableFuture;
  * returned with the ack/nack. When returns are also enabled, the
  * {@link #setReturnedMessage(Message) returnedMessage} property will be populated when a
  * message can't be delivered - the return always arrives before the confirmation. In this
- * case the {@code #id} property must be set to a unique value.
+ * case the {@code #id} property must be set to a unique value. If no id is provided it
+ * will automatically set to a unique value.
  *
  * @author Gary Russell
  * @since 1.0.1
@@ -38,7 +42,6 @@ public class CorrelationData implements Correlation {
 
 	private final SettableListenableFuture<Confirm> future = new SettableListenableFuture<>();
 
-	@Nullable
 	private volatile String id;
 
 	private volatile Message returnedMessage;
@@ -48,6 +51,7 @@ public class CorrelationData implements Correlation {
 	 * @since 1.6.7
 	 */
 	public CorrelationData() {
+		this.id = UUID.randomUUID().toString();
 	}
 
 	/**
@@ -56,10 +60,14 @@ public class CorrelationData implements Correlation {
 	 * @param id the id.
 	 */
 	public CorrelationData(String id) {
+		Assert.notNull(id, "'id' cannot be null and must be unique");
 		this.id = id;
 	}
 
-	@Nullable
+	/**
+	 * Return the id.
+	 * @return the id.
+	 */
 	public String getId() {
 		return this.id;
 	}
@@ -67,14 +75,13 @@ public class CorrelationData implements Correlation {
 	/**
 	 * Set the correlation id. Generally, the correlation id shouldn't be changed.
 	 * One use case, however, is when it needs to be set in a
-	 * {@link org.springframework.amqp.core.MessagePostProcessor} after a
-	 * {@link CorrelationData} with a 'null' correlation id has been passed into a
-	 * {@link org.springframework.amqp.rabbit.core.RabbitTemplate}.
+	 * {@link org.springframework.amqp.core.MessagePostProcessor}.
 	 *
 	 * @param id the id.
 	 * @since 1.6
 	 */
 	public void setId(String id) {
+		Assert.notNull(id, "'id' cannot be null and must be unique");
 		this.id = id;
 	}
 

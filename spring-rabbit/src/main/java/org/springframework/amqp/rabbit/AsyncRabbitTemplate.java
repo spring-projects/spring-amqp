@@ -374,7 +374,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 	@Override
 	public RabbitMessageFuture sendAndReceive(String exchange, String routingKey, Message message) {
-		String correlationId = getOrSetCorrelationIdAndSetReplyTo(message);
+		String correlationId = getOrSetCorrelationIdAndSetReplyTo(message, null);
 		RabbitMessageFuture future = new RabbitMessageFuture(correlationId, message);
 		CorrelationData correlationData = null;
 		if (this.enableConfirms) {
@@ -640,13 +640,15 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 		}
 	}
 
-	private String getOrSetCorrelationIdAndSetReplyTo(Message message) {
+	private String getOrSetCorrelationIdAndSetReplyTo(Message message,
+			@Nullable AsyncCorrelationData correlationData) {
+
 		String correlationId;
 		MessageProperties messageProperties = message.getMessageProperties();
 		Assert.notNull(messageProperties, "the message properties cannot be null");
 		String currentCorrelationId = messageProperties.getCorrelationId();
 		if (!StringUtils.hasText(currentCorrelationId)) {
-			correlationId = UUID.randomUUID().toString();
+			correlationId = correlationData != null ? correlationData.getId() : UUID.randomUUID().toString();
 			messageProperties.setCorrelationId(correlationId);
 			Assert.isNull(messageProperties.getReplyTo(), "'replyTo' property must be null");
 		}
@@ -816,9 +818,9 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 			if (correlationData.userPostProcessor != null) {
 				messageToSend = correlationData.userPostProcessor.postProcessMessage(message);
 			}
-			String correlationId = getOrSetCorrelationIdAndSetReplyTo(messageToSend);
+			String correlationId = getOrSetCorrelationIdAndSetReplyTo(messageToSend, correlationData);
 			correlationData.future = new RabbitConverterFuture<C>(correlationId, message);
-			if (correlationData.enableConfirms && correlationData.getId() == null) {
+			if (correlationData.enableConfirms) {
 				correlationData.setId(correlationId);
 				correlationData.future.setConfirm(new SettableListenableFuture<>());
 			}
@@ -831,13 +833,13 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 	private static class AsyncCorrelationData<C> extends CorrelationData {
 
-		private final MessagePostProcessor userPostProcessor;
+		final MessagePostProcessor userPostProcessor; // NOSONAR
 
-		private final ParameterizedTypeReference<C> returnType;
+		final ParameterizedTypeReference<C> returnType; // NOSONAR
 
-		private final boolean enableConfirms;
+		final boolean enableConfirms; // NOSONAR
 
-		private volatile RabbitConverterFuture<C> future;
+		volatile RabbitConverterFuture<C> future; // NOSONAR
 
 		AsyncCorrelationData(MessagePostProcessor userPostProcessor, ParameterizedTypeReference<C> returnType,
 				boolean enableConfirms) {

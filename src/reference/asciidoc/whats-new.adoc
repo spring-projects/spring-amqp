@@ -31,6 +31,9 @@ See <<spring-rabbit-test>> for more information.
 The template's `ReturnCallback` has been refactored as `ReturnsCallback` for simpler use in lambda expressions.
 See <<template-confirms>> for more information.
 
+When using returns and correlated confirms, the `CorrelationData` now requires a unique `id` property.
+See <<template-confirms>> for more information.
+
 ==== Listener Container Changes
 
 A new listener container property `consumeDelay` is now available; it is helpful when using the https://github.com/rabbitmq/rabbitmq-sharding[RabbitMQ Sharding Plugin].
