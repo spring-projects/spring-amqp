@@ -641,7 +641,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	}
 
 	private String getOrSetCorrelationIdAndSetReplyTo(Message message,
-			@Nullable AsyncCorrelationData correlationData) {
+			@Nullable AsyncCorrelationData<?> correlationData) {
 
 		String correlationId;
 		MessageProperties messageProperties = message.getMessageProperties();
