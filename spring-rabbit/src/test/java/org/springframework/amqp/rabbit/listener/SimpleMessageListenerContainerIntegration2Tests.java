@@ -22,6 +22,7 @@ import static org.awaitility.Awaitility.with;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.spy;
@@ -135,14 +136,21 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	@Test
 	public void testChangeQueues() throws Exception {
 		CountDownLatch latch = new CountDownLatch(30);
-		container =
-				createContainer(new MessageListenerAdapter(new PojoListener(latch)), queue.getName(), queue1.getName());
+		AtomicInteger restarts = new AtomicInteger();
+		container = spy(createContainer(new MessageListenerAdapter(new PojoListener(latch)), false, queue.getName(),
+				queue1.getName()));
+		willAnswer(invocation -> {
+			restarts.incrementAndGet();
+			invocation.callRealMethod();
+			return null;
+		}).given(container).addAndStartConsumers(1);
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 		this.container.setApplicationEventPublisher(e -> {
 			if (e instanceof AsyncConsumerStoppedEvent) {
 				consumerLatch.countDown();
 			}
 		});
+		this.container.start();
 		for (int i = 0; i < 10; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
 			template.convertAndSend(queue1.getName(), i + "foo");
@@ -156,6 +164,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		assertThat(waited).as("Timed out waiting for message").isTrue();
 		assertThat(template.receiveAndConvert(queue.getName())).isNull();
 		assertThat(template.receiveAndConvert(queue1.getName())).isNull();
+		assertThat(restarts.get()).isEqualTo(1);
 	}
 
 	@Test
