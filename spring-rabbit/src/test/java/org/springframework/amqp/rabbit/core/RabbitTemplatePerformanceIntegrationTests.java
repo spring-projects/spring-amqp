@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.core;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -77,7 +78,7 @@ public class RabbitTemplatePerformanceIntegrationTests {
 	@RepeatedTest(50)
 	public void testSendAndReceive() throws InterruptedException {
 		CountDownLatch latch = new CountDownLatch(4);
-		List<String> results = new ArrayList<>();
+		List<String> results = Collections.synchronizedList(new ArrayList<>());
 		Stream.of(1, 2, 3, 4).forEach(i -> exec.execute(() -> {
 			template.convertAndSend(ROUTE, "message");
 			results.add((String) template.receiveAndConvert(ROUTE, 10_000L));
@@ -90,7 +91,7 @@ public class RabbitTemplatePerformanceIntegrationTests {
 	@RepeatedTest(50)
 	public void testSendAndReceiveTransacted() throws InterruptedException {
 		CountDownLatch latch = new CountDownLatch(4);
-		List<String> results = new ArrayList<>();
+		List<String> results = Collections.synchronizedList(new ArrayList<>());
 		template.setChannelTransacted(true);
 		Stream.of(1, 2, 3, 4).forEach(i -> exec.execute(() -> {
 			template.convertAndSend(ROUTE, "message");
@@ -105,7 +106,7 @@ public class RabbitTemplatePerformanceIntegrationTests {
 	public void testSendAndReceiveExternalTransacted() throws InterruptedException {
 		template.setChannelTransacted(true);
 		CountDownLatch latch = new CountDownLatch(4);
-		List<String> results = new ArrayList<>();
+		List<String> results = Collections.synchronizedList(new ArrayList<>());
 		template.setChannelTransacted(true);
 		Stream.of(1, 2, 3, 4).forEach(i -> exec.execute(() -> {
 			new TransactionTemplate(new TestTransactionManager()).execute(status -> {
