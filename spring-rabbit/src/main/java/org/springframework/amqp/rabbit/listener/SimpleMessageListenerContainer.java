@@ -358,8 +358,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	@Override
 	public void addQueueNames(String... queueName) {
-		super.addQueueNames(queueName);
-		queuesChanged();
+		super.addQueueNames(queueName); // calls addQueues() which will cycle consumers
 	}
 
 	/**
@@ -756,7 +755,13 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					consumerIterator.remove();
 					count++;
 				}
-				this.addAndStartConsumers(count);
+				try {
+					this.cancellationLock.await(getShutdownTimeout(), TimeUnit.MILLISECONDS);
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+				addAndStartConsumers(count);
 			}
 		}
 	}
