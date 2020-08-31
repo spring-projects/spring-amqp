@@ -1089,6 +1089,7 @@ public class PublisherCallbackChannelImpl
 		}
 	}
 
+	@Nullable
 	private PendingConfirm findConfirm(Return returned) {
 		LongString returnCorrelation = (LongString) returned.getProperties().getHeaders()
 				.get(RETURNED_MESSAGE_CORRELATION_KEY);
