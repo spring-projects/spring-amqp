@@ -398,7 +398,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * @param queueName The queue to add.
 	 */
 	@Override
-	public void addQueueNames(String... queueName) {
+	public void addQueueNames(String... queueName) { // NOSONAR - extra javadocs
 		super.addQueueNames(queueName); // calls addQueues() which will cycle consumers
 	}
 
