@@ -97,6 +97,7 @@ import com.rabbitmq.client.ConnectionFactory;
  * @author Dominique Villard
  * @author Nicolas Ristock
  * @author Eugene Gusev
+ * @author Wayne Chu
  *
  * @since 1.4
  */
