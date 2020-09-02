@@ -925,6 +925,9 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
+			catch (Exception e) {
+				addError("Could not send log message, appender is stopped", e);
+			}
 		}
 
 		private void sendOneEncoderPatternMessage(RabbitTemplate rabbitTemplate, String routingKey) {
