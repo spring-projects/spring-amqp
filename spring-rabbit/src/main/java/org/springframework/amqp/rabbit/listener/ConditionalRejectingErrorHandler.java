@@ -78,6 +78,16 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 	}
 
 	/**
+	 * Return the discardFatalsWithXDeath.
+	 * @return the discardFatalsWithXDeath.
+	 * @since 2.3
+	 * @see #setDiscardFatalsWithXDeath(boolean)
+	 */
+	protected boolean isDiscardFatalsWithXDeath() {
+		return this.discardFatalsWithXDeath;
+	}
+
+	/**
 	 * Set to false to disable the (now) default behavior of logging and discarding
 	 * messages that cause fatal exceptions and have an `x-death` header; which
 	 * usually means that the message has been republished after previously being
@@ -90,12 +100,31 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 	}
 
 	/**
+	 * Return the rejectManual.
+	 * @return the rejectManual.
+	 * @since 2.3
+	 * @see #setRejectManual(boolean)
+	 */
+	protected boolean isRejectManual() {
+		return this.rejectManual;
+	}
+
+	/**
 	 * Set to false to NOT reject a fatal message when MANUAL ack mode is being used.
 	 * @param rejectManual false to leave the message in an unack'd state.
 	 * @since 2.1.9
 	 */
 	public void setRejectManual(boolean rejectManual) {
 		this.rejectManual = rejectManual;
+	}
+
+	/**
+	 * Return the exception strategy.
+	 * @return the strategy.
+	 * @since 2.3
+	 */
+	protected FatalExceptionStrategy getExceptionStrategy() {
+		return this.exceptionStrategy;
 	}
 
 	@Override
@@ -109,6 +138,7 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 					if (xDeath != null && xDeath.size() > 0) {
 						this.logger.error("x-death header detected on a message with a fatal exception; "
 								+ "perhaps requeued from a DLQ? - discarding: " + failed);
+						handleDiscarded(failed);
 						throw new ImmediateAcknowledgeAmqpException("Fatal and x-death present");
 					}
 				}
@@ -116,6 +146,16 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 			throw new AmqpRejectAndDontRequeueException("Error Handler converted exception to fatal", this.rejectManual,
 					t);
 		}
+	}
+
+	/**
+	 * Called when a message with a fatal exception has an {@code x-death} header, prior
+	 * to discarding the message. Subclasses can override this method to perform some
+	 * action, such as sending the message to a parking queue.
+	 * @param failed the failed message.
+	 * @since 2.3
+	 */
+	protected void handleDiscarded(Message failed) {
 	}
 
 	/**
