@@ -378,6 +378,7 @@ public class BatchingRabbitTemplateTests {
 		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
 		template.setConnectionFactory(this.connectionFactory);
 		GZipPostProcessor gZipPostProcessor = new GZipPostProcessor();
+		gZipPostProcessor.setEncodingDelimiter(":"); // unzip messages from older versions
 		assertThat(getStreamLevel(gZipPostProcessor)).isEqualTo(Deflater.BEST_SPEED);
 		template.setBeforePublishPostProcessors(gZipPostProcessor);
 		MessageProperties props = new MessageProperties();
@@ -489,7 +490,7 @@ public class BatchingRabbitTemplateTests {
 		message = new Message("bar".getBytes(), props);
 		template.send("", ROUTE, message);
 		message = receive(template);
-		assertThat(message.getMessageProperties().getContentEncoding()).isEqualTo("gzip:foo");
+		assertThat(message.getMessageProperties().getContentEncoding()).isEqualTo("gzip, foo");
 		GUnzipPostProcessor unzipper = new GUnzipPostProcessor();
 		message = unzipper.postProcessMessage(message);
 		assertThat(new String(message.getBody())).isEqualTo("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar");
@@ -550,7 +551,7 @@ public class BatchingRabbitTemplateTests {
 		message = new Message("bar".getBytes(), props);
 		template.send("", ROUTE, message);
 		message = receive(template);
-		assertThat(message.getMessageProperties().getContentEncoding()).isEqualTo("zip:foo");
+		assertThat(message.getMessageProperties().getContentEncoding()).isEqualTo("zip, foo");
 		UnzipPostProcessor unzipper = new UnzipPostProcessor();
 		message = unzipper.postProcessMessage(message);
 		assertThat(new String(message.getBody())).isEqualTo("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar");
@@ -612,7 +613,7 @@ public class BatchingRabbitTemplateTests {
 		message = new Message("bar".getBytes(), props);
 		template.send("", ROUTE, message);
 		message = receive(template);
-		assertThat(message.getMessageProperties().getContentEncoding()).isEqualTo("deflate:foo");
+		assertThat(message.getMessageProperties().getContentEncoding()).isEqualTo("deflate, foo");
 		InflaterPostProcessor inflater = new InflaterPostProcessor();
 		message = inflater.postProcessMessage(message);
 		assertThat(new String(message.getBody())).isEqualTo("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar");
