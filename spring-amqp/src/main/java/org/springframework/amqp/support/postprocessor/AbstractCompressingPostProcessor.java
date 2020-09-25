@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,9 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.MessagePropertiesBuilder;
 import org.springframework.core.Ordered;
+import org.springframework.util.Assert;
 import org.springframework.util.FileCopyUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * Base class for post processors that compress the message body. The content encoding is
@@ -52,6 +54,8 @@ public abstract class AbstractCompressingPostProcessor implements MessagePostPro
 	private int order;
 
 	private boolean copyProperties = false;
+
+	private String encodingDelimiter = ", ";
 
 	/**
 	 * Construct a post processor that will include the
@@ -85,6 +89,19 @@ public abstract class AbstractCompressingPostProcessor implements MessagePostPro
 		this.copyProperties = copyProperties;
 	}
 
+	/**
+	 * Set a delimiter to be added between the compression type and the original encoding,
+	 * if any. Defaults to {@code ", "} (since 2.3); for compatibility with consumers
+	 * using versions of spring-amqp earlier than 2.2.12, set it to {@code ":"} (no
+	 * trailing space).
+	 * @param encodingDelimiter the delimiter.
+	 * @since 2.2.12
+	 */
+	public void setEncodingDelimiter(String encodingDelimiter) {
+		Assert.notNull(encodingDelimiter, "'encodingDelimiter' cannot be null");
+		this.encodingDelimiter = encodingDelimiter;
+	}
+
 	@Override
 	public Message postProcessMessage(Message message) throws AmqpException {
 		try {
@@ -109,9 +126,9 @@ public abstract class AbstractCompressingPostProcessor implements MessagePostPro
 
 			MessageProperties messageProperties =
 					messagePropertiesBuilder.setContentEncoding(getEncoding() +
-							(originalProperties.getContentEncoding() == null
+							(!StringUtils.hasText(originalProperties.getContentEncoding())
 									? ""
-									: ":" + originalProperties.getContentEncoding()))
+									: this.encodingDelimiter + originalProperties.getContentEncoding()))
 							.build();
 
 			return new Message(compressed, messageProperties);

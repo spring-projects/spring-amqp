@@ -1393,7 +1393,7 @@ public class RabbitTemplateIntegrationTests {
 			Message message = new Message("foo".getBytes(), props);
 			Message reply = template.sendAndReceive("", ROUTE, message);
 			assertThat(reply).isNotNull();
-			assertThat(reply.getMessageProperties().getContentEncoding()).isEqualTo("gzip:UTF-8");
+			assertThat(reply.getMessageProperties().getContentEncoding()).isEqualTo("gzip, UTF-8");
 			GUnzipPostProcessor unzipper = new GUnzipPostProcessor();
 			reply = unzipper.postProcessMessage(reply);
 			assertThat(new String(reply.getBody())).isEqualTo("FOO");
