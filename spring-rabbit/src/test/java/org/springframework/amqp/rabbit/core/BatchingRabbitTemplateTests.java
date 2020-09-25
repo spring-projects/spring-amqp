@@ -501,10 +501,14 @@ public class BatchingRabbitTemplateTests {
 		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
 		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
 		template.setConnectionFactory(this.connectionFactory);
-		template.setBeforePublishPostProcessors(new GZipPostProcessor());
+		AtomicReference<String> encoding = new AtomicReference<>();
+		template.setBeforePublishPostProcessors(new GZipPostProcessor(), msg -> {
+			encoding.set(msg.getMessageProperties().getContentEncoding());
+			return msg;
+		});
 		template.setAfterReceivePostProcessors(new DelegatingDecompressingPostProcessor());
 		MessageProperties props = new MessageProperties();
-		props.setContentEncoding("foo");
+		props.setContentEncoding("");
 		Message message = new Message("foo".getBytes(), props);
 		template.send("", ROUTE, message);
 		message = new Message("bar".getBytes(), props);
@@ -513,6 +517,7 @@ public class BatchingRabbitTemplateTests {
 		byte[] out = (byte[]) template.receiveAndConvert(ROUTE);
 		assertThat(out).isNotNull();
 		assertThat(new String(out)).isEqualTo("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar");
+		assertThat(encoding.get()).isEqualTo("gzip");
 	}
 
 	@Test

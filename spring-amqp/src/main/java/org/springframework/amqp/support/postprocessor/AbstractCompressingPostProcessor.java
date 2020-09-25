@@ -33,6 +33,7 @@ import org.springframework.amqp.core.MessagePropertiesBuilder;
 import org.springframework.core.Ordered;
 import org.springframework.util.Assert;
 import org.springframework.util.FileCopyUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * Base class for post processors that compress the message body. The content encoding is
@@ -125,7 +126,7 @@ public abstract class AbstractCompressingPostProcessor implements MessagePostPro
 
 			MessageProperties messageProperties =
 					messagePropertiesBuilder.setContentEncoding(getEncoding() +
-							(originalProperties.getContentEncoding() == null
+							(!StringUtils.hasText(originalProperties.getContentEncoding())
 									? ""
 									: this.encodingDelimiter + originalProperties.getContentEncoding()))
 							.build();
