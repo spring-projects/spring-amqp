@@ -127,3 +127,11 @@ See <<message-properties-converters>> for more information.
 
 Recovery of failed producer-created batches is now supported.
 See <<batch-retry>> for more information.
+
+A new listener container property `consumeDelay` is now available; it is helpful when using the https://github.com/rabbitmq/rabbitmq-sharding[RabbitMQ Sharding Plugin].
+See <<containerAttributes>> for more information.
+
+==== MessagePostProcessor Changes
+
+The compressing `MessagePostProcessor` s now can use a comma to separate multiple content encodings instead of a colon.
+See the IMPORTANT note in <<post-processing>> for more information.

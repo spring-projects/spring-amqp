@@ -3828,6 +3828,10 @@ By default, these properties are reused for performance reasons, and modified wi
 If you retain a reference to the original outbound message, its properties will change as well.
 So, if your application retains a copy of an outbound message with these message post processors, consider turning the `copyProperties` option on.
 
+IMPORTANT: Starting with version 2.2.12, you can configure the delimiter that the compressing post processors use between content encoding elements.
+With versions 2.2.11 and before, this was hard-coded as `:`; it is now set to `:` by default but can be overridden to a standard `,` by setting the `encodingDelimiter` property; this will be the default in 2.3 and above.
+The decompressors will work with both delimiters.
+
 Similarly, the `SimpleMessageListenerContainer` also has a `setAfterReceivePostProcessors()` method, letting the decompression be performed after messages are received by the container.
 
 Starting with version 2.1.4, `addBeforePublishPostProcessors()` and `addAfterReceivePostProcessors()` have been added to the `RabbitTemplate` to allow appending new post processors to the list of before publish and after receive post processors respectively.

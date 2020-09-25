@@ -494,10 +494,14 @@ public class BatchingRabbitTemplateTests {
 		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
 		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
 		template.setConnectionFactory(this.connectionFactory);
-		template.setBeforePublishPostProcessors(new GZipPostProcessor());
+		AtomicReference<String> encoding = new AtomicReference<>();
+		template.setBeforePublishPostProcessors(new GZipPostProcessor(), msg -> {
+			encoding.set(msg.getMessageProperties().getContentEncoding());
+			return msg;
+		});
 		template.setAfterReceivePostProcessors(new DelegatingDecompressingPostProcessor());
 		MessageProperties props = new MessageProperties();
-		props.setContentEncoding("foo");
+		props.setContentEncoding("");
 		Message message = new Message("foo".getBytes(), props);
 		template.send("", ROUTE, message);
 		message = new Message("bar".getBytes(), props);
@@ -506,6 +510,7 @@ public class BatchingRabbitTemplateTests {
 		byte[] out = (byte[]) template.receiveAndConvert(ROUTE);
 		assertThat(out).isNotNull();
 		assertThat(new String(out)).isEqualTo("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar");
+		assertThat(encoding.get()).isEqualTo("gzip");
 	}
 
 	@Test
@@ -535,6 +540,7 @@ public class BatchingRabbitTemplateTests {
 		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
 		template.setConnectionFactory(this.connectionFactory);
 		ZipPostProcessor zipPostProcessor = new ZipPostProcessor();
+		zipPostProcessor.setEncodingDelimiter(", ");
 		assertThat(getStreamLevel(zipPostProcessor)).isEqualTo(Deflater.BEST_SPEED);
 		template.setBeforePublishPostProcessors(zipPostProcessor);
 		MessageProperties props = new MessageProperties();
@@ -544,7 +550,7 @@ public class BatchingRabbitTemplateTests {
 		message = new Message("bar".getBytes(), props);
 		template.send("", ROUTE, message);
 		message = receive(template);
-		assertThat(message.getMessageProperties().getContentEncoding()).isEqualTo("zip:foo");
+		assertThat(message.getMessageProperties().getContentEncoding()).isEqualTo("zip, foo");
 		UnzipPostProcessor unzipper = new UnzipPostProcessor();
 		message = unzipper.postProcessMessage(message);
 		assertThat(new String(message.getBody())).isEqualTo("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar");
@@ -597,6 +603,7 @@ public class BatchingRabbitTemplateTests {
 		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
 		template.setConnectionFactory(this.connectionFactory);
 		DeflaterPostProcessor deflaterPostProcessor = new DeflaterPostProcessor();
+		deflaterPostProcessor.setEncodingDelimiter(", ");
 		assertThat(getStreamLevel(deflaterPostProcessor)).isEqualTo(Deflater.BEST_SPEED);
 		template.setBeforePublishPostProcessors(deflaterPostProcessor);
 		MessageProperties props = new MessageProperties();
@@ -606,7 +613,7 @@ public class BatchingRabbitTemplateTests {
 		message = new Message("bar".getBytes(), props);
 		template.send("", ROUTE, message);
 		message = receive(template);
-		assertThat(message.getMessageProperties().getContentEncoding()).isEqualTo("deflate:foo");
+		assertThat(message.getMessageProperties().getContentEncoding()).isEqualTo("deflate, foo");
 		InflaterPostProcessor inflater = new InflaterPostProcessor();
 		message = inflater.postProcessMessage(message);
 		assertThat(new String(message.getBody())).isEqualTo("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar");
