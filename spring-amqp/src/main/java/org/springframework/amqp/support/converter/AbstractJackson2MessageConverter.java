@@ -84,7 +84,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 
 	private ProjectingMessageConverter projectingConverter;
 
-	private boolean standardCharset;
+	private boolean charsetIsUtf8 = true;
 
 	private boolean assumeSupportedContentType = true;
 
@@ -125,9 +125,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	public void setDefaultCharset(@Nullable String defaultCharset) {
 		this.defaultCharset = (defaultCharset != null) ? Charset.forName(defaultCharset)
 				: DEFAULT_CHARSET;
-		if (this.defaultCharset.equals(StandardCharsets.UTF_8)) {
-			this.standardCharset = true;
-		}
+		this.charsetIsUtf8 = this.defaultCharset.equals(StandardCharsets.UTF_8);
 	}
 
 	public String getDefaultCharset() {
@@ -371,7 +369,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 
 		byte[] bytes;
 		try {
-			if (this.standardCharset) {
+			if (this.charsetIsUtf8) {
 				bytes = this.objectMapper.writeValueAsBytes(objectToConvert);
 			}
 			else {
