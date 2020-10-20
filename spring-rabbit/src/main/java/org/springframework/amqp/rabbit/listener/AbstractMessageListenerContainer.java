@@ -242,9 +242,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private boolean micrometerEnabled = true;
 
-	private volatile boolean lazyLoad;
-
 	private boolean isBatchListener;
+
+	private OOMHandler oOMHandler = error -> System.exit(99);
+
+	private volatile boolean lazyLoad;
 
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
@@ -1123,6 +1125,21 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		this.micrometerEnabled = micrometerEnabled;
 	}
 
+	protected OOMHandler getOOMHandler() {
+		return this.oOMHandler;
+	}
+
+	/**
+	 * Provide an OOMHandler implementation; by default, {@code System.exit(99)} is
+	 * called.
+	 * @param oOMHandler the handler.
+	 * @since 2.2.12
+	 */
+	public void setOOMHandler(OOMHandler oOMHandler) {
+		Assert.notNull(oOMHandler, "'oOMHandler' cannot be null");
+		this.oOMHandler = oOMHandler;
+	}
+
 	/**
 	 * Delegates to {@link #validateConfiguration()} and {@link #initialize()}.
 	 */
@@ -1947,6 +1964,22 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private interface ContainerDelegate {
 
 		void invokeListener(Channel channel, Object data);
+
+	}
+
+	/**
+	 * A handler for {@link OutOfMemoryError} on the container thread(s).
+	 * @since 2.2.12
+	 *
+	 */
+	@FunctionalInterface
+	public interface OOMHandler {
+
+		/**
+		 * Handle the error; typically, the JVM will be terminated.
+		 * @param error the error.
+		 */
+		void handle(OutOfMemoryError error);
 
 	}
 

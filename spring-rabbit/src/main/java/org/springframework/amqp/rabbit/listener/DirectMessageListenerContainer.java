@@ -1085,6 +1085,10 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					}
 				}
 			}
+			catch (OutOfMemoryError e) { // NOSONAR
+				getOOMHandler().handle(e);
+				throw e;
+			}
 		}
 
 		private void handleAck(long deliveryTag, boolean channelLocallyTransacted) {

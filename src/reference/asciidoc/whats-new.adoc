@@ -35,6 +35,10 @@ See <<exception-handling>> for more information.
 Listener performance can now be monitored using Micrometer `Timer` s.
 See <<micrometer>> for more information.
 
+You can now configure an `OOMHandler` (out of memory handler); the default implementation does nothing, for backwards compatibility.
+Normally, the JVM should be terminated; this will be the default action in a future release.
+See <<containerAttributes>> for more information.
+
 ==== @RabbitListener Changes
 
 You can now configure an `executor` on each listener, overriding the factory configuration, to more easily identify threads associated with the listener.
@@ -127,9 +131,6 @@ See <<message-properties-converters>> for more information.
 
 Recovery of failed producer-created batches is now supported.
 See <<batch-retry>> for more information.
-
-A new listener container property `consumeDelay` is now available; it is helpful when using the https://github.com/rabbitmq/rabbitmq-sharding[RabbitMQ Sharding Plugin].
-See <<containerAttributes>> for more information.
 
 ==== MessagePostProcessor Changes
 
