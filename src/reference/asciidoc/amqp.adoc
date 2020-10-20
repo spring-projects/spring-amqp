@@ -5789,6 +5789,15 @@ a|image::images/tickmark.png[]
 a|image::images/tickmark.png[]
 a|image::images/tickmark.png[]
 
+|oOMHandler
+(N/A)
+
+|An `AbstractMessageListenerContainer.OOMHandler` implementation that is called when a container thread catches an `OutOfMemoryException`.
+The default implementation calls `System.exit(99)`.
+
+a|image::images/tickmark.png[]
+a|image::images/tickmark.png[]
+
 |phase
 (phase)
 
