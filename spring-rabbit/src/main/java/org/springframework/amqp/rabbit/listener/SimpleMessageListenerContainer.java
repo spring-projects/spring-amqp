@@ -357,7 +357,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	/**
 	 * Set to true to present a list of messages based on the {@link #setBatchSize(int)},
-	 * if the listener supports it.
+	 * if the listener supports it. This will coerce {@link #setDeBatchingEnabled(boolean)
+	 * deBatchingEnabled} to true as well.
 	 * @param consumerBatchEnabled true to create message batches in the container.
 	 * @since 2.2
 	 * @see #setBatchSize(int)
@@ -512,8 +513,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	@Override
 	protected void doInitialize() {
-		Assert.state(!this.consumerBatchEnabled  || isDeBatchingEnabled(),
-				"When setting 'consumerBatchEnabled' to true, 'deBatchingEnabled' must also be true");
+		if (this.consumerBatchEnabled) {
+			setDeBatchingEnabled(true);
+		}
 	}
 
 	@ManagedMetric(metricType = MetricType.GAUGE)
