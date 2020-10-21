@@ -113,6 +113,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		implements MessageListenerContainer, ApplicationContextAware, BeanNameAware, DisposableBean,
 		ApplicationEventPublisherAware {
 
+	private static final int EXIT_99 = 99;
+
 	private static final String UNCHECKED = "unchecked";
 
 	static final int DEFAULT_FAILED_DECLARATION_RETRY_INTERVAL = 5000;
@@ -246,7 +248,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private long consumeDelay;
 
-	private OOMHandler oOMHandler = error -> System.exit(99);
+	private OOMHandler oOMHandler = error -> System.exit(EXIT_99);
 
 	private volatile boolean lazyLoad;
 

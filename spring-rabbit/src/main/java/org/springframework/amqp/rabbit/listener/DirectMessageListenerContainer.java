@@ -1044,7 +1044,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			});
 		}
 
-		private void callExecuteListener(Object data, long deliveryTag) {
+		private void callExecuteListener(Object data, long deliveryTag) { // NOSONAR (complex)
 			boolean channelLocallyTransacted = isChannelLocallyTransacted();
 			try {
 				executeListener(getChannel(), data);
