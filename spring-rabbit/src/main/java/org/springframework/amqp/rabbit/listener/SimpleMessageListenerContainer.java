@@ -1255,12 +1255,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			catch (Error e) { //NOSONAR
-				// ok to catch Error - we're aborting so will stop
 				logger.error("Consumer thread error, thread abort.", e);
-				if (e instanceof OutOfMemoryError) { // NOSONAR
-					getOOMHandler().handle((OutOfMemoryError) e);
-				}
 				publishConsumerFailedEvent("Consumer threw an Error", true, e);
+				getJavaLangErrorHandler().handle(e);
 				aborted = true;
 			}
 			catch (Throwable t) { //NOSONAR

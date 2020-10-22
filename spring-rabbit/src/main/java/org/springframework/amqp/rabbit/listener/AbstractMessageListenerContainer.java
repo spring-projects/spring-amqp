@@ -248,7 +248,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private long consumeDelay;
 
-	private OOMHandler oOMHandler = error -> System.exit(EXIT_99);
+	private JavaLangErrorHandler javaLangErrorHandler = error -> System.exit(EXIT_99);
 
 	private volatile boolean lazyLoad;
 
@@ -1149,19 +1149,19 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		this.consumeDelay = consumeDelay;
 	}
 
-	protected OOMHandler getOOMHandler() {
-		return this.oOMHandler;
+	protected JavaLangErrorHandler getJavaLangErrorHandler() {
+		return this.javaLangErrorHandler;
 	}
 
 	/**
 	 * Provide an OOMHandler implementation; by default, {@code System.exit(99)} is
 	 * called.
-	 * @param oOMHandler the handler.
+	 * @param javaLangErrorHandler the handler.
 	 * @since 2.2.12
 	 */
-	public void setOOMHandler(OOMHandler oOMHandler) {
-		Assert.notNull(oOMHandler, "'oOMHandler' cannot be null");
-		this.oOMHandler = oOMHandler;
+	public void setjavaLangErrorHandler(JavaLangErrorHandler javaLangErrorHandler) {
+		Assert.notNull(javaLangErrorHandler, "'javaLangErrorHandler' cannot be null");
+		this.javaLangErrorHandler = javaLangErrorHandler;
 	}
 
 	/**
@@ -1992,18 +1992,18 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
-	 * A handler for {@link OutOfMemoryError} on the container thread(s).
+	 * A handler for {@link Error} on the container thread(s).
 	 * @since 2.2.12
 	 *
 	 */
 	@FunctionalInterface
-	public interface OOMHandler {
+	public interface JavaLangErrorHandler {
 
 		/**
 		 * Handle the error; typically, the JVM will be terminated.
 		 * @param error the error.
 		 */
-		void handle(OutOfMemoryError error);
+		void handle(Error error);
 
 	}
 

@@ -38,7 +38,8 @@ See <<template-confirms>> for more information.
 
 A new listener container property `consumeDelay` is now available; it is helpful when using the https://github.com/rabbitmq/rabbitmq-sharding[RabbitMQ Sharding Plugin].
 
-The default `OOMHandler` (out of memory handler) now calls `System.exit(99)`.
+The default `JavaLangErrorHandler` now calls `System.exit(99)`.
+To revert to the previous behavior (do nothing), add a no-op handler.
 
 See <<containerAttributes>> for more information.
 
