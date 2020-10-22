@@ -5685,6 +5685,15 @@ a|image::images/tickmark.png[]
 a|image::images/tickmark.png[]
 a|image::images/tickmark.png[]
 
+|javaLangErrorHandler
+(N/A)
+
+|An `AbstractMessageListenerContainer.JavaLangErrorHandler` implementation that is called when a container thread catches an `Error`.
+The default implementation calls `System.exit(99)`; to revert to the previous behavior (do nothing), add a no-op handler.
+
+a|image::images/tickmark.png[]
+a|image::images/tickmark.png[]
+
 |maxConcurrentConsumers
 (max-concurrency)
 
@@ -5785,15 +5794,6 @@ a|image::images/tickmark.png[]
 (N/A)
 
 |Set to `true` to disable delivery from the server to consumers messages published on the same channel's connection.
-
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
-
-|oOMHandler
-(N/A)
-
-|An `AbstractMessageListenerContainer.OOMHandler` implementation that is called when a container thread catches an `OutOfMemoryException`.
-The default implementation calls `System.exit(99)`.
 
 a|image::images/tickmark.png[]
 a|image::images/tickmark.png[]
