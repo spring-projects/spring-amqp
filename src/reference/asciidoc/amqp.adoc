@@ -5430,10 +5430,10 @@ Default is a `SimpleAsyncTaskExecutor`, using internally managed threads.
 a| image::images/tickmark.png[]
 a| image::images/tickmark.png[]
 
-| oOMHandler
+| javaLangErrorHandler
 (N/A)
 
-| An `AbstractMessageListenerContainer.OOMHandler` implementation that is called when a container thread catches an `OutOfMemoryException`.
+| An `AbstractMessageListenerContainer.JavaLangErrorHandler` implementation that is called when a container thread catches an `Error`.
 The default implementation does nothing, for backwards compatibility.
 Normally, the JVM should be terminated; this will be the default action in a future release.
 

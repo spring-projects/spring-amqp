@@ -1085,8 +1085,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					}
 				}
 			}
-			catch (OutOfMemoryError e) { // NOSONAR
-				getOOMHandler().handle(e);
+			catch (Error e) { // NOSONAR
+				getJavaLangErrorHandler().handle(e);
 				throw e;
 			}
 		}
