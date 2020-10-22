@@ -1154,8 +1154,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
-	 * Provide an OOMHandler implementation; by default, {@code System.exit(99)} is
-	 * called.
+	 * Provide a JavaLangErrorHandler implementation; by default, {@code System.exit(99)}
+	 * is called.
 	 * @param javaLangErrorHandler the handler.
 	 * @since 2.2.12
 	 */
