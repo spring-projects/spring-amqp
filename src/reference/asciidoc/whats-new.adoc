@@ -48,3 +48,7 @@ See <<containerAttributes>> for more information.
 The compressing `MessagePostProcessor` s now use a comma to separate multiple content encodings instead of a colon.
 The decompressors can handle both formats but, if you produce messages with this version that are consumed by versions earlier than 2.2.12, you should configure the compressor to use the old delimiter.
 See the IMPORTANT note in <<post-processing>> for more information.
+
+==== Multiple Broker Support Improvements
+
+See <<multi-rabbit>> for more information.
