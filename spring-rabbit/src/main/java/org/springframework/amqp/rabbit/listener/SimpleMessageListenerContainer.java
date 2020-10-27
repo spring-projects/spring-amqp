@@ -102,6 +102,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private final BlockingQueue<ListenerContainerConsumerFailedEvent> abortEvents = new LinkedBlockingQueue<>();
 
+	private final ActiveObjectCounter<BlockingQueueConsumer> cancellationLock = new ActiveObjectCounter<>();
+
 	private long startConsumerMinInterval = DEFAULT_START_CONSUMER_MIN_INTERVAL;
 
 	private long stopConsumerMinInterval = DEFAULT_STOP_CONSUMER_MIN_INTERVAL;
@@ -117,8 +119,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private long receiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
 
 	private Set<BlockingQueueConsumer> consumers;
-
-	private final ActiveObjectCounter<BlockingQueueConsumer> cancellationLock = new ActiveObjectCounter<>();
 
 	private Integer declarationRetries;
 

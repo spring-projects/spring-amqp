@@ -133,6 +133,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private static final boolean MICROMETER_PRESENT = ClassUtils.isPresent(
 			"io.micrometer.core.instrument.MeterRegistry", AbstractMessageListenerContainer.class.getClassLoader());
 
+	private final Object lifecycleMonitor = new Object();
+
 	private final ContainerDelegate delegate = this::actualInvokeListener;
 
 	protected final Object consumersMonitor = new Object(); //NOSONAR
@@ -183,29 +185,25 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private int phase = Integer.MAX_VALUE;
 
-	private volatile boolean active = false;
+	private boolean active = false;
 
-	private volatile boolean running = false;
-
-	private final Object lifecycleMonitor = new Object();
-
-	private volatile List<Queue> queues = new CopyOnWriteArrayList<>();
+	private boolean running = false;
 
 	private ErrorHandler errorHandler = new ConditionalRejectingErrorHandler();
 
 	private boolean exposeListenerChannel = true;
 
-	private volatile MessageListener messageListener;
+	private MessageListener messageListener;
 
-	private volatile AcknowledgeMode acknowledgeMode = AcknowledgeMode.AUTO;
+	private AcknowledgeMode acknowledgeMode = AcknowledgeMode.AUTO;
 
-	private volatile boolean deBatchingEnabled = DEFAULT_DEBATCHING_ENABLED;
+	private boolean deBatchingEnabled = DEFAULT_DEBATCHING_ENABLED;
 
-	private volatile boolean initialized;
+	private boolean initialized;
 
 	private Collection<MessagePostProcessor> afterReceivePostProcessors;
 
-	private volatile ApplicationContext applicationContext;
+	private ApplicationContext applicationContext;
 
 	private String listenerId;
 
@@ -214,17 +212,17 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	@Nullable
 	private ConsumerTagStrategy consumerTagStrategy;
 
-	private volatile boolean exclusive;
+	private boolean exclusive;
 
-	private volatile boolean noLocal;
+	private boolean noLocal;
 
-	private volatile boolean defaultRequeueRejected = true;
+	private boolean defaultRequeueRejected = true;
 
-	private volatile int prefetchCount = DEFAULT_PREFETCH_COUNT;
+	private int prefetchCount = DEFAULT_PREFETCH_COUNT;
 
 	private long idleEventInterval;
 
-	private volatile long lastReceive = System.currentTimeMillis();
+	private long lastReceive = System.currentTimeMillis();
 
 	private boolean statefulRetryFatalWithNullMessageId = true;
 
@@ -249,6 +247,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private long consumeDelay;
 
 	private JavaLangErrorHandler javaLangErrorHandler = error -> System.exit(EXIT_99);
+
+	private volatile List<Queue> queues = new CopyOnWriteArrayList<>();
 
 	private volatile boolean lazyLoad;
 
