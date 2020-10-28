@@ -51,7 +51,7 @@ ext {
 	junitJupiterVersion = '5.7.0'
 	log4jVersion = '2.13.3'
 	logbackVersion = '1.2.3'
-	micrometerVersion = '1.5.5'
+	micrometerVersion = '1.5.6'
 	mockitoVersion = '3.6.0'
 	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.9.0'
 	rabbitmqHttpClientVersion = '3.8.0.RELEASE'
