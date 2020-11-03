@@ -18,9 +18,11 @@ package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInterceptor;
+import org.aopalliance.intercept.MethodInvocation;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
@@ -125,7 +127,7 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory {
 		public Channel createChannel(boolean transactional) {
 			Channel channel = transactional ? this.txChannels.get() : this.channels.get();
 			if (channel == null || !channel.isOpen()) {
-				channel = super.createChannel(transactional);
+				channel = createProxy(super.createChannel(transactional), transactional);
 				if (transactional) {
 					try {
 						channel.txSelect();
@@ -133,7 +135,6 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory {
 					catch (IOException e) {
 						throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 					}
-					channel = createProxy(channel);
 					this.txChannels.set(channel);
 				}
 				else {
@@ -145,28 +146,63 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory {
 							throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 						}
 					}
-					channel = createProxy(channel);
 					this.channels.set(channel);
 				}
 			}
 			return channel;
 		}
 
-		private Channel createProxy(Channel channel) {
+		private Channel createProxy(Channel channel, boolean transactional) {
 			ProxyFactory pf = new ProxyFactory(channel);
+			AtomicBoolean confirmSelected = new AtomicBoolean();
 			Advice advice =
 					(MethodInterceptor) invocation -> {
-						if (ConnectionWrapper.this.channels.get() == null) {
-							return invocation.proceed();
+						String method = invocation.getMethod().getName();
+						switch (method) {
+							case "close":
+								return handleClose(channel, transactional, invocation);
+							case "getTargetChannel":
+								return channel;
+							case "isTransactional":
+								return transactional;
+							case "confirmSelect":
+								confirmSelected.set(true);
+								return channel.confirmSelect();
+							case "isConfirmSelected":
+								return confirmSelected.get();
 						}
-						else {
-							return null;
-						}
+						return null;
 					};
 			NameMatchMethodPointcutAdvisor advisor = new NameMatchMethodPointcutAdvisor(advice);
 			advisor.addMethodName("close");
+			advisor.addMethodName("getTargetChannel");
+			advisor.addMethodName("isTransactional");
+			advisor.addMethodName("confirmSelect");
+			advisor.addMethodName("isConfirmSelected");
 			pf.addAdvisor(advisor);
+			pf.addInterface(ChannelProxy.class);
 			return (Channel) pf.getProxy();
+		}
+
+		private Object handleClose(Channel channel, boolean transactional, MethodInvocation invocation)
+				throws Throwable {
+
+			if (ConnectionWrapper.this.channels.get() == null) {
+				return invocation.proceed();
+			}
+			else {
+				if (RabbitUtils.isPhysicalCloseRequired()) {
+					physicalClose(channel);
+					if (transactional) {
+						this.txChannels.remove();
+					}
+					else {
+						this.channels.remove();
+					}
+					RabbitUtils.clearPhysicalCloseRequired();
+				}
+				return null;
+			}
 		}
 
 		@Override
@@ -183,13 +219,17 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory {
 			Channel channel = channelsTL.get();
 			if (channel != null) {
 				channelsTL.remove();
-				if (channel.isOpen()) {
-					try {
-						channel.close();
-					}
-					catch (IOException | TimeoutException e) {
-						logger.debug("Error on close", e);
-					}
+				physicalClose(channel);
+			}
+		}
+
+		private void physicalClose(Channel channel) {
+			if (channel.isOpen()) {
+				try {
+					channel.close();
+				}
+				catch (IOException | TimeoutException e) {
+					logger.debug("Error on close", e);
 				}
 			}
 		}

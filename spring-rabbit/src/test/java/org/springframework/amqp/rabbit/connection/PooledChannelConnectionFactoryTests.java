@@ -50,10 +50,12 @@ public class PooledChannelConnectionFactoryTests {
 				nonTxConfiged.set(true);
 			}
 		});
+		pcf.setSimplePublisherConfirms(true);
 		Connection conn = pcf.createConnection();
 		assertThat(txConfiged.get()).isTrue();
 		assertThat(nonTxConfiged.get()).isTrue();
 		Channel chann1 = conn.createChannel(false);
+		assertThat(((ChannelProxy) chann1).isConfirmSelected()).isTrue();
 		chann1.close();
 		Channel chann2 = conn.createChannel(false);
 		assertThat(chann2).isSameAs(chann1);
@@ -63,6 +65,11 @@ public class PooledChannelConnectionFactoryTests {
 		chann1.close();
 		chann2 = conn.createChannel(true);
 		assertThat(chann2).isSameAs(chann1);
+		RabbitUtils.setPhysicalCloseRequired(chann2, true);
+		chann2.close();
+		chann1 = conn.createChannel(true);
+		assertThat(chann1).isNotSameAs(chann2);
+		chann1.close();
 		pcf.destroy();
 	}
 

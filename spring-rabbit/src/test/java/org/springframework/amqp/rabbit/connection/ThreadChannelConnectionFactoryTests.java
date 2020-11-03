@@ -66,7 +66,13 @@ public class ThreadChannelConnectionFactoryTests {
 				.isTrue();
 		chann2.close();
 		chann2 = conn.createChannel(false);
+		RabbitUtils.setPhysicalCloseRequired(chann2, true);
 		chann2.close();
+		scf.setSimplePublisherConfirms(true);
+		chann1 = conn.createChannel(false);
+		assertThat(chann1).isNotSameAs(chann2);
+		assertThat(((ChannelProxy) chann1).isConfirmSelected()).isTrue();
+		chann1.close();
 		scf.destroy();
 		assertThat(((Channel) TestUtils.getPropertyValue(conn, "channels", ThreadLocal.class).get()).isOpen())
 				.isFalse();
