@@ -1338,6 +1338,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			if (logger.isDebugEnabled()) {
 				logger.debug("Closing cached Channel: " + this.target);
 			}
+			RabbitUtils.clearPhysicalCloseRequired();
 			if (this.target == null) {
 				return;
 			}

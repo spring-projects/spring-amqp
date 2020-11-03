@@ -17,11 +17,15 @@
 package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInterceptor;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
@@ -120,6 +124,8 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 
 	private static final class ConnectionWrapper extends SimpleConnection {
 
+		private static final Log logger = LogFactory.getLog(ConnectionWrapper.class);
+
 		private final ObjectPool<Channel> channels;
 
 		private final ObjectPool<Channel> txChannels;
@@ -152,21 +158,53 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 		private Channel createProxy(Channel channel, boolean transacted) {
 			ProxyFactory pf = new ProxyFactory(channel);
 			AtomicReference<Channel> proxy = new AtomicReference<>();
+			AtomicBoolean confirmSelected = new AtomicBoolean();
 			Advice advice =
 					(MethodInterceptor) invocation -> {
-						if (transacted) {
-							ConnectionWrapper.this.txChannels.returnObject(proxy.get());
-						}
-						else {
-							ConnectionWrapper.this.channels.returnObject(proxy.get());
+						String method = invocation.getMethod().getName();
+						switch (method) {
+						case "close":
+							return handleClose(channel, transacted, proxy);
+						case "getTargetChannel":
+							return channel;
+						case "isTransactional":
+							return transacted;
+						case "confirmSelect":
+							confirmSelected.set(true);
+							return channel.confirmSelect();
+						case "isConfirmSelected":
+							return confirmSelected.get();
 						}
 						return null;
 					};
 			NameMatchMethodPointcutAdvisor advisor = new NameMatchMethodPointcutAdvisor(advice);
 			advisor.addMethodName("close");
+			advisor.addMethodName("getTargetChannel");
+			advisor.addMethodName("isTransactional");
+			advisor.addMethodName("confirmSelect");
+			advisor.addMethodName("isConfirmSelected");
 			pf.addAdvisor(advisor);
+			pf.addInterface(ChannelProxy.class);
 			proxy.set((Channel) pf.getProxy());
 			return proxy.get();
+		}
+
+		private Object handleClose(Channel channel, boolean transacted, AtomicReference<Channel> proxy)
+				throws Exception {
+
+			if (!RabbitUtils.isPhysicalCloseRequired()) {
+				if (transacted) {
+					ConnectionWrapper.this.txChannels.returnObject(proxy.get());
+				}
+				else {
+					ConnectionWrapper.this.channels.returnObject(proxy.get());
+				}
+				return null;
+			}
+			else {
+				physicalClose(channel);
+			}
+			return null;
 		}
 
 		@Override
@@ -179,11 +217,23 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 			this.txChannels.close();
 		}
 
+		private void physicalClose(Channel channel) {
+			RabbitUtils.clearPhysicalCloseRequired();
+			if (channel.isOpen()) {
+				try {
+					channel.close();
+				}
+				catch (IOException | TimeoutException e) {
+					logger.debug("Error on close", e);
+				}
+			}
+		}
+
 		private class ChannelFactory implements PooledObjectFactory<Channel> {
 
 			@Override
 			public PooledObject<Channel> makeObject() {
-				Channel channel = ConnectionWrapper.super.createChannel(false);
+				Channel channel = createProxy(ConnectionWrapper.super.createChannel(false), false);
 				if (ConnectionWrapper.this.simplePublisherConfirms) {
 					try {
 						channel.confirmSelect();
@@ -192,7 +242,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 						throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 					}
 				}
-				return new DefaultPooledObject<>(createProxy(channel, false));
+				return new DefaultPooledObject<>(channel);
 			}
 
 			@Override
@@ -219,14 +269,14 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 
 			@Override
 			public PooledObject<Channel> makeObject() {
-				Channel channel = ConnectionWrapper.super.createChannel(true);
+				Channel channel = createProxy(ConnectionWrapper.super.createChannel(true), true);
 				try {
 					channel.txSelect();
 				}
 				catch (IOException e) {
 					throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 				}
-				return new DefaultPooledObject<>(createProxy(channel, true));
+				return new DefaultPooledObject<>(channel);
 			}
 
 		}
