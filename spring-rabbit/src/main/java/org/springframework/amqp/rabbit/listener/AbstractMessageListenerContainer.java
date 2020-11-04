@@ -458,7 +458,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	@Override
 	@Nullable
-	public Object getMessageListener() {
+	/**
+	 * Get a reference to the message listener.
+	 * @return the message listener.
+	 */
+	public MessageListener getMessageListener() {
 		return this.messageListener;
 	}
 
