@@ -455,7 +455,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	/**
 	 * @return The message listener object to register.
 	 */
-	public Object getMessageListener() {
+	public MessageListener getMessageListener() {
 		return this.messageListener;
 	}
 
