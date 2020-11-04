@@ -124,7 +124,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 
 	private static final class ConnectionWrapper extends SimpleConnection {
 
-		private static final Log logger = LogFactory.getLog(ConnectionWrapper.class);
+		private static final Log LOGGER = LogFactory.getLog(ConnectionWrapper.class);
 
 		private final ObjectPool<Channel> channels;
 
@@ -164,7 +164,8 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 						String method = invocation.getMethod().getName();
 						switch (method) {
 						case "close":
-							return handleClose(channel, transacted, proxy);
+							handleClose(channel, transacted, proxy);
+							return null;
 						case "getTargetChannel":
 							return channel;
 						case "isTransactional":
@@ -189,8 +190,8 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 			return proxy.get();
 		}
 
-		private Object handleClose(Channel channel, boolean transacted, AtomicReference<Channel> proxy)
-				throws Exception {
+		private void handleClose(Channel channel, boolean transacted, AtomicReference<Channel> proxy)
+				throws Exception { // NOSONAR returnObject() throws it
 
 			if (!RabbitUtils.isPhysicalCloseRequired()) {
 				if (transacted) {
@@ -199,12 +200,10 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 				else {
 					ConnectionWrapper.this.channels.returnObject(proxy.get());
 				}
-				return null;
 			}
 			else {
 				physicalClose(channel);
 			}
-			return null;
 		}
 
 		@Override
@@ -224,7 +223,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 					channel.close();
 				}
 				catch (IOException | TimeoutException e) {
-					logger.debug("Error on close", e);
+					LOGGER.debug("Error on close", e);
 				}
 			}
 		}

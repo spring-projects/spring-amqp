@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInterceptor;
-import org.aopalliance.intercept.MethodInvocation;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
@@ -160,7 +159,8 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory {
 						String method = invocation.getMethod().getName();
 						switch (method) {
 							case "close":
-								return handleClose(channel, transactional, invocation);
+								handleClose(channel, transactional);
+								return null;
 							case "getTargetChannel":
 								return channel;
 							case "isTransactional":
@@ -184,11 +184,10 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory {
 			return (Channel) pf.getProxy();
 		}
 
-		private Object handleClose(Channel channel, boolean transactional, MethodInvocation invocation)
-				throws Throwable {
+		private void handleClose(Channel channel, boolean transactional) {
 
 			if (ConnectionWrapper.this.channels.get() == null) {
-				return invocation.proceed();
+				physicalClose(channel);
 			}
 			else {
 				if (RabbitUtils.isPhysicalCloseRequired()) {
@@ -201,7 +200,6 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory {
 					}
 					RabbitUtils.clearPhysicalCloseRequired();
 				}
-				return null;
 			}
 		}
 
