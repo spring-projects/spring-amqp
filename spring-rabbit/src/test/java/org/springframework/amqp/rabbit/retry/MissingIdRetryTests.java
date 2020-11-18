@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.retry;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atMost;
@@ -112,13 +113,9 @@ public class MissingIdRetryTests {
 		try {
 			assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
 			Map map = (Map) new DirectFieldAccessor(cache).getPropertyValue("map");
-			int n = 0;
-			while (n++ < 100 && map.size() != 0) {
-				Thread.sleep(100);
-			}
+			await().until(() -> map.size() == 0);
 			verify(cache, never()).put(any(), any(RetryContext.class));
 			verify(cache, never()).remove(any());
-			assertThat(map).as("Expected map.size() = 0, was: " + map.size()).hasSize(0);
 		}
 		finally {
 			container.stop();
@@ -161,10 +158,7 @@ public class MissingIdRetryTests {
 		try {
 			assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
 			Map map = (Map) new DirectFieldAccessor(cache).getPropertyValue("map");
-			int n = 0;
-			while (n++ < 100 && map.size() != 0) {
-				Thread.sleep(100);
-			}
+			await().until(() -> map.size() == 0);
 			ArgumentCaptor putCaptor = ArgumentCaptor.forClass(Object.class);
 			ArgumentCaptor getCaptor = ArgumentCaptor.forClass(Object.class);
 			ArgumentCaptor removeCaptor = ArgumentCaptor.forClass(Object.class);
@@ -175,7 +169,6 @@ public class MissingIdRetryTests {
 			logger.debug("puts:" + putCaptor.getAllValues());
 			logger.debug("gets:" + putCaptor.getAllValues());
 			logger.debug("removes:" + removeCaptor.getAllValues());
-			assertThat(map).as("Expected map.size() = 0, was: " + map.size()).hasSize(0);
 		}
 		finally {
 			container.stop();
@@ -226,10 +219,7 @@ public class MissingIdRetryTests {
 		try {
 			assertThat(cdl.await(30, TimeUnit.SECONDS)).isTrue();
 			Map map = (Map) new DirectFieldAccessor(cache).getPropertyValue("map");
-			int n = 0;
-			while (n++ < 100 && map.size() != 0) {
-				Thread.sleep(100);
-			}
+			await().until(() -> map.size() == 0);
 			ArgumentCaptor putCaptor = ArgumentCaptor.forClass(Object.class);
 			ArgumentCaptor getCaptor = ArgumentCaptor.forClass(Object.class);
 			ArgumentCaptor removeCaptor = ArgumentCaptor.forClass(Object.class);
@@ -240,7 +230,6 @@ public class MissingIdRetryTests {
 			logger.debug("puts:" + putCaptor.getAllValues());
 			logger.debug("gets:" + putCaptor.getAllValues());
 			logger.debug("removes:" + removeCaptor.getAllValues());
-			assertThat(map).as("Expected map.size() = 0, was: " + map.size()).hasSize(0);
 		}
 		finally {
 			container.stop();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -51,6 +52,7 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.Address;
+import com.rabbitmq.client.AddressResolver;
 import com.rabbitmq.client.BlockedListener;
 import com.rabbitmq.client.Recoverable;
 import com.rabbitmq.client.RecoveryListener;
@@ -66,6 +68,30 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
  */
 public abstract class AbstractConnectionFactory implements ConnectionFactory, DisposableBean, BeanNameAware,
 		ApplicationContextAware, ApplicationEventPublisherAware, ApplicationListener<ContextClosedEvent> {
+
+	/**
+	 * The mode used to shuffle the addresses.
+	 */
+	public enum AddressShuffleMode {
+
+		/**
+		 * Do not shuffle the addresses before or after opening a connection; attempt
+		 * connections in a fixed order.
+		 */
+		NONE,
+
+		/**
+		 * Randomly shuffle the addresses before opening a connection; attempt connections
+		 * in the new order.
+		 */
+		RANDOM,
+
+		/**
+		 * Shuffle the addresses after opening a connection, moving the first address to the end.
+		 */
+		INORDER
+
+	}
 
 	private static final String PUBLISHER_SUFFIX = ".publisher";
 
@@ -107,7 +133,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	private List<Address> addresses;
 
-	private boolean shuffleAddresses;
+	private AddressShuffleMode addressShuffleMode = AddressShuffleMode.NONE;
 
 	private int closeTimeout = DEFAULT_CLOSE_TIMEOUT;
 
@@ -121,6 +147,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	private ApplicationContext applicationContext;
 
 	private ApplicationEventPublisher applicationEventPublisher;
+
+	private AddressResolver addressResolver;
 
 	private volatile boolean contextStopped;
 
@@ -218,6 +246,16 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	/**
+	 * Set an {@link AddressResolver} to use when creating connections; overrides
+	 * {@link #setAddresses(String)}, {@link #setHost(String)}, and {@link #setPort(int)}.
+	 * @param addressResolver the resolver.
+	 * @since 2.1.15
+	 */
+	public void setAddressResolver(AddressResolver addressResolver) {
+		this.addressResolver = addressResolver; // NOSONAR - sync inconsistency
+	}
+
+	/**
 	 * @param uri the URI
 	 * @since 1.5
 	 * @see com.rabbitmq.client.ConnectionFactory#setUri(URI)
@@ -281,18 +319,19 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	 * This property overrides the host+port properties if not empty.
 	 * @param addresses list of addresses with form "host[:port],..."
 	 */
-	public void setAddresses(String addresses) {
+	public synchronized void setAddresses(String addresses) {
 		if (StringUtils.hasText(addresses)) {
 			Address[] addressArray = Address.parseAddresses(addresses);
 			if (addressArray.length > 0) {
-				this.addresses = Arrays.asList(addressArray);
+				this.addresses = new LinkedList<>(Arrays.asList(addressArray));
 				if (this.publisherConnectionFactory != null) {
 					this.publisherConnectionFactory.setAddresses(addresses);
 				}
 				return;
 			}
 		}
-		this.logger.info("setAddresses() called with an empty value, will be using the host+port properties for connections");
+		this.logger.info("setAddresses() called with an empty value, will be using the host+port "
+				+ " or addressResolver properties for connections");
 		this.addresses = null;
 	}
 
@@ -452,9 +491,23 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	 * @param shuffleAddresses true to shuffle the list.
 	 * @since 2.1.8
 	 * @see Collections#shuffle(List)
+	 * @deprecated since 2.3 in favor of
+	 * {@link #setAddressShuffleMode(AddressShuffleMode)}.
 	 */
+	@Deprecated
 	public void setShuffleAddresses(boolean shuffleAddresses) {
-		this.shuffleAddresses = shuffleAddresses;
+		setAddressShuffleMode(AddressShuffleMode.RANDOM);
+	}
+
+	/**
+	 * Set the mode for shuffling addresses.
+	 * @param addressShuffleMode the address shuffle mode.
+	 * @since 2.3
+	 * @see Collections#shuffle(List)
+	 */
+	public void setAddressShuffleMode(AddressShuffleMode addressShuffleMode) {
+		Assert.notNull(addressShuffleMode, "'addressShuffleMode' cannot be null");
+		this.addressShuffleMode = addressShuffleMode; // NOSONAR - sync inconsistency
 	}
 
 	public boolean hasPublisherConnectionFactory() {
@@ -511,29 +564,52 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		}
 	}
 
-	private com.rabbitmq.client.Connection connect(String connectionName) throws IOException, TimeoutException {
-		com.rabbitmq.client.Connection rabbitConnection;
+	private synchronized com.rabbitmq.client.Connection connect(String connectionName)
+			throws IOException, TimeoutException {
+
+		if (this.addressResolver != null) {
+			return connectResolver(connectionName);
+		}
 		if (this.addresses != null) {
-			List<Address> addressesToConnect = this.addresses;
-			if (this.shuffleAddresses && addressesToConnect.size() > 1) {
-				List<Address> list = new ArrayList<>(addressesToConnect);
-				Collections.shuffle(list);
-				addressesToConnect = list;
-			}
-			if (this.logger.isInfoEnabled()) {
-				this.logger.info("Attempting to connect to: " + addressesToConnect);
-			}
-			rabbitConnection = this.rabbitConnectionFactory.newConnection(this.executorService, addressesToConnect,
-					connectionName);
+			return connectAddresses(connectionName);
 		}
 		else {
-			if (this.logger.isInfoEnabled()) {
-				this.logger.info("Attempting to connect to: " + this.rabbitConnectionFactory.getHost()
-						+ ":" + this.rabbitConnectionFactory.getPort());
-			}
-			rabbitConnection = this.rabbitConnectionFactory.newConnection(this.executorService, connectionName);
+			return connectHostPort(connectionName);
 		}
-		return rabbitConnection;
+	}
+
+	private com.rabbitmq.client.Connection connectResolver(String connectionName) throws IOException, TimeoutException {
+		if (this.logger.isInfoEnabled()) {
+			this.logger.info("Attempting to connect with: " + this.addressResolver);
+		}
+		return this.rabbitConnectionFactory.newConnection(this.executorService, this.addressResolver,
+				connectionName);
+	}
+
+	private synchronized com.rabbitmq.client.Connection connectAddresses(String connectionName)
+			throws IOException, TimeoutException {
+
+		List<Address> addressesToConnect = new ArrayList<>(this.addresses);
+		if (addressesToConnect.size() > 1 && AddressShuffleMode.RANDOM.equals(this.addressShuffleMode)) {
+			Collections.shuffle(addressesToConnect);
+		}
+		if (this.logger.isInfoEnabled()) {
+			this.logger.info("Attempting to connect to: " + addressesToConnect);
+		}
+		com.rabbitmq.client.Connection connection = this.rabbitConnectionFactory.newConnection(this.executorService,
+				addressesToConnect, connectionName);
+		if (addressesToConnect.size() > 1 && AddressShuffleMode.INORDER.equals(this.addressShuffleMode)) {
+			this.addresses.add(this.addresses.remove(0));
+		}
+		return connection;
+	}
+
+	private com.rabbitmq.client.Connection connectHostPort(String connectionName) throws IOException, TimeoutException {
+		if (this.logger.isInfoEnabled()) {
+			this.logger.info("Attempting to connect to: " + this.rabbitConnectionFactory.getHost()
+					+ ":" + this.rabbitConnectionFactory.getPort());
+		}
+		return this.rabbitConnectionFactory.newConnection(this.executorService, connectionName);
 	}
 
 	protected final String getDefaultHostName() {

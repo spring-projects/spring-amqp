@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.AddressShuffleMode;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
 import org.springframework.amqp.rabbit.connection.ConnectionNameStrategy;
@@ -123,9 +124,15 @@ public final class ConnectionFactoryParserTests {
 		assertThat(addresses.get(1).getPort()).isEqualTo(-1);
 		assertThat(addresses.get(2).getHost()).isEqualTo("host3");
 		assertThat(addresses.get(2).getPort()).isEqualTo(4567);
-		assertThat(dfa.getPropertyValue("shuffleAddresses")).isEqualTo(Boolean.TRUE);
+		assertThat(dfa.getPropertyValue("addressShuffleMode")).isEqualTo(AddressShuffleMode.INORDER);
 		assertThat(TestUtils.getPropertyValue(connectionFactory,
 				"rabbitConnectionFactory.threadFactory")).isSameAs(beanFactory.getBean("tf"));
 	}
 
+	@Test
+	void testResolver() {
+		CachingConnectionFactory connectionFactory = beanFactory.getBean("resolved", CachingConnectionFactory.class);
+		assertThat(TestUtils.getPropertyValue(connectionFactory, "addressResolver"))
+				.isSameAs(this.beanFactory.getBean("resolver"));
+	}
 }

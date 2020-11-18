@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,9 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
@@ -45,6 +43,7 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CorrelationData.Confirm;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -74,6 +73,7 @@ import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
 import com.rabbitmq.client.LongString;
 import com.rabbitmq.client.Method;
+import com.rabbitmq.client.Return;
 import com.rabbitmq.client.ReturnCallback;
 import com.rabbitmq.client.ReturnListener;
 import com.rabbitmq.client.ShutdownListener;
@@ -92,11 +92,9 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
  *
  */
 public class PublisherCallbackChannelImpl
-		implements PublisherCallbackChannel, ConfirmListener, ReturnListener, ShutdownListener {
+		implements PublisherCallbackChannel, ConfirmListener, ReturnCallback, ShutdownListener {
 
 	private static final MessagePropertiesConverter CONVERTER  = new DefaultMessagePropertiesConverter();
-
-	private static final long RETURN_CALLBACK_TIMEOUT = 60;
 
 	private final Log logger = LogFactory.getLog(this.getClass());
 
@@ -112,11 +110,7 @@ public class PublisherCallbackChannelImpl
 
 	private final ExecutorService executor;
 
-	private final CountDownLatch returnLatch = new CountDownLatch(1);
-
 	private volatile java.util.function.Consumer<Channel> afterAckCallback;
-
-	private boolean hasReturned;
 
 	/**
 	 * Create a {@link PublisherCallbackChannelImpl} instance based on the provided
@@ -1016,9 +1010,9 @@ public class PublisherCallbackChannelImpl
 		this.executor.execute(() -> {
 			try {
 				if (listener.isConfirmListener()) {
-					if (this.hasReturned && !this.returnLatch.await(RETURN_CALLBACK_TIMEOUT, TimeUnit.SECONDS)) {
-						this.logger
-								.error("Return callback failed to execute in " + RETURN_CALLBACK_TIMEOUT + " seconds");
+					if (pendingConfirm.isReturned() && !pendingConfirm.waitForReturnIfNeeded()) {
+						this.logger.error("Return callback failed to execute in "
+								+ PendingConfirm.RETURN_CALLBACK_TIMEOUT + " seconds");
 					}
 					if (this.logger.isDebugEnabled()) {
 						this.logger.debug("Sending confirm " + pendingConfirm);
@@ -1061,55 +1055,74 @@ public class PublisherCallbackChannelImpl
 //  ReturnListener
 
 	@Override
-	public void handleReturn(int replyCode,
-			String replyText,
-			String exchange,
-			String routingKey,
-			AMQP.BasicProperties properties,
-			byte[] body) {
-		LongString returnCorrelation = (LongString) properties.getHeaders().get(RETURNED_MESSAGE_CORRELATION_KEY);
-		if (returnCorrelation != null) {
-			PendingConfirm confirm = this.pendingReturns.remove(returnCorrelation.toString());
+	public void handle(Return returned) {
+
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug("Return " + this.toString());
+		}
+		PendingConfirm confirm = findConfirm(returned);
+		Listener listener = findListener(returned.getProperties());
+		if (listener == null || !listener.isReturnListener()) {
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("No Listener for returned message");
+			}
+		}
+		else {
 			if (confirm != null) {
-				MessageProperties messageProperties = CONVERTER.toMessageProperties(properties,
-						new Envelope(0L, false, exchange, routingKey), StandardCharsets.UTF_8.name());
+				confirm.setReturned(true);
+			}
+			Listener listenerToInvoke = listener;
+			PendingConfirm toCountDown = confirm;
+			this.executor.execute(() -> {
+				try {
+					listenerToInvoke.handleReturn(returned);
+				}
+				catch (Exception e) {
+					this.logger.error("Exception delivering returned message ", e);
+				}
+				finally {
+					if (toCountDown != null) {
+						toCountDown.countDown();
+					}
+				}
+			});
+		}
+	}
+
+	@Nullable
+	private PendingConfirm findConfirm(Return returned) {
+		LongString returnCorrelation = (LongString) returned.getProperties().getHeaders()
+				.get(RETURNED_MESSAGE_CORRELATION_KEY);
+		PendingConfirm confirm = null;
+		if (returnCorrelation != null) {
+			confirm = this.pendingReturns.remove(returnCorrelation.toString());
+			if (confirm != null) {
+				MessageProperties messageProperties = CONVERTER.toMessageProperties(returned.getProperties(),
+						new Envelope(0L, false, returned.getExchange(), returned.getRoutingKey()),
+						StandardCharsets.UTF_8.name());
 				if (confirm.getCorrelationData() != null) {
-					confirm.getCorrelationData().setReturnedMessage(new Message(body, messageProperties)); // NOSONAR never null
+					confirm.getCorrelationData().setReturnedMessage(new Message(returned.getBody(), messageProperties)); // NOSONAR never null
 				}
 			}
 		}
+		return confirm;
+	}
+
+	@Nullable
+	private Listener findListener(AMQP.BasicProperties properties) {
+		Listener listener = null;
 		Object returnListenerHeader = properties.getHeaders().get(RETURN_LISTENER_CORRELATION_KEY);
 		String uuidObject = null;
 		if (returnListenerHeader != null) {
 			uuidObject = returnListenerHeader.toString();
 		}
-		Listener listener = null;
 		if (uuidObject != null) {
 			listener = this.listeners.get(uuidObject);
 		}
 		else {
 			this.logger.error("No '" + RETURN_LISTENER_CORRELATION_KEY + "' header in returned message");
 		}
-		if (listener == null || !listener.isReturnListener()) {
-			if (this.logger.isWarnEnabled()) {
-				this.logger.warn("No Listener for returned message");
-			}
-		}
-		else {
-			this.hasReturned = true;
-			Listener listenerToInvoke = listener;
-			this.executor.execute(() -> {
-				try {
-					listenerToInvoke.handleReturn(replyCode, replyText, exchange, routingKey, properties, body);
-				}
-				catch (Exception e) {
-					this.logger.error("Exception delivering returned message ", e);
-				}
-				finally {
-					this.returnLatch.countDown();
-				}
-			});
-		}
+		return listener;
 	}
 
 // ShutdownListener

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbit.listener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.amqp.core.AcknowledgeMode;
@@ -27,6 +26,7 @@ import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
+import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
@@ -89,6 +89,12 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	private BatchingStrategy batchingStrategy;
 
 	private AcknowledgeMode ackMode;
+
+	private ReplyPostProcessor replyPostProcessor;
+
+	private String replyContentType;
+
+	private boolean converterWinsContentType = true;
 
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
@@ -318,8 +324,50 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 		return this.ackMode;
 	}
 
-	public void setAckMode(AcknowledgeMode ackMode) {
-		this.ackMode = ackMode;
+	public void setAckMode(AcknowledgeMode mode) {
+		this.ackMode = mode;
+	}
+
+	@Override
+	public ReplyPostProcessor getReplyPostProcessor() {
+		return this.replyPostProcessor;
+	}
+
+	/**
+	 * Set a {@link ReplyPostProcessor} to post process a response message before it is sent.
+	 * @param replyPostProcessor the post processor.
+	 * @since 2.2.5
+	 */
+	public void setReplyPostProcessor(ReplyPostProcessor replyPostProcessor) {
+		this.replyPostProcessor = replyPostProcessor;
+	}
+
+	@Override
+	public String getReplyContentType() {
+		return this.replyContentType;
+	}
+
+	/**
+	 * Set the reply content type.
+	 * @param replyContentType the content type.
+	 * @since 2.3
+	 */
+	public void setReplyContentType(String replyContentType) {
+		this.replyContentType = replyContentType;
+	}
+
+	@Override
+	public boolean isConverterWinsContentType() {
+		return this.converterWinsContentType;
+	}
+
+	/**
+	 * Set whether the content type set by a converter prevails or not.
+	 * @param converterWinsContentType false to always apply the reply content type.
+	 * @since 2.3
+	 */
+	public void setConverterWinsContentType(boolean converterWinsContentType) {
+		this.converterWinsContentType = converterWinsContentType;
 	}
 
 	@Override
@@ -342,7 +390,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 
 		container.setExclusive(isExclusive());
 		if (getPriority() != null) {
-			Map<String, Object> args = new HashMap<String, Object>();
+			Map<String, Object> args = container.getConsumerArguments();
 			args.put("x-priority", getPriority());
 			container.setConsumerArguments(args);
 		}

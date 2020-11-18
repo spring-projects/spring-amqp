@@ -14,7 +14,8 @@
 				  connectionName="log4j2Appender"
 				  clientConnectionProperties="foo:bar,baz:qux"
 				  async="false"
-				  senderPoolSize="3" maxSenderRetries="5"
+				  senderPoolSize="3"
+				  maxSenderRetries="5"
 				  bufferSize="10">
 			<ArrayBlockingQueue/>
 		</RabbitMQ>
@@ -23,6 +24,8 @@
 				  host="localhost" port="5672" user="guest" password="guest" applicationId="testAppId" charset="UTF-8"
 				  routingKeyPattern="%X{applicationId}.%c.%p"
 				  exchange="log4j2Test_default_queue" deliveryMode="NON_PERSISTENT"
+				  async="true"
+				  senderPoolSize="2"
 				  addMdcAsHeaders="true">
 		</RabbitMQ>
 		<RabbitMQ name="rabbitmq_uri"

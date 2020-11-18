@@ -141,7 +141,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		}
 		InvocationResult result = null;
 		try {
-			if (this.messagingMessageConverter.method == null) {
+			if (this.messagingMessageConverter.method == null && amqpMessage != null) {
 				amqpMessage.getMessageProperties()
 						.setTargetMethod(this.handlerAdapter.getMethodFor(message.getPayload()));
 			}
@@ -252,7 +252,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 				return this.messagingMessageConverter.toMessage(result, new MessageProperties());
 			}
 			else {
-				return converter.toMessage(result, new MessageProperties(), genericType);
+				return convert(result, genericType, converter);
 			}
 		}
 		else {

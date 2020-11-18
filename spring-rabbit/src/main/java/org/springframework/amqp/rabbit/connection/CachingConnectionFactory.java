@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1136,20 +1136,14 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 			else if (methodName.equals("close")) {
 				// Handle close method: don't pass the call on.
-				if (CachingConnectionFactory.this.active) {
-					synchronized (this.channelList) {
-						if (CachingConnectionFactory.this.active && !RabbitUtils.isPhysicalCloseRequired() &&
-								(this.channelList.size() < getChannelCacheSize()
-										|| this.channelList.contains(proxy))) {
-							logicalClose((ChannelProxy) proxy);
-							return null;
-						}
-					}
+				if (CachingConnectionFactory.this.active && !RabbitUtils.isPhysicalCloseRequired()) {
+					logicalClose((ChannelProxy) proxy);
+					return null;
 				}
-
-				// If we get here, we're supposed to shut down.
-				physicalClose(proxy);
-				return null;
+				else {
+					physicalClose(proxy);
+					return null;
+				}
 			}
 			else if (methodName.equals("getTargetChannel")) {
 				// Handle getTargetChannel method: return underlying Channel.
@@ -1291,14 +1285,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				synchronized (this.channelList) {
 					// Allow for multiple close calls...
 					if (CachingConnectionFactory.this.active) {
-						if (!this.channelList.contains(proxy)) {
-							if (logger.isTraceEnabled()) {
-								logger.trace("Returning cached Channel: " + this.target);
-							}
-							releasePermitIfNecessary(proxy);
-							this.channelList.addLast((ChannelProxy) proxy);
-							setHighWaterMark();
-						}
+						cacheOrClose(proxy);
 					}
 					else {
 						if (proxy.isOpen()) {
@@ -1310,6 +1297,28 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 						}
 					}
 				}
+			}
+		}
+
+		private void cacheOrClose(Channel proxy) {
+			boolean alreadyCached = this.channelList.contains(proxy);
+			if (this.channelList.size() >= getChannelCacheSize() && !alreadyCached) {
+				if (logger.isTraceEnabled()) {
+					logger.trace("Cache limit reached: " + this.target);
+				}
+				try {
+					physicalClose(proxy);
+				}
+				catch (@SuppressWarnings(UNUSED) Exception e) {
+				}
+			}
+			else if (!alreadyCached) {
+				if (logger.isTraceEnabled()) {
+					logger.trace("Returning cached Channel: " + this.target);
+				}
+				releasePermitIfNecessary(proxy);
+				this.channelList.addLast((ChannelProxy) proxy);
+				setHighWaterMark();
 			}
 		}
 
@@ -1329,6 +1338,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			if (logger.isDebugEnabled()) {
 				logger.debug("Closing cached Channel: " + this.target);
 			}
+			RabbitUtils.clearPhysicalCloseRequired();
 			if (this.target == null) {
 				return;
 			}

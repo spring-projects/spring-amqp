@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.test;
+package org.springframework.amqp.rabbit.test.examples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
 
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -35,6 +35,9 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
+import org.springframework.amqp.rabbit.test.RabbitListenerTest;
+import org.springframework.amqp.rabbit.test.RabbitListenerTestHarness;
+import org.springframework.amqp.rabbit.test.RabbitListenerTestHarness.InvocationData;
 import org.springframework.amqp.rabbit.test.mockito.LatchCountDownAndCallRealMethodAnswer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -46,15 +49,13 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 /**
  * @author Gary Russell
- * @author Artem Bilan
- *
  * @since 1.6
  *
  */
 @SpringJUnitConfig
 @DirtiesContext
 @RabbitAvailable
-public class ExampleRabbitListenerSpyTest {
+public class ExampleRabbitListenerSpyAndCaptureTest {
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -69,12 +70,17 @@ public class ExampleRabbitListenerSpyTest {
 	private RabbitListenerTestHarness harness;
 
 	@Test
-	public void testTwoWay() {
+	public void testTwoWay() throws Exception {
 		assertThat(this.rabbitTemplate.convertSendAndReceive(this.queue1.getName(), "foo")).isEqualTo("FOO");
 
 		Listener listener = this.harness.getSpy("foo");
 		assertThat(listener).isNotNull();
 		verify(listener).foo("foo");
+
+		InvocationData invocationData = this.harness.getNextInvocationDataFor("foo", 10, TimeUnit.SECONDS);
+		assertThat(invocationData).isNotNull();
+		assertThat((String) invocationData.getArguments()[0]).isEqualTo("foo");
+		assertThat((String) invocationData.getResult()).isEqualTo("FOO");
 	}
 
 	@Test
@@ -82,20 +88,51 @@ public class ExampleRabbitListenerSpyTest {
 		Listener listener = this.harness.getSpy("bar");
 		assertThat(listener).isNotNull();
 
-		LatchCountDownAndCallRealMethodAnswer answer = new LatchCountDownAndCallRealMethodAnswer(2);
-		doAnswer(answer).when(listener).foo(anyString(), anyString());
+		LatchCountDownAndCallRealMethodAnswer answer = this.harness.getLatchAnswerFor("bar", 3);
+		willAnswer(answer).given(listener).foo(anyString(), anyString());
 
 		this.rabbitTemplate.convertAndSend(this.queue2.getName(), "bar");
 		this.rabbitTemplate.convertAndSend(this.queue2.getName(), "baz");
+		this.rabbitTemplate.convertAndSend(this.queue2.getName(), "ex");
 
-		assertThat(answer.getLatch().await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(answer.await(10)).isTrue();
 		verify(listener).foo("bar", this.queue2.getName());
 		verify(listener).foo("baz", this.queue2.getName());
+
+		InvocationData invocationData = this.harness.getNextInvocationDataFor("bar", 10, TimeUnit.SECONDS);
+		assertThat(invocationData).isNotNull();
+		Object[] args = invocationData.getArguments();
+		assertThat((String) args[0]).isEqualTo("bar");
+		assertThat((String) args[1]).isEqualTo(queue2.getName());
+
+		invocationData = this.harness.getNextInvocationDataFor("bar", 10, TimeUnit.SECONDS);
+		assertThat(invocationData).isNotNull();
+		args = invocationData.getArguments();
+		assertThat((String) args[0]).isEqualTo("baz");
+		assertThat((String) args[1]).isEqualTo(queue2.getName());
+
+		invocationData = this.harness.getNextInvocationDataFor("bar", 10, TimeUnit.SECONDS);
+		assertThat(invocationData).isNotNull();
+		args = invocationData.getArguments();
+		assertThat((String) args[0]).isEqualTo("ex");
+		assertThat((String) args[1]).isEqualTo(queue2.getName());
+		assertThat(invocationData.getThrowable()).isNotNull();
+		assertThat(invocationData.getThrowable().getMessage()).isEqualTo("ex");
+
+		invocationData = this.harness.getNextInvocationDataFor("bar", 10, TimeUnit.SECONDS);
+		assertThat(invocationData).isNotNull();
+		args = invocationData.getArguments();
+		assertThat((String) args[0]).isEqualTo("ex");
+		assertThat((String) args[1]).isEqualTo(queue2.getName());
+		assertThat(invocationData.getThrowable()).isNull();
+
+		Collection<Exception> exceptions = answer.getExceptions();
+		assertThat(exceptions).hasSize(1);
+		assertThat(exceptions.iterator().next()).isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Configuration
-	@EnableRabbit
-	@RabbitListenerTest
+	@RabbitListenerTest(capture = true)
 	public static class Config {
 
 		@Bean
@@ -139,13 +176,20 @@ public class ExampleRabbitListenerSpyTest {
 
 	public static class Listener {
 
+		private boolean failed;
+
 		@RabbitListener(id = "foo", queues = "#{queue1.name}")
 		public String foo(String foo) {
 			return foo.toUpperCase();
 		}
 
 		@RabbitListener(id = "bar", queues = "#{queue2.name}")
-		public void foo(@Payload String foo, @Header("amqp_receivedRoutingKey") String rk) {
+		public void foo(@Payload String foo, @SuppressWarnings("unused") @Header("amqp_receivedRoutingKey") String rk) {
+			if (!failed && foo.equals("ex")) {
+				failed = true;
+				throw new IllegalArgumentException(foo);
+			}
+			failed = false;
 		}
 
 	}

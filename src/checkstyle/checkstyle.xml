@@ -5,12 +5,12 @@
 <module name="Checker">
 
 	<module name="SuppressionFilter">
-		<property name="file" value="src/checkstyle/checkstyle-suppressions.xml"/>
+		<property name="file" value="${config_loc}/checkstyle-suppressions.xml"/>
 	</module>
 
 	<!-- Root Checks -->
 	<module name="RegexpHeader">
-		<property name="headerFile" value="src/checkstyle/checkstyle-header.txt"/>
+		<property name="headerFile" value="${config_loc}/checkstyle-header.txt"/>
 		<property name="fileExtensions" value="java"/>
 	</module>
 	<module name="NewlineAtEndOfFile">
@@ -79,7 +79,9 @@
 		<module name="AvoidStarImport"/>
 		<module name="AvoidStaticImport">
 			<property name="excludes"
-					  value="org.assertj.core.api.Assertions.*, org.junit.Assert.*, org.junit.Assume.*, org.junit.internal.matchers.ThrowableMessageMatcher.*, org.hamcrest.CoreMatchers.*, org.hamcrest.Matchers.*, org.hamcrest.collection.IsArrayContainingInOrder.*, org.springframework.boot.configurationprocessor.ConfigurationMetadataMatchers.*, org.springframework.boot.configurationprocessor.TestCompiler.*, org.mockito.Mockito.*, org.mockito.BDDMockito.*, org.mockito.ArgumentMatchers.*, org.mockito.AdditionalMatchers.*, org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*, org.springframework.test.web.servlet.result.MockMvcResultMatchers.*, org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*, org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.*, org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo, org.springframework.amqp.rabbit.test.RabbitMatchers.*"/>
+					  value="org.assertj.core.api.Assertions.*, org.junit.Assert.*, org.junit.Assume.*,
+					  org.awaitility.Awaitility.*,
+					  org.junit.internal.matchers.ThrowableMessageMatcher.*, org.hamcrest.CoreMatchers.*, org.hamcrest.Matchers.*, org.hamcrest.collection.IsArrayContainingInOrder.*, org.springframework.boot.configurationprocessor.ConfigurationMetadataMatchers.*, org.springframework.boot.configurationprocessor.TestCompiler.*, org.mockito.Mockito.*, org.mockito.BDDMockito.*, org.mockito.ArgumentMatchers.*, org.mockito.AdditionalMatchers.*, org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*, org.springframework.test.web.servlet.result.MockMvcResultMatchers.*, org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*, org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.*, org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo, org.springframework.amqp.rabbit.test.RabbitMatchers.*"/>
 		</module>
 		<module name="IllegalImport"/>
 		<module name="RedundantImport"/>
@@ -162,6 +164,11 @@
 			<property name="format" value="System.(out|err).print"/>
 			<property name="illegalPattern" value="true"/>
 			<property name="message" value="System.out or .err"/>
+		</module>
+		<module name="Regexp">
+			<property name="format" value="import.*Mockito\.(doAnswer|when|doThrow|doReturn|doCallRealMethod|doNothing);"/>
+			<property name="illegalPattern" value="true"/>
+			<property name="message" value="Please use BDDMockito"/>
 		</module>
 		<!-- Whitespace -->
 		<module name="GenericWhitespace"/>

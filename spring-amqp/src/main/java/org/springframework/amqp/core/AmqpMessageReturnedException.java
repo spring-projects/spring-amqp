@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 the original author or authors.
+ * Copyright 2015-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ package org.springframework.amqp.core;
 import org.springframework.amqp.AmqpException;
 
 /**
- * Exception thrown in an RPC scenario if the request message cannot be delivered when
- * the mandatory flag is set.
+ * Exception thrown if the request message cannot be delivered when the mandatory flag is
+ * set.
  *
  * @author Gary Russell
  * @since 1.5
@@ -30,53 +30,49 @@ public class AmqpMessageReturnedException extends AmqpException {
 
 	private static final long serialVersionUID = 1866579721126554167L;
 
-	private final Message returnedMessage;
+	private final ReturnedMessage returned;
 
-	private final int replyCode;
-
-	private final String replyText;
-
-	private final String exchange;
-
-	private final String routingKey;
-
+	@Deprecated
 	public AmqpMessageReturnedException(String message, Message returnedMessage, int replyCode, String replyText,
 			String exchange, String routingKey) {
+
+		this(message, new ReturnedMessage(returnedMessage, replyCode, replyText, exchange, routingKey));
+	}
+
+	public AmqpMessageReturnedException(String message, ReturnedMessage returned) {
 		super(message);
-		this.returnedMessage = returnedMessage;
-		this.replyCode = replyCode;
-		this.replyText = replyText;
-		this.exchange = exchange;
-		this.routingKey = routingKey;
+		this.returned = returned;
 	}
 
 	public Message getReturnedMessage() {
-		return this.returnedMessage;
+		return this.returned.getMessage();
 	}
 
 	public int getReplyCode() {
-		return this.replyCode;
+		return this.returned.getReplyCode();
 	}
 
 	public String getReplyText() {
-		return this.replyText;
+		return this.returned.getReplyText();
 	}
 
 	public String getExchange() {
-		return this.exchange;
+		return this.returned.getExchange();
 	}
 
 	public String getRoutingKey() {
-		return this.routingKey;
+		return this.returned.getRoutingKey();
+	}
+
+	public ReturnedMessage getReturned() {
+		return this.returned;
 	}
 
 	@Override
 	public String toString() {
 		return "AmqpMessageReturnedException: "
 				+ getMessage()
-				+ "[returnedMessage=" + this.returnedMessage + ", replyCode=" + this.replyCode
-				+ ", replyText=" + this.replyText + ", exchange=" + this.exchange + ", routingKey=" + this.routingKey
-				+ "]";
+				+ ", " + this.returned.toString();
 	}
 
 }

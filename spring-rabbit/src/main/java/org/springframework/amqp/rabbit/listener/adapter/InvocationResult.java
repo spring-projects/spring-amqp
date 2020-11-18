@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 the original author or authors.
+ * Copyright 2018-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,16 +45,13 @@ public final class InvocationResult {
 	private final Method method;
 
 	/**
-	 * @deprecated in favor of {@link #InvocationResult(Object, Expression, Type, Object, Method)}.
+	 * Construct an instance with the provided properties.
 	 * @param result the result.
 	 * @param sendTo the sendTo expression.
 	 * @param returnType the return type.
+	 * @param bean the bean.
+	 * @param method the method.
 	 */
-	@Deprecated
-	public InvocationResult(Object result, @Nullable Expression sendTo, @Nullable Type returnType) {
-		this(result, sendTo, returnType, null, null);
-	}
-
 	public InvocationResult(Object result, @Nullable Expression sendTo, @Nullable Type returnType,
 			@Nullable Object bean, @Nullable Method method) {
 

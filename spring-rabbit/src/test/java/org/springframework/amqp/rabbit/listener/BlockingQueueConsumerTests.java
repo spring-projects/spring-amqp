@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,11 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -138,11 +136,11 @@ public class BlockingQueueConsumerTests {
 		Connection connection = mock(Connection.class);
 		Channel channel = mock(Channel.class);
 
-		when(connectionFactory.createConnection()).thenReturn(connection);
-		when(connection.createChannel(anyBoolean())).thenReturn(channel);
-		when(channel.isOpen()).thenReturn(true);
-		when(channel.queueDeclarePassive(anyString()))
-				.then(invocation -> {
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(anyBoolean())).willReturn(channel);
+		given(channel.isOpen()).willReturn(true);
+		given(channel.queueDeclarePassive(anyString()))
+				.willAnswer(invocation -> {
 					String arg = invocation.getArgument(0);
 					if ("good".equals(arg)) {
 						return any(AMQP.Queue.DeclareOk.class);
@@ -151,8 +149,8 @@ public class BlockingQueueConsumerTests {
 						throw new IOException();
 					}
 				});
-		when(channel.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
-				anyMap(), any(Consumer.class))).thenReturn("consumerTag");
+		given(channel.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+				anyMap(), any(Consumer.class))).willReturn("consumerTag");
 
 		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
 				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
@@ -172,9 +170,9 @@ public class BlockingQueueConsumerTests {
 		Connection connection = mock(Connection.class);
 		Channel channel = mock(Channel.class);
 
-		when(connectionFactory.createConnection()).thenReturn(connection);
-		when(connection.createChannel(anyBoolean())).thenReturn(channel);
-		when(channel.isOpen()).thenReturn(true);
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(anyBoolean())).willReturn(channel);
+		given(channel.isOpen()).willReturn(true);
 
 		final String queue = "testQ";
 		final boolean noLocal = true;
@@ -270,18 +268,18 @@ public class BlockingQueueConsumerTests {
 		Connection connection = mock(Connection.class);
 		ChannelProxy channel = mock(ChannelProxy.class);
 		Channel rabbitChannel = mock(AutorecoveringChannel.class);
-		when(channel.getTargetChannel()).thenReturn(rabbitChannel);
+		given(channel.getTargetChannel()).willReturn(rabbitChannel);
 
-		when(connectionFactory.createConnection()).thenReturn(connection);
-		when(connection.createChannel(anyBoolean())).thenReturn(channel);
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(anyBoolean())).willReturn(channel);
 		final AtomicBoolean isOpen = new AtomicBoolean(true);
-		doReturn(isOpen.get()).when(channel).isOpen();
-		when(channel.queueDeclarePassive(anyString()))
-				.then(invocation -> mock(AMQP.Queue.DeclareOk.class));
-		doAnswer(i -> {
+		willReturn(isOpen.get()).given(channel).isOpen();
+		given(channel.queueDeclarePassive(anyString()))
+				.willAnswer(invocation -> mock(AMQP.Queue.DeclareOk.class));
+		willAnswer(i -> {
 			((Consumer) i.getArgument(6)).handleConsumeOk("consumerTag");
 			return "consumerTag";
-		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+		}).given(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
 				anyMap(), any(Consumer.class));
 
 		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
@@ -306,26 +304,26 @@ public class BlockingQueueConsumerTests {
 		Connection connection = mock(Connection.class);
 		ChannelProxy channel = mock(ChannelProxy.class);
 		Channel rabbitChannel = mock(AutorecoveringChannel.class);
-		when(channel.getTargetChannel()).thenReturn(rabbitChannel);
+		given(channel.getTargetChannel()).willReturn(rabbitChannel);
 
-		when(connectionFactory.createConnection()).thenReturn(connection);
-		when(connection.createChannel(anyBoolean())).thenReturn(channel);
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(anyBoolean())).willReturn(channel);
 		final AtomicBoolean isOpen = new AtomicBoolean(true);
-		doReturn(isOpen.get()).when(channel).isOpen();
-		when(channel.queueDeclarePassive(anyString()))
-				.then(invocation -> mock(AMQP.Queue.DeclareOk.class));
+		willReturn(isOpen.get()).given(channel).isOpen();
+		given(channel.queueDeclarePassive(anyString()))
+				.willAnswer(invocation -> mock(AMQP.Queue.DeclareOk.class));
 		AtomicReference<Consumer> theConsumer = new AtomicReference<>();
-		doAnswer(inv -> {
+		willAnswer(inv -> {
 			Consumer consumer = inv.getArgument(6);
 			consumer.handleConsumeOk("consumerTag");
 			theConsumer.set(consumer);
 			return "consumerTag";
-		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+		}).given(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
 				anyMap(), any(Consumer.class));
-		doAnswer(inv -> {
+		willAnswer(inv -> {
 			theConsumer.get().handleCancelOk("consumerTag");
 			return null;
-		}).when(channel).basicCancel("consumerTag");
+		}).given(channel).basicCancel("consumerTag");
 		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
 				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
 				AcknowledgeMode.AUTO, true, 2, "test");

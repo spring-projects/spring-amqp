@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,9 @@
 package org.springframework.amqp.rabbit.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
-import java.util.Properties;
+import java.time.Duration;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,16 +67,9 @@ public final class QueueParserIntegrationTests {
 
 		assertThat(queue.getArguments().get("x-message-ttl")).isEqualTo(100L);
 		template.convertAndSend(queue.getName(), "message");
-		Properties props = rabbitAdmin.getQueueProperties("arguments");
-		if (props != null) {
-			int n = 0;
-			while (n++ < 200 && (Integer) props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT) > 0) {
-				Thread.sleep(50);
-				props = rabbitAdmin.getQueueProperties("arguments");
-			}
-			assertThat((Integer) props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT)).isEqualTo(0);
-		}
-
+		await().with().pollInterval(Duration.ofMillis(50))
+				.until(() -> rabbitAdmin.getQueueProperties("arguments")
+						.get(RabbitAdmin.QUEUE_MESSAGE_COUNT).equals(0));
 		connectionFactory.destroy();
 		RabbitAvailableCondition.getBrokerRunning().deleteQueues("arguments");
 	}

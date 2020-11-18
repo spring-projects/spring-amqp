@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,6 +78,16 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 	}
 
 	/**
+	 * Return the discardFatalsWithXDeath.
+	 * @return the discardFatalsWithXDeath.
+	 * @since 2.3
+	 * @see #setDiscardFatalsWithXDeath(boolean)
+	 */
+	protected boolean isDiscardFatalsWithXDeath() {
+		return this.discardFatalsWithXDeath;
+	}
+
+	/**
 	 * Set to false to disable the (now) default behavior of logging and discarding
 	 * messages that cause fatal exceptions and have an `x-death` header; which
 	 * usually means that the message has been republished after previously being
@@ -90,12 +100,31 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 	}
 
 	/**
+	 * Return the rejectManual.
+	 * @return the rejectManual.
+	 * @since 2.3
+	 * @see #setRejectManual(boolean)
+	 */
+	protected boolean isRejectManual() {
+		return this.rejectManual;
+	}
+
+	/**
 	 * Set to false to NOT reject a fatal message when MANUAL ack mode is being used.
 	 * @param rejectManual false to leave the message in an unack'd state.
 	 * @since 2.1.9
 	 */
 	public void setRejectManual(boolean rejectManual) {
 		this.rejectManual = rejectManual;
+	}
+
+	/**
+	 * Return the exception strategy.
+	 * @return the strategy.
+	 * @since 2.3
+	 */
+	protected FatalExceptionStrategy getExceptionStrategy() {
+		return this.exceptionStrategy;
 	}
 
 	@Override
@@ -109,6 +138,7 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 					if (xDeath != null && xDeath.size() > 0) {
 						this.logger.error("x-death header detected on a message with a fatal exception; "
 								+ "perhaps requeued from a DLQ? - discarding: " + failed);
+						handleDiscarded(failed);
 						throw new ImmediateAcknowledgeAmqpException("Fatal and x-death present");
 					}
 				}
@@ -116,6 +146,16 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 			throw new AmqpRejectAndDontRequeueException("Error Handler converted exception to fatal", this.rejectManual,
 					t);
 		}
+	}
+
+	/**
+	 * Called when a message with a fatal exception has an {@code x-death} header, prior
+	 * to discarding the message. Subclasses can override this method to perform some
+	 * action, such as sending the message to a parking queue.
+	 * @param failed the failed message.
+	 * @since 2.3
+	 */
+	protected void handleDiscarded(Message failed) {
 	}
 
 	/**
@@ -161,18 +201,12 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 		public boolean isFatal(Throwable t) {
 			Throwable cause = t.getCause();
 			while (cause instanceof MessagingException
-					&& !(cause instanceof
-					org.springframework.messaging.converter.MessageConversionException)
+					&& !(cause instanceof org.springframework.messaging.converter.MessageConversionException)
 					&& !(cause instanceof MethodArgumentResolutionException)) {
 				cause = cause.getCause();
 			}
 			if (t instanceof ListenerExecutionFailedException && isCauseFatal(cause)) {
-				if (this.logger.isWarnEnabled()) {
-					this.logger.warn(
-							"Fatal message conversion error; message rejected; "
-									+ "it will be dropped or routed to a dead letter exchange, if so configured: "
-									+ ((ListenerExecutionFailedException) t).getFailedMessage());
-				}
+				logFatalException((ListenerExecutionFailedException) t, cause);
 				return true;
 			}
 			return false;
@@ -185,6 +219,22 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 					|| cause instanceof NoSuchMethodException
 					|| cause instanceof ClassCastException
 					|| isUserCauseFatal(cause);
+		}
+
+		/**
+		 * Log the fatal ListenerExecutionFailedException at WARN level, excluding stack
+		 * trace. Subclasses can override this behavior.
+		 * @param t the {@link ListenerExecutionFailedException}.
+		 * @param cause the root cause (skipping any general {@link MessagingException}s).
+		 * @since 2.2.4
+		 */
+		protected void logFatalException(ListenerExecutionFailedException t, Throwable cause) {
+			if (this.logger.isWarnEnabled()) {
+				this.logger.warn(
+						"Fatal message conversion error; message rejected; "
+								+ "it will be dropped or routed to a dead letter exchange, if so configured: "
+								+ t.getFailedMessage());
+			}
 		}
 
 		/**

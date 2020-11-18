@@ -94,15 +94,7 @@ public abstract class AbstractDeclarable implements Declarable {
 		this.ignoreDeclarationExceptions = ignoreDeclarationExceptions;
 	}
 
-	/**
-	 * The {@code AmqpAdmin}s that should declare this object; default is
-	 * all admins.
-	 * <br><br>A null argument, or an array/varArg with a single null argument, clears the collection
-	 * ({@code setAdminsThatShouldDeclare((AmqpAdmin) null)} or
-	 * {@code setAdminsThatShouldDeclare((AmqpAdmin[]) null)}). Clearing the collection resets
-	 * the behavior such that all admins will declare the object.
-	 * @param adminArgs The admins.
-	 */
+	@Override
 	public void setAdminsThatShouldDeclare(Object... adminArgs) {
 		Collection<Object> admins = new ArrayList<Object>();
 		if (adminArgs != null) {

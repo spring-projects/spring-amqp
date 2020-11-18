@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -289,9 +289,10 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	@Component
 	static class FullConfigurableBean {
 
-		@RabbitListener(id = "${rabbit.listener.id}", containerFactory = "${rabbit.listener.containerFactory}",
+		@RabbitListener(id = "#{'${rabbit.listener.id}'}",
+				containerFactory = "#{'${rabbit.listener.containerFactory}'}",
 				queues = {"${rabbit.listener.queue}", "queue2"}, exclusive = true,
-				priority = "${rabbit.listener.priority}", admin = "${rabbit.listener.admin}")
+				priority = "#{'${rabbit.listener.priority}'}", admin = "#{'${rabbit.listener.admin}'}")
 		public void fullHandle(String msg) {
 
 		}
@@ -323,20 +324,16 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	@Component
 	static class RabbitListenersBean {
 
-		@RabbitListeners({
-				@RabbitListener(id = "first", queues = "myQueue"),
-				@RabbitListener(id = "second", queues = "anotherQueue")
-		})
+		@RabbitListener(id = "first", queues = "myQueue")
+		@RabbitListener(id = "second", queues = "anotherQueue")
 		public void repeatableHandle(String msg) {
 		}
 
 	}
 
 	@Component
-	@RabbitListeners({
-		@RabbitListener(id = "third", queues = "class1"),
-		@RabbitListener(id = "fourth", queues = "class2")
-	})
+	@RabbitListener(id = "third", queues = "class1")
+	@RabbitListener(id = "fourth", queues = "class2")
 	static class ClassLevelListenersBean {
 
 		@RabbitHandler

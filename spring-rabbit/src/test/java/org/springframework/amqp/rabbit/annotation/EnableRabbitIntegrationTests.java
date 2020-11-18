@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,8 @@ package org.springframework.amqp.rabbit.annotation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.Mockito.doAnswer;
+import static org.awaitility.Awaitility.await;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
@@ -77,6 +78,7 @@ import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
@@ -223,6 +225,19 @@ public class EnableRabbitIntegrationTests {
 	public static void setUp() {
 		System.setProperty(RabbitListenerAnnotationBeanPostProcessor.RABBIT_EMPTY_STRING_ARGUMENTS_PROPERTY,
 				"test-empty");
+		RabbitAvailableCondition.getBrokerRunning().removeExchanges("auto.exch.tx",
+				"auto.exch",
+				"auto.exch.fanout",
+				"auto.exch",
+				"auto.exch",
+				"auto.start",
+				"auto.headers",
+				"auto.headers",
+				"auto.internal",
+				"multi.exch",
+				"multi.json.exch",
+				"multi.exch.tx",
+				"test.metaFanout");
 	}
 
 	@AfterAll
@@ -417,6 +432,7 @@ public class EnableRabbitIntegrationTests {
 				.isEqualTo("MyService");
 		assertThat((String) reply.getMessageProperties().getHeader("method"))
 				.isEqualTo("capitalizeWithHeader");
+		assertThat((String) reply.getMessageProperties().getHeader("prefix")).isEqualTo("prefix-");
 	}
 
 	@Test
@@ -870,11 +886,9 @@ public class EnableRabbitIntegrationTests {
 		assertThat(message).isNotNull();
 		assertThat(new String(message.getBody())).isEqualTo("{\"field\":\"MESSAGING\"}");
 		assertThat(message.getMessageProperties().getHeaders().get("foo")).isEqualTo("bar");
-		Timer timer = null;
-		int n = 0;
-		while (timer == null && n++ < 100) {
+		Timer timer = await().until(() -> {
 			try {
-				timer = this.meterRegistry.get("spring.rabbitmq.listener")
+				return this.meterRegistry.get("spring.rabbitmq.listener")
 						.tag("listener.id", "list.of.messages")
 						.tag("queue", "test.messaging.message")
 						.tag("result", "success")
@@ -883,10 +897,9 @@ public class EnableRabbitIntegrationTests {
 						.timer();
 			}
 			catch (@SuppressWarnings("unused") Exception e) {
-				Thread.sleep(100);
+				return null;
 			}
-		}
-		assertThat(timer).isNotNull();
+		}, tim -> tim != null);
 		assertThat(timer.count()).isEqualTo(1L);
 	}
 
@@ -1089,7 +1102,7 @@ public class EnableRabbitIntegrationTests {
 			return foo.toUpperCase() + foo;
 		}
 
-		@RabbitListener(queues = "test.header", group = "testGroup")
+		@RabbitListener(queues = "test.header", group = "testGroup", replyPostProcessor = "#{'echoPrefixHeader'}")
 		public String capitalizeWithHeader(@Payload String content, @Header String prefix) {
 			return prefix + content.toUpperCase();
 		}
@@ -1653,7 +1666,7 @@ public class EnableRabbitIntegrationTests {
 		@Bean
 		public ErrorHandler errorHandler() {
 			ErrorHandler handler = Mockito.spy(new ConditionalRejectingErrorHandler());
-			doAnswer(invocation -> {
+			willAnswer(invocation -> {
 				try {
 					return invocation.callRealMethod();
 				}
@@ -1662,7 +1675,7 @@ public class EnableRabbitIntegrationTests {
 					errorHandlerLatch().countDown();
 					throw e;
 				}
-			}).when(handler).handleError(Mockito.any(Throwable.class));
+			}).given(handler).handleError(Mockito.any(Throwable.class));
 			return handler;
 		}
 
@@ -1804,6 +1817,14 @@ public class EnableRabbitIntegrationTests {
 			DirectExchange directExchange = new DirectExchange("auto.internal", true, true);
 			directExchange.setInternal(true);
 			return directExchange;
+		}
+
+		@Bean
+		public ReplyPostProcessor echoPrefixHeader() {
+			return (req, resp) -> {
+				resp.getMessageProperties().setHeader("prefix", req.getMessageProperties().getHeader("prefix"));
+				return resp;
+			};
 		}
 
 	}

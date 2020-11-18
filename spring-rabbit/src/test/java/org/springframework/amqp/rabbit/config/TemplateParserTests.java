@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,44 +47,46 @@ public final class TemplateParserTests {
 	private DefaultListableBeanFactory beanFactory;
 
 	@BeforeEach
-	public void setUpDefaultBeanFactory() throws Exception {
+	public void setUpDefaultBeanFactory() {
 		beanFactory = new DefaultListableBeanFactory();
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
 		reader.loadBeanDefinitions(new ClassPathResource(getClass().getSimpleName() + "-context.xml", getClass()));
 	}
 
 	@Test
-	public void testTemplate() throws Exception {
+	public void testTemplate() {
 		AmqpTemplate template = beanFactory.getBean("template", AmqpTemplate.class);
 		assertThat(template).isNotNull();
 		assertThat(TestUtils.getPropertyValue(template, "mandatoryExpression.value")).isEqualTo(Boolean.FALSE);
-		assertThat(TestUtils.getPropertyValue(template, "returnCallback")).isNull();
+		assertThat(TestUtils.getPropertyValue(template, "returnsCallback")).isNull();
 		assertThat(TestUtils.getPropertyValue(template, "confirmCallback")).isNull();
 		assertThat(TestUtils.getPropertyValue(template, "useDirectReplyToContainer", Boolean.class)).isTrue();
 	}
 
 	@Test
-	public void testTemplateWithCallbacks() throws Exception {
+	public void testTemplateWithCallbacks() {
 		AmqpTemplate template = beanFactory.getBean("withCallbacks", AmqpTemplate.class);
 		assertThat(template).isNotNull();
 		assertThat(TestUtils.getPropertyValue(template, "mandatoryExpression.literalValue")).isEqualTo("true");
-		assertThat(TestUtils.getPropertyValue(template, "returnCallback")).isNotNull();
+		assertThat(TestUtils.getPropertyValue(template, "returnsCallback")).isNotNull();
 		assertThat(TestUtils.getPropertyValue(template, "confirmCallback")).isNotNull();
 		assertThat(TestUtils.getPropertyValue(template, "useDirectReplyToContainer", Boolean.class)).isFalse();
 	}
 
 	@Test
-	public void testTemplateWithMandatoryExpression() throws Exception {
+	public void testTemplateWithMandatoryExpression() {
 		AmqpTemplate template = beanFactory.getBean("withMandatoryExpression", AmqpTemplate.class);
 		assertThat(template).isNotNull();
 		assertThat(TestUtils.getPropertyValue(template, "mandatoryExpression.expression")).isEqualTo("'true'");
-		assertThat(TestUtils.getPropertyValue(template, "sendConnectionFactorySelectorExpression.expression")).isEqualTo("'foo'");
-		assertThat(TestUtils.getPropertyValue(template, "receiveConnectionFactorySelectorExpression.expression")).isEqualTo("'foo'");
+		assertThat(TestUtils.getPropertyValue(template, "sendConnectionFactorySelectorExpression.expression"))
+				.isEqualTo("'foo'");
+		assertThat(TestUtils.getPropertyValue(template, "receiveConnectionFactorySelectorExpression.expression"))
+				.isEqualTo("'foo'");
 		assertThat(TestUtils.getPropertyValue(template, "useTemporaryReplyQueues", Boolean.class)).isFalse();
 	}
 
 	@Test
-	public void testKitchenSink() throws Exception {
+	public void testKitchenSink() {
 		RabbitTemplate template = beanFactory.getBean("kitchenSink", RabbitTemplate.class);
 		assertThat(template).isNotNull();
 		assertThat(template.getMessageConverter() instanceof SerializerMessageConverter).isTrue();
@@ -98,11 +100,12 @@ public final class TemplateParserTests {
 		assertThat(accessor.getPropertyValue("defaultReceiveQueue")).isEqualTo("bar");
 		assertThat(accessor.getPropertyValue("routingKey")).isEqualTo("spam");
 		assertThat(TestUtils.getPropertyValue(template, "useTemporaryReplyQueues", Boolean.class)).isTrue();
-		assertThat(TestUtils.getPropertyValue(template, "userIdExpression.expression")).isEqualTo("@connectionFactory.username");
+		assertThat(TestUtils.getPropertyValue(template, "userIdExpression.expression"))
+				.isEqualTo("@connectionFactory.username");
 	}
 
 	@Test
-	public void testWithReplyQ() throws Exception {
+	public void testWithReplyQ() {
 		RabbitTemplate template = beanFactory.getBean("withReplyQ", RabbitTemplate.class);
 		assertThat(template).isNotNull();
 		DirectFieldAccessor dfa = new DirectFieldAccessor(template);

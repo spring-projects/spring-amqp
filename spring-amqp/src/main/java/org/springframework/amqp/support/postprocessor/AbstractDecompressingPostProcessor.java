@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,17 +91,22 @@ public abstract class AbstractDecompressingPostProcessor implements MessagePostP
 				FileCopyUtils.copy(unzipper, out);
 				MessageProperties messageProperties = message.getMessageProperties();
 				String encoding = messageProperties.getContentEncoding();
-				int colonAt = encoding.indexOf(':');
-				if (colonAt > 0) {
-					encoding = encoding.substring(0, colonAt);
+				int delimAt = encoding.indexOf(':');
+				if (delimAt < 0) {
+					delimAt = encoding.indexOf(',');
+				}
+				if (delimAt > 0) {
+					encoding = encoding.substring(0, delimAt);
 				}
 				Assert.state(getEncoding().equals(encoding), "Content encoding must be:" + getEncoding() + ", was:"
 						+ encoding);
-				if (colonAt < 0) {
+				if (delimAt < 0) {
 					messageProperties.setContentEncoding(null);
 				}
 				else {
-					messageProperties.setContentEncoding(messageProperties.getContentEncoding().substring(colonAt + 1));
+					messageProperties.setContentEncoding(messageProperties.getContentEncoding()
+							.substring(delimAt + 1)
+							.trim());
 				}
 				messageProperties.getHeaders().remove(MessageProperties.SPRING_AUTO_DECOMPRESS);
 				return new Message(out.toByteArray(), messageProperties);

@@ -40,7 +40,8 @@
 		<rabbit:listener id="container5" queues="foo" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 
-	<rabbit:listener-container connection-factory="connectionFactory" channel-transacted="true" transaction-size="5" >
+	<rabbit:listener-container connection-factory="connectionFactory" channel-transacted="true" batch-size="5"
+			consumer-batch-enabled="true" >
 		<rabbit:listener id="container6" queues="foo" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 

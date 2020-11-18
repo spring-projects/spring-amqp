@@ -72,12 +72,12 @@ Retries are delayed as follows: `N ^ log(N)`, where `N` is the retry number.
 | useSsl
 | false
 | Whether to use SSL for the RabbitMQ connection.
-See <<_rabbitconnectionfactorybean_and_configuring_ssl>>
+See <<rabbitconnectionfactorybean-configuring-ssl>>
 
 | verifyHostname
 | true
 | Enable server hostname verification for TLS connections.
-See <<_rabbitconnectionfactorybean_and_configuring_ssl>>
+See <<rabbitconnectionfactorybean-configuring-ssl>>
 
 | sslAlgorithm
 | null
@@ -270,6 +270,45 @@ public class MyEnhancedAppender extends AmqpAppender {
 ----
 ====
 
+Starting with 2.2.4, the log4j2 `AmqpAppender` can be extended using `@PluginBuilderFactory` and extending also `AmqpAppender.Builder`
+
+
+====
+[source, java]
+----
+@Plugin(name = "MyEnhancedAppender", category = "Core", elementType = "appender", printObject = true)
+public class MyEnhancedAppender extends AmqpAppender {
+
+	public MyEnhancedAppender(String name, Filter filter, Layout<? extends Serializable> layout,
+			boolean ignoreExceptions, AmqpManager manager, BlockingQueue<Event> eventQueue, String foo, String bar) {
+		super(name, filter, layout, ignoreExceptions, manager, eventQueue);
+
+	@Override
+	public Message postProcessMessageBeforeSend(Message message, Event event) {
+			message.getMessageProperties().setHeader("foo", "bar");
+		return message;
+	}
+
+	@PluginBuilderFactory
+	public static Builder newBuilder() {
+		return new Builder();
+	}
+
+	protected static class Builder extends AmqpAppender.Builder {
+
+		@Override
+		protected AmqpAppender buildInstance(String name, Filter filter, Layout<? extends Serializable> layout,
+				boolean ignoreExceptions, AmqpManager manager, BlockingQueue<Event> eventQueue) {
+			return new MyEnhancedAppender(name, filter, layout, ignoreExceptions, manager, eventQueue);
+		}
+	}
+
+}
+----
+====
+
+
+
 ==== Customizing the Client Properties
 
 You can add custom client properties by adding either string properties or more complex properties.
@@ -341,8 +380,6 @@ Then you can add `<thing1>thing2</thing1>` to logback.xml.
 
 For String properties such as those shown in the preceding example, the previous technique can be used.
 Subclasses allow for adding richer properties (such as adding a `Map` or numeric property).
-
-With Log4j 2, subclasses are not supported, due to the way Log4j 2 uses static factory methods.
 
 ==== Providing a Custom Queue Implementation
 

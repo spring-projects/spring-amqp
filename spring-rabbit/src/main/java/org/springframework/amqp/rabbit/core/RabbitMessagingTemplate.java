@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.springframework.amqp.rabbit.core;
 import java.util.Map;
 
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
+import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.MessagingMessageConverter;
 import org.springframework.beans.factory.InitializingBean;
@@ -195,7 +197,13 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	@Override
 	protected void doSend(String destination, Message<?> message) {
 		try {
-			this.rabbitTemplate.send(destination, createMessage(message));
+			Object correlation = message.getHeaders().get(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION);
+			if (correlation instanceof CorrelationData) {
+				this.rabbitTemplate.send(destination, createMessage(message), (CorrelationData) correlation);
+			}
+			else {
+				this.rabbitTemplate.send(destination, createMessage(message));
+			}
 		}
 		catch (RuntimeException ex) {
 			throw convertAmqpException(ex);
@@ -204,7 +212,13 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 
 	protected void doSend(String exchange, String routingKey, Message<?> message) {
 		try {
-			this.rabbitTemplate.send(exchange, routingKey, createMessage(message));
+			Object correlation = message.getHeaders().get(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION);
+			if (correlation instanceof CorrelationData) {
+				this.rabbitTemplate.send(exchange, routingKey, createMessage(message), (CorrelationData) correlation);
+			}
+			else {
+				this.rabbitTemplate.send(exchange, routingKey, createMessage(message));
+			}
 		}
 		catch (RuntimeException ex) {
 			throw convertAmqpException(ex);

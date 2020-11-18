@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 the original author or authors.
+ * Copyright 2015-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -179,12 +180,8 @@ public class RabbitRestApiTests {
 		admin.declareQueue(queue2);
 		Channel channel = this.connectionFactory.createConnection().createChannel(false);
 		String consumer = channel.basicConsume(queue1.getName(), false, "", false, true, null, new DefaultConsumer(channel));
-		QueueInfo qi = this.rabbitRestClient.getQueue("/", queue1.getName());
-		int n = 0;
-		while (n++ < 100 && (qi.getExclusiveConsumerTag() == null || qi.getExclusiveConsumerTag().equals(""))) {
-			Thread.sleep(100);
-			qi = this.rabbitRestClient.getQueue("/", queue1.getName());
-		}
+		QueueInfo qi = await().until(() -> this.rabbitRestClient.getQueue("/", queue1.getName()),
+				info -> info.getExclusiveConsumerTag() != null && !"".equals(info.getExclusiveConsumerTag()));
 		QueueInfo queueOut = this.rabbitRestClient.getQueue("/", queue1.getName());
 		assertThat(queueOut.isDurable()).isFalse();
 		assertThat(queueOut.isExclusive()).isFalse();

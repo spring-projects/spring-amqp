@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +19,18 @@ package org.springframework.amqp.rabbit.core;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -112,7 +113,6 @@ import org.springframework.transaction.support.AbstractPlatformTransactionManage
 import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationAdapter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionSynchronizationUtils;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -179,8 +179,8 @@ public class RabbitTemplateIntegrationTests {
 		this.template.setSendConnectionFactorySelectorExpression(new LiteralExpression("foo"));
 		BeanFactory bf = mock(BeanFactory.class);
 		ConnectionFactory cf = mock(ConnectionFactory.class);
-		when(cf.getUsername()).thenReturn("guest");
-		when(bf.getBean("cf")).thenReturn(cf);
+		given(cf.getUsername()).willReturn("guest");
+		given(bf.getBean("cf")).willReturn(cf);
 		this.template.setBeanFactory(bf);
 		this.template.setBeanName(info.getDisplayName() + ".RabbitTemplate");
 		this.testName = info.getDisplayName();
@@ -205,11 +205,7 @@ public class RabbitTemplateIntegrationTests {
 			this.template.setChannelTransacted(true);
 			this.template.convertAndSend(ROUTE, "foo");
 			this.template.convertAndSend(UUID.randomUUID().toString(), ROUTE, "xxx"); // force channel close
-			int n = 0;
-			while (n++ < 100 && channel.isOpen()) {
-				Thread.sleep(100);
-			}
-			assertThat(channel.isOpen()).isFalse();
+			await().until(() -> !channel.isOpen());
 			try {
 				this.template.convertAndSend(ROUTE, "bar");
 				fail("Expected Exception");
@@ -265,13 +261,7 @@ public class RabbitTemplateIntegrationTests {
 	@Test
 	public void testReceiveNonBlocking() throws Exception {
 		this.template.convertAndSend(ROUTE, "nonblock");
-		int n = 0;
-		String out = (String) this.template.receiveAndConvert(ROUTE);
-		while (n++ < 100 && out == null) {
-			Thread.sleep(100);
-			out = (String) this.template.receiveAndConvert(ROUTE);
-		}
-		assertThat(out).isNotNull();
+		String out = await().until(() -> (String) this.template.receiveAndConvert(ROUTE), str -> str != null);
 		assertThat(out).isEqualTo("nonblock");
 		assertThat(this.template.receive(ROUTE)).isNull();
 	}
@@ -343,7 +333,7 @@ public class RabbitTemplateIntegrationTests {
 		}
 
 		Connection connection = spy(connectionFactory.createConnection());
-		when(connection.createChannel(anyBoolean())).then(
+		given(connection.createChannel(anyBoolean())).willAnswer(
 				invocation -> new MockChannel((Channel) invocation.callRealMethod()));
 
 		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory);
@@ -659,6 +649,7 @@ public class RabbitTemplateIntegrationTests {
 		assertThat(result).isEqualTo(null);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testAtomicSendAndReceive() throws Exception {
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
@@ -689,10 +680,12 @@ public class RabbitTemplateIntegrationTests {
 		// Message was consumed so nothing left on queue
 		reply = template.receive();
 		assertThat(reply).isEqualTo(null);
+		assertThat(TestUtils.getPropertyValue(template, "replyHolder", Map.class)).hasSize(0);
 		template.stop();
 		cachingConnectionFactory.destroy();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testAtomicSendAndReceiveUserCorrelation() throws Exception {
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
@@ -732,6 +725,7 @@ public class RabbitTemplateIntegrationTests {
 		// Message was consumed so nothing left on queue
 		reply = template.receive();
 		assertThat(reply).isEqualTo(null);
+		assertThat(TestUtils.getPropertyValue(template, "replyHolder", Map.class)).hasSize(0);
 		template.stop();
 		container.stop();
 		cachingConnectionFactory.destroy();
@@ -752,17 +746,17 @@ public class RabbitTemplateIntegrationTests {
 			fields[0] = field;
 		}, field -> field.getName().equals("logger"));
 		Log logger = Mockito.mock(Log.class);
-		when(logger.isTraceEnabled()).thenReturn(true);
+		given(logger.isTraceEnabled()).willReturn(true);
 
 		final AtomicBoolean execConfiguredOk = new AtomicBoolean();
 
-		doAnswer(invocation -> {
+		willAnswer(invocation -> {
 			String log = invocation.getArgument(0);
 			if (log.startsWith("Message received") && Thread.currentThread().getName().startsWith(execName)) {
 				execConfiguredOk.set(true);
 			}
 			return null;
-		}).when(logger).trace(anyString());
+		}).given(logger).trace(anyString());
 		final RabbitTemplate template = createSendAndReceiveRabbitTemplate(connectionFactory);
 		ReflectionUtils.setField(fields[0], template, logger);
 		template.setRoutingKey(ROUTE);
@@ -1091,13 +1085,7 @@ public class RabbitTemplateIntegrationTests {
 		this.template.convertAndSend(ROUTE, "test");
 		template.setReceiveTimeout(timeout);
 
-		boolean received = receiveAndReply();
-		int n = 0;
-		while (timeout == 0 && !received && n++ < 100) {
-			Thread.sleep(100);
-			received = receiveAndReply();
-		}
-		assertThat(received).isTrue();
+		boolean received = await().until(() -> receiveAndReply(), b -> b);
 
 		Message receive = this.template.receive();
 		assertThat(receive).isNotNull();
@@ -1330,6 +1318,7 @@ public class RabbitTemplateIntegrationTests {
 		sendAndReceiveFastGuts(true, true, false);
 	}
 
+	@SuppressWarnings("unchecked")
 	private void sendAndReceiveFastGuts(boolean tempQueue, boolean setDirectReplyToExplicitly, boolean expectUsedTemp) {
 		RabbitTemplate template = createSendAndReceiveRabbitTemplate(this.connectionFactory);
 		try {
@@ -1368,6 +1357,7 @@ public class RabbitTemplateIntegrationTests {
 			else {
 				assertThat(replyToWas.get()).startsWith(Address.AMQ_RABBITMQ_REPLY_TO);
 			}
+			assertThat(TestUtils.getPropertyValue(template, "replyHolder", Map.class)).hasSize(0);
 		}
 		catch (Exception e) {
 			assertThat(e.getCause().getCause().getMessage()).contains("404");
@@ -1378,6 +1368,7 @@ public class RabbitTemplateIntegrationTests {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testReplyCompressionWithContainer() {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(
@@ -1402,10 +1393,11 @@ public class RabbitTemplateIntegrationTests {
 			Message message = new Message("foo".getBytes(), props);
 			Message reply = template.sendAndReceive("", ROUTE, message);
 			assertThat(reply).isNotNull();
-			assertThat(reply.getMessageProperties().getContentEncoding()).isEqualTo("gzip:UTF-8");
+			assertThat(reply.getMessageProperties().getContentEncoding()).isEqualTo("gzip, UTF-8");
 			GUnzipPostProcessor unzipper = new GUnzipPostProcessor();
 			reply = unzipper.postProcessMessage(reply);
 			assertThat(new String(reply.getBody())).isEqualTo("FOO");
+			assertThat(TestUtils.getPropertyValue(template, "replyHolder", Map.class)).hasSize(0);
 		}
 		finally {
 			template.stop();
@@ -1420,10 +1412,10 @@ public class RabbitTemplateIntegrationTests {
 	}
 
 	@Test
-	public void testDegugLogOnPassiveDeclaration() {
+	public void testDebugLogOnPassiveDeclaration() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
 		Log logger = spy(TestUtils.getPropertyValue(connectionFactory, "logger", Log.class));
-		doReturn(true).when(logger).isDebugEnabled();
+		willReturn(true).given(logger).isDebugEnabled();
 		new DirectFieldAccessor(connectionFactory).setPropertyValue("logger", logger);
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		final String queueName = UUID.randomUUID().toString();
@@ -1472,9 +1464,9 @@ public class RabbitTemplateIntegrationTests {
 	@Test
 	public void testRouting() throws Exception {
 		Connection connection1 = mock(Connection.class);
-		when(this.cf1.createConnection()).thenReturn(connection1);
+		given(this.cf1.createConnection()).willReturn(connection1);
 		Channel channel1 = mock(Channel.class);
-		when(connection1.createChannel(false)).thenReturn(channel1);
+		given(connection1.createChannel(false)).willReturn(channel1);
 		this.routingTemplate.convertAndSend("exchange", "routingKey", "xyz", message -> {
 			message.getMessageProperties().setHeader("cfKey", "foo");
 			return message;
@@ -1483,9 +1475,9 @@ public class RabbitTemplateIntegrationTests {
 				any(byte[].class));
 
 		Connection connection2 = mock(Connection.class);
-		when(this.cf2.createConnection()).thenReturn(connection2);
+		given(this.cf2.createConnection()).willReturn(connection2);
 		Channel channel2 = mock(Channel.class);
-		when(connection2.createChannel(false)).thenReturn(channel2);
+		given(connection2.createChannel(false)).willReturn(channel2);
 		this.routingTemplate.convertAndSend("exchange", "routingKey", "xyz", message -> {
 			message.getMessageProperties().setHeader("cfKey", "bar");
 			return message;
@@ -1517,7 +1509,7 @@ public class RabbitTemplateIntegrationTests {
 			template.convertAndSend(ROUTE, "message");
 
 			if (rollback) {
-				TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter() {
+				TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
 
 					@Override
 					public void afterCommit() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,8 @@ public abstract class AmqpHeaders {
 
 	public static final String CONTENT_TYPE = MessageHeaders.CONTENT_TYPE;
 
+	public static final String CONTENT_TYPE_CONVERTER_WINS = PREFIX + "contentTypeConverterWins";
+
 	public static final String CORRELATION_ID = PREFIX + "correlationId";
 
 	public static final String DELAY = PREFIX + "delay";
@@ -86,6 +88,12 @@ public abstract class AmqpHeaders {
 	public static final String SPRING_REPLY_CORRELATION = PREFIX + "springReplyCorrelation";
 
 	public static final String SPRING_REPLY_TO_STACK = PREFIX + "springReplyToStack";
+
+	/**
+	 * A CorrelationData instance for publisher confirms (not mapped).
+	 * @since 2.3
+	 */
+	public static final String PUBLISH_CONFIRM_CORRELATION = PREFIX + "publishConfirmCorrelation";
 
 	public static final String PUBLISH_CONFIRM = PREFIX + "publishConfirm";
 

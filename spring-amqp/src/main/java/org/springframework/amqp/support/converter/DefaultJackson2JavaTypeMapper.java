@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,13 +92,13 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 	 */
 	public void setTrustedPackages(@Nullable String... trustedPackages) {
 		if (trustedPackages != null) {
-			for (String whiteListClass : trustedPackages) {
-				if ("*".equals(whiteListClass)) {
+			for (String trusted : trustedPackages) {
+				if ("*".equals(trusted)) {
 					this.trustedPackages.clear();
 					break;
 				}
 				else {
-					this.trustedPackages.add(whiteListClass);
+					this.trustedPackages.add(trusted);
 				}
 			}
 		}
@@ -112,9 +112,7 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 	@Override
 	public JavaType toJavaType(MessageProperties properties) {
 		JavaType inferredType = getInferredType(properties);
-		if (inferredType != null
-			 && ((!inferredType.isAbstract() && !inferredType.isInterface()
-					|| inferredType.getRawClass().getPackage().getName().startsWith("java.util")))) {
+		if (inferredType != null && canConvert(inferredType)) {
 			return inferredType;
 		}
 
@@ -129,6 +127,19 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 		}
 
 		return TypeFactory.defaultInstance().constructType(Object.class);
+	}
+
+	private boolean canConvert(JavaType inferredType) {
+		if (inferredType.isAbstract()) {
+			return false;
+		}
+		if (inferredType.isContainerType() && inferredType.getContentType().isAbstract()) {
+			return false;
+		}
+		if (inferredType.getKeyType() != null && inferredType.getKeyType().isAbstract()) {
+			return false;
+		}
+		return true;
 	}
 
 	private JavaType fromTypeHeader(MessageProperties properties, String typeIdHeader) {
@@ -151,7 +162,7 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 	@Override
 	@Nullable
 	public JavaType getInferredType(MessageProperties properties) {
-		if (hasInferredTypeHeader(properties) && this.typePrecedence.equals(TypePrecedence.INFERRED)) {
+		if (this.typePrecedence.equals(TypePrecedence.INFERRED) && hasInferredTypeHeader(properties)) {
 			return fromInferredTypeHeader(properties);
 		}
 		return null;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyManagementException;
@@ -42,8 +43,10 @@ import javax.net.ssl.TrustManagerFactory;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.ConnectionFactory;
@@ -51,6 +54,8 @@ import com.rabbitmq.client.ExceptionHandler;
 import com.rabbitmq.client.MetricsCollector;
 import com.rabbitmq.client.SaslConfig;
 import com.rabbitmq.client.SocketConfigurator;
+import com.rabbitmq.client.impl.CredentialsProvider;
+import com.rabbitmq.client.impl.CredentialsRefreshService;
 import com.rabbitmq.client.impl.nio.NioParams;
 
 /**
@@ -93,7 +98,24 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private static final String TRUST_STORE_TYPE = "trustStore.type";
 
-	private static final String TLS_V1_1 = "TLSv1.1";
+	private static final String DEFAULT_PROTOCOL;
+
+	static {
+		String protocol = "TLSv1.1";
+		try {
+			String[] protocols = SSLContext.getDefault().getSupportedSSLParameters().getProtocols();
+			for (String prot : protocols) {
+				if ("TLSv1.2".equals(prot)) {
+					protocol = "TLSv1.2";
+					break;
+				}
+			}
+		}
+		catch (NoSuchAlgorithmException e) {
+			// nothing
+		}
+		DEFAULT_PROTOCOL = protocol;
+	}
 
 	private static final String KEY_STORE_DEFAULT_TYPE = "PKCS12";
 
@@ -103,7 +125,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private final Properties sslProperties = new Properties();
 
-	private final PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+	private ResourceLoader resourceLoader = new PathMatchingResourcePatternResolver();
 
 	private boolean useSSL;
 
@@ -125,7 +147,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private String trustStoreType;
 
-	private String sslAlgorithm = TLS_V1_1;
+	private String sslAlgorithm = DEFAULT_PROTOCOL;
 
 	private boolean sslAlgorithmSet;
 
@@ -434,6 +456,24 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	}
 
 	/**
+	 * Set a credentials provider (e.g. OAUTH2).
+	 * @param provider the provider.
+	 * @since 2.3
+	 */
+	public void setCredentialsProvider(CredentialsProvider provider) {
+		this.connectionFactory.setCredentialsProvider(provider);
+	}
+
+	/**
+	 * Set a refresh service.
+	 * @param service the service.
+	 * @since 2.3
+	 */
+	public void setCredentialsRefreshService(CredentialsRefreshService service) {
+		this.connectionFactory.setCredentialsRefreshService(service);
+	}
+
+	/**
 	 * @param virtualHost the virtual host.
 	 * @see com.rabbitmq.client.ConnectionFactory#setVirtualHost(java.lang.String)
 	 */
@@ -659,6 +699,27 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	}
 
 	/**
+	 * Get the resource loader; used to resolve the key store and trust store {@link Resource}s
+	 * to input streams.
+	 * @return the resource loader.
+	 * @since 2.3
+	 */
+	protected ResourceLoader getResourceLoader() {
+		return this.resourceLoader;
+	}
+
+	/**
+	 * Set the resource loader; used to resolve the key store and trust store {@link Resource}s
+	 * to input streams.
+	 * @param resourceLoader the resource loader.
+	 * @since 2.3
+	 */
+	public void setResourceLoader(ResourceLoader resourceLoader) {
+		Assert.notNull(resourceLoader, "'resourceLoader' cannot be null");
+		this.resourceLoader = resourceLoader;
+	}
+
+	/**
 	 * Access the connection factory to set any other properties not supported by
 	 * this factory bean.
 	 * @return the connection factory.
@@ -754,9 +815,11 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		KeyManager[] keyManagers = null;
 		if (StringUtils.hasText(keyStoreName) || this.keyStoreResource != null) {
 			Resource resource = this.keyStoreResource != null ? this.keyStoreResource
-					: this.resolver.getResource(keyStoreName);
+					: this.resourceLoader.getResource(keyStoreName);
 			KeyStore ks = KeyStore.getInstance(storeType);
-			ks.load(resource.getInputStream(), keyPassphrase);
+			try (InputStream inputStream = resource.getInputStream()) {
+				ks.load(inputStream, keyPassphrase);
+			}
 			KeyManagerFactory kmf = KeyManagerFactory.getInstance(this.keyStoreAlgorithm);
 			kmf.init(ks, keyPassphrase);
 			keyManagers = kmf.getKeyManagers();
@@ -777,9 +840,11 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		TrustManager[] trustManagers = null;
 		if (StringUtils.hasText(trustStoreName) || this.trustStoreResource != null) {
 			Resource resource = this.trustStoreResource != null ? this.trustStoreResource
-					: this.resolver.getResource(trustStoreName);
+					: this.resourceLoader.getResource(trustStoreName);
 			KeyStore tks = KeyStore.getInstance(storeType);
-			tks.load(resource.getInputStream(), trustPassphrase);
+			try (InputStream inputStream = resource.getInputStream()) {
+				tks.load(inputStream, trustPassphrase);
+			}
 			TrustManagerFactory tmf = TrustManagerFactory.getInstance(this.trustStoreAlgorithm);
 			tmf.init(tks);
 			trustManagers = tmf.getTrustManagers();

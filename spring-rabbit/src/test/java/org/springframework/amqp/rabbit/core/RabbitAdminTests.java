@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -32,8 +33,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -149,19 +149,11 @@ public class RabbitAdminTests {
 		try {
 			rabbitAdmin.declareQueue(new Queue(queueName));
 			new RabbitTemplate(connectionFactory).convertAndSend(queueName, "foo");
-			int n = 0;
-			while (n++ < 100 && messageCount(rabbitAdmin, queueName) == 0) {
-				Thread.sleep(100);
-			}
-			assertThat(n < 100).as("Message count = 0").isTrue();
+			await("Message count = 0").until(() -> messageCount(rabbitAdmin, queueName) > 0);
 			Channel channel = connectionFactory.createConnection().createChannel(false);
 			DefaultConsumer consumer = new DefaultConsumer(channel);
 			channel.basicConsume(queueName, true, consumer);
-			n = 0;
-			while (n++ < 100 && messageCount(rabbitAdmin, queueName) > 0) {
-				Thread.sleep(100);
-			}
-			assertThat(n < 100).as("Message count > 0").isTrue();
+			await("Message count > 0").until(() -> messageCount(rabbitAdmin, queueName) == 0);
 			Properties props = rabbitAdmin.getQueueProperties(queueName);
 			assertThat(props.get(RabbitAdmin.QUEUE_CONSUMER_COUNT)).isNotNull();
 			assertThat(props.get(RabbitAdmin.QUEUE_CONSUMER_COUNT)).isEqualTo(1);
@@ -191,12 +183,12 @@ public class RabbitAdminTests {
 			queues.put("adQ", new Queue("testq.ad", true, false, true));
 			queues.put("exclQ", new Queue("testq.excl", true, true, false));
 			queues.put("allQ", new Queue("testq.all", false, true, true));
-			when(ctx.getBeansOfType(Queue.class)).thenReturn(queues);
+			given(ctx.getBeansOfType(Queue.class)).willReturn(queues);
 			Map<String, Exchange> exchanges = new HashMap<String, Exchange>();
 			exchanges.put("nonDurEx", new DirectExchange("testex.nonDur", false, false));
 			exchanges.put("adEx", new DirectExchange("testex.ad", true, true));
 			exchanges.put("allEx", new DirectExchange("testex.all", false, true));
-			when(ctx.getBeansOfType(Exchange.class)).thenReturn(exchanges);
+			given(ctx.getBeansOfType(Exchange.class)).willReturn(exchanges);
 			rabbitAdmin.setApplicationContext(ctx);
 			rabbitAdmin.afterPropertiesSet();
 			Log logger = spy(TestUtils.getPropertyValue(rabbitAdmin, "logger", Log.class));
@@ -344,7 +336,7 @@ public class RabbitAdminTests {
 		verify(connection, times(1)).createChannel(false);
 		verify(channel1, times(4)).queueDeclare();
 		verify(channel1, times(1)).close();
-		verifyZeroInteractions(channel2);
+		verifyNoInteractions(channel2);
 	}
 
 	@Test
@@ -382,25 +374,15 @@ public class RabbitAdminTests {
 		AnonymousQueue queue = new AnonymousQueue();
 		admin.declareQueue(queue);
 		Client client = new Client("http://guest:guest@localhost:15672/api");
-		QueueInfo info = client.getQueue("?", queue.getName());
-		int n = 0;
-		while (n++ < 100 && info == null) {
-			Thread.sleep(100);
-			info = client.getQueue("/", queue.getName());
-		}
-		assertThat(info).isNotNull();
+		AnonymousQueue queue1 = queue;
+		QueueInfo info = await().until(() -> client.getQueue("/", queue1.getName()), inf -> inf != null);
 		assertThat(info.getArguments().get(Queue.X_QUEUE_MASTER_LOCATOR)).isEqualTo("client-local");
 
 		queue = new AnonymousQueue();
 		queue.setMasterLocator(null);
 		admin.declareQueue(queue);
-		info = client.getQueue("?", queue.getName());
-		n = 0;
-		while (n++ < 100 && info == null) {
-			Thread.sleep(100);
-			info = client.getQueue("/", queue.getName());
-		}
-		assertThat(info).isNotNull();
+		AnonymousQueue queue2 = queue;
+		info = await().until(() -> client.getQueue("/", queue2.getName()), inf -> inf != null);
 		assertThat(info.getArguments().get(Queue.X_QUEUE_MASTER_LOCATOR)).isNull();
 		cf.destroy();
 	}

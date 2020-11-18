@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,16 +55,6 @@ public class SimpleRabbitListenerContainerFactory
 	private Long receiveTimeout;
 
 	private Boolean consumerBatchEnabled;
-
-	/**
-	 * @param txSize the transaction size.
-	 * @see SimpleMessageListenerContainer#setBatchSize
-	 * @deprecated in favor of {@link #setBatchSize(Integer)}
-	 */
-	@Deprecated
-	public void setTxSize(Integer txSize) {
-		setBatchSize(txSize);
-	}
 
 	/**
 	 * @param batchSize the batch size.

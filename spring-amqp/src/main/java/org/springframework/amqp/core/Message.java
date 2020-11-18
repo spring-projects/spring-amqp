@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,10 +46,12 @@ public class Message implements Serializable {
 
 	private static final long serialVersionUID = -7177590352110605597L;
 
-	private static final String ENCODING = Charset.defaultCharset().name();
+	private static final String DEFAULT_ENCODING = Charset.defaultCharset().name();
 
-	private static final Set<String> whiteListPatterns = // NOSONAR lower case static
+	private static final Set<String> ALLOWED_LIST_PATTERNS =
 			new LinkedHashSet<>(Arrays.asList("java.util.*", "java.lang.*"));
+
+	private static String bodyEncoding = DEFAULT_ENCODING;
 
 	private final MessageProperties messageProperties;
 
@@ -61,7 +63,7 @@ public class Message implements Serializable {
 	}
 
 	/**
-	 * Add patterns to the white list of permissable package/class name patterns for
+	 * Add patterns to the allowed list of permissible package/class name patterns for
 	 * deserialization in {@link #toString()}.
 	 * The patterns will be applied in order until a match is found.
 	 * A class can be fully qualified or a wildcard '*' is allowed at the
@@ -72,9 +74,20 @@ public class Message implements Serializable {
 	 * @param patterns the patterns.
 	 * @since 1.5.7
 	 */
-	public static void addWhiteListPatterns(String... patterns) {
+	public static void addAllowedListPatterns(String... patterns) {
 		Assert.notNull(patterns, "'patterns' cannot be null");
-		whiteListPatterns.addAll(Arrays.asList(patterns));
+		ALLOWED_LIST_PATTERNS.addAll(Arrays.asList(patterns));
+	}
+
+	/**
+	 * Set the encoding to use in {@link #toString()} when converting the body if
+	 * there is no {@link MessageProperties#getContentEncoding() contentEncoding} message property present.
+	 * @param encoding the encoding to use.
+	 * @since 2.2.4
+	 */
+	public static void setDefaultEncoding(String encoding) {
+		Assert.notNull(encoding, "'encoding' cannot be null");
+		bodyEncoding = encoding;
 	}
 
 	public byte[] getBody() {
@@ -102,16 +115,18 @@ public class Message implements Serializable {
 			return null;
 		}
 		try {
-			String contentType = (this.messageProperties != null) ? this.messageProperties.getContentType() : null;
+			boolean nullProps = this.messageProperties == null;
+			String contentType = nullProps ? null : this.messageProperties.getContentType();
 			if (MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT.equals(contentType)) {
-				return SerializationUtils.deserialize(new ByteArrayInputStream(this.body), whiteListPatterns,
+				return SerializationUtils.deserialize(new ByteArrayInputStream(this.body), ALLOWED_LIST_PATTERNS,
 						ClassUtils.getDefaultClassLoader()).toString();
 			}
+			String encoding = encoding(nullProps);
 			if (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)
 					|| MessageProperties.CONTENT_TYPE_JSON.equals(contentType)
 					|| MessageProperties.CONTENT_TYPE_JSON_ALT.equals(contentType)
 					|| MessageProperties.CONTENT_TYPE_XML.equals(contentType)) {
-				return new String(this.body, ENCODING);
+				return new String(this.body, encoding);
 			}
 		}
 		catch (Exception e) {
@@ -119,6 +134,14 @@ public class Message implements Serializable {
 		}
 		// Comes out as '[B@....b' (so harmless)
 		return this.body.toString() + "(byte[" + this.body.length + "])"; //NOSONAR
+	}
+
+	private String encoding(boolean nullProps) {
+		String encoding = nullProps ? null : this.messageProperties.getContentEncoding();
+		if (encoding == null) {
+			encoding = bodyEncoding;
+		}
+		return encoding;
 	}
 
 	@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,14 +43,16 @@ import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.appender.AbstractManager;
 import org.apache.logging.log4j.core.async.BlockingQueueFactory;
 import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.Property;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
-import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
+import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
+import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginConfiguration;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
-import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.apache.logging.log4j.core.util.Integers;
 
+import org.springframework.amqp.AmqpApplicationContextClosedException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
@@ -70,6 +72,9 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.utils.JavaUtils;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.retry.RetryPolicy;
@@ -89,6 +94,7 @@ import com.rabbitmq.client.ConnectionFactory;
  * @author Dominique Villard
  * @author Nicolas Ristock
  * @author Eugene Gusev
+ * @author Francesco Scipioni
  *
  * @since 1.6
  */
@@ -135,121 +141,31 @@ public class AmqpAppender extends AbstractAppender {
 	 */
 	private final Object layoutMutex = new Object();
 
-	@SuppressWarnings("deprecation") // For backward compatibility
+	/**
+	 * Construct an instance with the provided properties.
+	 * @param name the name.
+	 * @param filter the filter.
+	 * @param layout the layout.
+	 * @param ignoreExceptions true to ignore exceptions.
+	 * @param manager the manager.
+	 * @param eventQueue the event queue.
+	 * @param properties the properties.
+	 */
 	public AmqpAppender(String name, Filter filter, Layout<? extends Serializable> layout, boolean ignoreExceptions,
-			AmqpManager manager, BlockingQueue<Event> eventQueue) {
+			Property[] properties, AmqpManager manager, BlockingQueue<Event> eventQueue) {
 
-		super(name, filter, layout, ignoreExceptions);
+		super(name, filter, layout, ignoreExceptions, properties);
 		this.manager = manager;
 		this.events = eventQueue;
 	}
 
-	@PluginFactory
-	public static AmqpAppender createAppender(// NOSONAR NCSS line count
-			@PluginConfiguration final Configuration configuration,
-			@PluginAttribute("name") String name,
-			@PluginElement("Layout") Layout<? extends Serializable> layout,
-			@PluginElement("Filter") Filter filter,
-			@PluginAttribute("ignoreExceptions") boolean ignoreExceptions,
-			@PluginAttribute("uri") URI uri,
-			@PluginAttribute("host") String host,
-			@PluginAttribute("port") String port,
-			@PluginAttribute("addresses") String addresses,
-			@PluginAttribute("user") String user,
-			@PluginAttribute("password") String password,
-			@PluginAttribute("virtualHost") String virtualHost,
-			@PluginAttribute("useSsl") boolean useSsl,
-			@PluginAttribute("verifyHostname") boolean verifyHostname,
-			@PluginAttribute("sslAlgorithm") String sslAlgorithm,
-			@PluginAttribute("sslPropertiesLocation") String sslPropertiesLocation,
-			@PluginAttribute("keyStore") String keyStore,
-			@PluginAttribute("keyStorePassphrase") String keyStorePassphrase,
-			@PluginAttribute("keyStoreType") String keyStoreType,
-			@PluginAttribute("trustStore") String trustStore,
-			@PluginAttribute("trustStorePassphrase") String trustStorePassphrase,
-			@PluginAttribute("trustStoreType") String trustStoreType,
-			@PluginAttribute("saslConfig") String saslConfig,
-			@PluginAttribute("senderPoolSize") int senderPoolSize,
-			@PluginAttribute("maxSenderRetries") int maxSenderRetries,
-			@PluginAttribute("applicationId") String applicationId,
-			@PluginAttribute("routingKeyPattern") String routingKeyPattern,
-			@PluginAttribute("generateId") boolean generateId,
-			@PluginAttribute("deliveryMode") String deliveryMode,
-			@PluginAttribute("exchange") String exchange,
-			@PluginAttribute("exchangeType") String exchangeType,
-			@PluginAttribute("declareExchange") boolean declareExchange,
-			@PluginAttribute("durable") boolean durable,
-			@PluginAttribute("autoDelete") boolean autoDelete,
-			@PluginAttribute("contentType") String contentType,
-			@PluginAttribute("contentEncoding") String contentEncoding,
-			@PluginAttribute("connectionName") String connectionName,
-			@PluginAttribute("clientConnectionProperties") String clientConnectionProperties,
-			@PluginAttribute("async") boolean async,
-			@PluginAttribute("charset") String charset,
-			@PluginAttribute(value = "bufferSize", defaultInt = Integer.MAX_VALUE) int bufferSize,
-			@PluginElement(BlockingQueueFactory.ELEMENT_TYPE) BlockingQueueFactory<Event> blockingQueueFactory,
-			@PluginAttribute(value = "addMdcAsHeaders", defaultBoolean = true) boolean addMdcAsHeaders) {
-
-		if (name == null) {
-			LOGGER.error("No name for AmqpAppender");
-		}
-		Layout<? extends Serializable> theLayout = layout;
-		if (theLayout == null) {
-			theLayout = PatternLayout.createDefaultLayout();
-		}
-		AmqpManager manager = new AmqpManager(configuration.getLoggerContext(), name);
-		JavaUtils.INSTANCE
-			.acceptIfNotNull(uri, value -> manager.uri = value)
-			.acceptIfNotNull(host, value -> manager.host = value)
-			.acceptIfNotNull(port, value -> manager.port = Integers.parseInt(value))
-			.acceptIfNotNull(addresses, value -> manager.addresses = value)
-			.acceptIfNotNull(user, value -> manager.username = value)
-			.acceptIfNotNull(password, value -> manager.password = value)
-			.acceptIfNotNull(virtualHost, value -> manager.virtualHost = value)
-			.acceptIfNotNull(useSsl, value -> manager.useSsl = value)
-			.acceptIfNotNull(verifyHostname, value -> manager.verifyHostname = value)
-			.acceptIfNotNull(sslAlgorithm, value -> manager.sslAlgorithm = value)
-			.acceptIfNotNull(sslPropertiesLocation, value -> manager.sslPropertiesLocation = value)
-			.acceptIfNotNull(keyStore, value -> manager.keyStore = value)
-			.acceptIfNotNull(keyStorePassphrase, value -> manager.keyStorePassphrase = value)
-			.acceptIfNotNull(keyStoreType, value -> manager.keyStoreType = value)
-			.acceptIfNotNull(trustStore, value -> manager.trustStore = value)
-			.acceptIfNotNull(trustStorePassphrase, value -> manager.trustStorePassphrase = value)
-			.acceptIfNotNull(trustStoreType, value -> manager.trustStoreType = value)
-			.acceptIfNotNull(saslConfig, value -> manager.saslConfig = value)
-			.acceptIfNotNull(senderPoolSize, value -> manager.senderPoolSize = value)
-			.acceptIfNotNull(maxSenderRetries, value -> manager.maxSenderRetries = value)
-			.acceptIfNotNull(applicationId, value -> manager.applicationId = value)
-			.acceptIfNotNull(routingKeyPattern, value -> manager.routingKeyPattern = value)
-			.acceptIfNotNull(generateId, value -> manager.generateId = value)
-			.acceptIfNotNull(deliveryMode, value -> manager.deliveryMode = MessageDeliveryMode.valueOf(deliveryMode))
-			.acceptIfNotNull(exchange, value -> manager.exchangeName = value)
-			.acceptIfNotNull(exchangeType, value -> manager.exchangeType = value)
-			.acceptIfNotNull(declareExchange, value -> manager.declareExchange = value)
-			.acceptIfNotNull(durable, value -> manager.durable = value)
-			.acceptIfNotNull(autoDelete, value -> manager.autoDelete = value)
-			.acceptIfNotNull(contentType, value -> manager.contentType = value)
-			.acceptIfNotNull(contentEncoding, value -> manager.contentEncoding = value)
-			.acceptIfNotNull(connectionName, value -> manager.connectionName = value)
-			.acceptIfNotNull(clientConnectionProperties, value -> manager.clientConnectionProperties = value)
-			.acceptIfNotNull(charset, value -> manager.charset = value)
-			.acceptIfNotNull(async, value -> manager.async = value)
-			.acceptIfNotNull(addMdcAsHeaders, value -> manager.addMdcAsHeaders = value);
-
-		BlockingQueue<Event> eventQueue;
-		if (blockingQueueFactory == null) {
-			eventQueue = new LinkedBlockingQueue<>(bufferSize);
-		}
-		else {
-			eventQueue = blockingQueueFactory.create(bufferSize);
-		}
-
-		AmqpAppender appender = new AmqpAppender(name, filter, theLayout, ignoreExceptions, manager, eventQueue);
-		if (manager.activateOptions()) {
-			appender.startSenders();
-			return appender;
-		}
-		return null;
+	/**
+	 * Create a new builder.
+	 * @return the builder.
+	 */
+	@PluginBuilderFactory
+	public static Builder newBuilder() {
+		return new Builder();
 	}
 
 	/**
@@ -360,6 +276,9 @@ public class AmqpAppender extends AbstractAppender {
 			message = postProcessMessageBeforeSend(message, event);
 			this.rabbitTemplate.send(this.manager.exchangeName, routingKey, message);
 		}
+		catch (AmqpApplicationContextClosedException e) {
+			getHandler().error("Could not send log message " + logEvent.getMessage() + " appender is stopped");
+		}
 		catch (AmqpException e) {
 			int retries = event.incrementRetries();
 			if (this.manager.async && retries < this.manager.maxSenderRetries) {
@@ -386,7 +305,7 @@ public class AmqpAppender extends AbstractAppender {
 	@Override
 	protected boolean stop(long timeout, TimeUnit timeUnit, boolean changeLifeCycleState) {
 		boolean stopped = super.stop(timeout, timeUnit, changeLifeCycleState);
-		return stopped || this.manager.stop(timeout, timeUnit);
+		return this.manager.stop(timeout, timeUnit) || stopped;
 	}
 
 	/**
@@ -454,6 +373,8 @@ public class AmqpAppender extends AbstractAppender {
 	protected static class AmqpManager extends AbstractManager {
 
 		private static final int DEFAULT_MAX_SENDER_RETRIES = 30;
+
+		private final ApplicationContext context = new GenericApplicationContext();
 
 		/**
 		 * True to send events on separate threads.
@@ -662,6 +583,7 @@ public class AmqpAppender extends AbstractAppender {
 						.withNoConsoleNoAnsi(true)
 						.build();
 				this.connectionFactory = new CachingConnectionFactory(rabbitConnectionFactory);
+				this.connectionFactory.setApplicationContext(this.context);
 				if (StringUtils.hasText(this.connectionName)) {
 					this.connectionFactory.setConnectionNameStrategy(cf -> this.connectionName);
 				}
@@ -751,6 +673,7 @@ public class AmqpAppender extends AbstractAppender {
 			this.retryTimer.cancel();
 			this.senderPool.shutdownNow();
 			this.connectionFactory.destroy();
+			this.connectionFactory.onApplicationEvent(new ContextClosedEvent(this.context));
 			try {
 				return this.senderPool.awaitTermination(timeout, timeUnit);
 			}
@@ -781,6 +704,436 @@ public class AmqpAppender extends AbstractAppender {
 				}
 				this.connectionFactory.addConnectionListener(new DeclareExchangeConnectionListener(x, admin));
 			}
+		}
+
+	}
+
+	protected static class Builder implements org.apache.logging.log4j.core.util.Builder<AmqpAppender> {
+
+		@PluginConfiguration
+		private Configuration configuration;
+
+		@PluginBuilderAttribute("name")
+		private String name;
+
+		@PluginElement("Layout")
+		private Layout<? extends Serializable> layout;
+
+		@PluginElement("Filter")
+		private Filter filter;
+
+		@PluginBuilderAttribute("ignoreExceptions")
+		private boolean ignoreExceptions;
+
+		@PluginBuilderAttribute("uri")
+		private URI uri;
+
+		@PluginBuilderAttribute("host")
+		private String host;
+
+		@PluginBuilderAttribute("port")
+		private String port;
+
+		@PluginBuilderAttribute("addresses")
+		private String addresses;
+
+		@PluginBuilderAttribute("user")
+		private String user;
+
+		@PluginBuilderAttribute("password")
+		private String password;
+
+		@PluginBuilderAttribute("virtualHost")
+		private String virtualHost;
+
+		@PluginBuilderAttribute("useSsl")
+		private boolean useSsl;
+
+		@PluginBuilderAttribute("verifyHostname")
+		private boolean verifyHostname;
+
+		@PluginBuilderAttribute("sslAlgorithm")
+		private String sslAlgorithm;
+
+		@PluginBuilderAttribute("sslPropertiesLocation")
+		private String sslPropertiesLocation;
+
+		@PluginBuilderAttribute("keyStore")
+		private String keyStore;
+
+		@PluginBuilderAttribute("keyStorePassphrase")
+		private String keyStorePassphrase;
+
+		@PluginBuilderAttribute("keyStoreType")
+		private String keyStoreType;
+
+		@PluginBuilderAttribute("trustStore")
+		private String trustStore;
+
+		@PluginBuilderAttribute("trustStorePassphrase")
+		private String trustStorePassphrase;
+
+		@PluginBuilderAttribute("trustStoreType")
+		private String trustStoreType;
+
+		@PluginBuilderAttribute("saslConfig")
+		private String saslConfig;
+
+		@PluginBuilderAttribute("senderPoolSize")
+		private int senderPoolSize;
+
+		@PluginBuilderAttribute("maxSenderRetries")
+		private int maxSenderRetries;
+
+		@PluginBuilderAttribute("applicationId")
+		private String applicationId;
+
+		@PluginBuilderAttribute("routingKeyPattern")
+		private String routingKeyPattern;
+
+		@PluginBuilderAttribute("generateId")
+		private boolean generateId;
+
+		@PluginBuilderAttribute("deliveryMode")
+		private String deliveryMode;
+
+		@PluginBuilderAttribute("exchange")
+		private String exchange;
+
+		@PluginBuilderAttribute("exchangeType")
+		private String exchangeType;
+
+		@PluginBuilderAttribute("declareExchange")
+		private boolean declareExchange;
+
+		@PluginBuilderAttribute("durable")
+		private boolean durable;
+
+		@PluginBuilderAttribute("autoDelete")
+		private boolean autoDelete;
+
+		@PluginBuilderAttribute("contentType")
+		private String contentType;
+
+		@PluginBuilderAttribute("contentEncoding")
+		private String contentEncoding;
+
+		@PluginBuilderAttribute("connectionName")
+		private String connectionName;
+
+		@PluginBuilderAttribute("clientConnectionProperties")
+		private String clientConnectionProperties;
+
+		@PluginBuilderAttribute("async")
+		private boolean async;
+
+		@PluginBuilderAttribute("charset")
+		private String charset;
+
+		@PluginBuilderAttribute("bufferSize")
+		private int bufferSize = Integer.MAX_VALUE;
+
+		@PluginElement(BlockingQueueFactory.ELEMENT_TYPE)
+		private BlockingQueueFactory<Event> blockingQueueFactory;
+
+		@PluginBuilderAttribute("addMdcAsHeaders")
+		private boolean addMdcAsHeaders = Boolean.TRUE;
+
+		public Builder setConfiguration(Configuration configuration) {
+			this.configuration = configuration;
+			return this;
+		}
+
+		public Builder setName(String name) {
+			this.name = name;
+			return this;
+		}
+
+		public Builder setLayout(Layout<? extends Serializable> layout) {
+			this.layout = layout;
+			return this;
+		}
+
+		public Builder setFilter(Filter filter) {
+			this.filter = filter;
+			return this;
+		}
+
+		public Builder setIgnoreExceptions(boolean ignoreExceptions) {
+			this.ignoreExceptions = ignoreExceptions;
+			return this;
+		}
+
+		public Builder setUri(URI uri) {
+			this.uri = uri;
+			return this;
+		}
+
+		public Builder setHost(String host) {
+			this.host = host;
+			return this;
+		}
+
+		public Builder setPort(String port) {
+			this.port = port;
+			return this;
+		}
+
+		public Builder setAddresses(String addresses) {
+			this.addresses = addresses;
+			return this;
+		}
+
+		public Builder setUser(String user) {
+			this.user = user;
+			return this;
+		}
+
+		public Builder setPassword(String password) {
+			this.password = password;
+			return this;
+		}
+
+		public Builder setVirtualHost(String virtualHost) {
+			this.virtualHost = virtualHost;
+			return this;
+		}
+
+		public Builder setUseSsl(boolean useSsl) {
+			this.useSsl = useSsl;
+			return this;
+		}
+
+		public Builder setVerifyHostname(boolean verifyHostname) {
+			this.verifyHostname = verifyHostname;
+			return this;
+		}
+
+		public Builder setSslAlgorithm(String sslAlgorithm) {
+			this.sslAlgorithm = sslAlgorithm;
+			return this;
+		}
+
+		public Builder setSslPropertiesLocation(String sslPropertiesLocation) {
+			this.sslPropertiesLocation = sslPropertiesLocation;
+			return this;
+		}
+
+		public Builder setKeyStore(String keyStore) {
+			this.keyStore = keyStore;
+			return this;
+		}
+
+		public Builder setKeyStorePassphrase(String keyStorePassphrase) {
+			this.keyStorePassphrase = keyStorePassphrase;
+			return this;
+		}
+
+		public Builder setKeyStoreType(String keyStoreType) {
+			this.keyStoreType = keyStoreType;
+			return this;
+		}
+
+		public Builder setTrustStore(String trustStore) {
+			this.trustStore = trustStore;
+			return this;
+		}
+
+		public Builder setTrustStorePassphrase(String trustStorePassphrase) {
+			this.trustStorePassphrase = trustStorePassphrase;
+			return this;
+		}
+
+		public Builder setTrustStoreType(String trustStoreType) {
+			this.trustStoreType = trustStoreType;
+			return this;
+		}
+
+		public Builder setSaslConfig(String saslConfig) {
+			this.saslConfig = saslConfig;
+			return this;
+		}
+
+		public Builder setSenderPoolSize(int senderPoolSize) {
+			this.senderPoolSize = senderPoolSize;
+			return this;
+		}
+
+		public Builder setMaxSenderRetries(int maxSenderRetries) {
+			this.maxSenderRetries = maxSenderRetries;
+			return this;
+		}
+
+		public Builder setApplicationId(String applicationId) {
+			this.applicationId = applicationId;
+			return this;
+		}
+
+		public Builder setRoutingKeyPattern(String routingKeyPattern) {
+			this.routingKeyPattern = routingKeyPattern;
+			return this;
+		}
+
+		public Builder setGenerateId(boolean generateId) {
+			this.generateId = generateId;
+			return this;
+		}
+
+		public Builder setDeliveryMode(String deliveryMode) {
+			this.deliveryMode = deliveryMode;
+			return this;
+		}
+
+		public Builder setExchange(String exchange) {
+			this.exchange = exchange;
+			return this;
+		}
+
+		public Builder setExchangeType(String exchangeType) {
+			this.exchangeType = exchangeType;
+			return this;
+		}
+
+		public Builder setDeclareExchange(boolean declareExchange) {
+			this.declareExchange = declareExchange;
+			return this;
+		}
+
+		public Builder setDurable(boolean durable) {
+			this.durable = durable;
+			return this;
+		}
+
+		public Builder setAutoDelete(boolean autoDelete) {
+			this.autoDelete = autoDelete;
+			return this;
+		}
+
+		public Builder setContentType(String contentType) {
+			this.contentType = contentType;
+			return this;
+		}
+
+		public Builder setContentEncoding(String contentEncoding) {
+			this.contentEncoding = contentEncoding;
+			return this;
+		}
+
+		public Builder setConnectionName(String connectionName) {
+			this.connectionName = connectionName;
+			return this;
+		}
+
+		public Builder setClientConnectionProperties(String clientConnectionProperties) {
+			this.clientConnectionProperties = clientConnectionProperties;
+			return this;
+		}
+
+		public Builder setAsync(boolean async) {
+			this.async = async;
+			return this;
+		}
+
+		public Builder setCharset(String charset) {
+			this.charset = charset;
+			return this;
+		}
+
+		public Builder setBufferSize(int bufferSize) {
+			this.bufferSize = bufferSize;
+			return this;
+		}
+
+		public Builder setBlockingQueueFactory(BlockingQueueFactory<Event> blockingQueueFactory) {
+			this.blockingQueueFactory = blockingQueueFactory;
+			return this;
+		}
+
+		public Builder setAddMdcAsHeaders(boolean addMdcAsHeaders) {
+			this.addMdcAsHeaders = addMdcAsHeaders;
+			return this;
+		}
+
+		@Override
+		public AmqpAppender build() {
+			if (this.name == null) {
+				LOGGER.error("No name for AmqpAppender");
+			}
+			Layout<? extends Serializable> theLayout = this.layout;
+			if (theLayout == null) {
+				theLayout = PatternLayout.createDefaultLayout();
+			}
+			AmqpManager manager = new AmqpManager(this.configuration.getLoggerContext(), this.name);
+			JavaUtils.INSTANCE
+				.acceptIfNotNull(this.uri, value -> manager.uri = value)
+				.acceptIfNotNull(this.host, value -> manager.host = value)
+				.acceptIfNotNull(this.port, value -> manager.port = Integers.parseInt(value))
+				.acceptIfNotNull(this.addresses, value -> manager.addresses = value)
+				.acceptIfNotNull(this.user, value -> manager.username = value)
+				.acceptIfNotNull(this.password, value -> manager.password = value)
+				.acceptIfNotNull(this.virtualHost, value -> manager.virtualHost = value)
+				.acceptIfNotNull(this.useSsl, value -> manager.useSsl = value)
+				.acceptIfNotNull(this.verifyHostname, value -> manager.verifyHostname = value)
+				.acceptIfNotNull(this.sslAlgorithm, value -> manager.sslAlgorithm = value)
+				.acceptIfNotNull(this.sslPropertiesLocation, value -> manager.sslPropertiesLocation = value)
+				.acceptIfNotNull(this.keyStore, value -> manager.keyStore = value)
+				.acceptIfNotNull(this.keyStorePassphrase, value -> manager.keyStorePassphrase = value)
+				.acceptIfNotNull(this.keyStoreType, value -> manager.keyStoreType = value)
+				.acceptIfNotNull(this.trustStore, value -> manager.trustStore = value)
+				.acceptIfNotNull(this.trustStorePassphrase, value -> manager.trustStorePassphrase = value)
+				.acceptIfNotNull(this.trustStoreType, value -> manager.trustStoreType = value)
+				.acceptIfNotNull(this.saslConfig, value -> manager.saslConfig = value)
+				.acceptIfNotNull(this.senderPoolSize, value -> manager.senderPoolSize = value)
+				.acceptIfNotNull(this.maxSenderRetries, value -> manager.maxSenderRetries = value)
+				.acceptIfNotNull(this.applicationId, value -> manager.applicationId = value)
+				.acceptIfNotNull(this.routingKeyPattern, value -> manager.routingKeyPattern = value)
+				.acceptIfNotNull(this.generateId, value -> manager.generateId = value)
+				.acceptIfNotNull(this.deliveryMode, value -> manager.deliveryMode = MessageDeliveryMode.valueOf(this.deliveryMode))
+				.acceptIfNotNull(this.exchange, value -> manager.exchangeName = value)
+				.acceptIfNotNull(this.exchangeType, value -> manager.exchangeType = value)
+				.acceptIfNotNull(this.declareExchange, value -> manager.declareExchange = value)
+				.acceptIfNotNull(this.durable, value -> manager.durable = value)
+				.acceptIfNotNull(this.autoDelete, value -> manager.autoDelete = value)
+				.acceptIfNotNull(this.contentType, value -> manager.contentType = value)
+				.acceptIfNotNull(this.contentEncoding, value -> manager.contentEncoding = value)
+				.acceptIfNotNull(this.connectionName, value -> manager.connectionName = value)
+				.acceptIfNotNull(this.clientConnectionProperties, value -> manager.clientConnectionProperties = value)
+				.acceptIfNotNull(this.charset, value -> manager.charset = value)
+				.acceptIfNotNull(this.async, value -> manager.async = value)
+				.acceptIfNotNull(this.addMdcAsHeaders, value -> manager.addMdcAsHeaders = value);
+
+			BlockingQueue<Event> eventQueue;
+			if (this.blockingQueueFactory == null) {
+				eventQueue = new LinkedBlockingQueue<>(this.bufferSize);
+			}
+			else {
+				eventQueue = this.blockingQueueFactory.create(this.bufferSize);
+			}
+
+			AmqpAppender appender = buildInstance(this.name, this.filter, theLayout, this.ignoreExceptions, manager, eventQueue);
+			if (manager.activateOptions()) {
+				appender.startSenders();
+				return appender;
+			}
+			return null;
+		}
+
+		/**
+		 * Subclasses can extends Builder, use same logic but need to modify class instance.
+		 *
+		 * @param name The Appender name.
+		 * @param filter The Filter to associate with the Appender.
+		 * @param layout The layout to use to format the event.
+		 * @param ignoreExceptions If true, exceptions will be logged and suppressed. If false errors will be logged and
+		 *            then passed to the application.
+		 * @param manager Manager class for the appender.
+		 * @param eventQueue Where LoggingEvents are queued to send.
+		 * @return {@link AmqpAppender}
+		 */
+		protected AmqpAppender buildInstance(String name, Filter filter, Layout<? extends Serializable> layout,
+				boolean ignoreExceptions, AmqpManager manager, BlockingQueue<Event> eventQueue) {
+
+			return new AmqpAppender(name, filter, layout, ignoreExceptions, Property.EMPTY_ARRAY, manager, eventQueue);
 		}
 
 	}

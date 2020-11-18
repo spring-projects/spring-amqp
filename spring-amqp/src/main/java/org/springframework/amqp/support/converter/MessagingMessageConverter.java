@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,11 @@ import java.util.Map;
 
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.AmqpHeaderMapper;
+import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.SimpleAmqpHeaderMapper;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.util.Assert;
 
@@ -99,16 +101,24 @@ public class MessagingMessageConverter implements MessageConverter, Initializing
 	}
 
 	@Override
-	public org.springframework.amqp.core.Message toMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
+	public org.springframework.amqp.core.Message toMessage(Object object, MessageProperties messageProperties)
+			throws MessageConversionException {
+
 		if (!(object instanceof Message)) {
 			throw new IllegalArgumentException("Could not convert [" + object + "] - only [" +
 					Message.class.getName() + "] is handled by this converter");
 		}
 		Message<?> input = (Message<?>) object;
+		this.headerMapper.fromHeaders(input.getHeaders(), messageProperties);
 		org.springframework.amqp.core.Message amqpMessage = this.payloadConverter.toMessage(
 				input.getPayload(), messageProperties);
-
-		this.headerMapper.fromHeaders(input.getHeaders(), messageProperties);
+		// Default previous behavior of mapper wins for backwards compatibility.
+		if (!Boolean.TRUE.equals(input.getHeaders().get(AmqpHeaders.CONTENT_TYPE_CONVERTER_WINS))) {
+			Object contentType = input.getHeaders().get(MessageHeaders.CONTENT_TYPE);
+			if (contentType != null) {
+				messageProperties.setContentType(contentType.toString());
+			}
+		}
 		return amqpMessage;
 	}
 

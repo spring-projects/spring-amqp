@@ -28,7 +28,6 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.beans.factory.BeanClassLoaderAware;
-import org.springframework.remoting.rmi.CodebaseAwareObjectInputStream;
 import org.springframework.util.ClassUtils;
 
 /**
@@ -42,7 +41,7 @@ import org.springframework.util.ClassUtils;
  * @author Oleg Zhurakousky
  * @author Gary Russell
  */
-public class SimpleMessageConverter extends WhiteListDeserializingMessageConverter implements BeanClassLoaderAware {
+public class SimpleMessageConverter extends AllowedListDeserializingMessageConverter implements BeanClassLoaderAware {
 
 	public static final String DEFAULT_CHARSET = "UTF-8";
 
@@ -58,16 +57,20 @@ public class SimpleMessageConverter extends WhiteListDeserializingMessageConvert
 	}
 
 	/**
-	 * Set the codebase URL to download classes from if not found locally. Can consists of multiple URLs, separated by
-	 * spaces.
+	 * Set the codebase URL to download classes from if not found locally. Can consist of
+	 * multiple URLs, separated by spaces.
 	 * <p>
 	 * Follows RMI's codebase conventions for dynamic class download.
 	 *
 	 * @param codebaseUrl The codebase URL.
 	 *
+	 * @deprecated due to deprecation of
+	 * {@link org.springframework.remoting.rmi.CodebaseAwareObjectInputStream}.
+	 *
 	 * @see org.springframework.remoting.rmi.CodebaseAwareObjectInputStream
 	 * @see java.rmi.server.RMIClassLoader
 	 */
+	@Deprecated
 	public void setCodebaseUrl(String codebaseUrl) {
 		this.codebaseUrl = codebaseUrl;
 	}
@@ -170,13 +173,15 @@ public class SimpleMessageConverter extends WhiteListDeserializingMessageConvert
 	 * @throws IOException if creation of the ObjectInputStream failed
 	 * @see org.springframework.remoting.rmi.CodebaseAwareObjectInputStream
 	 */
+	@SuppressWarnings("deprecation")
 	protected ObjectInputStream createObjectInputStream(InputStream is, String codebaseUrl) throws IOException {
-		return new CodebaseAwareObjectInputStream(is, this.beanClassLoader, codebaseUrl) {
+		return new org.springframework.remoting.rmi.CodebaseAwareObjectInputStream(is, this.beanClassLoader,
+				codebaseUrl) {
 
 			@Override
 			protected Class<?> resolveClass(ObjectStreamClass classDesc) throws IOException, ClassNotFoundException {
 				Class<?> clazz = super.resolveClass(classDesc);
-				checkWhiteList(clazz);
+				checkAllowedList(clazz);
 				return clazz;
 			}
 

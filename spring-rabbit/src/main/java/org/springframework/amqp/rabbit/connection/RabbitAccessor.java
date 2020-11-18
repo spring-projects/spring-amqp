@@ -58,7 +58,7 @@ public abstract class RabbitAccessor implements InitializingBean {
 	 *
 	 * @param connectionFactory The connection factory.
 	 */
-	public final void setConnectionFactory(ConnectionFactory connectionFactory) {
+	public void setConnectionFactory(ConnectionFactory connectionFactory) {
 		this.connectionFactory = connectionFactory;
 	}
 

@@ -41,14 +41,14 @@ import org.springframework.core.serializer.Serializer;
  * {@link MessageProperties#getContentType() content-type} of the provided Message.
  * <p>
  * If a {@link DefaultDeserializer} is configured (default),
- * the {@link #setWhiteListPatterns(java.util.List) white list patterns} will be applied
+ * the {@link #setAllowedListPatterns(java.util.List) allowed patterns} will be applied
  * (if configured); for all other deserializers, the deserializer is responsible for
  * checking classes, if necessary.
  *
  * @author Dave Syer
  * @author Gary Russell
  */
-public class SerializerMessageConverter extends WhiteListDeserializingMessageConverter {
+public class SerializerMessageConverter extends AllowedListDeserializingMessageConverter {
 
 	public static final String DEFAULT_CHARSET = "UTF-8";
 
@@ -174,7 +174,7 @@ public class SerializerMessageConverter extends WhiteListDeserializingMessageCon
 				protected Class<?> resolveClass(ObjectStreamClass classDesc)
 						throws IOException, ClassNotFoundException {
 					Class<?> clazz = super.resolveClass(classDesc);
-					checkWhiteList(clazz);
+					checkAllowedList(clazz);
 					return clazz;
 				}
 

@@ -9,7 +9,7 @@
 
 	<rabbit:connection-factory id="kitchenSink" host="foo" virtual-host="/bar"
 		channel-cache-size="10" port="6888" username="user" password="password"
-		publisher-confirms="true" publisher-returns="true" connection-timeout="789"
+		confirm-type="CORRELATED" publisher-returns="true" connection-timeout="789"
 		factory-timeout="234" connection-limit="456"
 		requested-heartbeat="123"
 		connection-name-strategy="connectionNameStrategy"/>
@@ -20,7 +20,15 @@
 
 	<rabbit:connection-factory id="native" connection-factory="connectionFactory" channel-cache-size="10" />
 
-	<bean id="connectionFactory" class="com.rabbitmq.client.ConnectionFactory"/>
+
+	<rabbit:connection-factory id="resolved" connection-factory="connectionFactory"
+		address-resolver="resolver"/>
+
+	<bean id="resolver" class="com.rabbitmq.client.ListAddressResolver">
+		<constructor-arg value="null"/>
+	</bean>
+
+	<bean id="connectionFactory" class="org.springframework.amqp.rabbit.connection.RabbitConnectionFactoryBean"/>
 
 	<rabbit:connection-factory id="withExecutor" host="foo" virtual-host="/bar"
 		connection-cache-size="10" port="6888" username="user" password="password"
@@ -37,7 +45,7 @@
 	<bean id="execService" class="java.util.concurrent.Executors" factory-method="newSingleThreadExecutor" />
 
 	<rabbit:connection-factory id="multiHost" virtual-host="/bar" addresses="host1:1234,host2,host3:4567"
-		thread-factory="tf" shuffle-addresses="true"
+		thread-factory="tf" address-shuffle-mode="INORDER"
 		channel-cache-size="10" username="user" password="password" />
 
 	<bean id="tf" class="org.springframework.scheduling.concurrent.CustomizableThreadFactory">

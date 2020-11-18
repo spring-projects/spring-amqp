@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ package org.springframework.amqp.rabbit.config;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 import org.aopalliance.aop.Advice;
 import org.apache.commons.logging.Log;
@@ -347,18 +346,6 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	}
 
 	/**
-	 * A {@link Consumer} that is invoked to enable setting other container properties not
-	 * exposed  by this container factory.
-	 * @param configurer the configurer;
-	 * @since 2.1.1
-	 * @deprecated in favor of {@link #setContainerCustomizer(ContainerCustomizer)}.
-	 */
-	@Deprecated
-	public void setContainerConfigurer(Consumer<C> configurer) {
-		this.containerCustomizer = container -> configurer.accept(container);
-	}
-
-	/**
 	 * Set a {@link ContainerCustomizer} that is invoked after a container is created and
 	 * configured to enable further customization of the container.
 	 * @param containerCustomizer the customizer.
@@ -408,7 +395,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 				JavaUtils.INSTANCE
 						.acceptIfNotNull(this.connectionFactory, instance::setConnectionFactory)
 						.acceptIfNotNull(this.errorHandler, instance::setErrorHandler);
-		if (this.messageConverter != null && endpoint != null) {
+		if (this.messageConverter != null && endpoint != null && endpoint.getMessageConverter() == null) {
 			endpoint.setMessageConverter(this.messageConverter);
 		}
 		javaUtils
@@ -455,7 +442,10 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 					.acceptIfNotNull(this.retryTemplate, messageListener::setRetryTemplate)
 					.acceptIfCondition(this.retryTemplate != null && this.recoveryCallback != null,
 							this.recoveryCallback, messageListener::setRecoveryCallback)
-					.acceptIfNotNull(this.defaultRequeueRejected, messageListener::setDefaultRequeueRejected);
+					.acceptIfNotNull(this.defaultRequeueRejected, messageListener::setDefaultRequeueRejected)
+					.acceptIfNotNull(endpoint.getReplyPostProcessor(), messageListener::setReplyPostProcessor)
+					.acceptIfNotNull(endpoint.getReplyContentType(), messageListener::setReplyContentType);
+			messageListener.setConverterWinsContentType(endpoint.isConverterWinsContentType());
 		}
 		initializeContainer(instance, endpoint);
 

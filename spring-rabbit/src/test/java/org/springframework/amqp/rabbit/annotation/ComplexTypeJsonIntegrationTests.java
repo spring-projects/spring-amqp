@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.annotation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.util.concurrent.TimeUnit;
 
@@ -111,13 +112,9 @@ public class ComplexTypeJsonIntegrationTests {
 			m.getMessageProperties().getHeaders().remove("__TypeId__");
 			return m;
 		});
-		Foo<Bar<Baz, Qux>> foo =
-				this.rabbitTemplate.receiveAndConvert(new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { });
-		int n = 0;
-		while (n++ < 100 && foo == null) {
-			Thread.sleep(100);
-			foo = this.rabbitTemplate.receiveAndConvert(new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { });
-		}
+		Foo<Bar<Baz, Qux>> foo = await().until(
+				() -> this.rabbitTemplate.receiveAndConvert(new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { }),
+				msg -> msg != null);
 		verifyFooBarBazQux(foo);
 	}
 

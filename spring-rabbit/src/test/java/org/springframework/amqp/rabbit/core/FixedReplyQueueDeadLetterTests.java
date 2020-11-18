@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -99,13 +100,7 @@ public class FixedReplyQueueDeadLetterTests {
 	void testQueueArgs1() throws MalformedURLException, URISyntaxException, InterruptedException {
 		Client client = new Client(brokerRunning.getAdminUri(), brokerRunning.getAdminUser(),
 				brokerRunning.getAdminPassword());
-		QueueInfo queue = client.getQueue("/", "all.args.1");
-		int n = 0;
-		while (n++ < 100 && queue == null) {
-			Thread.sleep(100);
-			queue = client.getQueue("/", "all.args.1");
-		}
-		assertThat(n).isLessThan(100);
+		QueueInfo queue = await().until(() -> client.getQueue("/", "all.args.1"), que -> que != null);
 		Map<String, Object> arguments = queue.getArguments();
 		assertThat(arguments.get("x-message-ttl")).isEqualTo(1000);
 		assertThat(arguments.get("x-expires")).isEqualTo(200_000);
@@ -124,13 +119,7 @@ public class FixedReplyQueueDeadLetterTests {
 	void testQueueArgs2() throws MalformedURLException, URISyntaxException, InterruptedException {
 		Client client = new Client(brokerRunning.getAdminUri(), brokerRunning.getAdminUser(),
 				brokerRunning.getAdminPassword());
-		QueueInfo queue = client.getQueue("/", "all.args.2");
-		int n = 0;
-		while (n++ < 100 && queue == null) {
-			Thread.sleep(100);
-			queue = client.getQueue("/", "all.args.1");
-		}
-		assertThat(n).isLessThan(100);
+		QueueInfo queue = await().until(() -> client.getQueue("/", "all.args.2"), que -> que != null);
 		Map<String, Object> arguments = queue.getArguments();
 		assertThat(arguments.get("x-message-ttl")).isEqualTo(1000);
 		assertThat(arguments.get("x-expires")).isEqualTo(200_000);
@@ -148,13 +137,7 @@ public class FixedReplyQueueDeadLetterTests {
 	void testQueueArgs3() throws MalformedURLException, URISyntaxException, InterruptedException {
 		Client client = new Client(brokerRunning.getAdminUri(), brokerRunning.getAdminUser(),
 				brokerRunning.getAdminPassword());
-		QueueInfo queue = client.getQueue("/", "all.args.3");
-		int n = 0;
-		while (n++ < 100 && queue == null) {
-			Thread.sleep(100);
-			queue = client.getQueue("/", "all.args.1");
-		}
-		assertThat(n).isLessThan(100);
+		QueueInfo queue = await().until(() -> client.getQueue("/", "all.args.3"), que -> que != null);
 		Map<String, Object> arguments = queue.getArguments();
 		assertThat(arguments.get("x-message-ttl")).isEqualTo(1000);
 		assertThat(arguments.get("x-expires")).isEqualTo(200_000);
@@ -178,13 +161,7 @@ public class FixedReplyQueueDeadLetterTests {
 	void testQuorumArgs() throws MalformedURLException, URISyntaxException, InterruptedException {
 		Client client = new Client(brokerRunning.getAdminUri(), brokerRunning.getAdminUser(),
 				brokerRunning.getAdminPassword());
-		QueueInfo queue = client.getQueue("/", "test.quorum");
-		int n = 0;
-		while (n++ < 100 && queue == null) {
-			Thread.sleep(100);
-			queue = client.getQueue("/", "test.quorum");
-		}
-		assertThat(n).isLessThan(100);
+		QueueInfo queue = await().until(() -> client.getQueue("/", "test.quorum"), que -> que != null);
 		Map<String, Object> arguments = queue.getArguments();
 		assertThat(arguments.get("x-queue-type")).isEqualTo("quorum");
 		assertThat(arguments.get("x-delivery-limit")).isEqualTo(10);
