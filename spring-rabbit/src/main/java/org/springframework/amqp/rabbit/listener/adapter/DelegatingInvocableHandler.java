@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 the original author or authors.
+ * Copyright 2015-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -164,8 +164,9 @@ public class DelegatingInvocableHandler {
 			replyTo = extractSendTo(method.toString(), ann);
 		}
 		if (replyTo == null) {
-			SendTo ann = AnnotationUtils.getAnnotation(this.bean.getClass(), SendTo.class);
-			replyTo = extractSendTo(getBean().getClass().getSimpleName(), ann);
+			Class<?> beanType = handler.getBeanType();
+			SendTo ann = AnnotationUtils.getAnnotation(beanType, SendTo.class);
+			replyTo = extractSendTo(beanType.getSimpleName(), ann);
 		}
 		if (replyTo != null) {
 			this.handlerSendTo.put(handler, PARSER.parseExpression(replyTo, PARSER_CONTEXT));
