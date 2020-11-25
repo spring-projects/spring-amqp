@@ -22,7 +22,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
+import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
@@ -33,6 +41,8 @@ import com.rabbitmq.client.ConnectionFactory;
  *
  */
 @RabbitAvailable
+@SpringJUnitConfig
+@DirtiesContext
 public class PooledChannelConnectionFactoryTests {
 
 	@Test
@@ -71,6 +81,74 @@ public class PooledChannelConnectionFactoryTests {
 		assertThat(chann1).isNotSameAs(chann2);
 		chann1.close();
 		pcf.destroy();
+	}
+
+	@Test
+	void queueDeclared(@Autowired RabbitAdmin admin, @Autowired Config config,
+			@Autowired PooledChannelConnectionFactory pccf) throws Exception {
+
+		assertThat(admin.getQueueProperties("PooledChannelConnectionFactoryTests.q")).isNotNull();
+		assertThat(config.created).isTrue();
+		pccf.createConnection().createChannel(false).close();
+		assertThat(config.channelCreated).isTrue();
+
+		admin.deleteQueue("PooledChannelConnectionFactoryTests.q");
+		pccf.destroy();
+		assertThat(config.closed).isTrue();
+	}
+
+	@Configuration
+	public static class Config {
+
+		boolean created;
+
+		boolean closed;
+
+		Connection connection;
+
+		boolean channelCreated;
+
+		@Bean
+		PooledChannelConnectionFactory pccf() {
+			PooledChannelConnectionFactory pccf = new PooledChannelConnectionFactory(
+					RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
+			pccf.addConnectionListener(new ConnectionListener() {
+
+				@Override
+				public void onCreate(Connection connection) {
+					Config.this.connection = connection;
+					Config.this.created = true;
+				}
+
+				@Override
+				public void onClose(Connection connection) {
+					if (Config.this.connection.equals(connection)) {
+						Config.this.closed = true;
+					}
+				}
+
+			});
+			pccf.addChannelListener(new ChannelListener() {
+
+				@Override
+				public void onCreate(Channel channel, boolean transactional) {
+					Config.this.channelCreated = true;
+				}
+
+			});
+			return pccf;
+		}
+
+		@Bean
+		RabbitAdmin admin(PooledChannelConnectionFactory pccf) {
+			return new RabbitAdmin(pccf);
+		}
+
+		@Bean
+		Queue queue() {
+			return new Queue("PooledChannelConnectionFactoryTests.q");
+		}
+
 	}
 
 }

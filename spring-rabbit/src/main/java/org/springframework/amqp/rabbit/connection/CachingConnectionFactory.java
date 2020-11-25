@@ -45,8 +45,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.commons.logging.Log;
-
 import org.springframework.amqp.AmqpApplicationContextClosedException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpTimeoutException;
@@ -206,8 +204,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	private ConfirmType confirmType = ConfirmType.NONE;
 
 	private boolean publisherReturns;
-
-	private ConditionalExceptionLogger closeExceptionLogger = new DefaultChannelCloseLogger();
 
 	private PublisherCallbackChannelFactory publisherChannelFactory = PublisherCallbackChannelImpl.factory();
 
@@ -534,19 +530,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		if (this.connection.target != null) {
 			listener.onCreate(this.connection);
 		}
-	}
-
-	@Override
-	public void shutdownCompleted(ShutdownSignalException cause) {
-		this.closeExceptionLogger.log(logger, "Channel shutdown", cause);
-		int protocolClassId = cause.getReason().protocolClassId();
-		if (protocolClassId == RabbitUtils.CHANNEL_PROTOCOL_CLASS_ID_20) {
-			getChannelListener().onShutDown(cause);
-		}
-		else if (protocolClassId == RabbitUtils.CONNECTION_PROTOCOL_CLASS_ID_10) {
-			getConnectionListener().onShutDown(cause);
-		}
-
 	}
 
 	private Channel getChannel(ChannelCachingConnectionProxy connection, boolean transactional) {
@@ -1544,41 +1527,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			return "Proxy@" + ObjectUtils.getIdentityHexString(this) + " "
 					+ (CachingConnectionFactory.this.cacheMode == CacheMode.CHANNEL ? "Shared " : "Dedicated ")
 					+ "Rabbit Connection: " + this.target;
-		}
-
-	}
-
-	/**
-	 * Default implementation of {@link ConditionalExceptionLogger} for logging channel
-	 * close exceptions.
-	 * @since 1.5
-	 */
-	private static class DefaultChannelCloseLogger implements ConditionalExceptionLogger {
-
-		DefaultChannelCloseLogger() {
-		}
-
-		@Override
-		public void log(Log logger, String message, Throwable t) {
-			if (t instanceof ShutdownSignalException) {
-				ShutdownSignalException cause = (ShutdownSignalException) t;
-				if (RabbitUtils.isPassiveDeclarationChannelClose(cause)) {
-					if (logger.isDebugEnabled()) {
-						logger.debug(message + ": " + cause.getMessage());
-					}
-				}
-				else if (RabbitUtils.isExclusiveUseChannelClose(cause)) {
-					if (logger.isInfoEnabled()) {
-						logger.info(message + ": " + cause.getMessage());
-					}
-				}
-				else if (!RabbitUtils.isNormalChannelClose(cause)) {
-					logger.error(message + ": " + cause.getMessage());
-				}
-			}
-			else {
-				logger.error("Unexpected invocation of " + this.getClass() + ", with message: " + message, t);
-			}
 		}
 
 	}

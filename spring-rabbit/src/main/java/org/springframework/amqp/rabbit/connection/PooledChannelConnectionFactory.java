@@ -40,6 +40,7 @@ import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.ShutdownListener;
 
 /**
  * A very simple connection factory that caches channels using Apache Pool2
@@ -48,11 +49,10 @@ import com.rabbitmq.client.ConnectionFactory;
  * a callback.
  *
  * @author Gary Russell
- *
  * @since 2.3
  *
  */
-public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
+public class PooledChannelConnectionFactory extends AbstractConnectionFactory implements ShutdownListener {
 
 	private volatile ConnectionWrapper connection;
 
@@ -104,13 +104,33 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 	}
 
 	@Override
+	public void addConnectionListener(ConnectionListener listener) {
+		super.addConnectionListener(listener); // handles publishing sub-factory
+		// If the connection is already alive we assume that the new listener wants to be notified
+		if (this.connection != null && this.connection.isOpen()) {
+			listener.onCreate(this.connection);
+		}
+	}
+
+	@Override
 	public synchronized Connection createConnection() throws AmqpException {
 		if (this.connection == null || !this.connection.isOpen()) {
 			Connection bareConnection = createBareConnection(); // NOSONAR - see destroy()
 			this.connection = new ConnectionWrapper(bareConnection.getDelegate(), getCloseTimeout(), // NOSONAR
-					this.simplePublisherConfirms, this.poolConfigurer);
+					this.simplePublisherConfirms, this.poolConfigurer, getChannelListener());
+			getConnectionListener().onCreate(this.connection);
 		}
 		return this.connection;
+	}
+
+	/**
+	 * Close the connection(s). This will impact any in-process operations. New
+	 * connection(s) will be created on demand after this method returns. This might be
+	 * used to force a reconnect to the primary broker after failing over to a secondary
+	 * broker.
+	 */
+	public void resetConnection() {
+		destroy();
 	}
 
 	@Override
@@ -118,6 +138,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 		super.destroy();
 		if (this.connection != null) {
 			this.connection.forceClose();
+			getConnectionListener().onClose(this.connection);
 			this.connection = null;
 		}
 	}
@@ -132,8 +153,10 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 
 		private final boolean simplePublisherConfirms;
 
+		private final ChannelListener channelListener;
+
 		ConnectionWrapper(com.rabbitmq.client.Connection delegate, int closeTimeout, boolean simplePublisherConfirms,
-				BiConsumer<GenericObjectPool<Channel>, Boolean> configurer) {
+				BiConsumer<GenericObjectPool<Channel>, Boolean> configurer, ChannelListener channelListener) {
 
 			super(delegate, closeTimeout);
 			GenericObjectPool<Channel> pool = new GenericObjectPool<>(new ChannelFactory());
@@ -143,12 +166,15 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory {
 			configurer.accept(pool, true);
 			this.txChannels = pool;
 			this.simplePublisherConfirms = simplePublisherConfirms;
+			this.channelListener = channelListener;
 		}
 
 		@Override
 		public Channel createChannel(boolean transactional) {
 			try {
-				return transactional ? this.txChannels.borrowObject() : this.channels.borrowObject();
+				Channel channel = transactional ? this.txChannels.borrowObject() : this.channels.borrowObject();
+				this.channelListener.onCreate(channel, transactional);
+				return channel;
 			}
 			catch (Exception e) {
 				throw RabbitExceptionTranslator.convertRabbitAccessException(e);

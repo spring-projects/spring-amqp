@@ -20,8 +20,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
+import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
@@ -32,6 +40,8 @@ import com.rabbitmq.client.ConnectionFactory;
  *
  */
 @RabbitAvailable
+@SpringJUnitConfig
+@DirtiesContext
 public class ThreadChannelConnectionFactoryTests {
 
 	@Test
@@ -78,6 +88,74 @@ public class ThreadChannelConnectionFactoryTests {
 				.isFalse();
 		assertThat(((Channel) TestUtils.getPropertyValue(conn, "txChannels", ThreadLocal.class).get()).isOpen())
 				.isFalse();
+	}
+
+	@Test
+	void queueDeclared(@Autowired RabbitAdmin admin, @Autowired Config config,
+			@Autowired ThreadChannelConnectionFactory tccf) throws Exception {
+
+		assertThat(admin.getQueueProperties("ThreadChannelConnectionFactoryTests.q")).isNotNull();
+		assertThat(config.created).isTrue();
+		tccf.createConnection().createChannel(false).close();
+		assertThat(config.channelCreated).isTrue();
+
+		admin.deleteQueue("ThreadChannelConnectionFactoryTests.q");
+		tccf.destroy();
+		assertThat(config.closed).isTrue();
+	}
+
+	@Configuration
+	public static class Config {
+
+		boolean created;
+
+		boolean closed;
+
+		Connection connection;
+
+		boolean channelCreated;
+
+		@Bean
+		ThreadChannelConnectionFactory tccf() {
+			ThreadChannelConnectionFactory tccf = new ThreadChannelConnectionFactory(
+					RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
+			tccf.addConnectionListener(new ConnectionListener() {
+
+				@Override
+				public void onCreate(Connection connection) {
+					Config.this.connection = connection;
+					Config.this.created = true;
+				}
+
+				@Override
+				public void onClose(Connection connection) {
+					if (Config.this.connection.equals(connection)) {
+						Config.this.closed = true;
+					}
+				}
+
+			});
+			tccf.addChannelListener(new ChannelListener() {
+
+				@Override
+				public void onCreate(Channel channel, boolean transactional) {
+					Config.this.channelCreated = true;
+				}
+
+			});
+			return tccf;
+		}
+
+		@Bean
+		RabbitAdmin admin(ThreadChannelConnectionFactory tccf) {
+			return new RabbitAdmin(tccf);
+		}
+
+		@Bean
+		Queue queue() {
+			return new Queue("ThreadChannelConnectionFactoryTests.q");
+		}
+
 	}
 
 }
