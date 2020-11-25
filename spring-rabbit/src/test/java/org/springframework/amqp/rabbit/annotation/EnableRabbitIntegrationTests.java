@@ -131,6 +131,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ErrorHandler;
+import org.springframework.validation.annotation.Validated;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.http.client.Client;
@@ -1148,8 +1149,9 @@ public class EnableRabbitIntegrationTests {
 
 		}
 
-		@RabbitListener(id = "different", queues = "differentTypes", containerFactory = "jsonListenerContainerFactory")
-		public void handleDifferent(Foo2 foo) {
+		@RabbitListener(id = "different", queues = "differentTypes",
+				containerFactory = "jsonListenerContainerFactoryNoClassMapper")
+		public void handleDifferent(@Validated Foo2 foo) {
 			foos.add(foo);
 			latch.countDown();
 		}
@@ -1586,6 +1588,19 @@ public class EnableRabbitIntegrationTests {
 					"org.springframework.amqp.rabbit.annotation.EnableRabbitIntegrationTests$Foo1", Foo2.class);
 			classMapper.setIdClassMapping(idClassMapping);
 			messageConverter.setClassMapper(classMapper);
+			factory.setMessageConverter(messageConverter);
+			factory.setReceiveTimeout(10L);
+			factory.setConcurrentConsumers(2);
+			return factory;
+		}
+
+		@Bean
+		public SimpleRabbitListenerContainerFactory jsonListenerContainerFactoryNoClassMapper() {
+			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+			factory.setConnectionFactory(rabbitConnectionFactory());
+			factory.setErrorHandler(errorHandler());
+			factory.setConsumerTagStrategy(consumerTagStrategy());
+			Jackson2JsonMessageConverter messageConverter = new Jackson2JsonMessageConverter();
 			factory.setMessageConverter(messageConverter);
 			factory.setReceiveTimeout(10L);
 			factory.setConcurrentConsumers(2);
@@ -2189,7 +2204,7 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@RabbitListener(queues = "test.converted.args2")
-		public String foo2a(@Payload Foo2 foo2, @Header("amqp_consumerQueue") String queue) {
+		public String foo2a(Foo2 foo2, @Header("amqp_consumerQueue") String queue) {
 			return foo2 + queue;
 		}
 
