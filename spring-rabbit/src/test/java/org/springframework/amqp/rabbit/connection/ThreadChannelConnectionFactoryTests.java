@@ -92,10 +92,12 @@ public class ThreadChannelConnectionFactoryTests {
 
 	@Test
 	void queueDeclared(@Autowired RabbitAdmin admin, @Autowired Config config,
-			@Autowired ThreadChannelConnectionFactory tccf) {
+			@Autowired ThreadChannelConnectionFactory tccf) throws Exception {
 
 		assertThat(admin.getQueueProperties("ThreadChannelConnectionFactoryTests.q")).isNotNull();
 		assertThat(config.created).isTrue();
+		tccf.createConnection().createChannel(false).close();
+		assertThat(config.channelCreated).isTrue();
 
 		admin.deleteQueue("ThreadChannelConnectionFactoryTests.q");
 		tccf.destroy();
@@ -110,6 +112,8 @@ public class ThreadChannelConnectionFactoryTests {
 		boolean closed;
 
 		Connection connection;
+
+		boolean channelCreated;
 
 		@Bean
 		ThreadChannelConnectionFactory tccf() {
@@ -128,6 +132,14 @@ public class ThreadChannelConnectionFactoryTests {
 					if (Config.this.connection.equals(connection)) {
 						Config.this.closed = true;
 					}
+				}
+
+			});
+			tccf.addChannelListener(new ChannelListener() {
+
+				@Override
+				public void onCreate(Channel channel, boolean transactional) {
+					Config.this.channelCreated = true;
 				}
 
 			});

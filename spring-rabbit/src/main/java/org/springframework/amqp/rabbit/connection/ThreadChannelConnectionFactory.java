@@ -31,7 +31,6 @@ import org.springframework.aop.support.NameMatchMethodPointcutAdvisor;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.ShutdownListener;
-import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * A very simple connection factory that caches a channel per thread. Users are
@@ -129,13 +128,6 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 		}
 	}
 
-	@Override
-	public void shutdownCompleted(ShutdownSignalException cause) {
-		if (cause.getReason().protocolClassId() == RabbitUtils.CONNECTION_PROTOCOL_CLASS_ID_10) {
-			getConnectionListener().onShutDown(cause);
-		}
-	}
-
 	private final class ConnectionWrapper extends SimpleConnection {
 
 		/*
@@ -176,6 +168,7 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 					this.channels.set(channel);
 				}
 			}
+			getChannelListener().onCreate(channel, transactional);
 			return channel;
 		}
 

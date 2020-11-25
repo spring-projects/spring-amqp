@@ -41,7 +41,6 @@ import org.springframework.util.Assert;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.ShutdownListener;
-import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * A very simple connection factory that caches channels using Apache Pool2
@@ -118,7 +117,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory im
 		if (this.connection == null || !this.connection.isOpen()) {
 			Connection bareConnection = createBareConnection(); // NOSONAR - see destroy()
 			this.connection = new ConnectionWrapper(bareConnection.getDelegate(), getCloseTimeout(), // NOSONAR
-					this.simplePublisherConfirms, this.poolConfigurer);
+					this.simplePublisherConfirms, this.poolConfigurer, getChannelListener());
 			getConnectionListener().onCreate(this.connection);
 		}
 		return this.connection;
@@ -144,13 +143,6 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory im
 		}
 	}
 
-	@Override
-	public void shutdownCompleted(ShutdownSignalException cause) {
-		if (cause.getReason().protocolClassId() == RabbitUtils.CONNECTION_PROTOCOL_CLASS_ID_10) {
-			getConnectionListener().onShutDown(cause);
-		}
-	}
-
 	private static final class ConnectionWrapper extends SimpleConnection {
 
 		private static final Log LOGGER = LogFactory.getLog(ConnectionWrapper.class);
@@ -161,8 +153,10 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory im
 
 		private final boolean simplePublisherConfirms;
 
+		private final ChannelListener channelListener;
+
 		ConnectionWrapper(com.rabbitmq.client.Connection delegate, int closeTimeout, boolean simplePublisherConfirms,
-				BiConsumer<GenericObjectPool<Channel>, Boolean> configurer) {
+				BiConsumer<GenericObjectPool<Channel>, Boolean> configurer, ChannelListener channelListener) {
 
 			super(delegate, closeTimeout);
 			GenericObjectPool<Channel> pool = new GenericObjectPool<>(new ChannelFactory());
@@ -172,12 +166,15 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory im
 			configurer.accept(pool, true);
 			this.txChannels = pool;
 			this.simplePublisherConfirms = simplePublisherConfirms;
+			this.channelListener = channelListener;
 		}
 
 		@Override
 		public Channel createChannel(boolean transactional) {
 			try {
-				return transactional ? this.txChannels.borrowObject() : this.channels.borrowObject();
+				Channel channel = transactional ? this.txChannels.borrowObject() : this.channels.borrowObject();
+				this.channelListener.onCreate(channel, transactional);
+				return channel;
 			}
 			catch (Exception e) {
 				throw RabbitExceptionTranslator.convertRabbitAccessException(e);

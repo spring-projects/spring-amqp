@@ -37,6 +37,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
+import org.springframework.amqp.support.ConditionalExceptionLogger;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
@@ -56,6 +57,8 @@ import com.rabbitmq.client.AddressResolver;
 import com.rabbitmq.client.BlockedListener;
 import com.rabbitmq.client.Recoverable;
 import com.rabbitmq.client.RecoveryListener;
+import com.rabbitmq.client.ShutdownListener;
+import com.rabbitmq.client.ShutdownSignalException;
 import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
 
 /**
@@ -67,7 +70,8 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
  *
  */
 public abstract class AbstractConnectionFactory implements ConnectionFactory, DisposableBean, BeanNameAware,
-		ApplicationContextAware, ApplicationEventPublisherAware, ApplicationListener<ContextClosedEvent> {
+		ApplicationContextAware, ApplicationEventPublisherAware, ApplicationListener<ContextClosedEvent>,
+		ShutdownListener {
 
 	/**
 	 * The mode used to shuffle the addresses.
@@ -151,6 +155,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	private AddressResolver addressResolver;
 
 	private volatile boolean contextStopped;
+
+	protected ConditionalExceptionLogger closeExceptionLogger = new DefaultChannelCloseLogger();
 
 	/**
 	 * Create a new AbstractConnectionFactory for the given target ConnectionFactory,
@@ -627,6 +633,19 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	@Override
+	public void shutdownCompleted(ShutdownSignalException cause) {
+		int protocolClassId = cause.getReason().protocolClassId();
+		if (protocolClassId == RabbitUtils.CHANNEL_PROTOCOL_CLASS_ID_20) {
+			this.closeExceptionLogger.log(this.logger, "Shutdown Signal", cause);
+			getChannelListener().onShutDown(cause);
+		}
+		else if (protocolClassId == RabbitUtils.CONNECTION_PROTOCOL_CLASS_ID_10) {
+			getConnectionListener().onShutDown(cause);
+		}
+
+	}
+
+	@Override
 	public void destroy() {
 		if (this.publisherConnectionFactory != null) {
 			this.publisherConnectionFactory.destroy();
@@ -662,6 +681,41 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		@Override
 		public void handleUnblocked() {
 			this.applicationEventPublisher.publishEvent(new ConnectionUnblockedEvent(this.connection));
+		}
+
+	}
+
+	/**
+	 * Default implementation of {@link ConditionalExceptionLogger} for logging channel
+	 * close exceptions.
+	 * @since 1.5
+	 */
+	private static class DefaultChannelCloseLogger implements ConditionalExceptionLogger {
+
+		DefaultChannelCloseLogger() {
+		}
+
+		@Override
+		public void log(Log logger, String message, Throwable t) {
+			if (t instanceof ShutdownSignalException) {
+				ShutdownSignalException cause = (ShutdownSignalException) t;
+				if (RabbitUtils.isPassiveDeclarationChannelClose(cause)) {
+					if (logger.isDebugEnabled()) {
+						logger.debug(message + ": " + cause.getMessage());
+					}
+				}
+				else if (RabbitUtils.isExclusiveUseChannelClose(cause)) {
+					if (logger.isInfoEnabled()) {
+						logger.info(message + ": " + cause.getMessage());
+					}
+				}
+				else if (!RabbitUtils.isNormalChannelClose(cause)) {
+					logger.error(message + ": " + cause.getMessage());
+				}
+			}
+			else {
+				logger.error("Unexpected invocation of " + getClass() + ", with message: " + message, t);
+			}
 		}
 
 	}

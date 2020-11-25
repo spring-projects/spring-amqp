@@ -85,10 +85,12 @@ public class PooledChannelConnectionFactoryTests {
 
 	@Test
 	void queueDeclared(@Autowired RabbitAdmin admin, @Autowired Config config,
-			@Autowired PooledChannelConnectionFactory pccf) {
+			@Autowired PooledChannelConnectionFactory pccf) throws Exception {
 
 		assertThat(admin.getQueueProperties("PooledChannelConnectionFactoryTests.q")).isNotNull();
 		assertThat(config.created).isTrue();
+		pccf.createConnection().createChannel(false).close();
+		assertThat(config.channelCreated).isTrue();
 
 		admin.deleteQueue("PooledChannelConnectionFactoryTests.q");
 		pccf.destroy();
@@ -103,6 +105,8 @@ public class PooledChannelConnectionFactoryTests {
 		boolean closed;
 
 		Connection connection;
+
+		boolean channelCreated;
 
 		@Bean
 		PooledChannelConnectionFactory pccf() {
@@ -121,6 +125,14 @@ public class PooledChannelConnectionFactoryTests {
 					if (Config.this.connection.equals(connection)) {
 						Config.this.closed = true;
 					}
+				}
+
+			});
+			pccf.addChannelListener(new ChannelListener() {
+
+				@Override
+				public void onCreate(Channel channel, boolean transactional) {
+					Config.this.channelCreated = true;
 				}
 
 			});
