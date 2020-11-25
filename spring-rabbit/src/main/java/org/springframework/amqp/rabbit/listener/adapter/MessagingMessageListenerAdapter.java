@@ -34,6 +34,7 @@ import org.springframework.core.MethodParameter;
 import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessagingException;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.remoting.support.RemoteInvocationResult;
@@ -333,12 +334,21 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			for (int i = 0; i < this.method.getParameterCount(); i++) {
 				MethodParameter methodParameter = new MethodParameter(this.method, i);
 				/*
-				 * We're looking for a single non-annotated parameter, or one annotated with @Payload.
+				 * We're looking for a single parameter, or one annotated with @Payload.
 				 * We ignore parameters with type Message because they are not involved with conversion.
 				 */
+				boolean isHeader = methodParameter.hasParameterAnnotation(Header.class);
+				boolean isPayload = methodParameter.hasParameterAnnotation(Payload.class);
+				if (isHeader && isPayload) {
+					if (MessagingMessageListenerAdapter.this.logger.isWarnEnabled()) {
+						MessagingMessageListenerAdapter.this.logger.warn(this.method.getName()
+							+ ": Cannot annotate a parameter with both @Header and @Payload; "
+							+ "ignored for payload conversion");
+					}
+				}
 				if (isEligibleParameter(methodParameter)
-						&& (methodParameter.getParameterAnnotations().length == 0
-						|| methodParameter.hasParameterAnnotation(Payload.class))) {
+						&& (!isHeader || isPayload) && !(isHeader && isPayload)) {
+
 					if (genericParameterType == null) {
 						genericParameterType = extractGenericParameterTypFromMethodParameter(methodParameter);
 					}
