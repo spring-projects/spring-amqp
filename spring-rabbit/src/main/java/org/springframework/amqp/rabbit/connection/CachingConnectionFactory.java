@@ -891,7 +891,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			this.connectionHighWaterMark.set(0);
 		}
 		if (this.defaultPublisherFactory) {
-			((CachingConnectionFactory) getPublisherConnectionFactory()).resetConnection();
+			((CachingConnectionFactory) getPublisherConnectionFactory()).resetConnection(); // NOSONAR
 		}
 	}
 
@@ -985,7 +985,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	@ManagedAttribute
 	public Properties getPublisherConnectionFactoryCacheProperties() {
 		if (this.defaultPublisherFactory) {
-			return ((CachingConnectionFactory) getPublisherConnectionFactory()).getCacheProperties();
+			return ((CachingConnectionFactory) getPublisherConnectionFactory()).getCacheProperties(); // NOSONAR
 		}
 		return new Properties();
 	}
