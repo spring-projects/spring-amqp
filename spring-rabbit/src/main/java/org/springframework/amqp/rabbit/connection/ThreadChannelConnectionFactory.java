@@ -68,6 +68,9 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 		if (!isPublisher) {
 			setPublisherConnectionFactory(new ThreadChannelConnectionFactory(rabbitConnectionFactory, true));
 		}
+		else {
+			this.defaultPublisherFactory = false;
+		}
 	}
 
 	@Override
