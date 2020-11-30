@@ -36,6 +36,7 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.NameMatchMethodPointcutAdvisor;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
@@ -60,6 +61,8 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory im
 
 	private BiConsumer<GenericObjectPool<Channel>, Boolean> poolConfigurer = (pool, tx) -> { };
 
+	private boolean defaultPublisherFactory = true;
+
 	/**
 	 * Construct an instance.
 	 * @param rabbitConnectionFactory the rabbitmq connection factory.
@@ -78,6 +81,15 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory im
 		if (!isPublisher) {
 			setPublisherConnectionFactory(new PooledChannelConnectionFactory(rabbitConnectionFactory, true));
 		}
+		else {
+			this.defaultPublisherFactory = false;
+		}
+	}
+
+	@Override
+	public void setPublisherConnectionFactory(@Nullable AbstractConnectionFactory publisherConnectionFactory) {
+		super.setPublisherConnectionFactory(publisherConnectionFactory);
+		this.defaultPublisherFactory = false;
 	}
 
 	/**
@@ -88,6 +100,9 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory im
 	public void setPoolConfigurer(BiConsumer<GenericObjectPool<Channel>, Boolean> poolConfigurer) {
 		Assert.notNull(poolConfigurer, "'poolConfigurer' cannot be null");
 		this.poolConfigurer = poolConfigurer; // NOSONAR - sync inconsistency
+		if (this.defaultPublisherFactory) {
+			((PooledChannelConnectionFactory) getPublisherConnectionFactory()).setPoolConfigurer(poolConfigurer);
+		}
 	}
 
 	@Override
@@ -101,6 +116,10 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory im
 	 */
 	public void setSimplePublisherConfirms(boolean simplePublisherConfirms) {
 		this.simplePublisherConfirms = simplePublisherConfirms;
+		if (this.defaultPublisherFactory) {
+			((ThreadChannelConnectionFactory) getPublisherConnectionFactory())
+				.setSimplePublisherConfirms(simplePublisherConfirms);
+		}
 	}
 
 	@Override
@@ -117,7 +136,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory im
 		if (this.connection == null || !this.connection.isOpen()) {
 			Connection bareConnection = createBareConnection(); // NOSONAR - see destroy()
 			this.connection = new ConnectionWrapper(bareConnection.getDelegate(), getCloseTimeout(), // NOSONAR
-					this.simplePublisherConfirms, this.poolConfigurer, getChannelListener());
+					this.simplePublisherConfirms, this.poolConfigurer, getChannelListener()); // NOSONAR
 			getConnectionListener().onCreate(this.connection);
 		}
 		return this.connection;

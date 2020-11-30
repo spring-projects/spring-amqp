@@ -27,6 +27,7 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.NameMatchMethodPointcutAdvisor;
+import org.springframework.lang.Nullable;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
@@ -47,6 +48,8 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 
 	private boolean simplePublisherConfirms;
 
+	private boolean defaultPublisherFactory = true;
+
 	/**
 	 * Construct an instance.
 	 * @param rabbitConnectionFactory the rabbitmq connection factory.
@@ -65,6 +68,15 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 		if (!isPublisher) {
 			setPublisherConnectionFactory(new ThreadChannelConnectionFactory(rabbitConnectionFactory, true));
 		}
+		else {
+			this.defaultPublisherFactory = false;
+		}
+	}
+
+	@Override
+	public void setPublisherConnectionFactory(@Nullable AbstractConnectionFactory publisherConnectionFactory) {
+		super.setPublisherConnectionFactory(publisherConnectionFactory);
+		this.defaultPublisherFactory = false;
 	}
 
 	@Override
@@ -78,6 +90,10 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 	 */
 	public void setSimplePublisherConfirms(boolean simplePublisherConfirms) {
 		this.simplePublisherConfirms = simplePublisherConfirms;
+		if (this.defaultPublisherFactory) {
+			((ThreadChannelConnectionFactory) getPublisherConnectionFactory())
+				.setSimplePublisherConfirms(simplePublisherConfirms);
+		}
 	}
 
 	@Override
