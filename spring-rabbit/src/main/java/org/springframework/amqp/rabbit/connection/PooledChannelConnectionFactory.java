@@ -101,7 +101,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory im
 		Assert.notNull(poolConfigurer, "'poolConfigurer' cannot be null");
 		this.poolConfigurer = poolConfigurer; // NOSONAR - sync inconsistency
 		if (this.defaultPublisherFactory) {
-			((PooledChannelConnectionFactory) getPublisherConnectionFactory()).setPoolConfigurer(poolConfigurer);
+			((PooledChannelConnectionFactory) getPublisherConnectionFactory()).setPoolConfigurer(poolConfigurer); // NOSONAR
 		}
 	}
 
@@ -117,8 +117,8 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory im
 	public void setSimplePublisherConfirms(boolean simplePublisherConfirms) {
 		this.simplePublisherConfirms = simplePublisherConfirms;
 		if (this.defaultPublisherFactory) {
-			((ThreadChannelConnectionFactory) getPublisherConnectionFactory())
-				.setSimplePublisherConfirms(simplePublisherConfirms);
+			((PooledChannelConnectionFactory) getPublisherConnectionFactory())
+				.setSimplePublisherConfirms(simplePublisherConfirms); // NOSONAR
 		}
 	}
 

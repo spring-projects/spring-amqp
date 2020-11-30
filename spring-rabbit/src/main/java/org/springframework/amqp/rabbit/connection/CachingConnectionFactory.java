@@ -330,7 +330,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		Assert.isTrue(sessionCacheSize >= 1, "Channel cache size must be 1 or higher");
 		this.channelCacheSize = sessionCacheSize;
 		if (this.defaultPublisherFactory) {
-			((CachingConnectionFactory) getPublisherConnectionFactory()).setChannelCacheSize(sessionCacheSize);
+			((CachingConnectionFactory) getPublisherConnectionFactory()).setChannelCacheSize(sessionCacheSize); // NOSONAR
 		}
 	}
 
@@ -347,7 +347,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		Assert.notNull(cacheMode, "'cacheMode' must not be null.");
 		this.cacheMode = cacheMode;
 		if (this.defaultPublisherFactory) {
-			((CachingConnectionFactory) getPublisherConnectionFactory()).setCacheMode(cacheMode);
+			((CachingConnectionFactory) getPublisherConnectionFactory()).setCacheMode(cacheMode); // NOSONAR
 		}
 	}
 
@@ -359,7 +359,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		Assert.isTrue(connectionCacheSize >= 1, "Connection cache size must be 1 or higher.");
 		this.connectionCacheSize = connectionCacheSize;
 		if (this.defaultPublisherFactory) {
-			((CachingConnectionFactory) getPublisherConnectionFactory()).setConnectionCacheSize(connectionCacheSize);
+			((CachingConnectionFactory) getPublisherConnectionFactory()).setConnectionCacheSize(connectionCacheSize); // NOSONAR
 		}
 	}
 
@@ -375,7 +375,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		Assert.isTrue(connectionLimit >= 1, "Connection limit must be 1 or higher.");
 		this.connectionLimit = connectionLimit;
 		if (this.defaultPublisherFactory) {
-			((CachingConnectionFactory) getPublisherConnectionFactory()).setConnectionLimit(connectionLimit);
+			((CachingConnectionFactory) getPublisherConnectionFactory()).setConnectionLimit(connectionLimit); // NOSONAR
 		}
 	}
 
@@ -392,7 +392,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	public void setPublisherReturns(boolean publisherReturns) {
 		this.publisherReturns = publisherReturns;
 		if (this.defaultPublisherFactory) {
-			((CachingConnectionFactory) getPublisherConnectionFactory()).setPublisherReturns(publisherReturns);
+			((CachingConnectionFactory) getPublisherConnectionFactory()).setPublisherReturns(publisherReturns); // NOSONAR
 		}
 	}
 
@@ -449,7 +449,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		Assert.notNull(confirmType, "'confirmType' cannot be null");
 		this.confirmType = confirmType;
 		if (this.defaultPublisherFactory) {
-			((CachingConnectionFactory) getPublisherConnectionFactory()).setPublisherConfirmType(confirmType);
+			((CachingConnectionFactory) getPublisherConnectionFactory()).setPublisherConfirmType(confirmType); // NOSONAR
 		}
 	}
 
@@ -469,7 +469,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		this.channelCheckoutTimeout = channelCheckoutTimeout;
 		if (this.defaultPublisherFactory) {
 			((CachingConnectionFactory) getPublisherConnectionFactory())
-					.setChannelCheckoutTimeout(channelCheckoutTimeout);
+					.setChannelCheckoutTimeout(channelCheckoutTimeout); // NOSONAR
 		}
 	}
 
@@ -492,7 +492,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 		initCacheWaterMarks();
 		if (this.defaultPublisherFactory) {
-			((CachingConnectionFactory) getPublisherConnectionFactory()).afterPropertiesSet();
+			((CachingConnectionFactory) getPublisherConnectionFactory()).afterPropertiesSet(); // NOSONAR
 		}
 	}
 

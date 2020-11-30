@@ -92,7 +92,7 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 		this.simplePublisherConfirms = simplePublisherConfirms;
 		if (this.defaultPublisherFactory) {
 			((ThreadChannelConnectionFactory) getPublisherConnectionFactory())
-				.setSimplePublisherConfirms(simplePublisherConfirms);
+				.setSimplePublisherConfirms(simplePublisherConfirms); // NOSONAR
 		}
 	}
 
