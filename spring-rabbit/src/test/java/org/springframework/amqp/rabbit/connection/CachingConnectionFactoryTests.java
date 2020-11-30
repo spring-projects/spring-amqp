@@ -1795,6 +1795,16 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertThat(closeLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(rejected.get()).isFalse();
 		closeExec.shutdownNow();
+
+		ccf.setChannelCacheSize(42);
+		assertThat(ccf.getChannelCacheSize()).isEqualTo(42);
+		assertThat(((CachingConnectionFactory) ccf.getPublisherConnectionFactory()).getChannelCacheSize())
+				.isEqualTo(42);
+		ccf.setPublisherConnectionFactory(new CachingConnectionFactory());
+		ccf.setChannelCacheSize(42);
+		assertThat(ccf.getChannelCacheSize()).isEqualTo(42);
+		assertThat(((CachingConnectionFactory) ccf.getPublisherConnectionFactory()).getChannelCacheSize())
+				.isEqualTo(25);
 	}
 
 	@Test

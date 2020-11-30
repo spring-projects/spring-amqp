@@ -113,6 +113,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	private final AtomicInteger defaultConnectionNameStrategyCounter = new AtomicInteger();
 
+	private ConditionalExceptionLogger closeExceptionLogger = new DefaultChannelCloseLogger();
+
 	private AbstractConnectionFactory publisherConnectionFactory;
 
 	private RecoveryListener recoveryListener = new RecoveryListener() {
@@ -156,8 +158,6 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	private volatile boolean contextStopped;
 
-	protected ConditionalExceptionLogger closeExceptionLogger = new DefaultChannelCloseLogger();
-
 	/**
 	 * Create a new AbstractConnectionFactory for the given target ConnectionFactory,
 	 * with no publisher connection factory.
@@ -168,8 +168,21 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		this.rabbitConnectionFactory = rabbitConnectionFactory;
 	}
 
-	protected final void setPublisherConnectionFactory(
-			AbstractConnectionFactory publisherConnectionFactory) {
+	/**
+	 * Set a custom publisher connection factory; the type does not need to be the same
+	 * as this factory.
+	 * @param publisherConnectionFactory the factory.
+	 * @since 2.3.2
+	 */
+	public void setPublisherConnectionFactory(
+			@Nullable AbstractConnectionFactory publisherConnectionFactory) {
+
+		doSetPublisherConnectionFactory(publisherConnectionFactory);
+	}
+
+	protected final void doSetPublisherConnectionFactory(
+			@Nullable AbstractConnectionFactory publisherConnectionFactory) {
+
 		this.publisherConnectionFactory = publisherConnectionFactory;
 	}
 
@@ -470,6 +483,26 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 			this.publisherConnectionFactory.setConnectionNameStrategy(
 					cf -> connectionNameStrategy.obtainNewConnectionName(cf) + PUBLISHER_SUFFIX);
 		}
+	}
+
+	/**
+	 * Set the strategy for logging close exceptions; by default, if a channel is closed due to a failed
+	 * passive queue declaration, it is logged at debug level. Normal channel closes (200 OK) are not
+	 * logged. All others are logged at ERROR level (unless access is refused due to an exclusive consumer
+	 * condition, in which case, it is logged at INFO level).
+	 * @param closeExceptionLogger the {@link ConditionalExceptionLogger}.
+	 * @since 1.5
+	 */
+	public void setCloseExceptionLogger(ConditionalExceptionLogger closeExceptionLogger) {
+		Assert.notNull(closeExceptionLogger, "'closeExceptionLogger' cannot be null");
+		this.closeExceptionLogger = closeExceptionLogger;
+		if (this.publisherConnectionFactory != null) {
+			this.publisherConnectionFactory.setCloseExceptionLogger(closeExceptionLogger);
+		}
+	}
+
+	protected ConnectionNameStrategy getConnectionNameStrategy() {
+		return this.connectionNameStrategy;
 	}
 
 	@Override

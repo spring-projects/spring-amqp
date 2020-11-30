@@ -324,7 +324,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			return extractMessage(message);
 		}
 
-		private Type determineInferredType() {
+		private Type determineInferredType() { // NOSONAR - complexity
 			if (this.method == null) {
 				return null;
 			}
@@ -339,14 +339,12 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 				 */
 				boolean isHeader = methodParameter.hasParameterAnnotation(Header.class);
 				boolean isPayload = methodParameter.hasParameterAnnotation(Payload.class);
-				if (isHeader && isPayload) {
-					if (MessagingMessageListenerAdapter.this.logger.isWarnEnabled()) {
-						MessagingMessageListenerAdapter.this.logger.warn(this.method.getName()
-							+ ": Cannot annotate a parameter with both @Header and @Payload; "
-							+ "ignored for payload conversion");
-					}
+				if (isHeader && isPayload && MessagingMessageListenerAdapter.this.logger.isWarnEnabled()) {
+					MessagingMessageListenerAdapter.this.logger.warn(this.method.getName()
+						+ ": Cannot annotate a parameter with both @Header and @Payload; "
+						+ "ignored for payload conversion");
 				}
-				if (isEligibleParameter(methodParameter)
+				if (isEligibleParameter(methodParameter) // NOSONAR
 						&& (!isHeader || isPayload) && !(isHeader && isPayload)) {
 
 					if (genericParameterType == null) {
