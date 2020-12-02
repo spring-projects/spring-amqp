@@ -4166,7 +4166,7 @@ See the https://www.rabbitmq.com/dlx.html[RabbitMQ Dead Letter Documentation] fo
 You can also take a look at the `FixedReplyQueueDeadLetterTests` test case for an example.
 
 [[async-template]]
-===== `AsyncRabbitTemplate`
+===== Async Rabbit Template
 
 Version 1.6 introduced the `AsyncRabbitTemplate`.
 This has similar `sendAndReceive` (and `convertSendAndReceive`) methods to those on the <<amqp-template>>.
