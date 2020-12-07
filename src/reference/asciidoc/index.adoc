@@ -14,7 +14,7 @@ ifdef::backend-html5[]
 *{project-version}*
 endif::[]
 
-(C) 2010 - 2019 by Pivotal Software, Inc.
+(C) 2010 - 2020 by VMware, Inc.
 
 Copies of this document may be made for your own use and for distribution to others, provided that you do not charge any fee for such copies and further provided that each copy contains this Copyright Notice, whether distributed in print or electronically.
 

@@ -12,7 +12,7 @@ publishing {
 				url = linkScmUrl
 				organization {
 					name = 'Spring IO'
-					url = 'https://spring.io/projects/spring-kafka'
+					url = 'https://spring.io/projects/spring-amqp'
 				}
 				licenses {
 					license {
@@ -30,38 +30,28 @@ publishing {
 					developer {
 						id = 'garyrussell'
 						name = 'Gary Russell'
-						email = 'grussell@pivotal.io'
+						email = 'grussell@vmware.com'
 						roles = ['project lead']
 					}
 					developer {
 						id = 'artembilan'
 						name = 'Artem Bilan'
-						email = 'abilan@pivotal.io'
+						email = 'abilan@vmware.com'
 					}
 					developer {
-						id = 'dsyer'
+						id = 'davesyer'
 						name = 'Dave Syer'
-						email = 'dsyer@pivotal.io'
+						email = 'dsyer@vmware.com'
 					}
 					developer {
 						id = 'markfisher'
 						name = 'Mark Fisher'
-						email = 'mfisher@pivotal.io'
+						email = 'markfisher@vmware.com'
 					}
 					developer {
-						id = 'mpollack'
+						id = 'markpollack'
 						name = 'Mark Pollack'
-						email = 'mpollack@pivotal.io'
-					}
-					developer {
-						id = 'jbrisbin'
-						name = 'Jon Brisbin'
-						email = 'jbrisbin@pivotal.io'
-					}
-					developer {
-						id = 'tomas.lukosius'
-						name = 'Tomas Lukosius'
-						email = 'tomas.lukosius@opencredo.com'
+						email = 'mpollack@vmware.com'
 					}
 				}
 				issueManagement {
