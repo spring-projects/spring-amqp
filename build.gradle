@@ -27,7 +27,6 @@ plugins {
 description = 'Spring AMQP'
 
 ext {
-	isTravisBuild = System.getenv().get('TRAVIS') == 'true'
 	linkHomepage = 'https://projects.spring.io/spring-amqp'
 	linkCi       = 'https://build.spring.io/browse/AMQP'
 	linkIssue    = 'https://jira.spring.io/browse/AMQP'
@@ -204,7 +203,7 @@ subprojects { subproject ->
 	}
 
 	task updateCopyrights {
-		onlyIf { !System.getenv('TRAVIS') && !System.getenv('bamboo_buildKey') }
+		onlyIf { !System.getenv('GITHUB_ACTION') && !System.getenv('bamboo_buildKey') }
 		inputs.files(modifiedFiles.filter { f -> f.path.contains(subproject.name) })
 		outputs.dir('build/classes')
 
@@ -237,10 +236,6 @@ subprojects { subproject ->
 	test {
 		jacoco {
 			destinationFile = file("$buildDir/jacoco.exec")
-		}
-		if (isTravisBuild) {
-			// restrict memory usage, so tests don't fail with exit code 137 on travis
-			maxHeapSize = '256m'
 		}
 	}
 

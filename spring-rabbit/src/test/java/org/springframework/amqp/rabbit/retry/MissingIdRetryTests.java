@@ -62,7 +62,7 @@ import org.springframework.retry.support.RetryTemplate;
 
 /**
  * @author Gary Russell
- * @author Arnaud Cogolu?gnes
+ * @author Arnaud Cogoluègnes
  * @since 1.1.2
  *
  */
@@ -83,7 +83,7 @@ public class MissingIdRetryTests {
 		RabbitAvailableCondition.getBrokerRunning().deleteExchanges("retry.test.exchange");
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@SuppressWarnings("rawtypes")
 	@Test
 	public void testWithNoId() throws Exception {
 		// 2 messages; each retried once by missing id interceptor
