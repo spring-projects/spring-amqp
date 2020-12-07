@@ -366,6 +366,47 @@ public class Jackson2JsonMessageConverterTests {
 		assertThat(((Buz) buzs.get(0)).getField()).isEqualTo("foo");
 	}
 
+	@Test
+	void concreteInListRegression() throws Exception {
+		byte[] bytes = "[{\"name\":\"bar\"}]".getBytes();
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setInferredArgumentType(getClass().getDeclaredMethod("fooLister").getGenericReturnType());
+		messageProperties.setHeader("__TypeId__", List.class.getName());
+		messageProperties.setHeader("__ContentTypeId__", Object.class.getName());
+		Message message = new Message(bytes, messageProperties);
+		Jackson2JsonMessageConverter j2Converter = new Jackson2JsonMessageConverter();
+		@SuppressWarnings("unchecked")
+		List<Foo> foos = (List<Foo>) j2Converter.fromMessage(message);
+		assertThat(foos).hasSize(1);
+		assertThat(foos.get(0).getName()).isEqualTo("bar");
+	}
+
+	@Test
+	void concreteInMapRegression() throws Exception {
+		byte[] bytes = "{\"test\":{\"field\":\"baz\"}}".getBytes();
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setInferredArgumentType(getClass().getDeclaredMethod("stringQuxLister").getGenericReturnType());
+		messageProperties.setHeader("__TypeId__", Map.class.getName());
+		messageProperties.setHeader("__KeyTypeId__", String.class.getName());
+		messageProperties.setHeader("__ContentTypeId__", Object.class.getName());
+		Message message = new Message(bytes, messageProperties);
+		Jackson2JsonMessageConverter j2Converter = new Jackson2JsonMessageConverter();
+
+		@SuppressWarnings("unchecked")
+		Map<String, Qux> foos = (Map<String, Qux>) j2Converter.fromMessage(message);
+		assertThat(foos).hasSize(1);
+		assertThat(foos.keySet().iterator().next()).isEqualTo("test");
+		assertThat(foos.values().iterator().next().getField()).isEqualTo("baz");
+	}
+
+	public List<Foo> fooLister() {
+		return null;
+	}
+
+	public Map<String, Qux> stringQuxLister() {
+		return null;
+	}
+
 	public List<Baz> bazLister() {
 		return null;
 	}
@@ -506,6 +547,9 @@ public class Jackson2JsonMessageConverterTests {
 	public static class Qux implements Baz {
 
 		private String field;
+
+		public Qux() {
+		}
 
 		public Qux(String field) {
 			this.field = field;

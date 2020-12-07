@@ -130,7 +130,7 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 	}
 
 	private boolean canConvert(JavaType inferredType) {
-		if (inferredType.isAbstract()) {
+		if (inferredType.isAbstract() && !inferredType.isContainerType()) {
 			return false;
 		}
 		if (inferredType.isContainerType() && inferredType.getContentType().isAbstract()) {
