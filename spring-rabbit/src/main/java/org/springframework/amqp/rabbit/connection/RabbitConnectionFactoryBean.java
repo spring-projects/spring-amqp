@@ -75,7 +75,7 @@ import com.rabbitmq.client.impl.nio.NioParams;
  *
  * @author Gary Russell
  * @author Heath Abelson
- * @author Arnaud Cogolu?gnes
+ * @author Arnaud Cogoluègnes
  * @author Hareendran
  * @author Dominique Villard
  * @author Zachary DeLuca
