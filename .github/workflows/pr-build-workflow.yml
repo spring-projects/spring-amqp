@@ -11,9 +11,10 @@ jobs:
 
     services:
       rabbitmq:
-        image: rabbitmq
+        image: rabbitmq:management
         ports:
           - 5672:5672
+          - 15762:15762
 
     steps:
       - uses: actions/checkout@v2
