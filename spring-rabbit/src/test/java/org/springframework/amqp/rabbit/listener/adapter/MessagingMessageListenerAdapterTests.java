@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -39,8 +40,10 @@ import org.springframework.amqp.rabbit.test.MessageTestUtils;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.messaging.Message;
+import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 import org.springframework.messaging.support.MessageBuilder;
@@ -190,6 +193,13 @@ public class MessagingMessageListenerAdapterTests {
 				.build();
 		listener.onMessage(message, channel);
 		assertThat(this.sample.payload.getClass()).isEqualTo(LinkedHashMap.class);
+	}
+
+	@Test
+	void headers() throws Exception {
+		MessagingMessageListenerAdapter listener = getSimpleInstance("withHeaders", Foo.class, Map.class);
+		assertThat(TestUtils.getPropertyValue(listener, "messagingMessageConverter.inferredArgumentType"))
+				.isEqualTo(Foo.class);
 	}
 
 	@Test
@@ -376,6 +386,10 @@ public class MessagingMessageListenerAdapterTests {
 		@SuppressWarnings("unused")
 		public String failWithReturn(Integer input) {
 			throw new IllegalArgumentException("Expected test exception");
+		}
+
+		@SuppressWarnings("unused")
+		public void withHeaders(Foo foo, @Headers Map<String, Object> headers) {
 		}
 
 	}
