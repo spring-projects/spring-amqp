@@ -135,7 +135,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private final Object lifecycleMonitor = new Object();
 
-	private final ContainerDelegate delegate = this::actualInvokeListener;
+	private final ContainerDelegate delegate = this::actualExecuteListener;
 
 	protected final Object consumersMonitor = new Object(); //NOSONAR
 
@@ -1457,8 +1457,12 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @see #invokeListener
 	 * @see #handleListenerException
 	 */
-	@SuppressWarnings(UNCHECKED)
 	protected void executeListener(Channel channel, Object data) {
+		this.proxy.executeListener(channel, data);
+	}
+
+	@SuppressWarnings(UNCHECKED)
+	private void actualExecuteListener(Channel channel, Object data) {
 		if (!isRunning()) {
 			if (logger.isWarnEnabled()) {
 				logger.warn(
@@ -1535,17 +1539,13 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		}
 	}
 
-	protected void invokeListener(Channel channel, Object data) {
-		this.proxy.invokeListener(channel, data);
-	}
-
 	/**
 	 * Invoke the specified listener: either as standard MessageListener or (preferably) as SessionAwareMessageListener.
 	 * @param channel the Rabbit Channel to operate on
 	 * @param data the received Rabbit Message or List of Message.
 	 * @see #setMessageListener(MessageListener)
 	 */
-	protected void actualInvokeListener(Channel channel, Object data) {
+	protected void invokeListener(Channel channel, Object data) {
 		Object listener = getMessageListener();
 		if (listener instanceof ChannelAwareMessageListener) {
 			doInvokeListener((ChannelAwareMessageListener) listener, channel, data);
@@ -1986,9 +1986,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	@FunctionalInterface
 	private interface ContainerDelegate {
-
-		void invokeListener(Channel channel, Object data);
-
+		void executeListener(Channel channel, Object data);
 	}
 
 	/**
