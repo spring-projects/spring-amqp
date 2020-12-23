@@ -27,9 +27,12 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
+import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
+import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.support.converter.ContentTypeDelegatingMessageConverter;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -37,6 +40,7 @@ import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
@@ -118,11 +122,34 @@ public class EnableRabbitReturnTypesTests {
 		}
 
 		@Bean
+		public RabbitAdmin admin(CachingConnectionFactory cf) {
+			return new RabbitAdmin(cf);
+		}
+
+		@Bean
 		public Jackson2JsonMessageConverter converter() {
 			return new Jackson2JsonMessageConverter();
 		}
 
-		@RabbitListener(queues = "EnableRabbitReturnTypesTests.1")
+		@Bean
+		public SimpleAsyncTaskExecutor exec() {
+			return new SimpleAsyncTaskExecutor();
+		}
+
+		@Bean
+		public ReplyPostProcessor rpp() {
+			return (in, out) -> out;
+		}
+
+		@Bean
+		public RabbitListenerErrorHandler rleh() {
+			return (amqpMessage, message, exception) -> null;
+		}
+
+		@RabbitListener(queues = "EnableRabbitReturnTypesTests.1", admin = "#{@admin}",
+				containerFactory = "#{@rabbitListenerContainerFactory}",
+				executor = "#{@exec}", replyPostProcessor = "#{@rpp}", messageConverter = "#{@converter}",
+				errorHandler = "#{@rleh}")
 		public One listen1(String in) {
 			if ("3".equals(in)) {
 				return new Three();

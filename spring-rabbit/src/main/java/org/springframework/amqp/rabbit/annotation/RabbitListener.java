@@ -116,10 +116,15 @@ public @interface RabbitListener {
 	String id() default "";
 
 	/**
-	 * The bean name of the {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory}
-	 * to use to create the message listener container responsible to serve this endpoint.
-	 * <p>If not specified, the default container factory is used, if any.
-	 * @return the {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory}
+	 * The bean name of the
+	 * {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory} to
+	 * use to create the message listener container responsible to serve this endpoint.
+	 * <p>
+	 * If not specified, the default container factory is used, if any. If a SpEL
+	 * expression is provided ({@code #{...}}), the expression can either evaluate to a
+	 * container factory instance or a bean name.
+	 * @return the
+	 * {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory}
 	 * bean name.
 	 */
 	String containerFactory() default "";
@@ -166,12 +171,14 @@ public @interface RabbitListener {
 	String priority() default "";
 
 	/**
-	 * Reference to a {@link org.springframework.amqp.rabbit.core.RabbitAdmin
-	 * RabbitAdmin}. Required if the listener is using auto-delete
-	 * queues and those queues are configured for conditional declaration. This
-	 * is the admin that will (re)declare those queues when the container is
-	 * (re)started. See the reference documentation for more information.
-	 * @return the {@link org.springframework.amqp.rabbit.core.RabbitAdmin} bean name.
+	 * Reference to a {@link org.springframework.amqp.core.AmqpAdmin AmqpAdmin}.
+	 * Required if the listener is using auto-delete queues and those queues are
+	 * configured for conditional declaration. This is the admin that will (re)declare
+	 * those queues when the container is (re)started. See the reference documentation for
+	 * more information. If a SpEL expression is provided ({@code #{...}}) the expression
+	 * can evaluate to an {@link org.springframework.amqp.core.AmqpAdmin} instance
+	 * or bean name.
+	 * @return the {@link org.springframework.amqp.core.AmqpAdmin} bean name.
 	 */
 	String admin() default "";
 
@@ -246,8 +253,10 @@ public @interface RabbitListener {
 	String autoStartup() default "";
 
 	/**
-	 * Set the task executor bean name to use for this listener's container; overrides
-	 * any executor set on the container factory.
+	 * Set the task executor bean name to use for this listener's container; overrides any
+	 * executor set on the container factory. If a SpEL expression is provided
+	 * ({@code #{...}}), the expression can either evaluate to a executor instance or a bean
+	 * name.
 	 * @return the executor bean name.
 	 * @since 2.2
 	 */
@@ -266,7 +275,9 @@ public @interface RabbitListener {
 	/**
 	 * The bean name of a
 	 * {@link org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor} to post
-	 * process a response before it is sent.
+	 * process a response before it is sent. If a SpEL expression is provided
+	 * ({@code #{...}}), the expression can either evaluate to a post processor instance
+	 * or a bean name.
 	 * @return the bean name.
 	 * @since 2.2.5
 	 * @see org.springframework.amqp.rabbit.listener.adapter.AbstractAdaptableMessageListener#setReplyPostProcessor(org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor)
@@ -275,7 +286,9 @@ public @interface RabbitListener {
 
 	/**
 	 * Override the container factory's message converter used for this listener.
-	 * @return the message converter bean name.
+	 * @return the message converter bean name. If a SpEL expression is provided
+	 * ({@code #{...}}), the expression can either evaluate to a converter instance
+	 * or a bean name.
 	 * @since 2.3
 	 */
 	String messageConverter() default "";
