@@ -146,9 +146,9 @@ public class EnableRabbitReturnTypesTests {
 			return (amqpMessage, message, exception) -> null;
 		}
 
-		@RabbitListener(queues = "EnableRabbitReturnTypesTests.1", admin = "#{admin}",
+		@RabbitListener(queues = "EnableRabbitReturnTypesTests.1", admin = "#{@admin}",
 				containerFactory = "#{@rabbitListenerContainerFactory}",
-				executor = "#{@exec}", replyPostProcessor = "#{@rpp}", messageConverter = "#{converter}",
+				executor = "#{@exec}", replyPostProcessor = "#{@rpp}", messageConverter = "#{@converter}",
 				errorHandler = "#{@rleh}")
 		public One listen1(String in) {
 			if ("3".equals(in)) {
