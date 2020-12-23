@@ -27,6 +27,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
@@ -118,11 +119,16 @@ public class EnableRabbitReturnTypesTests {
 		}
 
 		@Bean
+		public RabbitAdmin admin(CachingConnectionFactory cf) {
+			return new RabbitAdmin(cf);
+		}
+
+		@Bean
 		public Jackson2JsonMessageConverter converter() {
 			return new Jackson2JsonMessageConverter();
 		}
 
-		@RabbitListener(queues = "EnableRabbitReturnTypesTests.1",
+		@RabbitListener(queues = "EnableRabbitReturnTypesTests.1", admin = "#{admin}",
 				containerFactory = "#{@rabbitListenerContainerFactory}")
 		public One listen1(String in) {
 			if ("3".equals(in)) {

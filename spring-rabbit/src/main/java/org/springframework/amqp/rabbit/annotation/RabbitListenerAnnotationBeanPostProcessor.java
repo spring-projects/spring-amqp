@@ -38,6 +38,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.core.AcknowledgeMode;
+import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Base64UrlNamingStrategy;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
@@ -482,6 +483,11 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	}
 
 	private void resolveAdmin(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener, Object adminTarget) {
+		Object resolved = resolveExpression(rabbitListener.admin());
+		if (resolved instanceof AmqpAdmin) {
+			endpoint.setAdmin((AmqpAdmin) resolved);
+			return;
+		}
 		String rabbitAdmin = resolveExpressionAsString(rabbitListener.admin(), "admin");
 		if (StringUtils.hasText(rabbitAdmin)) {
 			Assert.state(this.beanFactory != null, "BeanFactory must be set to resolve RabbitAdmin by bean name");

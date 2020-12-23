@@ -171,12 +171,14 @@ public @interface RabbitListener {
 	String priority() default "";
 
 	/**
-	 * Reference to a {@link org.springframework.amqp.rabbit.core.RabbitAdmin
-	 * RabbitAdmin}. Required if the listener is using auto-delete
-	 * queues and those queues are configured for conditional declaration. This
-	 * is the admin that will (re)declare those queues when the container is
-	 * (re)started. See the reference documentation for more information.
-	 * @return the {@link org.springframework.amqp.rabbit.core.RabbitAdmin} bean name.
+	 * Reference to a {@link org.springframework.amqp.rabbit.core.AmqpAdmin AmqpAdmin}.
+	 * Required if the listener is using auto-delete queues and those queues are
+	 * configured for conditional declaration. This is the admin that will (re)declare
+	 * those queues when the container is (re)started. See the reference documentation for
+	 * more information. If a SpEL expression is provided {@code #{...}} the expression
+	 * can evaluate to an {@link org.springframework.amqp.rabbit.core.AmqpAdmin} instance
+	 * or bean name.
+	 * @return the {@link org.springframework.amqp.rabbit.core.AmqpAdmin} bean name.
 	 */
 	String admin() default "";
 
