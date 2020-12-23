@@ -116,13 +116,13 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests2 {
 			});
 		}
 		this.templateWithConfirmsEnabled.setMandatory(true);
-		CorrelationData corr = new CorrelationData();
+		CorrelationData corr = new CorrelationData("foo");
 		this.templateWithConfirmsEnabled.convertAndSend("", ROUTE2, "foo", corr);
 		assertThat(corr.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
 		if (listener) {
 			assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 		}
-		corr = new CorrelationData();
+		corr = new CorrelationData("bar");
 		this.templateWithConfirmsEnabled.convertAndSend("", "bad route", "foo", corr);
 		assertThat(corr.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
 		assertThat(corr.getReturnedMessage()).isNotNull();
