@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -35,7 +36,8 @@ import org.springframework.util.Assert;
  * @author Gary Russell
  * @since 1.3
  */
-public abstract class AbstractRoutingConnectionFactory implements ConnectionFactory, RoutingConnectionFactory {
+public abstract class AbstractRoutingConnectionFactory implements ConnectionFactory, RoutingConnectionFactory,
+		InitializingBean {
 
 	private final Map<Object, ConnectionFactory> targetConnectionFactories =
 			new ConcurrentHashMap<Object, ConnectionFactory>();
@@ -45,6 +47,10 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	private ConnectionFactory defaultTargetConnectionFactory;
 
 	private boolean lenientFallback = true;
+
+	private Boolean confirms;
+
+	private Boolean returns;
 
 	/**
 	 * Specify the map of target ConnectionFactories, with the lookup key as key.
@@ -58,6 +64,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 		Assert.noNullElements(targetConnectionFactories.values().toArray(),
 				"'targetConnectionFactories' cannot have null values.");
 		this.targetConnectionFactories.putAll(targetConnectionFactories);
+		targetConnectionFactories.values().stream().forEach(cf -> checkConfirmsAndReturns(cf));
 	}
 
 	/**
@@ -69,6 +76,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	 */
 	public void setDefaultTargetConnectionFactory(ConnectionFactory defaultTargetConnectionFactory) {
 		this.defaultTargetConnectionFactory = defaultTargetConnectionFactory;
+		checkConfirmsAndReturns(defaultTargetConnectionFactory);
 	}
 
 	/**
@@ -94,8 +102,36 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	}
 
 	@Override
+	public boolean isPublisherConfirms() {
+		return this.confirms;
+	}
+
+	@Override
+	public boolean isPublisherReturns() {
+		return this.returns;
+	}
+
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		Assert.notNull(this.confirms, "At least one target factory (or default) is required");
+	}
+
+	private void checkConfirmsAndReturns(ConnectionFactory cf) {
+		if (this.confirms == null) {
+			this.confirms = cf.isPublisherConfirms();
+		}
+		if (this.returns == null) {
+			this.returns = cf.isPublisherReturns();
+		}
+		Assert.isTrue(this.confirms.booleanValue() == cf.isPublisherConfirms(),
+				"Target connection factories must have the same setting for publisher confirms");
+		Assert.isTrue(this.returns.booleanValue() == cf.isPublisherReturns(),
+				"Target connection factories must have the same setting for publisher returns");
+	}
+
+	@Override
 	public Connection createConnection() throws AmqpException {
-		return this.determineTargetConnectionFactory().createConnection();
+		return determineTargetConnectionFactory().createConnection();
 	}
 
 	/**

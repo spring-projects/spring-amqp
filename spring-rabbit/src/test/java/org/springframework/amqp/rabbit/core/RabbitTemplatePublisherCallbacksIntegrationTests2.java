@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
+import org.springframework.amqp.rabbit.connection.SimpleRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 
@@ -39,36 +41,38 @@ import com.rabbitmq.client.Envelope;
  * @since 1.6
  *
  */
-@RabbitAvailable(queues = RabbitTemplatePublisherCallbacksIntegrationTests2.ROUTE)
+@RabbitAvailable(queues = { RabbitTemplatePublisherCallbacksIntegrationTests2.ROUTE,
+		RabbitTemplatePublisherCallbacksIntegrationTests2.ROUTE2 })
 public class RabbitTemplatePublisherCallbacksIntegrationTests2 {
 
 	public static final String ROUTE = "test.queue.RabbitTemplatePublisherCallbacksIntegrationTests2";
+
+	public static final String ROUTE2 = "test.queue.RabbitTemplatePublisherCallbacksIntegrationTests2.route";
 
 	private CachingConnectionFactory connectionFactoryWithConfirmsEnabled;
 
 	private RabbitTemplate templateWithConfirmsEnabled;
 
 	@BeforeEach
-	public void create() {
+	void create() {
 		connectionFactoryWithConfirmsEnabled = new CachingConnectionFactory();
 		connectionFactoryWithConfirmsEnabled.setHost("localhost");
-		// When using publisher confirms, the cache size needs to be large enough
-		// otherwise channels can be closed before confirms are received.
 		connectionFactoryWithConfirmsEnabled.setChannelCacheSize(100);
 		connectionFactoryWithConfirmsEnabled.setPort(BrokerTestUtils.getPort());
 		connectionFactoryWithConfirmsEnabled.setPublisherConfirmType(ConfirmType.CORRELATED);
+		connectionFactoryWithConfirmsEnabled.setPublisherReturns(true);
 		templateWithConfirmsEnabled = new RabbitTemplate(connectionFactoryWithConfirmsEnabled);
 	}
 
 	@AfterEach
-	public void cleanUp() {
+	void cleanUp() {
 		if (connectionFactoryWithConfirmsEnabled != null) {
 			connectionFactoryWithConfirmsEnabled.destroy();
 		}
 	}
 
 	@Test
-	public void test36Methods() throws Exception {
+	void test36Methods() throws Exception {
 		this.templateWithConfirmsEnabled.convertAndSend(ROUTE, "foo");
 		this.templateWithConfirmsEnabled.convertAndSend(ROUTE, "foo");
 		assertMessageCountEquals(2L);
@@ -89,6 +93,51 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests2 {
 		});
 		assertThat(result).isEqualTo(1L);
 		assertMessageCountEquals(0L);
+	}
+
+	@Test
+	void routingWithConfirmsNoListener() throws Exception {
+		routingWithConfirms(false);
+	}
+
+	@Test
+	void routingWithConfirmsListener() throws Exception {
+		routingWithConfirms(true);
+	}
+
+	private void routingWithConfirms(boolean listener) throws Exception {
+		CountDownLatch latch = new CountDownLatch(1);
+		SimpleRoutingConnectionFactory rcf = new SimpleRoutingConnectionFactory();
+		rcf.setDefaultTargetConnectionFactory(this.connectionFactoryWithConfirmsEnabled);
+		this.templateWithConfirmsEnabled.setConnectionFactory(rcf);
+		if (listener) {
+			this.templateWithConfirmsEnabled.setConfirmCallback((correlationData, ack, cause) -> {
+				latch.countDown();
+			});
+		}
+		this.templateWithConfirmsEnabled.setMandatory(true);
+		CorrelationData corr = new CorrelationData();
+		this.templateWithConfirmsEnabled.convertAndSend("", ROUTE2, "foo", corr);
+		assertThat(corr.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
+		if (listener) {
+			assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		}
+		corr = new CorrelationData();
+		this.templateWithConfirmsEnabled.convertAndSend("", "bad route", "foo", corr);
+		assertThat(corr.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
+		assertThat(corr.getReturnedMessage()).isNotNull();
+	}
+
+	@Test
+	void routingWithSimpleConfirms() throws Exception {
+		SimpleRoutingConnectionFactory rcf = new SimpleRoutingConnectionFactory();
+		rcf.setDefaultTargetConnectionFactory(this.connectionFactoryWithConfirmsEnabled);
+		this.templateWithConfirmsEnabled.setConnectionFactory(rcf);
+	 	assertThat(this.templateWithConfirmsEnabled.<Boolean>invoke(template -> {
+				template.convertAndSend("", ROUTE2, "foo");
+				template.waitForConfirmsOrDie(10_000);
+				return true;
+	 	})).isTrue();
 	}
 
 	private void assertMessageCountEquals(long wanted) throws InterruptedException {
