@@ -133,11 +133,11 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests2 {
 		SimpleRoutingConnectionFactory rcf = new SimpleRoutingConnectionFactory();
 		rcf.setDefaultTargetConnectionFactory(this.connectionFactoryWithConfirmsEnabled);
 		this.templateWithConfirmsEnabled.setConnectionFactory(rcf);
-	 	assertThat(this.templateWithConfirmsEnabled.<Boolean>invoke(template -> {
+		assertThat(this.templateWithConfirmsEnabled.<Boolean>invoke(template -> {
 				template.convertAndSend("", ROUTE2, "foo");
 				template.waitForConfirmsOrDie(10_000);
 				return true;
-	 	})).isTrue();
+		})).isTrue();
 	}
 
 	private void assertMessageCountEquals(long wanted) throws InterruptedException {
