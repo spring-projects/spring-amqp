@@ -116,10 +116,15 @@ public @interface RabbitListener {
 	String id() default "";
 
 	/**
-	 * The bean name of the {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory}
-	 * to use to create the message listener container responsible to serve this endpoint.
-	 * <p>If not specified, the default container factory is used, if any.
-	 * @return the {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory}
+	 * The bean name of the
+	 * {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory} to
+	 * use to create the message listener container responsible to serve this endpoint.
+	 * <p>
+	 * If not specified, the default container factory is used, if any. If a SpEL
+	 * expression is provided {@code #{...}}, the expression can either evaluate to a
+	 * container factory instance or a bean name.
+	 * @return the
+	 * {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory}
 	 * bean name.
 	 */
 	String containerFactory() default "";

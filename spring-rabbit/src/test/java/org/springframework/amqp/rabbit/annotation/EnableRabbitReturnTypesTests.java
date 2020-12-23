@@ -122,7 +122,8 @@ public class EnableRabbitReturnTypesTests {
 			return new Jackson2JsonMessageConverter();
 		}
 
-		@RabbitListener(queues = "EnableRabbitReturnTypesTests.1")
+		@RabbitListener(queues = "EnableRabbitReturnTypesTests.1",
+				containerFactory = "#{@rabbitListenerContainerFactory}")
 		public One listen1(String in) {
 			if ("3".equals(in)) {
 				return new Three();

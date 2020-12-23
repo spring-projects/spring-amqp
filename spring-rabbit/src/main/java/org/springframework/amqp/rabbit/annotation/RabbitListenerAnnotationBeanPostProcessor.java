@@ -501,6 +501,10 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			Object factoryTarget, String beanName) {
 
 		RabbitListenerContainerFactory<?> factory = null;
+		Object resolved = resolveExpression(rabbitListener.containerFactory());
+		if (resolved instanceof RabbitListenerContainerFactory) {
+			return (RabbitListenerContainerFactory<?>) resolved;
+		}
 		String containerFactoryBeanName = resolveExpressionAsString(rabbitListener.containerFactory(),
 				"containerFactory");
 		if (StringUtils.hasText(containerFactoryBeanName)) {
