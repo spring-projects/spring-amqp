@@ -29,6 +29,7 @@ import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -177,7 +178,7 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 		if (null != this.errorExchangeName) {
 			String routingKey = this.errorRoutingKey != null ? this.errorRoutingKey
 					: this.prefixedOriginalRoutingKey(message);
-			this.errorTemplate.send(this.errorExchangeName, routingKey, message);
+			doSend(this.errorExchangeName, routingKey, message);
 			if (this.logger.isWarnEnabled()) {
 				this.logger.warn("Republishing failed message to exchange '" + this.errorExchangeName
 						+ "' with routing key " + routingKey);
@@ -185,11 +186,27 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 		}
 		else {
 			final String routingKey = this.prefixedOriginalRoutingKey(message);
-			this.errorTemplate.send(routingKey, message);
+			doSend(null, routingKey, message);
 			if (this.logger.isWarnEnabled()) {
 				this.logger.warn("Republishing failed message to the template's default exchange with routing key "
 						+ routingKey);
 			}
+		}
+	}
+
+	/**
+	 * Send the message.
+	 * @param exchange the exchange or null to use the template's default.
+	 * @param routingKey the routing key.
+	 * @param message the message.
+	 * @since 2.3.3
+	 */
+	protected void doSend(@Nullable String exchange, String routingKey, Message message) {
+		if (exchange != null) {
+			this.errorTemplate.send(exchange, routingKey, message);
+		}
+		else {
+			this.errorTemplate.send(routingKey, message);
 		}
 	}
 

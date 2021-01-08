@@ -103,7 +103,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 		assertThat(confirmLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(cacheCount.get()).isEqualTo(1);
 		assertThat(returnCalledFirst.get()).isTrue();
-		assertThat(correlationData.getReturnedMessage()).isNotNull();
+		assertThat(correlationData.getReturned()).isNotNull();
 		cf.destroy();
 	}
 

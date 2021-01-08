@@ -6263,6 +6263,14 @@ Starting with versions 2.1.13, 2.2.3, the exception message is included in this 
 
 Whenever a truncation of any kind occurs, the original exception will be logged to retain the complete information.
 
+Starting with version 2.3.3, a new subclass `RepublishMessageRecovererWithConfirms` is provided; this supports both styles of publisher confirms and will wait for the confirmation before returning (or throw an exception if not confirmed or the message is returned).
+
+If the confirm type is `CORRELATED`, the subclass will also detect if a message is returned and throw an `AmqpMessageReturnedException`; if the publication is negatively acknowledged, it will throw an `AmqpNackReceivedException`.
+
+If the confirm type is `SIMPLE`, the subclass will invoke the `waitForConfirmsOrDie` method on the channel.
+
+See <<cf-pub-conf-ret>> for more information about confirms and returns.
+
 Starting with version 2.1, an `ImmediateRequeueMessageRecoverer` is  added to throw an `ImmediateRequeueAmqpException`, which notifies a listener container to requeue the current failed message.
 
 ===== Exception Classification for Spring Retry

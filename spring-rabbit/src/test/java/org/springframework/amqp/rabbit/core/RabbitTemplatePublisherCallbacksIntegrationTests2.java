@@ -125,7 +125,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests2 {
 		corr = new CorrelationData();
 		this.templateWithConfirmsEnabled.convertAndSend("", "bad route", "foo", corr);
 		assertThat(corr.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
-		assertThat(corr.getReturnedMessage()).isNotNull();
+		assertThat(corr.getReturned()).isNotNull();
 	}
 
 	@Test

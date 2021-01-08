@@ -52,3 +52,8 @@ See the IMPORTANT note in <<post-processing>> for more information.
 ==== Multiple Broker Support Improvements
 
 See <<multi-rabbit>> for more information.
+
+==== RepublishMessageRecoverer Changes
+
+A new subclass of this recoverer is not provided that supports publisher confirms.
+See <<async-listeners>> for more information.
