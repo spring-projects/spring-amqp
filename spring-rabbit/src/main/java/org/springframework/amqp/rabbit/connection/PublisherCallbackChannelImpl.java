@@ -1102,9 +1102,9 @@ public class PublisherCallbackChannelImpl
 						new Envelope(0L, false, returned.getExchange(), returned.getRoutingKey()),
 						StandardCharsets.UTF_8.name());
 				if (confirm.getCorrelationData() != null) {
-					confirm.getCorrelationData().setReturned(new ReturnedMessage(
+					confirm.getCorrelationData().setReturned(new ReturnedMessage(// NOSONAR never null
 							new Message(returned.getBody(), messageProperties), returned.getReplyCode(),
-							returned.getReplyText(), returned.getExchange(), returned.getRoutingKey())); // NOSONAR never null
+							returned.getReplyText(), returned.getExchange(), returned.getRoutingKey()));
 				}
 			}
 		}

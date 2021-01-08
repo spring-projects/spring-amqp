@@ -130,7 +130,7 @@ public class RepublishMessageRecovererWithConfirms extends RepublishMessageRecov
 			throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
 		}
 		catch (ExecutionException ex) {
-			throw RabbitExceptionTranslator.convertRabbitAccessException(ex.getCause());
+			throw RabbitExceptionTranslator.convertRabbitAccessException(ex.getCause()); // NOSONAR (stack trace)
 		}
 		catch (TimeoutException ex) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
