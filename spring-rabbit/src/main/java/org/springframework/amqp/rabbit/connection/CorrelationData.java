@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import org.springframework.util.concurrent.SettableListenableFuture;
  * {@link org.springframework.amqp.rabbit.core.RabbitTemplate} methods that include one of
  * these as a parameter; when the publisher confirm is received, the CorrelationData is
  * returned with the ack/nack. When returns are also enabled, the
- * {@link #setReturned(Message) returned} property will be populated when a
+ * {@link #setReturned(ReturnedMessage) returned} property will be populated when a
  * message can't be delivered - the return always arrives before the confirmation. In this
  * case the {@code #id} property must be set to a unique value. If no id is provided it
  * will automatically set to a unique value.
@@ -57,7 +57,7 @@ public class CorrelationData implements Correlation {
 
 	/**
 	 * Construct an instance with the supplied id. Must be unique if returns are enabled
-	 * to allow population of the {@link #setReturned(Message) returned} message.
+	 * to allow population of the {@link #setReturned(ReturnedMessage) returned} message.
 	 * @param id the id.
 	 */
 	public CorrelationData(String id) {
