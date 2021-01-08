@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -855,7 +855,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		this.templateWithConfirmsAndReturnsEnabled.convertAndSend("", "NO_QUEUE_HERE", "foo", cd4);
 		assertThat(cd4.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
 		assertThat(callbackLatch.await(10, TimeUnit.SECONDS)).isTrue();
-		assertThat(cd4.getReturnedMessage()).isNotNull();
+		assertThat(cd4.getReturned()).isNotNull();
 		assertThat(resent.get()).isTrue();
 		assertThat(callbackThreadName.get()).startsWith("spring-rabbit-deferred-pool");
 		admin.deleteQueue(queue.getName());

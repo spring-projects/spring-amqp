@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 the original author or authors.
+ * Copyright 2020-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ public class MessagingTemplateConfirmsTests {
 		rmt.send("messaging.confirms.unroutable",
 				new GenericMessage<>("foo", Collections.singletonMap(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION, data)));
 		assertThat(data.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
-		assertThat(data.getReturnedMessage()).isNotNull();
+		assertThat(data.getReturned()).isNotNull();
 		ccf.destroy();
 	}
 

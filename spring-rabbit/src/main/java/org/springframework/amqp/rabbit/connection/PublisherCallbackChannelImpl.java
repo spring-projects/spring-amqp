@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.core.ReturnedMessage;
 import org.springframework.amqp.rabbit.connection.CorrelationData.Confirm;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
@@ -1101,7 +1102,9 @@ public class PublisherCallbackChannelImpl
 						new Envelope(0L, false, returned.getExchange(), returned.getRoutingKey()),
 						StandardCharsets.UTF_8.name());
 				if (confirm.getCorrelationData() != null) {
-					confirm.getCorrelationData().setReturnedMessage(new Message(returned.getBody(), messageProperties)); // NOSONAR never null
+					confirm.getCorrelationData().setReturned(new ReturnedMessage(// NOSONAR never null
+							new Message(returned.getBody(), messageProperties), returned.getReplyCode(),
+							returned.getReplyText(), returned.getExchange(), returned.getRoutingKey()));
 				}
 			}
 		}
