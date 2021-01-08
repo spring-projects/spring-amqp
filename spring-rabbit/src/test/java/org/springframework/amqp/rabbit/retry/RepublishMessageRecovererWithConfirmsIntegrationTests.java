@@ -18,7 +18,7 @@ package org.springframework.amqp.rabbit.retry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.fail;
 
 import org.junit.jupiter.api.Test;
 
