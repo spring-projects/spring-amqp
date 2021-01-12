@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 the original author or authors.
+ * Copyright 2016-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import static org.mockito.Mockito.verify;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -100,6 +101,8 @@ public class DirectMessageListenerContainerIntegrationTests {
 	public static final String EQ2 = "eventTestQ2.DirectMessageListenerContainerIntegrationTests";
 
 	public static final String DLQ1 = "testDLQ1.DirectMessageListenerContainerIntegrationTests";
+
+	private static final String MISSING = "missing.DirectMessageListenerContainerIntegrationTests";
 
 	private static CachingConnectionFactory adminCf;
 
@@ -679,6 +682,31 @@ public class DirectMessageListenerContainerIntegrationTests {
 		cf.destroy();
 	}
 
+	@Test
+	void missingQueueOnStart() throws InterruptedException {
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		RabbitAdmin admin = new RabbitAdmin(cf);
+		admin.deleteQueue(MISSING);
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
+		container.setQueueNames(MISSING);
+		container.setBeanName("missingQOnStart");
+		final CountDownLatch latch = new CountDownLatch(1);
+		container.setApplicationEventPublisher(event -> {
+			if (event instanceof MissingQueueEvent) {
+				admin.declareQueue(new Queue(MISSING));
+			}
+			else if (event instanceof AsyncConsumerStartedEvent) {
+				latch.countDown();
+			}
+		});
+		container.afterPropertiesSet();
+		container.start();
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		container.stop();
+		admin.deleteQueue(MISSING);
+		cf.destroy();
+	}
+
 	private boolean consumersOnQueue(String queue, int expected) throws Exception {
 		await().with().pollDelay(Duration.ZERO).atMost(Duration.ofSeconds(60))
 				.until(() -> admin.getQueueProperties(queue),
@@ -694,7 +722,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 	}
 
 	private boolean restartConsumerCount(AbstractMessageListenerContainer container, int expected) throws Exception {
-		List<?> consumers = TestUtils.getPropertyValue(container, "consumersToRestart", List.class);
+		Set<?> consumers = TestUtils.getPropertyValue(container, "consumersToRestart", Set.class);
 		await().with().pollDelay(Duration.ZERO).atMost(Duration.ofSeconds(60))
 				.until(() -> consumers.size() == expected);
 		return true;
