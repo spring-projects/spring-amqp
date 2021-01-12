@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 the original author or authors.
+ * Copyright 2016-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,12 +24,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -103,7 +105,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	protected final List<SimpleConsumer> consumers = new LinkedList<>(); // NOSONAR
 
-	private final List<SimpleConsumer> consumersToRestart = new LinkedList<>();
+	private final Set<SimpleConsumer> consumersToRestart = new LinkedHashSet<>();
+
+	private final Set<String> removedQueues = ConcurrentHashMap.newKeySet();
 
 	private final MultiValueMap<String, SimpleConsumer> consumersByQueue = new LinkedMultiValueMap<>();
 
@@ -243,6 +247,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		Assert.notNull(queueNames, "'queueNames' cannot be null");
 		Assert.noNullElements(queueNames, "'queueNames' cannot contain null elements");
 		try {
+			Arrays.stream(queueNames).forEach(this.removedQueues::remove);
 			addQueues(Arrays.stream(queueNames));
 		}
 		catch (AmqpIOException e) {
@@ -256,6 +261,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		Assert.notNull(queues, "'queues' cannot be null");
 		Assert.noNullElements(queues, "'queues' cannot contain null elements");
 		try {
+			Arrays.stream(queues)
+				.map(q -> q.getActualName())
+				.forEach(this.removedQueues::remove);
 			addQueues(Arrays.stream(queues).map(Queue::getName));
 		}
 		catch (AmqpIOException e) {
@@ -298,7 +306,10 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		if (isRunning()) {
 			synchronized (this.consumersMonitor) {
 				checkStartState();
-				queueNames.map(this.consumersByQueue::remove)
+				queueNames.map(queue -> {
+							this.removedQueues.add(queue);
+							return this.consumersByQueue.remove(queue);
+						})
 						.filter(Objects::nonNull)
 						.flatMap(Collection::stream)
 						.forEach(this::cancelConsumer);
@@ -313,7 +324,21 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			for (String queue : getQueueNames()) {
 				while (this.consumersByQueue.get(queue) == null
 						|| this.consumersByQueue.get(queue).size() < newCount) { // NOSONAR never null
-					doConsumeFromQueue(queue);
+					List<SimpleConsumer> cBQ = this.consumersByQueue.get(queue);
+					int index = 0;
+					if (cBQ != null) {
+						// find a gap or set the index to the end
+						List<Integer> indices = cBQ.stream()
+								.map(cons -> cons.getIndex())
+								.sorted()
+								.collect(Collectors.toList());
+						for (index = 0; index < indices.size(); index++) {
+							if (index < indices.get(index)) {
+								break;
+							}
+						}
+					}
+					doConsumeFromQueue(queue, index);
 				}
 				List<SimpleConsumer> consumerList = this.consumersByQueue.get(queue);
 				if (consumerList != null && consumerList.size() > newCount) {
@@ -430,9 +455,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			checkConsumers(now);
 			if (this.lastRestartAttempt + getFailedDeclarationRetryInterval() < now) {
 				synchronized (this.consumersMonitor) {
-					List<SimpleConsumer> restartableConsumers = new ArrayList<>(this.consumersToRestart);
-					this.consumersToRestart.clear();
 					if (this.started) {
+						List<SimpleConsumer> restartableConsumers = new ArrayList<>(this.consumersToRestart);
+						this.consumersToRestart.clear();
 						if (restartableConsumers.size() > 0) {
 							doRedeclareElementsIfNecessary();
 						}
@@ -440,10 +465,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						while (iterator.hasNext()) {
 							SimpleConsumer consumer = iterator.next();
 							iterator.remove();
-							if (!DirectMessageListenerContainer.this.consumersByQueue
-									.containsKey(consumer.getQueue())) {
+							if (DirectMessageListenerContainer.this.removedQueues.contains(consumer.getQueue())) {
 								if (this.logger.isDebugEnabled()) {
-									this.logger.debug("Skipping restart of consumer " + consumer);
+									this.logger.debug("Skipping restart of consumer, queue removed " + consumer);
 								}
 								continue;
 							}
@@ -516,11 +540,11 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			if (StringUtils.hasText(actualName)) {
 				namesToQueues.remove(consumer.getQueue());
 				namesToQueues.put(actualName, queue);
-				consumer = new SimpleConsumer(null, null, actualName);
+				consumer = new SimpleConsumer(null, null, actualName, consumer.getIndex());
 			}
 		}
 		try {
-			doConsumeFromQueue(consumer.getQueue());
+			doConsumeFromQueue(consumer.getQueue(), consumer.getIndex());
 			return true;
 		}
 		catch (AmqpConnectException | AmqpIOException e) {
@@ -646,12 +670,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		// Possible race with setConsumersPerQueue and the task launched by start()
 		if (CollectionUtils.isEmpty(list)) {
 			for (int i = 0; i < this.consumersPerQueue; i++) {
-				doConsumeFromQueue(queue);
+				doConsumeFromQueue(queue, i);
 			}
 		}
 	}
 
-	private void doConsumeFromQueue(String queue) {
+	private void doConsumeFromQueue(String queue, int index) {
 		if (!isActive()) {
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug("Consume from queue " + queue + " ignore, container stopping");
@@ -668,7 +692,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		catch (Exception e) {
 			publishConsumerFailedEvent(e.getMessage(), false, e);
-			addConsumerToRestart(new SimpleConsumer(null, null, queue));
+			addConsumerToRestart(new SimpleConsumer(null, null, queue, index));
 			throw e instanceof AmqpConnectException // NOSONAR exception type check
 					? (AmqpConnectException) e
 					: new AmqpConnectException(e);
@@ -678,7 +702,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				SimpleResourceHolder.pop(getRoutingConnectionFactory()); // NOSONAR never null here
 			}
 		}
-		SimpleConsumer consumer = consume(queue, connection);
+		SimpleConsumer consumer = consume(queue, index, connection);
 		synchronized (this.consumersMonitor) {
 			if (consumer != null) {
 				this.cancellationLock.add(consumer);
@@ -695,7 +719,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	@Nullable
-	private SimpleConsumer consume(String queue, Connection connection) {
+	private SimpleConsumer consume(String queue, int index, Connection connection) {
 		Channel channel = null;
 		SimpleConsumer consumer = null;
 		try {
@@ -709,7 +733,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			channel = connection.createChannel(isChannelTransacted());
 			channel.basicQos(getPrefetchCount());
-			consumer = new SimpleConsumer(connection, channel, queue);
+			consumer = new SimpleConsumer(connection, channel, queue, index);
 			channel.queueDeclarePassive(queue);
 			consumer.consumerTag = channel.basicConsume(queue, getAcknowledgeMode().isAutoAck(),
 					(getConsumerTagStrategy() != null
@@ -723,13 +747,14 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			RabbitUtils.closeChannel(channel);
 			RabbitUtils.closeConnection(connection);
 
-			consumer = handleConsumeException(queue, consumer, e);
+			consumer = handleConsumeException(queue, index, consumer, e);
 		}
 		return consumer;
 	}
 
 	@Nullable
-	private SimpleConsumer handleConsumeException(String queue, @Nullable SimpleConsumer consumerArg, Exception e) {
+	private SimpleConsumer handleConsumeException(String queue, int index, @Nullable SimpleConsumer consumerArg,
+			Exception e) {
 
 		SimpleConsumer consumer = consumerArg;
 		if (e.getCause() instanceof ShutdownSignalException
@@ -740,6 +765,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		else if (e.getCause() instanceof ShutdownSignalException
 				&& RabbitUtils.isPassiveDeclarationChannelClose((ShutdownSignalException) e.getCause())) {
+			publishMissingQueueEvent(queue);
 			this.logger.error("Queue not present, scheduling consumer "
 					+ (consumer == null ? "for queue " + queue : consumer) + " for restart", e);
 		}
@@ -749,7 +775,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 
 		if (consumer == null) {
-			addConsumerToRestart(new SimpleConsumer(null, null, queue));
+			addConsumerToRestart(new SimpleConsumer(null, null, queue, index));
 		}
 		else {
 			addConsumerToRestart(consumer);
@@ -844,11 +870,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	private void addConsumerToRestart(SimpleConsumer consumer) {
-		if (this.started) {
-			this.consumersToRestart.add(consumer);
-			if (this.logger.isTraceEnabled()) {
-				this.logger.trace("Consumers to restart now: " + this.consumersToRestart);
-			}
+		this.consumersToRestart.add(consumer);
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace("Consumers to restart now: " + this.consumersToRestart);
 		}
 	}
 
@@ -870,6 +894,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		private final Connection connection;
 
 		private final String queue;
+
+		private final int index;
 
 		private final boolean ackRequired;
 
@@ -903,10 +929,11 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		private volatile boolean ackFailed;
 
-		SimpleConsumer(@Nullable Connection connection, @Nullable Channel channel, String queue) {
+		SimpleConsumer(@Nullable Connection connection, @Nullable Channel channel, String queue, int index) {
 			super(channel);
 			this.connection = connection;
 			this.queue = queue;
+			this.index = index;
 			this.ackRequired = !getAcknowledgeMode().isAutoAck() && !getAcknowledgeMode().isManual();
 			if (channel instanceof ChannelProxy) {
 				this.targetChannel = ((ChannelProxy) channel).getTargetChannel();
@@ -916,8 +943,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 
-		private String getQueue() {
+		String getQueue() {
 			return this.queue;
+		}
+
+		int getIndex() {
+			return this.index;
 		}
 
 		@Override
@@ -1221,8 +1252,52 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 
 		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + getEnclosingInstance().hashCode();
+			result = prime * result + this.index;
+			result = prime * result + ((this.queue == null) ? 0 : this.queue.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null) {
+				return false;
+			}
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
+			SimpleConsumer other = (SimpleConsumer) obj;
+			if (!getEnclosingInstance().equals(other.getEnclosingInstance())) {
+				return false;
+			}
+			if (this.index != other.index) {
+				return false;
+			}
+			if (this.queue == null) {
+				if (other.queue != null) {
+					return false;
+				}
+			}
+			else if (!this.queue.equals(other.queue)) {
+				return false;
+			}
+			return true;
+		}
+
+		private DirectMessageListenerContainer getEnclosingInstance() {
+			return DirectMessageListenerContainer.this;
+		}
+
+		@Override
 		public String toString() {
-			return "SimpleConsumer [queue=" + this.queue + ", consumerTag=" + this.consumerTag
+			return "SimpleConsumer [queue=" + this.queue + ", index=" + this.index
+					+ ", consumerTag=" + this.consumerTag
 					+ " identity=" + ObjectUtils.getIdentityHexString(this) + "]";
 		}
 

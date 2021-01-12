@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -159,6 +159,8 @@ public class BlockingQueueConsumer {
 	private ApplicationEventPublisher applicationEventPublisher;
 
 	private long consumeDelay;
+
+	private java.util.function.Consumer<String> missingQueuePublisher = str -> { };
 
 	private volatile long abortStarted;
 
@@ -372,6 +374,15 @@ public class BlockingQueueConsumer {
 
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
 		this.applicationEventPublisher = applicationEventPublisher;
+	}
+
+	/**
+	 * Set the publisher for a missing queue event.
+	 * @param missingQueuePublisher the publisher.
+	 * @since 2.1.18
+	 */
+	public void setMissingQueuePublisher(java.util.function.Consumer<String> missingQueuePublisher) {
+		this.missingQueuePublisher = missingQueuePublisher;
 	}
 
 	/**
@@ -714,6 +725,7 @@ public class BlockingQueueConsumer {
 				if (logger.isWarnEnabled()) {
 					logger.warn("Failed to declare queue: " + queueName);
 				}
+				this.missingQueuePublisher.accept(queueName);
 				if (!this.channel.isOpen()) {
 					throw new AmqpIOException(e);
 				}
