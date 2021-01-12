@@ -1988,6 +1988,7 @@ Several other events are published at various stages of the container lifecycle:
 * `AsyncConsumerStoppedEvent`: When the consumer is stopped - `SimpleMessageListenerContainer` only.
 * `ConsumeOkEvent`: When a `consumeOk` is received from the broker, contains the queue name and `consumerTag`
 * `ListenerContainerIdleEvent`: See <<idle-containers>>.
+* `MissingQueueEvent`: When a missing queue is detected.
 
 [[consumerTags]]
 ===== Consumer Tags
