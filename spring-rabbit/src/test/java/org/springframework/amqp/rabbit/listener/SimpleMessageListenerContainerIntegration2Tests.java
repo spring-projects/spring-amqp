@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -255,8 +255,10 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 			if (event instanceof ListenerContainerConsumerFailedEvent) {
 				eventRef.set((ListenerContainerConsumerFailedEvent) event);
 			}
-			events.add((AmqpEvent) event);
-			eventLatch.countDown();
+			if (!(event instanceof MissingQueueEvent)) {
+				events.add((AmqpEvent) event);
+				eventLatch.countDown();
+			}
 		});
 		container.start();
 		for (int i = 0; i < 10; i++) {
@@ -544,6 +546,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		ConnectionFactory connectionFactory = new CachingConnectionFactory("localhost", BrokerTestUtils.getPort());
 
 		CountDownLatch latch = new CountDownLatch(1);
+		CountDownLatch missingLatch = new CountDownLatch(1);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setMessageListener(new MessageListenerAdapter(new PojoListener(latch)));
 		container.setQueues(queue);
@@ -552,8 +555,15 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container.setDeclarationRetries(1);
 		container.setFailedDeclarationRetryInterval(100);
 		container.setRetryDeclarationInterval(30000);
+		container.setApplicationEventPublisher(event -> {
+			if (event instanceof MissingQueueEvent) {
+				missingLatch.countDown();
+			}
+		});
 		container.afterPropertiesSet();
 		container.start();
+
+		assertTrue(missingLatch.await(10, TimeUnit.SECONDS));
 
 		new RabbitAdmin(connectionFactory).declareQueue(queue);
 		this.template.convertAndSend(queue.getName(), "foo");
