@@ -52,7 +52,7 @@ ext {
 	mockitoVersion = '3.1.0'
 	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.7.3'
 	rabbitmqHttpClientVersion = '3.2.0.RELEASE'
-	reactorVersion = 'Dysprosium-SR15'
+	reactorVersion = 'Dysprosium-SR16'
 	springDataCommonsVersion = '2.2.12.RELEASE'
 	springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.2.12.RELEASE'
 	springRetryVersion = '1.2.5.RELEASE'
