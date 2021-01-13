@@ -701,6 +701,8 @@ public class DirectMessageListenerContainerIntegrationTests {
 				latch.countDown();
 			}
 		});
+		container.setMonitorInterval(500);
+		container.setFailedDeclarationRetryInterval(500);
 		container.afterPropertiesSet();
 		container.start();
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
