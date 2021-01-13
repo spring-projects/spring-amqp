@@ -106,7 +106,12 @@ public class CorrelationData implements Correlation {
 	@Deprecated
 	@Nullable
 	public Message getReturnedMessage() {
-		return this.returnedMessage.getMessage();
+		if (this.returnedMessage == null) {
+			return null;
+		}
+		else {
+			return this.returnedMessage.getMessage();
+		}
 	}
 
 	/**
