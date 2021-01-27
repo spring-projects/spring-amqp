@@ -172,7 +172,9 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			}
 
 			@Override
-			public Message postProcessMessage(Message message, Correlation correlation) {
+			public Message postProcessMessage(Message message, Correlation correlation, String exch, String rk) {
+				assertThat(exch).isEqualTo("");
+				assertThat(rk).isEqualTo(ROUTE);
 				mppLatch.countDown();
 				return message;
 			}
