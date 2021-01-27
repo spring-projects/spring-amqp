@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 the original author or authors.
+ * Copyright 2016-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -471,6 +471,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 	private <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object,
 			MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<C> responseType) {
+
 		AsyncCorrelationData<C> correlationData = new AsyncCorrelationData<C>(messagePostProcessor, responseType,
 				this.enableConfirms);
 		if (this.container != null) {
@@ -483,7 +484,8 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 						"No 'messageConverter' specified. Check configuration of RabbitTemplate.");
 			}
 			Message message = converter.toMessage(object, new MessageProperties());
-			this.messagePostProcessor.postProcessMessage(message, correlationData);
+			this.messagePostProcessor.postProcessMessage(message, correlationData,
+					this.template.nullSafeExchange(exchange), this.template.nullSafeRoutingKey(routingKey));
 			ChannelHolder channelHolder = this.directReplyToContainer.getChannelHolder();
 			correlationData.future.setChannelHolder(channelHolder);
 			sendDirect(channelHolder.getChannel(), exchange, routingKey, message, correlationData);

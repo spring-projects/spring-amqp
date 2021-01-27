@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,8 @@ public interface MessagePostProcessor {
 	Message postProcessMessage(Message message) throws AmqpException;
 
 	/**
-	 * Change (or replace) the message and/or change its correlation data.
+	 * Change (or replace) the message and/or change its correlation data. Only applies to
+	 * outbound messages.
 	 * @param message the message.
 	 * @param correlation the correlation data.
 	 * @return the message.
@@ -57,6 +58,20 @@ public interface MessagePostProcessor {
 	 */
 	default Message postProcessMessage(Message message, Correlation correlation) {
 		return postProcessMessage(message);
+	}
+
+	/**
+	 * Change (or replace) the message and/or change its correlation data. Only applies to
+	 * outbound messages.
+	 * @param message the message.
+	 * @param correlation the correlation data.
+	 * @param exchange the exchange to which the message is to be sent.
+	 * @param routingKey the routing key.
+	 * @return the message.
+	 * @since 2.3.4
+	 */
+	default Message postProcessMessage(Message message, Correlation correlation, String exchange, String routingKey) {
+		return postProcessMessage(message, correlation);
 	}
 
 }

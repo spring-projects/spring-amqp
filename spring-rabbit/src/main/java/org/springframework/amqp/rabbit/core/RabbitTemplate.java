@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1150,7 +1150,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			final MessagePostProcessor messagePostProcessor,
 			@Nullable CorrelationData correlationData) throws AmqpException {
 		Message messageToSend = convertMessageIfNecessary(message);
-		messageToSend = messagePostProcessor.postProcessMessage(messageToSend, correlationData);
+		messageToSend = messagePostProcessor.postProcessMessage(messageToSend, correlationData,
+				nullSafeExchange(exchange), nullSafeRoutingKey(routingKey));
 		send(exchange, routingKey, messageToSend, correlationData);
 	}
 
@@ -1785,7 +1786,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 		Message requestMessage = convertMessageIfNecessary(message);
 		if (messagePostProcessor != null) {
-			requestMessage = messagePostProcessor.postProcessMessage(requestMessage, correlationData);
+			requestMessage = messagePostProcessor.postProcessMessage(requestMessage, correlationData,
+					nullSafeExchange(exchange), nullSafeRoutingKey(routingKey));
 		}
 		return doSendAndReceive(exchange, routingKey, requestMessage, correlationData);
 	}
@@ -2321,17 +2323,11 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @param correlationData The correlation data.
 	 * @throws IOException If thrown by RabbitMQ API methods.
 	 */
-	public void doSend(Channel channel, String exchangeArg, String routingKeyArg, Message message, // NOSONAR complexity
+	public void doSend(Channel channel, String exchangeArg, String routingKeyArg, Message message,
 			boolean mandatory, @Nullable CorrelationData correlationData) throws IOException {
 
-		String exch = exchangeArg;
-		String rKey = routingKeyArg;
-		if (exch == null) {
-			exch = this.exchange;
-		}
-		if (rKey == null) {
-			rKey = this.routingKey;
-		}
+		String exch = nullSafeExchange(exchangeArg);
+		String rKey = nullSafeRoutingKey(routingKeyArg);
 
 		if (logger.isTraceEnabled()) {
 			logger.trace("Original message to publish: " + message);
@@ -2344,7 +2340,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 		if (this.beforePublishPostProcessors != null) {
 			for (MessagePostProcessor processor : this.beforePublishPostProcessors) {
-				messageToUse = processor.postProcessMessage(messageToUse, correlationData);
+				messageToUse = processor.postProcessMessage(messageToUse, correlationData, exch, rKey);
 			}
 		}
 		setupConfirm(channel, messageToUse, correlationData);
@@ -2364,6 +2360,26 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			// Transacted channel created by this template -> commit.
 			RabbitUtils.commitIfNecessary(channel);
 		}
+	}
+
+	/**
+	 * Return the exchange or the default exchange if null.
+	 * @param exchange the exchange.
+	 * @return the result.
+	 * @since 2.3.4
+	 */
+	public String nullSafeExchange(String exchange) {
+		return exchange == null ? this.exchange : exchange;
+	}
+
+	/**
+	 * Return the routing key or the default routing key if null.
+	 * @param rk the routing key.
+	 * @return the result.
+	 * @since 2.3.4
+	 */
+	public String nullSafeRoutingKey(String rk) {
+		return rk == null ? this.routingKey : rk;
 	}
 
 	protected void sendToRabbit(Channel channel, String exchange, String routingKey, boolean mandatory,
