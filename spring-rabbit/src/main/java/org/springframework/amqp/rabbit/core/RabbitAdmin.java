@@ -769,7 +769,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		}
 	}
 
-	private <T extends Throwable> void logOrRethrowDeclarationException(Declarable element,
+	private <T extends Throwable> void logOrRethrowDeclarationException(@Nullable Declarable element,
 			String elementType, T t) throws T {
 
 		publishDeclarationExceptionEvent(element, t);
