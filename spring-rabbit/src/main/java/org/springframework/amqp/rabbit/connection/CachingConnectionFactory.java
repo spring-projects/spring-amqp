@@ -529,7 +529,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		LinkedList<ChannelProxy> channelList = determineChannelList(connection, transactional);
 		ChannelProxy channel = null;
 		if (connection.isOpen()) {
-			channel = findOpenChannel(channelList, channel);
+			channel = findOpenChannel(channelList);
 			if (channel != null && logger.isTraceEnabled()) {
 				logger.trace("Found cached Rabbit Channel: " + channel.toString());
 			}
@@ -576,9 +576,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		return permits;
 	}
 
-	private ChannelProxy findOpenChannel(LinkedList<ChannelProxy> channelList, // NOSONAR LinkedList.removeFirst()
-			ChannelProxy channelArg) {
-		ChannelProxy channel = channelArg;
+	@Nullable
+	private ChannelProxy findOpenChannel(LinkedList<ChannelProxy> channelList) {
+
+		ChannelProxy channel = null;
 		synchronized (channelList) {
 			while (!channelList.isEmpty()) {
 				channel = channelList.removeFirst();

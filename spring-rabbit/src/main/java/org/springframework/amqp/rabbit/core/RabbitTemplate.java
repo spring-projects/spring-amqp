@@ -1444,7 +1444,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		return delivery;
 	}
 
-	private void logReceived(Message message) {
+	private void logReceived(@Nullable Message message) {
 		if (message == null) {
 			logger.debug("Received no message");
 		}
@@ -2161,8 +2161,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 	}
 
-	private void cleanUpAfterAction(Channel channel, boolean invokeScope, RabbitResourceHolder resourceHolder,
-			Connection connection) {
+	private void cleanUpAfterAction(@Nullable Channel channel, boolean invokeScope,
+			@Nullable RabbitResourceHolder resourceHolder, @Nullable Connection connection) {
 
 		if (!invokeScope) {
 			if (resourceHolder != null) {
@@ -2257,8 +2257,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		return listener;
 	}
 
-	private void cleanUpAfterAction(RabbitResourceHolder resourceHolder, Connection connection, Channel channel,
-			ConfirmListener listener) {
+	private void cleanUpAfterAction(@Nullable RabbitResourceHolder resourceHolder, @Nullable Connection connection,
+			@Nullable Channel channel, @Nullable ConfirmListener listener) {
 
 		if (listener != null) {
 			channel.removeConfirmListener(listener);
