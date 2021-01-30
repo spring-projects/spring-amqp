@@ -1129,6 +1129,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			catch (Error e) { // NOSONAR
+				this.logger.error("Failed to invoke listener", e);
 				getJavaLangErrorHandler().handle(e);
 				throw e;
 			}
