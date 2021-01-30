@@ -1833,7 +1833,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	@Nullable
 	protected Message doSendAndReceiveWithTemporary(final String exchange, final String routingKey,
-			final Message message, final CorrelationData correlationData) {
+			final Message message, @Nullable final CorrelationData correlationData) {
 
 		return execute(channel -> {
 			final PendingReply pendingReply = new PendingReply();
@@ -1909,7 +1909,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	@Nullable
 	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message,
-			final CorrelationData correlationData) {
+			@Nullable final CorrelationData correlationData) {
+
 		Assert.state(this.isListener, () -> "RabbitTemplate is not configured as MessageListener - "
 				+ "cannot use a 'replyAddress': " + this.replyAddress);
 		return execute(channel -> {
@@ -1919,7 +1920,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	@Nullable
 	private Message doSendAndReceiveWithDirect(String exchange, String routingKey, Message message,
-			CorrelationData correlationData) {
+			@Nullable CorrelationData correlationData) {
 		ConnectionFactory connectionFactory = obtainTargetConnectionFactory(
 				this.sendConnectionFactorySelectorExpression, message);
 		if (this.usePublisherConnection && connectionFactory.getPublisherConnectionFactory() != null) {
@@ -1968,7 +1969,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	@Nullable
 	private Message doSendAndReceiveAsListener(final String exchange, final String routingKey, final Message message,
-			final CorrelationData correlationData, Channel channel) throws Exception { // NOSONAR
+			@Nullable final CorrelationData correlationData, Channel channel) throws Exception { // NOSONAR
+
 		final PendingReply pendingReply = new PendingReply();
 		String messageTag = null;
 		if (this.userCorrelationId) {
@@ -2038,8 +2040,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	@Nullable
 	private Message exchangeMessages(final String exchange, final String routingKey, final Message message,
-			final CorrelationData correlationData, Channel channel, final PendingReply pendingReply, String messageTag)
-			throws IOException, InterruptedException {
+			@Nullable final CorrelationData correlationData, Channel channel, final PendingReply pendingReply,
+			String messageTag) throws IOException, InterruptedException {
 
 		Message reply;
 		boolean mandatory = isMandatoryFor(message);

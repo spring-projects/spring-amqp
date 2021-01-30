@@ -577,7 +577,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	}
 
 	@Nullable
-	private ChannelProxy findOpenChannel(LinkedList<ChannelProxy> channelList) {
+	private ChannelProxy findOpenChannel(LinkedList<ChannelProxy> channelList) { // NOSONAR - LL Vs. L - removeFirst()
 
 		ChannelProxy channel = null;
 		synchronized (channelList) {

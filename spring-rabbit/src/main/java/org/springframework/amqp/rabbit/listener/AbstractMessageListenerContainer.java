@@ -1637,7 +1637,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			}
 		}
 		finally {
-			cleanUpAfterInvoke(resourceHolder, channelToUse, boundHere);
+			cleanUpAfterInvoke(resourceHolder, channelToUse, boundHere); // NOSONAR channel not null here
 		}
 	}
 
