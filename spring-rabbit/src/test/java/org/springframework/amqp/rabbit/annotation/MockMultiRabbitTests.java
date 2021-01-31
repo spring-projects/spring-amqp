@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.annotation;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -39,6 +40,7 @@ import org.springframework.amqp.rabbit.connection.SimpleResourceHolder;
 import org.springframework.amqp.rabbit.connection.SimpleRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
@@ -176,6 +178,28 @@ class MockMultiRabbitTests {
 		SimpleResourceHolder.unbind(MultiConfig.ROUTING_CONNECTION_FACTORY);
 		Mockito.verify(MultiConfig.CONNECTION_FACTORY_BROKER_C).createConnection();
 		Mockito.verify(MultiConfig.CONNECTION_BROKER_C).createChannel(false);
+
+		context.close(); // Close and stop the listeners
+	}
+
+	@Test
+	@DisplayName("Test assignment of RabbitAdmin in the endpoint registry")
+	void testAssignmentOfRabbitAdminInTheEndpointRegistry() {
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(MultiConfig.class,
+				AutoBindingListenerTestBeans.class);
+
+		final RabbitListenerEndpointRegistry registry = context.getBean(RabbitListenerEndpointRegistry.class);
+		final Collection<MessageListenerContainer> listenerContainers = registry.getListenerContainers();
+
+		Assertions.assertThat(listenerContainers).hasSize(3);
+		listenerContainers.forEach(container -> {
+			Assertions.assertThat(container).isInstanceOf(MessageListenerTestContainer.class);
+			final MessageListenerTestContainer refContainer = (MessageListenerTestContainer) container;
+			final RabbitListenerEndpoint endpoint = refContainer.getEndpoint();
+			Assertions.assertThat(endpoint).isInstanceOf(MethodRabbitListenerEndpoint.class);
+			final MethodRabbitListenerEndpoint refEndpoint = (MethodRabbitListenerEndpoint) endpoint;
+			Assertions.assertThat(refEndpoint.getAdmin()).isNotNull();
+		});
 
 		context.close(); // Close and stop the listeners
 	}
