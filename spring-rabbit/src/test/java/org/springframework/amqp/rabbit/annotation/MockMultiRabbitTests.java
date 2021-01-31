@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 the original author or authors.
+ * Copyright 2020-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Declarable;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.rabbit.config.MessageListenerTestContainer;
+import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
 import org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -266,7 +267,7 @@ class MockMultiRabbitTests {
 			return postProcessor;
 		}
 
-		@Bean("defaultRabbitAdmin")
+		@Bean(RabbitListenerConfigUtils.RABBIT_ADMIN_BEAN_NAME)
 		public RabbitAdmin defaultRabbitAdmin() {
 			return DEFAULT_RABBIT_ADMIN;
 		}

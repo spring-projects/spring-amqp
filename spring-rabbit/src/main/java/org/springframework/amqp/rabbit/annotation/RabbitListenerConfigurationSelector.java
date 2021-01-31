@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 the original author or authors.
+ * Copyright 2019-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,10 @@ import org.springframework.core.type.AnnotationMetadata;
 
 /**
  * A {@link DeferredImportSelector} implementation with the lowest order to import a
- * {@link RabbitBootstrapConfiguration} as late as possible.
+ * {@link MultiRabbitBootstrapConfiguration} and {@link RabbitBootstrapConfiguration}
+ * as late as possible.
+ * {@link MultiRabbitBootstrapConfiguration} has precedence to be able to provide the
+ * extended BeanPostProcessor, if enabled.
  *
  * @author Artem Bilan
  *
@@ -33,7 +36,8 @@ public class RabbitListenerConfigurationSelector implements DeferredImportSelect
 
 	@Override
 	public String[] selectImports(AnnotationMetadata importingClassMetadata) {
-		return new String[] { RabbitBootstrapConfiguration.class.getName() };
+		return new String[] { MultiRabbitBootstrapConfiguration.class.getName(),
+				RabbitBootstrapConfiguration.class.getName()};
 	}
 
 }

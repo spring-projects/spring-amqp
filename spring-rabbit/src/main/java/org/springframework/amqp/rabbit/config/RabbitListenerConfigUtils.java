@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,5 +35,30 @@ public abstract class RabbitListenerConfigUtils {
 	 */
 	public static final String RABBIT_LISTENER_ENDPOINT_REGISTRY_BEAN_NAME =
 			"org.springframework.amqp.rabbit.config.internalRabbitListenerEndpointRegistry";
+
+	/**
+	 * The bean name of the default RabbitAdmin.
+	 */
+	public static final String RABBIT_ADMIN_BEAN_NAME = "amqpAdmin";
+
+	/**
+	 * The bean name of the default ConnectionFactory.
+	 */
+	public static final String RABBIT_CONNECTION_FACTORY_BEAN_NAME = "rabbitConnectionFactory";
+
+	/**
+	 * The default property to enable/disable MultiRabbit processing.
+	 */
+	public static final String MULTI_RABBIT_ENABLED_PROPERTY = "spring.multirabbitmq.enabled";
+
+	/**
+	 * The bean name of the ContainerFactory of the default broker for MultiRabbit.
+	 */
+	public static final String MULTI_RABBIT_CONTAINER_FACTORY_BEAN_NAME = "multiRabbitContainerFactory";
+
+	/**
+	 * The MultiRabbit admins' suffix.
+	 */
+	public static final String MULTI_RABBIT_ADMIN_SUFFIX = "-admin";
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 the original author or authors.
+ * Copyright 2020-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 
 import org.springframework.amqp.core.Declarable;
+import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -35,14 +36,6 @@ import org.springframework.util.StringUtils;
  * @since 2.3
  */
 public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListenerAnnotationBeanPostProcessor {
-
-	public static final String CONNECTION_FACTORY_BEAN_NAME = "multiRabbitConnectionFactory";
-
-	public static final String CONNECTION_FACTORY_CREATOR_BEAN_NAME = "rabbitConnectionFactoryCreator";
-
-	private static final String DEFAULT_RABBIT_ADMIN_BEAN_NAME = "defaultRabbitAdmin";
-
-	private static final String RABBIT_ADMIN_SUFFIX = "-admin";
 
 	@Override
 	protected Collection<Declarable> processAmqpListener(RabbitListener rabbitListener, Method method,
@@ -66,11 +59,10 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 	protected String resolveMultiRabbitAdminName(RabbitListener rabbitListener) {
 		String admin = super.resolveExpressionAsString(rabbitListener.admin(), "admin");
 		if (!StringUtils.hasText(admin) && StringUtils.hasText(rabbitListener.containerFactory())) {
-			admin = rabbitListener.containerFactory()
-					+ MultiRabbitListenerAnnotationBeanPostProcessor.RABBIT_ADMIN_SUFFIX;
+			admin = rabbitListener.containerFactory() + RabbitListenerConfigUtils.MULTI_RABBIT_ADMIN_SUFFIX;
 		}
 		if (!StringUtils.hasText(admin)) {
-			admin = MultiRabbitListenerAnnotationBeanPostProcessor.DEFAULT_RABBIT_ADMIN_BEAN_NAME;
+			admin = RabbitListenerConfigUtils.RABBIT_ADMIN_BEAN_NAME;
 		}
 		return admin;
 	}
