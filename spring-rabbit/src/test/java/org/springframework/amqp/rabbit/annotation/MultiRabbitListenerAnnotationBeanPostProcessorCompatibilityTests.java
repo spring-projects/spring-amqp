@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 the original author or authors.
+ * Copyright 2020-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.annotation;
 
+import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.context.annotation.Bean;
@@ -51,7 +52,7 @@ class MultiRabbitListenerAnnotationBeanPostProcessorCompatibilityTests
 			return postProcessor;
 		}
 
-		@Bean
+		@Bean(RabbitListenerConfigUtils.RABBIT_ADMIN_BEAN_NAME)
 		public RabbitAdmin defaultRabbitAdmin() {
 			return new RabbitAdmin(new SingleConnectionFactory());
 		}
