@@ -1023,9 +1023,18 @@ public class PublisherCallbackChannelImpl
 			}
 			finally {
 				try {
-					if (this.afterAckCallback != null && getPendingConfirmsCount() == 0) {
-						this.afterAckCallback.accept(this);
-						this.afterAckCallback = null;
+					if (this.afterAckCallback != null) {
+						java.util.function.Consumer<Channel> callback = null;
+						synchronized (this) {
+							if (getPendingConfirmsCount() == 0) {
+								callback = this.afterAckCallback;
+								this.afterAckCallback = null;
+							}
+						}
+						if (callback != null) {
+							callback.accept(this);
+						}
+
 					}
 				}
 				catch (Exception e) {
