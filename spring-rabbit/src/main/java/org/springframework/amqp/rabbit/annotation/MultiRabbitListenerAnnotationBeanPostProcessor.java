@@ -83,7 +83,7 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 	/**
 	 * An {@link InvocationHandler} to provide a replacing admin() parameter of the listener.
 	 */
-	private final class RabbitListenerAdminReplacementInvocationHandler implements InvocationHandler {
+	private static final class RabbitListenerAdminReplacementInvocationHandler implements InvocationHandler {
 
 		private final RabbitListener target;
 		private final String admin;

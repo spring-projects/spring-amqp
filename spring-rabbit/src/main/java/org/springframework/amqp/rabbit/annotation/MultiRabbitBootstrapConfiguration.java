@@ -17,7 +17,6 @@
 package org.springframework.amqp.rabbit.annotation;
 
 import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
-import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.context.EnvironmentAware;
@@ -37,7 +36,7 @@ import org.springframework.lang.Nullable;
  *
  * @see RabbitListenerAnnotationBeanPostProcessor
  * @see MultiRabbitListenerAnnotationBeanPostProcessor
- * @see RabbitListenerEndpointRegistry
+ * @see org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry
  * @see EnableRabbit
  */
 public class MultiRabbitBootstrapConfiguration implements ImportBeanDefinitionRegistrar, EnvironmentAware {
