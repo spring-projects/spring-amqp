@@ -135,12 +135,12 @@ String foo = (String) template.receiveAndConvert("myqueue");
 public class RabbitConfiguration {
 
     @Bean
-    public ConnectionFactory connectionFactory() {
+    public CachingConnectionFactory connectionFactory() {
         return new CachingConnectionFactory("localhost");
     }
 
     @Bean
-    public AmqpAdmin amqpAdmin() {
+    public RabbitAdmin amqpAdmin() {
         return new RabbitAdmin(connectionFactory());
     }
 

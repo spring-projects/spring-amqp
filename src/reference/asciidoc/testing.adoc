@@ -472,20 +472,15 @@ IMPORTANT: The method must be called before invoking any of the `isRunning()` st
 Variable values are applied to all instances created after this invocation.
 Invoke `clearEnvironmentVariableOverrides()` to reset the rule to use defaults (including any actual environment variables).
 
-In your test cases, you can use those properties when creating the connection factory.
+In your test cases, you can use the `brokerRunning` when creating the connection factory; `getConnectionFactory()` returns the rule's RabbitMQ `ConnectionFactory`.
 The following example shows how to do so:
 
 ====
 [source, java]
 ----
 @Bean
-public ConnectionFactory rabbitConnectionFactory() {
-    CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
-    connectionFactory.setHost(brokerRunning.getHostName());
-    connectionFactory.setPort(brokerRunning.getPort());
-    connectionFactory.setUsername(brokerRunning.getUser());
-    connectionFactory.setPassword(brokerRunning.getPassword());
-    return connectionFactory;
+public CachingConnectionFactory rabbitConnectionFactory() {
+    return new CachingConnectionFactory(brokerRunning.getConnectionFactory());
 }
 ----
 ====

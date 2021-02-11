@@ -28,7 +28,7 @@ The following listing shows how the connection factory is created:
 [source,java]
 ----
 @Bean
-public ConnectionFactory connectionFactory() {
+public CachingConnectionFactory connectionFactory() {
     CachingConnectionFactory connectionFactory =
         new CachingConnectionFactory("localhost");
     connectionFactory.setUsername("guest");
