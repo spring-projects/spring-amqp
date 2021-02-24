@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2020 the original author or authors.
+ * Copyright 2015-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,16 +38,31 @@ public class HandlerAdapter {
 
 	private final DelegatingInvocableHandler delegatingHandler;
 
+	/**
+	 * Construct an instance with the provided method.
+	 * @param invokerHandlerMethod the method.
+	 */
 	public HandlerAdapter(InvocableHandlerMethod invokerHandlerMethod) {
 		this.invokerHandlerMethod = invokerHandlerMethod;
 		this.delegatingHandler = null;
 	}
 
+	/**
+	 * Construct an instance with the provided delegating handler.
+	 * @param delegatingHandler the handler.
+	 */
 	public HandlerAdapter(DelegatingInvocableHandler delegatingHandler) {
 		this.invokerHandlerMethod = null;
 		this.delegatingHandler = delegatingHandler;
 	}
 
+	/**
+	 * Invoke the appropriate method for the payload.
+	 * @param message the message.
+	 * @param providedArgs additional arguments.
+	 * @return the invocation result.
+	 * @throws Exception if one occurs.
+	 */
 	public InvocationResult invoke(Message<?> message, Object... providedArgs) throws Exception { // NOSONAR
 		if (this.invokerHandlerMethod != null) {
 			return new InvocationResult(this.invokerHandlerMethod.invoke(message, providedArgs),
@@ -67,6 +82,11 @@ public class HandlerAdapter {
 		}
 	}
 
+	/**
+	 * Get the method signature for the payload type via {@link Method#toGenericString()}.
+	 * @param payload the payload.
+	 * @return the method signature.
+	 */
 	public String getMethodAsString(Object payload) {
 		if (this.invokerHandlerMethod != null) {
 			return this.invokerHandlerMethod.getMethod().toGenericString();
@@ -76,6 +96,12 @@ public class HandlerAdapter {
 		}
 	}
 
+	/**
+	 * Get the method for the payload type.
+	 * @param payload the payload.
+	 * @return the method.
+	 * @since 2.2.3
+	 */
 	public Method getMethodFor(Object payload) {
 		if (this.invokerHandlerMethod != null) {
 			return this.invokerHandlerMethod.getMethod();
@@ -100,6 +126,10 @@ public class HandlerAdapter {
 		}
 	}
 
+	/**
+	 * Get the bean from the handler method.
+	 * @return the bean.
+	 */
 	public Object getBean() {
 		if (this.invokerHandlerMethod != null) {
 			return this.invokerHandlerMethod.getBean();
@@ -109,6 +139,13 @@ public class HandlerAdapter {
 		}
 	}
 
+	/**
+	 * Build an {@link InvocationResult} for the result and inbound payload.
+	 * @param result the result.
+	 * @param inboundPayload the payload.
+	 * @return the invocation result.
+	 * @since 2.1.7
+	 */
 	@Nullable
 	public InvocationResult getInvocationResultFor(Object result, Object inboundPayload) {
 		if (this.invokerHandlerMethod != null) {
