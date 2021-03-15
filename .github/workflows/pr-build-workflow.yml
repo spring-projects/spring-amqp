@@ -30,8 +30,9 @@ jobs:
           arguments: check
 
       - name: Capture Test Results
+        if: ${{ failure() }}
         uses: actions/upload-artifact@v2
         with:
           name: test-results
-          path: spring-rabbit/build/reports/tests
+          path: 'spring-rabbit/build/reports/tests/**/*.*'
           retention-days: 3
