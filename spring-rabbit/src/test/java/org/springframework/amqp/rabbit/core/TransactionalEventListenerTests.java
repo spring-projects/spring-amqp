@@ -48,7 +48,7 @@ import com.rabbitmq.client.Channel;
 
 /**
  * @author Gary Russell
- * @since 2.3.6
+ * @since 2.2.16
  *
  */
 @SpringJUnitConfig
