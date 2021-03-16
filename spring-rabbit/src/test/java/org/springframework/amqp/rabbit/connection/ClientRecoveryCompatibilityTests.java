@@ -17,7 +17,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
@@ -43,6 +43,7 @@ public class ClientRecoveryCompatibilityTests {
 
 	@Test
 	public void testDefeatRecovery() throws Exception {
+		RabbitUtils.clearPhysicalCloseRequired(); // left over from some other test
 		final Channel channel1 = mock(Channel.class);
 		when(channel1.isOpen()).thenReturn(true);
 		final Channel channel2 = mock(Channel.class);
@@ -57,37 +58,32 @@ public class ClientRecoveryCompatibilityTests {
 		ccf.setExecutor(mock(ExecutorService.class));
 		Connection conn1 = ccf.createConnection();
 		Channel channel = conn1.createChannel(false);
-		verifyChannelIs(channel1, channel);
+		ChannelProxy proxy = (ChannelProxy) channel;
+		assertThat(proxy.getTargetChannel()).isSameAs(channel1);
 		channel.close();
 		conn1.close();
 		Connection conn2 = ccf.createConnection();
 		assertThat(conn2).isSameAs(conn1);
 		channel = conn1.createChannel(false);
-		verifyChannelIs(channel1, channel);
+		proxy = (ChannelProxy) channel;
+		assertThat(proxy.getTargetChannel()).isSameAs(channel1);
 		channel.close();
 		conn2.close();
 
 		when(rabbitConn.isOpen()).thenReturn(false).thenReturn(true);
 		when(channel1.isOpen()).thenReturn(false);
-		conn2 = ccf.createConnection();
-		try {
-			conn2.createChannel(false);
-			fail("Expected AutoRecoverConnectionNotCurrentlyOpenException");
-		}
-		catch (AutoRecoverConnectionNotCurrentlyOpenException e) {
-			assertThat(e.getMessage()).isEqualTo("Auto recovery connection is not currently open");
-		}
+		Connection conn3 = ccf.createConnection();
+		assertThat(conn3).isSameAs(conn1);
+		assertThatExceptionOfType(AutoRecoverConnectionNotCurrentlyOpenException.class).isThrownBy(() ->
+					conn3.createChannel(false))
+				.withMessage("Auto recovery connection is not currently open");
 		channel = conn2.createChannel(false);
-		verifyChannelIs(channel2, channel);
+		proxy = (ChannelProxy) channel;
+		assertThat(proxy.getTargetChannel()).isSameAs(channel2);
 		channel.close();
 
 		verify(rabbitConn, never()).close();
 		verify(channel1).close(); // physically closed to defeat recovery
-	}
-
-	private void verifyChannelIs(Channel mockChannel, Channel channel) {
-		ChannelProxy proxy = (ChannelProxy) channel;
-		assertThat(proxy.getTargetChannel()).isSameAs(mockChannel);
 	}
 
 }
