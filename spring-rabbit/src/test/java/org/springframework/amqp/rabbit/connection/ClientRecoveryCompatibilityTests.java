@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,6 @@ public class ClientRecoveryCompatibilityTests {
 
 	@Test
 	public void testDefeatRecovery() throws Exception {
-		RabbitUtils.clearPhysicalCloseRequired(); // left over from some other test
 		final Channel channel1 = mock(Channel.class);
 		when(channel1.isOpen()).thenReturn(true);
 		final Channel channel2 = mock(Channel.class);
@@ -75,7 +74,7 @@ public class ClientRecoveryCompatibilityTests {
 		Connection conn3 = ccf.createConnection();
 		assertThat(conn3).isSameAs(conn1);
 		assertThatExceptionOfType(AutoRecoverConnectionNotCurrentlyOpenException.class).isThrownBy(() ->
-					conn3.createChannel(false))
+				conn3.createChannel(false))
 				.withMessage("Auto recovery connection is not currently open");
 		channel = conn2.createChannel(false);
 		proxy = (ChannelProxy) channel;

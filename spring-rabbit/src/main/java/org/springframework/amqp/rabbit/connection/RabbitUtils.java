@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -229,18 +229,12 @@ public abstract class RabbitUtils {
 	public static boolean isPhysicalCloseRequired() {
 		Boolean mustClose = physicalCloseRequired.get();
 		if (mustClose == null) {
-			return false;
+			mustClose = Boolean.FALSE;
 		}
 		else {
-			return mustClose;
+			physicalCloseRequired.remove();
 		}
-	}
-
-	/**
-	 * Clear the physicalCloseRequired flag.
-	 */
-	public static void clearPhysicalCloseRequired() {
-		physicalCloseRequired.remove();
+		return mustClose;
 	}
 
 	/**
