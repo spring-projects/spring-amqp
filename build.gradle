@@ -235,6 +235,14 @@ subprojects { subproject ->
     compileKotlin.dependsOn updateCopyrights
 
 	test {
+		testLogging {
+			events "skipped", "failed"
+			showStandardStreams = project.hasProperty("showStandardStreams") ?: false
+			showExceptions = true
+			showStackTraces = true
+			exceptionFormat = 'full'
+		}
+
 		jacoco {
 			destinationFile = file("$buildDir/jacoco.exec")
 		}
