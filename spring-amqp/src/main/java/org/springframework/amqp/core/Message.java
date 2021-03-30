@@ -125,17 +125,13 @@ public class Message implements Serializable {
 	}
 
 	private String getBodyContentAsString() {
-		if (this.body == null) {
-			return null;
-		}
 		try {
-			boolean nullProps = this.messageProperties == null;
-			String contentType = nullProps ? null : this.messageProperties.getContentType();
+			String contentType = this.messageProperties.getContentType();
 			if (MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT.equals(contentType)) {
 				return SerializationUtils.deserialize(new ByteArrayInputStream(this.body), ALLOWED_LIST_PATTERNS,
 						ClassUtils.getDefaultClassLoader()).toString();
 			}
-			String encoding = encoding(nullProps);
+			String encoding = encoding();
 			if (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)
 					|| MessageProperties.CONTENT_TYPE_JSON.equals(contentType)
 					|| MessageProperties.CONTENT_TYPE_JSON_ALT.equals(contentType)
@@ -150,8 +146,8 @@ public class Message implements Serializable {
 		return this.body.toString() + "(byte[" + this.body.length + "])"; //NOSONAR
 	}
 
-	private String encoding(boolean nullProps) {
-		String encoding = nullProps ? null : this.messageProperties.getContentEncoding();
+	private String encoding() {
+		String encoding = this.messageProperties.getContentEncoding();
 		if (encoding == null) {
 			encoding = bodyEncoding;
 		}
