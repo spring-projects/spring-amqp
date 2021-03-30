@@ -57,7 +57,23 @@ public class Message implements Serializable {
 
 	private final byte[] body;
 
+	/**
+	 * Construct an instance with the provided body and default {@link MessageProperties}.
+	 * @param body the body.
+	 * @since 2.2.17
+	 */
+	public Message(byte[] body) {
+		this(body, new MessageProperties());
+	}
+
+	/**
+	 * Construct an instance with the provided body and properties.
+	 * @param body the body.
+	 * @param messageProperties the properties.
+	 */
 	public Message(byte[] body, MessageProperties messageProperties) { //NOSONAR
+		Assert.notNull(body, "'body' cannot be null");
+		Assert.notNull(messageProperties, "'messageProperties' cannot be null");
 		this.body = body; //NOSONAR
 		this.messageProperties = messageProperties;
 	}
