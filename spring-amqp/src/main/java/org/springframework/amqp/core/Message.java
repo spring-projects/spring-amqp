@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,23 @@ public class Message implements Serializable {
 
 	private final byte[] body;
 
+	/**
+	 * Construct an instance with the provided body and default {@link MessageProperties}.
+	 * @param body the body.
+	 * @since 2.2.17
+	 */
+	public Message(byte[] body) {
+		this(body, new MessageProperties());
+	}
+
+	/**
+	 * Construct an instance with the provided body and properties.
+	 * @param body the body.
+	 * @param messageProperties the properties.
+	 */
 	public Message(byte[] body, MessageProperties messageProperties) { //NOSONAR
+		Assert.notNull(body, "'body' cannot be null");
+		Assert.notNull(messageProperties, "'messageProperties' cannot be null");
 		this.body = body; //NOSONAR
 		this.messageProperties = messageProperties;
 	}
@@ -103,9 +119,7 @@ public class Message implements Serializable {
 		StringBuilder buffer = new StringBuilder();
 		buffer.append("(");
 		buffer.append("Body:'").append(this.getBodyContentAsString()).append("'");
-		if (this.messageProperties != null) {
-			buffer.append(" ").append(this.messageProperties.toString());
-		}
+		buffer.append(" ").append(this.messageProperties.toString());
 		buffer.append(")");
 		return buffer.toString();
 	}
