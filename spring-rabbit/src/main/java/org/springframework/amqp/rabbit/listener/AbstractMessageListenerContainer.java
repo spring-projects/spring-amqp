@@ -1257,7 +1257,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	public void shutdown() {
 		synchronized (this.lifecycleMonitor) {
 			if (!isActive()) {
-				logger.info("Shutdown ignored - container is not active already");
+				logger.debug("Shutdown ignored - container is not active already");
+				this.lifecycleMonitor.notifyAll();
 				return;
 			}
 			this.active = false;
