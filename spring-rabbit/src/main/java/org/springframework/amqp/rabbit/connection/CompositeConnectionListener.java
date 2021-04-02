@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import com.rabbitmq.client.ShutdownSignalException;
 
 /**
+ * A composite listener that invokes its delegages in turn.
+ *
  * @author Dave Syer
  * @author Gary Russell
  *
@@ -31,23 +33,24 @@ public class CompositeConnectionListener implements ConnectionListener {
 
 	private List<ConnectionListener> delegates = new CopyOnWriteArrayList<ConnectionListener>();
 
+	@Override
 	public void onCreate(Connection connection) {
-		for (ConnectionListener delegate : this.delegates) {
-			delegate.onCreate(connection);
-		}
+		this.delegates.forEach(delegate -> delegate.onCreate(connection));
 	}
 
+	@Override
 	public void onClose(Connection connection) {
-		for (ConnectionListener delegate : this.delegates) {
-			delegate.onClose(connection);
-		}
+		this.delegates.forEach(delegate -> delegate.onClose(connection));
 	}
 
 	@Override
 	public void onShutDown(ShutdownSignalException signal) {
-		for (ConnectionListener delegate : this.delegates) {
-			delegate.onShutDown(signal);
-		}
+		this.delegates.forEach(delegate -> delegate.onShutDown(signal));
+	}
+
+	@Override
+	public void onFailed(Exception exception) {
+		this.delegates.forEach(delegate -> delegate.onFailed(exception));
 	}
 
 	public void setDelegates(List<? extends ConnectionListener> delegates) {
