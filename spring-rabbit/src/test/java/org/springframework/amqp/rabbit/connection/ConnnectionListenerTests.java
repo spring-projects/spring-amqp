@@ -27,7 +27,7 @@ import org.springframework.amqp.AmqpIOException;
 
 /**
  * @author Gary Russell
- * @since 2.6.17
+ * @since 2.2.17
  *
  */
 public class ConnnectionListenerTests {
