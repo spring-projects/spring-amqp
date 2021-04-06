@@ -27,27 +27,16 @@ import org.springframework.amqp.AmqpIOException;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 2.2.17
  *
  */
-public class ConnnectionListenerTests {
+public class ConnectionListenerTests {
 
 	@Test
 	void cantConnectCCF() {
 		CachingConnectionFactory ccf = new CachingConnectionFactory(rcf());
 		cantConnect(ccf);
-	}
-
-	@Test
-	void cantConnectTCCF() {
-		ThreadChannelConnectionFactory tccf = new ThreadChannelConnectionFactory(rcf());
-		cantConnect(tccf);
-	}
-
-	@Test
-	void cantConnectPCCF() {
-		PooledChannelConnectionFactory pccf = new PooledChannelConnectionFactory(rcf());
-		cantConnect(pccf);
 	}
 
 	private com.rabbitmq.client.ConnectionFactory rcf() {
@@ -70,7 +59,7 @@ public class ConnnectionListenerTests {
 			}
 
 		});
-		assertThatExceptionOfType(AmqpIOException.class).isThrownBy(() -> cf.createConnection());
+		assertThatExceptionOfType(AmqpIOException.class).isThrownBy(cf::createConnection);
 		assertThat(failed.get()).isTrue();
 	}
 
