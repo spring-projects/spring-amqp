@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 the original author or authors.
+ * Copyright 2016-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.interceptor.TransactionAttribute;
 import org.springframework.util.ErrorHandler;
 import org.springframework.util.backoff.BackOff;
+
+import com.rabbitmq.client.Channel;
 
 /**
  * A Factory bean to create a listener container.
@@ -110,6 +112,8 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 	private Boolean defaultRequeueRejected;
 
 	private Integer prefetchCount;
+
+	private Boolean globalQos;
 
 	private Long shutdownTimeout;
 
@@ -266,6 +270,16 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 
 	public void setPrefetchCount(int prefetchCount) {
 		this.prefetchCount = prefetchCount;
+	}
+
+	/**
+	 * Apply prefetch to the entire channel.
+	 * @param globalQos true for a channel-wide prefetch.
+	 * @since 2.2.17
+	 * @see Channel#basicQos(int, boolean)
+	 */
+	public void setGlobalQos(boolean globalQos) {
+		this.globalQos = globalQos;
 	}
 
 	public void setShutdownTimeout(long shutdownTimeout) {
@@ -449,6 +463,7 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 					.acceptIfNotNull(this.exclusive, container::setExclusive)
 					.acceptIfNotNull(this.defaultRequeueRejected, container::setDefaultRequeueRejected)
 					.acceptIfNotNull(this.prefetchCount, container::setPrefetchCount)
+					.acceptIfNotNull(this.globalQos, container::setGlobalQos)
 					.acceptIfNotNull(this.shutdownTimeout, container::setShutdownTimeout)
 					.acceptIfNotNull(this.idleEventInterval, container::setIdleEventInterval)
 					.acceptIfNotNull(this.transactionManager, container::setTransactionManager)

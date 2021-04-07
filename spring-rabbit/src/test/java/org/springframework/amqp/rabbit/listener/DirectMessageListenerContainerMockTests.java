@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,7 +86,7 @@ public class DirectMessageListenerContainerMockTests {
 			qos.set(i.getArgument(0));
 			latch1.countDown();
 			return null;
-		}).given(channel).basicQos(anyInt());
+		}).given(channel).basicQos(anyInt(), anyBoolean());
 		final CountDownLatch latch2 = new CountDownLatch(1);
 		willAnswer(i -> {
 			latch2.countDown();
@@ -135,7 +135,7 @@ public class DirectMessageListenerContainerMockTests {
 		willAnswer(i -> {
 			qos.set(i.getArgument(0));
 			return null;
-		}).given(channel).basicQos(anyInt());
+		}).given(channel).basicQos(anyInt(), anyBoolean());
 		final CountDownLatch latch2 = new CountDownLatch(2);
 		final CountDownLatch latch3 = new CountDownLatch(1);
 		willAnswer(i -> {
@@ -233,7 +233,7 @@ public class DirectMessageListenerContainerMockTests {
 			qos.set(i.getArgument(0));
 			latch1.countDown();
 			return null;
-		}).given(channel).basicQos(anyInt());
+		}).given(channel).basicQos(anyInt(), anyBoolean());
 		final CountDownLatch latch2 = new CountDownLatch(2);
 		willAnswer(i -> {
 			latch2.countDown();

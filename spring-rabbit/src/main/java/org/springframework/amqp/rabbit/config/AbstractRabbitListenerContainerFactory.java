@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 the original author or authors.
+ * Copyright 2014-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,6 +85,8 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	private PlatformTransactionManager transactionManager;
 
 	private Integer prefetchCount;
+
+	private Boolean globalQos;
 
 	private Boolean defaultRequeueRejected;
 
@@ -387,6 +389,16 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		this.deBatchingEnabled = deBatchingEnabled;
 	}
 
+	/**
+	 * Apply prefetch to the entire channel.
+	 * @param globalQos true for a channel-wide prefetch.
+	 * @since 2.2.17
+	 * @see com.rabbitmq.client.Channel#basicQos(int, boolean)
+	 */
+	public void setGlobalQos(boolean globalQos) {
+		this.globalQos = globalQos;
+	}
+
 	@Override
 	public C createListenerContainer(RabbitListenerEndpoint endpoint) {
 		C instance = createContainerInstance();
@@ -405,6 +417,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 			.acceptIfNotNull(this.taskExecutor, instance::setTaskExecutor)
 			.acceptIfNotNull(this.transactionManager, instance::setTransactionManager)
 			.acceptIfNotNull(this.prefetchCount, instance::setPrefetchCount)
+			.acceptIfNotNull(this.globalQos, instance::setGlobalQos)
 			.acceptIfNotNull(this.defaultRequeueRejected, instance::setDefaultRequeueRejected)
 			.acceptIfNotNull(this.adviceChain, instance::setAdviceChain)
 			.acceptIfNotNull(this.recoveryBackOff, instance::setRecoveryBackOff)

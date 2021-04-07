@@ -162,6 +162,8 @@ public class BlockingQueueConsumer {
 
 	private java.util.function.Consumer<String> missingQueuePublisher = str -> { };
 
+	private boolean globalQos;
+
 	private volatile long abortStarted;
 
 	private volatile boolean normalCancel;
@@ -406,6 +408,16 @@ public class BlockingQueueConsumer {
 	}
 
 	/**
+	 * Apply prefetch to the entire channel.
+	 * @param globalQos true for a channel-wide prefetch.
+	 * @since 2.2.17
+	 * @see Channel#basicQos(int, boolean)
+	 */
+	public void setGlobalQos(boolean globalQos) {
+		this.globalQos = globalQos;
+	}
+
+	/**
 	 * Return true if cancellation is expected.
 	 * @return true if expected.
 	 */
@@ -629,10 +641,8 @@ public class BlockingQueueConsumer {
 			}
 		}
 		if (!this.acknowledgeMode.isAutoAck() && !cancelled()) {
-			// Set basicQos before calling basicConsume (otherwise if we are not acking the broker
-			// will send blocks of 100 messages)
 			try {
-				this.channel.basicQos(this.prefetchCount);
+				this.channel.basicQos(this.prefetchCount, this.globalQos);
 			}
 			catch (IOException e) {
 				this.activeObjectCounter.release(this);
