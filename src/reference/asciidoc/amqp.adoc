@@ -5672,6 +5672,15 @@ You can set it to `false` to revert to the previous behavior.
 a|image::images/tickmark.png[]
 a|image::images/tickmark.png[]
 
+|globalQos
+(global-qos)
+
+|When true, the `prefetchCount` is applied globally to the channel rather than to each consumer on the channel.
+See https://www.rabbitmq.com/amqp-0-9-1-reference.html#basic.qos.global[`basicQos.global`] for more information.
+
+a|image::images/tickmark.png[]
+a|image::images/tickmark.png[]
+
 |(group)
 
 |This is available only when using the namespace.
@@ -5866,6 +5875,7 @@ to a large amount of memory in the client process), and if strict message orderi
 (the prefetch value should be set back to 1 in this case).
 Also, with low-volume messaging and multiple consumers (including concurrency within a single listener container instance), you may wish to reduce the prefetch to get a more even distribution of messages across consumers.
 
+Also see `globalQos`.
 
 a|image::images/tickmark.png[]
 a|image::images/tickmark.png[]

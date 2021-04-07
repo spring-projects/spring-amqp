@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -161,7 +161,7 @@ public class BlockingQueueConsumerTests {
 		blockingQueueConsumer.setFailedDeclarationRetryInterval(10);
 		blockingQueueConsumer.start();
 
-		verify(channel).basicQos(20);
+		verify(channel).basicQos(20, false);
 	}
 
 	@Test
@@ -291,7 +291,7 @@ public class BlockingQueueConsumerTests {
 		blockingQueueConsumer.setFailedDeclarationRetryInterval(10);
 		blockingQueueConsumer.start();
 
-		verify(channel).basicQos(2);
+		verify(channel).basicQos(2, false);
 		isOpen.set(false);
 		blockingQueueConsumer.stop();
 		verify(channel).basicCancel("consumerTag");
@@ -333,7 +333,7 @@ public class BlockingQueueConsumerTests {
 		blockingQueueConsumer.setFailedDeclarationRetryInterval(10);
 		blockingQueueConsumer.start();
 
-		verify(channel).basicQos(2);
+		verify(channel).basicQos(2, false);
 		Consumer consumer = (Consumer) TestUtils.getPropertyValue(blockingQueueConsumer, "consumers", Map.class)
 				.get("test");
 		isOpen.set(false);

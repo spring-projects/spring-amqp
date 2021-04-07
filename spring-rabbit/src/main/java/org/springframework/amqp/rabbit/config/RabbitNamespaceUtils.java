@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +67,8 @@ public final class RabbitNamespaceUtils {
 	private static final String MIN_CONSECUTIVE_IDLE_ATTRIBUTE = "min-consecutive-idle";
 
 	private static final String PREFETCH_ATTRIBUTE = "prefetch";
+
+	private static final String GLOBAL_QOS = "global-qos";
 
 	private static final String RECEIVE_TIMEOUT_ATTRIBUTE = "receive-timeout";
 
@@ -202,6 +204,11 @@ public final class RabbitNamespaceUtils {
 		String prefetch = containerEle.getAttribute(PREFETCH_ATTRIBUTE);
 		if (StringUtils.hasText(prefetch)) {
 			containerDef.getPropertyValues().add("prefetchCount", new TypedStringValue(prefetch));
+		}
+
+		String globalQos = containerEle.getAttribute(GLOBAL_QOS);
+		if (StringUtils.hasText(globalQos)) {
+			containerDef.getPropertyValues().add("globalQos", new TypedStringValue(globalQos));
 		}
 
 		String receiveTimeout = containerEle.getAttribute(RECEIVE_TIMEOUT_ATTRIBUTE);

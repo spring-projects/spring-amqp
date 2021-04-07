@@ -424,6 +424,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 
 		final AtomicBoolean networkGlitch = new AtomicBoolean();
 
+		final AtomicBoolean globalQos = new AtomicBoolean();
+
 		class MockChannel extends PublisherCallbackChannelImpl {
 
 			MockChannel(Channel delegate) {
@@ -431,11 +433,12 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 			}
 
 			@Override
-			public void basicQos(int prefetchCount) throws IOException {
+			public void basicQos(int prefetchCount, boolean global) throws IOException {
+				globalQos.set(global);
 				if (networkGlitch.compareAndSet(false, true)) {
 					throw new IOException("Intentional connection reset");
 				}
-				super.basicQos(prefetchCount);
+				super.basicQos(prefetchCount, global);
 			}
 
 		}
@@ -452,11 +455,13 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container.setMessageListener(new MessageListenerAdapter(new PojoListener(latch)));
 		container.setQueueNames(queue.getName());
 		container.setRecoveryInterval(500);
+		container.setGlobalQos(true);
 		container.afterPropertiesSet();
 		container.start();
 
 		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(networkGlitch.get()).isTrue();
+		assertThat(globalQos.get()).isTrue();
 
 		container.stop();
 		((DisposableBean) connectionFactory).destroy();

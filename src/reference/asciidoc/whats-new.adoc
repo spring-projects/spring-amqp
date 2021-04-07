@@ -41,6 +41,8 @@ A new listener container property `consumeDelay` is now available; it is helpful
 The default `JavaLangErrorHandler` now calls `System.exit(99)`.
 To revert to the previous behavior (do nothing), add a no-op handler.
 
+The containers now support the `globalQos` property to apply the `prefetchCount` globally for the channel rather than for each consumer on the channel.
+
 See <<containerAttributes>> for more information.
 
 ==== MessagePostProcessor Changes

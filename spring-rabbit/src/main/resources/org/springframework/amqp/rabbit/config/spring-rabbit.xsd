@@ -728,10 +728,23 @@
 		<xsd:attribute name="prefetch" type="xsd:string">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
-	Tells the broker how many messages to send to each consumer in a single request. Often this can be set quite high
-	to improve throughput. It should be greater than or equal to the transaction size.
+	Tells the broker how many messages to send to each consumer (or channel) in a single request.
+	Often this can be set quite high
+	to improve throughput, but it can cause starvation when you have multiple application instances
+	and low message volume.
+	It should be greater than or equal to the batch size. Also see 'global-qos'.
 				]]></xsd:documentation>
 			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="global-qos">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	When true, apply the 'prefetch' globally to the channel rather than to each consumer on the channel.
+				]]></xsd:documentation>
+			</xsd:annotation>
+			<xsd:simpleType>
+				<xsd:union memberTypes="xsd:boolean xsd:string" />
+			</xsd:simpleType>
 		</xsd:attribute>
 		<xsd:attribute name="transaction-size" type="xsd:string">
 			<xsd:annotation>

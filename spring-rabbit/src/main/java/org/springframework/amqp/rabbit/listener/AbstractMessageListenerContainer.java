@@ -220,6 +220,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private int prefetchCount = DEFAULT_PREFETCH_COUNT;
 
+	private boolean globalQos;
+
 	private long idleEventInterval;
 
 	private long lastReceive = System.currentTimeMillis();
@@ -797,6 +799,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * Tell the broker how many messages to send to each consumer in a single request.
 	 * Often this can be set quite high to improve throughput.
 	 * @param prefetchCount the prefetch count
+	 * @see com.rabbitmq.client.Channel#basicQos(int, boolean)
 	 */
 	public void setPrefetchCount(int prefetchCount) {
 		this.prefetchCount = prefetchCount;
@@ -809,6 +812,20 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	protected int getPrefetchCount() {
 		return this.prefetchCount;
+	}
+
+	/**
+	 * Apply prefetchCount to the entire channel.
+	 * @param globalQos true for a channel-wide prefetch.
+	 * @since 2.2.17
+	 * @see com.rabbitmq.client.Channel#basicQos(int, boolean)
+	 */
+	public void setGlobalQos(boolean globalQos) {
+		this.globalQos = globalQos;
+	}
+
+	protected boolean isGlobalQos() {
+		return this.globalQos;
 	}
 
 	/**
