@@ -724,7 +724,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		SimpleConsumer consumer = null;
 		try {
 			channel = connection.createChannel(isChannelTransacted());
-			channel.basicQos(getPrefetchCount());
+			channel.basicQos(getPrefetchCount(), isGlobalQos());
 			consumer = new SimpleConsumer(connection, channel, queue, index);
 			channel.queueDeclarePassive(queue);
 			consumer.consumerTag = channel.basicConsume(queue, getAcknowledgeMode().isAutoAck(),

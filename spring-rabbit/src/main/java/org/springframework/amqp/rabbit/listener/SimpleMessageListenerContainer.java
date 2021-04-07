@@ -831,6 +831,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		consumer = new BlockingQueueConsumer(getConnectionFactory(), getMessagePropertiesConverter(),
 				this.cancellationLock, getAcknowledgeMode(), isChannelTransacted(), actualPrefetchCount,
 				isDefaultRequeueRejected(), getConsumerArguments(), isNoLocal(), isExclusive(), queues);
+		consumer.setGlobalQos(isGlobalQos());
 		consumer.setMissingQueuePublisher(this::publishMissingQueueEvent);
 		if (this.declarationRetries != null) {
 			consumer.setDeclarationRetries(this.declarationRetries);

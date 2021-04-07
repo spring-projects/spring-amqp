@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,6 +103,7 @@ public class RabbitListenerContainerFactoryTests {
 		this.factory.setRecoveryBackOff(recoveryBackOff);
 		this.factory.setMissingQueuesFatal(true);
 		this.factory.setAfterReceivePostProcessors(afterReceivePostProcessor);
+		this.factory.setGlobalQos(true);
 		this.factory.setContainerCustomizer(c -> c.setShutdownTimeout(10_000));
 
 		assertThat(this.factory.getAdviceChain()).isEqualTo(new Advice[]{advice});
@@ -138,6 +139,7 @@ public class RabbitListenerContainerFactoryTests {
 		List<?> actualAfterReceivePostProcessors = (List<?>) fieldAccessor.getPropertyValue("afterReceivePostProcessors");
 		assertThat(actualAfterReceivePostProcessors.size()).as("Wrong number of afterReceivePostProcessors").isEqualTo(1);
 		assertThat(actualAfterReceivePostProcessors.get(0)).as("Wrong advice").isSameAs(afterReceivePostProcessor);
+		assertThat(fieldAccessor.getPropertyValue("globalQos")).isEqualTo(true);
 	}
 
 	@Test

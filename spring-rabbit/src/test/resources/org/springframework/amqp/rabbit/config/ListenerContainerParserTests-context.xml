@@ -24,7 +24,7 @@
 	</rabbit:listener-container>
 
 	<rabbit:listener-container connection-factory="connectionFactory" acknowledge="manual" concurrency="5"
-			auto-declare="false">
+			auto-declare="false" global-qos="true">
 		<rabbit:listener id="container2" queues="foo, bar" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 

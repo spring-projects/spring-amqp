@@ -5546,8 +5546,16 @@ Also impacted by 'batchSize'.
 See <<listener-concurrency>>.
 Default: 10.
 
-a| image::images/tickmark.png[]
-a|
+|globalQos
+(global-qos)
+
+|When true, the `prefetchCount` is applied globally to the channel rather than to each consumer on the channel.
+See https://www.rabbitmq.com/amqp-0-9-1-reference.html#basic.qos.global[`basicQos.global`] for more information.
+
+a|image::images/tickmark.png[]
+a|image::images/tickmark.png[]
+
+|(group)
 
 | connectionFactory
 (connection-factory)

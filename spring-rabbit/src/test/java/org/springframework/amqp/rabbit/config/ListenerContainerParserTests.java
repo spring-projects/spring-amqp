@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2020 the original author or authors.
+ * Copyright 2010-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,6 +104,7 @@ public class ListenerContainerParserTests {
 		assertThat(ReflectionTestUtils.getField(container, "idleEventInterval")).isEqualTo(1235L);
 		assertThat(container.getListenerId()).isEqualTo("container1");
 		assertThat(TestUtils.getPropertyValue(container, "mismatchedQueuesFatal", Boolean.class)).isTrue();
+		assertThat(TestUtils.getPropertyValue(container, "globalQos", Boolean.class)).isFalse();
 	}
 
 	@Test
@@ -149,6 +150,7 @@ public class ListenerContainerParserTests {
 		assertThat(Arrays.asList(container.getQueueNames()).toString()).isEqualTo("[foo, " + queue.getName() + "]");
 		assertThat(TestUtils.getPropertyValue(container, "missingQueuesFatal", Boolean.class)).isTrue();
 		assertThat(TestUtils.getPropertyValue(container, "autoDeclare", Boolean.class)).isFalse();
+		assertThat(TestUtils.getPropertyValue(container, "globalQos", Boolean.class)).isTrue();
 	}
 
 	@Test
