@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 the original author or authors.
+ * Copyright 2014-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,10 +38,14 @@ public class DelegatingDecompressingPostProcessor implements MessagePostProcesso
 
 	private int order;
 
+	/**
+	 * Construct an instance with the default decompressors (gzip, zip, deflate) with
+	 * the alwaysDecompress flag set to true.
+	 */
 	public DelegatingDecompressingPostProcessor() {
-		this.decompressors.put("gzip", new GUnzipPostProcessor());
-		this.decompressors.put("zip", new UnzipPostProcessor());
-		this.decompressors.put("deflate", new InflaterPostProcessor());
+		this.decompressors.put("gzip", new GUnzipPostProcessor(true));
+		this.decompressors.put("zip", new UnzipPostProcessor(true));
+		this.decompressors.put("deflate", new InflaterPostProcessor(true));
 	}
 
 	@Override
