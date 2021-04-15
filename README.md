@@ -1,4 +1,4 @@
-Spring AMQP [<img src="https://build.spring.io/plugins/servlet/wittified/build-status/AMQP-MASTER">](https://build.spring.io/browse/AMQP-MASTER) [![Join the chat at https://gitter.im/spring-projects/spring-amqp](https://badges.gitter.im/spring-projects/spring-amqp.svg)](https://gitter.im/spring-projects/spring-amqp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+Spring AMQP [<img src="https://build.spring.io/plugins/servlet/wittified/build-status/AMQP-MAIN">](https://build.spring.io/browse/AAMQP-MAIN) [![Join the chat at https://gitter.im/spring-projects/spring-amqp](https://badges.gitter.im/spring-projects/spring-amqp.svg)](https://gitter.im/spring-projects/spring-amqp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 ===========
 
 This project provides support for using Spring and Java with [AMQP 0.9.1](https://www.rabbitmq.com/amqp-0-9-1-reference.html), and in particular [RabbitMQ](https://www.rabbitmq.com/).
@@ -115,7 +115,7 @@ None of these is essential for a pull request, but they will all help.  They can
 * Add yourself as an @author to the .java files that you modify substantially (more than cosmetic changes).
 * Add some Javadocs and, if you change the namespace, some XSD doc elements.
 * A few unit tests would help a lot as well - someone has to do it.
-* If no-one else is using your branch, please rebase it against the current master (or other target branch in the main project).
+* If no-one else is using your branch, please rebase it against the current main (or other target branch in the main project).
 
 # License
 
