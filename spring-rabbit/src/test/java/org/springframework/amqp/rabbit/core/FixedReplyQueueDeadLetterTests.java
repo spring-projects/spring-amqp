@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 the original author or authors.
+ * Copyright 2014-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.ExchangeBuilder;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
-import org.springframework.amqp.core.QueueBuilder.MasterLocator;
+import org.springframework.amqp.core.QueueBuilder.LeaderLocator;
 import org.springframework.amqp.core.QueueBuilder.Overflow;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -111,7 +111,7 @@ public class FixedReplyQueueDeadLetterTests {
 		assertThat(arguments.get("x-dead-letter-routing-key")).isEqualTo("reply.dlrk");
 		assertThat(arguments.get("x-max-priority")).isEqualTo(4);
 		assertThat(arguments.get("x-queue-mode")).isEqualTo("lazy");
-		assertThat(arguments.get("x-queue-master-locator")).isEqualTo("min-masters");
+		assertThat(arguments.get(Queue.X_QUEUE_LEADER_LOCATOR)).isEqualTo(LeaderLocator.minLeaders.getValue());
 		assertThat(arguments.get("x-single-active-consumer")).isEqualTo(Boolean.TRUE);
 	}
 
@@ -130,7 +130,7 @@ public class FixedReplyQueueDeadLetterTests {
 		assertThat(arguments.get("x-dead-letter-routing-key")).isEqualTo("reply.dlrk");
 		assertThat(arguments.get("x-max-priority")).isEqualTo(4);
 		assertThat(arguments.get("x-queue-mode")).isEqualTo("lazy");
-		assertThat(arguments.get("x-queue-master-locator")).isEqualTo("client-local");
+		assertThat(arguments.get(Queue.X_QUEUE_LEADER_LOCATOR)).isEqualTo(LeaderLocator.clientLocal.getValue());
 	}
 
 	@Test
@@ -148,7 +148,7 @@ public class FixedReplyQueueDeadLetterTests {
 		assertThat(arguments.get("x-dead-letter-routing-key")).isEqualTo("reply.dlrk");
 		assertThat(arguments.get("x-max-priority")).isEqualTo(4);
 		assertThat(arguments.get("x-queue-mode")).isEqualTo("lazy");
-		assertThat(arguments.get("x-queue-master-locator")).isEqualTo("random");
+		assertThat(arguments.get(Queue.X_QUEUE_LEADER_LOCATOR)).isEqualTo(LeaderLocator.random.getValue());
 
 		ExchangeInfo exchange = client.getExchange("/", "dlx.test.requestEx");
 		assertThat(exchange.getArguments().get("alternate-exchange")).isEqualTo("alternate");
@@ -294,7 +294,7 @@ public class FixedReplyQueueDeadLetterTests {
 					.deadLetterRoutingKey("reply.dlrk")
 					.maxPriority(4)
 					.lazy()
-					.masterLocator(MasterLocator.minMasters)
+					.leaderLocator(LeaderLocator.minLeaders)
 					.singleActiveConsumer()
 					.build();
 		}
@@ -311,7 +311,7 @@ public class FixedReplyQueueDeadLetterTests {
 					.deadLetterRoutingKey("reply.dlrk")
 					.maxPriority(4)
 					.lazy()
-					.masterLocator(MasterLocator.clientLocal)
+					.leaderLocator(LeaderLocator.clientLocal)
 					.build();
 		}
 
@@ -327,7 +327,7 @@ public class FixedReplyQueueDeadLetterTests {
 					.deadLetterRoutingKey("reply.dlrk")
 					.maxPriority(4)
 					.lazy()
-					.masterLocator(MasterLocator.random)
+					.leaderLocator(LeaderLocator.random)
 					.build();
 		}
 

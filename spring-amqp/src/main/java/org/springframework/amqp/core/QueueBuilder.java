@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import java.util.Map;
  * Builds a Spring AMQP Queue using a fluent API.
  *
  * @author Maciej Walkowiak
+ * @author Gary Russell
+ *
  * @since 1.6
  *
  */
@@ -228,8 +230,22 @@ public final class QueueBuilder extends AbstractBuilder {
 	 * or {@link MasterLocator#random}.
 	 * @return the builder.
 	 * @since 2.2
+	 * @deprecated in favor of {@link #leaderLocator(LeaderLocator)}.
 	 */
+	@Deprecated
 	public QueueBuilder masterLocator(MasterLocator locator) {
+		return withArgument("x-queue-master-locator", locator.getValue());
+	}
+
+	/**
+	 * Set the master locator mode which determines which node a queue master will be
+	 * located on a cluster of nodes.
+	 * @param locator {@link MasterLocator#minMasters}, {@link MasterLocator#clientLocal}
+	 * or {@link MasterLocator#random}.
+	 * @return the builder.
+	 * @since 2.2
+	 */
+	public QueueBuilder leaderLocator(LeaderLocator locator) {
 		return withArgument("x-queue-master-locator", locator.getValue());
 	}
 
@@ -270,6 +286,9 @@ public final class QueueBuilder extends AbstractBuilder {
 		return new Queue(this.name, this.durable, this.exclusive, this.autoDelete, getArguments());
 	}
 
+	/**
+	 * Overflow argument values.
+	 */
 	public enum Overflow {
 
 		/**
@@ -288,12 +307,20 @@ public final class QueueBuilder extends AbstractBuilder {
 			this.value = value;
 		}
 
+		/**
+		 * Return the value.
+		 * @return the value.
+		 */
 		public String getValue() {
 			return this.value;
 		}
 
 	}
 
+	/**
+	 * @deprecated in favor of {@link LeaderLocator}.
+	 */
+	@Deprecated
 	public enum MasterLocator {
 
 		/**
@@ -317,6 +344,49 @@ public final class QueueBuilder extends AbstractBuilder {
 			this.value = value;
 		}
 
+		/**
+		 * Return the value.
+		 * @return the value.
+		 */
+		public String getValue() {
+			return this.value;
+		}
+
+	}
+
+	/**
+	 * Locate the queue leader.
+	 *
+	 * @since 2.3.7
+	 *
+	 */
+	public enum LeaderLocator {
+
+		/**
+		 * Deploy on the node with the fewest queue leaders.
+		 */
+		minLeaders("min-masters"),
+
+		/**
+		 * Deploy on the node we are connected to.
+		 */
+		clientLocal("client-local"),
+
+		/**
+		 * Deploy on a random node.
+		 */
+		random("random");
+
+		private final String value;
+
+		LeaderLocator(String value) {
+			this.value = value;
+		}
+
+		/**
+		 * Return the value.
+		 * @return the value.
+		 */
 		public String getValue() {
 			return this.value;
 		}

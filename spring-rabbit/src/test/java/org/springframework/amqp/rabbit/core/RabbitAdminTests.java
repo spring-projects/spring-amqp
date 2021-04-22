@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -367,7 +367,7 @@ public class RabbitAdminTests {
 	}
 
 	@Test
-	public void testMasterLocator() throws Exception {
+	public void testLeaderLocator() throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory(
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
 		RabbitAdmin admin = new RabbitAdmin(cf);
@@ -376,14 +376,14 @@ public class RabbitAdminTests {
 		Client client = new Client("http://guest:guest@localhost:15672/api");
 		AnonymousQueue queue1 = queue;
 		QueueInfo info = await().until(() -> client.getQueue("/", queue1.getName()), inf -> inf != null);
-		assertThat(info.getArguments().get(Queue.X_QUEUE_MASTER_LOCATOR)).isEqualTo("client-local");
+		assertThat(info.getArguments().get(Queue.X_QUEUE_LEADER_LOCATOR)).isEqualTo("client-local");
 
 		queue = new AnonymousQueue();
-		queue.setMasterLocator(null);
+		queue.setLeaderLocator(null);
 		admin.declareQueue(queue);
 		AnonymousQueue queue2 = queue;
 		info = await().until(() -> client.getQueue("/", queue2.getName()), inf -> inf != null);
-		assertThat(info.getArguments().get(Queue.X_QUEUE_MASTER_LOCATOR)).isNull();
+		assertThat(info.getArguments().get(Queue.X_QUEUE_LEADER_LOCATOR)).isNull();
 		cf.destroy();
 	}
 
