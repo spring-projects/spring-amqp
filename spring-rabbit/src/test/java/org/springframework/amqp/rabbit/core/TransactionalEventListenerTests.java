@@ -112,6 +112,7 @@ public class TransactionalEventListenerTests {
 			publisher.publishEvent("test");
 		}
 
+		@SuppressWarnings("serial")
 		@Bean
 		PlatformTransactionManager transactionManager(AtomicBoolean committed) {
 			return new AbstractPlatformTransactionManager() {

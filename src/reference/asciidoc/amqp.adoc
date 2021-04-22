@@ -698,12 +698,12 @@ See <<cf-pub-conf-ret>>.
 ===== Queue Affinity and the `LocalizedQueueConnectionFactory`
 
 When using HA queues in a cluster, for the best performance, you may want to connect to the physical broker
-where the master queue resides.
+where the lead queue resides.
 The `CachingConnectionFactory` can be configured with multiple broker addresses.
 This is to fail over and the client attempts to connect in order.
-The `LocalizedQueueConnectionFactory` uses the REST API provided by the admin plugin to determine on which node the queue is mastered.
+The `LocalizedQueueConnectionFactory` uses the REST API provided by the management plugin to determine which node is the lead for the queue.
 It then creates (or retrieves from a cache) a `CachingConnectionFactory` that connects to just that node.
-If the connection fails, the new master node is determined and the consumer connects to it.
+If the connection fails, the new lead node is determined and the consumer connects to it.
 The `LocalizedQueueConnectionFactory` is configured with a default connection factory, in case the physical location of the queue cannot be determined, in which case it connects as normal to the cluster.
 
 The `LocalizedQueueConnectionFactory` is a `RoutingConnectionFactory` and the `SimpleMessageListenerContainer` uses the queue names as the lookup key as discussed in <<routing-connection-factory>> above.
@@ -748,8 +748,7 @@ public LocalizedQueueConnectionFactory queueAffinityCF(
 ====
 
 Notice that the first three parameters are arrays of `addresses`, `adminUris`, and `nodes`.
-These are positional in that, when a container attempts to connect to a queue, it uses the admin API to determine on which node the queue is
-mastered and connects to the address in the same array position as that node.
+These are positional in that, when a container attempts to connect to a queue, it uses the admin API to determine which node is the lead for the queue and connects to the address in the same array position as that node.
 
 [[cf-pub-conf-ret]]
 ===== Publisher Confirms and Returns
@@ -4415,7 +4414,7 @@ A `<rabbit:queue/>` with an empty (or missing) `name` attribute always creates a
 
 See <<anonymous-queue>> to understand why `AnonymousQueue` is preferred over broker-generated queue names as well as
 how to control the format of the name.
-Starting with version 2.1, anonymous queues are declared with argument `x-queue-master-locator` set to `client-local` by default.
+Starting with version 2.1, anonymous queues are declared with argument `Queue.X_QUEUE_LEADER_LOCATOR` set to `client-local` by default.
 This ensures that the queue is declared on the node to which the application is connected.
 Declarative queues must have fixed names because they might be referenced elsewhere in the context -- such as in the
 listener shown in the following example:
@@ -4549,7 +4548,7 @@ With Spring Framework 3.2 and later, this can be declared a little more succinct
 ----
 ====
 
-When you use Java configuration, the `x-queue-master-locator` is supported as a first class property through the `setMasterLocator()` method on the `Queue` class.
+When you use Java configuration, the `Queue.X_QUEUE_LEADER_LOCATOR` argument is supported as a first class property through the `setLeaderLocator()` method on the `Queue` class.
 Starting with version 2.1, anonymous queues are declared with this property set to `client-local` by default.
 This ensures that the queue is declared on the node the application is connected to.
 
@@ -4757,7 +4756,7 @@ public Queue allArgs1() {
             .deadLetterRoutingKey("dlrk")
             .maxPriority(4)
             .lazy()
-            .masterLocator(MasterLocator.minMasters)
+            .leaderLocator(LeaderLocator.minLeaders)
             .singleActiveConsumer()
             .build();
 }
@@ -5053,9 +5052,9 @@ The third example creates names such as `custom.gen-MRBv9sqISkuCiPfOYfpo4g`.
 
 You can also provide your own naming strategy bean.
 
-Starting with version 2.1, anonymous queues are declared with argument `x-queue-master-locator` set to `client-local` by default.
+Starting with version 2.1, anonymous queues are declared with argument `Queue.X_QUEUE_LEADER_LOCATOR` set to `client-local` by default.
 This ensures that the queue is declared on the node to which the application is connected.
-You can revert to the previous behavior by calling `queue.setMasterLocator(null)` after constructing the instance.
+You can revert to the previous behavior by calling `queue.setLeaderLocator(null)` after constructing the instance.
 
 [[broker-events]]
 ==== Broker Event Listener
