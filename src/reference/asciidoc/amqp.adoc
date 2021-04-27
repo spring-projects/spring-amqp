@@ -1286,6 +1286,106 @@ Boolean result = this.template.invoke(t -> {
 ----
 ====
 
+IMPORTANT: Scoped operations are bound to a thread.
+See <<multi-strict>> for a discussion about strict ordering in a multi-threaded environment.
+
+[[multi-strict]]
+===== Strict Message Ordering in a Multi-Threaded Environment
+
+The discussion in <<scoped-operations>> applies only when the operations are performed on the same thread.
+
+Consider the following situation:
+
+* `thread-1` sends a message to a queue and hands off work to `thread-2`
+* `thread-2` sends a message to the same queue
+
+Because of the async nature of RabbitMQ and the use of cached channels; it is not certain that the same channel will be used and therefore the order in which the messages arrive in the queue is not guaranteed.
+(In most cases they will arrive in order, but the probability of out-of-order delivery is not zero).
+To solve this use case, you can use a bounded channel cache with size `1` (together with a `channelCheckoutTimeout`) to ensure the messages are always published on the same channel, and order will be guaranteed.
+To do this, if you have other uses for the connection factory, such as consumers, you should either use a dedicated connection factory for the template, or configure the template to use the publisher connection factory embedded in the main connection factory (see <<separate-connection>>).
+
+This is best illustrated with a simple Spring Boot Application:
+
+====
+[source, java]
+----
+@SpringBootApplication
+public class Application {
+
+	private static final Logger log = LoggerFactory.getLogger(Application.class);
+
+	public static void main(String[] args) {
+		SpringApplication.run(Application.class, args);
+	}
+
+	@Bean
+	TaskExecutor exec() {
+		ThreadPoolTaskExecutor exec = new ThreadPoolTaskExecutor();
+		exec.setCorePoolSize(10);
+		return exec;
+	}
+
+	@Bean
+	CachingConnectionFactory ccf() {
+		CachingConnectionFactory ccf = new CachingConnectionFactory("localhost");
+		CachingConnectionFactory publisherCF = (CachingConnectionFactory) ccf.getPublisherConnectionFactory();
+		publisherCF.setChannelCacheSize(1);
+		publisherCF.setChannelCheckoutTimeout(1000L);
+		return ccf;
+	}
+
+	@RabbitListener(queues = "queue")
+	void listen(String in) {
+		log.info(in);
+	}
+
+	@Bean
+	Queue queue() {
+		return new Queue("queue");
+	}
+
+
+	@Bean
+	public ApplicationRunner runner(Service service, TaskExecutor exec) {
+		return args -> {
+			exec.execute(() -> service.mainService("test"));
+		};
+	}
+
+}
+
+@Component
+class Service {
+
+	private static final Logger LOG = LoggerFactory.getLogger(Service.class);
+
+	private final RabbitTemplate template;
+
+	private final TaskExecutor exec;
+
+	Service(RabbitTemplate template, TaskExecutor exec) {
+		template.setUsePublisherConnection(true);
+		this.template = template;
+		this.exec = exec;
+	}
+
+	void mainService(String toSend) {
+		LOG.info("Publishing from main service");
+		this.template.convertAndSend("queue", toSend);
+		this.exec.execute(() -> secondaryService(toSend.toUpperCase()));
+	}
+
+	void secondaryService(String toSend) {
+		LOG.info("Publishing from secondary service");
+		this.template.convertAndSend("queue", toSend);
+	}
+
+}
+----
+====
+
+Even though the publishing is performed on two different threads, they will both use the same channel because the cache is capped at a single channel.
+
 [[template-messaging]]
 ===== Messaging Integration
 
