@@ -48,8 +48,6 @@ import org.springframework.transaction.interceptor.TransactionAttribute;
 import org.springframework.util.ErrorHandler;
 import org.springframework.util.backoff.BackOff;
 
-import com.rabbitmq.client.Channel;
-
 /**
  * A Factory bean to create a listener container.
  *
@@ -276,7 +274,7 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 	 * Apply prefetch to the entire channel.
 	 * @param globalQos true for a channel-wide prefetch.
 	 * @since 2.2.17
-	 * @see Channel#basicQos(int, boolean)
+	 * @see com.rabbitmq.client.Channel#basicQos(int, boolean)
 	 */
 	public void setGlobalQos(boolean globalQos) {
 		this.globalQos = globalQos;

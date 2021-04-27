@@ -454,7 +454,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	public void setConfirmCallback(ConfirmCallback confirmCallback) {
-		Assert.state(this.confirmCallback == null || this.confirmCallback == confirmCallback,
+		Assert.state(this.confirmCallback == null || this.confirmCallback.equals(confirmCallback),
 				"Only one ConfirmCallback is supported by each RabbitTemplate");
 		this.confirmCallback = confirmCallback;
 	}
@@ -466,7 +466,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 */
 	@Deprecated
 	public void setReturnCallback(ReturnCallback returnCallback) {
-		Assert.state(this.returnsCallback == null || this.returnsCallback.delegate() == returnCallback,
+		Assert.state(this.returnsCallback == null || this.returnsCallback.delegate().equals(returnCallback),
 				"Only one ReturnCallback is supported by each RabbitTemplate");
 		this.returnsCallback = new ReturnsCallback() {
 
@@ -485,7 +485,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	public void setReturnsCallback(ReturnsCallback returnCallback) {
-		Assert.state(this.returnsCallback == null || this.returnsCallback == returnCallback,
+		Assert.state(this.returnsCallback == null || this.returnsCallback.equals(returnCallback),
 				"Only one ReturnCallback is supported by each RabbitTemplate");
 		this.returnsCallback = returnCallback;
 	}
