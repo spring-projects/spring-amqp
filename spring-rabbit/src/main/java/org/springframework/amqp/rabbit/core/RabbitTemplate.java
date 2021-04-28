@@ -466,7 +466,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 */
 	@Deprecated
 	public void setReturnCallback(ReturnCallback returnCallback) {
-		Assert.state(this.returnsCallback == null || this.returnsCallback.delegate().equals(returnCallback),
+		Assert.state(this.returnsCallback == null ||
+					(this.returnsCallback.delegate() != null && this.returnsCallback.delegate().equals(returnCallback)),
 				"Only one ReturnCallback is supported by each RabbitTemplate");
 		this.returnsCallback = new ReturnsCallback() {
 
