@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 the original author or authors.
+ * Copyright 2020-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,9 @@
 package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -28,6 +31,7 @@ import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.NameMatchMethodPointcutAdvisor;
 import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
@@ -43,6 +47,8 @@ import com.rabbitmq.client.ShutdownListener;
  *
  */
 public class ThreadChannelConnectionFactory extends AbstractConnectionFactory implements ShutdownListener {
+
+	private final Map<UUID, Context> contextSwitches = new ConcurrentHashMap<>();
 
 	private volatile ConnectionWrapper connection;
 
@@ -144,6 +150,40 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 		}
 	}
 
+	/**
+	 * Call to prepare to switch the channel(s) owned by this thread to another thread.
+	 * @return an opaque object representing the context to switch.
+	 * @since 2.3.7
+	 * @see #switchContext(Object)
+	 */
+	public Object prepareSwitchContext() {
+		return prepareSwitchContext(UUID.randomUUID());
+	}
+
+	Object prepareSwitchContext(UUID uuid) {
+		if (getPublisherConnectionFactory() instanceof ThreadChannelConnectionFactory) {
+			((ThreadChannelConnectionFactory) getPublisherConnectionFactory()).prepareSwitchContext(uuid);
+		}
+		this.contextSwitches.put(uuid, ((ConnectionWrapper) createConnection()).prepareSwitchContext());
+		return uuid;
+	}
+
+	/**
+	 * Acquire ownership of another thread's channel(s) after that thread called
+	 * {@link #prepareSwitchContext()}.
+	 * @param toSwitch the context returned by {@link #prepareSwitchContext()}.
+	 * @since 2.3.7
+	 * @see #prepareSwitchContext()
+	 */
+	public void switchContext(Object toSwitch) {
+		if (getPublisherConnectionFactory() instanceof ThreadChannelConnectionFactory) {
+			((ThreadChannelConnectionFactory) getPublisherConnectionFactory()).switchContext(toSwitch);
+		}
+		Context context = this.contextSwitches.remove(toSwitch);
+		Assert.state(context != null, () -> "No context to switch for " + toSwitch.toString());
+		((ConnectionWrapper) createConnection()).switchContext(context);
+	}
+
 	private final class ConnectionWrapper extends SimpleConnection {
 
 		/*
@@ -183,8 +223,8 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 					}
 					this.channels.set(channel);
 				}
+				getChannelListener().onCreate(channel, transactional);
 			}
-			getChannelListener().onCreate(channel, transactional);
 			return channel;
 		}
 
@@ -223,7 +263,7 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 
 		private void handleClose(Channel channel, boolean transactional) {
 
-			if (ConnectionWrapper.this.channels.get() == null) {
+			if (transactional && this.txChannels.get() == null ? true : this.channels.get() == null) {
 				physicalClose(channel);
 			}
 			else {
@@ -235,7 +275,6 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 					else {
 						this.channels.remove();
 					}
-					RabbitUtils.clearPhysicalCloseRequired();
 				}
 			}
 		}
@@ -266,12 +305,61 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 				catch (IOException | TimeoutException e) {
 					logger.debug("Error on close", e);
 				}
+				finally {
+					RabbitUtils.clearPhysicalCloseRequired();
+				}
 			}
 		}
 
 		void forceClose() {
 			super.close();
 			getConnectionListener().onClose(this);
+		}
+
+		Context prepareSwitchContext() {
+			Context context = new Context(this.channels.get(), this.txChannels.get());
+			this.channels.remove();
+			this.txChannels.remove();
+			return context;
+		}
+
+		void switchContext(Context context) {
+			if (context.getNonTx() != null) {
+				doSwitch(context.getNonTx(), this.channels);
+			}
+			if (context.getTx() != null) {
+				doSwitch(context.getTx(), this.txChannels);
+			}
+		}
+
+		private void doSwitch(Channel channel, ThreadLocal<Channel> channelTL) {
+			Channel toClose = channelTL.get();
+			if (toClose != null) {
+				RabbitUtils.setPhysicalCloseRequired(channel, true);
+				physicalClose(toClose);
+			}
+			channelTL.set(channel);
+		}
+
+	}
+
+	private static class Context {
+
+		private final Channel nonTx;
+
+		private final Channel tx;
+
+		Context(@Nullable Channel nonTx, @Nullable Channel tx) {
+			this.nonTx = nonTx;
+			this.tx = tx;
+		}
+
+		Channel getNonTx() {
+			return this.nonTx;
+		}
+
+		Channel getTx() {
+			return this.tx;
 		}
 
 	}

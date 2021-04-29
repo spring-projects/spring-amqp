@@ -66,7 +66,6 @@ import org.springframework.amqp.rabbit.connection.PublisherCallbackChannel;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.SimpleRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnCallback;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnsCallback;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.SerializationUtils;
@@ -576,7 +575,8 @@ public class RabbitTemplateTests {
 		assertThatIllegalStateException().isThrownBy(() ->
 				template.setReturnCallback(mock(RabbitTemplate.ReturnCallback.class)));
 		RabbitTemplate template2 = new RabbitTemplate();
-		ReturnCallback callback = mock(RabbitTemplate.ReturnCallback.class);
+		org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnCallback callback =
+				mock(org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnCallback.class);
 		template2.setReturnCallback(callback);
 		template2.setReturnCallback(callback);
 	}

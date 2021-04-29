@@ -257,6 +257,8 @@ This factory manages a single connection and two `ThreadLocal` s, one for transa
 This factory ensures that all operations on the same thread use the same channel (as long as it remains open).
 This facilitates strict message ordering without the need for <<scoped-operations>>.
 To avoid memory leaks, if your application uses many short-lived threads, you must call the factory's `closeThreadChannel()` to release the channel resource.
+Starting with version 2.3.7, a thread can transfer its channel(s) to another thread.
+See <<multi-strict>> for more information.
 
 ====== `CachingConnectionFactory`
 
@@ -1385,6 +1387,97 @@ class Service {
 ====
 
 Even though the publishing is performed on two different threads, they will both use the same channel because the cache is capped at a single channel.
+
+Starting with version 2.3.7, the `ThreadChannelConnectionFactory` supports transferring a thread's channel(s) to another thread, using the `prepareContextSwitch` and `switchContext` methods.
+The first method returns a context which is passed to the second thread which calls the second method.
+A thread can have either a non-transactional channel or a transactional channel (or one of each) bound to it; you cannot transfer them individually, unless you use two connection factories.
+An example follows:
+
+====
+[source, java]
+----
+@SpringBootApplication
+public class Application {
+
+	private static final Logger log = LoggerFactory.getLogger(Application.class);
+
+	public static void main(String[] args) {
+		SpringApplication.run(Application.class, args);
+	}
+
+	@Bean
+	TaskExecutor exec() {
+		ThreadPoolTaskExecutor exec = new ThreadPoolTaskExecutor();
+		exec.setCorePoolSize(10);
+		return exec;
+	}
+
+	@Bean
+	ThreadChannelConnectionFactory tccf() {
+		ConnectionFactory rabbitConnectionFactory = new ConnectionFactory();
+		rabbitConnectionFactory.setHost("localhost");
+		return new ThreadChannelConnectionFactory(rabbitConnectionFactory);
+	}
+
+	@RabbitListener(queues = "queue")
+	void listen(String in) {
+		log.info(in);
+	}
+
+	@Bean
+	Queue queue() {
+		return new Queue("queue");
+	}
+
+
+	@Bean
+	public ApplicationRunner runner(Service service, TaskExecutor exec) {
+		return args -> {
+			exec.execute(() -> service.mainService("test"));
+		};
+	}
+
+}
+
+@Component
+class Service {
+
+	private static final Logger LOG = LoggerFactory.getLogger(Service.class);
+
+	private final RabbitTemplate template;
+
+	private final TaskExecutor exec;
+
+	private final ThreadChannelConnectionFactory connFactory;
+
+	Service(RabbitTemplate template, TaskExecutor exec,
+			ThreadChannelConnectionFactory tccf) {
+
+		this.template = template;
+		this.exec = exec;
+		this.connFactory = tccf;
+	}
+
+	void mainService(String toSend) {
+		LOG.info("Publishing from main service");
+		this.template.convertAndSend("queue", toSend);
+		Object context = this.connFactory.prepareSwitchContext();
+		this.exec.execute(() -> secondaryService(toSend.toUpperCase(), context));
+	}
+
+	void secondaryService(String toSend, Object threadContext) {
+		LOG.info("Publishing from secondary service");
+		this.connFactory.switchContext(threadContext);
+		this.template.convertAndSend("queue", toSend);
+		this.connFactory.closeThreadChannel();
+	}
+
+}
+----
+====
+
+IMPORTANT: Once the `prepareSwitchContext` is called, if the current thread performs any more operations, they will be performed on a new channel.
+It is important to close the thread-bound channel when it is no longer needed.
 
 [[template-messaging]]
 ===== Messaging Integration
