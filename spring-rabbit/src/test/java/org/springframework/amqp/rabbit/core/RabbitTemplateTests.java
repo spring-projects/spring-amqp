@@ -66,6 +66,7 @@ import org.springframework.amqp.rabbit.connection.PublisherCallbackChannel;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.SimpleRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnCallback;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnsCallback;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.SerializationUtils;
@@ -572,6 +573,12 @@ public class RabbitTemplateTests {
 		ReturnsCallback cb = TestUtils.getPropertyValue(template, "returnsCallback", ReturnsCallback.class);
 		cb.returnedMessage(new ReturnedMessage(null, 0, null, null, null));
 		assertThat(called.get()).isTrue();
+		assertThatIllegalStateException().isThrownBy(() ->
+				template.setReturnCallback(mock(RabbitTemplate.ReturnCallback.class)));
+		RabbitTemplate template2 = new RabbitTemplate();
+		ReturnCallback callback = mock(RabbitTemplate.ReturnCallback.class);
+		template2.setReturnCallback(callback);
+		template2.setReturnCallback(callback);
 	}
 
 	@SuppressWarnings("serial")

@@ -466,8 +466,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 */
 	@Deprecated
 	public void setReturnCallback(ReturnCallback returnCallback) {
-		Assert.state(this.returnsCallback == null ||
-					(this.returnsCallback.delegate() != null && this.returnsCallback.delegate().equals(returnCallback)),
+		ReturnCallback delegate = this.returnsCallback == null ? null : this.returnsCallback.delegate();
+		Assert.state(this.returnsCallback == null || delegate == null || delegate.equals(returnCallback),
 				"Only one ReturnCallback is supported by each RabbitTemplate");
 		this.returnsCallback = new ReturnsCallback() {
 
@@ -2856,7 +2856,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		void returnedMessage(ReturnedMessage returned);
 
 		/**
-		 * Internal use only; transisitional during deprecation.
+		 * Internal use only; transitional during deprecation.
 		 * @return the legacy delegate.
 		 * @deprecated - will be removed with {@link ReturnCallback}.
 		 */
