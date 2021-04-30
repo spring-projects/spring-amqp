@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.amqp.rabbit.listener;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.beans.factory.BeanFactory;
@@ -24,7 +26,9 @@ import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.lang.Nullable;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
+import org.springframework.messaging.handler.invocation.HandlerMethodArgumentResolver;
 import org.springframework.util.Assert;
+import org.springframework.validation.Validator;
 
 /**
  * Helper bean for registering {@link RabbitListenerEndpoint} with
@@ -41,6 +45,8 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	private final List<AmqpListenerEndpointDescriptor> endpointDescriptors =
 			new ArrayList<AmqpListenerEndpointDescriptor>();
 
+	private List<HandlerMethodArgumentResolver> customMethodArgumentResolvers = new ArrayList<>();
+
 	@Nullable
 	private RabbitListenerEndpointRegistry endpointRegistry;
 
@@ -53,6 +59,8 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	private BeanFactory beanFactory;
 
 	private boolean startImmediately;
+
+	private Validator validator;
 
 	/**
 	 * Set the {@link RabbitListenerEndpointRegistry} instance to use.
@@ -72,6 +80,27 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	}
 
 	/**
+	 * Return the list of {@link HandlerMethodArgumentResolver}.
+	 * @return the list of {@link HandlerMethodArgumentResolver}.
+	 * @since 2.3.7
+	 */
+	public List<HandlerMethodArgumentResolver> getCustomMethodArgumentResolvers() {
+		return Collections.unmodifiableList(this.customMethodArgumentResolvers);
+	}
+
+
+	/**
+	 * Add custom methods arguments resolvers to
+	 * {@link org.springframework.amqp.rabbit.annotation.RabbitListenerAnnotationBeanPostProcessor}
+	 * Default empty list.
+	 * @param methodArgumentResolvers the methodArgumentResolvers to assign.
+	 * @since 2.3.7
+	 */
+	public void setCustomMethodArgumentResolvers(HandlerMethodArgumentResolver... methodArgumentResolvers) {
+		this.customMethodArgumentResolvers = Arrays.asList(methodArgumentResolvers);
+	}
+
+	/**
 	 * Set the {@link MessageHandlerMethodFactory} to use to configure the message
 	 * listener responsible to serve an endpoint detected by this processor.
 	 * <p>
@@ -84,6 +113,8 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	 * @param rabbitHandlerMethodFactory the {@link MessageHandlerMethodFactory} instance.
 	 */
 	public void setMessageHandlerMethodFactory(MessageHandlerMethodFactory rabbitHandlerMethodFactory) {
+		Assert.isNull(this.validator,
+				"A validator cannot be provided with a custom message handler factory");
 		this.messageHandlerMethodFactory = rabbitHandlerMethodFactory;
 	}
 
@@ -127,6 +158,26 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 		this.beanFactory = beanFactory;
 	}
 
+	/**
+	 * Get the validator, if supplied.
+	 * @return the validator.
+	 * @since 2.3.7
+	 */
+	@Nullable
+	public Validator getValidator() {
+		return this.validator;
+	}
+
+	/**
+	 * Set the validator to use if the default message handler factory is used.
+	 * @param validator the validator.
+	 * @since 2.3.7
+	 */
+	public void setValidator(Validator validator) {
+		Assert.isNull(this.messageHandlerMethodFactory,
+				"A validator cannot be provided with a custom message handler factory");
+		this.validator = validator;
+	}
 
 	@Override
 	public void afterPropertiesSet() {
@@ -137,6 +188,9 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 		Assert.state(this.endpointRegistry != null, "No registry available");
 		synchronized (this.endpointDescriptors) {
 			for (AmqpListenerEndpointDescriptor descriptor : this.endpointDescriptors) {
+				if (descriptor.endpoint instanceof MultiMethodRabbitListenerEndpoint && this.validator != null) {
+					((MultiMethodRabbitListenerEndpoint) descriptor.endpoint).setValidator(this.validator);
+				}
 				this.endpointRegistry.registerListenerContainer(// NOSONAR never null
 						descriptor.endpoint, resolveContainerFactory(descriptor));
 			}

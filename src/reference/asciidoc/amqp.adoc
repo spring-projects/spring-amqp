@@ -2714,6 +2714,44 @@ public class AppConfig implements RabbitListenerConfigurer {
 IMPORTANT: For multi-method listeners (see <<annotation-method-selection>>), the method selection is based on the payload of the message *after the message conversion*.
 The method argument converter is called only after the method has been selected.
 
+[[custom-argument-resolver]]
+====== Adding custom `HandlerMethodArgumentResolver` to @RabbitListener
+
+Starting with version 2.3.7 you are able to add your own `HandlerMethodArgumentResolver` and resolve custom method parameters.
+All you need is to implement `RabbitListenerConfigurer` and use method `setCustomMethodArgumentResolvers()` from class `RabbitListenerEndpointRegistrar`.
+
+====
+[source, java]
+----
+@Configuration
+class CustomRabbitConfig implements RabbitListenerConfigurer {
+
+    @Override
+    public void configureRabbitListeners(RabbitListenerEndpointRegistrar registrar) {
+        registrar.setCustomMethodArgumentResolvers(
+				new HandlerMethodArgumentResolver() {
+
+					@Override
+					public boolean supportsParameter(MethodParameter parameter) {
+						return CustomMethodArgument.class.isAssignableFrom(parameter.getParameterType());
+					}
+
+					@Override
+					public Object resolveArgument(MethodParameter parameter, org.springframework.messaging.Message<?> message) {
+						return new CustomMethodArgument(
+								(String) message.getPayload(),
+								message.getHeaders().get("customHeader", String.class)
+						);
+					}
+
+				}
+			);
+    }
+
+}
+----
+====
+
 [[async-annotation-driven-registration]]
 ====== Programmatic Endpoint Registration
 
@@ -2821,6 +2859,83 @@ public class AppConfig implements RabbitListenerConfigurer {
         factory.setValidator(myValidator());
         return factory;
     }
+}
+----
+====
+
+[[rabbit-validation]]
+====== @RabbitListener @Payload Validation
+
+Starting with version 2.3.7, it is now easier to add a `Validator` to validate `@RabbitListener` and `@RabbitHandler` `@Payload` arguments.
+Now, you can simply add the validator to the registrar itself.
+
+====
+[source, java]
+----
+@Configuration
+@EnableRabbit
+public class Config implements RabbitListenerConfigurer {
+    ...
+    @Override
+    public void configureRabbitListeners(RabbitListenerEndpointRegistrar registrar) {
+      registrar.setValidator(new MyValidator());
+    }
+}
+----
+====
+
+NOTE: When using Spring Boot with the validation starter, a `LocalValidatorFactoryBean` is auto-configured:
+
+====
+[source, java]
+----
+@Configuration
+@EnableRabbit
+public class Config implements RabbitListenerConfigurer {
+    @Autowired
+    private LocalValidatorFactoryBean validator;
+    ...
+    @Override
+    public void configureRabbitListeners(RabbitListenerEndpointRegistrar registrar) {
+      registrar.setValidator(this.validator);
+    }
+}
+----
+====
+
+To validate:
+
+====
+[source, java]
+----
+public static class ValidatedClass {
+  @Max(10)
+  private int bar;
+  public int getBar() {
+    return this.bar;
+  }
+  public void setBar(int bar) {
+    this.bar = bar;
+  }
+}
+----
+====
+
+and
+
+====
+[source, java]
+----
+@RabbitListener(id="validated", queues = "queue1", errorHandler = "validationErrorHandler",
+      containerFactory = "jsonListenerContainerFactory")
+public void validatedListener(@Payload @Valid ValidatedClass val) {
+    ...
+}
+@Bean
+public RabbitListenerErrorHandler validationErrorHandler() {
+    return (m, e) -> {
+        ...
+    };
 }
 ----
 ====

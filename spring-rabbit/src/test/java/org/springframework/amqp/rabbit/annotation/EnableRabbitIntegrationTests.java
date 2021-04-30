@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 the original author or authors.
+ * Copyright 2014-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,8 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
+import javax.validation.Valid;
 
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInterceptor;
@@ -107,6 +109,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
+import org.springframework.core.MethodParameter;
 import org.springframework.core.Ordered;
 import org.springframework.core.PriorityOrdered;
 import org.springframework.core.convert.ConversionService;
@@ -120,6 +123,8 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
+import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
+import org.springframework.messaging.handler.invocation.HandlerMethodArgumentResolver;
 import org.springframework.messaging.support.GenericMessage;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.retry.support.RetryTemplate;
@@ -131,6 +136,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ErrorHandler;
+import org.springframework.validation.Errors;
+import org.springframework.validation.Validator;
 import org.springframework.validation.annotation.Validated;
 
 import com.rabbitmq.client.Channel;
@@ -167,6 +174,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 		"test.simple.direct2", "test.generic.list", "test.generic.map",
 		"amqp656dlq", "test.simple.declare", "test.return.exceptions", "test.pojo.errors", "test.pojo.errors2",
 		"test.messaging.message", "test.amqp.message", "test.bytes.to.string", "test.projection",
+		"test.custom.argument", "test.arg.validation",
 		"manual.acks.1", "manual.acks.2", "erit.batch.1", "erit.batch.2", "erit.batch.3" },
 		purgeAfterEach = false)
 public class EnableRabbitIntegrationTests {
@@ -181,7 +189,10 @@ public class EnableRabbitIntegrationTests {
 	private RabbitAdmin rabbitAdmin;
 
 	@Autowired
-	private CountDownLatch errorHandlerLatch;
+	private CountDownLatch errorHandlerLatch1;
+
+	@Autowired
+	private CountDownLatch errorHandlerLatch2;
 
 	@Autowired
 	private AtomicReference<Throwable> errorHandlerError;
@@ -221,6 +232,9 @@ public class EnableRabbitIntegrationTests {
 
 	@Autowired
 	private MultiListenerBean multi;
+
+	@Autowired
+	private MultiListenerValidatedJsonBean multiValidated;
 
 	@BeforeAll
 	public static void setUp() {
@@ -498,13 +512,47 @@ public class EnableRabbitIntegrationTests {
 	public void testInvalidPojoConversion() throws InterruptedException {
 		this.rabbitTemplate.convertAndSend("test.invalidPojo", "bar");
 
-		assertThat(this.errorHandlerLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.errorHandlerLatch1.await(10, TimeUnit.SECONDS)).isTrue();
 		Throwable throwable = this.errorHandlerError.get();
 		assertThat(throwable).isNotNull();
 		assertThat(throwable).isInstanceOf(AmqpRejectAndDontRequeueException.class);
 		assertThat(throwable.getCause()).isInstanceOf(ListenerExecutionFailedException.class);
 		assertThat(throwable.getCause().getCause()).isInstanceOf(org.springframework.messaging.converter.MessageConversionException.class);
 		assertThat(throwable.getCause().getCause().getMessage()).contains("Failed to convert message payload 'bar' to 'java.util.Date'");
+	}
+
+	@Test
+	public void testRabbitListenerValidation() throws InterruptedException {
+		ValidatedClass validatedObject = new ValidatedClass();
+		validatedObject.setBar(5);
+		this.jsonRabbitTemplate.convertAndSend("test.arg.validation", validatedObject);
+		assertThat(this.service.validationLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.service.validatedObject.validated).isTrue();
+		assertThat(this.service.validatedObject.valCount).isEqualTo(1);
+
+	}
+
+	@Test
+	public void testRabbitHandlerValidationFailed() throws InterruptedException {
+		ValidatedClass validatedObject = new ValidatedClass();
+		validatedObject.setBar(42);
+		this.jsonRabbitTemplate.convertAndSend("multi.json.exch", "multi.json.valid.rk", validatedObject);
+		assertThat(this.errorHandlerLatch2.await(10, TimeUnit.SECONDS)).isTrue();
+		Throwable throwable = this.errorHandlerError.get();
+		assertThat(throwable).isNotNull();
+		assertThat(throwable).isInstanceOf(AmqpRejectAndDontRequeueException.class);
+		assertThat(throwable.getCause()).isInstanceOf(ListenerExecutionFailedException.class);
+		assertThat(throwable.getCause().getCause()).isInstanceOf(MethodArgumentNotValidException.class);
+	}
+
+	@Test
+	public void testRabbitHandlerNoDefaultValidationCount() throws InterruptedException {
+		ValidatedClass validatedObject = new ValidatedClass();
+		validatedObject.setBar(8);
+		this.jsonRabbitTemplate.convertAndSend("multi.json.exch", "multi.json.valid.rk", validatedObject);
+		assertThat(this.multiValidated.latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.multiValidated.validatedObject.validated).isTrue();
+		assertThat(this.multiValidated.validatedObject.valCount).isEqualTo(1);
 	}
 
 	@Test
@@ -950,6 +998,18 @@ public class EnableRabbitIntegrationTests {
 		assertThat(this.myService.batch3Strings.get(0)).isInstanceOf(String.class);
 	}
 
+	@Test
+	public void testCustomMethodArgumentResolverListener() throws InterruptedException {
+		MessageProperties properties = new MessageProperties();
+		properties.setHeader("customHeader", "fiz");
+		Message request = MessageTestUtils.createTextMessage("foo", properties);
+		this.rabbitTemplate.convertAndSend("test.custom.argument", request);
+		assertThat(this.myService.customMethodArgumentResolverLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.myService.customMethodArgument.body).isEqualTo("foo");
+		assertThat(this.myService.customMethodArgument.topic).isEqualTo("fiz");
+
+	}
+
 	interface TxService {
 
 		@Transactional
@@ -1012,11 +1072,15 @@ public class EnableRabbitIntegrationTests {
 
 		final CountDownLatch latch = new CountDownLatch(1);
 
+		final CountDownLatch validationLatch = new CountDownLatch(1);
+
 		final CountDownLatch batch1Latch = new CountDownLatch(1);
 
 		final CountDownLatch batch2Latch = new CountDownLatch(1);
 
 		final CountDownLatch batch3Latch = new CountDownLatch(1);
+
+		final CountDownLatch customMethodArgumentResolverLatch = new CountDownLatch(1);
 
 		volatile Boolean channelBoundOk;
 
@@ -1025,6 +1089,10 @@ public class EnableRabbitIntegrationTests {
 		volatile List<org.springframework.messaging.Message<?>> messagingMessagesReceived;
 
 		volatile List<String> batch3Strings;
+
+		volatile CustomMethodArgument customMethodArgument;
+
+		volatile ValidatedClass validatedObject;
 
 		public MyService(RabbitTemplate txRabbitTemplate) {
 			this.txRabbitTemplate = txRabbitTemplate;
@@ -1327,6 +1395,18 @@ public class EnableRabbitIntegrationTests {
 			this.batch3Latch.countDown();
 		}
 
+		@RabbitListener(queues = "test.custom.argument")
+		public void customMethodArgumentResolverListener(String data, CustomMethodArgument customMethodArgument) {
+			this.customMethodArgument = customMethodArgument;
+			this.customMethodArgumentResolverLatch.countDown();
+		}
+
+		@RabbitListener(queues = "test.arg.validation", containerFactory = "simpleJsonListenerContainerFactory")
+		public void handleValidArg(@Valid ValidatedClass validatedObject) {
+			this.validatedObject = validatedObject;
+			this.validationLatch.countDown();
+		}
+
 	}
 
 	public static class JsonObject {
@@ -1386,6 +1466,19 @@ public class EnableRabbitIntegrationTests {
 			return "bar=" + this.bar;
 		}
 
+
+	}
+
+	public static class CustomMethodArgument {
+
+		final String body;
+
+		final String topic;
+
+		CustomMethodArgument(String body, String topic) {
+			this.body = body;
+			this.topic = topic;
+		}
 
 	}
 
@@ -1467,7 +1560,7 @@ public class EnableRabbitIntegrationTests {
 	@Configuration
 	@EnableRabbit
 	@EnableTransactionManagement
-	public static class EnableRabbitConfig {
+	public static class EnableRabbitConfig implements RabbitListenerConfigurer {
 
 		private int increment;
 
@@ -1648,6 +1741,46 @@ public class EnableRabbitIntegrationTests {
 			return factory;
 		}
 
+		@Override
+		public void configureRabbitListeners(RabbitListenerEndpointRegistrar registrar) {
+			registrar.setValidator(new Validator() {
+				@Override
+				public boolean supports(Class<?> clazz) {
+					return ValidatedClass.class.isAssignableFrom(clazz);
+				}
+
+				@Override
+				public void validate(Object target, Errors errors) {
+					if (target instanceof ValidatedClass) {
+						if (((ValidatedClass) target).getBar() > 10) {
+							errors.reject("bar too large");
+						}
+						else {
+							((ValidatedClass) target).setValidated(true);
+						}
+					}
+				}
+			});
+			registrar.setCustomMethodArgumentResolvers(
+				new HandlerMethodArgumentResolver() {
+
+					@Override
+					public boolean supportsParameter(MethodParameter parameter) {
+						return CustomMethodArgument.class.isAssignableFrom(parameter.getParameterType());
+					}
+
+					@Override
+					public Object resolveArgument(MethodParameter parameter, org.springframework.messaging.Message<?> message) {
+						return new CustomMethodArgument(
+								(String) message.getPayload(),
+								message.getHeaders().get("customHeader", String.class)
+						);
+					}
+
+				}
+			);
+		}
+
 		@Bean
 		public String tagPrefix() {
 			return UUID.randomUUID().toString();
@@ -1669,7 +1802,12 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@Bean
-		public CountDownLatch errorHandlerLatch() {
+		public CountDownLatch errorHandlerLatch1() {
+			return new CountDownLatch(1);
+		}
+
+		@Bean
+		public CountDownLatch errorHandlerLatch2() {
 			return new CountDownLatch(1);
 		}
 
@@ -1687,7 +1825,13 @@ public class EnableRabbitIntegrationTests {
 				}
 				catch (Throwable e) {
 					errorHandlerError().set(e);
-					errorHandlerLatch().countDown();
+					Throwable cause = e.getCause().getCause();
+					if (cause instanceof org.springframework.messaging.converter.MessageConversionException) {
+						errorHandlerLatch1().countDown();
+					}
+					else if (cause instanceof MethodArgumentNotValidException) {
+						errorHandlerLatch2().countDown();
+					}
 					throw e;
 				}
 			}).given(handler).handleError(Mockito.any(Throwable.class));
@@ -1724,6 +1868,13 @@ public class EnableRabbitIntegrationTests {
 			return (msg, springMsg, ex) -> {
 				this.errorHandlerChannel = springMsg.getHeaders().get(AmqpHeaders.CHANNEL, Channel.class);
 				throw new RuntimeException("from error handler", ex.getCause());
+			};
+		}
+
+		@Bean
+		public RabbitListenerErrorHandler throwWrappedValidationException() {
+			return (msg, springMsg, ex) -> {
+				throw new RuntimeException("argument validation failed", ex);
 			};
 		}
 
@@ -1790,6 +1941,11 @@ public class EnableRabbitIntegrationTests {
 		@Bean
 		public MultiListenerJsonBean multiListenerJson() {
 			return new MultiListenerJsonBean();
+		}
+
+		@Bean
+		public MultiListenerValidatedJsonBean multiListenerValidatedJsonBean() {
+			return new MultiListenerValidatedJsonBean();
 		}
 
 		@Bean
@@ -1908,6 +2064,23 @@ public class EnableRabbitIntegrationTests {
 			return "QUX: " + qux.field + ": " + rk;
 		}
 
+	}
+
+	@RabbitListener(bindings = @QueueBinding
+			(value = @Queue,
+			 exchange = @Exchange(value = "multi.json.exch", autoDelete = "true"),
+			 key = "multi.json.valid.rk"), containerFactory = "simpleJsonListenerContainerFactory",
+			 returnExceptions = "true")
+	static class MultiListenerValidatedJsonBean {
+
+		final CountDownLatch latch = new CountDownLatch(1);
+		volatile ValidatedClass validatedObject;
+
+		@RabbitHandler
+		public void validatedListener(@Valid @Payload ValidatedClass validatedObject) {
+			this.validatedObject = validatedObject;
+			latch.countDown();
+		}
 	}
 
 	interface TxClassLevel {
@@ -2255,6 +2428,43 @@ public class EnableRabbitIntegrationTests {
 		public String projection(Sample in) {
 			return in.getUsername() + in.getName();
 		}
+	}
+
+	@SuppressWarnings("serial")
+	public static class ValidatedClass implements Serializable {
+
+		private int bar;
+
+		private volatile boolean validated;
+
+		volatile int valCount;
+
+		public ValidatedClass() {
+		}
+
+		public ValidatedClass(int bar) {
+			this.bar = bar;
+		}
+
+		public int getBar() {
+			return this.bar;
+		}
+
+		public void setBar(int bar) {
+			this.bar = bar;
+		}
+
+		public boolean isValidated() {
+			return this.validated;
+		}
+
+		public void setValidated(boolean validated) {
+			this.validated = validated;
+			if (validated) { // don't count the json deserialization call
+				this.valCount++;
+			}
+		}
+
 	}
 
 	interface Sample {

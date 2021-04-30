@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 the original author or authors.
+ * Copyright 2015-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.springframework.amqp.rabbit.listener.adapter.HandlerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.lang.Nullable;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
+import org.springframework.validation.Validator;
 
 /**
  * @author Gary Russell
@@ -36,6 +37,8 @@ public class MultiMethodRabbitListenerEndpoint extends MethodRabbitListenerEndpo
 	private final List<Method> methods;
 
 	private final Method defaultMethod;
+
+	private Validator validator;
 
 	/**
 	 * Construct an instance for the provided methods and bean.
@@ -59,6 +62,15 @@ public class MultiMethodRabbitListenerEndpoint extends MethodRabbitListenerEndpo
 		setBean(bean);
 	}
 
+	/**
+	 * Set a payload validator.
+	 * @param validator the validator.
+	 * @since 2.3.7
+	 */
+	public void setValidator(Validator validator) {
+		this.validator = validator;
+	}
+
 	@Override
 	protected HandlerAdapter configureListenerAdapter(MessagingMessageListenerAdapter messageListener) {
 		List<InvocableHandlerMethod> invocableHandlerMethods = new ArrayList<InvocableHandlerMethod>();
@@ -71,8 +83,9 @@ public class MultiMethodRabbitListenerEndpoint extends MethodRabbitListenerEndpo
 				defaultHandler = handler;
 			}
 		}
-		return new HandlerAdapter(new DelegatingInvocableHandler(invocableHandlerMethods, defaultHandler,
-				getBean(), getResolver(), getBeanExpressionContext()));
+		DelegatingInvocableHandler delegatingHandler = new DelegatingInvocableHandler(invocableHandlerMethods,
+				defaultHandler, getBean(), getResolver(), getBeanExpressionContext(), this.validator);
+		return new HandlerAdapter(delegatingHandler);
 	}
 
 }
