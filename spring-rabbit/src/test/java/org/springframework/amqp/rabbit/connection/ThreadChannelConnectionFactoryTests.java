@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
@@ -317,7 +318,9 @@ public class ThreadChannelConnectionFactoryTests {
 		conn.createChannel(false);
 		tccf.prepareSwitchContext();
 		tccf.destroy();
-		verify(log).warn("Unclaimed context switches from threads:[main]");
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		verify(log).warn(captor.capture());
+		assertThat(captor.getValue()).startsWith("Unclaimed context switches from threads:");
 	}
 
 	@Test
