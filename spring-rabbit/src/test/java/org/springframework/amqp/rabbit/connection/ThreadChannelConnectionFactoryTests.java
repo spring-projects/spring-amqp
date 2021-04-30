@@ -18,13 +18,19 @@ package org.springframework.amqp.rabbit.connection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.commons.logging.Log;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Message;
@@ -34,6 +40,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -116,6 +123,7 @@ public class ThreadChannelConnectionFactoryTests {
 		assertThat(config.closed).isTrue();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	void contextSwitch() throws Exception {
 		ConnectionFactory rabbitConnectionFactory = new ConnectionFactory();
@@ -131,6 +139,7 @@ public class ThreadChannelConnectionFactoryTests {
 			nonTx.set(conn.createChannel(false));
 			tx.set(conn.createChannel(true));
 			Object ctx = tccf.prepareSwitchContext();
+			assertThat(tccf.prepareSwitchContext()).isNull();
 			assertThat(TestUtils.getPropertyValue(conn, "channels", ThreadLocal.class).get()).isNull();
 			assertThat(TestUtils.getPropertyValue(conn, "txChannels", ThreadLocal.class).get()).isNull();
 			context.add(ctx);
@@ -144,6 +153,99 @@ public class ThreadChannelConnectionFactoryTests {
 		assertThat(chann1).isSameAs(nonTx.get());
 		Channel chann2 = conn.createChannel(true);
 		assertThat(chann2).isSameAs(tx.get());
+		assertThat(TestUtils.getPropertyValue(tccf, "switchesInProgress", Map.class)).isEmpty();
+		tccf.switchContext(null); // test no-op
+		tccf.destroy();
+	}
+
+	@SuppressWarnings("unchecked")
+	@Test
+	void contextSwitchMulti() throws Exception {
+		ConnectionFactory rabbitConnectionFactory = new ConnectionFactory();
+		rabbitConnectionFactory.setHost("localhost");
+		rabbitConnectionFactory.setAutomaticRecoveryEnabled(false);
+		ThreadChannelConnectionFactory tccf = new ThreadChannelConnectionFactory(rabbitConnectionFactory);
+		TaskExecutor exec = new SimpleAsyncTaskExecutor();
+		AtomicReference<Channel> nonTx = new AtomicReference<>();
+		AtomicReference<Channel> tx = new AtomicReference<>();
+		BlockingQueue<Object> context = new LinkedBlockingQueue<>();
+		CountDownLatch latch = new CountDownLatch(1);
+		exec.execute(() -> {
+			Connection conn = tccf.createConnection();
+			nonTx.set(conn.createChannel(false));
+			tx.set(conn.createChannel(true));
+			Object ctx = tccf.prepareSwitchContext();
+			assertThat(tccf.prepareSwitchContext()).isNull();
+			assertThat(TestUtils.getPropertyValue(conn, "channels", ThreadLocal.class).get()).isNull();
+			assertThat(TestUtils.getPropertyValue(conn, "txChannels", ThreadLocal.class).get()).isNull();
+			conn.createChannel(false);
+			context.add(ctx);
+			context.add(tccf.prepareSwitchContext());
+			latch.countDown();
+		});
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		Object ctx = context.poll(10, TimeUnit.SECONDS);
+		assertThat(ctx).isNotNull();
+		tccf.switchContext(ctx);
+		Connection conn = tccf.createConnection();
+		Channel chann1 = conn.createChannel(false);
+		assertThat(chann1).isSameAs(nonTx.get());
+		Channel chann2 = conn.createChannel(true);
+		assertThat(chann2).isSameAs(tx.get());
+		assertThat(TestUtils.getPropertyValue(tccf, "switchesInProgress", Map.class)).hasSize(1);
+		ctx = context.poll(10, TimeUnit.SECONDS);
+		tccf.switchContext(ctx);
+		assertThat(TestUtils.getPropertyValue(tccf, "switchesInProgress", Map.class)).isEmpty();
+		tccf.destroy();
+	}
+
+	@SuppressWarnings("unchecked")
+	@Test
+	void contextSwitchBothFactories() throws Exception {
+		ConnectionFactory rabbitConnectionFactory = new ConnectionFactory();
+		rabbitConnectionFactory.setHost("localhost");
+		rabbitConnectionFactory.setAutomaticRecoveryEnabled(false);
+		ThreadChannelConnectionFactory tccf = new ThreadChannelConnectionFactory(rabbitConnectionFactory);
+		TaskExecutor exec = new SimpleAsyncTaskExecutor();
+		AtomicReference<Channel> nonTx1 = new AtomicReference<>();
+		AtomicReference<Channel> tx1 = new AtomicReference<>();
+		BlockingQueue<Object> context = new LinkedBlockingQueue<>();
+		AtomicReference<Channel> nonTx2 = new AtomicReference<>();
+		AtomicReference<Channel> tx2 = new AtomicReference<>();
+		exec.execute(() -> {
+			Connection conn1 = tccf.createConnection();
+			nonTx1.set(conn1.createChannel(false));
+			tx1.set(conn1.createChannel(true));
+			org.springframework.amqp.rabbit.connection.ConnectionFactory pcf = tccf.getPublisherConnectionFactory();
+			Connection conn2 = pcf.createConnection();
+			nonTx2.set(conn2.createChannel(false));
+			tx2.set(conn2.createChannel(true));
+			Object ctx = tccf.prepareSwitchContext();
+			assertThat(tccf.prepareSwitchContext()).isNull();
+			assertThat(TestUtils.getPropertyValue(conn1, "channels", ThreadLocal.class).get()).isNull();
+			assertThat(TestUtils.getPropertyValue(conn1, "txChannels", ThreadLocal.class).get()).isNull();
+			assertThat(TestUtils.getPropertyValue(conn2, "channels", ThreadLocal.class).get()).isNull();
+			assertThat(TestUtils.getPropertyValue(conn2, "txChannels", ThreadLocal.class).get()).isNull();
+			context.add(ctx);
+		});
+		Object ctx = context.poll(10, TimeUnit.SECONDS);
+		assertThat(ctx).isNotNull();
+		tccf.switchContext(ctx);
+		assertThatIllegalStateException().isThrownBy(() -> tccf.switchContext(ctx));
+		Connection conn1 = tccf.createConnection();
+		Channel chann1 = conn1.createChannel(false);
+		assertThat(chann1).isSameAs(nonTx1.get());
+		Channel chann2 = conn1.createChannel(true);
+		assertThat(chann2).isSameAs(tx1.get());
+		org.springframework.amqp.rabbit.connection.ConnectionFactory pcf = tccf.getPublisherConnectionFactory();
+		Connection conn2 = pcf.createConnection();
+		Channel chann3 = conn2.createChannel(false);
+		assertThat(chann3).isSameAs(nonTx2.get());
+		Channel chann4 = conn2.createChannel(true);
+		assertThat(chann4).isSameAs(tx2.get());
+		assertThat(TestUtils.getPropertyValue(tccf, "switchesInProgress", Map.class)).isEmpty();
+		assertThat(TestUtils.getPropertyValue(tccf, "publisherConnectionFactory.switchesInProgress", Map.class))
+				.isEmpty();
 		tccf.destroy();
 	}
 
@@ -192,13 +294,47 @@ public class ThreadChannelConnectionFactoryTests {
 		Object ctx = context.poll(10, TimeUnit.SECONDS);
 		assertThat(ctx).isNotNull();
 		tccf.switchContext(ctx);
-		Channel toBeOrphaned = template.execute(channel -> null);
+		Channel toBeOrphaned = template.execute(channel -> channel);
 		exec.execute(task);
 		ctx = context.poll(10, TimeUnit.SECONDS);
 		assertThat(ctx).isNotNull();
 		tccf.switchContext(ctx);
 		template.execute(channel -> null);
 		assertThat(toBeOrphaned.isOpen()).isFalse();
+		tccf.destroy();
+	}
+
+	@Test
+	void unclaimed() throws Exception {
+		ConnectionFactory rabbitConnectionFactory = new ConnectionFactory();
+		rabbitConnectionFactory.setHost("localhost");
+		rabbitConnectionFactory.setAutomaticRecoveryEnabled(false);
+		ThreadChannelConnectionFactory tccf = new ThreadChannelConnectionFactory(rabbitConnectionFactory);
+		Log log = spy(TestUtils.getPropertyValue(tccf, "logger", Log.class));
+		new DirectFieldAccessor(tccf).setPropertyValue("logger", log);
+		given(log.isWarnEnabled()).willReturn(true);
+		Connection conn = tccf.createConnection();
+		conn.createChannel(false);
+		tccf.prepareSwitchContext();
+		tccf.destroy();
+		verify(log).warn("Unclaimed context switches from threads:[main]");
+	}
+
+	@Test
+	void neitherBound() throws Exception {
+		ConnectionFactory rabbitConnectionFactory = new ConnectionFactory();
+		rabbitConnectionFactory.setHost("localhost");
+		rabbitConnectionFactory.setAutomaticRecoveryEnabled(false);
+		ThreadChannelConnectionFactory tccf = new ThreadChannelConnectionFactory(rabbitConnectionFactory);
+		Log log1 = spy(TestUtils.getPropertyValue(tccf, "logger", Log.class));
+		new DirectFieldAccessor(tccf).setPropertyValue("logger", log1);
+		Log log2 = spy(TestUtils.getPropertyValue(tccf, "publisherConnectionFactory.logger", Log.class));
+		new DirectFieldAccessor(tccf).setPropertyValue("publisherConnectionFactory.logger", log2);
+		given(log1.isDebugEnabled()).willReturn(true);
+		given(log2.isDebugEnabled()).willReturn(true);
+		assertThat(tccf.prepareSwitchContext()).isNull();
+		verify(log1).debug("No channels are bound to this thread");
+		verify(log2).debug("No channels are bound to this thread");
 		tccf.destroy();
 	}
 

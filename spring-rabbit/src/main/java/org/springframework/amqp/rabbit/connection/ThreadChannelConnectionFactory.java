@@ -22,6 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInterceptor;
@@ -49,6 +50,8 @@ import com.rabbitmq.client.ShutdownListener;
 public class ThreadChannelConnectionFactory extends AbstractConnectionFactory implements ShutdownListener {
 
 	private final Map<UUID, Context> contextSwitches = new ConcurrentHashMap<>();
+
+	private final Map<UUID, Thread> switchesInProgress = new ConcurrentHashMap<>();
 
 	private volatile ConnectionWrapper connection;
 
@@ -148,23 +151,48 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 			this.connection.forceClose();
 			this.connection = null;
 		}
+		if (this.switchesInProgress.size() > 0) {
+			if (this.logger.isWarnEnabled()) {
+				this.logger.warn("Unclaimed context switches from threads:" +
+						this.switchesInProgress.values()
+								.stream()
+								.map(t -> t.getName())
+								.collect(Collectors.toList()));
+			}
+		}
+		this.contextSwitches.clear();
+		this.switchesInProgress.clear();
 	}
 
 	/**
 	 * Call to prepare to switch the channel(s) owned by this thread to another thread.
-	 * @return an opaque object representing the context to switch.
+	 * @return an opaque object representing the context to switch. If there are no channels
+	 * or no open channels assigned to this thread, null is returned.
 	 * @since 2.3.7
 	 * @see #switchContext(Object)
 	 */
+	@Nullable
 	public Object prepareSwitchContext() {
 		return prepareSwitchContext(UUID.randomUUID());
 	}
 
+	@Nullable
 	Object prepareSwitchContext(UUID uuid) {
+		Object pubContext = null;
 		if (getPublisherConnectionFactory() instanceof ThreadChannelConnectionFactory) {
-			((ThreadChannelConnectionFactory) getPublisherConnectionFactory()).prepareSwitchContext(uuid);
+			pubContext = ((ThreadChannelConnectionFactory) getPublisherConnectionFactory()).prepareSwitchContext(uuid);
 		}
-		this.contextSwitches.put(uuid, ((ConnectionWrapper) createConnection()).prepareSwitchContext());
+		Context context = ((ConnectionWrapper) createConnection()).prepareSwitchContext();
+		if (context.getNonTx() == null && context.getTx() == null) {
+			this.logger.debug("No channels are bound to this thread");
+			return pubContext;
+		}
+		if (this.switchesInProgress.values().contains(Thread.currentThread())) {
+			this.logger
+					.warn("A previous context switch from this thread has not been claimed yet; possible memory leak?");
+		}
+		this.contextSwitches.put(uuid, context);
+		this.switchesInProgress.put(uuid, Thread.currentThread());
 		return uuid;
 	}
 
@@ -175,13 +203,27 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 	 * @since 2.3.7
 	 * @see #prepareSwitchContext()
 	 */
-	public void switchContext(Object toSwitch) {
+	public void switchContext(@Nullable Object toSwitch) {
+		if (toSwitch != null) {
+			Assert.state(doSwitch(toSwitch), () -> "No context to switch for " + toSwitch.toString());
+		}
+		else {
+			this.logger.debug("Attempted to switch a null context - no channels to acquire");
+		}
+	}
+
+	boolean doSwitch(@Nullable Object toSwitch) {
+		boolean switched = false;
 		if (getPublisherConnectionFactory() instanceof ThreadChannelConnectionFactory) {
-			((ThreadChannelConnectionFactory) getPublisherConnectionFactory()).switchContext(toSwitch);
+			switched = ((ThreadChannelConnectionFactory) getPublisherConnectionFactory()).doSwitch(toSwitch);
 		}
 		Context context = this.contextSwitches.remove(toSwitch);
-		Assert.state(context != null, () -> "No context to switch for " + toSwitch.toString());
-		((ConnectionWrapper) createConnection()).switchContext(context);
+		this.switchesInProgress.remove(toSwitch);
+		if (context != null) {
+			((ConnectionWrapper) createConnection()).switchContext(context);
+			switched = true;
+		}
+		return switched;
 	}
 
 	private final class ConnectionWrapper extends SimpleConnection {
@@ -354,10 +396,12 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 			this.tx = tx;
 		}
 
+		@Nullable
 		Channel getNonTx() {
 			return this.nonTx;
 		}
 
+		@Nullable
 		Channel getTx() {
 			return this.tx;
 		}
