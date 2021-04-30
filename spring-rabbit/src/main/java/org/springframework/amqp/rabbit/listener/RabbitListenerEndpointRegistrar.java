@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.amqp.rabbit.listener;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.beans.factory.BeanFactory;
@@ -24,6 +26,7 @@ import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.lang.Nullable;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
+import org.springframework.messaging.handler.invocation.HandlerMethodArgumentResolver;
 import org.springframework.util.Assert;
 
 /**
@@ -40,6 +43,8 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 
 	private final List<AmqpListenerEndpointDescriptor> endpointDescriptors =
 			new ArrayList<AmqpListenerEndpointDescriptor>();
+
+	private List<HandlerMethodArgumentResolver> customMethodArgumentResolvers = new ArrayList<>();
 
 	@Nullable
 	private RabbitListenerEndpointRegistry endpointRegistry;
@@ -69,6 +74,27 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	@Nullable
 	public RabbitListenerEndpointRegistry getEndpointRegistry() {
 		return this.endpointRegistry;
+	}
+
+	/**
+	 * Return the list of {@link HandlerMethodArgumentResolver}.
+	 * @return the list of {@link HandlerMethodArgumentResolver}.
+	 * @since 2.3.7
+	 */
+	public List<HandlerMethodArgumentResolver> getCustomMethodArgumentResolvers() {
+		return Collections.unmodifiableList(this.customMethodArgumentResolvers);
+	}
+
+
+	/**
+	 * Add custom methods arguments resolvers to
+	 * {@link org.springframework.amqp.rabbit.annotation.RabbitListenerAnnotationBeanPostProcessor}
+	 * Default empty list.
+	 * @param methodArgumentResolvers the methodArgumentResolvers to assign.
+	 * @since 2.3.7
+	 */
+	public void setCustomMethodArgumentResolvers(HandlerMethodArgumentResolver... methodArgumentResolvers) {
+		this.customMethodArgumentResolvers = Arrays.asList(methodArgumentResolvers);
 	}
 
 	/**
