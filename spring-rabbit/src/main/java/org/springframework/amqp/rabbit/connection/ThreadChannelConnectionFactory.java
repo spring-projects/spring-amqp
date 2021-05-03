@@ -151,14 +151,12 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 			this.connection.forceClose();
 			this.connection = null;
 		}
-		if (this.switchesInProgress.size() > 0) {
-			if (this.logger.isWarnEnabled()) {
-				this.logger.warn("Unclaimed context switches from threads:" +
-						this.switchesInProgress.values()
-								.stream()
-								.map(t -> t.getName())
-								.collect(Collectors.toList()));
-			}
+		if (this.switchesInProgress.size() > 0 && this.logger.isWarnEnabled()) {
+			this.logger.warn("Unclaimed context switches from threads:" +
+					this.switchesInProgress.values()
+							.stream()
+							.map(t -> t.getName())
+							.collect(Collectors.toList()));
 		}
 		this.contextSwitches.clear();
 		this.switchesInProgress.clear();
@@ -180,7 +178,7 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 	Object prepareSwitchContext(UUID uuid) {
 		Object pubContext = null;
 		if (getPublisherConnectionFactory() instanceof ThreadChannelConnectionFactory) {
-			pubContext = ((ThreadChannelConnectionFactory) getPublisherConnectionFactory()).prepareSwitchContext(uuid);
+			pubContext = ((ThreadChannelConnectionFactory) getPublisherConnectionFactory()).prepareSwitchContext(uuid); // NOSONAR
 		}
 		Context context = ((ConnectionWrapper) createConnection()).prepareSwitchContext();
 		if (context.getNonTx() == null && context.getTx() == null) {
@@ -212,10 +210,10 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 		}
 	}
 
-	boolean doSwitch(@Nullable Object toSwitch) {
+	boolean doSwitch(Object toSwitch) {
 		boolean switched = false;
 		if (getPublisherConnectionFactory() instanceof ThreadChannelConnectionFactory) {
-			switched = ((ThreadChannelConnectionFactory) getPublisherConnectionFactory()).doSwitch(toSwitch);
+			switched = ((ThreadChannelConnectionFactory) getPublisherConnectionFactory()).doSwitch(toSwitch); // NOSONAR
 		}
 		Context context = this.contextSwitches.remove(toSwitch);
 		this.switchesInProgress.remove(toSwitch);
@@ -366,11 +364,13 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 		}
 
 		void switchContext(Context context) {
-			if (context.getNonTx() != null) {
-				doSwitch(context.getNonTx(), this.channels);
+			Channel nonTx = context.getNonTx();
+			if (nonTx != null) {
+				doSwitch(nonTx, this.channels);
 			}
-			if (context.getTx() != null) {
-				doSwitch(context.getTx(), this.txChannels);
+			Channel tx = context.getTx();
+			if (tx != null) {
+				doSwitch(tx, this.txChannels);
 			}
 		}
 
