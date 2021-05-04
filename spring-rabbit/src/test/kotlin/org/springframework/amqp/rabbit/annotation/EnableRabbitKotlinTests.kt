@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 the original author or authors.
+ * Copyright 2018-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ class EnableRabbitKotlinTests {
 		val template = RabbitTemplate(this.config.cf())
 		template.convertAndSend("kotlinQueue1", "test")
 		assertThat(this.config.ehLatch.await(10, TimeUnit.SECONDS)).isTrue();
-		val reply = template.receiveAndConvert("kotlinReplyQueue")
+		val reply = template.receiveAndConvert("kotlinReplyQueue", 10_000)
 		assertThat(reply).isEqualTo("error processed");
 	}
 
