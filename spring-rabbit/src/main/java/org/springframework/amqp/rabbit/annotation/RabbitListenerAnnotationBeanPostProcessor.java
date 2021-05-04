@@ -92,6 +92,7 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.validation.Validator;
 
 /**
  * Bean post-processor that registers methods annotated with {@link RabbitListener}
@@ -960,6 +961,10 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 		private MessageHandlerMethodFactory createDefaultMessageHandlerMethodFactory() {
 			DefaultMessageHandlerMethodFactory defaultFactory = new DefaultMessageHandlerMethodFactory();
+			Validator validator = RabbitListenerAnnotationBeanPostProcessor.this.registrar.getValidator();
+			if (validator != null) {
+				defaultFactory.setValidator(validator);
+			}
 			defaultFactory.setBeanFactory(RabbitListenerAnnotationBeanPostProcessor.this.beanFactory);
 			DefaultConversionService conversionService = new DefaultConversionService();
 			conversionService.addConverter(

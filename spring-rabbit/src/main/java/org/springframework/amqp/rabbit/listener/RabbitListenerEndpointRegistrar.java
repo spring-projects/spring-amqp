@@ -28,6 +28,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
 import org.springframework.messaging.handler.invocation.HandlerMethodArgumentResolver;
 import org.springframework.util.Assert;
+import org.springframework.validation.Validator;
 
 /**
  * Helper bean for registering {@link RabbitListenerEndpoint} with
@@ -58,6 +59,8 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	private BeanFactory beanFactory;
 
 	private boolean startImmediately;
+
+	private Validator validator;
 
 	/**
 	 * Set the {@link RabbitListenerEndpointRegistry} instance to use.
@@ -110,6 +113,8 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	 * @param rabbitHandlerMethodFactory the {@link MessageHandlerMethodFactory} instance.
 	 */
 	public void setMessageHandlerMethodFactory(MessageHandlerMethodFactory rabbitHandlerMethodFactory) {
+		Assert.isNull(this.validator,
+				"A validator cannot be provided with a custom message handler factory");
 		this.messageHandlerMethodFactory = rabbitHandlerMethodFactory;
 	}
 
@@ -153,6 +158,26 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 		this.beanFactory = beanFactory;
 	}
 
+	/**
+	 * Get the validator, if supplied.
+	 * @return the validator.
+	 * @since 2.3.7
+	 */
+	@Nullable
+	public Validator getValidator() {
+		return this.validator;
+	}
+
+	/**
+	 * Set the validator to use if the default message handler factory is used.
+	 * @param validator the validator.
+	 * @since 2.3.7
+	 */
+	public void setValidator(Validator validator) {
+		Assert.isNull(this.messageHandlerMethodFactory,
+				"A validator cannot be provided with a custom message handler factory");
+		this.validator = validator;
+	}
 
 	@Override
 	public void afterPropertiesSet() {
@@ -163,6 +188,9 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 		Assert.state(this.endpointRegistry != null, "No registry available");
 		synchronized (this.endpointDescriptors) {
 			for (AmqpListenerEndpointDescriptor descriptor : this.endpointDescriptors) {
+				if (descriptor.endpoint instanceof MultiMethodRabbitListenerEndpoint && this.validator != null) {
+					((MultiMethodRabbitListenerEndpoint) descriptor.endpoint).setValidator(this.validator);
+				}
 				this.endpointRegistry.registerListenerContainer(// NOSONAR never null
 						descriptor.endpoint, resolveContainerFactory(descriptor));
 			}

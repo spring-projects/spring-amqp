@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2020 the original author or authors.
+ * Copyright 2015-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,10 +38,14 @@ import org.springframework.expression.common.TemplateParserContext;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.converter.MessageConverter;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.handler.annotation.support.PayloadMethodArgumentResolver;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 import org.springframework.util.Assert;
+import org.springframework.validation.Validator;
 
 
 /**
@@ -66,6 +70,9 @@ public class DelegatingInvocableHandler {
 
 	private final ConcurrentMap<Class<?>, InvocableHandlerMethod> cachedHandlers = new ConcurrentHashMap<>();
 
+	private final ConcurrentMap<InvocableHandlerMethod, MethodParameter> payloadMethodParameters =
+			new ConcurrentHashMap<>();
+
 	private final InvocableHandlerMethod defaultHandler;
 
 	private final Map<InvocableHandlerMethod, Expression> handlerSendTo = new HashMap<>();
@@ -75,6 +82,8 @@ public class DelegatingInvocableHandler {
 	private final BeanExpressionResolver resolver;
 
 	private final BeanExpressionContext beanExpressionContext;
+
+	private final PayloadValidator validator;
 
 	/**
 	 * Construct an instance with the supplied handlers for the bean.
@@ -86,7 +95,7 @@ public class DelegatingInvocableHandler {
 	public DelegatingInvocableHandler(List<InvocableHandlerMethod> handlers, Object bean,
 			BeanExpressionResolver beanExpressionResolver, BeanExpressionContext beanExpressionContext) {
 
-		this(handlers, null, bean, beanExpressionResolver, beanExpressionContext);
+		this(handlers, null, bean, beanExpressionResolver, beanExpressionContext, null);
 	}
 
 	/**
@@ -101,13 +110,32 @@ public class DelegatingInvocableHandler {
 	public DelegatingInvocableHandler(List<InvocableHandlerMethod> handlers,
 			@Nullable InvocableHandlerMethod defaultHandler, Object bean, BeanExpressionResolver beanExpressionResolver,
 			BeanExpressionContext beanExpressionContext) {
+		this(handlers, defaultHandler, bean, beanExpressionResolver, beanExpressionContext, null);
+	}
+
+	/**
+	 * Construct an instance with the supplied handlers for the bean.
+	 * @param handlers the handlers.
+	 * @param defaultHandler the default handler.
+	 * @param bean the bean.
+	 * @param beanExpressionResolver the resolver.
+	 * @param beanExpressionContext the context.
+	 * @param validator the validator.
+	 * @since 2.0.3
+	 */
+	public DelegatingInvocableHandler(List<InvocableHandlerMethod> handlers,
+			@Nullable InvocableHandlerMethod defaultHandler, Object bean, BeanExpressionResolver beanExpressionResolver,
+			BeanExpressionContext beanExpressionContext, @Nullable Validator validator) {
 
 		this.handlers = new ArrayList<>(handlers);
 		this.defaultHandler = defaultHandler;
 		this.bean = bean;
 		this.resolver = beanExpressionResolver;
 		this.beanExpressionContext = beanExpressionContext;
+		this.validator = validator == null ? null : new PayloadValidator(validator);
 	}
+
+
 
 	/**
 	 * @return the bean
@@ -127,6 +155,12 @@ public class DelegatingInvocableHandler {
 	public InvocationResult invoke(Message<?> message, Object... providedArgs) throws Exception { // NOSONAR
 		Class<? extends Object> payloadClass = message.getPayload().getClass();
 		InvocableHandlerMethod handler = getHandlerForPayload(payloadClass);
+		if (this.validator != null) {
+			MethodParameter parameter = this.payloadMethodParameters.get(handler);
+			if (parameter != null && this.validator.supportsParameter(parameter)) {
+				this.validator.validate(message, parameter, message.getPayload());
+			}
+		}
 		Object result = handler.invoke(message, providedArgs);
 		if (message.getHeaders().get(AmqpHeaders.REPLY_TO) == null) {
 			Expression replyTo = this.handlerSendTo.get(handler);
@@ -227,6 +261,9 @@ public class DelegatingInvocableHandler {
 			if ((methodParameter.getParameterAnnotations().length == 0
 					|| !methodParameter.hasParameterAnnotation(Header.class))
 						&& methodParameter.getParameterType().isAssignableFrom(payloadClass)) {
+				if (this.validator != null) {
+					this.payloadMethodParameters.put(handler, methodParameter);
+				}
 				return true;
 			}
 		}
@@ -238,6 +275,9 @@ public class DelegatingInvocableHandler {
 						&& methodParameter.getParameterType().isAssignableFrom(payloadClass)) {
 				if (foundCandidate) {
 					throw new AmqpException("Ambiguous payload parameter for " + method.toGenericString());
+				}
+				if (this.validator != null) {
+					this.payloadMethodParameters.put(handler, methodParameter);
 				}
 				foundCandidate = true;
 			}
@@ -285,4 +325,31 @@ public class DelegatingInvocableHandler {
 		return null;
 	}
 
+	private static final class PayloadValidator extends PayloadMethodArgumentResolver {
+
+		PayloadValidator(Validator validator) {
+			super(new MessageConverter() { // Required but never used
+
+				@Override
+				@Nullable
+				public Message<?> toMessage(Object payload, @Nullable
+						MessageHeaders headers) {
+					return null;
+				}
+
+				@Override
+				@Nullable
+				public Object fromMessage(Message<?> message, Class<?> targetClass) {
+					return null;
+				}
+
+			}, validator);
+		}
+
+		@Override
+		public void validate(Message<?> message, MethodParameter parameter, Object target) { // NOSONAR - public
+			super.validate(message, parameter, target);
+		}
+
+	}
 }

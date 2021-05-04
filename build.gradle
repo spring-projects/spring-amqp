@@ -46,6 +46,7 @@ ext {
 	commonsPoolVersion = '2.9.0'
 	googleJsr305Version = '3.0.2'
 	hamcrestVersion = '2.2'
+	hibernateValidationVersion = '6.2.0.Final'
 	jacksonBomVersion = '2.11.3'
 	jaywayJsonPathVersion = '2.4.0'
 	junit4Version = '4.13.1'
@@ -362,6 +363,7 @@ project('spring-rabbit') {
 
 		testApi project(':spring-rabbit-junit')
 		testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
+		testImplementation "org.hibernate.validator:hibernate-validator:$hibernateValidationVersion"
 		testRuntimeOnly 'org.springframework:spring-web'
 		testRuntimeOnly "org.apache.httpcomponents:httpclient:$commonsHttpClientVersion"
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core'
