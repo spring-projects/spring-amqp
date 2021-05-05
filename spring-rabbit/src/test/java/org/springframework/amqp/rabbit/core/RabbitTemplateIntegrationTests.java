@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,11 +40,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -88,6 +90,8 @@ import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.rabbit.junit.LogLevels;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
+import org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
@@ -102,6 +106,7 @@ import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.expression.common.LiteralExpression;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.annotation.DirtiesContext;
@@ -138,8 +143,10 @@ import com.rabbitmq.client.impl.AMQImpl;
  * @author Artem Bilan
  */
 @SpringJUnitConfig
-@RabbitAvailable({ RabbitTemplateIntegrationTests.ROUTE, RabbitTemplateIntegrationTests.REPLY_QUEUE_NAME })
-@LogLevels(classes = { RabbitTemplate.class,
+@RabbitAvailable({ RabbitTemplateIntegrationTests.ROUTE, RabbitTemplateIntegrationTests.REPLY_QUEUE_NAME,
+	RabbitTemplateIntegrationTests.NO_CORRELATION })
+@LogLevels(classes = { RabbitTemplate.class, DirectMessageListenerContainer.class,
+			DirectReplyToMessageListenerContainer.class,
 			RabbitAdmin.class, RabbitTemplateIntegrationTests.class, BrokerRunning.class,
 			ClosingRecoveryListener.class },
 		level = "DEBUG")
@@ -153,6 +160,8 @@ public class RabbitTemplateIntegrationTests {
 	public static final String REPLY_QUEUE_NAME = "test.reply.queue.RabbitTemplateIntegrationTests";
 
 	public static final Queue REPLY_QUEUE = new Queue(REPLY_QUEUE_NAME);
+
+	public static final String NO_CORRELATION = "no.corr.request";
 
 	private CachingConnectionFactory connectionFactory;
 
@@ -1642,6 +1651,68 @@ public class RabbitTemplateIntegrationTests {
 		}
 		exec.shutdownNow();
 		ccf.destroy();
+	}
+
+	@Test
+	void directReplyToNoCorrelation() throws InterruptedException {
+		ConnectionFactory cf = new CachingConnectionFactory("localhost");
+		SimpleAsyncTaskExecutor exec = new SimpleAsyncTaskExecutor();
+		RabbitTemplate template = new RabbitTemplate(cf);
+		template.setUseChannelForCorrelation(true);
+		BlockingQueue<Object> q = new LinkedBlockingQueue<>();
+		exec.execute(() -> {
+			Object reply = template.convertSendAndReceive(NO_CORRELATION, "test");
+			if (reply != null) {
+				q.add(reply);
+			}
+		});
+		Message received = template.receive(NO_CORRELATION, 10_000);
+		assertThat(received).isNotNull();
+		String replyTo = received.getMessageProperties().getReplyTo();
+		template.convertAndSend(received.getMessageProperties().getReplyTo(), "TEST");
+		assertThat(q.poll(10, TimeUnit.SECONDS)).isEqualTo("TEST");
+		exec.execute(() -> {
+			Object reply = template.convertSendAndReceive(NO_CORRELATION, "test");
+			if (reply != null) {
+				q.add(reply);
+			}
+		});
+		received = template.receive(NO_CORRELATION, 10_000);
+		assertThat(received).isNotNull();
+		template.convertAndSend(received.getMessageProperties().getReplyTo(), "TEST");
+		assertThat(q.poll(10, TimeUnit.SECONDS)).isEqualTo("TEST");
+		assertThat(received.getMessageProperties().getReplyTo()).isEqualTo(replyTo);
+	}
+
+	@Test
+	void directReplyToNoCorrelationNoReply() throws InterruptedException {
+		ConnectionFactory cf = new CachingConnectionFactory("localhost");
+		SimpleAsyncTaskExecutor exec = new SimpleAsyncTaskExecutor();
+		RabbitTemplate template = new RabbitTemplate(cf);
+		template.setReplyTimeout(100);
+		template.setUseChannelForCorrelation(true);
+		CountDownLatch latch = new CountDownLatch(1);
+		exec.execute(() -> {
+			Object reply = template.convertSendAndReceive(NO_CORRELATION, "test");
+			latch.countDown();
+		});
+		Message received = template.receive(NO_CORRELATION, 10_000);
+		assertThat(received).isNotNull();
+		String replyTo = received.getMessageProperties().getReplyTo();
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		BlockingQueue<Object> q = new LinkedBlockingQueue<>();
+		template.setReplyTimeout(10000);
+		exec.execute(() -> {
+			Object reply = template.convertSendAndReceive(NO_CORRELATION, "test");
+			if (reply != null) {
+				q.add(reply);
+			}
+		});
+		received = template.receive(NO_CORRELATION, 10_000);
+		assertThat(received).isNotNull();
+		template.convertAndSend(received.getMessageProperties().getReplyTo(), "TEST");
+		assertThat(q.poll(10, TimeUnit.SECONDS)).isEqualTo("TEST");
+		assertThat(received.getMessageProperties().getReplyTo()).isNotEqualTo(replyTo);
 	}
 
 	private Collection<String> getMessagesToSend() {

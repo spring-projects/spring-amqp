@@ -34,6 +34,9 @@ See <<template-confirms>> for more information.
 When using returns and correlated confirms, the `CorrelationData` now requires a unique `id` property.
 See <<template-confirms>> for more information.
 
+When using direct reply-to, you can now configure the template such that the server does not need to return correlation data with the reply.
+See <<direct-reply-to>> for more information.
+
 ==== Listener Container Changes
 
 A new listener container property `consumeDelay` is now available; it is helpful when using the https://github.com/rabbitmq/rabbitmq-sharding[RabbitMQ Sharding Plugin].
