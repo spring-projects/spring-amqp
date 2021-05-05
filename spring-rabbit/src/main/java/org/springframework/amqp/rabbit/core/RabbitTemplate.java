@@ -44,7 +44,6 @@ import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.AmqpMessageReturnedException;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
@@ -67,6 +66,7 @@ import org.springframework.amqp.rabbit.connection.ThreadChannelConnectionFactory
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
+import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.Delivery;
@@ -151,7 +151,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @since 1.0
  */
 public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
-		implements BeanFactoryAware, RabbitOperations, MessageListener,
+		implements BeanFactoryAware, RabbitOperations, ChannelAwareMessageListener,
 		ListenerContainerAware, PublisherCallbackChannel.Listener, BeanNameAware, DisposableBean {
 
 	private static final String UNCHECKED = "unchecked";
@@ -181,7 +181,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	private final ConcurrentMap<Channel, RabbitTemplate> publisherConfirmChannels =
 			new ConcurrentHashMap<Channel, RabbitTemplate>();
 
-	private final Map<String, PendingReply> replyHolder = new ConcurrentHashMap<String, PendingReply>();
+	private final Map<Object, PendingReply> replyHolder = new ConcurrentHashMap<Object, PendingReply>();
 
 	private final String uuid = UUID.randomUUID().toString();
 
@@ -266,6 +266,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	private volatile boolean evaluatedFastReplyTo;
 
 	private volatile boolean isListener;
+
+	private boolean useChannelForCorrelation;
 
 	/**
 	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
@@ -852,6 +854,17 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 */
 	public void setReplyErrorHandler(ErrorHandler replyErrorHandler) {
 		this.replyErrorHandler = replyErrorHandler;
+	}
+
+	/**
+	 * When using direct reply-to, set this to true to avoid the server needing to
+	 * send the correlation id in a reply header. Use the channel to correlate the reply
+	 * to a request instead.
+	 * @param useChannelForCorrelation true to use the channel.
+	 * @since 2.3.7
+	 */
+	public void setUseChannelForCorrelation(boolean useChannelForCorrelation) {
+		this.useChannelForCorrelation = useChannelForCorrelation;
 	}
 
 	/**
@@ -1915,7 +1928,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		Assert.state(this.isListener, () -> "RabbitTemplate is not configured as MessageListener - "
 				+ "cannot use a 'replyAddress': " + this.replyAddress);
 		return execute(channel -> {
-			return doSendAndReceiveAsListener(exchange, routingKey, message, correlationData, channel);
+			return doSendAndReceiveAsListener(exchange, routingKey, message, correlationData, channel, false);
 		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));
 	}
 
@@ -1953,24 +1966,33 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			}
 		}
 		ChannelHolder channelHolder = container.getChannelHolder();
+		boolean cancelConsumer = false;
 		try {
 			Channel channel = channelHolder.getChannel();
 			if (this.confirmsOrReturnsCapable) {
 				addListener(channel);
 			}
-			return doSendAndReceiveAsListener(exchange, routingKey, message, correlationData, channel);
+			Message reply = doSendAndReceiveAsListener(exchange, routingKey, message, correlationData, channel,
+					this.useChannelForCorrelation);
+			if (reply == null && this.useChannelForCorrelation) {
+				cancelConsumer = true;
+			}
+			return reply;
 		}
 		catch (Exception e) {
+			if (this.useChannelForCorrelation) {
+				cancelConsumer = true;
+			}
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 		}
 		finally {
-			container.releaseConsumerFor(channelHolder, false, null);
+			container.releaseConsumerFor(channelHolder, cancelConsumer, "Reply failed; consumer cannot be reused");
 		}
 	}
 
 	@Nullable
 	private Message doSendAndReceiveAsListener(final String exchange, final String routingKey, final Message message,
-			@Nullable final CorrelationData correlationData, Channel channel) throws Exception { // NOSONAR
+			@Nullable final CorrelationData correlationData, Channel channel, boolean noCorrelation) throws Exception { // NOSONAR
 
 		final PendingReply pendingReply = new PendingReply();
 		String messageTag = null;
@@ -1985,8 +2007,11 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		if (messageTag == null) {
 			messageTag = String.valueOf(this.messageTagProvider.incrementAndGet());
 		}
-		this.replyHolder.put(messageTag, pendingReply);
 		saveAndSetProperties(message, pendingReply, messageTag);
+		this.replyHolder.put(messageTag, pendingReply);
+		if (noCorrelation) {
+			this.replyHolder.put(channel, pendingReply);
+		}
 
 		if (logger.isDebugEnabled()) {
 			logger.debug("Sending message with tag " + messageTag);
@@ -2003,6 +2028,9 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 		finally {
 			this.replyHolder.remove(messageTag);
+			if (noCorrelation) {
+				this.replyHolder.remove(channel);
+			}
 		}
 		return reply;
 	}
@@ -2600,17 +2628,20 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public void onMessage(Message message) {
+	public void onMessage(Message message, @Nullable Channel channel) {
 		if (logger.isTraceEnabled()) {
 			logger.trace("Message received " + message);
 		}
-		String messageTag;
+		Object messageTag;
 		if (this.correlationKey == null) { // using standard correlationId property
 			messageTag = message.getMessageProperties().getCorrelationId();
 		}
 		else {
-			messageTag = (String) message.getMessageProperties()
+			messageTag = message.getMessageProperties()
 					.getHeaders().get(this.correlationKey);
+		}
+		if (this.useChannelForCorrelation && channel != null && this.replyHolder.containsKey(channel)) {
+			messageTag = channel;
 		}
 		if (messageTag == null) {
 			throw new AmqpRejectAndDontRequeueException("No correlation header in reply");
@@ -2627,6 +2658,17 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			restoreProperties(message, pendingReply);
 			pendingReply.reply(message);
 		}
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @deprecated - use {@link #onMessage(Message, Channel)}.
+	 */
+	@Deprecated
+	@Override
+	public void onMessage(Message message) {
+		onMessage(message, null);
 	}
 
 	private void restoreProperties(Message message, PendingReply pendingReply) {
