@@ -51,6 +51,7 @@ public class RejectAndDontRequeueRecoverer implements MessageRecoverer {
 
 	/**
 	 * Construct an instance with the provided exception message.
+	 * @param message the message.
 	 * @since 2.3.7
 	 */
 	public RejectAndDontRequeueRecoverer(String message) {
