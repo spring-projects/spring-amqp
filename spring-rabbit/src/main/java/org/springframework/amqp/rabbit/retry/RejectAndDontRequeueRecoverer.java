@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,15 @@
 
 package org.springframework.amqp.rabbit.retry;
 
+import java.util.function.Supplier;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
+import org.springframework.util.Assert;
 
 /**
  * MessageRecover that causes the listener container to reject
@@ -35,14 +38,33 @@ import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
  */
 public class RejectAndDontRequeueRecoverer implements MessageRecoverer {
 
-	protected Log logger = LogFactory.getLog(RejectAndDontRequeueRecoverer.class); // NOSONAR protected
+	private final Supplier<String> messageSupplier;
+
+	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR protected
+
+	/**
+	 * Construct an instance with the default exception message supplier.
+	 */
+	public RejectAndDontRequeueRecoverer() {
+		this(() -> "Retry Policy Exhausted");
+	}
+
+	/**
+	 * Construct an instance with the provided exception message supplier.
+	 * @param messageSupplier the message supplier.
+	 * @since 2.3.7
+	 */
+	public RejectAndDontRequeueRecoverer(Supplier<String> messageSupplier) {
+		Assert.notNull(messageSupplier, "'messageSupplier' cannot be null");
+		this.messageSupplier = messageSupplier;
+	}
 
 	@Override
 	public void recover(Message message, Throwable cause) {
 		if (this.logger.isWarnEnabled()) {
 			this.logger.warn("Retries exhausted for message " + message, cause);
 		}
-		throw new ListenerExecutionFailedException("Retry Policy Exhausted",
+		throw new ListenerExecutionFailedException(this.messageSupplier.get(),
 					new AmqpRejectAndDontRequeueException(cause), message);
 	}
 
