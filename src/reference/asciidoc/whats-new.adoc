@@ -35,7 +35,7 @@ When using returns and correlated confirms, the `CorrelationData` now requires a
 See <<template-confirms>> for more information.
 
 When using direct reply-to, you can now configure the template such that the server does not need to return correlation data with the reply.
-See <<>> for more information.
+See <<direct-reply-to>> for more information.
 
 ==== Listener Container Changes
 
