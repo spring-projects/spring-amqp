@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ public class RabbitTemplateHeaderTests {
 			MessageProperties springProps = new DefaultMessagePropertiesConverter()
 					.toMessageProperties(basicProps, null, "UTF-8");
 			Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
-			template.onMessage(replyMessage);
+			template.onMessage(replyMessage, mock(Channel.class));
 			return null;
 		}).given(mockChannel).basicPublish(any(String.class), any(String.class), Mockito.anyBoolean(),
 				any(BasicProperties.class), any(byte[].class));
@@ -146,7 +146,7 @@ public class RabbitTemplateHeaderTests {
 			MessageProperties springProps = new DefaultMessagePropertiesConverter()
 					.toMessageProperties(basicProps, null, "UTF-8");
 			Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
-			template.onMessage(replyMessage);
+			template.onMessage(replyMessage, mock(Channel.class));
 			return null;
 		}).given(mockChannel).basicPublish(any(String.class), any(String.class), Mockito.anyBoolean(),
 				any(BasicProperties.class), any(byte[].class));
@@ -201,7 +201,7 @@ public class RabbitTemplateHeaderTests {
 				nestedReplyTo.add(replyMessage.getMessageProperties().getReplyTo());
 				nestedCorrelation.add(replyMessage.getMessageProperties().getCorrelationId());
 			}
-			template.onMessage(replyMessage);
+			template.onMessage(replyMessage, mock(Channel.class));
 			return null;
 		}).given(mockChannel).basicPublish(any(String.class), any(String.class), Mockito.anyBoolean(),
 				any(BasicProperties.class), any(byte[].class));
@@ -251,7 +251,7 @@ public class RabbitTemplateHeaderTests {
 			MessageProperties springProps = new DefaultMessagePropertiesConverter()
 					.toMessageProperties(basicProps, null, "UTF-8");
 			Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
-			template.onMessage(replyMessage);
+			template.onMessage(replyMessage, mock(Channel.class));
 			return null;
 		}).given(mockChannel).basicPublish(any(String.class), any(String.class), Mockito.anyBoolean(),
 				any(BasicProperties.class), any(byte[].class));
@@ -308,7 +308,7 @@ public class RabbitTemplateHeaderTests {
 				nestedReplyTo.add(replyMessage.getMessageProperties().getReplyTo());
 				nestedCorrelation.add((String) replyMessage.getMessageProperties().getHeaders().get(CORRELATION_HEADER));
 			}
-			template.onMessage(replyMessage);
+			template.onMessage(replyMessage, mock(Channel.class));
 			return null;
 		}).given(mockChannel).basicPublish(any(String.class), any(String.class), Mockito.anyBoolean(),
 				any(BasicProperties.class), any(byte[].class));

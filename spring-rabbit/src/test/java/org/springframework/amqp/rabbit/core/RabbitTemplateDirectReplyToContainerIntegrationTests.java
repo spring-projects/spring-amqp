@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -36,6 +37,8 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.util.ErrorHandler;
+
+import com.rabbitmq.client.Channel;
 
 /**
  * @author Gary Russell
@@ -74,11 +77,11 @@ public class RabbitTemplateDirectReplyToContainerIntegrationTests extends Rabbit
 		assertThat(TestUtils.getPropertyValue(container, "inUseConsumerChannels", Map.class)).hasSize(0);
 		assertThat(TestUtils.getPropertyValue(container, "errorHandler")).isSameAs(replyErrorHandler);
 		Message replyMessage = new Message("foo".getBytes(), new MessageProperties());
-		assertThatThrownBy(() -> rabbitTemplate.onMessage(replyMessage))
+		assertThatThrownBy(() -> rabbitTemplate.onMessage(replyMessage, mock(Channel.class)))
 			.isInstanceOf(AmqpRejectAndDontRequeueException.class)
 			.hasMessage("No correlation header in reply");
 		replyMessage.getMessageProperties().setCorrelationId("foo");
-		assertThatThrownBy(() -> rabbitTemplate.onMessage(replyMessage))
+		assertThatThrownBy(() -> rabbitTemplate.onMessage(replyMessage, mock(Channel.class)))
 			.isInstanceOf(AmqpRejectAndDontRequeueException.class)
 			.hasMessage("Reply received after timeout");
 
