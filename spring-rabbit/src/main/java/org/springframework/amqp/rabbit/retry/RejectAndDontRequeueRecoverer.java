@@ -43,10 +43,18 @@ public class RejectAndDontRequeueRecoverer implements MessageRecoverer {
 	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR protected
 
 	/**
-	 * Construct an instance with the default exception message supplier.
+	 * Construct an instance with the default exception message.
 	 */
 	public RejectAndDontRequeueRecoverer() {
 		this(() -> "Retry Policy Exhausted");
+	}
+
+	/**
+	 * Construct an instance with the provided exception message.
+	 * @since 2.3.7
+	 */
+	public RejectAndDontRequeueRecoverer(String message) {
+		this(() -> message);
 	}
 
 	/**
