@@ -233,6 +233,9 @@ public class EnableRabbitIntegrationTests {
 	@Autowired
 	private MultiListenerBean multi;
 
+	@Autowired
+	private MultiListenerValidatedJsonBean multiValidated;
+
 	@BeforeAll
 	public static void setUp() {
 		System.setProperty(RabbitListenerAnnotationBeanPostProcessor.RABBIT_EMPTY_STRING_ARGUMENTS_PROPERTY,
@@ -525,10 +528,12 @@ public class EnableRabbitIntegrationTests {
 		this.jsonRabbitTemplate.convertAndSend("test.arg.validation", validatedObject);
 		assertThat(this.service.validationLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.service.validatedObject.validated).isTrue();
+		assertThat(this.service.validatedObject.valCount).isEqualTo(1);
+
 	}
 
 	@Test
-	public void testRabbitHandlerValidation() throws InterruptedException {
+	public void testRabbitHandlerValidationFailed() throws InterruptedException {
 		ValidatedClass validatedObject = new ValidatedClass();
 		validatedObject.setBar(42);
 		this.jsonRabbitTemplate.convertAndSend("multi.json.exch", "multi.json.valid.rk", validatedObject);
@@ -538,6 +543,16 @@ public class EnableRabbitIntegrationTests {
 		assertThat(throwable).isInstanceOf(AmqpRejectAndDontRequeueException.class);
 		assertThat(throwable.getCause()).isInstanceOf(ListenerExecutionFailedException.class);
 		assertThat(throwable.getCause().getCause()).isInstanceOf(MethodArgumentNotValidException.class);
+	}
+
+	@Test
+	public void testRabbitHandlerNoDefaultValidationCount() throws InterruptedException {
+		ValidatedClass validatedObject = new ValidatedClass();
+		validatedObject.setBar(8);
+		this.jsonRabbitTemplate.convertAndSend("multi.json.exch", "multi.json.valid.rk", validatedObject);
+		assertThat(this.multiValidated.latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.multiValidated.validatedObject.validated).isTrue();
+		assertThat(this.multiValidated.validatedObject.valCount).isEqualTo(1);
 	}
 
 	@Test
@@ -2058,8 +2073,13 @@ public class EnableRabbitIntegrationTests {
 			 returnExceptions = "true")
 	static class MultiListenerValidatedJsonBean {
 
+		final CountDownLatch latch = new CountDownLatch(1);
+		volatile ValidatedClass validatedObject;
+
 		@RabbitHandler
 		public void validatedListener(@Valid @Payload ValidatedClass validatedObject) {
+			this.validatedObject = validatedObject;
+			latch.countDown();
 		}
 	}
 
@@ -2417,6 +2437,8 @@ public class EnableRabbitIntegrationTests {
 
 		private volatile boolean validated;
 
+		volatile int valCount;
+
 		public ValidatedClass() {
 		}
 
@@ -2438,6 +2460,9 @@ public class EnableRabbitIntegrationTests {
 
 		public void setValidated(boolean validated) {
 			this.validated = validated;
+			if (validated) { // don't count the json deserialization call
+				this.valCount++;
+			}
 		}
 
 	}
