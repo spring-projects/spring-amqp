@@ -267,6 +267,12 @@ public class DelegatingInvocableHandler {
 				return true;
 			}
 		}
+		return findACandidate(payloadClass, handler, method, parameterAnnotations);
+	}
+
+	private boolean findACandidate(Class<? extends Object> payloadClass, InvocableHandlerMethod handler, Method method,
+			Annotation[][] parameterAnnotations) {
+
 		boolean foundCandidate = false;
 		for (int i = 0; i < parameterAnnotations.length; i++) {
 			MethodParameter methodParameter = new MethodParameter(method, i);
