@@ -48,6 +48,7 @@ import com.rabbitmq.client.Channel;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 2.2.16
  *
  */
@@ -115,6 +116,8 @@ public class TransactionalEventListenerTests {
 		@Bean
 		PlatformTransactionManager transactionManager(AtomicBoolean committed) {
 			return new AbstractPlatformTransactionManager() {
+
+				private static final long serialVersionUID = 4268801052358035098L;
 
 				@Override
 				protected void doRollback(DefaultTransactionStatus status) throws TransactionException {
