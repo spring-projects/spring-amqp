@@ -3554,10 +3554,12 @@ When a `TaskExecutor` is specifically provided through the `taskExecutor` proper
 It is recommended that you use a similar technique to name the threads created by a custom `TaskExecutor` bean definition, to aid with thread identification in log messages.
 
 The `Executor` configured in the `CachingConnectionFactory` is passed into the `RabbitMQ Client` when creating the connection, and its threads are used to deliver new messages to the listener container.
-If this is not configured, the client uses an internal thread pool executor with a pool size of five.
+If this is not configured, the client uses an internal thread pool executor with (at the time of writing) a pool size of `Runtime.getRuntime().availableProcessors() * 2` for each connection.
 
-IMPORTANT: With the `DirectMessageListenerContainer`, you need to ensure that the connection factory is configured with a task executor that had sufficient threads to support your desired concurrency across all listener containers that use that factory.
-The default pool size is only five.
+If you have a large number of factories or are using `CacheMode.CONNECTION`, you may wish to consider using a shared `ThreadPoolTaskExecutor` with enough threads to satisfy your workload.
+
+IMPORTANT: With the `DirectMessageListenerContainer`, you need to ensure that the connection factory is configured with a task executor that has sufficient threads to support your desired concurrency across all listener containers that use that factory.
+The default pool size (at the time of writing) is `Runtime.getRuntime().availableProcessors() * 2`.
 
 The `RabbitMQ client` uses a `ThreadFactory` to create threads for low-level I/O (socket) operations.
 To modify this factory, you need to configure the underlying RabbitMQ `ConnectionFactory`, as discussed in <<connection-factory>>.
