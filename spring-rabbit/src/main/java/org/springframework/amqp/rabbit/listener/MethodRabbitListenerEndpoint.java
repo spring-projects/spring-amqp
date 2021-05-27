@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.listener;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
+import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.listener.adapter.BatchMessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.HandlerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
@@ -52,6 +53,8 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 	private boolean returnExceptions;
 
 	private RabbitListenerErrorHandler errorHandler;
+
+	private AdapterProvider adapterProvider = new DefaultAdapterProvider();
 
 	/**
 	 * Set the object instance that should manage this endpoint.
@@ -114,6 +117,15 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 		return this.messageHandlerMethodFactory;
 	}
 
+	/**
+	 * Set a provider to create adapter instances.
+	 * @param adapterProvider the provider.
+	 */
+	public void setAdapterProvider(AdapterProvider adapterProvider) {
+		Assert.notNull(adapterProvider, "'adapterProvider' cannot be null");
+		this.adapterProvider = adapterProvider;
+	}
+
 	@Override
 	protected MessagingMessageListenerAdapter createMessageListener(MessageListenerContainer container) {
 		Assert.state(this.messageHandlerMethodFactory != null,
@@ -150,14 +162,8 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 	 * @return the {@link MessagingMessageListenerAdapter} instance.
 	 */
 	protected MessagingMessageListenerAdapter createMessageListenerInstance() {
-		if (isBatchListener()) {
-			return new BatchMessagingMessageListenerAdapter(this.bean, this.method, this.returnExceptions,
+		return this.adapterProvider.getAdapter(isBatchListener(), this.bean, this.method, this.returnExceptions,
 					this.errorHandler, getBatchingStrategy());
-		}
-		else {
-			return new MessagingMessageListenerAdapter(this.bean, this.method, this.returnExceptions,
-					this.errorHandler);
-		}
 	}
 
 	@Nullable
@@ -194,6 +200,45 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 		return super.getEndpointDescription()
 				.append(" | bean='").append(this.bean).append("'")
 				.append(" | method='").append(this.method).append("'");
+	}
+
+	/**
+	 * Provider of listener adapters.
+	 * @since 2.4
+	 *
+	 */
+	public interface AdapterProvider {
+
+		/**
+		 * Get an adapter instance.
+		 * @param batch true for a batch listener.
+		 * @param bean the bean.
+		 * @param method the method.
+		 * @param returnExceptions true to return exceptions.
+		 * @param errorHandler the error handler.
+		 * @param batchingStrategy the batching strategy for batch listeners.
+		 * @return the adapter.
+		 */
+		MessagingMessageListenerAdapter getAdapter(boolean batch, Object bean, Method method, boolean returnExceptions,
+				RabbitListenerErrorHandler errorHandler, @Nullable BatchingStrategy batchingStrategy);
+	}
+
+	private static final class DefaultAdapterProvider implements AdapterProvider {
+
+		@Override
+		public MessagingMessageListenerAdapter getAdapter(boolean batch, Object bean, Method method,
+				boolean returnExceptions, RabbitListenerErrorHandler errorHandler,
+				@Nullable BatchingStrategy batchingStrategy) {
+
+			if (batch) {
+				return new BatchMessagingMessageListenerAdapter(bean, method, returnExceptions, errorHandler,
+						batchingStrategy);
+			}
+			else {
+				return new MessagingMessageListenerAdapter(bean, method, returnExceptions, errorHandler);
+			}
+		}
+
 	}
 
 }

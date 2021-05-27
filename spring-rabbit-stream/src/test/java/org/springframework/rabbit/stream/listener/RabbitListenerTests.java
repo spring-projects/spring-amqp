@@ -1,0 +1,142 @@
+/*
+ * Copyright 2021 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.rabbit.stream.listener;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.jupiter.api.Test;
+
+import org.springframework.amqp.rabbit.annotation.EnableRabbit;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.rabbit.stream.config.StreamRabbitListenerContainerFactory;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+
+import com.rabbitmq.stream.Address;
+import com.rabbitmq.stream.Environment;
+import com.rabbitmq.stream.Message;
+import com.rabbitmq.stream.MessageHandler.Context;
+
+/**
+ * @author Gary Russell
+ * @since 2.4
+ *
+ */
+@SpringJUnitConfig
+public class RabbitListenerTests extends AbstractIntegrationTests {
+
+	@Autowired
+	Config config;
+
+	@Test
+	void simple(@Autowired RabbitTemplate template,
+			@Autowired RabbitListenerEndpointRegistry registry) throws InterruptedException {
+
+		registry.start();
+		template.convertAndSend("test.stream.queue1", "foo");
+		assertThat(this.config.latch1.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.config.received).isEqualTo("foo");
+	}
+
+	@Test
+	void nativeMsg(@Autowired RabbitTemplate template,
+			@Autowired RabbitListenerEndpointRegistry registry) throws InterruptedException {
+
+		registry.start();
+		template.convertAndSend("test.stream.queue2", "foo");
+		assertThat(this.config.latch2.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.config.receivedNative).isNotNull();
+		assertThat(this.config.context).isNotNull();
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	@EnableRabbit
+	public static class Config {
+
+		final CountDownLatch latch1 = new CountDownLatch(1);
+
+		final CountDownLatch latch2 = new CountDownLatch(1);
+
+		volatile String received;
+
+		volatile Message receivedNative;
+
+		volatile Context context;
+
+		@Bean
+		Environment environment() {
+			return Environment.builder()
+					.addressResolver(add -> new Address("localhost", rabbitmq.getMappedPort(5552)))
+					.build();
+		}
+
+		@Bean
+		DisposableBean disposer(Environment env) {
+			return () -> env.close();
+		}
+
+		@Bean
+		RabbitListenerContainerFactory<StreamListenerContainer> rabbitListenerContainerFactory(Environment env) {
+			return new StreamRabbitListenerContainerFactory(env);
+		}
+
+		@RabbitListener(queues = "test.stream.queue1")
+		void listen(String in) {
+			this.received = in;
+			this.latch1.countDown();
+		}
+
+		@Bean
+		RabbitListenerContainerFactory<StreamListenerContainer> nativeFactory(Environment env) {
+			StreamRabbitListenerContainerFactory factory = new StreamRabbitListenerContainerFactory(env);
+			factory.setNativeListener(true);
+			factory.setConsumerCustomizer(builder -> builder.name("myConsumer")
+					.manualCommitStrategy());
+			return factory;
+		}
+
+		@RabbitListener(queues = "test.stream.queue2", containerFactory = "nativeFactory")
+		void nativeMsg(Message in, Context context) {
+			this.receivedNative = in;
+			this.context = context;
+			this.latch2.countDown();
+			context.commit();
+		}
+
+		@Bean
+		CachingConnectionFactory cf() {
+			return new CachingConnectionFactory(rabbitmq.getContainerIpAddress(), rabbitmq.getFirstMappedPort());
+		}
+
+		@Bean
+		RabbitTemplate template(CachingConnectionFactory cf) {
+			return new RabbitTemplate(cf);
+		}
+
+	}
+
+}
