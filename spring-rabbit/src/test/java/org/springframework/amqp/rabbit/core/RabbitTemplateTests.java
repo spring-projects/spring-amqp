@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,7 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
+import org.springframework.amqp.core.ReturnedMessage;
 import org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
@@ -65,6 +66,8 @@ import org.springframework.amqp.rabbit.connection.PublisherCallbackChannel;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.SimpleRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnsCallback;
+import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.amqp.utils.test.TestUtils;
@@ -557,6 +560,60 @@ public class RabbitTemplateTests {
 		template.invoke(t -> null);
 		verify(pcf).createConnection();
 		verify(conn).createChannel(true);
+	}
+
+	@Test
+	void resourcesClearedAfterTxFails() throws IOException, TimeoutException {
+		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
+		Connection mockConnection = mock(Connection.class);
+		Channel mockChannel = mock(Channel.class);
+
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
+		given(mockConnection.isOpen()).willReturn(true);
+		given(mockConnection.createChannel()).willReturn(mockChannel);
+		given(mockChannel.txSelect()).willReturn(mock(SelectOk.class));
+		given(mockChannel.txCommit()).willThrow(IllegalStateException.class);
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		connectionFactory.setExecutor(mock(ExecutorService.class));
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		template.setChannelTransacted(true);
+		TransactionTemplate tt = new TransactionTemplate(new RabbitTransactionManager(connectionFactory));
+		assertThatIllegalStateException()
+			.isThrownBy(() ->
+				tt.execute(status -> {
+					template.convertAndSend("foo", "bar");
+					return null;
+				}));
+		assertThat(TransactionSynchronizationManager.hasResource(connectionFactory)).isFalse();
+		assertThatIllegalStateException()
+			.isThrownBy(() -> (TransactionSynchronizationManager.getSynchronizations()).isEmpty())
+			.withMessage("Transaction synchronization is not active");
+	}
+
+	@Test
+	void resourcesClearedAfterTxFailsWithSync() throws IOException, TimeoutException {
+		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
+		Connection mockConnection = mock(Connection.class);
+		Channel mockChannel = mock(Channel.class);
+
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
+		given(mockConnection.isOpen()).willReturn(true);
+		given(mockConnection.createChannel()).willReturn(mockChannel);
+		given(mockChannel.txSelect()).willReturn(mock(SelectOk.class));
+		given(mockChannel.txCommit()).willThrow(IllegalStateException.class);
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		connectionFactory.setExecutor(mock(ExecutorService.class));
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		template.setChannelTransacted(true);
+		TransactionTemplate tt = new TransactionTemplate(new TestTransactionManager());
+		tt.execute(status -> {
+			template.convertAndSend("foo", "bar");
+			return null;
+		});
+		assertThat(TransactionSynchronizationManager.hasResource(connectionFactory)).isFalse();
+		assertThatIllegalStateException()
+			.isThrownBy(() -> (TransactionSynchronizationManager.getSynchronizations()).isEmpty())
+			.withMessage("Transaction synchronization is not active");
 	}
 
 	@SuppressWarnings("serial")
