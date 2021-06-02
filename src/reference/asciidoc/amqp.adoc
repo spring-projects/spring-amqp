@@ -6420,7 +6420,7 @@ Anonymous queues are non-durable, exclusive, and auto-deleting.
 IMPORTANT: Automatic declaration is performed only when the `CachingConnectionFactory` cache mode is `CHANNEL` (the default).
 This limitation exists because exclusive and auto-delete queues are bound to the connection.
 
-Starting with version 2.2.2, the `RabbitAdmin` will detect beans of type `DeclarationCustomizer` and apply the function before actually processing the declaration.
+Starting with version 2.2.2, the `RabbitAdmin` will detect beans of type `DeclarableCustomizer` and apply the function before actually processing the declaration.
 This is useful, for example, to set a new argument (property) before it has first class support within the framework.
 
 ====
