@@ -330,17 +330,20 @@ public final class ConnectionFactoryUtils {
 
 		@Override
 		public void afterCompletion(int status) {
-			if (status == TransactionSynchronization.STATUS_COMMITTED) {
-				this.resourceHolder.commitAll();
+			try {
+				if (status == TransactionSynchronization.STATUS_COMMITTED) {
+					this.resourceHolder.commitAll();
+				}
+				else {
+					this.resourceHolder.rollbackAll();
+				}
 			}
-			else {
-				this.resourceHolder.rollbackAll();
+			finally {
+				if (this.resourceHolder.isReleaseAfterCompletion()) {
+					this.resourceHolder.setSynchronizedWithTransaction(false);
+				}
+				super.afterCompletion(status);
 			}
-
-			if (this.resourceHolder.isReleaseAfterCompletion()) {
-				this.resourceHolder.setSynchronizedWithTransaction(false);
-			}
-			super.afterCompletion(status);
 		}
 
 		@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,6 +42,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -67,6 +69,7 @@ import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.SimpleRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnsCallback;
+import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.amqp.utils.test.TestUtils;
@@ -79,9 +82,11 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 import org.springframework.transaction.support.DefaultTransactionStatus;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.AMQP.Tx.SelectOk;
 import com.rabbitmq.client.AuthenticationFailureException;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -579,6 +584,60 @@ public class RabbitTemplateTests {
 				mock(org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnCallback.class);
 		template2.setReturnCallback(callback);
 		template2.setReturnCallback(callback);
+	}
+
+	@Test
+	void resourcesClearedAfterTxFails() throws IOException, TimeoutException {
+		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
+		Connection mockConnection = mock(Connection.class);
+		Channel mockChannel = mock(Channel.class);
+
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
+		given(mockConnection.isOpen()).willReturn(true);
+		given(mockConnection.createChannel()).willReturn(mockChannel);
+		given(mockChannel.txSelect()).willReturn(mock(SelectOk.class));
+		given(mockChannel.txCommit()).willThrow(IllegalStateException.class);
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		connectionFactory.setExecutor(mock(ExecutorService.class));
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		template.setChannelTransacted(true);
+		TransactionTemplate tt = new TransactionTemplate(new RabbitTransactionManager(connectionFactory));
+		assertThatIllegalStateException()
+			.isThrownBy(() ->
+				tt.execute(status -> {
+					template.convertAndSend("foo", "bar");
+					return null;
+				}));
+		assertThat(TransactionSynchronizationManager.hasResource(connectionFactory)).isFalse();
+		assertThatIllegalStateException()
+			.isThrownBy(() -> (TransactionSynchronizationManager.getSynchronizations()).isEmpty())
+			.withMessage("Transaction synchronization is not active");
+	}
+
+	@Test
+	void resourcesClearedAfterTxFailsWithSync() throws IOException, TimeoutException {
+		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
+		Connection mockConnection = mock(Connection.class);
+		Channel mockChannel = mock(Channel.class);
+
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
+		given(mockConnection.isOpen()).willReturn(true);
+		given(mockConnection.createChannel()).willReturn(mockChannel);
+		given(mockChannel.txSelect()).willReturn(mock(SelectOk.class));
+		given(mockChannel.txCommit()).willThrow(IllegalStateException.class);
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		connectionFactory.setExecutor(mock(ExecutorService.class));
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		template.setChannelTransacted(true);
+		TransactionTemplate tt = new TransactionTemplate(new TestTransactionManager());
+		tt.execute(status -> {
+			template.convertAndSend("foo", "bar");
+			return null;
+		});
+		assertThat(TransactionSynchronizationManager.hasResource(connectionFactory)).isFalse();
+		assertThatIllegalStateException()
+			.isThrownBy(() -> (TransactionSynchronizationManager.getSynchronizations()).isEmpty())
+			.withMessage("Transaction synchronization is not active");
 	}
 
 	@SuppressWarnings("serial")
