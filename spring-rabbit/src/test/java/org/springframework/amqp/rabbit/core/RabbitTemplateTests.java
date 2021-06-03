@@ -33,6 +33,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,6 +42,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -58,7 +60,6 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
-import org.springframework.amqp.core.ReturnedMessage;
 import org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
@@ -66,7 +67,6 @@ import org.springframework.amqp.rabbit.connection.PublisherCallbackChannel;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.SimpleRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnsCallback;
 import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.SerializationUtils;
@@ -80,6 +80,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 import org.springframework.transaction.support.DefaultTransactionStatus;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.rabbitmq.client.AMQP;
@@ -347,7 +348,7 @@ public class RabbitTemplateTests {
 	public void testNoListenerAllowed1() {
 		RabbitTemplate template = new RabbitTemplate();
 		assertThatIllegalStateException()
-			.isThrownBy(() -> template.expectedQueueNames());
+				.isThrownBy(() -> template.expectedQueueNames());
 	}
 
 	@Test
@@ -355,7 +356,7 @@ public class RabbitTemplateTests {
 		RabbitTemplate template = new RabbitTemplate();
 		template.setReplyAddress(Address.AMQ_RABBITMQ_REPLY_TO);
 		assertThatIllegalStateException()
-			.isThrownBy(() -> template.expectedQueueNames());
+				.isThrownBy(() -> template.expectedQueueNames());
 	}
 
 	public final static AtomicInteger LOOKUP_KEY_COUNT = new AtomicInteger();
@@ -571,7 +572,7 @@ public class RabbitTemplateTests {
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
 		given(mockConnection.createChannel()).willReturn(mockChannel);
-		given(mockChannel.txSelect()).willReturn(mock(SelectOk.class));
+		given(mockChannel.txSelect()).willReturn(mock(AMQP.Tx.SelectOk.class));
 		given(mockChannel.txCommit()).willThrow(IllegalStateException.class);
 		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
 		connectionFactory.setExecutor(mock(ExecutorService.class));
@@ -579,15 +580,15 @@ public class RabbitTemplateTests {
 		template.setChannelTransacted(true);
 		TransactionTemplate tt = new TransactionTemplate(new RabbitTransactionManager(connectionFactory));
 		assertThatIllegalStateException()
-			.isThrownBy(() ->
-				tt.execute(status -> {
-					template.convertAndSend("foo", "bar");
-					return null;
-				}));
+				.isThrownBy(() ->
+						tt.execute(status -> {
+							template.convertAndSend("foo", "bar");
+							return null;
+						}));
 		assertThat(TransactionSynchronizationManager.hasResource(connectionFactory)).isFalse();
 		assertThatIllegalStateException()
-			.isThrownBy(() -> (TransactionSynchronizationManager.getSynchronizations()).isEmpty())
-			.withMessage("Transaction synchronization is not active");
+				.isThrownBy(() -> (TransactionSynchronizationManager.getSynchronizations()).isEmpty())
+				.withMessage("Transaction synchronization is not active");
 	}
 
 	@Test
@@ -599,7 +600,7 @@ public class RabbitTemplateTests {
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
 		given(mockConnection.createChannel()).willReturn(mockChannel);
-		given(mockChannel.txSelect()).willReturn(mock(SelectOk.class));
+		given(mockChannel.txSelect()).willReturn(mock(AMQP.Tx.SelectOk.class));
 		given(mockChannel.txCommit()).willThrow(IllegalStateException.class);
 		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
 		connectionFactory.setExecutor(mock(ExecutorService.class));
@@ -612,8 +613,8 @@ public class RabbitTemplateTests {
 		});
 		assertThat(TransactionSynchronizationManager.hasResource(connectionFactory)).isFalse();
 		assertThatIllegalStateException()
-			.isThrownBy(() -> (TransactionSynchronizationManager.getSynchronizations()).isEmpty())
-			.withMessage("Transaction synchronization is not active");
+				.isThrownBy(() -> (TransactionSynchronizationManager.getSynchronizations()).isEmpty())
+				.withMessage("Transaction synchronization is not active");
 	}
 
 	@SuppressWarnings("serial")
@@ -647,6 +648,7 @@ public class RabbitTemplateTests {
 		public Message postProcessMessage(Message message) throws AmqpException {
 			return message;
 		}
+
 	}
 
 }
