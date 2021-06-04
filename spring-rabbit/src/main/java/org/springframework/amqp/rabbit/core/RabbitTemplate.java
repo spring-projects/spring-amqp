@@ -891,7 +891,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				else {
 					delivery = consumer.nextDelivery(timeoutMillis);
 				}
-				channel.basicCancel(consumer.getConsumerTag());
+				RabbitUtils.cancel(channel, consumer.getConsumerTag());
 				if (delivery == null) {
 					RabbitUtils.setPhysicalCloseRequired(channel, true);
 					return null;
@@ -1020,7 +1020,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 					else {
 						delivery = consumer.nextDelivery(RabbitTemplate.this.receiveTimeout);
 					}
-					channel.basicCancel(consumer.getConsumerTag());
+					RabbitUtils.cancel(channel, consumer.getConsumerTag());
 					if (delivery != null) {
 						long deliveryTag = delivery.getEnvelope().getDeliveryTag();
 						if (channelTransacted && !channelLocallyTransacted) {
@@ -1311,11 +1311,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				}
 				finally {
 					RabbitTemplate.this.replyHolder.remove(messageTag);
-					try {
-						channel.basicCancel(consumerTag);
-					}
-					catch (Exception e) {
-					}
+					RabbitUtils.cancel(channel, consumer.getConsumerTag());
 				}
 				return reply;
 			}

@@ -157,6 +157,22 @@ public abstract class RabbitUtils {
 		}
 	}
 
+	public static void cancel(Channel channel, String consumerTag) {
+		try {
+			channel.basicCancel(consumerTag);
+		}
+		catch (AlreadyClosedException e) {
+			if (logger.isTraceEnabled()) {
+				logger.trace(channel + " is already closed", e);
+			}
+		}
+		catch (Exception e) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Error performing 'basicCancel' on " + channel, e);
+			}
+		}
+	}
+
 	/**
 	 * Declare to that broker that a channel is going to be used transactionally, and convert exceptions that arise.
 	 *
