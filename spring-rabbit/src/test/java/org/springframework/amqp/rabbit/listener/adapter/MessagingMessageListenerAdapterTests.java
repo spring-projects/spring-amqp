@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 the original author or authors.
+ * Copyright 2014-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,16 +29,20 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.test.MessageTestUtils;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConversionException;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
@@ -273,9 +277,50 @@ public class MessagingMessageListenerAdapterTests {
 		assertThat(this.sample.batchPayloads.get(0).getClass()).isEqualTo(Foo.class);
 	}
 
+	@Test
+	void errorHandlerAfterConversionEx() throws Exception {
+		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage("foo");
+		Channel channel = mock(Channel.class);
+		AtomicBoolean ehCalled = new AtomicBoolean();
+		MessagingMessageListenerAdapter listener = getSimpleInstance("fail",
+				new RabbitListenerErrorHandler() {
+
+			@Override
+			public Object handleError(org.springframework.amqp.core.Message amqpMessage, Message<?> message,
+					ListenerExecutionFailedException exception) throws Exception {
+
+				ehCalled.set(true);
+				return null;
+			}
+
+		}, String.class);
+		listener.setMessageConverter(new MessageConverter() {
+
+			@Override
+			public org.springframework.amqp.core.Message toMessage(Object object, MessageProperties messageProperties)
+					throws MessageConversionException {
+
+				return null;
+			}
+
+			@Override
+			public Object fromMessage(org.springframework.amqp.core.Message message) throws MessageConversionException {
+				throw new MessageConversionException("test");
+			}
+		});
+		listener.onMessage(message, channel);
+		assertThat(ehCalled.get()).isTrue();
+	}
+
 	protected MessagingMessageListenerAdapter getSimpleInstance(String methodName, Class<?>... parameterTypes) {
+		return getSimpleInstance(methodName, null, parameterTypes);
+	}
+
+	protected MessagingMessageListenerAdapter getSimpleInstance(String methodName, RabbitListenerErrorHandler eh,
+			Class<?>... parameterTypes) {
+
 		Method m = ReflectionUtils.findMethod(SampleBean.class, methodName, parameterTypes);
-		return createInstance(m, false);
+		return createInstance(m, false, eh);
 	}
 
 	protected MessagingMessageListenerAdapter getSimpleInstance(String methodName, boolean returnExceptions,
@@ -285,7 +330,13 @@ public class MessagingMessageListenerAdapterTests {
 	}
 
 	protected MessagingMessageListenerAdapter createInstance(Method m, boolean returnExceptions) {
-		MessagingMessageListenerAdapter adapter = new MessagingMessageListenerAdapter(null, m, returnExceptions, null);
+		return createInstance(m, returnExceptions, null);
+	}
+
+	protected MessagingMessageListenerAdapter createInstance(Method m, boolean returnExceptions,
+			RabbitListenerErrorHandler eh) {
+
+		MessagingMessageListenerAdapter adapter = new MessagingMessageListenerAdapter(null, m, returnExceptions, eh);
 		adapter.setHandlerAdapter(new HandlerAdapter(factory.createInvocableHandlerMethod(sample, m)));
 		return adapter;
 	}
