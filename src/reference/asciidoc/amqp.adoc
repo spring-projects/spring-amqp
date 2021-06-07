@@ -3276,7 +3276,7 @@ static class TxServiceImpl implements TxService<Foo> {
 
     @Override
     @RabbitListener(...)
-    public String handle(Foo foo, String rk) {
+    public String handle(Thing thing, String rk) {
          ...
     }
 
@@ -3358,6 +3358,10 @@ public Object handleError(Message amqpMessage, org.springframework.messaging.Mes
           }
 ----
 ====
+
+Starting with version 2.2.18, if a message conversion exception is thrown, the error handler will be called, with `null` in the `message` argument.
+This allows the application to send some result to the caller, indicating that a badly-formed message was received.
+Previously, such errors were thrown and handled by the container.
 
 ====== Container Management
 
