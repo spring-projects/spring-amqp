@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,8 +131,50 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 	@Override
 	public void onMessage(org.springframework.amqp.core.Message amqpMessage, Channel channel) throws Exception { // NOSONAR
-		Message<?> message = toMessagingMessage(amqpMessage);
-		invokeHandlerAndProcessResult(amqpMessage, channel, message);
+		Message<?> message = null;
+		try {
+			message = toMessagingMessage(amqpMessage);
+			invokeHandlerAndProcessResult(amqpMessage, channel, message);
+		}
+		catch (ListenerExecutionFailedException ex) {
+			handleException(amqpMessage, channel, message, ex);
+		}
+		catch (ReplyFailureException ex) {
+			throw ex;
+		}
+		catch (Exception ex) {
+			handleException(amqpMessage, channel, message, new ListenerExecutionFailedException(
+					"Failed to convert message", ex, amqpMessage));
+		}
+	}
+
+	private void handleException(org.springframework.amqp.core.Message amqpMessage, Channel channel,
+			@Nullable Message<?> message, ListenerExecutionFailedException e) throws Exception {
+
+		if (this.errorHandler != null) {
+			try {
+				Message<?> messageWithChannel = null;
+				if (message != null) {
+					messageWithChannel = MessageBuilder.fromMessage(message)
+							.setHeader(AmqpHeaders.CHANNEL, channel)
+							.build();
+				}
+				Object errorResult = this.errorHandler.handleError(amqpMessage, messageWithChannel, e);
+				if (errorResult != null) {
+					handleResult(this.handlerAdapter.getInvocationResultFor(errorResult, message.getPayload()),
+							amqpMessage, channel, message);
+				}
+				else {
+					logger.trace("Error handler returned no result");
+				}
+			}
+			catch (Exception ex) {
+				returnOrThrow(amqpMessage, channel, message, ex, ex);
+			}
+		}
+		else {
+			returnOrThrow(amqpMessage, channel, message, e.getCause(), e);
+		}
 	}
 
 	protected void invokeHandlerAndProcessResult(@Nullable org.springframework.amqp.core.Message amqpMessage,
@@ -142,41 +184,16 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			logger.debug("Processing [" + message + "]");
 		}
 		InvocationResult result = null;
-		try {
-			if (this.messagingMessageConverter.method == null && amqpMessage != null) {
-				amqpMessage.getMessageProperties()
-						.setTargetMethod(this.handlerAdapter.getMethodFor(message.getPayload()));
-			}
-			result = invokeHandler(amqpMessage, channel, message);
-			if (result.getReturnValue() != null) {
-				handleResult(result, amqpMessage, channel, message);
-			}
-			else {
-				logger.trace("No result object given - no result to handle");
-			}
+		if (this.messagingMessageConverter.method == null && amqpMessage != null) {
+			amqpMessage.getMessageProperties()
+					.setTargetMethod(this.handlerAdapter.getMethodFor(message.getPayload()));
 		}
-		catch (ListenerExecutionFailedException e) {
-			if (this.errorHandler != null) {
-				try {
-					Message<?> messageWithChannel = MessageBuilder.fromMessage(message)
-							.setHeader(AmqpHeaders.CHANNEL, channel)
-							.build();
-					Object errorResult = this.errorHandler.handleError(amqpMessage, messageWithChannel, e);
-					if (errorResult != null) {
-						handleResult(this.handlerAdapter.getInvocationResultFor(errorResult, message.getPayload()),
-								amqpMessage, channel, message);
-					}
-					else {
-						logger.trace("Error handler returned no result");
-					}
-				}
-				catch (Exception ex) {
-					returnOrThrow(amqpMessage, channel, message, ex, ex);
-				}
-			}
-			else {
-				returnOrThrow(amqpMessage, channel, message, e.getCause(), e);
-			}
+		result = invokeHandler(amqpMessage, channel, message);
+		if (result.getReturnValue() != null) {
+			handleResult(result, amqpMessage, channel, message);
+		}
+		else {
+			logger.trace("No result object given - no result to handle");
 		}
 	}
 
