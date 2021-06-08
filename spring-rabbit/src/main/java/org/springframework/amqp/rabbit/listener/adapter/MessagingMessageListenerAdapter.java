@@ -142,14 +142,14 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		catch (ReplyFailureException ex) {
 			throw ex;
 		}
-		catch (Exception ex) {
+		catch (Exception ex) { // NOSONAR
 			handleException(amqpMessage, channel, message, new ListenerExecutionFailedException(
 					"Failed to convert message", ex, amqpMessage));
 		}
 	}
 
 	private void handleException(org.springframework.amqp.core.Message amqpMessage, Channel channel,
-			@Nullable Message<?> message, ListenerExecutionFailedException e) throws Exception {
+			@Nullable Message<?> message, ListenerExecutionFailedException e) throws Exception { // NOSONAR
 
 		if (this.errorHandler != null) {
 			try {
