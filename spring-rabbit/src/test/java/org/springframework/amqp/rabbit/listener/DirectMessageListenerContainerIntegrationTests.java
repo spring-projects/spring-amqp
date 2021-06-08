@@ -17,6 +17,8 @@
 package org.springframework.amqp.rabbit.listener;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -45,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.mockito.ArgumentCaptor;
 
+import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
@@ -124,6 +127,15 @@ public class DirectMessageListenerContainerIntegrationTests {
 	@BeforeEach
 	public void captureTestName(TestInfo info) {
 		this.testName = info.getDisplayName();
+	}
+
+	@Test
+	void authFailed() {
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		cf.setUsername("junk");
+		DirectMessageListenerContainer dmlc = new DirectMessageListenerContainer(cf);
+		dmlc.setPossibleAuthenticationFailureFatal(true);
+		assertThatExceptionOfType(AmqpAuthenticationException.class).isThrownBy(() -> dmlc.start());
 	}
 
 	@SuppressWarnings("unchecked")

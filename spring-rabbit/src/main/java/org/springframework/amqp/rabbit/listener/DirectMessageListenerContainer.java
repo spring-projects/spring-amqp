@@ -41,6 +41,7 @@ import java.util.stream.Stream;
 import org.apache.commons.logging.Log;
 
 import org.springframework.amqp.AmqpApplicationContextClosedException;
+import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
@@ -145,6 +146,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public DirectMessageListenerContainer() {
 		setMissingQueuesFatal(false);
+		doSetPossibleAuthenticationFailureFatal(false);
 	}
 
 	/**
@@ -154,6 +156,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	public DirectMessageListenerContainer(ConnectionFactory connectionFactory) {
 		setConnectionFactory(connectionFactory);
 		setMissingQueuesFatal(false);
+		doSetPossibleAuthenticationFailureFatal(false);
 	}
 
 	/**
@@ -418,6 +421,22 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		super.doStart();
 		final String[] queueNames = getQueueNames();
 		checkMissingQueues(queueNames);
+		if (isPossibleAuthenticationFailureFatal()) {
+			Connection connection = null;
+			try {
+				getConnectionFactory().createConnection();
+			}
+			catch (AmqpAuthenticationException ex) {
+				throw ex;
+			}
+			catch (Exception ex) { // NOSONAR
+			}
+			finally {
+				if (connection != null) {
+					connection.close();
+				}
+			}
+		}
 		long idleEventInterval = getIdleEventInterval();
 		if (this.taskScheduler == null) {
 			afterPropertiesSet();
@@ -434,9 +453,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		if (queueNames.length > 0) {
 			doRedeclareElementsIfNecessary();
 			getTaskExecutor().execute(() -> { // NOSONAR never null here
-
 				startConsumers(queueNames);
-
 			});
 		}
 		else {

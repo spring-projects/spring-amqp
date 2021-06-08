@@ -5668,10 +5668,16 @@ a| image::images/tickmark.png[]
 FailureFatal
 (possible-authentication-failure-fatal)
 
-a| When set to `true` (default), if a `PossibleAuthenticationFailureException` is thrown during connection, it is considered fatal.
-This causes the application context to fail to initialize during startup.
+a|When set to `true` (default for SMLC), if a `PossibleAuthenticationFailureException` is thrown during connection, it is considered fatal.
+This causes the application context to fail to initialize during startup (if the container is configured with auto startup).
 
 Since _version 2.0_.
+
+**DirectMessageListenerContainer**
+
+When set to `false` (default), each consumer will attempt to reconnect according to the `monitorInterval`.
+
+**SimpleMessageListenerContainer**
 
 When set to `false`, after making the 3 retries, the container will go into recovery mode, as with other problems, such as the broker being down.
 The container will attempt to recover according to the `recoveryInterval` property.
