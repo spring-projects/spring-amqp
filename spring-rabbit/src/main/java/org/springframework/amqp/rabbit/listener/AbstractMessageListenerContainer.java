@@ -1001,8 +1001,12 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 
 	public void setPossibleAuthenticationFailureFatal(boolean possibleAuthenticationFailureFatal) {
-		this.possibleAuthenticationFailureFatal = possibleAuthenticationFailureFatal;
+		doSetPossibleAuthenticationFailureFatal(possibleAuthenticationFailureFatal);
 		this.possibleAuthenticationFailureFatalSet = true;
+	}
+
+	protected final void doSetPossibleAuthenticationFailureFatal(boolean possibleAuthenticationFailureFatal) {
+		this.possibleAuthenticationFailureFatal = possibleAuthenticationFailureFatal;
 	}
 
 	public boolean isPossibleAuthenticationFailureFatal() {
