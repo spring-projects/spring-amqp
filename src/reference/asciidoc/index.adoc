@@ -12,6 +12,12 @@ Mark Pollack; Mark Fisher; Oleg Zhurakousky; Dave Syer; Gary Russell; Gunnar Hil
 
 ifdef::backend-html5[]
 *{project-version}*
+
+NOTE: This documentation is also available as https://docs.spring.io/spring-amqp/docs/current/reference/pdf/spring-integration-amqp.pdf[PDF].
+endif::[]
+
+ifdef::backend-pdf[]
+NOTE: This documentation is also available as https://docs.spring.io/spring-amqp/docs/current/reference/html/index.html[HTML].
 endif::[]
 
 (C) 2010 - 2021 by VMware, Inc.
