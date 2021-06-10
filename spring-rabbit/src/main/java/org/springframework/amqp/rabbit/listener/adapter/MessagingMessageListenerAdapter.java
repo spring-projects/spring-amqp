@@ -241,7 +241,12 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			Message<?> message) {
 
 		try {
-			return this.handlerAdapter.invoke(message, amqpMessage, channel);
+			if (amqpMessage == null) {
+				return this.handlerAdapter.invoke(message, channel);
+			}
+			else {
+				return this.handlerAdapter.invoke(message, amqpMessage, channel, amqpMessage.getMessageProperties());
+			}
 		}
 		catch (MessagingException ex) {
 			throw new ListenerExecutionFailedException(createMessagingErrorMessage("Listener method could not " +
@@ -395,6 +400,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		private boolean isEligibleParameter(MethodParameter methodParameter) {
 			Type parameterType = methodParameter.getGenericParameterType();
 			if (parameterType.equals(Channel.class)
+					|| parameterType.equals(MessageProperties.class)
 					|| parameterType.equals(org.springframework.amqp.core.Message.class)) {
 				return false;
 			}
