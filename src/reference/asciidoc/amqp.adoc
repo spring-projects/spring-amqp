@@ -2715,7 +2715,7 @@ IMPORTANT: For multi-method listeners (see <<annotation-method-selection>>), the
 The method argument converter is called only after the method has been selected.
 
 [[custom-argument-resolver]]
-====== Adding custom `HandlerMethodArgumentResolver` to @RabbitListener
+====== Adding a Custom `HandlerMethodArgumentResolver` to @RabbitListener
 
 Starting with version 2.3.7 you are able to add your own `HandlerMethodArgumentResolver` and resolve custom method parameters.
 All you need is to implement `RabbitListenerConfigurer` and use method `setCustomMethodArgumentResolvers()` from class `RabbitListenerEndpointRegistrar`.
@@ -2803,21 +2803,18 @@ public class MyService {
 ----
 ====
 
-The following list shows the main elements you can inject in listener endpoints:
+The following list shows the arguments that are available to be matched with parameters in listener endpoints:
 
 * The raw `org.springframework.amqp.core.Message`.
+* The `MessageProperties` from the raw `Message`.
 * The `com.rabbitmq.client.Channel` on which the message was received.
-* The `org.springframework.messaging.Message` representing the incoming AMQP message.
-Note that this message holds both the custom and the standard headers (as defined by `AmqpHeaders`).
-
-NOTE: Starting with version 1.6, the inbound `deliveryMode` header is now available in the header with a name of
-`AmqpHeaders.RECEIVED_DELIVERY_MODE` instead of `AmqpHeaders.DELIVERY_MODE`.
-
+* The `org.springframework.messaging.Message` converted from the incoming AMQP message.
 * `@Header`-annotated method arguments to extract a specific header value, including standard AMQP headers.
 * `@Headers`-annotated argument that must also be assignable to `java.util.Map` for getting access to all headers.
+* The converted payload
 
 A non-annotated element that is not one of the supported types (that is,
-`Message` and `Channel`) is considered to be the payload.
+`Message`, `MessageProperties`, `Message<?>` and `Channel`) is matched with the payload.
 You can make that explicit by annotating the parameter with `@Payload`.
 You can also turn on validation by adding an extra `@Valid`.
 

@@ -175,7 +175,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 		"amqp656dlq", "test.simple.declare", "test.return.exceptions", "test.pojo.errors", "test.pojo.errors2",
 		"test.messaging.message", "test.amqp.message", "test.bytes.to.string", "test.projection",
 		"test.custom.argument", "test.arg.validation",
-		"manual.acks.1", "manual.acks.2", "erit.batch.1", "erit.batch.2", "erit.batch.3" },
+		"manual.acks.1", "manual.acks.2", "erit.batch.1", "erit.batch.2", "erit.batch.3", "erit.mp.arg" },
 		purgeAfterEach = false)
 public class EnableRabbitIntegrationTests {
 
@@ -288,7 +288,6 @@ public class EnableRabbitIntegrationTests {
 		assertThat(AopUtils.isJdkDynamicProxy(this.txService)).isTrue();
 		Baz baz = new Baz();
 		baz.field = "baz";
-		rabbitTemplate.setReplyTimeout(600000);
 		assertThat(rabbitTemplate.convertSendAndReceive("auto.exch.tx", "auto.rk.tx", baz)).isEqualTo("BAZ: baz: auto.rk.tx");
 	}
 
@@ -1010,6 +1009,14 @@ public class EnableRabbitIntegrationTests {
 
 	}
 
+	@Test
+	void messagePropertiesParam() {
+		assertThat(this.rabbitTemplate.convertSendAndReceive("erit.mp.arg", "foo", msg -> {
+			msg.getMessageProperties().setHeader("myProp", "bar");
+			return msg;
+		})).isEqualTo("foo, myProp=bar");
+	}
+
 	interface TxService {
 
 		@Transactional
@@ -1405,6 +1412,11 @@ public class EnableRabbitIntegrationTests {
 		public void handleValidArg(@Valid ValidatedClass validatedObject) {
 			this.validatedObject = validatedObject;
 			this.validationLatch.countDown();
+		}
+
+		@RabbitListener(queues = "erit.mp.arg")
+		public String mpArgument(String payload, MessageProperties props) {
+			return payload + ", myProp=" + props.getHeader("myProp");
 		}
 
 	}
