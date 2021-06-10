@@ -425,22 +425,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		super.doStart();
 		final String[] queueNames = getQueueNames();
 		checkMissingQueues(queueNames);
-		if (isPossibleAuthenticationFailureFatal()) {
-			Connection connection = null;
-			try {
-				getConnectionFactory().createConnection();
-			}
-			catch (AmqpAuthenticationException ex) {
-				throw ex;
-			}
-			catch (Exception ex) { // NOSONAR
-			}
-			finally {
-				if (connection != null) {
-					connection.close();
-				}
-			}
-		}
+		checkConnect();
 		long idleEventInterval = getIdleEventInterval();
 		if (this.taskScheduler == null) {
 			afterPropertiesSet();
@@ -466,6 +451,26 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		if (logger.isInfoEnabled()) {
 			this.logger.info("Container initialized for queues: " + Arrays.asList(queueNames));
+		}
+	}
+
+	protected void checkConnect() {
+		if (isPossibleAuthenticationFailureFatal()) {
+			Connection connection = null;
+			try {
+				getConnectionFactory().createConnection();
+			}
+			catch (AmqpAuthenticationException ex) {
+				this.logger.debug("Failed to authenticate", ex);
+				throw ex;
+			}
+			catch (Exception ex) { // NOSONAR
+			}
+			finally {
+				if (connection != null) {
+					connection.close();
+				}
+			}
 		}
 	}
 
