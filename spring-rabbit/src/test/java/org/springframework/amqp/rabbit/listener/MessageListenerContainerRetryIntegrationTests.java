@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -150,7 +150,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 	}
 
 	@Test
-	void testStatefulRetryWithNoMessageIds() {
+	void testStatefulRetryWithNoMessageIds() throws Exception {
 
 		int messageCount = 2;
 		int txSize = 1;
@@ -165,11 +165,8 @@ public class MessageListenerContainerRetryIntegrationTests {
 		this.retryTemplate.setRetryContextCache(new MapRetryContextCache(1));
 		// The container should have shutdown, so there are now no active consumers
 		assertThatThrownBy(() -> doTestStatefulRetry(messageCount, txSize, failFrequency, concurrentConsumers))
-			.hasMessageContaining("Expecting:")
-			.hasMessageContaining(" <0>")
-			.hasMessageContaining("to be equal to")
-			.hasMessageContaining(" <1>")
-			.hasMessageContaining("but was not.");
+			.hasMessageContaining("expected: 1")
+			.hasMessageContaining("but was : 0");
 	}
 
 	@RepeatedTest(10)
