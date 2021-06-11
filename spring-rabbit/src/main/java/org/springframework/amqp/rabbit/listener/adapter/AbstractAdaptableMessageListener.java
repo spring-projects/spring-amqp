@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 the original author or authors.
+ * Copyright 2014-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -172,9 +172,11 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	 * that return result objects, which will be wrapped in
 	 * a response message and sent to a response destination.
 	 * <p>
+	 * It is parsed in {@link Address} so should be of the form exchange/rk.
+	 * <p>
 	 * It can be a string surrounded by "!{...}" in which case the expression is
 	 * evaluated at runtime; see the reference manual for more information.
-	 * @param defaultReplyTo The exchange.
+	 * @param defaultReplyTo The replyTo address.
 	 * @since 1.6
 	 */
 	public void setResponseAddress(String defaultReplyTo) {
