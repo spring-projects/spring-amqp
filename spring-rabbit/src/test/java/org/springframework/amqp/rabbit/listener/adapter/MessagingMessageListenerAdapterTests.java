@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.listener.adapter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -293,7 +294,7 @@ public class MessagingMessageListenerAdapterTests {
 				return null;
 			}
 
-		}, String.class);
+		}, false, String.class);
 		listener.setMessageConverter(new MessageConverter() {
 
 			@Override
@@ -312,15 +313,71 @@ public class MessagingMessageListenerAdapterTests {
 		assertThat(ehCalled.get()).isTrue();
 	}
 
+	@Test
+	void errorHandlerAfterConversionExWithResult() throws Exception {
+		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage("foo");
+		Channel channel = mock(Channel.class);
+		AtomicBoolean ehCalled = new AtomicBoolean();
+		MessagingMessageListenerAdapter listener = getSimpleInstance("fail",
+				new RabbitListenerErrorHandler() {
+
+			@Override
+			public Object handleError(org.springframework.amqp.core.Message amqpMessage, Message<?> message,
+					ListenerExecutionFailedException exception) throws Exception {
+
+				ehCalled.set(true);
+				return "foo";
+			}
+
+		}, false, String.class);
+		listener.setMessageConverter(new MessageConverter() {
+
+			@Override
+			public org.springframework.amqp.core.Message toMessage(Object object, MessageProperties messageProperties)
+					throws MessageConversionException {
+
+				return new org.springframework.amqp.core.Message(((String) object).getBytes(), messageProperties);
+			}
+
+			@Override
+			public Object fromMessage(org.springframework.amqp.core.Message message) throws MessageConversionException {
+				throw new MessageConversionException("test");
+			}
+		});
+		listener.setResponseAddress("foo/bar");
+		listener.onMessage(message, channel);
+		verify(channel).basicPublish(any(), any(), anyBoolean(), any(), any());
+		assertThat(ehCalled.get()).isTrue();
+	}
+
+	@Test
+	void errorHandlerAfterConversionExWithReturnEx() throws Exception {
+		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage("foo");
+		Channel channel = mock(Channel.class);
+		MessagingMessageListenerAdapter listener = getSimpleInstance("fail", null, true, String.class);
+		class MC extends SimpleMessageConverter {
+
+			@Override
+			public Object fromMessage(org.springframework.amqp.core.Message message) throws MessageConversionException {
+				throw new MessageConversionException("test");
+			}
+
+		}
+		listener.setMessageConverter(new MC());
+		listener.setResponseAddress("foo/bar");
+		listener.onMessage(message, channel);
+		verify(channel).basicPublish(any(), any(), anyBoolean(), any(), any());
+	}
+
 	protected MessagingMessageListenerAdapter getSimpleInstance(String methodName, Class<?>... parameterTypes) {
-		return getSimpleInstance(methodName, null, parameterTypes);
+		return getSimpleInstance(methodName, null, false, parameterTypes);
 	}
 
 	protected MessagingMessageListenerAdapter getSimpleInstance(String methodName, RabbitListenerErrorHandler eh,
-			Class<?>... parameterTypes) {
+			boolean returnEx, Class<?>... parameterTypes) {
 
 		Method m = ReflectionUtils.findMethod(SampleBean.class, methodName, parameterTypes);
-		return createInstance(m, false, eh);
+		return createInstance(m, returnEx, eh);
 	}
 
 	protected MessagingMessageListenerAdapter getSimpleInstance(String methodName, boolean returnExceptions,
