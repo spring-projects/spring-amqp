@@ -161,8 +161,11 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 				}
 				Object errorResult = this.errorHandler.handleError(amqpMessage, messageWithChannel, e);
 				if (errorResult != null) {
-					handleResult(this.handlerAdapter.getInvocationResultFor(errorResult, message.getPayload()),
-							amqpMessage, channel, message);
+					Object payload = message == null ? null : message.getPayload();
+					InvocationResult invResult = payload == null
+							? new InvocationResult(errorResult, null, null, null, null)
+							: this.handlerAdapter.getInvocationResultFor(errorResult, payload);
+					handleResult(invResult, amqpMessage, channel, message);
 				}
 				else {
 					logger.trace("Error handler returned no result");
@@ -203,15 +206,17 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		if (!this.returnExceptions) {
 			throw exceptionToThrow;
 		}
+		Object payload = message == null ? null : message.getPayload();
 		try {
+
 			handleResult(new InvocationResult(new RemoteInvocationResult(throwableToReturn), null,
-						this.handlerAdapter.getReturnTypeFor(message.getPayload()),
+						payload == null ? Object.class : this.handlerAdapter.getReturnTypeFor(payload),
 						this.handlerAdapter.getBean(),
-						this.handlerAdapter.getMethodFor(message.getPayload())),
+						payload == null ? null : this.handlerAdapter.getMethodFor(payload)),
 					amqpMessage, channel, message);
 		}
 		catch (ReplyFailureException rfe) {
-			if (void.class.equals(this.handlerAdapter.getReturnTypeFor(message.getPayload()))) {
+			if (payload == null || void.class.equals(this.handlerAdapter.getReturnTypeFor(payload))) {
 				throw exceptionToThrow;
 			}
 			else {
