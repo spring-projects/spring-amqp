@@ -16,56 +16,25 @@
 
 package org.springframework.rabbit.stream.support.converter;
 
-import java.util.Map;
-
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
-import org.springframework.amqp.utils.JavaUtils;
-import org.springframework.util.Assert;
-
-import com.rabbitmq.stream.MessageBuilder.PropertiesBuilder;
-import com.rabbitmq.stream.Properties;
-import com.rabbitmq.stream.codec.WrapperMessageBuilder;
 
 /**
+ * Converts between {@link com.rabbitmq.stream.Message} and
+ * {@link org.springframework.amqp.core.Message}.
+ *
  * @author Gary Russell
  * @since 2.4
  *
  */
-public class StreamMessageConverter implements MessageConverter {
+public interface StreamMessageConverter extends MessageConverter {
 
 	@Override
-	public Message toMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
-		Assert.isInstanceOf(com.rabbitmq.stream.Message.class, object);
-		com.rabbitmq.stream.Message qpid = (com.rabbitmq.stream.Message) object;
-		toMessageProperties(qpid, messageProperties);
-		return MessageBuilder.withBody(qpid.getBodyAsBinary()).andProperties(messageProperties).build();
-	}
+	Message toMessage(Object object, MessageProperties messageProperties) throws MessageConversionException;
 
 	@Override
-	public com.rabbitmq.stream.Message fromMessage(Message message) throws MessageConversionException {
-		WrapperMessageBuilder builder = new WrapperMessageBuilder();
-		PropertiesBuilder propsBuilder = builder.properties();
-		MessageProperties mProps = message.getMessageProperties();
-		JavaUtils.INSTANCE
-				.acceptIfNotNull(mProps.getMessageId(), propsBuilder::messageId);
-		// TODO ...
-		builder.addData(message.getBody());
-		return builder.build();
-	}
-
-	private void toMessageProperties(com.rabbitmq.stream.Message qpid, MessageProperties messageProperties) {
-		Properties properties = qpid.getProperties();
-		JavaUtils.INSTANCE
-				.acceptIfNotNull(properties.getMessageIdAsString(), messageProperties::setMessageId);
-		// TODO ...
-		Map<String, Object> applicationProperties = qpid.getApplicationProperties();
-		if (applicationProperties != null) {
-			messageProperties.getHeaders().putAll(applicationProperties);
-		}
-	}
+	com.rabbitmq.stream.Message fromMessage(Message message) throws MessageConversionException;
 
 }

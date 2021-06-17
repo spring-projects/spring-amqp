@@ -37,7 +37,7 @@ import com.rabbitmq.stream.Environment;
  * Factory for StreamListenerContainer.
  *
  * @author Gary Russell
- * @since 2.7
+ * @since 2.4
  *
  */
 public class StreamRabbitListenerContainerFactory
@@ -56,6 +56,7 @@ public class StreamRabbitListenerContainerFactory
 	 * @param environment the environment.
 	 */
 	public StreamRabbitListenerContainerFactory(Environment environment) {
+		Assert.notNull(environment, "'environment' cannot be null");
 		this.environment = environment;
 	}
 

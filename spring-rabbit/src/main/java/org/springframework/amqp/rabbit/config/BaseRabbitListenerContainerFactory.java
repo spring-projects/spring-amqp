@@ -51,9 +51,7 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	private RecoveryCallback<?> recoveryCallback;
 
 	@Override
-	public C createListenerContainer(RabbitListenerEndpoint endpoint) {
-		return null;
-	}
+	public abstract C createListenerContainer(RabbitListenerEndpoint endpoint);
 
 	/**
 	 * @param requeueRejected true to reject by default.

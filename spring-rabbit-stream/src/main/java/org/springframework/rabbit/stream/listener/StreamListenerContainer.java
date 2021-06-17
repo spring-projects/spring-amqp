@@ -16,19 +16,22 @@
 
 package org.springframework.rabbit.stream.listener;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.lang.Nullable;
+import org.springframework.rabbit.stream.support.converter.DefaultStreamMessageConverter;
 import org.springframework.rabbit.stream.support.converter.StreamMessageConverter;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.stream.Consumer;
 import com.rabbitmq.stream.ConsumerBuilder;
 import com.rabbitmq.stream.Environment;
-import com.rabbitmq.stream.OffsetSpecification;
 
 /**
  * A listener container for RabbitMQ Streams.
@@ -39,11 +42,13 @@ import com.rabbitmq.stream.OffsetSpecification;
  */
 public class StreamListenerContainer implements MessageListenerContainer, BeanNameAware {
 
+	protected Log logger = LogFactory.getLog(getClass());
+
 	private final Environment environment;
 
 	private final ConsumerBuilder builder;
 
-	private final StreamMessageConverter messageConverter = new StreamMessageConverter();
+	private StreamMessageConverter messageConverter;
 
 	private java.util.function.Consumer<ConsumerBuilder> consumerCustomizer = c -> { };
 
@@ -55,14 +60,19 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 
 	private String beanName;
 
+	private boolean autoStartup = true;
+
+	private MessageListener messageListener;
+
 	/**
 	 * Construct an instance using the provided environment.
 	 * @param environment the environment.
 	 */
 	public StreamListenerContainer(Environment environment) {
+		Assert.notNull(environment, "'environment' cannot be null");
 		this.environment = environment;
-		this.builder = environment.consumerBuilder()
-				.offset(OffsetSpecification.first());
+		this.builder = environment.consumerBuilder();
+		this.messageConverter = new DefaultStreamMessageConverter(environment);
 	}
 
 	@Override
@@ -70,6 +80,26 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 		Assert.isTrue(queueNames != null && queueNames.length == 1, "Only one stream is supported");
 		this.stream = queueNames[0];
 		this.builder.stream(this.stream);
+	}
+
+	/**
+	 * Get a {@link StreamMessageConverter} used to convert a
+	 * {@link com.rabbitmq.stream.Message} to a
+	 * {@link org.springframework.amqp.core.Message}.
+	 * @return the converter.
+	 */
+	public StreamMessageConverter getMessageConverter() {
+		return this.messageConverter;
+	}
+
+	/**
+	 * Set a {@link StreamMessageConverter} used to convert a
+	 * {@link com.rabbitmq.stream.Message} to a
+	 * {@link org.springframework.amqp.core.Message}.
+	 * @param messageConverter the converter.
+	 */
+	public void setMessageConverter(StreamMessageConverter messageConverter) {
+		this.messageConverter = messageConverter;
 	}
 
 	/**
@@ -109,6 +139,21 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	}
 
 	@Override
+	public void setAutoStartup(boolean autoStart) {
+		this.autoStartup = autoStart;
+	}
+
+	@Override
+	public boolean isAutoStartup() {
+		return this.autoStartup;
+	}
+	@Override
+	@Nullable
+	public Object getMessageListener() {
+		return this.messageListener;
+	}
+
+	@Override
 	public synchronized boolean isRunning() {
 		return this.consumer != null;
 	}
@@ -116,7 +161,6 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	@Override
 	public synchronized void start() {
 		if (this.consumer == null) {
-			this.environment.streamCreator().stream(this.stream).create();
 			this.consumerCustomizer.accept(this.builder);
 			this.consumer = this.builder.build();
 		}
@@ -132,6 +176,7 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 
 	@Override
 	public void setupMessageListener(MessageListener messageListener) {
+		this.messageListener = messageListener;
 		this.builder.messageHandler((context, message) -> {
 			if (messageListener instanceof StreamMessageListener) {
 				((StreamMessageListener) messageListener).onStreamMessage(message, context);
@@ -142,8 +187,8 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 					try {
 						((ChannelAwareMessageListener) messageListener).onMessage(message2, null);
 					}
-					catch (Exception e) {
-						e.printStackTrace();
+					catch (Exception e) { // NOSONAR
+						this.logger.error("Listner threw an exception", e);
 					}
 				}
 				else {

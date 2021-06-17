@@ -23,23 +23,29 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
-import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.rabbit.stream.config.StreamRabbitListenerContainerFactory;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
+import com.rabbitmq.http.client.Client;
+import com.rabbitmq.http.client.domain.QueueInfo;
 import com.rabbitmq.stream.Address;
 import com.rabbitmq.stream.Environment;
 import com.rabbitmq.stream.Message;
 import com.rabbitmq.stream.MessageHandler.Context;
+import com.rabbitmq.stream.OffsetSpecification;
 
 /**
  * @author Gary Russell
@@ -47,30 +53,34 @@ import com.rabbitmq.stream.MessageHandler.Context;
  *
  */
 @SpringJUnitConfig
+@DirtiesContext
 public class RabbitListenerTests extends AbstractIntegrationTests {
 
 	@Autowired
 	Config config;
 
 	@Test
-	void simple(@Autowired RabbitTemplate template,
-			@Autowired RabbitListenerEndpointRegistry registry) throws InterruptedException {
+	void simple(@Autowired RabbitTemplate template) throws InterruptedException {
 
-		registry.start();
 		template.convertAndSend("test.stream.queue1", "foo");
 		assertThat(this.config.latch1.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.config.received).isEqualTo("foo");
 	}
 
 	@Test
-	void nativeMsg(@Autowired RabbitTemplate template,
-			@Autowired RabbitListenerEndpointRegistry registry) throws InterruptedException {
+	void nativeMsg(@Autowired RabbitTemplate template) throws InterruptedException {
 
-		registry.start();
 		template.convertAndSend("test.stream.queue2", "foo");
 		assertThat(this.config.latch2.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.config.receivedNative).isNotNull();
 		assertThat(this.config.context).isNotNull();
+	}
+
+	@Test
+	void queueOverAmqp() throws Exception {
+		Client client = new Client("http://guest:guest@localhost:" + RABBITMQ.getMappedPort(15672) + "/api");
+		QueueInfo queue = client.getQueue("/", "stream.created.over.amqp");
+		assertThat(queue.getArguments().get("x-queue-type")).isEqualTo("stream");
 	}
 
 	@Configuration(proxyBeanMethods = false)
@@ -87,16 +97,32 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 
 		volatile Context context;
 
-		@Bean
+		@Bean(destroyMethod = "close")
 		Environment environment() {
 			return Environment.builder()
-					.addressResolver(add -> new Address("localhost", rabbitmq.getMappedPort(5552)))
+					.addressResolver(add -> new Address("localhost", RABBITMQ.getMappedPort(5552)))
 					.build();
 		}
 
 		@Bean
-		DisposableBean disposer(Environment env) {
-			return () -> env.close();
+		SmartLifecycle creator(Environment env) {
+			return new SmartLifecycle() {
+
+				@Override
+				public void stop() {
+				}
+
+				@Override
+				public void start() {
+					env.streamCreator().stream("test.stream.queue1").create();
+					env.streamCreator().stream("test.stream.queue2").create();
+				}
+
+				@Override
+				public boolean isRunning() {
+					return false;
+				}
+			};
 		}
 
 		@Bean
@@ -115,6 +141,7 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 			StreamRabbitListenerContainerFactory factory = new StreamRabbitListenerContainerFactory(env);
 			factory.setNativeListener(true);
 			factory.setConsumerCustomizer(builder -> builder.name("myConsumer")
+					.offset(OffsetSpecification.first())
 					.manualCommitStrategy());
 			return factory;
 		}
@@ -129,7 +156,7 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 
 		@Bean
 		CachingConnectionFactory cf() {
-			return new CachingConnectionFactory(rabbitmq.getContainerIpAddress(), rabbitmq.getFirstMappedPort());
+			return new CachingConnectionFactory(RABBITMQ.getContainerIpAddress(), RABBITMQ.getFirstMappedPort());
 		}
 
 		@Bean
@@ -137,6 +164,18 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 			return new RabbitTemplate(cf);
 		}
 
-	}
+		@Bean
+		RabbitAdmin admin(CachingConnectionFactory cf) {
+			return new RabbitAdmin(cf);
+		}
+
+		@Bean
+		Queue queue() {
+			return QueueBuilder.durable("stream.created.over.amqp")
+					.stream()
+					.build();
+		}
+
+ 	}
 
 }

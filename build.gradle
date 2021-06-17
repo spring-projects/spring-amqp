@@ -395,13 +395,15 @@ project('spring-rabbit-stream') {
 
 		api project(':spring-rabbit')
 		api "com.rabbitmq:stream-client:$rabbitmqStreamVersion"
-		api "org.apache.qpid:proton-j:$protonJVersion"
+		optionalApi "com.rabbitmq:http-client:$rabbitmqHttpClientVersion"
 
 		testApi project(':spring-rabbit-junit')
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core'
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind'
 		testRuntimeOnly 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
 		testRuntimeOnly 'com.fasterxml.jackson.module:jackson-module-kotlin'
+		testRuntimeOnly "org.apache.httpcomponents:httpclient:$commonsHttpClientVersion"
+		testRuntimeOnly "org.apache.qpid:proton-j:$protonJVersion"
 		testImplementation "org.testcontainers:rabbitmq:1.15.3"
 		testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 	}

@@ -28,13 +28,13 @@ import org.testcontainers.utility.DockerImageName;
  */
 public abstract class AbstractIntegrationTests {
 
-	static final GenericContainer<?> rabbitmq = new GenericContainer<>(
+	static final GenericContainer<?> RABBITMQ = new GenericContainer<>(
 			DockerImageName.parse("pivotalrabbitmq/rabbitmq-stream"))
 				.withExposedPorts(5672, 15672, 5552)
 				.withStartupTimeout(Duration.ofMinutes(2));
 
 	static {
-		rabbitmq.start();
+		RABBITMQ.start();
 	}
 
 }

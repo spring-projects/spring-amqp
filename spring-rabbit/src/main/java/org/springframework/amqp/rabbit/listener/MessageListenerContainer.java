@@ -63,17 +63,14 @@ public interface MessageListenerContainer extends SmartLifecycle {
 	 * @param queues the queue names.
 	 * @since 2.4
 	 */
-	default void setQueueNames(String... queues) {
-		throw new UnsupportedOperationException();
-	}
+	void setQueueNames(String... queues);
 
 	/**
 	 * Set auto startup.
 	 * @param autoStart true to auto start.
 	 * @since 2.4
 	 */
-	default void setAutoStartup(boolean autoStart) {
-	}
+	void setAutoStartup(boolean autoStart);
 
 	/**
 	 * Get the message listener.
@@ -81,16 +78,13 @@ public interface MessageListenerContainer extends SmartLifecycle {
 	 * @since 2.4
 	 */
 	@Nullable
-	default Object getMessageListener() {
-		return null;
-	}
+	Object getMessageListener();
 
 	/**
 	 * Set the listener id.
 	 * @param id the id.
 	 * @since 2.4
 	 */
-	default void setListenerId(String id) {
-	}
+	void setListenerId(String id);
 
 }
