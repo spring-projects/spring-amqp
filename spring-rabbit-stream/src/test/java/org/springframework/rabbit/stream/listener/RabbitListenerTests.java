@@ -97,7 +97,7 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 
 		volatile Context context;
 
-		@Bean(destroyMethod = "close")
+		@Bean
 		Environment environment() {
 			return Environment.builder()
 					.addressResolver(add -> new Address("localhost", RABBITMQ.getMappedPort(5552)))
