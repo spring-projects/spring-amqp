@@ -456,6 +456,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	@Override
+	@Nullable
 	public Object getMessageListener() {
 		return this.messageListener;
 	}
@@ -693,6 +694,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		return this.listenerId != null ? this.listenerId : this.beanName;
 	}
 
+	@Override
 	public void setListenerId(String listenerId) {
 		this.listenerId = listenerId;
 	}

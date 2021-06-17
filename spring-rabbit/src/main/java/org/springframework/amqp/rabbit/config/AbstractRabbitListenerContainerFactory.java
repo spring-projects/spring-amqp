@@ -30,7 +30,6 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
-import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -48,7 +47,8 @@ import org.springframework.util.backoff.BackOff;
 import org.springframework.util.backoff.FixedBackOff;
 
 /**
- * Base {@link RabbitListenerContainerFactory} for Spring's base container implementation.
+ * {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory}
+ * for Spring's base container implementation.
  * @param <C> the container type.
  *
  * @author Stephane Nicoll

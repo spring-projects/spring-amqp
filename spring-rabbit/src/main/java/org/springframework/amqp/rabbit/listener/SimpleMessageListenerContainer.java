@@ -564,8 +564,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	private void checkListenerContainerAware() {
-		if (getMessageListener() instanceof ListenerContainerAware) {
-			Collection<String> expectedQueueNames = ((ListenerContainerAware) getMessageListener()).expectedQueueNames();
+		Object messageListener = getMessageListener();
+		if (messageListener instanceof ListenerContainerAware) {
+			Collection<String> expectedQueueNames = ((ListenerContainerAware) messageListener).expectedQueueNames();
 			if (expectedQueueNames != null) {
 				String[] queueNames = getQueueNames();
 				Assert.state(expectedQueueNames.size() == queueNames.length,
