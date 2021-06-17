@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 the original author or authors.
+ * Copyright 2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,27 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.config;
+package org.springframework.rabbit.stream.listener;
 
-import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
+import java.time.Duration;
+
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.utility.DockerImageName;
 
 /**
- * Called by the container factory after the container is created and configured.
- *
- * @param <C> the container type.
- *
  * @author Gary Russell
- * @since 2.2.2
+ * @since 2.4
  *
  */
-@FunctionalInterface
-public interface ContainerCustomizer<C extends MessageListenerContainer> {
+public abstract class AbstractIntegrationTests {
 
-	/**
-	 * Configure the container.
-	 * @param container the container.
-	 */
-	void configure(C container);
+	static final GenericContainer<?> RABBITMQ = new GenericContainer<>(
+			DockerImageName.parse("pivotalrabbitmq/rabbitmq-stream"))
+				.withExposedPorts(5672, 15672, 5552)
+				.withStartupTimeout(Duration.ofMinutes(2));
+
+	static {
+		RABBITMQ.start();
+	}
 
 }

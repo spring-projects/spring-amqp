@@ -55,6 +55,8 @@ ext {
 	logbackVersion = '1.2.3'
 	micrometerVersion = '1.7.0'
 	mockitoVersion = '3.9.0'
+	protonJVersion = '0.33.8'
+	rabbitmqStreamVersion = '0.1.0-SNAPSHOT'
 	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.12.0'
 	rabbitmqHttpClientVersion = '3.9.0.RELEASE'
 	reactorVersion = '2020.0.7'
@@ -96,6 +98,7 @@ allprojects {
 		maven { url 'https://repo.spring.io/libs-milestone' }
 		if (version.endsWith('-SNAPSHOT')) {
 			maven { url 'https://repo.spring.io/libs-snapshot' }
+			maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
 		}
 //		maven { url 'https://repo.spring.io/libs-staging-local' }
 	}
@@ -381,6 +384,28 @@ project('spring-rabbit') {
 		kotlinOptions {
 			jvmTarget = '1.8'
 		}
+	}
+
+}
+
+project('spring-rabbit-stream') {
+	description = 'Spring RabbitMQ Stream Support'
+
+	dependencies {
+
+		api project(':spring-rabbit')
+		api "com.rabbitmq:stream-client:$rabbitmqStreamVersion"
+		optionalApi "com.rabbitmq:http-client:$rabbitmqHttpClientVersion"
+
+		testApi project(':spring-rabbit-junit')
+		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core'
+		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind'
+		testRuntimeOnly 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
+		testRuntimeOnly 'com.fasterxml.jackson.module:jackson-module-kotlin'
+		testRuntimeOnly "org.apache.httpcomponents:httpclient:$commonsHttpClientVersion"
+		testRuntimeOnly "org.apache.qpid:proton-j:$protonJVersion"
+		testImplementation "org.testcontainers:rabbitmq:1.15.3"
+		testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 	}
 
 }

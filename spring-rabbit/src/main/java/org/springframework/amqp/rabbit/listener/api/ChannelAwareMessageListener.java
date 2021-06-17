@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.lang.Nullable;
 
 import com.rabbitmq.client.Channel;
 
@@ -37,10 +38,11 @@ public interface ChannelAwareMessageListener extends MessageListener {
 	 * <p>Implementors are supposed to process the given Message,
 	 * typically sending reply messages through the given Session.
 	 * @param message the received AMQP message (never <code>null</code>)
-	 * @param channel the underlying Rabbit Channel (never <code>null</code>)
+	 * @param channel the underlying Rabbit Channel (never <code>null</code>
+	 * unless called by the stream listener container).
 	 * @throws Exception Any.
 	 */
-	void onMessage(Message message, Channel channel) throws Exception; // NOSONAR
+	void onMessage(Message message, @Nullable Channel channel) throws Exception; // NOSONAR
 
 	@Override
 	default void onMessage(Message message) {

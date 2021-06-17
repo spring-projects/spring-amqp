@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 the original author or authors.
+ * Copyright 2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,27 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.config;
+package org.springframework.rabbit.stream.listener;
 
-import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
+import org.springframework.amqp.core.MessageListener;
+
+import com.rabbitmq.stream.Message;
+import com.rabbitmq.stream.MessageHandler.Context;
 
 /**
- * Called by the container factory after the container is created and configured.
- *
- * @param <C> the container type.
+ * A message listener that receives native stream messages.
  *
  * @author Gary Russell
- * @since 2.2.2
+ * @since 2.4
  *
  */
-@FunctionalInterface
-public interface ContainerCustomizer<C extends MessageListenerContainer> {
+public interface StreamMessageListener extends MessageListener {
 
 	/**
-	 * Configure the container.
-	 * @param container the container.
+	 * Process a message.
+	 * @param message the message.
+	 * @param context the stream context.
 	 */
-	void configure(C container);
+	void onStreamMessage(Message message, Context context);
 
 }

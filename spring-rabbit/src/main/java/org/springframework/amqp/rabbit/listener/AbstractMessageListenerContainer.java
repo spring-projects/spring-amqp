@@ -296,6 +296,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * Set the name of the queue(s) to receive messages from.
 	 * @param queueName the desired queueName(s) (can not be <code>null</code>)
 	 */
+	@Override
 	public void setQueueNames(String... queueName) {
 		Assert.noNullElements(queueName, "Queue name(s) cannot be null");
 		setQueues(Arrays.stream(queueName)
@@ -454,9 +455,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		}
 	}
 
-	/**
-	 * @return The message listener object to register.
-	 */
+	@Override
 	public Object getMessageListener() {
 		return this.messageListener;
 	}
@@ -557,6 +556,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 *
 	 * @param autoStartup true for auto startup.
 	 */
+	@Override
 	public void setAutoStartup(boolean autoStartup) {
 		this.autoStartup = autoStartup;
 	}
@@ -1189,7 +1189,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * Delegates to {@link #validateConfiguration()} and {@link #initialize()}.
 	 */
 	@Override
-	public final void afterPropertiesSet() {
+	public void afterPropertiesSet() {
 		super.afterPropertiesSet();
 		Assert.state(
 				this.exposeListenerChannel || !getAcknowledgeMode().isManual(),

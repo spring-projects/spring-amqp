@@ -103,6 +103,10 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		this.handlerAdapter = handlerAdapter;
 	}
 
+	protected HandlerAdapter getHandlerAdapter() {
+		return this.handlerAdapter;
+	}
+
 	/**
 	 * Set the {@link AmqpHeaderMapper} implementation to use to map the standard
 	 * AMQP headers. By default, a {@link org.springframework.amqp.support.SimpleAmqpHeaderMapper

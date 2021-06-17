@@ -44,7 +44,9 @@ public class MultiMethodRabbitListenerEndpoint extends MethodRabbitListenerEndpo
 	 * Construct an instance for the provided methods and bean.
 	 * @param methods the methods.
 	 * @param bean the bean.
+	 * @deprecated - no longer used.
 	 */
+	@Deprecated
 	public MultiMethodRabbitListenerEndpoint(List<Method> methods, Object bean) {
 		this(methods, null, bean);
 	}

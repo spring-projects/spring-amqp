@@ -268,6 +268,15 @@ public final class QueueBuilder extends AbstractBuilder {
 	}
 
 	/**
+	 * Set the queue argument to declare a queue of type 'stream' instead of 'classic'.
+	 * @return the builder.
+	 * @since 2.4
+	 */
+	public QueueBuilder stream() {
+		return withArgument("x-queue-type", "stream");
+	}
+
+	/**
 	 * Set the delivery limit; only applies to quorum queues.
 	 * @param limit the limit.
 	 * @return the builder.
