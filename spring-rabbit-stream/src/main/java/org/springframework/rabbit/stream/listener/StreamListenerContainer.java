@@ -106,7 +106,7 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	 * Customize the consumer builder before it is built.
 	 * @param consumerCustomizer the customizer.
 	 */
-	public void setConsumerCustomizer(java.util.function.Consumer<ConsumerBuilder> consumerCustomizer) {
+	public synchronized void setConsumerCustomizer(java.util.function.Consumer<ConsumerBuilder> consumerCustomizer) {
 		this.consumerCustomizer = consumerCustomizer;
 	}
 
