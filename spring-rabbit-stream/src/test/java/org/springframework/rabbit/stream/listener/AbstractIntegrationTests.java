@@ -28,12 +28,17 @@ import org.testcontainers.utility.DockerImageName;
  */
 public abstract class AbstractIntegrationTests {
 
-	static final GenericContainer<?> RABBITMQ = new GenericContainer<>(
-			DockerImageName.parse("pivotalrabbitmq/rabbitmq-stream"))
-				.withExposedPorts(5672, 15672, 5552)
-				.withStartupTimeout(Duration.ofMinutes(2));
+	static final GenericContainer<?> RABBITMQ;
 
 	static {
+		String image = "pivotalrabbitmq/rabbitmq-stream";
+		String cache = System.getenv().get("IMAGE_CACHE");
+		if (cache != null) {
+			image = cache + image;
+		}
+		RABBITMQ = new GenericContainer<>(DockerImageName.parse(image))
+					.withExposedPorts(5672, 15672, 5552)
+					.withStartupTimeout(Duration.ofMinutes(2));
 		RABBITMQ.start();
 	}
 
