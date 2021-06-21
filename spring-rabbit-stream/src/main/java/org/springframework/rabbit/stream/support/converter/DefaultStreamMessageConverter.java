@@ -41,10 +41,13 @@ import com.rabbitmq.stream.codec.WrapperMessageBuilder;
  */
 public class DefaultStreamMessageConverter implements StreamMessageConverter {
 
-	private final Supplier<MessageBuilder> builder;
+	private final Supplier<MessageBuilder> builderSupplier;
 
+	/**
+	 * Construct an instance using a {@link WrapperMessageBuilder}.
+	 */
 	public DefaultStreamMessageConverter() {
-		this.builder = () -> new WrapperMessageBuilder();
+		this.builderSupplier = () -> new WrapperMessageBuilder();
 	}
 
 	/**
@@ -52,7 +55,7 @@ public class DefaultStreamMessageConverter implements StreamMessageConverter {
 	 * @param codec the codec.
 	 */
 	public DefaultStreamMessageConverter(@Nullable Codec codec) {
-		this.builder = () -> codec.messageBuilder();
+		this.builderSupplier = () -> codec.messageBuilder();
 	}
 
 	@Override
@@ -67,7 +70,7 @@ public class DefaultStreamMessageConverter implements StreamMessageConverter {
 
 	@Override
 	public com.rabbitmq.stream.Message fromMessage(Message message) throws MessageConversionException {
-		MessageBuilder builder = this.builder.get();
+		MessageBuilder builder = this.builderSupplier.get();
 		PropertiesBuilder propsBuilder = builder.properties();
 		MessageProperties mProps = message.getMessageProperties();
 		JavaUtils.INSTANCE
