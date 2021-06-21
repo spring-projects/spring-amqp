@@ -142,7 +142,7 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 			factory.setNativeListener(true);
 			factory.setConsumerCustomizer(builder -> builder.name("myConsumer")
 					.offset(OffsetSpecification.first())
-					.manualCommitStrategy());
+					.manualTrackingStrategy());
 			return factory;
 		}
 
@@ -151,7 +151,7 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 			this.receivedNative = in;
 			this.context = context;
 			this.latch2.countDown();
-			context.commit();
+			context.storeOffset();
 		}
 
 		@Bean
