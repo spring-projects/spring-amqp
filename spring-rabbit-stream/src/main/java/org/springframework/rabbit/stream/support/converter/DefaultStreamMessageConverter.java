@@ -17,15 +17,17 @@
 package org.springframework.rabbit.stream.support.converter;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.utils.JavaUtils;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
-import com.rabbitmq.stream.Environment;
+import com.rabbitmq.stream.Codec;
+import com.rabbitmq.stream.MessageBuilder;
 import com.rabbitmq.stream.MessageBuilder.PropertiesBuilder;
 import com.rabbitmq.stream.Properties;
 import com.rabbitmq.stream.codec.WrapperMessageBuilder;
@@ -39,15 +41,18 @@ import com.rabbitmq.stream.codec.WrapperMessageBuilder;
  */
 public class DefaultStreamMessageConverter implements StreamMessageConverter {
 
-	private final Environment environment;
+	private final Supplier<MessageBuilder> builder;
+
+	public DefaultStreamMessageConverter() {
+		this.builder = () -> new WrapperMessageBuilder();
+	}
 
 	/**
-	 * Construct an instance using the provided environment.
-	 * @param environment the environment.
+	 * Construct an instance using the provided codec.
+	 * @param codec the codec.
 	 */
-	public DefaultStreamMessageConverter(Environment environment) {
-		Assert.notNull(environment, "'environment' cannot be null");
-		this.environment = environment;
+	public DefaultStreamMessageConverter(@Nullable Codec codec) {
+		this.builder = () -> codec.messageBuilder();
 	}
 
 	@Override
@@ -55,13 +60,14 @@ public class DefaultStreamMessageConverter implements StreamMessageConverter {
 		Assert.isInstanceOf(com.rabbitmq.stream.Message.class, object);
 		com.rabbitmq.stream.Message streamMessage = (com.rabbitmq.stream.Message) object;
 		toMessageProperties(streamMessage, messageProperties);
-		return MessageBuilder.withBody(streamMessage.getBodyAsBinary()).andProperties(messageProperties).build();
+		return org.springframework.amqp.core.MessageBuilder.withBody(streamMessage.getBodyAsBinary())
+				.andProperties(messageProperties)
+				.build();
 	}
 
 	@Override
 	public com.rabbitmq.stream.Message fromMessage(Message message) throws MessageConversionException {
-		// TODO get the builder from the environment's codec
-		WrapperMessageBuilder builder = new WrapperMessageBuilder();
+		MessageBuilder builder = this.builder.get();
 		PropertiesBuilder propsBuilder = builder.properties();
 		MessageProperties mProps = message.getMessageProperties();
 		JavaUtils.INSTANCE

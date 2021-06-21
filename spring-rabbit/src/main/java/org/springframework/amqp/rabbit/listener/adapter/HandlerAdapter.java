@@ -64,7 +64,7 @@ public class HandlerAdapter {
 	 * @throws Exception if one occurs.
 	 */
 	public InvocationResult invoke(@Nullable Message<?> message, Object... providedArgs) throws Exception { // NOSONAR
-		if (this.invokerHandlerMethod != null) {
+		if (this.invokerHandlerMethod != null) { // NOSONAR (nullable message)
 			return new InvocationResult(this.invokerHandlerMethod.invoke(message, providedArgs),
 					null, this.invokerHandlerMethod.getMethod().getGenericReturnType(),
 					this.invokerHandlerMethod.getBean(),

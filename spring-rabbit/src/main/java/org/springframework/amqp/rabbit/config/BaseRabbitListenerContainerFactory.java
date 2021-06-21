@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbit.config;
 import java.util.Arrays;
 
 import org.springframework.amqp.core.MessagePostProcessor;
-import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
@@ -42,7 +41,7 @@ import org.springframework.util.Assert;
 public abstract class BaseRabbitListenerContainerFactory<C extends MessageListenerContainer>
 	implements RabbitListenerContainerFactory<C> {
 
-	protected Boolean defaultRequeueRejected;
+	private Boolean defaultRequeueRejected;
 
 	private MessagePostProcessor[] beforeSendReplyPostProcessors;
 
@@ -55,7 +54,7 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 
 	/**
 	 * @param requeueRejected true to reject by default.
-	 * @see AbstractMessageListenerContainer#setDefaultRequeueRejected
+	 * @see org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer#setDefaultRequeueRejected
 	 */
 	public void setDefaultRequeueRejected(Boolean requeueRejected) {
 		this.defaultRequeueRejected = requeueRejected;
@@ -109,7 +108,7 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 		if (instance.getMessageListener() instanceof AbstractAdaptableMessageListener) {
 			AbstractAdaptableMessageListener messageListener = (AbstractAdaptableMessageListener) instance
 					.getMessageListener();
-			JavaUtils.INSTANCE
+			JavaUtils.INSTANCE // NOSONAR
 					.acceptIfNotNull(this.beforeSendReplyPostProcessors,
 							messageListener::setBeforeSendReplyPostProcessors)
 					.acceptIfNotNull(this.retryTemplate, messageListener::setRetryTemplate)

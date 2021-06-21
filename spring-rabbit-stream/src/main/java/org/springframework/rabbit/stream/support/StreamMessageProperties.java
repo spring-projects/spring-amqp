@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.springframework.rabbit.stream.listener;
+package org.springframework.rabbit.stream.support;
 
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.lang.Nullable;
 
 import com.rabbitmq.stream.MessageHandler.Context;
 
@@ -31,13 +32,13 @@ public class StreamMessageProperties extends MessageProperties {
 
 	private static final long serialVersionUID = 1L;
 
-	private final Context context;
+	private transient Context context;
 
 	/**
 	 * Create a new instance with the provided context.
 	 * @param context the context.
 	 */
-	public StreamMessageProperties(Context context) {
+	public StreamMessageProperties(@Nullable Context context) {
 		this.context = context;
 	}
 
@@ -45,9 +46,9 @@ public class StreamMessageProperties extends MessageProperties {
 	 * Return the stream {@link Context} for the message.
 	 * @return the context.
 	 */
+	@Nullable
 	public Context getContext() {
 		return this.context;
 	}
-
 
 }

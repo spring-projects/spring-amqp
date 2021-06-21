@@ -362,7 +362,6 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 			.acceptIfNotNull(this.transactionManager, instance::setTransactionManager)
 			.acceptIfNotNull(this.prefetchCount, instance::setPrefetchCount)
 			.acceptIfNotNull(this.globalQos, instance::setGlobalQos)
-			.acceptIfNotNull(this.defaultRequeueRejected, instance::setDefaultRequeueRejected)
 			.acceptIfNotNull(this.adviceChain, instance::setAdviceChain)
 			.acceptIfNotNull(this.recoveryBackOff, instance::setRecoveryBackOff)
 			.acceptIfNotNull(this.mismatchedQueuesFatal, instance::setMismatchedQueuesFatal)

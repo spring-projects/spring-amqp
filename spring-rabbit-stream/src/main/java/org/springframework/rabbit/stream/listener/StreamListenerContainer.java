@@ -25,10 +25,12 @@ import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.lang.Nullable;
+import org.springframework.rabbit.stream.support.StreamMessageProperties;
 import org.springframework.rabbit.stream.support.converter.DefaultStreamMessageConverter;
 import org.springframework.rabbit.stream.support.converter.StreamMessageConverter;
 import org.springframework.util.Assert;
 
+import com.rabbitmq.stream.Codec;
 import com.rabbitmq.stream.Consumer;
 import com.rabbitmq.stream.ConsumerBuilder;
 import com.rabbitmq.stream.Environment;
@@ -42,17 +44,13 @@ import com.rabbitmq.stream.Environment;
  */
 public class StreamListenerContainer implements MessageListenerContainer, BeanNameAware {
 
-	protected Log logger = LogFactory.getLog(getClass());
-
-	private final Environment environment;
+	protected Log logger = LogFactory.getLog(getClass()); // NOSONAR
 
 	private final ConsumerBuilder builder;
 
 	private StreamMessageConverter messageConverter;
 
 	private java.util.function.Consumer<ConsumerBuilder> consumerCustomizer = c -> { };
-
-	private String stream;
 
 	private Consumer consumer;
 
@@ -69,17 +67,24 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	 * @param environment the environment.
 	 */
 	public StreamListenerContainer(Environment environment) {
+		this(environment, null);
+	}
+
+	/**
+	 * Construct an instance using the provided environment and codec.
+	 * @param environment the environment.
+	 * @param codec the codec used to create reply messages.
+	 */
+	public StreamListenerContainer(Environment environment, @Nullable Codec codec) {
 		Assert.notNull(environment, "'environment' cannot be null");
-		this.environment = environment;
 		this.builder = environment.consumerBuilder();
-		this.messageConverter = new DefaultStreamMessageConverter(environment);
+		this.messageConverter = new DefaultStreamMessageConverter(codec);
 	}
 
 	@Override
 	public void setQueueNames(String... queueNames) {
 		Assert.isTrue(queueNames != null && queueNames.length == 1, "Only one stream is supported");
-		this.stream = queueNames[0];
-		this.builder.stream(this.stream);
+		this.builder.stream(queueNames[0]);
 	}
 
 	/**
