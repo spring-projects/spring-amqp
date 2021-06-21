@@ -61,10 +61,17 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	}
 
 	/**
+	 * Return the defaultRequeueRejected.
+	 * @return the defaultRequeueRejected.
+	 */
+	protected Boolean getDefaultRequeueRejected() {
+		return this.defaultRequeueRejected;
+	}
+
+	/**
 	 * Set post processors that will be applied before sending replies; added to each
 	 * message listener adapter.
 	 * @param postProcessors the post processors.
-	 * @since 2.0.3
 	 * @see AbstractAdaptableMessageListener#setBeforeSendReplyPostProcessors(MessagePostProcessor...)
 	 */
 	public void setBeforeSendReplyPostProcessors(MessagePostProcessor... postProcessors) {
@@ -77,7 +84,6 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	 * Set a {@link RetryTemplate} to use when sending replies; added to each message
 	 * listener adapter.
 	 * @param retryTemplate the template.
-	 * @since 2.0.6
 	 * @see #setReplyRecoveryCallback(RecoveryCallback)
 	 * @see AbstractAdaptableMessageListener#setRetryTemplate(RetryTemplate)
 	 */
@@ -90,7 +96,6 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	 * message listener adapter. Only used if a {@link #setRetryTemplate(RetryTemplate)
 	 * retryTemplate} is provided.
 	 * @param recoveryCallback the recovery callback.
-	 * @since 2.0.6
 	 * @see #setRetryTemplate(RetryTemplate)
 	 * @see AbstractAdaptableMessageListener#setRecoveryCallback(RecoveryCallback)
 	 */
