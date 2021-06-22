@@ -16,7 +16,10 @@
 
 package org.springframework.rabbit.stream.support.converter;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 import org.springframework.amqp.core.Message;
@@ -24,10 +27,12 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.lang.Nullable;
+import org.springframework.rabbit.stream.support.StreamMessageProperties;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.stream.Codec;
 import com.rabbitmq.stream.MessageBuilder;
+import com.rabbitmq.stream.MessageBuilder.ApplicationPropertiesBuilder;
 import com.rabbitmq.stream.MessageBuilder.PropertiesBuilder;
 import com.rabbitmq.stream.Properties;
 import com.rabbitmq.stream.codec.WrapperMessageBuilder;
@@ -42,6 +47,8 @@ import com.rabbitmq.stream.codec.WrapperMessageBuilder;
 public class DefaultStreamMessageConverter implements StreamMessageConverter {
 
 	private final Supplier<MessageBuilder> builderSupplier;
+
+	private final Charset charset = StandardCharsets.UTF_8;
 
 	/**
 	 * Construct an instance using a {@link WrapperMessageBuilder}.
@@ -59,7 +66,7 @@ public class DefaultStreamMessageConverter implements StreamMessageConverter {
 	}
 
 	@Override
-	public Message toMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
+	public Message toMessage(Object object, StreamMessageProperties messageProperties) throws MessageConversionException {
 		Assert.isInstanceOf(com.rabbitmq.stream.Message.class, object);
 		com.rabbitmq.stream.Message streamMessage = (com.rabbitmq.stream.Message) object;
 		toMessageProperties(streamMessage, messageProperties);
@@ -72,22 +79,87 @@ public class DefaultStreamMessageConverter implements StreamMessageConverter {
 	public com.rabbitmq.stream.Message fromMessage(Message message) throws MessageConversionException {
 		MessageBuilder builder = this.builderSupplier.get();
 		PropertiesBuilder propsBuilder = builder.properties();
-		MessageProperties mProps = message.getMessageProperties();
+		MessageProperties props = message.getMessageProperties();
+		Assert.isInstanceOf(StreamMessageProperties.class, props);
+		StreamMessageProperties mProps = (StreamMessageProperties) props;
 		JavaUtils.INSTANCE
-				.acceptIfNotNull(mProps.getMessageId(), propsBuilder::messageId);
-		// TODO ...
+				.acceptIfNotNull(mProps.getMessageId(), propsBuilder::messageId) // TODO different types
+				.acceptIfNotNull(mProps.getUserId(), usr -> propsBuilder.userId(usr.getBytes(this.charset)))
+				.acceptIfNotNull(mProps.getTo(), propsBuilder::to)
+				.acceptIfNotNull(mProps.getSubject(), propsBuilder::subject)
+				.acceptIfNotNull(mProps.getReplyTo(), propsBuilder::replyTo)
+				.acceptIfNotNull(mProps.getCorrelationId(), propsBuilder::correlationId) // TODO different types
+				.acceptIfNotNull(mProps.getContentType(), propsBuilder::contentType)
+				.acceptIfNotNull(mProps.getContentEncoding(), propsBuilder::contentEncoding)
+				.acceptIfNotNull(mProps.getExpiration(), exp -> propsBuilder.absoluteExpiryTime(Long.parseLong(exp)))
+				.acceptIfNotNull(mProps.getCreationTime(), propsBuilder::creationTime)
+				.acceptIfNotNull(mProps.getGroupId(), propsBuilder::groupId)
+				.acceptIfNotNull(mProps.getGroupSequence(), propsBuilder::groupSequence)
+				.acceptIfNotNull(mProps.getReplyToGroupId(), propsBuilder::replyToGroupId);
+		if (mProps.getHeaders().size() > 0) {
+			ApplicationPropertiesBuilder appPropsBuilder = builder.applicationProperties();
+			mProps.getHeaders().forEach((key, val) -> {
+				mapProp(key, val, appPropsBuilder);
+			});
+		}
 		builder.addData(message.getBody());
 		return builder.build();
 	}
 
-	private void toMessageProperties(com.rabbitmq.stream.Message streamMessage, MessageProperties messageProperties) {
+	private void mapProp(String key, Object val, ApplicationPropertiesBuilder builder) {
+		if (val instanceof String) {
+			builder.entry(key, (String) val);
+		}
+		else if (val instanceof Long) {
+			builder.entry(key, (Long) val);
+		}
+		else if (val instanceof Integer) {
+			builder.entry(key, (Integer) val);
+		}
+		else if (val instanceof Short) {
+			builder.entry(key, (Short) val);
+		}
+		else if (val instanceof Byte) {
+			builder.entry(key, (Byte) val);
+		}
+		else if (val instanceof Double) {
+			builder.entry(key, (Double) val);
+		}
+		else if (val instanceof Float) {
+			builder.entry(key, (Float) val);
+		}
+		else if (val instanceof Character) {
+			builder.entry(key, (Character) val);
+		}
+		else if (val instanceof UUID) {
+			builder.entry(key, (UUID) val);
+		}
+		else if (val instanceof byte[]) {
+			builder.entry(key, (byte[]) val);
+		}
+	}
+
+	private void toMessageProperties(com.rabbitmq.stream.Message streamMessage,
+			StreamMessageProperties mProps) {
+
 		Properties properties = streamMessage.getProperties();
 		JavaUtils.INSTANCE
-				.acceptIfNotNull(properties.getMessageIdAsString(), messageProperties::setMessageId);
-		// TODO ...
+				.acceptIfNotNull(properties.getMessageIdAsString(), mProps::setMessageId)
+				.acceptIfNotNull(properties.getUserId(), usr -> mProps.setUserId(new String(usr, this.charset)))
+				.acceptIfNotNull(properties.getTo(), mProps::setTo)
+				.acceptIfNotNull(properties.getSubject(), mProps::setSubject)
+				.acceptIfNotNull(properties.getReplyTo(), mProps::setReplyTo)
+				.acceptIfNotNull(properties.getCorrelationIdAsString(), mProps::setCorrelationId)
+				.acceptIfNotNull(properties.getContentType(), mProps::setContentType)
+				.acceptIfNotNull(properties.getContentEncoding(), mProps::setContentEncoding)
+				.acceptIfNotNull(properties.getAbsoluteExpiryTime(), exp -> mProps.setExpiration(Long.toString(exp)))
+				.acceptIfNotNull(properties.getCreationTime(), mProps::setCreationTime)
+				.acceptIfNotNull(properties.getGroupId(), mProps::setGroupId)
+				.acceptIfNotNull(properties.getGroupSequence(), mProps::setGroupSequence)
+				.acceptIfNotNull(properties.getReplyToGroupId(), mProps::setReplyToGroupId);
 		Map<String, Object> applicationProperties = streamMessage.getApplicationProperties();
 		if (applicationProperties != null) {
-			messageProperties.getHeaders().putAll(applicationProperties);
+			mProps.getHeaders().putAll(applicationProperties);
 		}
 	}
 
