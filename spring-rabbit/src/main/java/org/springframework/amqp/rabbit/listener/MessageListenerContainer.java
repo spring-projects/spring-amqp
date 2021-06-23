@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.listener;
 
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.lang.Nullable;
 
@@ -28,7 +29,7 @@ import org.springframework.lang.Nullable;
  * @author Gary Russell
  * @since 1.4
  */
-public interface MessageListenerContainer extends SmartLifecycle {
+public interface MessageListenerContainer extends SmartLifecycle, InitializingBean {
 
 	/**
 	 * Setup the message listener to use. Throws an {@link IllegalArgumentException}
@@ -86,5 +87,9 @@ public interface MessageListenerContainer extends SmartLifecycle {
 	 * @since 2.4
 	 */
 	void setListenerId(String id);
+
+	@Override
+	default void afterPropertiesSet() throws Exception { // NOSONAR
+	}
 
 }
