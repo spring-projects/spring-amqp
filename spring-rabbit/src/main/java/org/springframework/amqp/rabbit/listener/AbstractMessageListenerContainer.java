@@ -457,6 +457,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	/**
 	 * @return The message listener object to register.
 	 */
+	@Override
 	public Object getMessageListener() {
 		return this.messageListener;
 	}
@@ -557,6 +558,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 *
 	 * @param autoStartup true for auto startup.
 	 */
+	@Override
 	public void setAutoStartup(boolean autoStartup) {
 		this.autoStartup = autoStartup;
 	}
