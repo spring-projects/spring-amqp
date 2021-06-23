@@ -89,7 +89,7 @@ public interface MessageListenerContainer extends SmartLifecycle, InitializingBe
 	void setListenerId(String id);
 
 	@Override
-	default void afterPropertiesSet() throws Exception { // NOSONAR
+	default void afterPropertiesSet() {
 	}
 
 }
