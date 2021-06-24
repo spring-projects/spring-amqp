@@ -698,6 +698,7 @@ publishing {
 	publications {
 		mavenJava(MavenPublication) {
 			artifact docsZip
+			artifact schemaZip
 			artifact distZip
 		}
 	}
