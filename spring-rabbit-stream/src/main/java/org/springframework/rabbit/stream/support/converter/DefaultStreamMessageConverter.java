@@ -106,7 +106,7 @@ public class DefaultStreamMessageConverter implements StreamMessageConverter {
 		return builder.build();
 	}
 
-	private void mapProp(String key, Object val, ApplicationPropertiesBuilder builder) {
+	private void mapProp(String key, Object val, ApplicationPropertiesBuilder builder) { // NOSONAR - complexity
 		if (val instanceof String) {
 			builder.entry(key, (String) val);
 		}

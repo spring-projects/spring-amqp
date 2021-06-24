@@ -16,12 +16,12 @@
 
 package org.springframework.rabbit.stream.support;
 
+import java.util.Objects;
+
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.lang.Nullable;
 
-import com.rabbitmq.stream.MessageBuilder.PropertiesBuilder;
 import com.rabbitmq.stream.MessageHandler.Context;
-import com.rabbitmq.stream.Properties;
 
 /**
  * {@link MessageProperties} extension for stream messages.
@@ -66,7 +66,7 @@ public class StreamMessageProperties extends MessageProperties {
 	}
 
 	/**
-	 * See {@link Properties#getTo()}.
+	 * See {@link com.rabbitmq.stream.Properties#getTo()}.
 	 * @return the to address.
 	 */
 	public String getTo() {
@@ -74,7 +74,7 @@ public class StreamMessageProperties extends MessageProperties {
 	}
 
 	/**
-	 * See {@link PropertiesBuilder#to(String)}.
+	 * See {@link com.rabbitmq.stream.MessageBuilder.PropertiesBuilder#to(String)}.
 	 * @param address the address.
 	 */
 	public void setTo(String address) {
@@ -82,7 +82,7 @@ public class StreamMessageProperties extends MessageProperties {
 	}
 
 	/**
-	 * See {@link Properties#getSubject()}.
+	 * See {@link com.rabbitmq.stream.Properties#getSubject()}.
 	 * @return the subject.
 	 */
 	public String getSubject() {
@@ -90,7 +90,7 @@ public class StreamMessageProperties extends MessageProperties {
 	}
 
 	/**
-	 * See {@link PropertiesBuilder#subject(String)}.
+	 * See {@link com.rabbitmq.stream.MessageBuilder.PropertiesBuilder#subject(String)}.
 	 * @param subject the subject.
 	 */
 	public void setSubject(String subject) {
@@ -98,7 +98,7 @@ public class StreamMessageProperties extends MessageProperties {
 	}
 
 	/**
-	 * See {@link Properties#getCreationTime()}.
+	 * See {@link com.rabbitmq.stream.Properties#getCreationTime()}.
 	 * @return the creation time.
 	 */
 	public long getCreationTime() {
@@ -106,7 +106,8 @@ public class StreamMessageProperties extends MessageProperties {
 	}
 
 	/**
-	 * See {@link PropertiesBuilder#creationTime(long)}.
+	 * See
+	 * {@link com.rabbitmq.stream.MessageBuilder.PropertiesBuilder#creationTime(long)}.
 	 * @param creationTime the creation time.
 	 */
 	public void setCreationTime(long creationTime) {
@@ -114,7 +115,7 @@ public class StreamMessageProperties extends MessageProperties {
 	}
 
 	/**
-	 * See {@link Properties#getGroupId()}.
+	 * See {@link com.rabbitmq.stream.Properties#getGroupId()}.
 	 * @return the group id.
 	 */
 	public String getGroupId() {
@@ -122,7 +123,7 @@ public class StreamMessageProperties extends MessageProperties {
 	}
 
 	/**
-	 * See {@link PropertiesBuilder#groupId(String)}.
+	 * See {@link com.rabbitmq.stream.MessageBuilder.PropertiesBuilder#groupId(String)}.
 	 * @param groupId the group id.
 	 */
 	public void setGroupId(String groupId) {
@@ -130,7 +131,7 @@ public class StreamMessageProperties extends MessageProperties {
 	}
 
 	/**
-	 * See {@link Properties#getGroupSequence()}.
+	 * See {@link com.rabbitmq.stream.Properties#getGroupSequence()}.
 	 * @return the group sequence.
 	 */
 	public long getGroupSequence() {
@@ -138,7 +139,8 @@ public class StreamMessageProperties extends MessageProperties {
 	}
 
 	/**
-	 * See {@link PropertiesBuilder#groupSequence(long)}.
+	 * See
+	 * {@link com.rabbitmq.stream.MessageBuilder.PropertiesBuilder#groupSequence(long)}.
 	 * @param groupSequence the group sequence.
 	 */
 	public void setGroupSequence(long groupSequence) {
@@ -146,7 +148,7 @@ public class StreamMessageProperties extends MessageProperties {
 	}
 
 	/**
-	 * See {@link Properties#getReplyToGroupId()}.
+	 * See {@link com.rabbitmq.stream.Properties#getReplyToGroupId()}.
 	 * @return the reply to group id.
 	 */
 	public String getReplyToGroupId() {
@@ -154,11 +156,38 @@ public class StreamMessageProperties extends MessageProperties {
 	}
 
 	/**
-	 * See {@link PropertiesBuilder#replyToGroupId(String)}.
+	 * See
+	 * {@link com.rabbitmq.stream.MessageBuilder.PropertiesBuilder#replyToGroupId(String)}.
 	 * @param replyToGroupId the reply to group id.
 	 */
 	public void setReplyToGroupId(String replyToGroupId) {
 		this.replyToGroupId = replyToGroupId;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = super.hashCode();
+		result = prime * result + Objects.hash(creationTime, groupId, groupSequence, replyToGroupId, subject, to);
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (!super.equals(obj)) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		StreamMessageProperties other = (StreamMessageProperties) obj;
+		return this.creationTime == other.creationTime && Objects.equals(this.groupId, other.groupId)
+				&& this.groupSequence == other.groupSequence
+				&& Objects.equals(this.replyToGroupId, other.replyToGroupId)
+				&& Objects.equals(this.subject, other.subject) && Objects.equals(this.to, other.to);
 	}
 
 }

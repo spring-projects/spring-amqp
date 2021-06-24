@@ -29,9 +29,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
@@ -183,15 +181,7 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 			RabbitListenerContainerFactory<?> factory) {
 
 		MessageListenerContainer listenerContainer = factory.createListenerContainer(endpoint);
-
-		if (listenerContainer instanceof InitializingBean) {
-			try {
-				((InitializingBean) listenerContainer).afterPropertiesSet();
-			}
-			catch (Exception ex) {
-				throw new BeanInitializationException("Failed to initialize message listener container", ex);
-			}
-		}
+		listenerContainer.afterPropertiesSet();
 
 		int containerPhase = listenerContainer.getPhase();
 		if (containerPhase < Integer.MAX_VALUE) {  // a custom phase value
