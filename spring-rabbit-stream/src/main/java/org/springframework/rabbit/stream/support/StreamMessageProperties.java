@@ -168,7 +168,8 @@ public class StreamMessageProperties extends MessageProperties {
 	public int hashCode() {
 		final int prime = 31;
 		int result = super.hashCode();
-		result = prime * result + Objects.hash(creationTime, groupId, groupSequence, replyToGroupId, subject, to);
+		result = prime * result + Objects.hash(this.creationTime, this.groupId, this.groupSequence, this.replyToGroupId,
+				this.subject, this.to);
 		return result;
 	}
 
