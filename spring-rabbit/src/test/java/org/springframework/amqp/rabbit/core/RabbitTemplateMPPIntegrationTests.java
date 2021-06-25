@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,43 +59,46 @@ public class RabbitTemplateMPPIntegrationTests {
 	@Autowired
 	private Config config;
 
-	@Test // 2.0.x only
+	@Test
 	public void testMPPsAppliedDirectReplyToContainerTests() {
+		this.config.afterMppCalled = 0;
 		this.template.sendAndReceive(new Message("foo".getBytes(), new MessageProperties()));
 		assertThat(this.config.beforeMppCalled).as("before MPP not called").isTrue();
-		assertThat(this.config.afterMppCalled).as("after MPP not called").isTrue();
+		assertThat(this.config.afterMppCalled).as("after MPP not called").isEqualTo(1);
 	}
 
 	@Test
 	public void testMPPsAppliedDirectReplyToTests() {
+		this.config.afterMppCalled = 0;
 		this.template.setUseDirectReplyToContainer(false);
 		this.template.sendAndReceive(new Message("foo".getBytes(), new MessageProperties()));
 		assertThat(this.config.beforeMppCalled).as("before MPP not called").isTrue();
-		assertThat(this.config.afterMppCalled).as("after MPP not called").isTrue();
+		assertThat(this.config.afterMppCalled).as("after MPP not called").isEqualTo(1);
 	}
 
 	@Test
 	public void testMPPsAppliedTemporaryReplyQueueTests() {
+		this.config.afterMppCalled = 0;
 		this.template.setUseDirectReplyToContainer(false);
 		this.template.setUseTemporaryReplyQueues(true);
 		this.template.sendAndReceive(new Message("foo".getBytes(), new MessageProperties()));
 		assertThat(this.config.beforeMppCalled).as("before MPP not called").isTrue();
-		assertThat(this.config.afterMppCalled).as("after MPP not called").isTrue();
+		assertThat(this.config.afterMppCalled).as("after MPP not called").isEqualTo(1);
 	}
 
 	@Test
 	public void testMPPsAppliedReplyContainerTests() {
+		this.config.afterMppCalled = 0;
 		this.template.setReplyAddress(REPLIES);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.config.cf());
 		try {
 			container.setQueueNames(REPLIES);
 			container.setMessageListener(this.template);
-			container.setAfterReceivePostProcessors(this.config.afterMPP());
 			container.afterPropertiesSet();
 			container.start();
 			this.template.sendAndReceive(new Message("foo".getBytes(), new MessageProperties()));
 			assertThat(this.config.beforeMppCalled).as("before MPP not called").isTrue();
-			assertThat(this.config.afterMppCalled).as("after MPP not called").isTrue();
+			assertThat(this.config.afterMppCalled).as("after MPP not called").isEqualTo(1);
 		}
 		finally {
 			container.stop();
@@ -106,9 +109,9 @@ public class RabbitTemplateMPPIntegrationTests {
 	@EnableRabbit
 	public static class Config {
 
-		private boolean beforeMppCalled;
+		boolean beforeMppCalled;
 
-		private boolean afterMppCalled;
+		int afterMppCalled;
 
 		@Bean
 		public CachingConnectionFactory cf() {
@@ -131,7 +134,7 @@ public class RabbitTemplateMPPIntegrationTests {
 		@Bean
 		public MessagePostProcessor afterMPP() {
 			return m -> {
-				this.afterMppCalled = true;
+				this.afterMppCalled++;
 				return m;
 			};
 		}
