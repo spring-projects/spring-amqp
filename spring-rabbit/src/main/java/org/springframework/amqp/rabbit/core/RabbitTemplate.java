@@ -1895,10 +1895,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 					if (this.taskExecutor != null) {
 						container.setTaskExecutor(this.taskExecutor);
 					}
-					if (this.afterReceivePostProcessors != null) {
-						container.setAfterReceivePostProcessors(this.afterReceivePostProcessors
-								.toArray(new MessagePostProcessor[this.afterReceivePostProcessors.size()]));
-					}
 					container.setNoLocal(this.noLocalReplyConsumer);
 					if (this.replyErrorHandler != null) {
 						container.setErrorHandler(this.replyErrorHandler);
