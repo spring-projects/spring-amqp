@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
@@ -62,8 +63,10 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
 import org.springframework.amqp.core.ReturnedMessage;
 import org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.AfterCompletionFailedException;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
+import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.PublisherCallbackChannel;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.SimpleRoutingConnectionFactory;
@@ -616,6 +619,7 @@ public class RabbitTemplateTests {
 
 	@Test
 	void resourcesClearedAfterTxFailsWithSync() throws IOException, TimeoutException {
+		ConnectionFactoryUtils.enableAfterCompletionFailureCapture(true);
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
@@ -638,6 +642,9 @@ public class RabbitTemplateTests {
 		assertThatIllegalStateException()
 			.isThrownBy(() -> (TransactionSynchronizationManager.getSynchronizations()).isEmpty())
 			.withMessage("Transaction synchronization is not active");
+		assertThatExceptionOfType(AfterCompletionFailedException.class)
+			.isThrownBy(() -> ConnectionFactoryUtils.checkAfterCompletion());
+		ConnectionFactoryUtils.enableAfterCompletionFailureCapture(true);
 	}
 
 	@SuppressWarnings("serial")
