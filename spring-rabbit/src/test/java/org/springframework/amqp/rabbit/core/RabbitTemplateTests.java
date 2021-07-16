@@ -644,7 +644,7 @@ public class RabbitTemplateTests {
 			.withMessage("Transaction synchronization is not active");
 		assertThatExceptionOfType(AfterCompletionFailedException.class)
 			.isThrownBy(() -> ConnectionFactoryUtils.checkAfterCompletion());
-		ConnectionFactoryUtils.enableAfterCompletionFailureCapture(true);
+		ConnectionFactoryUtils.enableAfterCompletionFailureCapture(false);
 	}
 
 	@SuppressWarnings("serial")
