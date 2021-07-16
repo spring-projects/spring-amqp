@@ -5676,8 +5676,10 @@ If you prefer XML configuration, you can declare the following bean in your XML 
 Synchronizing a RabbitMQ transaction with some other (e.g. DBMS) transaction provides "Best Effort One Phase Commit" semantics.
 It is possible that the RabbitMQ transaction fails to commit during the after completion phase of transaction synchronization.
 This is logged by the `spring-tx` infrastructure as an error, but no exception is thrown to the calling code.
-Starting with version 2.3.10, you can call `ConnectionUtils.checkAfterCompletion()`.
-It will simply return if no exception occurred; otherwise it will throw an `AfterCompletionFailedException`.
+Starting with version 2.3.10, you can call `ConnectionUtils.checkAfterCompletion()` after the transaction has committed on the same thread that processed the transaction.
+It will simply return if no exception occurred; otherwise it will throw an `AfterCompletionFailedException` which will have a property representing the synchronization status of the completion.
+
+Enable this feature by calling `ConnectionFactoryUtils.enableAfterCompletionFailureCapture(true)`; this is a global flag and applies to all threads.
 
 [[containerAttributes]]
 ==== Message Listener Container Configuration
