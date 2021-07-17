@@ -143,7 +143,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		catch (ListenerExecutionFailedException ex) {
 			handleException(amqpMessage, channel, message, ex);
 		}
-		catch (ReplyFailureException ex) {
+		catch (ReplyFailureException ex) { // NOSONAR
 			throw ex;
 		}
 		catch (Exception ex) { // NOSONAR

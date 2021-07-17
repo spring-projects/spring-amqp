@@ -43,7 +43,7 @@ import com.rabbitmq.client.Channel;
  */
 public final class ConnectionFactoryUtils {
 
-	private static final ThreadLocal<AfterCompletionFailedException> failures = new ThreadLocal<>();
+	private static final ThreadLocal<AfterCompletionFailedException> COMPLETION_EXCEPTIONS = new ThreadLocal<>();
 
 	private static boolean captureAfterCompletionExceptions;
 
@@ -193,7 +193,7 @@ public final class ConnectionFactoryUtils {
 
 	private static void completionFailed(AfterCompletionFailedException ex) {
 		if (captureAfterCompletionExceptions) {
-			failures.set(ex);
+			COMPLETION_EXCEPTIONS.set(ex);
 		}
 	}
 
@@ -215,9 +215,9 @@ public final class ConnectionFactoryUtils {
 	 * @since 2.3.10
 	 */
 	public static void checkAfterCompletion() {
-		AfterCompletionFailedException ex = failures.get();
+		AfterCompletionFailedException ex = COMPLETION_EXCEPTIONS.get();
 		if (ex != null) {
-			failures.remove();
+			COMPLETION_EXCEPTIONS.remove();
 			throw ex;
 		}
 	}
