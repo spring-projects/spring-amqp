@@ -166,7 +166,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 		// The container should have shutdown, so there are now no active consumers
 		assertThatThrownBy(() -> doTestStatefulRetry(messageCount, txSize, failFrequency, concurrentConsumers))
 			.hasMessageContaining("expected: 1")
-			.hasMessageContaining("but was : 0");
+			.hasMessageContaining("but was: 0");
 	}
 
 	@RepeatedTest(10)
