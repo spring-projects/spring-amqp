@@ -143,20 +143,23 @@ public class DefaultStreamMessageConverter implements StreamMessageConverter {
 			StreamMessageProperties mProps) {
 
 		Properties properties = streamMessage.getProperties();
-		JavaUtils.INSTANCE
-				.acceptIfNotNull(properties.getMessageIdAsString(), mProps::setMessageId)
-				.acceptIfNotNull(properties.getUserId(), usr -> mProps.setUserId(new String(usr, this.charset)))
-				.acceptIfNotNull(properties.getTo(), mProps::setTo)
-				.acceptIfNotNull(properties.getSubject(), mProps::setSubject)
-				.acceptIfNotNull(properties.getReplyTo(), mProps::setReplyTo)
-				.acceptIfNotNull(properties.getCorrelationIdAsString(), mProps::setCorrelationId)
-				.acceptIfNotNull(properties.getContentType(), mProps::setContentType)
-				.acceptIfNotNull(properties.getContentEncoding(), mProps::setContentEncoding)
-				.acceptIfNotNull(properties.getAbsoluteExpiryTime(), exp -> mProps.setExpiration(Long.toString(exp)))
-				.acceptIfNotNull(properties.getCreationTime(), mProps::setCreationTime)
-				.acceptIfNotNull(properties.getGroupId(), mProps::setGroupId)
-				.acceptIfNotNull(properties.getGroupSequence(), mProps::setGroupSequence)
-				.acceptIfNotNull(properties.getReplyToGroupId(), mProps::setReplyToGroupId);
+		if (properties != null) {
+			JavaUtils.INSTANCE
+					.acceptIfNotNull(properties.getMessageIdAsString(), mProps::setMessageId)
+					.acceptIfNotNull(properties.getUserId(), usr -> mProps.setUserId(new String(usr, this.charset)))
+					.acceptIfNotNull(properties.getTo(), mProps::setTo)
+					.acceptIfNotNull(properties.getSubject(), mProps::setSubject)
+					.acceptIfNotNull(properties.getReplyTo(), mProps::setReplyTo)
+					.acceptIfNotNull(properties.getCorrelationIdAsString(), mProps::setCorrelationId)
+					.acceptIfNotNull(properties.getContentType(), mProps::setContentType)
+					.acceptIfNotNull(properties.getContentEncoding(), mProps::setContentEncoding)
+					.acceptIfNotNull(properties.getAbsoluteExpiryTime(),
+							exp -> mProps.setExpiration(Long.toString(exp)))
+					.acceptIfNotNull(properties.getCreationTime(), mProps::setCreationTime)
+					.acceptIfNotNull(properties.getGroupId(), mProps::setGroupId)
+					.acceptIfNotNull(properties.getGroupSequence(), mProps::setGroupSequence)
+					.acceptIfNotNull(properties.getReplyToGroupId(), mProps::setReplyToGroupId);
+		}
 		Map<String, Object> applicationProperties = streamMessage.getApplicationProperties();
 		if (applicationProperties != null) {
 			mProps.getHeaders().putAll(applicationProperties);

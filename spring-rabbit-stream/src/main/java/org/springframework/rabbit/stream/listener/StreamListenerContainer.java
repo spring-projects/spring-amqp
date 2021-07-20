@@ -104,6 +104,7 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	 * @param messageConverter the converter.
 	 */
 	public void setMessageConverter(StreamMessageConverter messageConverter) {
+		Assert.notNull(messageConverter, "'messageConverter' cannot be null");
 		this.messageConverter = messageConverter;
 	}
 
