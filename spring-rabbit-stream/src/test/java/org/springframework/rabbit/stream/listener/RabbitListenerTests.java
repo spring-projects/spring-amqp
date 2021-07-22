@@ -61,15 +61,14 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 
 	@Test
 	void simple(@Autowired RabbitTemplate template) throws InterruptedException {
-
 		template.convertAndSend("test.stream.queue1", "foo");
 		assertThat(this.config.latch1.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.config.received).isEqualTo("foo");
+		assertThat(this.config.id).isEqualTo("test");
 	}
 
 	@Test
 	void nativeMsg(@Autowired RabbitTemplate template) throws InterruptedException {
-
 		template.convertAndSend("test.stream.queue2", "foo");
 		assertThat(this.config.latch2.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.config.receivedNative).isNotNull();
@@ -96,6 +95,8 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 		volatile Message receivedNative;
 
 		volatile Context context;
+
+		volatile String id;
 
 		@Bean
 		Environment environment() {
@@ -140,13 +141,16 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 		RabbitListenerContainerFactory<StreamListenerContainer> nativeFactory(Environment env) {
 			StreamRabbitListenerContainerFactory factory = new StreamRabbitListenerContainerFactory(env);
 			factory.setNativeListener(true);
-			factory.setConsumerCustomizer(builder -> builder.name("myConsumer")
-					.offset(OffsetSpecification.first())
-					.manualTrackingStrategy());
+			factory.setConsumerCustomizer((id, builder) -> {
+				builder.name("myConsumer")
+						.offset(OffsetSpecification.first())
+						.manualTrackingStrategy();
+				this.id = id;
+			});
 			return factory;
 		}
 
-		@RabbitListener(queues = "test.stream.queue2", containerFactory = "nativeFactory")
+		@RabbitListener(id = "test", queues = "test.stream.queue2", containerFactory = "nativeFactory")
 		void nativeMsg(Message in, Context context) {
 			this.receivedNative = in;
 			this.context = context;

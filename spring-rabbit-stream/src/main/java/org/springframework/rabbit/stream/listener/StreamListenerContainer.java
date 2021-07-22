@@ -50,7 +50,7 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 
 	private StreamMessageConverter messageConverter;
 
-	private java.util.function.Consumer<ConsumerBuilder> consumerCustomizer = c -> { };
+	private ConsumerCustomizer consumerCustomizer = (id, con) -> { };
 
 	private Consumer consumer;
 
@@ -112,7 +112,8 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	 * Customize the consumer builder before it is built.
 	 * @param consumerCustomizer the customizer.
 	 */
-	public synchronized void setConsumerCustomizer(java.util.function.Consumer<ConsumerBuilder> consumerCustomizer) {
+	public synchronized void setConsumerCustomizer(ConsumerCustomizer consumerCustomizer) {
+		Assert.notNull(consumerCustomizer, "'consumerCustomizer' cannot be null");
 		this.consumerCustomizer = consumerCustomizer;
 	}
 
@@ -167,7 +168,7 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	@Override
 	public synchronized void start() {
 		if (this.consumer == null) {
-			this.consumerCustomizer.accept(this.builder);
+			this.consumerCustomizer.accept(getListenerId(), this.builder);
 			this.consumer = this.builder.build();
 		}
 	}
