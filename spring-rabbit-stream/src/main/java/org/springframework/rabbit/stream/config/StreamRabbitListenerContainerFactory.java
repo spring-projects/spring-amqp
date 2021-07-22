@@ -17,7 +17,6 @@
 package org.springframework.rabbit.stream.config;
 
 import java.lang.reflect.Method;
-import java.util.function.Consumer;
 
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.config.BaseRabbitListenerContainerFactory;
@@ -26,11 +25,11 @@ import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.lang.Nullable;
+import org.springframework.rabbit.stream.listener.ConsumerCustomizer;
 import org.springframework.rabbit.stream.listener.StreamListenerContainer;
 import org.springframework.rabbit.stream.listener.adapter.StreamMessageListenerAdapter;
 import org.springframework.util.Assert;
 
-import com.rabbitmq.stream.ConsumerBuilder;
 import com.rabbitmq.stream.Environment;
 
 /**
@@ -47,7 +46,7 @@ public class StreamRabbitListenerContainerFactory
 
 	private boolean nativeListener;
 
-	private Consumer<ConsumerBuilder> consumerCustomizer;
+	private ConsumerCustomizer consumerCustomizer;
 
 	private ContainerCustomizer<StreamListenerContainer> containerCustomizer;
 
@@ -72,7 +71,7 @@ public class StreamRabbitListenerContainerFactory
 	 * Customize the consumer builder before it is built.
 	 * @param consumerCustomizer the customizer.
 	 */
-	public void setConsumerCustomizer(java.util.function.Consumer<ConsumerBuilder> consumerCustomizer) {
+	public void setConsumerCustomizer(ConsumerCustomizer consumerCustomizer) {
 		this.consumerCustomizer = consumerCustomizer;
 	}
 
