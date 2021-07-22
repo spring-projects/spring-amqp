@@ -27,5 +27,6 @@ import com.rabbitmq.stream.ConsumerBuilder;
  * @since 2.4
  *
  */
+@FunctionalInterface
 public interface ConsumerCustomizer extends BiConsumer<String, ConsumerBuilder> {
 }
