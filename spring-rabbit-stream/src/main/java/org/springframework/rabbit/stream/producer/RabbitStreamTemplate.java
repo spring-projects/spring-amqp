@@ -21,7 +21,7 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.beans.factory.BeanNameAware;
-import org.springframework.beans.factory.DisposableBean;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.rabbit.stream.support.StreamMessageProperties;
 import org.springframework.rabbit.stream.support.converter.DefaultStreamMessageConverter;
@@ -38,11 +38,15 @@ import com.rabbitmq.stream.Producer;
 import com.rabbitmq.stream.ProducerBuilder;
 
 /**
+ * Default implementation of {@link RabbitStreamOperations}.
+ *
  * @author Gary Russell
- * @since 2.8
+ * @since 2.4
  *
  */
-public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAware, DisposableBean {
+public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAware {
+
+	protected final LogAccessor logger = new LogAccessor(getClass()); // NOSONAR
 
 	private final Environment environment;
 
@@ -64,6 +68,8 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 	 * @param streamName the stream name.
 	 */
 	public RabbitStreamTemplate(Environment environment, String streamName) {
+		Assert.notNull(environment, "'environment' cannot be null");
+		Assert.notNull(streamName, "'streamName' cannot be null");
 		this.environment = environment;
 		this.streamName = streamName;
 	}
@@ -127,8 +133,15 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 	@Override
 	public ListenableFuture<Boolean> convertAndSend(Object message, @Nullable MessagePostProcessor mpp) {
 		Message message2 = this.messageConverter.toMessage(message, new StreamMessageProperties());
+		Assert.notNull(message2, "The message converter returned null");
 		if (mpp != null) {
 			message2 = mpp.postProcessMessage(message2);
+			if (message2 == null) {
+				this.logger.debug("Message Post Processor returned null, message not sent");
+				SettableListenableFuture<Boolean> future = new SettableListenableFuture<>();
+				future.set(false);
+				return future;
+			}
 		}
 		return send(message2);
 	}
@@ -176,12 +189,14 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 		};
 	}
 
-	public void reset() {
-		destroy();
-	}
-
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * <b>Close the underlying producer; a new producer will be created on the next
+	 * operation that requires one.</b>
+	 */
 	@Override
-	public synchronized void destroy() {
+	public synchronized void close() {
 		if (this.producer != null) {
 			this.producer.close();
 			this.producer = null;

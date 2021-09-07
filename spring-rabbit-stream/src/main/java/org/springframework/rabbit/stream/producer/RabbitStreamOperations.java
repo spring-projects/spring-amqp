@@ -30,7 +30,7 @@ import com.rabbitmq.stream.MessageBuilder;
  * @since 2.4
  *
  */
-public interface RabbitStreamOperations {
+public interface RabbitStreamOperations extends AutoCloseable {
 
 	/**
 	 * Send a Spring AMQP message.
@@ -47,7 +47,9 @@ public interface RabbitStreamOperations {
 	ListenableFuture<Boolean> convertAndSend(Object message);
 
 	/**
-	 * Convert to and send a Spring AMQP message.
+	 * Convert to and send a Spring AMQP message. If a {@link MessagePostProcessor} is
+	 * provided and returns {@code null}, the message is not sent and the future is
+	 * completed with {@code false}.
 	 * @param message the payload.
 	 * @param mpp a message post processor.
 	 * @return a future to indicate success/failure.
