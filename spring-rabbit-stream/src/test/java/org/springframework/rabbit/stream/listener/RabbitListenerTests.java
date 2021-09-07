@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Queue;
@@ -63,6 +64,15 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 
 	@Autowired
 	Config config;
+
+	@AfterAll
+	static void deleteQueues() {
+		try (Environment environment = Config.environment()) {
+			environment.deleteStream("test.stream.queue1");
+			environment.deleteStream("test.stream.queue2");
+			environment.deleteStream("stream.created.over.amqp");
+		}
+	}
 
 	@Test
 	void simple(@Autowired RabbitStreamTemplate template) throws Exception {
@@ -114,7 +124,7 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 		volatile String id;
 
 		@Bean
-		Environment environment() {
+		static Environment environment() {
 			return Environment.builder()
 					.addressResolver(add -> new Address("localhost", streamPort()))
 					.build();
