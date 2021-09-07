@@ -90,7 +90,7 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 
 	@Test
 	void queueOverAmqp() throws Exception {
-		Client client = new Client("http://guest:guest@localhost:" + RABBITMQ.getMappedPort(15672) + "/api");
+		Client client = new Client("http://guest:guest@localhost:" + managementPort() + "/api");
 		QueueInfo queue = client.getQueue("/", "stream.created.over.amqp");
 		assertThat(queue.getArguments().get("x-queue-type")).isEqualTo("stream");
 	}
@@ -114,7 +114,7 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 		@Bean
 		Environment environment() {
 			return Environment.builder()
-					.addressResolver(add -> new Address("localhost", RABBITMQ.getMappedPort(5552)))
+					.addressResolver(add -> new Address("localhost", streamPort()))
 					.build();
 		}
 
@@ -173,7 +173,7 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 
 		@Bean
 		CachingConnectionFactory cf() {
-			return new CachingConnectionFactory(RABBITMQ.getContainerIpAddress(), RABBITMQ.getFirstMappedPort());
+			return new CachingConnectionFactory("localhost", amqpPort());
 		}
 
 		@Bean

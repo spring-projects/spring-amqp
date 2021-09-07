@@ -31,15 +31,32 @@ public abstract class AbstractIntegrationTests {
 	static final GenericContainer<?> RABBITMQ;
 
 	static {
-		String image = "pivotalrabbitmq/rabbitmq-stream";
-		String cache = System.getenv().get("IMAGE_CACHE");
-		if (cache != null) {
-			image = cache + image;
+		if (System.getProperty("spring.rabbit.use.local.server") == null) {
+			String image = "pivotalrabbitmq/rabbitmq-stream";
+			String cache = System.getenv().get("IMAGE_CACHE");
+			if (cache != null) {
+				image = cache + image;
+			}
+			RABBITMQ = new GenericContainer<>(DockerImageName.parse(image))
+						.withExposedPorts(5672, 15672, 5552)
+						.withStartupTimeout(Duration.ofMinutes(2));
+			RABBITMQ.start();
 		}
-		RABBITMQ = new GenericContainer<>(DockerImageName.parse(image))
-					.withExposedPorts(5672, 15672, 5552)
-					.withStartupTimeout(Duration.ofMinutes(2));
-		RABBITMQ.start();
+		else {
+			RABBITMQ = null;
+		}
+	}
+
+	static int amqpPort() {
+		return RABBITMQ != null ? RABBITMQ.getMappedPort(5672) : 5672;
+	}
+
+	static int managementPort() {
+		return RABBITMQ != null ? RABBITMQ.getMappedPort(15672) : 15672;
+	}
+
+	static int streamPort() {
+		return RABBITMQ != null ? RABBITMQ.getMappedPort(5552) : 5552;
 	}
 
 }
