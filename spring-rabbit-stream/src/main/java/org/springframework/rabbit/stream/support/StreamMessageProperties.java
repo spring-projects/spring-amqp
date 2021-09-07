@@ -49,6 +49,12 @@ public class StreamMessageProperties extends MessageProperties {
 	private String replyToGroupId;
 
 	/**
+ 	 * Create a new instance.
+	 */
+	public StreamMessageProperties() {
+	}
+
+	/**
 	 * Create a new instance with the provided context.
 	 * @param context the context.
 	 */

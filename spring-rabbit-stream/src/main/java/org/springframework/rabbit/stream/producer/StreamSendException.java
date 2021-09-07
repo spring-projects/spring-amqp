@@ -14,21 +14,30 @@
  * limitations under the License.
  */
 
-package org.springframework.rabbit.stream.listener;
+package org.springframework.rabbit.stream.producer;
 
-import java.util.function.BiConsumer;
-
-import com.rabbitmq.stream.ConsumerBuilder;
+import org.springframework.amqp.AmqpException;
 
 /**
- * Customizer for {@link ConsumerBuilder}. The first parameter should be the bean name (or
- * listener id) of the component that calls this customizer. Refer to the RabbitMQ Stream
- * Java Client for customization options.
+ * Used to complete the future exceptionally when sending fails.
  *
  * @author Gary Russell
  * @since 2.4
  *
  */
-@FunctionalInterface
-public interface ConsumerCustomizer extends BiConsumer<String, ConsumerBuilder> {
+public class StreamSendException extends AmqpException {
+
+	private static final long serialVersionUID = 1L;
+
+	private final int confirmationCode;
+	/**
+	 * Construct an instance with the provided message.
+	 * @param message the message.
+	 * @param code the confirmation code.
+	 */
+	public StreamSendException(String message, int code) {
+		super(message);
+		this.confirmationCode = code;
+	}
+
 }

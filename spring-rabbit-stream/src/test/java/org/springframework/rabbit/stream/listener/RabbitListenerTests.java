@@ -18,9 +18,13 @@ package org.springframework.rabbit.stream.listener;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Queue;
@@ -36,6 +40,8 @@ import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.rabbit.stream.config.StreamRabbitListenerContainerFactory;
+import org.springframework.rabbit.stream.producer.RabbitStreamTemplate;
+import org.springframework.rabbit.stream.support.StreamMessageProperties;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
@@ -59,11 +65,30 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 	@Autowired
 	Config config;
 
+	@AfterAll
+	static void deleteQueues() {
+		try (Environment environment = Config.environment()) {
+			environment.deleteStream("test.stream.queue1");
+			environment.deleteStream("test.stream.queue2");
+			environment.deleteStream("stream.created.over.amqp");
+		}
+	}
+
 	@Test
-	void simple(@Autowired RabbitTemplate template) throws InterruptedException {
-		template.convertAndSend("test.stream.queue1", "foo");
+	void simple(@Autowired RabbitStreamTemplate template) throws Exception {
+		Future<Boolean> future = template.convertAndSend("foo");
+		assertThat(future.get(10, TimeUnit.SECONDS)).isTrue();
+		future = template.convertAndSend("bar", msg -> msg);
+		assertThat(future.get(10, TimeUnit.SECONDS)).isTrue();
+		future = template.send(new org.springframework.amqp.core.Message("baz".getBytes(),
+				new StreamMessageProperties()));
+		assertThat(future.get(10, TimeUnit.SECONDS)).isTrue();
+		future = template.send(template.messageBuilder().addData("qux".getBytes()).build());
+		assertThat(future.get(10, TimeUnit.SECONDS)).isTrue();
+		future = template.convertAndSend("bar", msg -> null);
+		assertThat(future.get(10, TimeUnit.SECONDS)).isFalse();
 		assertThat(this.config.latch1.await(10, TimeUnit.SECONDS)).isTrue();
-		assertThat(this.config.received).isEqualTo("foo");
+		assertThat(this.config.received).containsExactly("foo", "bar", "baz", "qux");
 		assertThat(this.config.id).isEqualTo("test");
 	}
 
@@ -77,7 +102,7 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 
 	@Test
 	void queueOverAmqp() throws Exception {
-		Client client = new Client("http://guest:guest@localhost:" + RABBITMQ.getMappedPort(15672) + "/api");
+		Client client = new Client("http://guest:guest@localhost:" + managementPort() + "/api");
 		QueueInfo queue = client.getQueue("/", "stream.created.over.amqp");
 		assertThat(queue.getArguments().get("x-queue-type")).isEqualTo("stream");
 	}
@@ -86,11 +111,11 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 	@EnableRabbit
 	public static class Config {
 
-		final CountDownLatch latch1 = new CountDownLatch(1);
+		final CountDownLatch latch1 = new CountDownLatch(4);
 
 		final CountDownLatch latch2 = new CountDownLatch(1);
 
-		volatile String received;
+		final List<String> received = new ArrayList<>();
 
 		volatile Message receivedNative;
 
@@ -99,9 +124,9 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 		volatile String id;
 
 		@Bean
-		Environment environment() {
+		static Environment environment() {
 			return Environment.builder()
-					.addressResolver(add -> new Address("localhost", RABBITMQ.getMappedPort(5552)))
+					.addressResolver(add -> new Address("localhost", streamPort()))
 					.build();
 		}
 
@@ -133,7 +158,7 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 
 		@RabbitListener(queues = "test.stream.queue1")
 		void listen(String in) {
-			this.received = in;
+			this.received.add(in);
 			this.latch1.countDown();
 		}
 
@@ -160,12 +185,19 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 
 		@Bean
 		CachingConnectionFactory cf() {
-			return new CachingConnectionFactory(RABBITMQ.getContainerIpAddress(), RABBITMQ.getFirstMappedPort());
+			return new CachingConnectionFactory("localhost", amqpPort());
 		}
 
 		@Bean
 		RabbitTemplate template(CachingConnectionFactory cf) {
 			return new RabbitTemplate(cf);
+		}
+
+		@Bean
+		RabbitStreamTemplate streamTemplate1(Environment env) {
+			RabbitStreamTemplate template = new RabbitStreamTemplate(env, "test.stream.queue1");
+			template.setProducerCustomizer((name, builder) -> builder.name("test"));
+			return template;
 		}
 
 		@Bean

@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-package org.springframework.rabbit.stream.listener;
+package org.springframework.rabbit.stream.producer;
 
 import java.util.function.BiConsumer;
 
-import com.rabbitmq.stream.ConsumerBuilder;
+import com.rabbitmq.stream.ProducerBuilder;
 
 /**
- * Customizer for {@link ConsumerBuilder}. The first parameter should be the bean name (or
- * listener id) of the component that calls this customizer. Refer to the RabbitMQ Stream
- * Java Client for customization options.
+ * Called to enable customization of the {@link ProducerBuilder} when a new producer is
+ * created. The first parameter should be the bean name of the component that calls this
+ * customizer. Refer to the RabbitMQ Stream Java Client for customization options.
  *
  * @author Gary Russell
  * @since 2.4
  *
  */
 @FunctionalInterface
-public interface ConsumerCustomizer extends BiConsumer<String, ConsumerBuilder> {
+public interface ProducerCustomizer extends BiConsumer<String, ProducerBuilder> {
 }
