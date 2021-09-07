@@ -101,7 +101,7 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 	@EnableRabbit
 	public static class Config {
 
-		final CountDownLatch latch1 = new CountDownLatch(1);
+		final CountDownLatch latch1 = new CountDownLatch(4);
 
 		final CountDownLatch latch2 = new CountDownLatch(1);
 
