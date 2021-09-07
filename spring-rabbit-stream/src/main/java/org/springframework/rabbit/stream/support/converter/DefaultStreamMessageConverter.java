@@ -46,9 +46,9 @@ import com.rabbitmq.stream.codec.WrapperMessageBuilder;
  */
 public class DefaultStreamMessageConverter implements StreamMessageConverter {
 
-	private final Supplier<MessageBuilder> builderSupplier;
-
 	private final Charset charset = StandardCharsets.UTF_8;
+
+	private Supplier<MessageBuilder> builderSupplier;
 
 	/**
 	 * Construct an instance using a {@link WrapperMessageBuilder}.
@@ -63,6 +63,14 @@ public class DefaultStreamMessageConverter implements StreamMessageConverter {
 	 */
 	public DefaultStreamMessageConverter(@Nullable Codec codec) {
 		this.builderSupplier = () -> codec.messageBuilder();
+	}
+
+	/**
+	 * Set a supplier for a message builder.
+	 * @param builderSupplier the supplier.
+	 */
+	public void setBuilderSupplier(Supplier<MessageBuilder> builderSupplier) {
+		this.builderSupplier = builderSupplier;
 	}
 
 	@Override

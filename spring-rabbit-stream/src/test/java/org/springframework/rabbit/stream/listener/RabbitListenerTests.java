@@ -18,7 +18,10 @@ package org.springframework.rabbit.stream.listener;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
@@ -36,6 +39,8 @@ import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.rabbit.stream.config.StreamRabbitListenerContainerFactory;
+import org.springframework.rabbit.stream.producer.RabbitStreamTemplate;
+import org.springframework.rabbit.stream.support.StreamMessageProperties;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
@@ -60,10 +65,18 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 	Config config;
 
 	@Test
-	void simple(@Autowired RabbitTemplate template) throws InterruptedException {
-		template.convertAndSend("test.stream.queue1", "foo");
+	void simple(@Autowired RabbitStreamTemplate template) throws Exception {
+		Future<Boolean> future = template.convertAndSend("foo");
+		assertThat(future.get(10, TimeUnit.SECONDS)).isTrue();
+		future = template.convertAndSend("bar", msg -> msg);
+		assertThat(future.get(10, TimeUnit.SECONDS)).isTrue();
+		future = template.send(new org.springframework.amqp.core.Message("baz".getBytes(),
+				new StreamMessageProperties()));
+		assertThat(future.get(10, TimeUnit.SECONDS)).isTrue();
+		future = template.send(template.messageBuilder().addData("qux".getBytes()).build());
+		assertThat(future.get(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.config.latch1.await(10, TimeUnit.SECONDS)).isTrue();
-		assertThat(this.config.received).isEqualTo("foo");
+		assertThat(this.config.received).containsExactly("foo", "bar", "baz", "qux");
 		assertThat(this.config.id).isEqualTo("test");
 	}
 
@@ -90,7 +103,7 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 
 		final CountDownLatch latch2 = new CountDownLatch(1);
 
-		volatile String received;
+		final List<String> received = new ArrayList<>();
 
 		volatile Message receivedNative;
 
@@ -133,7 +146,7 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 
 		@RabbitListener(queues = "test.stream.queue1")
 		void listen(String in) {
-			this.received = in;
+			this.received.add(in);
 			this.latch1.countDown();
 		}
 
@@ -166,6 +179,13 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 		@Bean
 		RabbitTemplate template(CachingConnectionFactory cf) {
 			return new RabbitTemplate(cf);
+		}
+
+		@Bean
+		RabbitStreamTemplate streamTemplate1(Environment env) {
+			RabbitStreamTemplate template = new RabbitStreamTemplate(env, "test.stream.queue1");
+			template.setProducerCustomizer((name, builder) -> builder.name("test"));
+			return template;
 		}
 
 		@Bean
