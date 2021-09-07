@@ -75,6 +75,8 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 		assertThat(future.get(10, TimeUnit.SECONDS)).isTrue();
 		future = template.send(template.messageBuilder().addData("qux".getBytes()).build());
 		assertThat(future.get(10, TimeUnit.SECONDS)).isTrue();
+		future = template.convertAndSend("bar", msg -> null);
+		assertThat(future.get(10, TimeUnit.SECONDS)).isFalse();
 		assertThat(this.config.latch1.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.config.received).containsExactly("foo", "bar", "baz", "qux");
 		assertThat(this.config.id).isEqualTo("test");
