@@ -86,7 +86,7 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 	}
 
 	@Override
-	public void setBeanName(String name) {
+	public synchronized void setBeanName(String name) {
 		this.beanName = name;
 	}
 
@@ -113,7 +113,7 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 	 * Used to customize the {@link ProducerBuilder} before the {@link Producer} is built.
 	 * @param producerCustomizer the customizer;
 	 */
-	public void setProducerCustomizer(ProducerCustomizer producerCustomizer) {
+	public synchronized void setProducerCustomizer(ProducerCustomizer producerCustomizer) {
 		Assert.notNull(producerCustomizer, "'producerCustomizer' cannot be null");
 		this.producerCustomizer = producerCustomizer;
 	}
