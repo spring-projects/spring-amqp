@@ -387,6 +387,54 @@ public class RabbitAdminTests {
 		cf.destroy();
 	}
 
+	@Test
+	void manualDeclarations() {
+		CachingConnectionFactory cf = new CachingConnectionFactory(
+				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
+		RabbitAdmin admin = new RabbitAdmin(cf);
+		GenericApplicationContext applicationContext = new GenericApplicationContext();
+		admin.setApplicationContext(applicationContext);
+		applicationContext.registerBean("admin", RabbitAdmin.class, () -> admin);
+		applicationContext.refresh();
+		admin.setRedeclareManualDeclarations(true);
+		admin.afterPropertiesSet();
+		admin.declareQueue(new Queue("test1", false, true, true));
+		admin.declareQueue(new Queue("test2", false, true, true));
+		admin.declareExchange(new DirectExchange("ex1", false, true));
+		admin.declareBinding(new Binding("test1", DestinationType.QUEUE, "ex1", "test", null));
+		RabbitTemplate template = new RabbitTemplate(cf);
+		admin.deleteQueue("test2");
+		template.execute(chan -> chan.queueDelete("test1"));
+		cf.resetConnection();
+		admin.initialize();
+		assertThat(admin.getQueueProperties("test1")).isNotNull();
+		assertThat(admin.getQueueProperties("test2")).isNull();
+		// verify the exchange and binding were recovered too
+		template.convertAndSend("ex1", "test", "foo");
+		Object received = template.receiveAndConvert("test1", 5000);
+		assertThat(received).isEqualTo("foo");
+		admin.resetAllManualDeclarations();
+		Map<?, ?> declarables = TestUtils.getPropertyValue(admin, "manualDeclarables", Map.class);
+		assertThat(declarables).hasSize(0);
+		cf.resetConnection();
+		admin.initialize();
+		assertThat(admin.getQueueProperties("test1")).isNull();
+		admin.declareQueue(new Queue("test1", false, true, true));
+		admin.declareExchange(new DirectExchange("ex1", false, true));
+		admin.declareBinding(new Binding("test1", DestinationType.QUEUE, "ex1", "test", null));
+		admin.declareExchange(new DirectExchange("ex2", false, true));
+		admin.declareBinding(new Binding("test1", DestinationType.QUEUE, "ex2", "test", null));
+		admin.declareBinding(new Binding("ex1", DestinationType.EXCHANGE, "ex2", "ex1", null));
+		assertThat(declarables).hasSize(6);
+		admin.deleteExchange("ex2");
+		assertThat(declarables).hasSize(3);
+		admin.deleteQueue("test1");
+		assertThat(declarables).hasSize(1);
+		admin.deleteExchange("ex1");
+		assertThat(declarables).hasSize(0);
+		cf.destroy();
+	}
+
 	@Configuration
 	public static class Config {
 
