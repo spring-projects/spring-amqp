@@ -19,10 +19,14 @@ package org.springframework.amqp.rabbit.core;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -63,6 +67,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
+import com.rabbitmq.client.AMQP.Queue.DeleteOk;
 import com.rabbitmq.client.AMQP.Queue.PurgeOk;
 import com.rabbitmq.client.Channel;
 
@@ -124,6 +129,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	private final ConnectionFactory connectionFactory;
 
+	private final Map<String, Declarable> manualDeclarables = Collections.synchronizedMap(new LinkedHashMap<>());
+
 	private String beanName;
 
 	private RetryTemplate retryTemplate;
@@ -141,6 +148,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	private TaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();
 
 	private boolean explicitDeclarationsOnly;
+
+	private boolean redeclareManualDeclarations;
 
 	private volatile boolean running = false;
 
@@ -220,6 +229,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		try {
 			this.rabbitTemplate.execute(channel -> {
 				declareExchanges(channel, exchange);
+				if (this.redeclareManualDeclarations) {
+					this.manualDeclarables.put(exchange.getName(), exchange);
+				}
 				return null;
 			});
 		}
@@ -238,6 +250,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 			try {
 				channel.exchangeDelete(exchangeName);
+				removeExchangeBindings(exchangeName);
 			}
 			catch (@SuppressWarnings(UNUSED) IOException e) {
 				return false;
@@ -245,6 +258,24 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			return true;
 		});
 	}
+
+	private void removeExchangeBindings(final String exchangeName) {
+		this.manualDeclarables.remove(exchangeName);
+		synchronized (this.manualDeclarables) {
+			Iterator<Entry<String, Declarable>> iterator = this.manualDeclarables.entrySet().iterator();
+			while (iterator.hasNext()) {
+				Entry<String, Declarable> next = iterator.next();
+				if (next.getValue() instanceof Binding) {
+					Binding binding = (Binding) next.getValue();
+					if ((!binding.isDestinationQueue() && binding.getDestination().equals(exchangeName))
+							|| binding.getExchange().equals(exchangeName)) {
+						iterator.remove();
+					}
+				}
+			}
+		}
+	}
+
 
 	// Queue operations
 
@@ -266,7 +297,11 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		try {
 			return this.rabbitTemplate.execute(channel -> {
 				DeclareOk[] declared = declareQueues(channel, queue);
-				return declared.length > 0 ? declared[0].getQueue() : null;
+				String result = declared.length > 0 ? declared[0].getQueue() : null;
+				if (this.redeclareManualDeclarations) {
+					this.manualDeclarables.put(result, queue);
+				}
+				return result;
 			});
 		}
 		catch (AmqpException e) {
@@ -303,6 +338,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		return this.rabbitTemplate.execute(channel -> { // NOSONAR never returns null
 			try {
 				channel.queueDelete(queueName);
+				removeQueueBindings(queueName);
 			}
 			catch (@SuppressWarnings(UNUSED) IOException e) {
 				return false;
@@ -316,9 +352,26 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			"Delete a queue from the broker if unused and empty (when corresponding arguments are true")
 	public void deleteQueue(final String queueName, final boolean unused, final boolean empty) {
 		this.rabbitTemplate.execute(channel -> {
-			channel.queueDelete(queueName, unused, empty);
+			DeleteOk queueDelete = channel.queueDelete(queueName, unused, empty);
+			removeQueueBindings(queueName);
 			return null;
 		});
+	}
+
+	private void removeQueueBindings(final String queueName) {
+		this.manualDeclarables.remove(queueName);
+		synchronized (this.manualDeclarables) {
+			Iterator<Entry<String, Declarable>> iterator = this.manualDeclarables.entrySet().iterator();
+			while (iterator.hasNext()) {
+				Entry<String, Declarable> next = iterator.next();
+				if (next.getValue() instanceof Binding) {
+					Binding binding = (Binding) next.getValue();
+					if (binding.isDestinationQueue() && binding.getDestination().equals(queueName)) {
+						iterator.remove();
+					}
+				}
+			}
+		}
 	}
 
 	@Override
@@ -352,6 +405,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		try {
 			this.rabbitTemplate.execute(channel -> {
 				declareBindings(channel, binding);
+				if (this.redeclareManualDeclarations) {
+					this.manualDeclarables.put(binding.toString(), binding);
+				}
 				return null;
 			});
 		}
@@ -377,6 +433,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 				channel.exchangeUnbind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
 						binding.getArguments());
 			}
+			this.manualDeclarables.remove(binding.toString());
 			return null;
 		});
 	}
@@ -442,6 +499,37 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 */
 	public void setExplicitDeclarationsOnly(boolean explicitDeclarationsOnly) {
 		this.explicitDeclarationsOnly = explicitDeclarationsOnly;
+	}
+
+	/**
+	 * Normally, when a connection is recovered, the admin only recovers auto-delete queues,
+	 * etc, that are declared as beans in the application context. When this is true, it
+	 * will also redeclare any manually declared {@link Declarable}s via admin methods.
+	 * @return true to redeclare.
+	 * @since 2.4
+	 */
+	public boolean isRedeclareManualDeclarations() {
+		return this.redeclareManualDeclarations;
+	}
+
+	/**
+	 * Normally, when a connection is recovered, the admin only recovers auto-delete
+	 * queues, etc, that are declared as beans in the application context. When this is
+	 * true, it will also redeclare any manually declared {@link Declarable}s via admin
+	 * methods. When a queue or exhange is deleted, it will not longer be recovered, nor
+	 * will any corresponding bindings.
+	 * @param redeclareManualDeclarations true to redeclare.
+	 * @since 2.4
+	 * @see #declareQueue(Queue)
+	 * @see #declareExchange(Exchange)
+	 * @see #declareBinding(Binding)
+	 * @see #deleteQueue(String)
+	 * @see #deleteExchange(String)
+	 * @see #removeBinding(Binding)
+	 * @see #resetAllManualDeclarations()
+	 */
+	public void setRedeclareManualDeclarations(boolean redeclareManualDeclarations) {
+		this.redeclareManualDeclarations = redeclareManualDeclarations;
 	}
 
 	/**
@@ -597,7 +685,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			}
 		}
 
-		if (exchanges.size() == 0 && queues.size() == 0 && bindings.size() == 0) {
+		if (exchanges.size() == 0 && queues.size() == 0 && bindings.size() == 0 && this.manualDeclarables.size() == 0) {
 			this.logger.debug("Nothing to declare");
 			return;
 		}
@@ -607,8 +695,34 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			declareBindings(channel, bindings.toArray(new Binding[bindings.size()]));
 			return null;
 		});
+		if (this.manualDeclarables.size() > 0) {
+			synchronized (this.manualDeclarables) {
+				this.logger.debug("Redeclaring manually declared Declarables");
+				for (Declarable dec : this.manualDeclarables.values()) {
+					if (dec instanceof Queue) {
+						declareQueue((Queue) dec);
+					}
+					else if (dec instanceof Exchange) {
+						declareExchange((Exchange) dec);
+					}
+					else {
+						declareBinding((Binding) dec);
+					}
+				}
+			}
+		}
 		this.logger.debug("Declarations finished");
 
+	}
+
+	/**
+	 * Invoke this method to prevent the admin from recovering any declarations made
+	 * by calls to {@code declare*()} methods.
+	 * @since 2.4
+	 * @see #setRedeclareManualDeclarations(boolean)
+	 */
+	public void resetAllManualDeclarations() {
+		this.manualDeclarables.clear();
 	}
 
 	private void processDeclarables(Collection<Exchange> contextExchanges, Collection<Queue> contextQueues,

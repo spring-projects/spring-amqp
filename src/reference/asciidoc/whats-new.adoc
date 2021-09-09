@@ -6,7 +6,12 @@
 This section describes the changes between version 2.4 and version 2.4.
 See <<change-history>> for changes in previous versions.
 
-==== @RabbitListener Changes
+==== `@RabbitListener` Changes
 
 `MessageProperties` is now available for argument matching.
 See <<async-annotation-driven-enable-signature>> for more information.
+
+==== `RabbitAdmin` Changes
+
+A new property `recoverManualDeclarations` allows recovery of manually declared queues/exchanges/bindings.
+See <<declarable-recovery>> for more information.

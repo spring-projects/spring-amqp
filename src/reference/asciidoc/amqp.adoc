@@ -5371,6 +5371,20 @@ Starting with version 2.1, anonymous queues are declared with argument `Queue.X_
 This ensures that the queue is declared on the node to which the application is connected.
 You can revert to the previous behavior by calling `queue.setLeaderLocator(null)` after constructing the instance.
 
+[[declarable-recovery]]
+===== Recovering Auto-Delete Declarations
+
+Normally, the `RabbitAdmin` (s) only recover queues/exchanges/bindings that are declared as beans in the application context; if any such declarations are auto-delete, they will be removed by the broker if the connection is lost.
+When the connection is re-established, the admin will redeclare the entities.
+Normally, entities created by calling `admin.declareQueue(...)`, `admin.declareExchange(...)` and `admin.declareBinding(...)` will not be recovered.
+
+Starting with version 2.4, the admin has a new property `redeclareManualDeclarations`; when true, the admin will recover these entities in addition to the beans in the application context.
+
+Recovery of individual declarations will not be performed if `deleteQueue(...)`, `deleteExchange(...)` or `removeBinding(...)` is called.
+Associated bindings are removed from the recoverable entities when queues and exchanges are deleted.
+
+Finally, calling `resetAllManualDeclarations()` will prevent the recovery of any previously declared entities.
+
 [[broker-events]]
 ==== Broker Event Listener
 
