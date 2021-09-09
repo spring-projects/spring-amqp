@@ -394,27 +394,40 @@ public class RabbitAdminTests {
 		RabbitAdmin admin = new RabbitAdmin(cf);
 		GenericApplicationContext applicationContext = new GenericApplicationContext();
 		admin.setApplicationContext(applicationContext);
-		applicationContext.registerBean("admin", RabbitAdmin.class, () -> admin);
-		applicationContext.refresh();
 		admin.setRedeclareManualDeclarations(true);
-		admin.afterPropertiesSet();
+		applicationContext.registerBean("admin", RabbitAdmin.class, () -> admin);
+		applicationContext.registerBean("beanQueue", Queue.class,
+				() -> new Queue("thisOneShouldntBeInTheManualDecs", false, true, true));
+		applicationContext.registerBean("beanEx", DirectExchange.class,
+				() -> new DirectExchange("thisOneShouldntBeInTheManualDecs", false, true));
+		applicationContext.registerBean("beanBinding", Binding.class,
+				() -> new Binding("thisOneShouldntBeInTheManualDecs", DestinationType.QUEUE,
+						"thisOneShouldntBeInTheManualDecs", "test", null));
+		applicationContext.refresh();
+		Map<?, ?> declarables = TestUtils.getPropertyValue(admin, "manualDeclarables", Map.class);
+		assertThat(declarables).hasSize(0);
+		// check the auto-configured Declarables
+		RabbitTemplate template = new RabbitTemplate(cf);
+		template.convertAndSend("thisOneShouldntBeInTheManualDecs", "test", "foo");
+		Object received = template.receiveAndConvert("thisOneShouldntBeInTheManualDecs", 5000);
+		assertThat(received).isEqualTo("foo");
+		// manual declarations
 		admin.declareQueue(new Queue("test1", false, true, true));
 		admin.declareQueue(new Queue("test2", false, true, true));
 		admin.declareExchange(new DirectExchange("ex1", false, true));
 		admin.declareBinding(new Binding("test1", DestinationType.QUEUE, "ex1", "test", null));
-		RabbitTemplate template = new RabbitTemplate(cf);
 		admin.deleteQueue("test2");
 		template.execute(chan -> chan.queueDelete("test1"));
 		cf.resetConnection();
 		admin.initialize();
 		assertThat(admin.getQueueProperties("test1")).isNotNull();
 		assertThat(admin.getQueueProperties("test2")).isNull();
+		assertThat(declarables).hasSize(3);
 		// verify the exchange and binding were recovered too
 		template.convertAndSend("ex1", "test", "foo");
-		Object received = template.receiveAndConvert("test1", 5000);
+		received = template.receiveAndConvert("test1", 5000);
 		assertThat(received).isEqualTo("foo");
 		admin.resetAllManualDeclarations();
-		Map<?, ?> declarables = TestUtils.getPropertyValue(admin, "manualDeclarables", Map.class);
 		assertThat(declarables).hasSize(0);
 		cf.resetConnection();
 		admin.initialize();
