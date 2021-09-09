@@ -40,4 +40,12 @@ public class StreamSendException extends AmqpException {
 		this.confirmationCode = code;
 	}
 
+	/**
+	 * Return the confirmation code, if available.
+	 * @return the code.
+	 */
+	public int getConfirmationCode() {
+		return this.confirmationCode;
+	}
+
 }
