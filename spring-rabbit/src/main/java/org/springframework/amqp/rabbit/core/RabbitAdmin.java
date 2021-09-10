@@ -67,7 +67,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
-import com.rabbitmq.client.AMQP.Queue.DeleteOk;
 import com.rabbitmq.client.AMQP.Queue.PurgeOk;
 import com.rabbitmq.client.Channel;
 
@@ -352,7 +351,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			"Delete a queue from the broker if unused and empty (when corresponding arguments are true")
 	public void deleteQueue(final String queueName, final boolean unused, final boolean empty) {
 		this.rabbitTemplate.execute(channel -> {
-			DeleteOk queueDelete = channel.queueDelete(queueName, unused, empty);
+			channel.queueDelete(queueName, unused, empty);
 			removeQueueBindings(queueName);
 			return null;
 		});
