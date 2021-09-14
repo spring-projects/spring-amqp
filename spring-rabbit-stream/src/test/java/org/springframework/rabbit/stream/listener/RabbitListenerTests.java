@@ -24,7 +24,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Queue;
@@ -65,7 +64,7 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 	@Autowired
 	Config config;
 
-	@AfterAll
+//	@AfterAll - causes test to throw errors - need to investigate
 	static void deleteQueues() {
 		try (Environment environment = Config.environment()) {
 			environment.deleteStream("test.stream.queue1");
@@ -140,6 +139,16 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 
 				@Override
 				public void start() {
+					try {
+						env.deleteStream("test.stream.queue1");
+					}
+					catch (Exception e) {
+					}
+					try {
+						env.deleteStream("test.stream.queue2");
+					}
+					catch (Exception e) {
+					}
 					env.streamCreator().stream("test.stream.queue1").create();
 					env.streamCreator().stream("test.stream.queue2").create();
 				}
