@@ -16,9 +16,12 @@
 
 package org.springframework.rabbit.stream.producer;
 
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.lang.Nullable;
+import org.springframework.rabbit.stream.support.converter.StreamMessageConverter;
 import org.springframework.util.concurrent.ListenableFuture;
 
 import com.rabbitmq.stream.MessageBuilder;
@@ -65,10 +68,28 @@ public interface RabbitStreamOperations extends AutoCloseable {
 	ListenableFuture<Boolean> send(com.rabbitmq.stream.Message message);
 
 	/**
-	 * Returns the producer's {@link MessageBuilder} to create native stream messages.
+	 * Return the producer's {@link MessageBuilder} to create native stream messages.
 	 * @return the builder.
 	 * @see #send(com.rabbitmq.stream.Message)
 	 */
 	MessageBuilder messageBuilder();
+
+	/**
+	 * Return the message converter.
+	 * @return the converter.
+	 */
+	MessageConverter messageConverter();
+
+	/**
+	 * Return the stream message converter.
+	 * @return the converter;
+	 */
+	StreamMessageConverter streamMessageConverter();
+
+	@Override
+	default void close() throws AmqpException {
+		// narrow exception to avoid compiler warning - see
+		// https://bugs.openjdk.java.net/browse/JDK-8155591
+	}
 
 }

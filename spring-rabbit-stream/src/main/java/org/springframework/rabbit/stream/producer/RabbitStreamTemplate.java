@@ -56,6 +56,8 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 
 	private StreamMessageConverter streamConverter = new DefaultStreamMessageConverter();
 
+	private boolean streamConverterSet;
+
 	private Producer producer;
 
 	private String beanName;
@@ -81,6 +83,10 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 			builder.stream(this.streamName);
 			this.producerCustomizer.accept(this.beanName, builder);
 			this.producer = builder.build();
+			if (!this.streamConverterSet) {
+				((DefaultStreamMessageConverter) this.streamConverter).setBuilderSupplier(
+						() ->  this.producer.messageBuilder());
+			}
 		}
 		return this.producer;
 	}
@@ -107,6 +113,7 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 	public void setStreamConverter(StreamMessageConverter streamConverter) {
 		Assert.notNull(streamConverter, "'streamConverter' cannot be null");
 		this.streamConverter = streamConverter;
+		this.streamConverterSet = true;
 	}
 
 	/**
@@ -117,6 +124,18 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 		Assert.notNull(producerCustomizer, "'producerCustomizer' cannot be null");
 		this.producerCustomizer = producerCustomizer;
 	}
+
+	@Override
+	public MessageConverter messageConverter() {
+		return this.messageConverter;
+	}
+
+
+	@Override
+	public StreamMessageConverter streamMessageConverter() {
+		return this.streamConverter;
+	}
+
 
 	@Override
 	public ListenableFuture<Boolean> send(Message message) {
