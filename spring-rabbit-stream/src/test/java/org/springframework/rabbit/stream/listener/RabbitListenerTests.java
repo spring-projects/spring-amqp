@@ -139,6 +139,16 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 
 				@Override
 				public void start() {
+					try {
+						env.deleteStream("test.stream.queue1");
+					}
+					catch (Exception e) {
+					}
+					try {
+						env.deleteStream("test.stream.queue2");
+					}
+					catch (Exception e) {
+					}
 					env.streamCreator().stream("test.stream.queue1").create();
 					env.streamCreator().stream("test.stream.queue2").create();
 				}
