@@ -110,7 +110,7 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 	 * for {@link #send(Message)} and {@link #convertAndSend(Object)} methods.
 	 * @param streamConverter the converter.
 	 */
-	public void setStreamConverter(StreamMessageConverter streamConverter) {
+	public synchronized void setStreamConverter(StreamMessageConverter streamConverter) {
 		Assert.notNull(streamConverter, "'streamConverter' cannot be null");
 		this.streamConverter = streamConverter;
 		this.streamConverterSet = true;
