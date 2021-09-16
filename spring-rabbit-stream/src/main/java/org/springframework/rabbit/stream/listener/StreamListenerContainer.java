@@ -48,7 +48,7 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 
 	private final ConsumerBuilder builder;
 
-	private StreamMessageConverter messageConverter;
+	private StreamMessageConverter streamConverter;
 
 	private ConsumerCustomizer consumerCustomizer = (id, con) -> { };
 
@@ -78,7 +78,7 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	public StreamListenerContainer(Environment environment, @Nullable Codec codec) {
 		Assert.notNull(environment, "'environment' cannot be null");
 		this.builder = environment.consumerBuilder();
-		this.messageConverter = new DefaultStreamMessageConverter(codec);
+		this.streamConverter = new DefaultStreamMessageConverter(codec);
 	}
 
 	@Override
@@ -93,8 +93,8 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	 * {@link org.springframework.amqp.core.Message}.
 	 * @return the converter.
 	 */
-	public StreamMessageConverter getMessageConverter() {
-		return this.messageConverter;
+	public StreamMessageConverter getStreamConverter() {
+		return this.streamConverter;
 	}
 
 	/**
@@ -103,9 +103,9 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	 * {@link org.springframework.amqp.core.Message}.
 	 * @param messageConverter the converter.
 	 */
-	public void setMessageConverter(StreamMessageConverter messageConverter) {
+	public void setStreamConverter(StreamMessageConverter messageConverter) {
 		Assert.notNull(messageConverter, "'messageConverter' cannot be null");
-		this.messageConverter = messageConverter;
+		this.streamConverter = messageConverter;
 	}
 
 	/**
@@ -189,7 +189,7 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 				((StreamMessageListener) messageListener).onStreamMessage(message, context);
 			}
 			else {
-				Message message2 = this.messageConverter.toMessage(message, new StreamMessageProperties(context));
+				Message message2 = this.streamConverter.toMessage(message, new StreamMessageProperties(context));
 				if (messageListener instanceof ChannelAwareMessageListener) {
 					try {
 						((ChannelAwareMessageListener) messageListener).onMessage(message2, null);
