@@ -31,7 +31,8 @@ public abstract class AbstractIntegrationTests {
 	static final GenericContainer<?> RABBITMQ;
 
 	static {
-		if (System.getProperty("spring.rabbit.use.local.server") == null) {
+		if (System.getProperty("spring.rabbit.use.local.server") == null
+				&& System.getenv("SPRING_RABBIT_USE_LOCAL_SERVER") == null) {
 			String image = "pivotalrabbitmq/rabbitmq-stream";
 			String cache = System.getenv().get("IMAGE_CACHE");
 			if (cache != null) {

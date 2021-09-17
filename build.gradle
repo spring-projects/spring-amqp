@@ -44,27 +44,26 @@ ext {
 	awaitilityVersion = '4.1.0'
 	commonsCompressVersion = '1.20'
 	commonsHttpClientVersion = '4.5.13'
-	commonsPoolVersion = '2.10.0'
+	commonsPoolVersion = '2.11.1'
 	googleJsr305Version = '3.0.2'
 	hamcrestVersion = '2.2'
 	hibernateValidationVersion = '6.2.0.Final'
-	jacksonBomVersion = '2.12.4'
+	jacksonBomVersion = '2.12.5'
 	jaywayJsonPathVersion = '2.4.0'
 	junit4Version = '4.13.2'
 	junitJupiterVersion = '5.7.2'
 	log4jVersion = '2.14.1'
 	logbackVersion = '1.2.3'
 	lz4Version = '1.8.0'
-	micrometerVersion = '1.8.0-M2'
+	micrometerVersion = '1.8.0-M3'
 	mockitoVersion = '3.11.2'
-	protonJVersion = '0.33.8'
-	rabbitmqStreamVersion = '0.3.0'
-	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.13.0'
-	rabbitmqHttpClientVersion = '3.11.0'
+	rabbitmqStreamVersion = '0.4.0'
+	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.13.1'
+	rabbitmqHttpClientVersion = '3.12.1'
 	reactorVersion = '2020.0.11'
 	snappyVersion = '1.1.8.4'
-	springDataCommonsVersion = '2.6.0-M2'
-	springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.3.9'
+	springDataCommonsVersion = '2.6.0-M3'
+	springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.3.10'
 	springRetryVersion = '1.3.1'
 	zstdJniVersion = '1.5.0-2'
 }
@@ -407,7 +406,6 @@ project('spring-rabbit-stream') {
 		testRuntimeOnly 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
 		testRuntimeOnly 'com.fasterxml.jackson.module:jackson-module-kotlin'
 		testRuntimeOnly "org.apache.httpcomponents:httpclient:$commonsHttpClientVersion"
-		testRuntimeOnly "org.apache.qpid:proton-j:$protonJVersion"
 		testRuntimeOnly "org.apache.commons:commons-compress:$commonsCompressVersion"
 		testRuntimeOnly "org.xerial.snappy:snappy-java:$snappyVersion"
 		testRuntimeOnly "org.lz4:lz4-java:$lz4Version"
