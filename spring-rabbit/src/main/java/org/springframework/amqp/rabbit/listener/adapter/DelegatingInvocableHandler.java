@@ -20,7 +20,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -68,7 +67,7 @@ public class DelegatingInvocableHandler {
 
 	private final InvocableHandlerMethod defaultHandler;
 
-	private final Map<InvocableHandlerMethod, Expression> handlerSendTo = new HashMap<>();
+	private final Map<InvocableHandlerMethod, Expression> handlerSendTo = new ConcurrentHashMap<>();
 
 	private final Object bean;
 
