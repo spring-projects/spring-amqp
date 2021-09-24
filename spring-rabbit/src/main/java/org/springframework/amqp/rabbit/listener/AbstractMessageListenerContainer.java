@@ -71,6 +71,7 @@ import org.springframework.amqp.support.postprocessor.MessagePostProcessorUtils;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactoryUtils;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
@@ -1802,8 +1803,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	protected void configureAdminIfNeeded() {
-		if (this.amqpAdmin == null && this.getApplicationContext() != null) {
-			Map<String, AmqpAdmin> admins = this.getApplicationContext().getBeansOfType(AmqpAdmin.class);
+		if (this.amqpAdmin == null && this.applicationContext != null) {
+			Map<String, AmqpAdmin> admins =
+					BeanFactoryUtils.beansOfTypeIncludingAncestors(this.applicationContext, AmqpAdmin.class,
+							false, false);
 			if (admins.size() == 1) {
 				this.amqpAdmin = admins.values().iterator().next();
 			}
