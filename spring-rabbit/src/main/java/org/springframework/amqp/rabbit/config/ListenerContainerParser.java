@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -179,21 +179,21 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 		String queueNames = listenerEle.getAttribute(QUEUE_NAMES_ATTRIBUTE);
 		if (StringUtils.hasText(queueNames)) {
-			String[] names = StringUtils.commaDelimitedListToStringArray(queueNames);
-			List<TypedStringValue> values = new ManagedList<TypedStringValue>();
-			for (int i = 0; i < names.length; i++) {
-				values.add(new TypedStringValue(names[i].trim()));
-			}
-			containerDef.getPropertyValues().add("queueNames", values);
+			containerDef.getPropertyValues().add("queueNames", queueNames);
 		}
 		String queues = listenerEle.getAttribute(QUEUES_ATTRIBUTE);
 		if (StringUtils.hasText(queues)) {
-			String[] names = StringUtils.commaDelimitedListToStringArray(queues);
-			List<RuntimeBeanReference> values = new ManagedList<RuntimeBeanReference>();
-			for (int i = 0; i < names.length; i++) {
-				values.add(new RuntimeBeanReference(names[i].trim()));
+			if (queues.startsWith("#{")) {
+				containerDef.getPropertyValues().add("queues", queues);
 			}
-			containerDef.getPropertyValues().add("queues", values);
+			else {
+				String[] names = StringUtils.commaDelimitedListToStringArray(queues);
+				List<RuntimeBeanReference> values = new ManagedList<RuntimeBeanReference>();
+				for (int i = 0; i < names.length; i++) {
+					values.add(new RuntimeBeanReference(names[i].trim()));
+				}
+				containerDef.getPropertyValues().add("queues", values);
+			}
 		}
 
 		ManagedMap<String, TypedStringValue> args = new ManagedMap<String, TypedStringValue>();
