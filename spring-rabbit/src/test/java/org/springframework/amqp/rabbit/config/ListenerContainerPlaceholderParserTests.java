@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2019 the original author or authors.
+ * Copyright 2010-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,6 +80,23 @@ public final class ListenerContainerPlaceholderParserTests {
 		assertThat(listenerAccessor.getPropertyValue("defaultListenerMethod")).isEqualTo("handle");
 		Queue queue = this.context.getBean("bar", Queue.class);
 		assertThat(Arrays.asList(container.getQueueNames()).toString()).isEqualTo("[foo, " + queue.getName() + "]");
+	}
+
+	@Test
+	public void commasInPropertyNames() {
+		SimpleMessageListenerContainer container = this.context.getBean("commaProps1",
+				SimpleMessageListenerContainer.class);
+		assertThat(container.getQueueNames()).containsExactly("foo", "bar");
+	}
+
+	@Test
+	public void commasInPropertyQueues() {
+		SimpleMessageListenerContainer container = this.context.getBean("commaProps2",
+				SimpleMessageListenerContainer.class);
+		String[] queueNames = container.getQueueNames();
+		assertThat(queueNames).hasSize(2);
+		assertThat(queueNames[0]).isEqualTo("foo");
+		assertThat(queueNames[1]).startsWith("spring.gen");
 	}
 
 }
