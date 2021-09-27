@@ -106,9 +106,8 @@ public class MessageTests {
 		Message listMessage = new SimpleMessageConverter().toMessage(Collections.singletonList(new Foo()),
 				new MessageProperties());
 		assertThat(listMessage.toString()).doesNotContainPattern("aFoo");
-		Message.addWhiteListPatterns(Foo.class.getName());
-		assertThat(message.toString()).contains("aFoo");
-		assertThat(listMessage.toString()).contains("aFoo");
+		assertThat(message.toString()).contains("[serialized object]");
+		assertThat(listMessage.toString()).contains("[serialized object]");
 	}
 
 	@SuppressWarnings("serial")
