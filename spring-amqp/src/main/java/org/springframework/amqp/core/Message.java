@@ -16,16 +16,11 @@
 
 package org.springframework.amqp.core;
 
-import java.io.ByteArrayInputStream;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.Set;
 
-import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.util.Assert;
-import org.springframework.util.ClassUtils;
 
 /**
  * The 0-8 and 0-9-1 AMQP specifications do not define an Message class or interface. Instead, when performing an
@@ -47,9 +42,6 @@ public class Message implements Serializable {
 	private static final long serialVersionUID = -7177590352110605597L;
 
 	private static final String DEFAULT_ENCODING = Charset.defaultCharset().name();
-
-	private static final Set<String> ALLOWED_LIST_PATTERNS =
-			new LinkedHashSet<>(Arrays.asList("java.util.*", "java.lang.*"));
 
 	private static String bodyEncoding = DEFAULT_ENCODING;
 
@@ -79,20 +71,13 @@ public class Message implements Serializable {
 	}
 
 	/**
-	 * Add patterns to the allowed list of permissible package/class name patterns for
-	 * deserialization in {@link #toString()}.
-	 * The patterns will be applied in order until a match is found.
-	 * A class can be fully qualified or a wildcard '*' is allowed at the
-	 * beginning or end of the class name.
-	 * Examples: {@code com.foo.*}, {@code *.MyClass}.
-	 * By default, only {@code java.util} and {@code java.lang} classes will be
-	 * deserialized.
+	 * No longer used.
+	 * @deprecated toString() no longer deserializes the body.
 	 * @param patterns the patterns.
 	 * @since 1.5.7
 	 */
+	@Deprecated
 	public static void addAllowedListPatterns(String... patterns) {
-		Assert.notNull(patterns, "'patterns' cannot be null");
-		ALLOWED_LIST_PATTERNS.addAll(Arrays.asList(patterns));
 	}
 
 	/**
@@ -128,8 +113,7 @@ public class Message implements Serializable {
 		try {
 			String contentType = this.messageProperties.getContentType();
 			if (MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT.equals(contentType)) {
-				return SerializationUtils.deserialize(new ByteArrayInputStream(this.body), ALLOWED_LIST_PATTERNS,
-						ClassUtils.getDefaultClassLoader()).toString();
+				return "[serialized object]";
 			}
 			String encoding = encoding();
 			if (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)
