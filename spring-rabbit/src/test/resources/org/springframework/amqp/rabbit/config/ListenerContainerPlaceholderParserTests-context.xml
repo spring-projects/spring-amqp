@@ -11,6 +11,7 @@
 				<prop key="five">5</prop>
 				<prop key="one">1</prop>
 				<prop key="false">false</prop>
+				<prop key="foo.and.bar">foo, bar</prop>
 			</props>
 		</property>
 	</bean>
@@ -27,5 +28,14 @@
 	<bean id="connectionFactory" class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory"/>
 
 	<bean id="testBean" class="org.springframework.amqp.rabbit.config.ListenerContainerParserTests$TestBean"/>
+
+	<rabbit:listener-container connection-factory="connectionFactory" auto-startup="false">
+		<rabbit:listener id="commaProps1" queue-names="${foo.and.bar}" ref="testBean" method="handle"/>
+	</rabbit:listener-container>
+
+	<rabbit:listener-container connection-factory="connectionFactory" auto-startup="false">
+		<rabbit:listener id="commaProps2" queues="#{T(java.util.Arrays).asList(@foo, @bar).toArray()}"
+				ref="testBean" method="handle"/>
+	</rabbit:listener-container>
 
 </beans>
