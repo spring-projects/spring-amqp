@@ -72,9 +72,9 @@ public class Message implements Serializable {
 
 	/**
 	 * No longer used.
-	 * @deprecated toString() no longer deserializes the body.
 	 * @param patterns the patterns.
 	 * @since 1.5.7
+	 * @deprecated toString() no longer deserializes the body.
 	 */
 	public static void addWhiteListPatterns(String... patterns) {
 	}
