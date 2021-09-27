@@ -100,9 +100,6 @@
 		<module name="JavadocType">
 			<property name="scope" value="package"/>
 		</module>
-		<module name="JavadocMethod">
-			<property name="allowMissingJavadoc" value="true"/>
-		</module>
 		<module name="JavadocVariable">
 			<property name="scope" value="public"/>
 			<property name="ignoreNamePattern" value="[A-Z_0-9]*"/>

@@ -529,8 +529,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	 * connection to the broker will be attempted in random order.
 	 * @param shuffleAddresses true to shuffle the list.
 	 * @since 2.1.8
-	 * @see Collections#shuffle(List)
 	 * @deprecated since 2.3 in favor of
+	 * @see Collections#shuffle(List)
 	 * {@link #setAddressShuffleMode(AddressShuffleMode)}.
 	 */
 	@Deprecated

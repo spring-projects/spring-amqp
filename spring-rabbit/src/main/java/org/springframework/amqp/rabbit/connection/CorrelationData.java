@@ -99,9 +99,9 @@ public class CorrelationData implements Correlation {
 	 * Return a returned message, if any; requires a unique
 	 * {@link #CorrelationData(String) id}. Guaranteed to be populated before the future
 	 * is set.
-	 * @deprecated in favor of {@link #getReturned()}.
 	 * @return the message or null.
 	 * @since 2.1
+	 * @deprecated in favor of {@link #getReturned()}.
 	 */
 	@Deprecated
 	@Nullable
@@ -117,8 +117,8 @@ public class CorrelationData implements Correlation {
 	/**
 	 * Set a returned message for this correlation data.
 	 * @param returnedMessage the returned message.
-	 * @deprecated in favor of {@link #setReturned(ReturnedMessage)}.
 	 * @since 1.7.13
+	 * @deprecated in favor of {@link #setReturned(ReturnedMessage)}.
 	 */
 	@Deprecated
 	public void setReturnedMessage(Message returnedMessage) {

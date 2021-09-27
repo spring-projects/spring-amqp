@@ -288,7 +288,7 @@ subprojects { subproject ->
 
 	checkstyle {
 		configDirectory.set(rootProject.file("src/checkstyle"))
-		toolVersion = '8.24'
+		toolVersion = '9.0'
 	}
 
 	jar {
