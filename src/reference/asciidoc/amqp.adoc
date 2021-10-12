@@ -1658,8 +1658,6 @@ There are, nevertheless, scenarios where the prefetch value should be low:
 * Other special cases
 
 Also, with low-volume messaging and multiple consumers (including concurrency within a single listener container instance), you may wish to reduce the prefetch to get a more even distribution of messages across consumers.
-We also recommend using `prefetch = 1` with the `MANUAL` `ack` mode.
-The `basicAck` is an asynchronous operation and, if something wrong happens on the Broker (double `ack` for the same delivery tag, for example), you end up with processed subsequent messages in the batch that are unacknowledged on the Broker, and other consumers may see them.
 
 See <<containerAttributes>>.
 
