@@ -167,7 +167,7 @@ public class AmqpAppenderTests {
 		// default value
 		assertThat(TestUtils.getPropertyValue(manager, "addMdcAsHeaders", Boolean.class)).isTrue();
 
-		java.util.Queue queue = TestUtils.getPropertyValue(appender, "events", java.util.Queue.class);
+		java.util.Queue<?> queue = TestUtils.getPropertyValue(appender, "events", java.util.Queue.class);
 		int i = 0;
 		while (queue.poll() != null) {
 			i++;

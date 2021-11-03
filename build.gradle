@@ -239,10 +239,13 @@ subprojects { subproject ->
 		}
 	}
 
-    compileKotlin.dependsOn updateCopyrights
+	compileKotlin.dependsOn updateCopyrights
+
+	tasks.withType(JavaForkOptions) {
+		jvmArgs '--add-opens', 'java.base/java.util.zip=ALL-UNNAMED'
+	}
 
 	test {
-        jvmArgs '--add-opens java.base/java.util.zip=ALL-UNNAMED'
 		testLogging {
 			events "skipped", "failed"
 			showStandardStreams = project.hasProperty("showStandardStreams") ?: false
