@@ -4581,81 +4581,9 @@ See <<json-complex>> for more information.
 [[remoting]]
 ===== Spring Remoting with AMQP
 
-The Spring Framework has a general remoting capability, allowing https://docs.spring.io/spring/docs/current/spring-framework-reference/html/remoting.html[Remote Procedure Calls (RPC)] that use various transports.
-Spring-AMQP supports a similar mechanism with a `AmqpProxyFactoryBean` on the client and a `AmqpInvokerServiceExporter` on the server.
-This provides RPC over AMQP.
-On the client side, a `RabbitTemplate` is used as described <<reply-listener,earlier>>.
-On the server side, the invoker (configured as a `MessageListener`) receives the message, invokes the configured service, and returns the reply by using the inbound message's `replyTo` information.
+Spring remoting is no longer supported because the functionality has been removed from Spring Framework.
 
-You can inject the client factory bean into any bean (by using its `serviceInterface`).
-The client can then invoke methods on the proxy, resulting in remote execution over AMQP.
-
-NOTE: With the default `MessageConverter` instances, the method parameters and returned value must be instances of `Serializable`.
-
-On the server side, the `AmqpInvokerServiceExporter` has both `AmqpTemplate` and `MessageConverter` properties.
-Currently, the template's `MessageConverter` is not used.
-If you need to supply a custom message converter, you should provide it by setting the `messageConverter` property.
-On the client side, you can add a custom message converter to the `AmqpTemplate`, which is provided to the `AmqpProxyFactoryBean` by using its `amqpTemplate` property.
-
-The following listing shows sample client and server configurations:
-
-====
-[source,xml]
-----
-<bean id="client"
-    class="org.springframework.amqp.remoting.client.AmqpProxyFactoryBean">
-    <property name="amqpTemplate" ref="template" />
-    <property name="serviceInterface" value="foo.ServiceInterface" />
-</bean>
-
-<rabbit:connection-factory id="connectionFactory" />
-
-<rabbit:template id="template" connection-factory="connectionFactory" reply-timeout="2000"
-    routing-key="remoting.binding" exchange="remoting.exchange" />
-
-<rabbit:admin connection-factory="connectionFactory" />
-
-<rabbit:queue name="remoting.queue" />
-
-<rabbit:direct-exchange name="remoting.exchange">
-    <rabbit:bindings>
-        <rabbit:binding queue="remoting.queue" key="remoting.binding" />
-    </rabbit:bindings>
-</rabbit:direct-exchange>
-----
-
-[source,xml]
-----
-<bean id="listener"
-    class="org.springframework.amqp.remoting.service.AmqpInvokerServiceExporter">
-    <property name="serviceInterface" value="foo.ServiceInterface" />
-    <property name="service" ref="service" />
-    <property name="amqpTemplate" ref="template" />
-</bean>
-
-<bean id="service" class="foo.ServiceImpl" />
-
-<rabbit:connection-factory id="connectionFactory" />
-
-<rabbit:template id="template" connection-factory="connectionFactory" />
-
-<rabbit:queue name="remoting.queue" />
-
-<rabbit:listener-container connection-factory="connectionFactory">
-    <rabbit:listener ref="listener" queue-names="remoting.queue" />
-</rabbit:listener-container>
-----
-====
-
-IMPORTANT: The `AmqpInvokerServiceExporter` can process only properly formed messages, such as those sent from the `AmqpProxyFactoryBean`.
-If it receives a message that it cannot interpret, a serialized `RuntimeException` is sent as a reply.
-If the message has no `replyToAddress` property, the message is rejected and permanently lost if no dead letter exchange has been configured.
-
-NOTE: By default, if the request message cannot be delivered, the calling thread eventually times out and a `RemoteProxyFailureException` is thrown.
-By default, the timeout is five seconds.
-You can modify that duration by setting the `replyTimeout` property on the `RabbitTemplate`.
-Starting with version 1.5, by setting the `mandatory` property to `true` and enabling returns on the connection factory (see <<cf-pub-conf-ret>>), the calling thread throws an `AmqpMessageReturnedException`.
-See <<reply-timeout>> for more information.
+Use `sendAndReceive` operations using the `RabbitTemplate` (client side ) and `@RabbitListener` instead.
 
 [[broker-configuration]]
 ==== Configuring the Broker

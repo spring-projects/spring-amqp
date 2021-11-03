@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,6 @@ package org.springframework.amqp.support.converter;
 import org.springframework.amqp.AmqpRemoteException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.beans.factory.BeanClassLoaderAware;
-import org.springframework.remoting.support.RemoteInvocationResult;
 import org.springframework.util.Assert;
 
 /**
@@ -32,7 +30,7 @@ import org.springframework.util.Assert;
  * @since 2.0
  *
  */
-public class RemoteInvocationAwareMessageConverterAdapter implements MessageConverter, BeanClassLoaderAware {
+public class RemoteInvocationAwareMessageConverterAdapter implements MessageConverter {
 
 	private final MessageConverter delegate;
 
@@ -47,13 +45,6 @@ public class RemoteInvocationAwareMessageConverterAdapter implements MessageConv
 		Assert.notNull(delegate, "'delegate' converter cannot be null");
 		this.delegate = delegate;
 		this.shouldSetClassLoader = false;
-	}
-
-	@Override
-	public void setBeanClassLoader(ClassLoader classLoader) {
-		if (this.shouldSetClassLoader) {
-			((SimpleMessageConverter) this.delegate).setBeanClassLoader(classLoader);
-		}
 	}
 
 	@Override

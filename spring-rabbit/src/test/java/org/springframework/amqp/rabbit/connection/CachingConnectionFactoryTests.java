@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,6 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -1763,7 +1762,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		AtomicBoolean rejected = new AtomicBoolean(true);
 		CountDownLatch closeLatch = new CountDownLatch(1);
 		ccf.setPublisherChannelFactory((channel, exec) -> {
-			executor.set(spy(exec));
+			executor.set(exec);
 			return pcc;
 		});
 		willAnswer(invoc -> {

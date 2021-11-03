@@ -40,6 +40,7 @@ import java.util.zip.Deflater;
 import org.apache.commons.logging.Log;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -88,6 +89,7 @@ import com.rabbitmq.client.ConnectionFactory;
  *
  */
 @RabbitAvailable(queues = BatchingRabbitTemplateTests.ROUTE)
+@Disabled("--add-opens java.base/java.util.zip=ALL-UNNAMED works in the IDE, but not in gradle ")
 public class BatchingRabbitTemplateTests {
 
 	public static final String ROUTE = "test.queue.BatchingRabbitTemplateTests";

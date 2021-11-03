@@ -1,17 +1,14 @@
 [[whats-new]]
 == What's New
 
-=== Changes in 2.4 Since 2.3
+=== Changes in 3.0 Since 2.4
 
-This section describes the changes between version 2.4 and version 2.4.
-See <<change-history>> for changes in previous versions.
+==== Java 17, Spring Framework 6.0
 
-==== `@RabbitListener` Changes
+This version requires Spring Framework 6.0 and Java 17
 
-`MessageProperties` is now available for argument matching.
-See <<async-annotation-driven-enable-signature>> for more information.
+==== Remoting
 
-==== `RabbitAdmin` Changes
+The remoting feature (using RMI) is no longer supported.
 
-A new property `recoverManualDeclarations` allows recovery of manually declared queues/exchanges/bindings.
-See <<declarable-recovery>> for more information.
+See <<remoting>> for alternatives.

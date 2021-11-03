@@ -1,5 +1,5 @@
 buildscript {
-	ext.kotlinVersion = '1.4.32'
+	ext.kotlinVersion = '1.5.0'
 	repositories {
 		mavenCentral()
 		maven { url 'https://plugins.gradle.org/m2' }
@@ -63,7 +63,7 @@ ext {
 	reactorVersion = '2020.0.12'
 	snappyVersion = '1.1.8.4'
 	springDataCommonsVersion = '2.6.0-RC1'
-	springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.3.11'
+	springVersion = project.hasProperty('springVersion') ? project.springVersion : '6.0.0-SNAPSHOT'
 	springRetryVersion = '1.3.1'
 	zstdJniVersion = '1.5.0-2'
 }
@@ -140,8 +140,8 @@ subprojects { subproject ->
 	}
 
 	compileJava {
-		sourceCompatibility = 1.8
-		targetCompatibility = 1.8
+		sourceCompatibility = 17
+		targetCompatibility = 17
 	}
 
 	eclipse {
@@ -151,7 +151,7 @@ subprojects { subproject ->
 	}
 
 	jacoco {
-		toolVersion = '0.8.5'
+		toolVersion = '0.8.7'
 	}
 
 	// dependencies that are common across all java projects
@@ -242,6 +242,7 @@ subprojects { subproject ->
     compileKotlin.dependsOn updateCopyrights
 
 	test {
+        jvmArgs '--add-opens java.base/java.util.zip=ALL-UNNAMED'
 		testLogging {
 			events "skipped", "failed"
 			showStandardStreams = project.hasProperty("showStandardStreams") ?: false
@@ -385,7 +386,7 @@ project('spring-rabbit') {
 
 	compileTestKotlin {
 		kotlinOptions {
-			jvmTarget = '1.8'
+			jvmTarget = '16'
 		}
 	}
 
@@ -549,6 +550,7 @@ task api(type: Javadoc) {
 	options.overview = 'src/api/overview.html'
 	options.stylesheetFile = file('src/api/stylesheet.css')
 	options.links(rootProject.ext.javadocLinks)
+	options.addStringOption('Xdoclint:none', '-quiet')
 
 	source subprojects.collect { project ->
 		project.sourceSets.main.allJava
