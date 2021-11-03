@@ -30,6 +30,7 @@ import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.MessagingMessageConverter;
+import org.springframework.amqp.support.converter.RemoteInvocationResult;
 import org.springframework.core.MethodParameter;
 import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
@@ -38,7 +39,6 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.support.MessageBuilder;
-import org.springframework.remoting.support.RemoteInvocationResult;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
@@ -221,7 +221,6 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		}
 		Object payload = message == null ? null : message.getPayload();
 		try {
-
 			handleResult(new InvocationResult(new RemoteInvocationResult(throwableToReturn), null,
 						payload == null ? Object.class : this.handlerAdapter.getReturnTypeFor(payload),
 						this.handlerAdapter.getBean(),

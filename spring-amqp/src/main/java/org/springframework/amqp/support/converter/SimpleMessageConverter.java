@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,6 @@ import java.io.UnsupportedEncodingException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.utils.SerializationUtils;
-import org.springframework.beans.factory.BeanClassLoaderAware;
-import org.springframework.util.ClassUtils;
 
 /**
  * Implementation of {@link MessageConverter} that can work with Strings, Serializable
@@ -41,39 +39,11 @@ import org.springframework.util.ClassUtils;
  * @author Oleg Zhurakousky
  * @author Gary Russell
  */
-public class SimpleMessageConverter extends AllowedListDeserializingMessageConverter implements BeanClassLoaderAware {
+public class SimpleMessageConverter extends AllowedListDeserializingMessageConverter {
 
 	public static final String DEFAULT_CHARSET = "UTF-8";
 
 	private volatile String defaultCharset = DEFAULT_CHARSET;
-
-	private String codebaseUrl;
-
-	private ClassLoader beanClassLoader = ClassUtils.getDefaultClassLoader();
-
-	@Override
-	public void setBeanClassLoader(ClassLoader beanClassLoader) {
-		this.beanClassLoader = beanClassLoader;
-	}
-
-	/**
-	 * Set the codebase URL to download classes from if not found locally. Can consist of
-	 * multiple URLs, separated by spaces.
-	 * <p>
-	 * Follows RMI's codebase conventions for dynamic class download.
-	 *
-	 * @param codebaseUrl The codebase URL.
-	 *
-	 * @deprecated due to deprecation of
-	 * {@link org.springframework.remoting.rmi.CodebaseAwareObjectInputStream}.
-	 *
-	 * @see org.springframework.remoting.rmi.CodebaseAwareObjectInputStream
-	 * @see java.rmi.server.RMIClassLoader
-	 */
-	@Deprecated
-	public void setCodebaseUrl(String codebaseUrl) {
-		this.codebaseUrl = codebaseUrl;
-	}
 
 	/**
 	 * Specify the default charset to use when converting to or from text-based
@@ -111,7 +81,7 @@ public class SimpleMessageConverter extends AllowedListDeserializingMessageConve
 					contentType.equals(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT)) {
 				try {
 					content = SerializationUtils.deserialize(
-							createObjectInputStream(new ByteArrayInputStream(message.getBody()), this.codebaseUrl));
+							createObjectInputStream(new ByteArrayInputStream(message.getBody())));
 				}
 				catch (IOException | IllegalArgumentException | IllegalStateException e) {
 					throw new MessageConversionException(
@@ -165,18 +135,15 @@ public class SimpleMessageConverter extends AllowedListDeserializingMessageConve
 	}
 
 	/**
-	 * Create an ObjectInputStream for the given InputStream and codebase. The default implementation creates a
-	 * CodebaseAwareObjectInputStream.
+	 * Create an ObjectInputStream for the given InputStream and codebase. The default
+	 * implementation creates an ObjectInputStream.
 	 * @param is the InputStream to read from
-	 * @param codebaseUrl the codebase URL to load classes from if not found locally (can be <code>null</code>)
 	 * @return the new ObjectInputStream instance to use
 	 * @throws IOException if creation of the ObjectInputStream failed
-	 * @see org.springframework.remoting.rmi.CodebaseAwareObjectInputStream
 	 */
 	@SuppressWarnings("deprecation")
-	protected ObjectInputStream createObjectInputStream(InputStream is, String codebaseUrl) throws IOException {
-		return new org.springframework.remoting.rmi.CodebaseAwareObjectInputStream(is, this.beanClassLoader,
-				codebaseUrl) {
+	protected ObjectInputStream createObjectInputStream(InputStream is) throws IOException {
+		return new ObjectInputStream(is) {
 
 			@Override
 			protected Class<?> resolveClass(ObjectStreamClass classDesc) throws IOException, ClassNotFoundException {
