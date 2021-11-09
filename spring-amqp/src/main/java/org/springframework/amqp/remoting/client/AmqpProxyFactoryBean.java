@@ -40,7 +40,9 @@ import org.springframework.beans.factory.InitializingBean;
  * @see AmqpClientInterceptor
  * @see org.springframework.remoting.rmi.RmiServiceExporter
  * @see org.springframework.remoting.RemoteAccessException
+ * @deprecated will be removed in 3.0.0.
  */
+@Deprecated
 public class AmqpProxyFactoryBean extends AmqpClientInterceptor implements FactoryBean<Object>, InitializingBean {
 
 	private Object serviceProxy;

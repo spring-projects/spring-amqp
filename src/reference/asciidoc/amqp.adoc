@@ -4581,6 +4581,10 @@ See <<json-complex>> for more information.
 [[remoting]]
 ===== Spring Remoting with AMQP
 
+IMPORTANT: This feature is deprecated and will be removed in 3.0.
+It has been superseded for a long time by <<annotation-error-handling>> with the `returnExceptions` being set to true, and configuring a `RemoteInvocationAwareMessageConverterAdapter` on the sending side.
+See <<annotation-error-handling>> for more information.
+
 The Spring Framework has a general remoting capability, allowing https://docs.spring.io/spring/docs/current/spring-framework-reference/html/remoting.html[Remote Procedure Calls (RPC)] that use various transports.
 Spring-AMQP supports a similar mechanism with a `AmqpProxyFactoryBean` on the client and a `AmqpInvokerServiceExporter` on the server.
 This provides RPC over AMQP.

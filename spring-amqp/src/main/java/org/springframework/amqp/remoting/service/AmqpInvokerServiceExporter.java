@@ -53,7 +53,9 @@ import org.springframework.remoting.support.RemoteInvocationResult;
  * @author Gary Russell
  * @author Artem Bilan
  * @since 1.2
+ * @deprecated will be removed in 3.0.0.
  */
+@Deprecated
 public class AmqpInvokerServiceExporter extends RemoteInvocationBasedExporter implements MessageListener {
 
 	private AmqpTemplate amqpTemplate;
