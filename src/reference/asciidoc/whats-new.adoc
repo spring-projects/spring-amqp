@@ -15,3 +15,8 @@ See <<async-annotation-driven-enable-signature>> for more information.
 
 A new property `recoverManualDeclarations` allows recovery of manually declared queues/exchanges/bindings.
 See <<declarable-recovery>> for more information.
+
+==== Remoting Support
+
+Support remoting using Spring Framework's RMI support is deprecated and will be removed in 3.0.
+See <<remoting>> for more information.

@@ -38,7 +38,9 @@ import org.springframework.remoting.support.RemoteInvocationResult;
  * @see org.springframework.amqp.remoting.service.AmqpInvokerServiceExporter
  * @see AmqpProxyFactoryBean
  * @see org.springframework.remoting.RemoteAccessException
+ * @deprecated will be removed in 3.0.0.
  */
+@Deprecated
 public class AmqpClientInterceptor extends RemoteAccessor implements MethodInterceptor {
 
 	private AmqpTemplate amqpTemplate;

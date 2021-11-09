@@ -29,8 +29,6 @@ import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.remoting.client.AmqpProxyFactoryBean;
-import org.springframework.amqp.remoting.service.AmqpInvokerServiceExporter;
 import org.springframework.amqp.remoting.testhelper.AbstractAmqpTemplate;
 import org.springframework.amqp.remoting.testhelper.SentSavingTemplate;
 import org.springframework.amqp.remoting.testservice.GeneralException;
@@ -49,11 +47,12 @@ import org.springframework.remoting.support.RemoteInvocation;
  * @author Gary Russell
  * @since 1.2
  */
+@SuppressWarnings("deprecation")
 public class RemotingTest {
 
 	private TestServiceInterface riggedProxy;
 
-	private AmqpInvokerServiceExporter serviceExporter;
+	private org.springframework.amqp.remoting.service.AmqpInvokerServiceExporter serviceExporter;
 
 	/**
 	 * Set up a rig of directly wired-up proxy and service listener so that both can be tested together without needing
@@ -63,14 +62,15 @@ public class RemotingTest {
 	public void initializeTestRig() {
 		// Set up the service
 		TestServiceInterface testService = new TestServiceImpl();
-		this.serviceExporter = new AmqpInvokerServiceExporter();
+		this.serviceExporter = new org.springframework.amqp.remoting.service.AmqpInvokerServiceExporter();
 		final SentSavingTemplate sentSavingTemplate = new SentSavingTemplate();
 		this.serviceExporter.setAmqpTemplate(sentSavingTemplate);
 		this.serviceExporter.setService(testService);
 		this.serviceExporter.setServiceInterface(TestServiceInterface.class);
 
 		// Set up the client
-		AmqpProxyFactoryBean amqpProxyFactoryBean = new AmqpProxyFactoryBean();
+		org.springframework.amqp.remoting.client.AmqpProxyFactoryBean amqpProxyFactoryBean =
+				new org.springframework.amqp.remoting.client.AmqpProxyFactoryBean();
 		amqpProxyFactoryBean.setServiceInterface(TestServiceInterface.class);
 		AmqpTemplate directForwardingTemplate = new AbstractAmqpTemplate() {
 			@Override
