@@ -600,6 +600,7 @@ public class EnableRabbitIntegrationTests {
 	}
 
 	@Test
+	@LogLevels(classes = { SimpleMessageListenerContainer.class, RabbitTemplate.class })
 	public void testConverted() {
 		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(
 				EnableRabbitConfigWithCustomConversion.class);
