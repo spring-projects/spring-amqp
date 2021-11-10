@@ -64,6 +64,9 @@ public final class ContainerUtils {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Rejecting messages (requeue=" + shouldRequeue + ")");
 		}
+		if (shouldRequeue) {
+			throwable.printStackTrace();
+		}
 		return shouldRequeue;
 	}
 
