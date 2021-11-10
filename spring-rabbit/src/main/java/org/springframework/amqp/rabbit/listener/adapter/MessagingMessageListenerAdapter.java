@@ -187,7 +187,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	protected void invokeHandlerAndProcessResult(@Nullable org.springframework.amqp.core.Message amqpMessage,
 			Channel channel, Message<?> message) throws Exception { // NOSONAR
 
-		boolean projectionUsed = amqpMessage.getMessageProperties().isProjectionUsed();
+		boolean projectionUsed = amqpMessage == null ? false : amqpMessage.getMessageProperties().isProjectionUsed();
 		if (projectionUsed) {
 			amqpMessage.getMessageProperties().setProjectionUsed(false);
 		}
