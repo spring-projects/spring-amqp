@@ -43,7 +43,11 @@ public class Message implements Serializable {
 
 	private static final String DEFAULT_ENCODING = Charset.defaultCharset().name();
 
+	private static final int DEFAULT_MAX_BODY_LENGTH = 50;
+
 	private static String bodyEncoding = DEFAULT_ENCODING;
+
+	private static int maxBodyLength = DEFAULT_MAX_BODY_LENGTH;
 
 	private final MessageProperties messageProperties;
 
@@ -91,6 +95,16 @@ public class Message implements Serializable {
 		bodyEncoding = encoding;
 	}
 
+	/**
+	 * Set the maximum length of a test message body to render as a String in
+	 * {@link #toString()}. Default 50.
+	 * @param length the length to render.
+	 * @since 2.2.20
+	 */
+	public static void setMaxBodyLength(int length) {
+		maxBodyLength = length;
+	}
+
 	public byte[] getBody() {
 		return this.body; //NOSONAR
 	}
@@ -116,10 +130,11 @@ public class Message implements Serializable {
 				return "[serialized object]";
 			}
 			String encoding = encoding();
-			if (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)
+			if (this.body.length <= maxBodyLength
+					&& (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)
 					|| MessageProperties.CONTENT_TYPE_JSON.equals(contentType)
 					|| MessageProperties.CONTENT_TYPE_JSON_ALT.equals(contentType)
-					|| MessageProperties.CONTENT_TYPE_XML.equals(contentType)) {
+					|| MessageProperties.CONTENT_TYPE_XML.equals(contentType))) {
 				return new String(this.body, encoding);
 			}
 		}
