@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Date;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 
@@ -108,6 +109,24 @@ public class MessageTests {
 		assertThat(listMessage.toString()).doesNotContainPattern("aFoo");
 		assertThat(message.toString()).contains("[serialized object]");
 		assertThat(listMessage.toString()).contains("[serialized object]");
+	}
+
+	@Test
+	void dontToStringLongBody() {
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN);
+		StringBuilder builder1 = new StringBuilder();
+		IntStream.range(0, 50).forEach(i -> builder1.append("x"));
+		String bodyAsString = builder1.toString();
+		Message message = new Message(bodyAsString.getBytes(), messageProperties);
+		assertThat(message.toString()).contains(bodyAsString);
+		StringBuilder builder2 = new StringBuilder();
+		IntStream.range(0, 51).forEach(i -> builder2.append("x"));
+		bodyAsString = builder2.toString();
+		message = new Message(bodyAsString.getBytes(), messageProperties);
+		assertThat(message.toString()).contains("[51]");
+		Message.setMaxBodyLength(100);
+		assertThat(message.toString()).contains(bodyAsString);
 	}
 
 	@SuppressWarnings("serial")
