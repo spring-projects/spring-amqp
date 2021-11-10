@@ -1,5 +1,5 @@
 <!--
-!!! To report Security Vulnerabilities, please go to https://pivotal.io/security !!!
+!!! To report Security Vulnerabilities, please go to https://tanzu.vmware.com/security !!!
 -->
 **Affects Version(s):** \<Spring AMQP version>
 
