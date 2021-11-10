@@ -30,7 +30,6 @@ import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.MessagingMessageConverter;
-import org.springframework.amqp.support.converter.ProjectingMessageConverter;
 import org.springframework.core.MethodParameter;
 import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
@@ -188,7 +187,11 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	protected void invokeHandlerAndProcessResult(@Nullable org.springframework.amqp.core.Message amqpMessage,
 			Channel channel, Message<?> message) throws Exception { // NOSONAR
 
-		if (logger.isDebugEnabled() && !(getMessageConverter() instanceof ProjectingMessageConverter)) {
+		boolean projectionUsed = amqpMessage.getMessageProperties().isProjectionUsed();
+		if (projectionUsed) {
+			amqpMessage.getMessageProperties().setProjectionUsed(false);
+		}
+		if (logger.isDebugEnabled() && !projectionUsed) {
 			logger.debug("Processing [" + message + "]");
 		}
 		InvocationResult result = null;
