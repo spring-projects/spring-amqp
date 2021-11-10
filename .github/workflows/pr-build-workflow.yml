@@ -27,7 +27,7 @@ jobs:
       - name: Run Gradle
         uses: burrunan/gradle-cache-action@v1
         with:
-          arguments: ':spring-rabbit:test --tests EnableRabbitIntegrationTests.testConverted'
+          arguments: ':spring-rabbit:test --tests EnableRabbitIntegrationTests'
 
       - name: Capture Test Results
         if: failure()
