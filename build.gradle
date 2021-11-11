@@ -236,6 +236,9 @@ subprojects { subproject ->
     compileKotlin.dependsOn updateCopyrights
 
 	test {
+		maxHeapSize = '2g'
+		jvmArgs '-XX:+HeapDumpOnOutOfMemoryError'
+
 		testLogging {
 			events "skipped", "failed"
 			showStandardStreams = project.hasProperty("showStandardStreams") ?: false
