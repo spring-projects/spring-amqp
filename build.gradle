@@ -144,6 +144,12 @@ subprojects { subproject ->
 		targetCompatibility = 1.8
 	}
 
+	compileTestJava {
+		sourceCompatibility = 11
+		targetCompatibility = 11
+		options.encoding = 'UTF-8'
+	}
+
 	eclipse {
 		project {
 			natures += 'org.springframework.ide.eclipse.core.springnature'
