@@ -128,6 +128,8 @@ public class MessageProperties implements Serializable {
 
 	private boolean lastInBatch;
 
+	private boolean projectionUsed;
+
 	private transient Type inferredArgumentType;
 
 	private transient Method targetMethod;
@@ -550,6 +552,26 @@ public class MessageProperties implements Serializable {
 	 */
 	public void setLastInBatch(boolean lastInBatch) {
 		this.lastInBatch = lastInBatch;
+	}
+
+	/**
+	 * Get an internal flag used to communicate that conversion used projection; always
+	 * false at the application level.
+	 * @return true if projection was used.
+	 * @since 2.2.20
+	 */
+	public boolean isProjectionUsed() {
+		return this.projectionUsed;
+	}
+
+	/**
+	 * Set an internal flag used to communicate that conversion used projection; always false
+	 * at the application level.
+	 * @param projectionUsed true for projection.
+	 * @since 2.2.20
+	 */
+	public void setProjectionUsed(boolean projectionUsed) {
+		this.projectionUsed = projectionUsed;
 	}
 
 	/**

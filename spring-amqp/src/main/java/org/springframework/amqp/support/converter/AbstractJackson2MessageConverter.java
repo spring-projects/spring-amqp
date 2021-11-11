@@ -290,37 +290,46 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 
 		Object content = null;
 		try {
-			JavaType inferredType = this.javaTypeMapper.getInferredType(properties);
-			if (inferredType != null && this.useProjectionForInterfaces && inferredType.isInterface()
-					&& !inferredType.getRawClass().getPackage().getName().startsWith("java.util")) { // List etc
-				content = this.projectingConverter.convert(message, inferredType.getRawClass());
-			}
-			else if (inferredType != null && this.alwaysConvertToInferredType) {
-				content = tryConverType(message, encoding, inferredType);
-			}
-			if (content == null) {
-				if (conversionHint instanceof ParameterizedTypeReference) {
-					content = convertBytesToObject(message.getBody(), encoding,
-							this.objectMapper.getTypeFactory().constructType(
-									((ParameterizedTypeReference<?>) conversionHint).getType()));
-				}
-				else if (getClassMapper() == null) {
-					JavaType targetJavaType = getJavaTypeMapper()
-							.toJavaType(message.getMessageProperties());
-					content = convertBytesToObject(message.getBody(),
-							encoding, targetJavaType);
-				}
-				else {
-					Class<?> targetClass = getClassMapper().toClass(// NOSONAR never null
-							message.getMessageProperties());
-					content = convertBytesToObject(message.getBody(),
-							encoding, targetClass);
-				}
-			}
+			content = convertContent(message, conversionHint, properties, encoding);
 		}
 		catch (IOException e) {
 			throw new MessageConversionException(
 					"Failed to convert Message content", e);
+		}
+		return content;
+	}
+
+	private Object convertContent(Message message, Object conversionHint, MessageProperties properties, String encoding)
+			throws IOException {
+
+		Object content = null;
+		JavaType inferredType = this.javaTypeMapper.getInferredType(properties);
+		if (inferredType != null && this.useProjectionForInterfaces && inferredType.isInterface()
+				&& !inferredType.getRawClass().getPackage().getName().startsWith("java.util")) { // List etc
+			content = this.projectingConverter.convert(message, inferredType.getRawClass());
+			properties.setProjectionUsed(true);
+		}
+		else if (inferredType != null && this.alwaysConvertToInferredType) {
+			content = tryConverType(message, encoding, inferredType);
+		}
+		if (content == null) {
+			if (conversionHint instanceof ParameterizedTypeReference) {
+				content = convertBytesToObject(message.getBody(), encoding,
+						this.objectMapper.getTypeFactory().constructType(
+								((ParameterizedTypeReference<?>) conversionHint).getType()));
+			}
+			else if (getClassMapper() == null) {
+				JavaType targetJavaType = getJavaTypeMapper()
+						.toJavaType(message.getMessageProperties());
+				content = convertBytesToObject(message.getBody(),
+						encoding, targetJavaType);
+			}
+			else {
+				Class<?> targetClass = getClassMapper().toClass(// NOSONAR never null
+						message.getMessageProperties());
+				content = convertBytesToObject(message.getBody(),
+						encoding, targetClass);
+			}
 		}
 		return content;
 	}

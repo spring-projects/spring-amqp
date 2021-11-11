@@ -183,7 +183,11 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	protected void invokeHandlerAndProcessResult(@Nullable org.springframework.amqp.core.Message amqpMessage,
 			Channel channel, Message<?> message) throws Exception { // NOSONAR
 
-		if (logger.isDebugEnabled()) {
+		boolean projectionUsed = amqpMessage == null ? false : amqpMessage.getMessageProperties().isProjectionUsed();
+		if (projectionUsed) {
+			amqpMessage.getMessageProperties().setProjectionUsed(false);
+		}
+		if (logger.isDebugEnabled() && !projectionUsed) {
 			logger.debug("Processing [" + message + "]");
 		}
 		InvocationResult result = null;
