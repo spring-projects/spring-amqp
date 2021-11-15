@@ -130,7 +130,7 @@ public class Message implements Serializable {
 				return "[serialized object]";
 			}
 			String encoding = encoding();
-			if (this.body.length <= maxBodyLength
+			if (this.body.length <= maxBodyLength // NOSONAR
 					&& (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)
 					|| MessageProperties.CONTENT_TYPE_JSON.equals(contentType)
 					|| MessageProperties.CONTENT_TYPE_JSON_ALT.equals(contentType)
