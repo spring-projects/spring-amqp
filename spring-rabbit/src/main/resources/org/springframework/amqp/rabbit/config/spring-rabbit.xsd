@@ -1285,7 +1285,7 @@
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 	When 'true' sets the mandatory flag on basic.publish; only applies if
-	a 'return-callback' is provided. Mutually exclusive with 'mandatory-expression'.
+	a 'returns-callback' is provided. Mutually exclusive with 'mandatory-expression'.
 	Defaults to 'false'.
 					]]></xsd:documentation>
 				</xsd:annotation>
@@ -1299,7 +1299,7 @@
 	A SpEL expression to be evaluated against each request message to determine a 'mandatory' boolean value.
 	The BeanFactoryResolver is available too, if the RabbitTemplate is used from Spring Context,
 	allowing for expressions such as '@myBean.isMandatory(#root)`.
-	Only applies if a 'return-callback' is provided. Mutually exclusive with 'mandatory'.
+	Only applies if a 'returns-callback' is provided. Mutually exclusive with 'mandatory'.
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
@@ -1309,10 +1309,26 @@
 	A reference to an implementation of RabbitTemplate.ReturnCallback - invoked if
 	a return is received for a message published with mandatory set
 	that couldn't be delivered according to the semantics of that option.
+	DEPRECTATED - use 'returns-callback' instead.
 					]]></xsd:documentation>
 					<xsd:appinfo>
 						<tool:annotation kind="ref">
-							<tool:expected-type type="org.springframework.amqp.core.RabbitTemplate.ReturnCallback" />
+							<tool:expected-type type="org.springframework.amqp.core.RabbitTemplate.ReturnCallback"/>
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="returns-callback" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	A reference to an implementation of RabbitTemplate.ReturnsCallback - invoked if
+	a return is received for a message published with mandatory set
+	that couldn't be delivered according to the semantics of that option.
+	Replaces the deprecated 'return-callback'.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.amqp.core.RabbitTemplate.ReturnsCallback"/>
 						</tool:annotation>
 					</xsd:appinfo>
 				</xsd:annotation>
@@ -1326,7 +1342,7 @@
 					]]></xsd:documentation>
 					<xsd:appinfo>
 						<tool:annotation kind="ref">
-							<tool:expected-type type="org.springframework.amqp.core.RabbitTemplate.ConfirmCallback" />
+							<tool:expected-type type="org.springframework.amqp.core.RabbitTemplate.ConfirmCallback"/>
 						</tool:annotation>
 					</xsd:appinfo>
 				</xsd:annotation>

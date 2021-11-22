@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +67,8 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 
 	private static final String RETURN_CALLBACK_ATTRIBUTE = "return-callback";
 
+	private static final String RETURNS_CALLBACK_ATTRIBUTE = "returns-callback";
+
 	private static final String CONFIRM_CALLBACK_ATTRIBUTE = "confirm-callback";
 
 	private static final String CORRELATION_KEY = "correlation-key";
@@ -122,6 +124,7 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, USE_TEMPORARY_REPLY_QUEUES_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, REPLY_ADDRESS_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, RETURN_CALLBACK_ATTRIBUTE);
+		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, RETURNS_CALLBACK_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, CONFIRM_CALLBACK_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, CORRELATION_KEY);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, RETRY_TEMPLATE);

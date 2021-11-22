@@ -34,7 +34,7 @@
 
 	<rabbit:template id="withCallbacks" connection-factory="connectionFactory"
 					 direct-reply-to-container="false"
-					 mandatory="true" return-callback="rcb" confirm-callback="ccb"/>
+					 mandatory="true" returns-callback="rcb" confirm-callback="ccb"/>
 
 	<rabbit:template id="withMandatoryExpression" connection-factory="connectionFactory"
 					 mandatory-expression="'true'"
@@ -42,7 +42,7 @@
 					 receive-connection-factory-selector-expression="'foo'"/>
 
 	<bean id="rcb" class="org.mockito.Mockito" factory-method="mock">
-		<constructor-arg value="org.springframework.amqp.rabbit.core.RabbitTemplate$ReturnCallback"/>
+		<constructor-arg value="org.springframework.amqp.rabbit.core.RabbitTemplate$ReturnsCallback"/>
 	</bean>
 
 	<bean id="ccb" class="org.mockito.Mockito" factory-method="mock">
