@@ -175,7 +175,7 @@ import org.springframework.context.annotation.Import;
  *     &#064;Override
  *     public void configureRabbitListeners(RabbitListenerEndpointRegistrar registrar) {
  *         registrar.setEndpointRegistry(myRabbitListenerEndpointRegistry());
- *         registrar.setMessageHandlerMethodFactory(myMessageHandlerMethodFactory);
+ *         registrar.setMessageHandlerMethodFactory(myMessageHandlerMethodFactory());
  *     }
  *
  *     &#064;Bean
