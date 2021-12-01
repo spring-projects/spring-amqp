@@ -30,6 +30,7 @@ import org.springframework.util.ObjectUtils;
  * broker using a single bean declaration for the collection.
  *
  * @author Gary Russell
+ * @author Björn Michael
  * @since 2.1
  */
 public class Declarables {

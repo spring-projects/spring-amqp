@@ -17,16 +17,16 @@
 package org.springframework.amqp.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.amqp.core.BindingBuilder.bind;
 
 import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 /**
  * @author Björn Michael
  * @since 2.4
  */
-public class DeclarablesTest {
+public class DeclarablesTests {
 
 	@Test
 	public void getDeclarables() {
@@ -42,7 +42,7 @@ public class DeclarablesTest {
 	public void getDeclarablesByType() {
 		Queue queue = new Queue("queue");
 		TopicExchange exchange = new TopicExchange("exchange");
-		Binding binding = bind(queue).to(exchange).with("foo.bar");
+		Binding binding = BindingBuilder.bind(queue).to(exchange).with("foo.bar");
 		Declarables declarables = new Declarables(queue, exchange, binding);
 
 		assertThat(declarables.getDeclarablesByType(Queue.class)).containsExactlyInAnyOrder(queue);
