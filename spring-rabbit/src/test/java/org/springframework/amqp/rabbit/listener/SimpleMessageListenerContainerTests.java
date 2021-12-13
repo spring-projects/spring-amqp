@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,6 +69,7 @@ import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
+import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -648,6 +649,31 @@ public class SimpleMessageListenerContainerTests {
 
 		assertThat(removed).isEqualTo(true);
 		assertThat(afterReceivePostProcessors).containsExactly(mpp2, mpp3);
+	}
+
+	@Test
+	void setConcurrency() throws Exception {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel = mock(Channel.class);
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(false)).willReturn(channel);
+		final AtomicReference<Consumer> consumer = new AtomicReference<>();
+		willAnswer(invocation -> {
+			consumer.set(invocation.getArgument(6));
+			consumer.get().handleConsumeOk("1");
+			return "1";
+		}).given(channel)
+				.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
+						any(Consumer.class));
+		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setQueueNames("foo", "bar");
+		container.setMessageListener(mock(MessageListener.class));
+		container.setConcurrency("5-10");
+		container.start();
+		await().until(() -> TestUtils.getPropertyValue(container, "consumers", Collection.class).size() == 5);
+		container.setConcurrency("10-10");
+		assertThat(TestUtils.getPropertyValue(container, "consumers", Collection.class)).hasSize(10);
 	}
 
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,
