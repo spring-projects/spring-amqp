@@ -295,7 +295,7 @@ public class BlockingQueueConsumer {
 		this.noLocal = noLocal;
 		this.exclusive = exclusive;
 		this.queues = Arrays.copyOf(queues, queues.length);
-		this.queue = new LinkedBlockingQueue<Delivery>(prefetchCount);
+		this.queue = new LinkedBlockingQueue<Delivery>(queues.length == 0 ? prefetchCount : prefetchCount * queues.length);
 	}
 
 	public Channel getChannel() {
