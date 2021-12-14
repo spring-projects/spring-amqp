@@ -52,7 +52,7 @@ ext {
 	jaywayJsonPathVersion = '2.4.0'
 	junit4Version = '4.13.2'
 	junitJupiterVersion = '5.7.2'
-	log4jVersion = '2.15.0'
+	log4jVersion = '2.16.0'
 	logbackVersion = '1.2.3'
 	lz4Version = '1.8.0'
 	micrometerVersion = '1.8.0'
