@@ -159,6 +159,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setMessageListener(new MessageListenerAdapter(this));
 		container.setQueueNames("foo");
 		container.setAutoStartup(false);
+		container.setShutdownTimeout(0);
 		container.afterPropertiesSet();
 		assertThat(ReflectionTestUtils.getField(container, "concurrentConsumers")).isEqualTo(1);
 		container.stop();
@@ -262,6 +263,8 @@ public class SimpleMessageListenerContainerTests {
 		container.setQueueNames("foobar");
 		container.setBatchSize(2);
 		container.setMessageListener(messages::add);
+		container.setShutdownTimeout(0);
+		container.afterPropertiesSet();
 		container.start();
 		BasicProperties props = new BasicProperties();
 		byte[] payload = "baz".getBytes();
@@ -308,6 +311,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setMessageListener(message -> {
 		});
 		container.setConsumerArguments(Collections.singletonMap("x-priority", 10));
+		container.setShutdownTimeout(0);
 		container.afterPropertiesSet();
 		container.start();
 		verify(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
@@ -343,6 +347,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setReceiveTimeout(1);
 		container.setMessageListener(message -> {
 		});
+		container.setShutdownTimeout(0);
 		container.afterPropertiesSet();
 		container.start();
 		assertThat(latch1.await(10, TimeUnit.SECONDS)).isTrue();
@@ -389,6 +394,7 @@ public class SimpleMessageListenerContainerTests {
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setMessageListener(message -> {
 		});
+		container.setShutdownTimeout(0);
 		container.afterPropertiesSet();
 
 		for (int i = 0; i < 10; i++) {
