@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -712,7 +713,7 @@ public class SimpleMessageListenerContainerTests {
 
 	}
 
-	private void waitForConsumersToStop(Set<?> consumers) {
+	private void waitForConsumersToStop(Set<?> consumers) throws InterruptedException {
 		int n = 0;
 		boolean stillUp = true;
 		while (stillUp && n++ < 1000) {
