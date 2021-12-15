@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,6 +73,7 @@ import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.BatchMessageListener;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
+import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -132,7 +133,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setAcknowledgeMode(AcknowledgeMode.NONE);
 		container.setTransactionManager(new TestTransactionManager());
 		assertThatIllegalStateException()
-			.isThrownBy(container::afterPropertiesSet);
+				.isThrownBy(container::afterPropertiesSet);
 		container.stop();
 		singleConnectionFactory.destroy();
 	}
@@ -146,7 +147,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setChannelTransacted(true);
 		container.setAcknowledgeMode(AcknowledgeMode.NONE);
 		assertThatIllegalStateException()
-			.isThrownBy(container::afterPropertiesSet);
+				.isThrownBy(container::afterPropertiesSet);
 		container.stop();
 		singleConnectionFactory.destroy();
 	}
@@ -456,10 +457,10 @@ public class SimpleMessageListenerContainerTests {
 		CountDownLatch latch2 = new CountDownLatch(2);
 		willAnswer(messageToConsumer(mockChannel1, container, false, latch1))
 				.given(mockChannel1).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
-				anyMap(), any(Consumer.class));
+						anyMap(), any(Consumer.class));
 		willAnswer(messageToConsumer(mockChannel2, container, false, latch1))
 				.given(mockChannel2).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
-				anyMap(), any(Consumer.class));
+						anyMap(), any(Consumer.class));
 		willAnswer(messageToConsumer(mockChannel1, container, true, latch2)).given(mockChannel1).basicCancel(anyString());
 		willAnswer(messageToConsumer(mockChannel2, container, true, latch2)).given(mockChannel2).basicCancel(anyString());
 
@@ -636,6 +637,7 @@ public class SimpleMessageListenerContainerTests {
 			public Message postProcessMessage(Message message) throws AmqpException {
 				return message;
 			}
+
 		}
 		Container container = new Container();
 
@@ -721,7 +723,7 @@ public class SimpleMessageListenerContainerTests {
 
 	}
 
-	private void waitForConsumersToStop(Set<?> consumers) throws Exception {
+	private void waitForConsumersToStop(Set<?> consumers) {
 		with().pollInterval(Duration.ofMillis(10)).atMost(Duration.ofSeconds(10))
 				.until(() -> consumers.stream()
 						.map(consumer -> TestUtils.getPropertyValue(consumer, "consumer"))
