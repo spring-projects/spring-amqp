@@ -26,7 +26,6 @@ import java.io.ObjectStreamClass;
 import java.util.Set;
 
 import org.springframework.core.ConfigurableObjectInputStream;
-import org.springframework.core.NestedIOException;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.PatternMatchUtils;
 
@@ -35,6 +34,7 @@ import org.springframework.util.PatternMatchUtils;
  *
  * @author Dave Syer
  * @author Gary Russell
+ * @author Artem Bilan
  */
 public final class SerializationUtils {
 
@@ -111,22 +111,22 @@ public final class SerializationUtils {
 			throws IOException {
 
 		try (
-			ObjectInputStream objectInputStream = new ConfigurableObjectInputStream(inputStream, classLoader) {
+				ObjectInputStream objectInputStream = new ConfigurableObjectInputStream(inputStream, classLoader) {
 
-				@Override
-				protected Class<?> resolveClass(ObjectStreamClass classDesc)
-						throws IOException, ClassNotFoundException {
-					Class<?> clazz = super.resolveClass(classDesc);
-					checkAllowedList(clazz, allowedListPatterns);
-					return clazz;
-				}
+					@Override
+					protected Class<?> resolveClass(ObjectStreamClass classDesc)
+							throws IOException, ClassNotFoundException {
+						Class<?> clazz = super.resolveClass(classDesc);
+						checkAllowedList(clazz, allowedListPatterns);
+						return clazz;
+					}
 
-			}) {
+				}) {
 
 			return objectInputStream.readObject();
 		}
 		catch (ClassNotFoundException ex) {
-			throw new NestedIOException("Failed to deserialize object type", ex);
+			throw new IOException("Failed to deserialize object type", ex);
 		}
 	}
 
