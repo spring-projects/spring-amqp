@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,15 +24,18 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
@@ -63,8 +66,10 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AnonymousQueue;
+import org.springframework.amqp.core.BatchMessageListener;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
+import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -124,7 +129,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setAcknowledgeMode(AcknowledgeMode.NONE);
 		container.setTransactionManager(new TestTransactionManager());
 		assertThatIllegalStateException()
-			.isThrownBy(container::afterPropertiesSet);
+				.isThrownBy(container::afterPropertiesSet);
 		container.stop();
 		singleConnectionFactory.destroy();
 	}
@@ -138,7 +143,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setChannelTransacted(true);
 		container.setAcknowledgeMode(AcknowledgeMode.NONE);
 		assertThatIllegalStateException()
-			.isThrownBy(container::afterPropertiesSet);
+				.isThrownBy(container::afterPropertiesSet);
 		container.stop();
 		singleConnectionFactory.destroy();
 	}
@@ -447,10 +452,10 @@ public class SimpleMessageListenerContainerTests {
 		CountDownLatch latch2 = new CountDownLatch(2);
 		doAnswer(messageToConsumer(mockChannel1, container, false, latch1))
 				.when(mockChannel1).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
-				anyMap(), any(Consumer.class));
+						anyMap(), any(Consumer.class));
 		doAnswer(messageToConsumer(mockChannel2, container, false, latch1))
 				.when(mockChannel2).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
-				anyMap(), any(Consumer.class));
+						anyMap(), any(Consumer.class));
 		doAnswer(messageToConsumer(mockChannel1, container, true, latch2)).when(mockChannel1).basicCancel(anyString());
 		doAnswer(messageToConsumer(mockChannel2, container, true, latch2)).when(mockChannel2).basicCancel(anyString());
 
@@ -621,6 +626,7 @@ public class SimpleMessageListenerContainerTests {
 			public Message postProcessMessage(Message message) throws AmqpException {
 				return message;
 			}
+
 		}
 		Container container = new Container();
 
@@ -637,6 +643,49 @@ public class SimpleMessageListenerContainerTests {
 
 		assertThat(removed).isEqualTo(true);
 		assertThat(afterReceivePostProcessors).containsExactly(mpp2, mpp3);
+	}
+
+	@Test
+	void filterMppNoDoubleAck() throws Exception {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel = mock(Channel.class);
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(false)).willReturn(channel);
+		final AtomicReference<Consumer> consumer = new AtomicReference<>();
+		willAnswer(invocation -> {
+			consumer.set(invocation.getArgument(6));
+			consumer.get().handleConsumeOk("1");
+			return "1";
+		}).given(channel)
+				.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
+						any(Consumer.class));
+		final CountDownLatch latch = new CountDownLatch(1);
+		willAnswer(invocation -> {
+			latch.countDown();
+			return null;
+		}).given(channel).basicAck(anyLong(), anyBoolean());
+
+		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setAfterReceivePostProcessors(msg -> null);
+		container.setQueueNames("foo");
+		MessageListener listener = mock(BatchMessageListener.class);
+		container.setMessageListener(listener);
+		container.setBatchSize(2);
+		container.setConsumerBatchEnabled(true);
+		container.start();
+		BasicProperties props = new BasicProperties();
+		byte[] payload = "baz".getBytes();
+		Envelope envelope = new Envelope(1L, false, "foo", "bar");
+		consumer.get().handleDelivery("1", envelope, props, payload);
+		envelope = new Envelope(2L, false, "foo", "bar");
+		consumer.get().handleDelivery("1", envelope, props, payload);
+		assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+		verify(channel, never()).basicAck(eq(1), anyBoolean());
+		verify(channel).basicAck(2, true);
+		container.stop();
+		verify(listener).containerAckMode(AcknowledgeMode.AUTO);
+		verifyNoMoreInteractions(listener);
 	}
 
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,
@@ -663,7 +712,7 @@ public class SimpleMessageListenerContainerTests {
 
 	}
 
-	private void waitForConsumersToStop(Set<?> consumers) throws Exception {
+	private void waitForConsumersToStop(Set<?> consumers) {
 		int n = 0;
 		boolean stillUp = true;
 		while (stillUp && n++ < 1000) {

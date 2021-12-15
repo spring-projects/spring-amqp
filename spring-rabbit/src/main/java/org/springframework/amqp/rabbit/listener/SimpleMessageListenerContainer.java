@@ -946,7 +946,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					for (MessagePostProcessor processor : getAfterReceivePostProcessors()) {
 						message = processor.postProcessMessage(message);
 						if (message == null) {
-							channel.basicAck(deliveryTag, false);
 							if (this.logger.isDebugEnabled()) {
 								this.logger.debug(
 										"Message Post Processor returned 'null', discarding message " + original);
