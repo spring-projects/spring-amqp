@@ -26,15 +26,18 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import java.io.IOException;
 import java.net.URL;
@@ -67,6 +70,7 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AnonymousQueue;
+import org.springframework.amqp.core.BatchMessageListener;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -648,6 +652,49 @@ public class SimpleMessageListenerContainerTests {
 
 		assertThat(removed).isEqualTo(true);
 		assertThat(afterReceivePostProcessors).containsExactly(mpp2, mpp3);
+	}
+
+	@Test
+	void filterMppNoDoubleAck() throws Exception {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel = mock(Channel.class);
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(false)).willReturn(channel);
+		final AtomicReference<Consumer> consumer = new AtomicReference<>();
+		willAnswer(invocation -> {
+			consumer.set(invocation.getArgument(6));
+			consumer.get().handleConsumeOk("1");
+			return "1";
+		}).given(channel)
+				.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
+						any(Consumer.class));
+		final CountDownLatch latch = new CountDownLatch(1);
+		willAnswer(invocation -> {
+			latch.countDown();
+			return null;
+		}).given(channel).basicAck(anyLong(), anyBoolean());
+
+		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setAfterReceivePostProcessors(msg -> null);
+		container.setQueueNames("foo");
+		MessageListener listener = mock(BatchMessageListener.class);
+		container.setMessageListener(listener);
+		container.setBatchSize(2);
+		container.setConsumerBatchEnabled(true);
+		container.start();
+		BasicProperties props = new BasicProperties();
+		byte[] payload = "baz".getBytes();
+		Envelope envelope = new Envelope(1L, false, "foo", "bar");
+		consumer.get().handleDelivery("1", envelope, props, payload);
+		envelope = new Envelope(2L, false, "foo", "bar");
+		consumer.get().handleDelivery("1", envelope, props, payload);
+		assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+		verify(channel, never()).basicAck(eq(1), anyBoolean());
+		verify(channel).basicAck(2, true);
+		container.stop();
+		verify(listener).containerAckMode(AcknowledgeMode.AUTO);
+		verifyNoMoreInteractions(listener);
 	}
 
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,
