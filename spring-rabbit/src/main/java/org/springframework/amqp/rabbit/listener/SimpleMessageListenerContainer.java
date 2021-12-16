@@ -1044,7 +1044,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			executeWithList(channel, messages, deliveryTag, consumer);
 		}
 
-		return consumer.commitIfNecessary(isChannelLocallyTransacted());
+		return consumer.commitIfNecessary(isChannelLocallyTransacted(), getMessageAckListener());
 
 	}
 

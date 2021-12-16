@@ -30,6 +30,7 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.MessageAckListener;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -114,6 +115,8 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	private BatchingStrategy batchingStrategy;
 
 	private Boolean deBatchingEnabled;
+
+	private MessageAckListener messageAckListener;
 
 	/**
 	 * @param connectionFactory The connection factory.
@@ -323,6 +326,15 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		this.globalQos = globalQos;
 	}
 
+	/**
+	 * Set a {@link MessageAckListener} to use when ack a message(messages) in {@link AcknowledgeMode#AUTO} mode.
+	 * @param messageAckListener the messageAckListener.
+	 * @see AbstractMessageListenerContainer#setMessageAckListener(MessageAckListener)
+	 */
+	public void setMessageAckListener(MessageAckListener messageAckListener) {
+		this.messageAckListener = messageAckListener;
+	}
+
 	@Override
 	public C createListenerContainer(RabbitListenerEndpoint endpoint) {
 		C instance = createContainerInstance();
@@ -355,7 +367,8 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 			.acceptIfNotNull(this.autoStartup, instance::setAutoStartup)
 			.acceptIfNotNull(this.phase, instance::setPhase)
 			.acceptIfNotNull(this.afterReceivePostProcessors, instance::setAfterReceivePostProcessors)
-			.acceptIfNotNull(this.deBatchingEnabled, instance::setDeBatchingEnabled);
+			.acceptIfNotNull(this.deBatchingEnabled, instance::setDeBatchingEnabled)
+			.acceptIfNotNull(this.messageAckListener, instance::setMessageAckListener);
 		if (this.batchListener && this.deBatchingEnabled == null) {
 			// turn off container debatching by default for batch listeners
 			instance.setDeBatchingEnabled(false);

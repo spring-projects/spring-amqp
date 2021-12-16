@@ -92,6 +92,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Nicolas Ristock
+ * @author Cao Weibo
  *
  * @since 2.0
  *
@@ -531,7 +532,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 							try {
 								consumer.ackIfNecessary(now);
 							}
-							catch (IOException e) {
+							catch (Exception e) {
 								this.logger.error("Exception while sending delayed ack", e);
 							}
 						}
@@ -882,7 +883,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					try {
 						consumer.ackIfNecessary(0L);
 					}
-					catch (IOException e) {
+					catch (Exception e) {
 						this.logger.error("Exception while sending delayed ack", e);
 					}
 				}
@@ -1175,7 +1176,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						}
 					}
 					else if (!isChannelTransacted() || isLocallyTransacted) {
-						getChannel().basicAck(deliveryTag, false);
+						sendAckWithNotify(deliveryTag, false);
 					}
 				}
 				if (isLocallyTransacted) {
@@ -1194,7 +1195,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		 * @param now the current time.
 		 * @throws IOException if one occurs.
 		 */
-		synchronized void ackIfNecessary(long now) throws IOException {
+		synchronized void ackIfNecessary(long now) throws Exception {
 			if (this.pendingAcks >= this.messagesPerAck || (
 					this.pendingAcks > 0 && (now - this.lastAck > this.ackTimeout || this.canceled))) {
 				sendAck(now);
@@ -1217,7 +1218,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					getChannel().basicNack(deliveryTag, !isAsyncReplies(),
 							ContainerUtils.shouldRequeue(isDefaultRequeueRejected(), e, this.logger));
 				}
-				catch (IOException e1) {
+				catch (Exception e1) {
 					this.logger.error("Failed to nack message", e1);
 				}
 			}
@@ -1226,10 +1227,49 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 
-		protected synchronized void sendAck(long now) throws IOException {
-			getChannel().basicAck(this.latestDeferredDeliveryTag, true);
+		protected synchronized void sendAck(long now) throws Exception {
+			sendAckWithNotify(this.latestDeferredDeliveryTag, true);
 			this.lastAck = now;
 			this.pendingAcks = 0;
+		}
+
+		/**
+		 * Send ack and notify MessageAckListener(if set).
+		 * @param deliveryTag DeliveryTag of this ack.
+		 * @param multiple Whether multiple ack.
+		 * @throws Exception Occured when ack.
+		 */
+		private void sendAckWithNotify(long deliveryTag, boolean multiple) throws Exception {
+			try {
+				getChannel().basicAck(deliveryTag, multiple);
+				notifyMessageAckListener(getMessageAckListener(), true, deliveryTag, null);
+			}
+			catch (Exception e) {
+				notifyMessageAckListener(getMessageAckListener(), false, deliveryTag, e);
+				throw e;
+			}
+		}
+
+		/**
+		 * Notify MessageAckListener set on message listener.
+		 * @param messageAckListener MessageAckListener set on the message listener.
+		 * @param success Whether ack succeeded.
+		 * @param deliveryTag The deliveryTag of ack.
+		 * @param cause If an exception occurs.
+		 */
+		private void notifyMessageAckListener(@Nullable MessageAckListener messageAckListener,
+											  boolean success,
+											  long deliveryTag,
+											  @Nullable Throwable cause) {
+			if (messageAckListener == null) {
+				return;
+			}
+			try {
+				messageAckListener.onComplete(success, deliveryTag, cause);
+			}
+			catch (Exception e) {
+				this.logger.error("An exception occured on MessageAckListener.", e);
+			}
 		}
 
 		@Override
