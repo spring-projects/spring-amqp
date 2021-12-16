@@ -53,6 +53,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AnonymousQueue;
+import org.springframework.amqp.core.BatchMessageListener;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
@@ -87,6 +88,7 @@ import com.rabbitmq.client.Channel;
  * @author Gunnar Hillert
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Cao Weibo
  *
  * @since 1.3
  *
@@ -679,6 +681,76 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		this.container.stop();
 		assertThat(exc.get()).isNotNull();
 		assertThat(exc.get().getMessage()).isEqualTo("Channel closed; cannot ack/nack");
+	}
+
+	@Test
+	public void testMessageAckListenerWithSuccessfulAck() throws Exception {
+		final AtomicInteger calledTimes = new AtomicInteger();
+		final AtomicReference<Long> ackDeliveryTag = new AtomicReference<>();
+		final AtomicReference<Boolean> ackSuccess = new AtomicReference<>();
+		final AtomicReference<Throwable> ackCause = new AtomicReference<>();
+		final CountDownLatch latch = new CountDownLatch(1);
+		this.container = createContainer((ChannelAwareMessageListener) (m, c) -> {
+		}, false, this.queue.getName());
+		this.container.setAcknowledgeMode(AcknowledgeMode.AUTO);
+		this.container.afterPropertiesSet();
+		this.container.start();
+		this.container.setMessageAckListener(new MessageAckListener() {
+			@Override
+			public void onComplete(boolean success, long deliveryTag, Throwable cause) throws Exception {
+				calledTimes.incrementAndGet();
+				ackDeliveryTag.set(deliveryTag);
+				ackSuccess.set(success);
+				ackCause.set(cause);
+				latch.countDown();
+			}
+		});
+		int messageCount = 5;
+		for (int i = 0; i < messageCount; i++) {
+			this.template.convertAndSend(this.queue.getName(), "foo");
+		}
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		this.container.stop();
+		assertThat(calledTimes.get()).isEqualTo(messageCount);
+		assertThat(ackSuccess.get()).isTrue();
+		assertThat(ackCause.get()).isNull();
+		assertThat(ackDeliveryTag.get()).isEqualTo(messageCount);
+	}
+
+	@Test
+	public void testMessageAckListenerWithBatchAck() throws Exception {
+		final AtomicInteger calledTimes = new AtomicInteger();
+		final AtomicReference<Long> ackDeliveryTag = new AtomicReference<>();
+		final AtomicReference<Boolean> ackSuccess = new AtomicReference<>();
+		final AtomicReference<Throwable> ackCause = new AtomicReference<>();
+		final CountDownLatch latch = new CountDownLatch(1);
+		this.container = createContainer((BatchMessageListener) messages -> {
+		}, false, this.queue.getName());
+		this.container.setBatchSize(5);
+		this.container.setConsumerBatchEnabled(true);
+		this.container.setAcknowledgeMode(AcknowledgeMode.AUTO);
+		this.container.afterPropertiesSet();
+		this.container.start();
+		this.container.setMessageAckListener(new MessageAckListener() {
+			@Override
+			public void onComplete(boolean success, long deliveryTag, Throwable cause) throws Exception {
+				calledTimes.incrementAndGet();
+				ackDeliveryTag.set(deliveryTag);
+				ackSuccess.set(success);
+				ackCause.set(cause);
+				latch.countDown();
+			}
+		});
+		int messageCount = 5;
+		for (int i = 0; i < messageCount; i++) {
+			this.template.convertAndSend(this.queue.getName(), "foo");
+		}
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		this.container.stop();
+		assertThat(calledTimes.get()).isEqualTo(1);
+		assertThat(ackSuccess.get()).isTrue();
+		assertThat(ackCause.get()).isNull();
+		assertThat(ackDeliveryTag.get()).isEqualTo(messageCount);
 	}
 
 	private boolean containerStoppedForAbortWithBadListener() throws InterruptedException {
