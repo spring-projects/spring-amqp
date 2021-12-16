@@ -87,6 +87,7 @@ import com.rabbitmq.utility.Utility;
  * @author Alex Panchenko
  * @author Johno Crawford
  * @author Ian Roberts
+ * @author Cao Weibo
  */
 public class BlockingQueueConsumer {
 
@@ -813,11 +814,11 @@ public class BlockingQueueConsumer {
 	/**
 	 * Perform a commit or message acknowledgement, as appropriate.
 	 * @param localTx Whether the channel is locally transacted.
+	 * @param messageAckListener MessageAckListener set on the message listener.
 	 * @return true if at least one delivery tag exists.
 	 * @throws IOException Any IOException.
 	 */
-	public boolean commitIfNecessary(boolean localTx) throws IOException {
-
+	public boolean commitIfNecessary(boolean localTx, MessageAckListener messageAckListener) throws IOException {
 		if (this.deliveryTags.isEmpty()) {
 			return false;
 		}
@@ -834,7 +835,14 @@ public class BlockingQueueConsumer {
 
 			if (ackRequired && (!this.transactional || isLocallyTransacted)) {
 				long deliveryTag = new ArrayList<Long>(this.deliveryTags).get(this.deliveryTags.size() - 1);
-				this.channel.basicAck(deliveryTag, true);
+				try {
+					this.channel.basicAck(deliveryTag, true);
+					notifyMessageAckListener(messageAckListener, true, deliveryTag, null);
+				}
+				catch (Exception e) {
+					logger.error("Error acking.", e);
+					notifyMessageAckListener(messageAckListener, false, deliveryTag, e);
+				}
 			}
 
 			if (isLocallyTransacted) {
@@ -849,6 +857,28 @@ public class BlockingQueueConsumer {
 
 		return true;
 
+	}
+
+	/**
+	 * Notify MessageAckListener set on the relevant message listener.
+	 * @param messageAckListener MessageAckListener set on the message listener.
+	 * @param success Whether ack succeeded.
+	 * @param deliveryTag The deliveryTag of ack.
+	 * @param cause If an exception occurs.
+	 */
+	private void notifyMessageAckListener(@Nullable MessageAckListener messageAckListener,
+										  boolean success,
+										  long deliveryTag,
+										  @Nullable Throwable cause) {
+		if (messageAckListener == null) {
+			return;
+		}
+		try {
+			messageAckListener.onComplete(success, deliveryTag, cause);
+		}
+		catch (Exception e) {
+			logger.error("An exception occured on MessageAckListener.", e);
+		}
 	}
 
 	@Override

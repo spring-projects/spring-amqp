@@ -255,6 +255,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private volatile boolean lazyLoad;
 
+	private MessageAckListener messageAckListener;
+
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
 		this.applicationEventPublisher = applicationEventPublisher;
@@ -1186,6 +1188,21 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	public void setjavaLangErrorHandler(JavaLangErrorHandler javaLangErrorHandler) {
 		Assert.notNull(javaLangErrorHandler, "'javaLangErrorHandler' cannot be null");
 		this.javaLangErrorHandler = javaLangErrorHandler;
+	}
+
+	/**
+	 * Set a {@link MessageAckListener} to use when ack a message(messages) in {@link AcknowledgeMode#AUTO} mode.
+	 * @param messageAckListener the messageAckListener.
+	 * @see MessageAckListener
+	 * @see AcknowledgeMode
+	 */
+	public void setMessageAckListener(MessageAckListener messageAckListener) {
+		Assert.notNull(messageAckListener, "'messageAckListener' cannot be null");
+		this.messageAckListener = messageAckListener;
+	}
+
+	protected MessageAckListener getMessageAckListener() {
+		return this.messageAckListener;
 	}
 
 	/**
