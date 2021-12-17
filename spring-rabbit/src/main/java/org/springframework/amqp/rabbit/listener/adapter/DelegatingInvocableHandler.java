@@ -20,6 +20,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,6 +45,7 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.handler.annotation.support.PayloadMethodArgumentResolver;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 import org.springframework.util.Assert;
+import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.validation.Validator;
 
 
@@ -83,6 +85,8 @@ public class DelegatingInvocableHandler {
 	private final BeanExpressionContext beanExpressionContext;
 
 	private final PayloadValidator validator;
+
+	private final boolean asyncReplies;
 
 	/**
 	 * Construct an instance with the supplied handlers for the bean.
@@ -132,15 +136,34 @@ public class DelegatingInvocableHandler {
 		this.resolver = beanExpressionResolver;
 		this.beanExpressionContext = beanExpressionContext;
 		this.validator = validator == null ? null : new PayloadValidator(validator);
+		boolean asyncReplies;
+		asyncReplies = defaultHandler != null && isAsyncReply(defaultHandler);
+		Iterator<InvocableHandlerMethod> iterator = handlers.iterator();
+		while (iterator.hasNext()) {
+			asyncReplies |= isAsyncReply(iterator.next());
+		}
+		this.asyncReplies = asyncReplies;
 	}
 
-
+	private boolean isAsyncReply(InvocableHandlerMethod method) {
+		return (AbstractAdaptableMessageListener.monoPresent && MonoHandler.isMono(method.getMethod().getReturnType()))
+				|| ListenableFuture.class.isAssignableFrom(method.getMethod().getReturnType());
+	}
 
 	/**
 	 * @return the bean
 	 */
 	public Object getBean() {
 		return this.bean;
+	}
+
+	/**
+	 * Return true if any handler method has an async reply type.
+	 * @return the asyncReply.
+	 * @since 2.2.21
+	 */
+	public boolean isAsyncReplies() {
+		return this.asyncReplies;
 	}
 
 	/**

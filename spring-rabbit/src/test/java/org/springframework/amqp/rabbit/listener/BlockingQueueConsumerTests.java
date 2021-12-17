@@ -258,7 +258,7 @@ public class BlockingQueueConsumerTests {
 		Set<Long> deliveryTags = new HashSet<Long>();
 		deliveryTags.add(1L);
 		dfa.setPropertyValue("deliveryTags", deliveryTags);
-		blockingQueueConsumer.rollbackOnExceptionIfNecessary(ex);
+		blockingQueueConsumer.rollbackOnExceptionIfNecessary(ex, -1);
 		verify(channel).basicNack(1L, true, expectedRequeue);
 	}
 

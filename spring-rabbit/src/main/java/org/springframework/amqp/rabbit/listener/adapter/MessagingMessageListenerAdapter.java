@@ -107,6 +107,11 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		return this.handlerAdapter;
 	}
 
+	@Override
+	public boolean isAsyncReplies() {
+		return this.handlerAdapter.isAsyncReplies();
+	}
+
 	/**
 	 * Set the {@link AmqpHeaderMapper} implementation to use to map the standard
 	 * AMQP headers. By default, a {@link org.springframework.amqp.support.SimpleAmqpHeaderMapper

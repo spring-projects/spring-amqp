@@ -777,8 +777,21 @@ public class BlockingQueueConsumer {
 	/**
 	 * Perform a rollback, handling rollback exceptions properly.
 	 * @param ex the thrown application exception or error
+	 * @deprecated in favor of {@link #rollbackOnExceptionIfNecessary(Throwable, long)}
 	 */
+	@Deprecated
 	public void rollbackOnExceptionIfNecessary(Throwable ex) {
+		rollbackOnExceptionIfNecessary(ex, -1);
+	}
+
+	/**
+	 * Perform a rollback, handling rollback exceptions properly.
+	 * @param ex the thrown application exception or error
+	 * @param tag delivery tag; when specified (greater than or equal to 0) only that
+	 * message is nacked.
+	 * @since 2.2.21.
+	 */
+	public void rollbackOnExceptionIfNecessary(Throwable ex, long tag) {
 
 		boolean ackRequired = !this.acknowledgeMode.isAutoAck()
 				&& (!this.acknowledgeMode.isManual() || ContainerUtils.isRejectManual(ex));
@@ -790,14 +803,20 @@ public class BlockingQueueConsumer {
 				RabbitUtils.rollbackIfNecessary(this.channel);
 			}
 			if (ackRequired) {
-				OptionalLong deliveryTag = this.deliveryTags.stream().mapToLong(l -> l).max();
-				if (deliveryTag.isPresent()) {
-					this.channel.basicNack(deliveryTag.getAsLong(), true,
-							ContainerUtils.shouldRequeue(this.defaultRequeueRejected, ex, logger));
+				if (tag < 0) {
+					OptionalLong deliveryTag = this.deliveryTags.stream().mapToLong(l -> l).max();
+					if (deliveryTag.isPresent()) {
+						this.channel.basicNack(deliveryTag.getAsLong(), true,
+								ContainerUtils.shouldRequeue(this.defaultRequeueRejected, ex, logger));
+					}
+					if (this.transactional) {
+						// Need to commit the reject (=nack)
+						RabbitUtils.commitIfNecessary(this.channel);
+					}
 				}
-				if (this.transactional) {
-					// Need to commit the reject (=nack)
-					RabbitUtils.commitIfNecessary(this.channel);
+				else {
+					this.channel.basicNack(tag, false,
+							ContainerUtils.shouldRequeue(this.defaultRequeueRejected, ex, logger));
 				}
 			}
 		}
@@ -806,7 +825,12 @@ public class BlockingQueueConsumer {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e); // NOSONAR stack trace loss
 		}
 		finally {
-			this.deliveryTags.clear();
+			if (tag < 0) {
+				this.deliveryTags.clear();
+			}
+			else {
+				this.deliveryTags.remove(tag);
+			}
 		}
 	}
 
