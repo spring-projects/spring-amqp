@@ -991,6 +991,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						}
 						break;
 					}
+					long tagToRollback = isAsyncReplies()
+							? message.getMessageProperties().getDeliveryTag()
+							: -1;
 					if (getTransactionManager() != null) {
 						if (getTransactionAttribute().rollbackOn(ex)) {
 							RabbitResourceHolder resourceHolder = (RabbitResourceHolder) TransactionSynchronizationManager
@@ -1003,7 +1006,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 								 * If we don't actually have a transaction, we have to roll back
 								 * manually. See prepareHolderForRollback().
 								 */
-								consumer.rollbackOnExceptionIfNecessary(ex);
+								consumer.rollbackOnExceptionIfNecessary(ex, tagToRollback);
 							}
 							throw ex; // encompassing transaction will handle the rollback.
 						}
@@ -1015,7 +1018,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						}
 					}
 					else {
-						consumer.rollbackOnExceptionIfNecessary(ex);
+						consumer.rollbackOnExceptionIfNecessary(ex, tagToRollback);
 						throw ex;
 					}
 				}
