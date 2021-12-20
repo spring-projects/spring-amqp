@@ -22,6 +22,7 @@ import java.lang.reflect.Type;
 import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
+import org.springframework.util.concurrent.ListenableFuture;
 
 /**
  * A wrapper for either an {@link InvocableHandlerMethod} or
@@ -38,6 +39,8 @@ public class HandlerAdapter {
 
 	private final DelegatingInvocableHandler delegatingHandler;
 
+	private final boolean asyncReplies;
+
 	/**
 	 * Construct an instance with the provided method.
 	 * @param invokerHandlerMethod the method.
@@ -45,6 +48,9 @@ public class HandlerAdapter {
 	public HandlerAdapter(InvocableHandlerMethod invokerHandlerMethod) {
 		this.invokerHandlerMethod = invokerHandlerMethod;
 		this.delegatingHandler = null;
+		this.asyncReplies = (AbstractAdaptableMessageListener.monoPresent
+				&& MonoHandler.isMono(invokerHandlerMethod.getMethod().getReturnType()))
+			|| ListenableFuture.class.isAssignableFrom(invokerHandlerMethod.getMethod().getReturnType());
 	}
 
 	/**
@@ -54,6 +60,7 @@ public class HandlerAdapter {
 	public HandlerAdapter(DelegatingInvocableHandler delegatingHandler) {
 		this.invokerHandlerMethod = null;
 		this.delegatingHandler = delegatingHandler;
+		this.asyncReplies = delegatingHandler.isAsyncReplies();
 	}
 
 	/**
@@ -137,6 +144,15 @@ public class HandlerAdapter {
 		else {
 			return this.delegatingHandler.getBean();
 		}
+	}
+
+	/**
+	 * Return true if any handler method has an async reply type.
+	 * @return the asyncReply.
+	 * @since 2.2.21
+	 */
+	public boolean isAsyncReplies() {
+		return this.asyncReplies;
 	}
 
 	/**

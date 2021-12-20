@@ -727,6 +727,7 @@ public class SimpleMessageListenerContainerTests {
 		verify(channel).basicAck(2, true);
 		container.stop();
 		verify(listener).containerAckMode(AcknowledgeMode.AUTO);
+		verify(listener).isAsyncReplies();
 		verifyNoMoreInteractions(listener);
 	}
 

@@ -1214,7 +1214,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 							}
 						}
 					}
-					getChannel().basicNack(deliveryTag, true,
+					getChannel().basicNack(deliveryTag, !isAsyncReplies(),
 							ContainerUtils.shouldRequeue(isDefaultRequeueRejected(), e, this.logger));
 				}
 				catch (IOException e1) {

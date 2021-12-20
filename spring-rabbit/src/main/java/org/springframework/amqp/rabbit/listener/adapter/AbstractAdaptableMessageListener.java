@@ -21,7 +21,6 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
 import java.util.Arrays;
-import java.util.function.Consumer;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -56,7 +55,6 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.concurrent.ListenableFuture;
 
 import com.rabbitmq.client.Channel;
-import reactor.core.publisher.Mono;
 
 /**
  * An abstract {@link org.springframework.amqp.core.MessageListener} adapter providing the
@@ -81,7 +79,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 
 	private static final ParserContext PARSER_CONTEXT = new TemplateParserContext("!{", "}");
 
-	private static final boolean monoPresent = // NOSONAR - lower case
+	static final boolean monoPresent = // NOSONAR - lower case, protected
 			ClassUtils.isPresent("reactor.core.publisher.Mono", ChannelAwareMessageListener.class.getClassLoader());
 
 	/**
@@ -691,21 +689,6 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 
 		public Object getResult() {
 			return this.result;
-		}
-
-	}
-
-	private static class MonoHandler { // NOSONAR - pointless to name it ..Utils|Helper
-
-		static boolean isMono(Object result) {
-			return result instanceof Mono;
-		}
-
-		@SuppressWarnings("unchecked")
-		static void subscribe(Object returnValue, Consumer<? super Object> success,
-				Consumer<? super Throwable> failure, Runnable completeConsumer) {
-
-			((Mono<? super Object>) returnValue).subscribe(success, failure, completeConsumer);
 		}
 
 	}
