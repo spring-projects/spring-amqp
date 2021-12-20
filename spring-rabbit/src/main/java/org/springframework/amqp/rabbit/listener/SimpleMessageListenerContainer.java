@@ -1057,7 +1057,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						 * If we don't actually have a transaction, we have to roll back
 						 * manually. See prepareHolderForRollback().
 						 */
-						consumer.rollbackOnExceptionIfNecessary(ex, -1);
+						consumer.rollbackOnExceptionIfNecessary(ex);
 					}
 					throw ex; // encompassing transaction will handle the rollback.
 				}
@@ -1068,7 +1068,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			else {
-				consumer.rollbackOnExceptionIfNecessary(ex, -1);
+				consumer.rollbackOnExceptionIfNecessary(ex);
 				throw ex;
 			}
 		}

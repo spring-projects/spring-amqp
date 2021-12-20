@@ -1227,7 +1227,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		}
 		if (this.isAsyncReplies() && !AcknowledgeMode.MANUAL.equals(this.acknowledgeMode)) {
 			this.acknowledgeMode = AcknowledgeMode.MANUAL;
-			logger.warn("Async replies require AcknowledgeMode.MANUAL, forced");
 		}
 	}
 

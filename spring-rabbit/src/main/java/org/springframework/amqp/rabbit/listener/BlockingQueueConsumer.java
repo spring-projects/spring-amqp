@@ -777,9 +777,7 @@ public class BlockingQueueConsumer {
 	/**
 	 * Perform a rollback, handling rollback exceptions properly.
 	 * @param ex the thrown application exception or error
-	 * @deprecated in favor of {@link #rollbackOnExceptionIfNecessary(Throwable, long)}
 	 */
-	@Deprecated
 	public void rollbackOnExceptionIfNecessary(Throwable ex) {
 		rollbackOnExceptionIfNecessary(ex, -1);
 	}
