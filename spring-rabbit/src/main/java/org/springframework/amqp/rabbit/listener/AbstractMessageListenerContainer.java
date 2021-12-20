@@ -254,6 +254,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private volatile boolean lazyLoad;
 
+	private boolean asyncReplies;
+
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
 		this.applicationEventPublisher = applicationEventPublisher;
@@ -437,6 +439,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		this.messageListener = messageListener;
 		this.isBatchListener = messageListener instanceof BatchMessageListener
 				|| messageListener instanceof ChannelAwareBatchMessageListener;
+		this.asyncReplies = messageListener.isAsyncReplies();
 	}
 
 	/**
@@ -1015,9 +1018,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		return this.possibleAuthenticationFailureFatal;
 	}
 
-
 	protected boolean isPossibleAuthenticationFailureFatalSet() {
 		return this.possibleAuthenticationFailureFatalSet;
+	}
+	protected boolean isAsyncReplies() {
+		return this.asyncReplies;
 	}
 
 	/**
@@ -1218,6 +1223,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		}
 		catch (IllegalStateException e) {
 			this.logger.debug("Could not enable micrometer timers", e);
+		}
+		if (this.isAsyncReplies() && !AcknowledgeMode.MANUAL.equals(this.acknowledgeMode)) {
+			this.acknowledgeMode = AcknowledgeMode.MANUAL;
 		}
 	}
 
