@@ -110,18 +110,21 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 			instance.setListenerId(endpoint.getId());
 			endpoint.setupListenerContainer(instance);
 		}
-		if (instance.getMessageListener() instanceof AbstractAdaptableMessageListener) {
-			AbstractAdaptableMessageListener messageListener = (AbstractAdaptableMessageListener) instance
-					.getMessageListener();
+		Object iml = instance.getMessageListener();
+		if (iml instanceof AbstractAdaptableMessageListener) {
+			AbstractAdaptableMessageListener messageListener = (AbstractAdaptableMessageListener) iml;
 			JavaUtils.INSTANCE // NOSONAR
 					.acceptIfNotNull(this.beforeSendReplyPostProcessors,
 							messageListener::setBeforeSendReplyPostProcessors)
 					.acceptIfNotNull(this.retryTemplate, messageListener::setRetryTemplate)
 					.acceptIfCondition(this.retryTemplate != null && this.recoveryCallback != null,
 							this.recoveryCallback, messageListener::setRecoveryCallback)
-					.acceptIfNotNull(this.defaultRequeueRejected, messageListener::setDefaultRequeueRejected)
-					.acceptIfNotNull(endpoint.getReplyPostProcessor(), messageListener::setReplyPostProcessor)
-					.acceptIfNotNull(endpoint.getReplyContentType(), messageListener::setReplyContentType);
+					.acceptIfNotNull(this.defaultRequeueRejected, messageListener::setDefaultRequeueRejected);
+			if (endpoint != null) {
+				JavaUtils.INSTANCE
+						.acceptIfNotNull(endpoint.getReplyPostProcessor(), messageListener::setReplyPostProcessor)
+						.acceptIfNotNull(endpoint.getReplyContentType(), messageListener::setReplyContentType);
+			}
 			messageListener.setConverterWinsContentType(endpoint.isConverterWinsContentType());
 		}
 	}
