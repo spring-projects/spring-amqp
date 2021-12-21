@@ -124,8 +124,8 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 				JavaUtils.INSTANCE
 						.acceptIfNotNull(endpoint.getReplyPostProcessor(), messageListener::setReplyPostProcessor)
 						.acceptIfNotNull(endpoint.getReplyContentType(), messageListener::setReplyContentType);
+				messageListener.setConverterWinsContentType(endpoint.isConverterWinsContentType());
 			}
-			messageListener.setConverterWinsContentType(endpoint.isConverterWinsContentType());
 		}
 	}
 
