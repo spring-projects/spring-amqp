@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1078,10 +1078,10 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 					(AbstractRoutingConnectionFactory) getConnectionFactory();
 			Object lookupKey;
 			if (rootObject != null) {
-				lookupKey = this.sendConnectionFactorySelectorExpression.getValue(this.evaluationContext, rootObject);
+				lookupKey = expression.getValue(this.evaluationContext, rootObject);
 			}
 			else {
-				lookupKey = this.sendConnectionFactorySelectorExpression.getValue(this.evaluationContext);
+				lookupKey = expression.getValue(this.evaluationContext);
 			}
 			if (lookupKey != null) {
 				ConnectionFactory connectionFactory = routingConnectionFactory.getTargetConnectionFactory(lookupKey);
