@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -365,24 +365,33 @@ public class RabbitTemplateTests {
 	@SuppressWarnings("unchecked")
 	public void testRoutingConnectionFactory() throws Exception {
 		org.springframework.amqp.rabbit.connection.ConnectionFactory connectionFactory1 =
-				Mockito.mock(org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
+				mock(org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
 		org.springframework.amqp.rabbit.connection.ConnectionFactory connectionFactory2 =
-				Mockito.mock(org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
+				mock(org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
+		org.springframework.amqp.rabbit.connection.ConnectionFactory connectionFactory3 =
+				mock(org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
+		org.springframework.amqp.rabbit.connection.ConnectionFactory connectionFactory4 =
+				mock(org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
 		Map<Object, org.springframework.amqp.rabbit.connection.ConnectionFactory> factories =
 				new HashMap<Object, org.springframework.amqp.rabbit.connection.ConnectionFactory>(2);
 		factories.put("foo", connectionFactory1);
 		factories.put("bar", connectionFactory2);
+		factories.put("baz", connectionFactory3);
+		factories.put("qux", connectionFactory4);
 
 
 		AbstractRoutingConnectionFactory connectionFactory = new SimpleRoutingConnectionFactory();
 		connectionFactory.setTargetConnectionFactories(factories);
 
 		final RabbitTemplate template = new RabbitTemplate(connectionFactory);
-		Expression expression = new SpelExpressionParser()
+		Expression sendExpression = new SpelExpressionParser()
 				.parseExpression("T(org.springframework.amqp.rabbit.core.RabbitTemplateTests)" +
 						".LOOKUP_KEY_COUNT.getAndIncrement() % 2 == 0 ? 'foo' : 'bar'");
-		template.setSendConnectionFactorySelectorExpression(expression);
-		template.setReceiveConnectionFactorySelectorExpression(expression);
+		template.setSendConnectionFactorySelectorExpression(sendExpression);
+		Expression receiveExpression = new SpelExpressionParser()
+				.parseExpression("T(org.springframework.amqp.rabbit.core.RabbitTemplateTests)" +
+						".LOOKUP_KEY_COUNT.getAndIncrement() % 2 == 0 ? 'baz' : 'qux'");
+		template.setReceiveConnectionFactorySelectorExpression(receiveExpression);
 
 		for (int i = 0; i < 3; i++) {
 			try {
@@ -405,8 +414,10 @@ public class RabbitTemplateTests {
 			}
 		}
 
-		Mockito.verify(connectionFactory1, Mockito.times(5)).createConnection();
-		Mockito.verify(connectionFactory2, Mockito.times(4)).createConnection();
+		Mockito.verify(connectionFactory1, times(2)).createConnection();
+		Mockito.verify(connectionFactory2, times(1)).createConnection();
+		Mockito.verify(connectionFactory3, times(3)).createConnection();
+		Mockito.verify(connectionFactory4, times(3)).createConnection();
 	}
 
 	@Test

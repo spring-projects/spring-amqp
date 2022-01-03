@@ -1035,10 +1035,10 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 					(AbstractRoutingConnectionFactory) getConnectionFactory();
 			Object lookupKey;
 			if (rootObject != null) {
-				lookupKey = this.sendConnectionFactorySelectorExpression.getValue(this.evaluationContext, rootObject);
+				lookupKey = expression.getValue(this.evaluationContext, rootObject);
 			}
 			else {
-				lookupKey = this.sendConnectionFactorySelectorExpression.getValue(this.evaluationContext);
+				lookupKey = expression.getValue(this.evaluationContext);
 			}
 			if (lookupKey != null) {
 				ConnectionFactory connectionFactory = routingConnectionFactory.getTargetConnectionFactory(lookupKey);
