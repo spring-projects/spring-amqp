@@ -257,6 +257,20 @@ public class RabbitMessagingTemplateTests {
 	}
 
 	@Test
+	public void receiveDefaultDestinationOverride() {
+		messagingTemplate.setDefaultDestination("defaultDest");
+		messagingTemplate.setUseTemplateDefaultReceiveQueue(true);
+
+		org.springframework.amqp.core.Message amqpMsg = createAmqpTextMessage();
+		given(rabbitTemplate.getDefaultReceiveQueue()).willReturn("default");
+		given(rabbitTemplate.receive("default")).willReturn(amqpMsg);
+
+		Message<?> message = messagingTemplate.receive();
+		verify(rabbitTemplate).receive("default");
+		assertTextMessage(message);
+	}
+
+	@Test
 	public void receiveNoDefaultSet() {
 		assertThatIllegalStateException()
 			.isThrownBy(() -> messagingTemplate.receive());

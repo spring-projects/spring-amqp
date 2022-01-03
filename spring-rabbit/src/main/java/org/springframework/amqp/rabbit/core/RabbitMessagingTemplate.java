@@ -48,6 +48,8 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 
 	private boolean converterSet;
 
+	private boolean useTemplateDefaultReceiveQueue;
+
 
 	/**
 	 * Constructor for use with bean properties.
@@ -71,6 +73,7 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	 * @param rabbitTemplate the template.
 	 */
 	public void setRabbitTemplate(RabbitTemplate rabbitTemplate) {
+		Assert.notNull(rabbitTemplate, "'rabbitTemplate' must not be null");
 		this.rabbitTemplate = rabbitTemplate;
 	}
 
@@ -105,6 +108,19 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	 */
 	public MessageConverter getAmqpMessageConverter() {
 		return this.amqpMessageConverter;
+	}
+
+	/**
+	 * When true, use the underlying {@link RabbitTemplate}'s defaultReceiveQueue property (if configured)
+	 * for receive only methods
+	 * instead of the {@link #setDefaultDestination(String) defaultDestination} configured
+	 * in this template. Set this to true to use the template's queue instead.
+	 * Default false, but will be true in a future release.
+	 * @param useTemplateDefaultReceiveQueue true to use the template's queue.
+	 * @since 2.2.22
+	 */
+	public void setUseTemplateDefaultReceiveQueue(boolean useTemplateDefaultReceiveQueue) {
+		this.useTemplateDefaultReceiveQueue = useTemplateDefaultReceiveQueue;
 	}
 
 	@Override
@@ -225,6 +241,28 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 		}
 	}
 
+	@Override
+	@Nullable
+	public Message<?> receive() {
+		return doReceive(resolveDestination());
+	}
+
+	@Override
+	@Nullable
+	public <T> T receiveAndConvert(Class<T> targetClass) {
+		return receiveAndConvert(resolveDestination(), targetClass);
+	}
+
+	private String resolveDestination() {
+		String dest = null;
+		if (this.useTemplateDefaultReceiveQueue) {
+			dest = this.rabbitTemplate.getDefaultReceiveQueue();
+		}
+		if (dest == null) {
+			dest = getRequiredDefaultDestination();
+		}
+		return dest;
+	}
 
 	@Override
 	protected Message<?> doReceive(String destination) {

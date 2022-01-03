@@ -349,6 +349,16 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	/**
+	 * Return the configured default receive queue.
+	 * @return the queue or null if not configured.
+	 * @since 2.2.22
+	 */
+	@Nullable
+	public String getDefaultReceiveQueue() {
+		return this.defaultReceiveQueue;
+	}
+
+	/**
 	 * The encoding to use when converting between byte arrays and Strings in message properties.
 	 *
 	 * @param encoding the encoding to set
