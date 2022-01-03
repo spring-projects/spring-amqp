@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,10 +111,9 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	}
 
 	/**
-	 * When true, use the underlying {@link RabbitTemplate}'s defaultReceiveQueue property (if configured)
-	 * for receive only methods
-	 * instead of the {@link #setDefaultDestination(String) defaultDestination} configured
-	 * in this template. Set this to true to use the template's queue instead.
+	 * When true, use the underlying {@link RabbitTemplate}'s defaultReceiveQueue property
+	 * (if configured) for receive only methods instead of the {@code defaultDestination}
+	 * configured in this template. Set this to true to use the template's queue instead.
 	 * Default false, but will be true in a future release.
 	 * @param useTemplateDefaultReceiveQueue true to use the template's queue.
 	 * @since 2.2.22
