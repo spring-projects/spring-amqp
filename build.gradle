@@ -49,9 +49,15 @@ ext {
 	hibernateValidationVersion = '6.2.0.Final'
 	jacksonBomVersion = '2.11.4'
 	jaywayJsonPathVersion = '2.4.0'
+<<<<<<< HEAD
 	junit4Version = '4.13.1'
 	junitJupiterVersion = '5.7.2'
 	log4jVersion = '2.17.0'
+=======
+	junit4Version = '4.13.2'
+	junitJupiterVersion = '5.8.2'
+	log4jVersion = '2.17.1'
+>>>>>>> ce7d4b171 (Upgrade Log4j to 2.17.1)
 	logbackVersion = '1.2.3'
 	micrometerVersion = '1.5.17'
 	mockitoVersion = '3.6.28'
