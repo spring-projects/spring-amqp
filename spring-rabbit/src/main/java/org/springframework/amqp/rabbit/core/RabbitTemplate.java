@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -334,6 +334,16 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 */
 	public void setDefaultReceiveQueue(String queue) {
 		this.defaultReceiveQueue = queue;
+	}
+
+	/**
+	 * Return the configured default receive queue.
+	 * @return the queue or null if not configured.
+	 * @since 2.2.22
+	 */
+	@Nullable
+	public String getDefaultReceiveQueue() {
+		return this.defaultReceiveQueue;
 	}
 
 	/**
