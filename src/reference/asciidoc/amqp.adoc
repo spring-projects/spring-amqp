@@ -5170,8 +5170,6 @@ public static class Config {
 
 IMPORTANT: In versions prior to 2.1, you could declare multiple `Declarable` instances by defining beans of type `Collection<Declarable>`.
 This can cause undesirable side effects in some cases, because the admin has to iterate over all `Collection<?>` beans.
-This feature is now disabled in favor of `Declarables`, as discussed earlier in this section.
-You can revert to the previous behavior by setting the `RabbitAdmin` property called `declareCollections` to `true`.
 
 Version 2.2 added the `getDeclarablesByType` method to `Declarables`; this can be used as a convenience, for example, when declaring the listener container bean(s).
 
