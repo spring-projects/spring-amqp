@@ -6728,7 +6728,7 @@ public class Application {
     }
 
     @Bean
-    RabbitTemplate template(RoutingConnectionFactory rcf) {
+    RabbitTemplate template(SimpleRoutingConnectionFactory rcf) {
         return new RabbitTemplate(rcf);
     }
 
