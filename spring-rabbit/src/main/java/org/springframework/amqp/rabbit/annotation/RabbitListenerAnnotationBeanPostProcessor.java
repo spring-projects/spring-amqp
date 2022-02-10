@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 the original author or authors.
+ * Copyright 2014-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -414,7 +414,19 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		endpoint.setBean(bean);
 		endpoint.setMessageHandlerMethodFactory(this.messageHandlerMethodFactory);
 		endpoint.setId(getEndpointId(rabbitListener));
-		endpoint.setQueueNames(resolveQueues(rabbitListener, declarables));
+		List<Object> resolvedQueues = resolveQueues(rabbitListener, declarables);
+		if (!resolvedQueues.isEmpty()) {
+			if (resolvedQueues.get(0) instanceof String) {
+				endpoint.setQueueNames(resolvedQueues.stream()
+						.map(o -> (String) o)
+						.collect(Collectors.toList()).toArray(new String[0]));
+			}
+			else {
+				endpoint.setQueues(resolvedQueues.stream()
+						.map(o -> (Queue) o)
+						.collect(Collectors.toList()).toArray(new Queue[0]));
+			}
+		}
 		endpoint.setConcurrency(resolveExpressionAsStringOrInteger(rabbitListener.concurrency(), "concurrency"));
 		endpoint.setBeanFactory(this.beanFactory);
 		endpoint.setReturnExceptions(resolveExpressionAsBoolean(rabbitListener.returnExceptions()));
@@ -625,15 +637,21 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 	}
 
-	private String[] resolveQueues(RabbitListener rabbitListener, Collection<Declarable> declarables) {
+	private List<Object> resolveQueues(RabbitListener rabbitListener, Collection<Declarable> declarables) {
 		String[] queues = rabbitListener.queues();
 		QueueBinding[] bindings = rabbitListener.bindings();
 		org.springframework.amqp.rabbit.annotation.Queue[] queuesToDeclare = rabbitListener.queuesToDeclare();
-		List<String> result = new ArrayList<String>();
+		List<String> queueNames = new ArrayList<String>();
+		List<Queue> queueBeans = new ArrayList<Queue>();
 		if (queues.length > 0) {
 			for (int i = 0; i < queues.length; i++) {
-				resolveAsString(resolveExpression(queues[i]), result, true, "queues");
+				resolveQueues(queues[i], queueNames, queueBeans);
 			}
+		}
+		if (!queueNames.isEmpty()) {
+			// revert to the previous behavior of just using the name when there is mixture of String and Queue
+			queueBeans.forEach(qb -> queueNames.add(qb.getName()));
+			queueBeans.clear();
 		}
 		if (queuesToDeclare.length > 0) {
 			if (queues.length > 0) {
@@ -641,7 +659,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 						"@RabbitListener can have only one of 'queues', 'queuesToDeclare', or 'bindings'");
 			}
 			for (int i = 0; i < queuesToDeclare.length; i++) {
-				result.add(declareQueue(queuesToDeclare[i], declarables));
+				queueNames.add(declareQueue(queuesToDeclare[i], declarables));
 			}
 		}
 		if (bindings.length > 0) {
@@ -649,26 +667,47 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				throw new BeanInitializationException(
 						"@RabbitListener can have only one of 'queues', 'queuesToDeclare', or 'bindings'");
 			}
-			return registerBeansForDeclaration(rabbitListener, declarables);
+			return Arrays.stream(registerBeansForDeclaration(rabbitListener, declarables))
+					.map(s -> (Object) s)
+					.collect(Collectors.toList());
 		}
-		return result.toArray(new String[result.size()]);
+		return queueNames.isEmpty()
+				? queueBeans.stream()
+						.map(s -> (Object) s)
+						.collect(Collectors.toList())
+				: queueNames.stream()
+						.map(s -> (Object) s)
+						.collect(Collectors.toList());
+
+	}
+
+	private void resolveQueues(String queue, List<String> result, List<Queue> queueBeans) {
+		resolveAsStringOrQueue(resolveExpression(queue), result, queueBeans, "queues");
 	}
 
 	@SuppressWarnings("unchecked")
-	private void resolveAsString(Object resolvedValue, List<String> result, boolean canBeQueue, String what) {
+	private void resolveAsStringOrQueue(Object resolvedValue, List<String> names, @Nullable List<Queue> queues,
+			String what) {
+
 		Object resolvedValueToUse = resolvedValue;
 		if (resolvedValue instanceof String[]) {
 			resolvedValueToUse = Arrays.asList((String[]) resolvedValue);
 		}
-		if (canBeQueue && resolvedValueToUse instanceof Queue) {
-			result.add(((Queue) resolvedValueToUse).getName());
+		if (queues != null && resolvedValueToUse instanceof Queue) {
+			if (!names.isEmpty()) {
+				// revert to the previous behavior of just using the name when there is mixture of String and Queue
+				names.add(((Queue) resolvedValueToUse).getName());
+			}
+			else {
+				queues.add((Queue) resolvedValueToUse);
+			}
 		}
 		else if (resolvedValueToUse instanceof String) {
-			result.add((String) resolvedValueToUse);
+			names.add((String) resolvedValueToUse);
 		}
 		else if (resolvedValueToUse instanceof Iterable) {
 			for (Object object : (Iterable<Object>) resolvedValueToUse) {
-				resolveAsString(object, result, canBeQueue, what);
+				resolveAsStringOrQueue(object, names, queues, what);
 			}
 		}
 		else {
@@ -676,7 +715,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 					"@RabbitListener."
 					+ what
 					+ " can't resolve '%s' as a String[] or a String "
-					+ (canBeQueue ? "or a Queue" : ""),
+					+ (queues != null ? "or a Queue" : ""),
 					resolvedValue));
 		}
 	}
@@ -776,7 +815,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			final int length = binding.key().length;
 			routingKeys = new ArrayList<>();
 			for (int i = 0; i < length; ++i) {
-				resolveAsString(resolveExpression(binding.key()[i]), routingKeys, false, "@QueueBinding.key");
+				resolveAsStringOrQueue(resolveExpression(binding.key()[i]), routingKeys, null, "@QueueBinding.key");
 			}
 		}
 		final Map<String, Object> bindingArguments = resolveArguments(binding.arguments());

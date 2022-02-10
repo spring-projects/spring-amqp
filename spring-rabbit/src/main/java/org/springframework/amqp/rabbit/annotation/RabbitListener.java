@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 the original author or authors.
+ * Copyright 2014-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -148,6 +148,8 @@ public @interface RabbitListener {
 	 * application context, the queue will be declared on the broker with default
 	 * binding (default exchange with the queue name as the routing key).
 	 * Mutually exclusive with {@link #bindings()} and {@link #queues()}.
+	 * NOTE: Broker-named queues cannot be declared this way, they must be defined
+	 * as beans (with an empty string for the name).
 	 * @return the queue(s) to declare.
 	 * @see org.springframework.amqp.rabbit.listener.MessageListenerContainer
 	 * @since 2.0
@@ -186,6 +188,8 @@ public @interface RabbitListener {
 	 * Array of {@link QueueBinding}s providing the listener's queue names, together
 	 * with the exchange and optional binding information.
 	 * Mutually exclusive with {@link #queues()} and {@link #queuesToDeclare()}.
+	 * NOTE: Broker-named queues cannot be declared this way, they must be defined
+	 * as beans (with an empty string for the name).
 	 * @return the bindings.
 	 * @see org.springframework.amqp.rabbit.listener.MessageListenerContainer
 	 * @since 1.5
