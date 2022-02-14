@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 the original author or authors.
+ * Copyright 2014-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.MessagePropertiesBuilder;
+import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.config.DirectRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
@@ -74,6 +75,7 @@ import org.springframework.amqp.rabbit.junit.BrokerRunningSupport;
 import org.springframework.amqp.rabbit.junit.LogLevels;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
+import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.ConditionalRejectingErrorHandler;
 import org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
@@ -1010,6 +1012,13 @@ public class EnableRabbitIntegrationTests {
 
 	}
 
+	@Test
+	void listenerWithBrokerNamedQueue() {
+		AbstractMessageListenerContainer container =
+				(AbstractMessageListenerContainer) this.registry.getListenerContainer("brokerNamed");
+		assertThat(container.getQueueNames()[0]).startsWith("amq.gen");
+	}
+
 	interface TxService {
 
 		@Transactional
@@ -1405,6 +1414,10 @@ public class EnableRabbitIntegrationTests {
 		public void handleValidArg(@Valid ValidatedClass validatedObject) {
 			this.validatedObject = validatedObject;
 			this.validationLatch.countDown();
+		}
+
+		@RabbitListener(id = "brokerNamed", queues = "#{@brokerNamed}")
+		void brokerNamed(String in) {
 		}
 
 	}
@@ -1996,6 +2009,11 @@ public class EnableRabbitIntegrationTests {
 				resp.getMessageProperties().setHeader("prefix", req.getMessageProperties().getHeader("prefix"));
 				return resp;
 			};
+		}
+
+		@Bean
+		org.springframework.amqp.core.Queue brokerNamed() {
+			return QueueBuilder.nonDurable("").autoDelete().exclusive().build();
 		}
 
 	}

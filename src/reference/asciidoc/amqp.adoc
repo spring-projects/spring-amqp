@@ -2340,7 +2340,8 @@ public class MyService {
 
 In the first example, a queue `myQueue` is declared automatically (durable) together with the exchange, if needed,
 and bound to the exchange with the routing key.
-In the second example, an anonymous (exclusive, auto-delete) queue is declared and bound.
+In the second example, an anonymous (exclusive, auto-delete) queue is declared and bound; the queue name is created by the framework using the `Base64UrlNamingStrategy`.
+You cannot declare broker-named queues using this technique; they need to be declared as bean definitions; see <<containers-and-broker-named-queues>>.
 Multiple `QueueBinding` entries can be provided, letting the listener listen to multiple queues.
 In the third example, a queue with the name retrieved from property `my.queue` is declared, if necessary, with the default binding to the default exchange using the queue name as the routing key.
 
