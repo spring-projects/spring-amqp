@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -187,9 +187,9 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
 		assertThat(factory.getListenerContainers().size()).as("one container should have been registered").isEqualTo(1);
 		RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
-		final Iterator<String> iterator = ((AbstractRabbitListenerEndpoint) endpoint).getQueueNames().iterator();
-		assertThat(iterator.next()).isEqualTo("testQueue");
-		assertThat(iterator.next()).isEqualTo("secondQueue");
+		final Iterator<Queue> iterator = ((AbstractRabbitListenerEndpoint) endpoint).getQueues().iterator();
+		assertThat(iterator.next().getName()).isEqualTo("testQueue");
+		assertThat(iterator.next().getName()).isEqualTo("secondQueue");
 
 		context.close();
 	}
@@ -218,9 +218,9 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
 		assertThat(factory.getListenerContainers().size()).as("one container should have been registered").isEqualTo(1);
 		RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
-		final Iterator<String> iterator = ((AbstractRabbitListenerEndpoint) endpoint).getQueueNames().iterator();
-		assertThat(iterator.next()).isEqualTo("testQueue");
-		assertThat(iterator.next()).isEqualTo("secondQueue");
+		final Iterator<Queue> iterator = ((AbstractRabbitListenerEndpoint) endpoint).getQueues().iterator();
+		assertThat(iterator.next().getName()).isEqualTo("testQueue");
+		assertThat(iterator.next().getName()).isEqualTo("secondQueue");
 
 		context.close();
 	}
