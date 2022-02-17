@@ -3,6 +3,14 @@ Spring AMQP [<img src="https://build.spring.io/plugins/servlet/wittified/build-s
 
 This project provides support for using Spring and Java with [AMQP 0.9.1](https://www.rabbitmq.com/amqp-0-9-1-reference.html), and in particular [RabbitMQ](https://www.rabbitmq.com/).
 
+# Code of Conduct
+
+Please see our [Code of conduct](https://github.com/spring-projects/.github/blob/master/CODE_OF_CONDUCT.md).
+
+# Reporting Security Vulnerabilities
+
+Please see our [Security policy](https://github.com/spring-projects/spring-amqp/security/policy).
+
 # Checking out and Building
 
 To check out the project from [GitHub](https://github.com/SpringSource/spring-amqp) and build from source using [Gradle](https://gradle.org/), do the following:
@@ -119,4 +127,4 @@ None of these is essential for a pull request, but they will all help.  They can
 
 # License
 
-Spring AMQP is released under the terms of the Apache Software License Version 2.0 (see license.txt).
+Spring AMQP is released under the terms of the Apache Software License Version 2.0 (see LICENSE.txt).
