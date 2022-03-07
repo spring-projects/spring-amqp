@@ -2139,7 +2139,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			return Timer.start(this.registry);
 		}
 
-		@SuppressWarnings("deprecation")
 		void success(Object sample, String queue) {
 			Timer timer = this.timers.get(queue + "none");
 			if (timer == null) {
@@ -2148,7 +2147,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			((Sample) sample).stop(timer);
 		}
 
-		@SuppressWarnings("deprecation")
 		void failure(Object sample, String queue, String exception) {
 			Timer timer = this.timers.get(queue + exception);
 			if (timer == null) {

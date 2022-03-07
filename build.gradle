@@ -55,7 +55,7 @@ ext {
 	log4jVersion = '2.17.1'
 	logbackVersion = '1.2.3'
 	lz4Version = '1.8.0'
-	micrometerVersion = '2.0.0-M1'
+	micrometerVersion = '2.0.0-SNAPSHOT'
 	mockitoVersion = '3.11.2'
 	rabbitmqStreamVersion = '0.4.0'
 	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.13.1'
@@ -382,6 +382,7 @@ project('spring-rabbit') {
 		optionalApi "ch.qos.logback:logback-classic:$logbackVersion"
 		optionalApi 'org.apache.logging.log4j:log4j-core'
 		optionalApi "io.micrometer:micrometer-core:$micrometerVersion"
+		optionalApi "io.micrometer:micrometer-binders:$micrometerVersion"
 		// Spring Data projection message binding support
 		optionalApi ("org.springframework.data:spring-data-commons:$springDataCommonsVersion") {
 			exclude group: 'org.springframework'
