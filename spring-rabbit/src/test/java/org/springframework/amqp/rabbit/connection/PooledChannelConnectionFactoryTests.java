@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 the original author or authors.
+ * Copyright 2020-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.connection;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 
@@ -31,12 +32,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
 
 /**
  * @author Gary Russell
+ * @author Leonardo Ferreira
  * @since 2.3
  *
  */
@@ -95,6 +98,105 @@ public class PooledChannelConnectionFactoryTests {
 		admin.deleteQueue("PooledChannelConnectionFactoryTests.q");
 		pccf.destroy();
 		assertThat(config.closed).isTrue();
+	}
+
+	@Test
+	void copyConfigsToPublisherConnectionFactory() {
+		PooledChannelConnectionFactory pcf = new PooledChannelConnectionFactory(new ConnectionFactory());
+		AtomicInteger txConfiged = new AtomicInteger();
+		AtomicInteger nonTxConfiged = new AtomicInteger();
+		pcf.setPoolConfigurer((pool, tx) -> {
+			if (tx) {
+				txConfiged.incrementAndGet();
+			}
+			else {
+				nonTxConfiged.incrementAndGet();
+			}
+		});
+
+		createAndCloseConnectionChannelTxAndChannelNonTx(pcf);
+
+		final org.springframework.amqp.rabbit.connection.ConnectionFactory publisherConnectionFactory = pcf
+				.getPublisherConnectionFactory();
+		assertThat(publisherConnectionFactory).isNotNull();
+
+		createAndCloseConnectionChannelTxAndChannelNonTx(publisherConnectionFactory);
+
+		assertThat(txConfiged.get()).isEqualTo(2);
+		assertThat(nonTxConfiged.get()).isEqualTo(2);
+
+		final Object listenerPoolConfigurer = ReflectionTestUtils.getField(pcf, "poolConfigurer");
+		final Object publisherPoolConfigurer = ReflectionTestUtils.getField(publisherConnectionFactory,
+				"poolConfigurer");
+
+		assertThat(listenerPoolConfigurer)
+				.isSameAs(publisherPoolConfigurer);
+
+		pcf.destroy();
+	}
+
+	@Test
+	void copyConfigsToPublisherConnectionFactoryWhenUsingCustomPublisherFactory() {
+		PooledChannelConnectionFactory pcf = new PooledChannelConnectionFactory(new ConnectionFactory());
+		AtomicBoolean listenerTxConfiged = new AtomicBoolean();
+		AtomicBoolean listenerNonTxConfiged = new AtomicBoolean();
+		pcf.setPoolConfigurer((pool, tx) -> {
+			if (tx) {
+				listenerTxConfiged.set(true);
+			}
+			else {
+				listenerNonTxConfiged.set(true);
+			}
+		});
+
+		final PooledChannelConnectionFactory publisherConnectionFactory = new PooledChannelConnectionFactory(
+				new ConnectionFactory());
+
+		AtomicBoolean publisherTxConfiged = new AtomicBoolean();
+		AtomicBoolean publisherNonTxConfiged = new AtomicBoolean();
+		publisherConnectionFactory.setPoolConfigurer((pool, tx) -> {
+			if (tx) {
+				publisherTxConfiged.set(true);
+			}
+			else {
+				publisherNonTxConfiged.set(true);
+			}
+		});
+
+		pcf.setPublisherConnectionFactory(publisherConnectionFactory);
+
+		assertThat(pcf.getPublisherConnectionFactory()).isSameAs(publisherConnectionFactory);
+
+		createAndCloseConnectionChannelTxAndChannelNonTx(pcf);
+
+		assertThat(listenerTxConfiged.get()).isEqualTo(true);
+		assertThat(listenerNonTxConfiged.get()).isEqualTo(true);
+
+		final Object listenerPoolConfigurer = ReflectionTestUtils.getField(pcf, "poolConfigurer");
+		final Object publisherPoolConfigurer = ReflectionTestUtils.getField(publisherConnectionFactory,
+				"poolConfigurer");
+
+		assertThat(listenerPoolConfigurer)
+				.isNotSameAs(publisherPoolConfigurer);
+
+		createAndCloseConnectionChannelTxAndChannelNonTx(publisherConnectionFactory);
+
+		assertThat(publisherTxConfiged.get()).isEqualTo(true);
+		assertThat(publisherNonTxConfiged.get()).isEqualTo(true);
+
+		pcf.destroy();
+	}
+
+	private void createAndCloseConnectionChannelTxAndChannelNonTx(
+			org.springframework.amqp.rabbit.connection.ConnectionFactory connectionFactory) {
+
+		Connection connection = connectionFactory.createConnection();
+		Channel nonTxChannel = connection.createChannel(false);
+		Channel txChannel = connection.createChannel(true);
+
+		RabbitUtils.closeChannel(nonTxChannel);
+		RabbitUtils.closeChannel(txChannel);
+		connection.close();
 	}
 
 	@Configuration
