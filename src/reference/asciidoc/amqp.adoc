@@ -3938,10 +3938,33 @@ public DefaultClassMapper classMapper() {
 Now, if the sending system sets the header to `thing1`, the converter creates a `Thing1` object, and so on.
 See the <<spring-rabbit-json>> sample application for a complete discussion about converting messages from non-Spring applications.
 
+Starting with version 2.4.3, the converter will not add a `contentEncoding` message property if the `supportedMediaType` has a `charset` parameter; this is also used for the encoding.
+A new method `setSupportedMediaType` has been added:
+
+====
+[source, java]
+----
+String utf16 = "application/json; charset=utf-16";
+converter.setSupportedContentType(MimeTypeUtils.parseMimeType(utf16));
+----
+====
+
 [[Jackson2JsonMessageConverter-from-message]]
 ====== Converting from a `Message`
 
 Inbound messages are converted to objects according to the type information added to headers by the sending system.
+
+Starting with version 2.4.3, if there is no `contentEncoding` message property, the converter will attempt to detect a `charset` parameter in the `contentType` message property and use that.
+If neither exist, if the `supportedMediaType` has a `charset` parameter, it will be used for decoding, with a final fallback to the `defaultCharset` property.
+A new method `setSupportedMediaType` has been added:
+
+====
+[source, java]
+----
+String utf16 = "application/json; charset=utf-16";
+converter.setSupportedContentType(MimeTypeUtils.parseMimeType(utf16));
+----
+====
 
 In versions prior to 1.6, if type information is not present, conversion would fail.
 Starting with version 1.6, if type information is missing, the converter converts the JSON by using Jackson defaults (usually a map).
