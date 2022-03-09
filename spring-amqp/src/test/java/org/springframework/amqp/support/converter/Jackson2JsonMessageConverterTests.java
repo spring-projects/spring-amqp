@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.support.converter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -34,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.web.JsonPath;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.util.MimeTypeUtils;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -397,6 +399,67 @@ public class Jackson2JsonMessageConverterTests {
 		assertThat(foos).hasSize(1);
 		assertThat(foos.keySet().iterator().next()).isEqualTo("test");
 		assertThat(foos.values().iterator().next().getField()).isEqualTo("baz");
+	}
+
+	@Test
+	void charsetInContentType() {
+		trade.setUserName("John Doe ∫");
+		Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
+		String utf8 = "application/json;charset=utf-8";
+		converter.setSupportedContentType(MimeTypeUtils.parseMimeType(utf8));
+		Message message = converter.toMessage(trade, new MessageProperties());
+		int bodyLength8 = message.getBody().length;
+		assertThat(message.getMessageProperties().getContentEncoding()).isNull();
+		assertThat(message.getMessageProperties().getContentType()).isEqualTo(utf8);
+		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
+		assertThat(marshalledTrade).isEqualTo(trade);
+
+		// use content type property
+		String utf16 = "application/json;charset=utf-16";
+		converter.setSupportedContentType(MimeTypeUtils.parseMimeType(utf16));
+		message = converter.toMessage(trade, new MessageProperties());
+		assertThat(message.getBody().length).isNotEqualTo(bodyLength8);
+		assertThat(message.getMessageProperties().getContentEncoding()).isNull();
+		assertThat(message.getMessageProperties().getContentType()).isEqualTo(utf16);
+		marshalledTrade = (SimpleTrade) converter.fromMessage(message);
+		assertThat(marshalledTrade).isEqualTo(trade);
+
+		// no encoding in message, use configured default
+		converter.setSupportedContentType(MimeTypeUtils.parseMimeType("application/json"));
+		converter.setDefaultCharset("UTF-16");
+		message = converter.toMessage(trade, new MessageProperties());
+		assertThat(message.getBody().length).isNotEqualTo(bodyLength8);
+		assertThat(message.getMessageProperties().getContentEncoding()).isNotNull();
+		message.getMessageProperties().setContentEncoding(null);
+		marshalledTrade = (SimpleTrade) converter.fromMessage(message);
+		assertThat(marshalledTrade).isEqualTo(trade);
+
+	}
+
+	@Test
+	void noConfigForCharsetInContentType() {
+		trade.setUserName("John Doe ∫");
+		Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
+		Message message = converter.toMessage(trade, new MessageProperties());
+		int bodyLength8 = message.getBody().length;
+		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
+		assertThat(marshalledTrade).isEqualTo(trade);
+
+		// no encoding in message; use configured default
+		message = converter.toMessage(trade, new MessageProperties());
+		assertThat(message.getMessageProperties().getContentEncoding()).isNotNull();
+		message.getMessageProperties().setContentEncoding(null);
+		marshalledTrade = (SimpleTrade) converter.fromMessage(message);
+		assertThat(marshalledTrade).isEqualTo(trade);
+
+		converter.setDefaultCharset("UTF-16");
+		Message message2 = converter.toMessage(trade, new MessageProperties());
+		message2.getMessageProperties().setContentEncoding(null);
+		assertThat(message2.getBody().length).isNotEqualTo(bodyLength8);
+		converter.setDefaultCharset("UTF-8");
+
+		assertThatExceptionOfType(MessageConversionException.class).isThrownBy(
+				() -> converter.fromMessage(message2));
 	}
 
 	public List<Foo> fooLister() {

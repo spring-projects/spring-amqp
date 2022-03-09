@@ -20,3 +20,8 @@ See <<declarable-recovery>> for more information.
 
 Support remoting using Spring Framework's RMI support is deprecated and will be removed in 3.0.
 See <<remoting>> for more information.
+
+==== Message Converter Changes
+
+The `Jackson2JsonMessageConverter` can now determine the charset from the `contentEncoding` header.
+See <<json-message-converter>> for more information.
