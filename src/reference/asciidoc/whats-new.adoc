@@ -10,8 +10,3 @@ This version requires Spring Framework 6.0 and Java 17
 ==== Remoting
 
 The remoting feature (using RMI) is no longer supported.
-
-==== Message Converter Changes
-
-The `Jackson2JsonMessageConverter` can now determine the charset from the `contentEncoding` header.
-See <<json-message-converter>> for more information.
