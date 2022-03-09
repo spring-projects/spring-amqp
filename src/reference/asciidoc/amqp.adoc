@@ -3954,7 +3954,7 @@ converter.setSupportedContentType(MimeTypeUtils.parseMimeType(utf16));
 
 Inbound messages are converted to objects according to the type information added to headers by the sending system.
 
-Starting with version 2.4.3, if there is no `contentEncoding` message property, the converter will attempt to detect a `charset` parameter in the `contentEncoding` message property and use that.
+Starting with version 2.4.3, if there is no `contentEncoding` message property, the converter will attempt to detect a `charset` parameter in the `contentType` message property and use that.
 If neither exist, if the `supportedMediaType` has a `charset` parameter, it will be used for decoding, with a final fallback to the `defaultCharset` property.
 A new method `setSupportedMediaType` has been added:
 
