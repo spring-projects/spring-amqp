@@ -18,9 +18,13 @@ package org.springframework.amqp.rabbit.connection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Queue;
@@ -196,6 +200,70 @@ public class PooledChannelConnectionFactoryTests {
 
 		RabbitUtils.closeChannel(nonTxChannel);
 		RabbitUtils.closeChannel(txChannel);
+		connection.close();
+	}
+
+	@Test
+	public void evictShouldCloseAllUnneededChannelsWithoutErrors() throws Exception {
+		PooledChannelConnectionFactory pcf = new PooledChannelConnectionFactory(new ConnectionFactory());
+		AtomicReference<GenericObjectPool<Channel>> channelsReference = new AtomicReference<>();
+		AtomicReference<GenericObjectPool<Channel>> txChannelsReference = new AtomicReference<>();
+		AtomicInteger swallowedExceptionsCount = new AtomicInteger();
+		pcf.setPoolConfigurer((pool, tx) -> {
+			if (tx) {
+				channelsReference.set(pool);
+			}
+			else {
+				txChannelsReference.set(pool);
+			}
+
+			pool.setEvictionPolicy((ec, u, idleCount) -> idleCount > ec.getMinIdle());
+			pool.setSwallowedExceptionListener(ex -> swallowedExceptionsCount.incrementAndGet());
+			pool.setNumTestsPerEvictionRun(5);
+
+			pool.setMinIdle(1);
+			pool.setMaxIdle(5);
+		});
+
+		createAndCloseFiveChannelTxAndChannelNonTx(pcf);
+
+		final GenericObjectPool<Channel> channels = channelsReference.get();
+		channels.evict();
+
+		assertThat(channels.getNumIdle())
+				.isEqualTo(1);
+		assertThat(channels.getDestroyedByEvictorCount())
+				.isEqualTo(4);
+
+		final GenericObjectPool<Channel> txChannels = txChannelsReference.get();
+		txChannels.evict();
+		assertThat(txChannels.getNumIdle())
+				.isEqualTo(1);
+		assertThat(txChannels.getDestroyedByEvictorCount())
+				.isEqualTo(4);
+
+		assertThat(swallowedExceptionsCount.get())
+				.isZero();
+	}
+
+	private void createAndCloseFiveChannelTxAndChannelNonTx(
+			org.springframework.amqp.rabbit.connection.ConnectionFactory connectionFactory) {
+		int channelAmount = 5;
+		Connection connection = connectionFactory.createConnection();
+
+		List<Channel> channels = new ArrayList<>(channelAmount);
+		List<Channel> txChannels = new ArrayList<>(channelAmount);
+
+		for (int i = 0; i < channelAmount; i++) {
+			channels.add(connection.createChannel(false));
+			txChannels.add(connection.createChannel(true));
+		}
+
+		for (int i = 0; i < channelAmount; i++) {
+			RabbitUtils.closeChannel(channels.get(i));
+			RabbitUtils.closeChannel(txChannels.get(i));
+		}
+
 		connection.close();
 	}
 
