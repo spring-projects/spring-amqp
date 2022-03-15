@@ -17,7 +17,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
@@ -52,6 +52,7 @@ import com.rabbitmq.client.Channel;
  * @author Artem Bilan
  * @author Josh Chappelle
  * @author Gary Russell
+ * @author Leonardo Ferreira
  * @since 1.3
  */
 public class RoutingConnectionFactoryTests {
@@ -335,12 +336,8 @@ public class RoutingConnectionFactoryTests {
 
 		routingFactory.addTargetConnectionFactory("1", Mockito.mock(ConnectionFactory.class));
 
-		try {
-			routingFactory.afterPropertiesSet();
-		}
-		catch (Exception e) {
-			fail("afterPropertiesSet should not throw any exception after addTargetConnectionFactory", e);
-		}
+		assertThatNoException()
+				.isThrownBy(routingFactory::afterPropertiesSet);
 	}
 
 }

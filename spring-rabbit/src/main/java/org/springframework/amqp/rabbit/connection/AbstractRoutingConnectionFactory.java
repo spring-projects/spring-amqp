@@ -34,6 +34,7 @@ import org.springframework.util.Assert;
  * @author Artem Bilan
  * @author Josh Chappelle
  * @author Gary Russell
+ * @author Leonardo Ferreira
  * @since 1.3
  */
 public abstract class AbstractRoutingConnectionFactory implements ConnectionFactory, RoutingConnectionFactory,
