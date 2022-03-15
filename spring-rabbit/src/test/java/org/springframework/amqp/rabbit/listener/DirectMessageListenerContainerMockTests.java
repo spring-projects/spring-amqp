@@ -360,6 +360,29 @@ public class DirectMessageListenerContainerMockTests {
 		container.stop();
 	}
 
+	@Test
+	void monitorTaskThreadName() {
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(mock(ConnectionFactory.class));
+		assertThat(container.getListenerId()).isEqualTo("not.a.Spring.bean");
+		container.setBeanName("aBean");
+		assertThat(container.getListenerId()).isEqualTo("aBean");
+		container.setListenerId("id");
+		assertThat(container.getListenerId()).isEqualTo("id");
+		container.afterPropertiesSet();
+		assertThat(container).extracting("taskScheduler")
+				.extracting("threadNamePrefix")
+				.asString()
+				.startsWith("id-consumerMonitor");
+
+		container = new DirectMessageListenerContainer(mock(ConnectionFactory.class));
+		container.setBeanName("aBean");
+		container.afterPropertiesSet();
+		assertThat(container).extracting("taskScheduler")
+				.extracting("threadNamePrefix")
+				.asString()
+				.startsWith("aBean-consumerMonitor");
+	}
+
 	private Envelope envelope(long tag) {
 		return new Envelope(tag, false, "", "");
 	}

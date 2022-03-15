@@ -391,7 +391,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	protected void doInitialize() {
 		if (this.taskScheduler == null) {
 			ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
-			threadPoolTaskScheduler.setThreadNamePrefix(getBeanName() + "-consumerMonitor-");
+			threadPoolTaskScheduler.setThreadNamePrefix(getListenerId() + "-consumerMonitor-");
 			threadPoolTaskScheduler.afterPropertiesSet();
 			this.taskScheduler = threadPoolTaskScheduler;
 		}
