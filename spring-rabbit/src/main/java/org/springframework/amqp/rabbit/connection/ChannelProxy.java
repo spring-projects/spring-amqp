@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import org.springframework.aop.RawTargetAccess;
+
 import com.rabbitmq.client.Channel;
 
 /**
@@ -24,9 +26,10 @@ import com.rabbitmq.client.Channel;
  *
  * @author Mark Pollack
  * @author Gary Russell
+ * @author Leonardo Ferreira
  * @see CachingConnectionFactory
  */
-public interface ChannelProxy extends Channel {
+public interface ChannelProxy extends Channel, RawTargetAccess {
 
 	/**
 	 * Return the target Channel of this proxy.
