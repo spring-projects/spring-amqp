@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
@@ -51,6 +52,7 @@ import com.rabbitmq.client.Channel;
  * @author Artem Bilan
  * @author Josh Chappelle
  * @author Gary Russell
+ * @author Leonardo Ferreira
  * @since 1.3
  */
 public class RoutingConnectionFactoryTests {
@@ -321,6 +323,21 @@ public class RoutingConnectionFactoryTests {
 		assertThat(connectionMakerKey.get()).isEqualTo("xxx[amq.rabbitmq.reply-to]");
 		assertThat(connectionMakerKey2.get()).isEqualTo("xxx[amq.rabbitmq.reply-to]");
 		assertThat(SimpleResourceHolder.unbind(connectionFactory)).isEqualTo("foo");
+	}
+
+	@Test
+	void afterPropertiesSetShouldNotThrowAnyExceptionAfterAddTargetConnectionFactory() throws Exception {
+		AbstractRoutingConnectionFactory routingFactory = new AbstractRoutingConnectionFactory() {
+			@Override
+			protected Object determineCurrentLookupKey() {
+				return null;
+			}
+		};
+
+		routingFactory.addTargetConnectionFactory("1", Mockito.mock(ConnectionFactory.class));
+
+		assertThatNoException()
+				.isThrownBy(routingFactory::afterPropertiesSet);
 	}
 
 }
