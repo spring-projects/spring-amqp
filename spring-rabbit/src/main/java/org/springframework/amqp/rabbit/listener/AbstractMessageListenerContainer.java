@@ -156,7 +156,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private TransactionAttribute transactionAttribute = new DefaultTransactionAttribute();
 
 	@Nullable
-	private String beanName;
+	private String beanName = "not.a.Spring.bean";
 
 	private Executor taskExecutor = new SimpleAsyncTaskExecutor();
 
