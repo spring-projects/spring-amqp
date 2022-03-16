@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,6 +77,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Alex Panchenko
+ * @author Mat Jaggard
  *
  * @since 1.0
  */
@@ -605,59 +606,80 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	@Override
 	protected void doShutdown() {
+		shutdownAndWaitOrCallback(null);
+	}
+
+	@Override
+	public void stop(Runnable callback) {
+		shutdownAndWaitOrCallback(callback);
+	}
+
+	private void shutdownAndWaitOrCallback(@Nullable Runnable callback) {
 		Thread thread = this.containerStoppingForAbort.get();
 		if (thread != null && !thread.equals(Thread.currentThread())) {
 			logger.info("Shutdown ignored - container is stopping due to an aborted consumer");
 			return;
 		}
 
-		try {
-			List<BlockingQueueConsumer> canceledConsumers = new ArrayList<>();
-			synchronized (this.consumersMonitor) {
-				if (this.consumers != null) {
-					Iterator<BlockingQueueConsumer> consumerIterator = this.consumers.iterator();
-					while (consumerIterator.hasNext()) {
-						BlockingQueueConsumer consumer = consumerIterator.next();
-						consumer.basicCancel(true);
-						canceledConsumers.add(consumer);
-						consumerIterator.remove();
-						if (consumer.declaring) {
-							consumer.thread.interrupt();
-						}
+		List<BlockingQueueConsumer> canceledConsumers = new ArrayList<>();
+		synchronized (this.consumersMonitor) {
+			if (this.consumers != null) {
+				Iterator<BlockingQueueConsumer> consumerIterator = this.consumers.iterator();
+				while (consumerIterator.hasNext()) {
+					BlockingQueueConsumer consumer = consumerIterator.next();
+					consumer.basicCancel(true);
+					canceledConsumers.add(consumer);
+					consumerIterator.remove();
+					if (consumer.declaring) {
+						consumer.thread.interrupt();
 					}
 				}
-				else {
-					logger.info("Shutdown ignored - container is already stopped");
-					return;
-				}
-			}
-			logger.info("Waiting for workers to finish.");
-			boolean finished = this.cancellationLock.await(getShutdownTimeout(), TimeUnit.MILLISECONDS);
-			if (finished) {
-				logger.info("Successfully waited for workers to finish.");
 			}
 			else {
-				logger.info("Workers not finished.");
-				if (isForceCloseChannel()) {
-					canceledConsumers.forEach(consumer -> {
-						if (logger.isWarnEnabled()) {
-							logger.warn("Closing channel for unresponsive consumer: " + consumer);
-						}
-						consumer.stop();
-					});
-				}
+				logger.info("Shutdown ignored - container is already stopped");
+				return;
 			}
 		}
-		catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			logger.warn("Interrupted waiting for workers.  Continuing with shutdown.");
-		}
 
-		synchronized (this.consumersMonitor) {
-			this.consumers = null;
-			this.cancellationLock.deactivate();
-		}
+		Runnable awaitShutdown = () -> {
+			logger.info("Waiting for workers to finish.");
+			try {
+				boolean finished = this.cancellationLock.await(getShutdownTimeout(), TimeUnit.MILLISECONDS);
+				if (finished) {
+					logger.info("Successfully waited for workers to finish.");
+				}
+				else {
+					logger.info("Workers not finished.");
+					if (isForceCloseChannel()) {
+						canceledConsumers.forEach(consumer -> {
+							if (logger.isWarnEnabled()) {
+								logger.warn("Closing channel for unresponsive consumer: " + consumer);
+							}
+							consumer.stop();
+						});
+					}
+				}
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				logger.warn("Interrupted waiting for workers.  Continuing with shutdown.");
+			}
 
+			synchronized (this.consumersMonitor) {
+				this.consumers = null;
+				this.cancellationLock.deactivate();
+			}
+
+			if (callback != null) {
+				callback.run();
+			}
+		};
+		if (callback == null) {
+			awaitShutdown.run();
+		}
+		else {
+			getTaskExecutor().execute(awaitShutdown);
+		}
 	}
 
 	private boolean isActive(BlockingQueueConsumer consumer) {
