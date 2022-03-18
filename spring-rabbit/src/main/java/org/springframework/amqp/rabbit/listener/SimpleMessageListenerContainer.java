@@ -16,46 +16,19 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.springframework.amqp.AmqpAuthenticationException;
-import org.springframework.amqp.AmqpConnectException;
-import org.springframework.amqp.AmqpException;
-import org.springframework.amqp.AmqpIOException;
-import org.springframework.amqp.AmqpIllegalStateException;
-import org.springframework.amqp.AmqpRejectAndDontRequeueException;
-import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.PossibleAuthenticationFailureException;
+import com.rabbitmq.client.ShutdownSignalException;
+import org.springframework.amqp.*;
 import org.springframework.amqp.core.BatchMessageListener;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
-import org.springframework.amqp.rabbit.connection.ConsumerChannelRegistry;
-import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
-import org.springframework.amqp.rabbit.connection.RabbitUtils;
-import org.springframework.amqp.rabbit.connection.SimpleResourceHolder;
+import org.springframework.amqp.rabbit.connection.*;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareBatchMessageListener;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
-import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
-import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
-import org.springframework.amqp.rabbit.support.ListenerContainerAware;
-import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
-import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
+import org.springframework.amqp.rabbit.support.*;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.jmx.export.annotation.ManagedMetric;
 import org.springframework.jmx.support.MetricType;
@@ -66,9 +39,14 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.backoff.BackOffExecution;
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.PossibleAuthenticationFailureException;
-import com.rabbitmq.client.ShutdownSignalException;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Mark Pollack
@@ -677,7 +655,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			awaitShutdown.run();
 		}
 		else {
-			new Thread(awaitShutdown).start();
+			getTaskExecutor().execute(awaitShutdown);
 		}
 	}
 
