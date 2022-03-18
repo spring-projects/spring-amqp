@@ -16,9 +16,21 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.PossibleAuthenticationFailureException;
-import com.rabbitmq.client.ShutdownSignalException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
@@ -54,20 +66,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.backoff.BackOffExecution;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.PossibleAuthenticationFailureException;
+import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * @author Mark Pollack
