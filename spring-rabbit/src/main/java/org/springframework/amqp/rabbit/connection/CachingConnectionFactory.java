@@ -94,6 +94,7 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
  * @author Artem Bilan
  * @author Steve Powell
  * @author Will Droste
+ * @author Leonardo Ferreira
  */
 @ManagedResource
 public class CachingConnectionFactory extends AbstractConnectionFactory
@@ -1132,6 +1133,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 			else if (methodName.equals("isConfirmSelected")) {
 				return this.confirmSelected;
+			}
+			else if (methodName.equals("isPublisherConfirms")) {
+				return this.publisherConfirms;
 			}
 			try {
 				if (this.target == null || !this.target.isOpen()) {

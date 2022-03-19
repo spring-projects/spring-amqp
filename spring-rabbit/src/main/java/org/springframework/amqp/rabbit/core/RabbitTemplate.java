@@ -147,6 +147,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Mark Norkin
  * @author Mohammad Hewedy
  * @author Alexey Platonov
+ * @author Leonardo Ferreira
  *
  * @since 1.0
  */
@@ -256,10 +257,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	private boolean noLocalReplyConsumer;
 
 	private ErrorHandler replyErrorHandler;
-
-	private volatile Boolean confirmsOrReturnsCapable;
-
-	private volatile boolean publisherConfirms;
 
 	private volatile boolean usingFastReplyTo;
 
@@ -1263,7 +1260,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				}
 				return buildMessageFromDelivery(delivery);
 			}
-		});
+		}, obtainTargetConnectionFactory(this.receiveConnectionFactorySelectorExpression, null));
 		logReceived(message);
 		return message;
 	}
@@ -1960,7 +1957,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		boolean cancelConsumer = false;
 		try {
 			Channel channel = channelHolder.getChannel();
-			if (this.confirmsOrReturnsCapable) {
+			if (isPublisherConfirmsOrReturns(connectionFactory)) {
 				addListener(channel);
 			}
 			Message reply = doSendAndReceiveAsListener(exchange, routingKey, message, correlationData, channel,
@@ -2224,12 +2221,10 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	private <T> T invokeAction(ChannelCallback<T> action, ConnectionFactory connectionFactory, Channel channel)
 			throws Exception { // NOSONAR see the callback
 
-		if (this.confirmsOrReturnsCapable == null) {
-			determineConfirmsReturnsCapability(connectionFactory);
-		}
-		if (this.confirmsOrReturnsCapable) {
+		if (isPublisherConfirmsOrReturns(connectionFactory)) {
 			addListener(channel);
 		}
+
 		if (logger.isDebugEnabled()) {
 			logger.debug(
 					"Executing callback " + action.getClass().getSimpleName() + " on RabbitMQ Channel: " + channel);
@@ -2351,10 +2346,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 	}
 
-	public void determineConfirmsReturnsCapability(ConnectionFactory connectionFactory) {
-		this.publisherConfirms = connectionFactory.isPublisherConfirms();
-		this.confirmsOrReturnsCapable =
-				this.publisherConfirms || connectionFactory.isPublisherReturns();
+	private boolean isPublisherConfirmsOrReturns(ConnectionFactory connectionFactory) {
+		return connectionFactory.isPublisherConfirms() || connectionFactory.isPublisherReturns();
 	}
 
 	/**
@@ -2435,8 +2428,11 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	private void setupConfirm(Channel channel, Message message, @Nullable CorrelationData correlationDataArg) {
-		if ((this.publisherConfirms || this.confirmCallback != null) && channel instanceof PublisherCallbackChannel) {
+		final boolean publisherConfirms = channel instanceof ChannelProxy
+				&& ((ChannelProxy) channel).isPublisherConfirms();
 
+		if ((publisherConfirms || this.confirmCallback != null)
+				&& channel instanceof PublisherCallbackChannel) {
 			long nextPublishSeqNo = channel.getNextPublishSeqNo();
 			if (nextPublishSeqNo > 0) {
 				PublisherCallbackChannel publisherCallbackChannel = (PublisherCallbackChannel) channel;
