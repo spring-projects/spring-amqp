@@ -62,6 +62,7 @@ import org.springframework.amqp.rabbit.connection.PublisherCallbackChannel;
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
+import org.springframework.amqp.rabbit.connection.RoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ThreadChannelConnectionFactory;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer;
@@ -147,6 +148,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Mark Norkin
  * @author Mohammad Hewedy
  * @author Alexey Platonov
+ * @author Leonardo Ferreira
  *
  * @since 1.0
  */
@@ -256,10 +258,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	private boolean noLocalReplyConsumer;
 
 	private ErrorHandler replyErrorHandler;
-
-	private volatile Boolean confirmsOrReturnsCapable;
-
-	private volatile boolean publisherConfirms;
 
 	private volatile boolean usingFastReplyTo;
 
@@ -1082,10 +1080,10 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));
 	}
 
-	private ConnectionFactory obtainTargetConnectionFactory(Expression expression, Object rootObject) {
-		if (expression != null && getConnectionFactory() instanceof AbstractRoutingConnectionFactory) {
-			AbstractRoutingConnectionFactory routingConnectionFactory =
-					(AbstractRoutingConnectionFactory) getConnectionFactory();
+	private ConnectionFactory obtainTargetConnectionFactory(Expression expression, @Nullable Object rootObject) {
+		if (expression != null && getConnectionFactory() instanceof RoutingConnectionFactory) {
+			RoutingConnectionFactory routingConnectionFactory =
+					(RoutingConnectionFactory) getConnectionFactory();
 			Object lookupKey;
 			if (rootObject != null) {
 				lookupKey = expression.getValue(this.evaluationContext, rootObject);
@@ -1098,9 +1096,13 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				if (connectionFactory != null) {
 					return connectionFactory;
 				}
-				else if (!routingConnectionFactory.isLenientFallback()) {
-					throw new IllegalStateException("Cannot determine target ConnectionFactory for lookup key ["
-							+ lookupKey + "]");
+				else if (getConnectionFactory() instanceof AbstractRoutingConnectionFactory) {
+					final AbstractRoutingConnectionFactory abstractRoutingCf =
+							(AbstractRoutingConnectionFactory) getConnectionFactory();
+					if (!abstractRoutingCf.isLenientFallback()) {
+						throw new IllegalStateException("Cannot determine target ConnectionFactory for lookup key ["
+								+ lookupKey + "]");
+					}
 				}
 			}
 		}
@@ -1263,7 +1265,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				}
 				return buildMessageFromDelivery(delivery);
 			}
-		});
+		}, obtainTargetConnectionFactory(this.receiveConnectionFactorySelectorExpression, null));
 		logReceived(message);
 		return message;
 	}
@@ -1960,7 +1962,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		boolean cancelConsumer = false;
 		try {
 			Channel channel = channelHolder.getChannel();
-			if (this.confirmsOrReturnsCapable) {
+			if (isPublisherConfirmsOrReturns(connectionFactory)) {
 				addListener(channel);
 			}
 			Message reply = doSendAndReceiveAsListener(exchange, routingKey, message, correlationData, channel,
@@ -2224,12 +2226,10 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	private <T> T invokeAction(ChannelCallback<T> action, ConnectionFactory connectionFactory, Channel channel)
 			throws Exception { // NOSONAR see the callback
 
-		if (this.confirmsOrReturnsCapable == null) {
-			determineConfirmsReturnsCapability(connectionFactory);
-		}
-		if (this.confirmsOrReturnsCapable) {
+		if (isPublisherConfirmsOrReturns(connectionFactory)) {
 			addListener(channel);
 		}
+
 		if (logger.isDebugEnabled()) {
 			logger.debug(
 					"Executing callback " + action.getClass().getSimpleName() + " on RabbitMQ Channel: " + channel);
@@ -2351,10 +2351,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 	}
 
-	public void determineConfirmsReturnsCapability(ConnectionFactory connectionFactory) {
-		this.publisherConfirms = connectionFactory.isPublisherConfirms();
-		this.confirmsOrReturnsCapable =
-				this.publisherConfirms || connectionFactory.isPublisherReturns();
+	private boolean isPublisherConfirmsOrReturns(ConnectionFactory connectionFactory) {
+		return connectionFactory.isPublisherConfirms() || connectionFactory.isPublisherReturns();
 	}
 
 	/**
@@ -2435,8 +2433,11 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	private void setupConfirm(Channel channel, Message message, @Nullable CorrelationData correlationDataArg) {
-		if ((this.publisherConfirms || this.confirmCallback != null) && channel instanceof PublisherCallbackChannel) {
+		final ConnectionFactory connectionFactory = obtainTargetConnectionFactory(
+				this.sendConnectionFactorySelectorExpression, message);
 
+		if ((connectionFactory.isPublisherConfirms() || this.confirmCallback != null)
+				&& channel instanceof PublisherCallbackChannel) {
 			PublisherCallbackChannel publisherCallbackChannel = (PublisherCallbackChannel) channel;
 			CorrelationData correlationData = this.correlationDataPostProcessor != null
 					? this.correlationDataPostProcessor.postProcess(message, correlationDataArg)
