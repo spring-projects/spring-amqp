@@ -1096,7 +1096,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				if (connectionFactory != null) {
 					return connectionFactory;
 				}
-				else if (getConnectionFactory() instanceof AbstractRoutingConnectionFactory) {
+
+				if (getConnectionFactory() instanceof AbstractRoutingConnectionFactory) {
 					final AbstractRoutingConnectionFactory abstractRoutingCf =
 							(AbstractRoutingConnectionFactory) getConnectionFactory();
 					if (!abstractRoutingCf.isLenientFallback()) {

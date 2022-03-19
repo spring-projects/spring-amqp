@@ -21,6 +21,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
 
 /**
+ * a {@link ConnectionFactory} that delegates all calls to another ConnectionFactory
  * @author Leonardo Ferreira
  */
 public class DelegatingConnectionFactory implements ConnectionFactory {
