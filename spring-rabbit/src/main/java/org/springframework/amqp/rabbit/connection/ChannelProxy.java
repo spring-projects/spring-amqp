@@ -54,4 +54,12 @@ public interface ChannelProxy extends Channel, RawTargetAccess {
 		return false;
 	}
 
+	/**
+	 * Return true if publisher confirms are enabled.
+	 * @return true if publisherConfirms.
+	 */
+	default boolean isPublisherConfirms() {
+		return false;
+	}
+
 }

@@ -51,7 +51,7 @@ _you should see branches on origin as well as upstream, including 'main' and 'ma
 
 == A Day in the Life of a Contributor
 
-* _Always_ work on topic branches (Typically use the HitHub (or JIRA) issue ID as the branch name).
+* _Always_ work on topic branches (Typically use the GitHub (or JIRA) issue ID as the branch name).
   - For example, to create and switch to a new branch for issue #123: `git checkout -b GH-123`
 * You might be working on several different topic branches at any given time, but when at a stopping point for one of those branches, commit (a local operation).
 * Please follow the "Commit Guidelines" described in https://git-scm.com/book/en/Distributed-Git-Contributing-to-a-Project[this chapter of Pro Git].
