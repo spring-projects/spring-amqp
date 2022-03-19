@@ -221,6 +221,8 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory im
 							return channel.confirmSelect();
 						case "isConfirmSelected":
 							return confirmSelected.get();
+						case "isPublisherConfirms":
+							return false;
 						}
 						return null;
 					};
@@ -230,6 +232,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory im
 			advisor.addMethodName("isTransactional");
 			advisor.addMethodName("confirmSelect");
 			advisor.addMethodName("isConfirmSelected");
+			advisor.addMethodName("isPublisherConfirms");
 			pf.addAdvisor(advisor);
 			pf.addInterface(ChannelProxy.class);
 			proxy.set((Channel) pf.getProxy());

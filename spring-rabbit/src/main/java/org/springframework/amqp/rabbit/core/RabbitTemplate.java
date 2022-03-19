@@ -2433,10 +2433,10 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	private void setupConfirm(Channel channel, Message message, @Nullable CorrelationData correlationDataArg) {
-		final ConnectionFactory connectionFactory = obtainTargetConnectionFactory(
-				this.sendConnectionFactorySelectorExpression, message);
+		final boolean publisherConfirms = channel instanceof ChannelProxy
+				&& ((ChannelProxy) channel).isPublisherConfirms();
 
-		if ((connectionFactory.isPublisherConfirms() || this.confirmCallback != null)
+		if ((publisherConfirms || this.confirmCallback != null)
 				&& channel instanceof PublisherCallbackChannel) {
 			PublisherCallbackChannel publisherCallbackChannel = (PublisherCallbackChannel) channel;
 			CorrelationData correlationData = this.correlationDataPostProcessor != null
