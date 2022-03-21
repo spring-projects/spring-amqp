@@ -358,6 +358,7 @@ project('spring-amqp') {
 		// Spring Data projection message binding support
 		optionalApi ("org.springframework.data:spring-data-commons:$springDataCommonsVersion") {
 			exclude group: 'org.springframework'
+			exclude group: 'io.micrometer'
 		}
 		optionalApi "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
 
