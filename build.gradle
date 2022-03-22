@@ -62,7 +62,7 @@ ext {
 	rabbitmqHttpClientVersion = '3.12.1'
 	reactorVersion = '2020.0.17'
 	snappyVersion = '1.1.8.4'
-	springDataCommonsVersion = '3.0.0-M2'
+	springDataCommonsVersion = '3.0.0-M3'
 	springVersion = project.hasProperty('springVersion') ? project.springVersion : '6.0.0-M3'
 	springRetryVersion = '1.3.2'
 	zstdJniVersion = '1.5.0-2'
