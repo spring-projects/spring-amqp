@@ -23,9 +23,11 @@ import static org.mockito.Mockito.verify;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -33,23 +35,23 @@ import org.mockito.Mockito;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.utils.test.TestUtils;
-import org.springframework.core.NestedIOException;
 import org.springframework.core.serializer.DefaultDeserializer;
 import org.springframework.core.serializer.Deserializer;
 
 /**
  * @author Mark Fisher
  * @author Gary Russell
+ * @author Artem Bilan
  */
 public class SerializerMessageConverterTests extends AllowedListDeserializingMessageConverterTests {
 
 	@Test
-	public void bytesAsDefaultMessageBodyType() throws Exception {
+	public void bytesAsDefaultMessageBodyType() {
 		SerializerMessageConverter converter = new SerializerMessageConverter();
 		Message message = new Message("test".getBytes(), new MessageProperties());
 		Object result = converter.fromMessage(message);
 		assertThat(result.getClass()).isEqualTo(byte[].class);
-		assertThat(new String((byte[]) result, "UTF-8")).isEqualTo("test");
+		assertThat(new String((byte[]) result, StandardCharsets.UTF_8)).isEqualTo("test");
 	}
 
 	@Test
@@ -65,7 +67,7 @@ public class SerializerMessageConverterTests extends AllowedListDeserializingMes
 	@Test
 	public void messageToBytes() {
 		SerializerMessageConverter converter = new SerializerMessageConverter();
-		Message message = new Message(new byte[] { 1, 2, 3 }, new MessageProperties());
+		Message message = new Message(new byte[]{ 1, 2, 3 }, new MessageProperties());
 		message.getMessageProperties().setContentType(MessageProperties.CONTENT_TYPE_BYTES);
 		Object result = converter.fromMessage(message);
 		assertThat(result.getClass()).isEqualTo(byte[].class);
@@ -126,7 +128,7 @@ public class SerializerMessageConverterTests extends AllowedListDeserializingMes
 	@Test
 	public void bytesToMessage() throws Exception {
 		SerializerMessageConverter converter = new SerializerMessageConverter();
-		Message message = converter.toMessage(new byte[] { 1, 2, 3 }, new MessageProperties());
+		Message message = converter.toMessage(new byte[]{ 1, 2, 3 }, new MessageProperties());
 		String contentType = message.getMessageProperties().getContentType();
 		byte[] body = message.getBody();
 		assertThat(contentType).isEqualTo("application/octet-stream");
@@ -168,7 +170,7 @@ public class SerializerMessageConverterTests extends AllowedListDeserializingMes
 	}
 
 	@Test
-	public void messageConversionExceptionForClassNotFound() throws Exception {
+	public void messageConversionExceptionForClassNotFound() {
 		SerializerMessageConverter converter = new SerializerMessageConverter();
 		TestBean testBean = new TestBean("foo");
 		Message message = converter.toMessage(testBean, new MessageProperties());
@@ -177,8 +179,8 @@ public class SerializerMessageConverterTests extends AllowedListDeserializingMes
 		byte[] body = message.getBody();
 		body[10] = 'z';
 		assertThatThrownBy(() -> converter.fromMessage(message))
-			.isExactlyInstanceOf(MessageConversionException.class)
-			.hasCauseExactlyInstanceOf(NestedIOException.class);
+				.isExactlyInstanceOf(MessageConversionException.class)
+				.hasCauseExactlyInstanceOf(IOException.class);
 	}
 
 }
