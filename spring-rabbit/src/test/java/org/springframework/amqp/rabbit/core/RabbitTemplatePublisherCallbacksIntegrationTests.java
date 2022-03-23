@@ -867,9 +867,11 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	}
 
 	@Test
-	void justReturns() {
+	void justReturns() throws InterruptedException {
 		CorrelationData correlationData = new CorrelationData();
+		CountDownLatch latch = new CountDownLatch(1);
 		this.templateWithReturnsEnabled.setReturnsCallback(returned -> {
+			latch.countDown();
 		});
 		this.templateWithReturnsEnabled.setConfirmCallback((correlationData1, ack, cause) -> {
 			// has callback but factory is not enabled
@@ -887,6 +889,9 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 				.extracting(map -> map.values().iterator().next())
 				.asInstanceOf(InstanceOfAssertFactories.MAP)
 				.isEmpty();
+
+		this.templateWithReturnsEnabled.convertAndSend("", "___JUNK___", "foo", correlationData);
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 	}
 
 }
