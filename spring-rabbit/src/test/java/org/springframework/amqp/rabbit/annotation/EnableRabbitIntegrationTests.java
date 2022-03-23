@@ -120,6 +120,7 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.web.JsonPath;
 import org.springframework.lang.NonNull;
+import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.converter.GenericMessageConverter;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -561,8 +562,9 @@ public class EnableRabbitIntegrationTests {
 	public void testDifferentTypes() throws InterruptedException {
 		Foo1 foo = new Foo1();
 		foo.setBar("bar");
+		this.service.foos.clear();
 		this.jsonRabbitTemplate.convertAndSend("differentTypes", foo);
-		assertThat(this.service.latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.service.dtLatch1.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.service.foos.get(0)).isInstanceOf(Foo2.class);
 		assertThat(((Foo2) this.service.foos.get(0)).getBar()).isEqualTo("bar");
 		assertThat(TestUtils.getPropertyValue(this.registry.getListenerContainer("different"), "concurrentConsumers")).isEqualTo(2);
@@ -572,8 +574,9 @@ public class EnableRabbitIntegrationTests {
 	public void testDifferentTypesWithConcurrency() throws InterruptedException {
 		Foo1 foo = new Foo1();
 		foo.setBar("bar");
-		this.jsonRabbitTemplate.convertAndSend("differentTypes", foo);
-		assertThat(this.service.latch.await(10, TimeUnit.SECONDS)).isTrue();
+		this.service.foos.clear();
+		this.jsonRabbitTemplate.convertAndSend("differentTypes2", foo);
+		assertThat(this.service.dtLatch2.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.service.foos.get(0)).isInstanceOf(Foo2.class);
 		assertThat(((Foo2) this.service.foos.get(0)).getBar()).isEqualTo("bar");
 		MessageListenerContainer container = this.registry.getListenerContainer("differentWithConcurrency");
@@ -585,8 +588,9 @@ public class EnableRabbitIntegrationTests {
 	public void testDifferentTypesWithVariableConcurrency() throws InterruptedException {
 		Foo1 foo = new Foo1();
 		foo.setBar("bar");
-		this.jsonRabbitTemplate.convertAndSend("differentTypes", foo);
-		assertThat(this.service.latch.await(10, TimeUnit.SECONDS)).isTrue();
+		this.service.foos.clear();
+		this.jsonRabbitTemplate.convertAndSend("differentTypes3", foo);
+		assertThat(this.service.dtLatch3.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.service.foos.get(0)).isInstanceOf(Foo2.class);
 		assertThat(((Foo2) this.service.foos.get(0)).getBar()).isEqualTo("bar");
 		MessageListenerContainer container = this.registry.getListenerContainer("differentWithVariableConcurrency");
@@ -1079,7 +1083,11 @@ public class EnableRabbitIntegrationTests {
 
 		final List<Object> foos = new ArrayList<>();
 
-		final CountDownLatch latch = new CountDownLatch(1);
+		final CountDownLatch dtLatch1 = new CountDownLatch(1);
+
+		final CountDownLatch dtLatch2 = new CountDownLatch(1);
+
+		final CountDownLatch dtLatch3 = new CountDownLatch(1);
 
 		final CountDownLatch validationLatch = new CountDownLatch(1);
 
@@ -1230,21 +1238,21 @@ public class EnableRabbitIntegrationTests {
 				containerFactory = "jsonListenerContainerFactoryNoClassMapper")
 		public void handleDifferent(@Validated Foo2 foo) {
 			foos.add(foo);
-			latch.countDown();
+			dtLatch1.countDown();
 		}
 
 		@RabbitListener(id = "differentWithConcurrency", queues = "differentTypes2",
-				containerFactory = "jsonListenerContainerFactory", concurrency = "#{3}")
-		public void handleDifferentWithConcurrency(Foo2 foo) {
+				containerFactory = "jsonListenerContainerFactoryNoClassMapper", concurrency = "#{3}")
+		public void handleDifferentWithConcurrency(Foo2 foo, MessageHeaders headers) {
 			foos.add(foo);
-			latch.countDown();
+			dtLatch2.countDown();
 		}
 
 		@RabbitListener(id = "differentWithVariableConcurrency", queues = "differentTypes3",
 				containerFactory = "jsonListenerContainerFactory", concurrency = "3-4")
 		public void handleDifferentWithVariableConcurrency(Foo2 foo) {
 			foos.add(foo);
-			latch.countDown();
+			dtLatch3.countDown();
 		}
 
 		@RabbitListener(id = "notStarted", containerFactory = "rabbitAutoStartFalseListenerContainerFactory",
