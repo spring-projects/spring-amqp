@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -130,6 +131,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		connectionFactoryWithReturnsEnabled.setPort(BrokerTestUtils.getPort());
 		connectionFactoryWithReturnsEnabled.setPublisherReturns(true);
 		templateWithReturnsEnabled = new RabbitTemplate(connectionFactoryWithReturnsEnabled);
+		templateWithReturnsEnabled.setMandatory(true);
 		connectionFactoryWithConfirmsAndReturnsEnabled = new CachingConnectionFactory();
 		connectionFactoryWithConfirmsAndReturnsEnabled.setHost("localhost");
 		connectionFactoryWithConfirmsAndReturnsEnabled.setChannelCacheSize(100);
@@ -320,6 +322,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
 		given(mockChannel.isOpen()).willReturn(true);
+		given(mockChannel.getNextPublishSeqNo()).willReturn(1L);
 
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
@@ -861,6 +864,29 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertThat(resent.get()).isTrue();
 		assertThat(callbackThreadName.get()).startsWith("spring-rabbit-deferred-pool");
 		admin.deleteQueue(queue.getName());
+	}
+
+	@Test
+	void justReturns() {
+		CorrelationData correlationData = new CorrelationData();
+		this.templateWithReturnsEnabled.setReturnsCallback(returned -> {
+		});
+		this.templateWithReturnsEnabled.setConfirmCallback((correlationData1, ack, cause) -> {
+			// has callback but factory is not enabled
+		});
+		this.templateWithReturnsEnabled.convertAndSend("", ROUTE, "foo", correlationData);
+		ChannelProxy channel = (ChannelProxy) this.connectionFactoryWithReturnsEnabled.createConnection()
+				.createChannel(false);
+		assertThat(channel.getTargetChannel())
+				.extracting("pendingReturns")
+				.asInstanceOf(InstanceOfAssertFactories.MAP)
+				.isEmpty();
+		assertThat(channel.getTargetChannel())
+				.extracting("pendingConfirms")
+				.asInstanceOf(InstanceOfAssertFactories.MAP)
+				.extracting(map -> map.values().iterator().next())
+				.asInstanceOf(InstanceOfAssertFactories.MAP)
+				.isEmpty();
 	}
 
 }
