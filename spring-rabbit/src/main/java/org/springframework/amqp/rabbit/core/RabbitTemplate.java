@@ -2437,17 +2437,22 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	private void setupConfirm(Channel channel, Message message, @Nullable CorrelationData correlationDataArg) {
 		if ((this.publisherConfirms || this.confirmCallback != null) && channel instanceof PublisherCallbackChannel) {
 
-			PublisherCallbackChannel publisherCallbackChannel = (PublisherCallbackChannel) channel;
-			CorrelationData correlationData = this.correlationDataPostProcessor != null
-					? this.correlationDataPostProcessor.postProcess(message, correlationDataArg)
-					: correlationDataArg;
 			long nextPublishSeqNo = channel.getNextPublishSeqNo();
-			message.getMessageProperties().setPublishSequenceNumber(nextPublishSeqNo);
-			publisherCallbackChannel.addPendingConfirm(this, nextPublishSeqNo,
-					new PendingConfirm(correlationData, System.currentTimeMillis()));
-			if (correlationData != null && StringUtils.hasText(correlationData.getId())) {
-				message.getMessageProperties().setHeader(PublisherCallbackChannel.RETURNED_MESSAGE_CORRELATION_KEY,
-						correlationData.getId());
+			if (nextPublishSeqNo > 0) {
+				PublisherCallbackChannel publisherCallbackChannel = (PublisherCallbackChannel) channel;
+				CorrelationData correlationData = this.correlationDataPostProcessor != null
+						? this.correlationDataPostProcessor.postProcess(message, correlationDataArg)
+						: correlationDataArg;
+				message.getMessageProperties().setPublishSequenceNumber(nextPublishSeqNo);
+				publisherCallbackChannel.addPendingConfirm(this, nextPublishSeqNo,
+						new PendingConfirm(correlationData, System.currentTimeMillis()));
+				if (correlationData != null && StringUtils.hasText(correlationData.getId())) {
+					message.getMessageProperties().setHeader(PublisherCallbackChannel.RETURNED_MESSAGE_CORRELATION_KEY,
+							correlationData.getId());
+				}
+			}
+			else {
+				logger.debug("Factory does not have confirms enabled");
 			}
 		}
 		else if (channel instanceof ChannelProxy && ((ChannelProxy) channel).isConfirmSelected()) {
