@@ -31,12 +31,12 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
-import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
 import org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.connection.PooledChannelConnectionFactory;
+import org.springframework.amqp.rabbit.connection.SimpleRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.expression.Expression;
@@ -69,8 +69,10 @@ class RabbitTemplateRoutingConnectionFactoryIntegrationTests {
 		connectionFactoryMap.put("true", cachingConnectionFactory);
 		connectionFactoryMap.put("false", pooledChannelConnectionFactory);
 
-		final FlexibleRoutingConnectionFactory routingConnectionFactory = new FlexibleRoutingConnectionFactory(
-				pooledChannelConnectionFactory, connectionFactoryMap);
+		final AbstractRoutingConnectionFactory routingConnectionFactory = new SimpleRoutingConnectionFactory();
+		routingConnectionFactory.setConsistentConfirmsReturns(false);
+		routingConnectionFactory.setDefaultTargetConnectionFactory(pooledChannelConnectionFactory);
+		routingConnectionFactory.setTargetConnectionFactories(connectionFactoryMap);
 
 		rabbitTemplate = new RabbitTemplate(routingConnectionFactory);
 
@@ -118,19 +120,4 @@ class RabbitTemplateRoutingConnectionFactoryIntegrationTests {
 		assertThat(receivedPayload).isEqualTo(payload);
 	}
 
-	static class FlexibleRoutingConnectionFactory extends AbstractRoutingConnectionFactory {
-
-		FlexibleRoutingConnectionFactory(AbstractConnectionFactory defaultConnectionFactory,
-				Map<Object, ConnectionFactory> connectionFactories) {
-			super();
-			super.setConsistentConfirmsReturns(false);
-			super.setDefaultTargetConnectionFactory(defaultConnectionFactory);
-			super.setTargetConnectionFactories(connectionFactories);
-		}
-
-		@Override
-		protected Object determineCurrentLookupKey() {
-			return null;
-		}
-	}
 }

@@ -696,6 +696,48 @@ For example, with lookup key qualifier `thing1` and a container listening to que
 IMPORTANT: The target (and default, if provided) connection factories must have the same settings for publisher confirms and returns.
 See <<cf-pub-conf-ret>>.
 
+Starting with version 2.4.4, this validation can be disabled. If you have a case that the values between confirms and returns need to be unequal,
+you can use `AbstractRoutingConnectionFactory#setConsistentConfirmsReturns` to turn of the validation.
+Note that the first connection factory added to `AbstractRoutingConnectionFactory` will determine the general values of `confirms` and `returns`.
+
+It may be useful if you have a case that certain messages you would to check confirms/returns and others you don't.
+e.g.
+
+====
+[source, java]
+----
+@Bean
+public RabbitTemplate rabbitTemplate() {
+	final com.rabbitmq.client.ConnectionFactory cf = new com.rabbitmq.client.ConnectionFactory();
+	cf.setHost("localhost");
+	cf.setPort(5672);
+
+	CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(cf);
+	cachingConnectionFactory.setPublisherConfirmType(CachingConnectionFactory.ConfirmType.CORRELATED);
+
+	PooledChannelConnectionFactory pooledChannelConnectionFactory = new PooledChannelConnectionFactory(cf);
+
+	final Map<Object, ConnectionFactory> connectionFactoryMap = new HashMap<>(2);
+	connectionFactoryMap.put("true", cachingConnectionFactory);
+	connectionFactoryMap.put("false", pooledChannelConnectionFactory);
+
+	final AbstractRoutingConnectionFactory routingConnectionFactory = new SimpleRoutingConnectionFactory();
+	routingConnectionFactory.setConsistentConfirmsReturns(false);
+	routingConnectionFactory.setDefaultTargetConnectionFactory(pooledChannelConnectionFactory);
+	routingConnectionFactory.setTargetConnectionFactories(connectionFactoryMap);
+
+	final RabbitTemplate rabbitTemplate = new RabbitTemplate(routingConnectionFactory);
+
+	final Expression sendExpression = new SpelExpressionParser().parseExpression(
+			"messageProperties.headers['x-use-publisher-confirms'] ?: false");
+	rabbitTemplate.setSendConnectionFactorySelectorExpression(sendExpression);
+}
+----
+====
+
+This way messages with the header `x-use-publisher-confirms: true` will be sent through the caching connection and you can ensure the message delivery.
+See <<cf-pub-conf-ret>>
+
 [[queue-affinity]]
 ===== Queue Affinity and the `LocalizedQueueConnectionFactory`
 
