@@ -25,8 +25,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Message;
@@ -44,16 +44,17 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 
 /**
  * @author Leonardo Ferreira
+ * @since 2.4.4
  */
 @RabbitAvailable(queues = RabbitTemplateRoutingConnectionFactoryIntegrationTests.ROUTE)
 class RabbitTemplateRoutingConnectionFactoryIntegrationTests {
 
 	public static final String ROUTE = "test.queue.RabbitTemplateRoutingConnectionFactoryIntegrationTests";
 
-	private RabbitTemplate rabbitTemplate;
+	private static RabbitTemplate rabbitTemplate;
 
-	@BeforeEach
-	public void create() {
+	@BeforeAll
+	static void create() {
 		final com.rabbitmq.client.ConnectionFactory cf = new com.rabbitmq.client.ConnectionFactory();
 		cf.setHost("localhost");
 		cf.setPort(BrokerTestUtils.getPort());
@@ -71,15 +72,15 @@ class RabbitTemplateRoutingConnectionFactoryIntegrationTests {
 		final FlexibleRoutingConnectionFactory routingConnectionFactory = new FlexibleRoutingConnectionFactory(
 				pooledChannelConnectionFactory, connectionFactoryMap);
 
-		this.rabbitTemplate = new RabbitTemplate(routingConnectionFactory);
+		rabbitTemplate = new RabbitTemplate(routingConnectionFactory);
 
 		final Expression sendExpression = new SpelExpressionParser().parseExpression(
 				"messageProperties.headers['x-use-publisher-confirms'] ?: false");
-		this.rabbitTemplate.setSendConnectionFactorySelectorExpression(sendExpression);
+		rabbitTemplate.setSendConnectionFactorySelectorExpression(sendExpression);
 	}
 
-	@AfterEach
-	void cleanUp() {
+	@AfterAll
+	static void cleanUp() {
 		rabbitTemplate.destroy();
 	}
 

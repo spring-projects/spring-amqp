@@ -127,7 +127,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 			this.returns = cf.isPublisherReturns();
 		}
 
-		if (consistentConfirmsReturns) {
+		if (this.consistentConfirmsReturns) {
 			Assert.isTrue(this.confirms.booleanValue() == cf.isPublisherConfirms(),
 					"Target connection factories must have the same setting for publisher confirms");
 			Assert.isTrue(this.returns.booleanValue() == cf.isPublisherReturns(),
@@ -234,6 +234,21 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 		return this.targetConnectionFactories.get(key);
 	}
 
+	/**
+	 * Specify whether to apply a validation enforcing all {@link ConnectionFactory#isPublisherConfirms()} and
+	 * {@link ConnectionFactory#isPublisherReturns()} have a consistent value.
+	 * <p>
+	 * A consistent value means that all ConnectionFactories must have the same value between all
+	 * {@link ConnectionFactory#isPublisherConfirms()} and the same value between all
+	 * {@link ConnectionFactory#isPublisherReturns()}.
+	 * </p>
+	 * <p>
+	 * Note that in any case the values between {@link ConnectionFactory#isPublisherConfirms()} and
+	 * {@link ConnectionFactory#isPublisherReturns()} don't need to equals between each other.
+	 * </p>
+	 * @param consistentConfirmsReturns true to validate, false to not validate.
+	 * @since 2.4.4
+	 */
 	public void setConsistentConfirmsReturns(boolean consistentConfirmsReturns) {
 		this.consistentConfirmsReturns = consistentConfirmsReturns;
 	}
