@@ -1080,10 +1080,10 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));
 	}
 
-	private ConnectionFactory obtainTargetConnectionFactory(Expression expression, @Nullable Object rootObject) {
-		if (expression != null && getConnectionFactory() instanceof RoutingConnectionFactory) {
-			RoutingConnectionFactory routingConnectionFactory =
-					(RoutingConnectionFactory) getConnectionFactory();
+	private ConnectionFactory obtainTargetConnectionFactory(Expression expression, Object rootObject) {
+		if (expression != null && getConnectionFactory() instanceof AbstractRoutingConnectionFactory) {
+			AbstractRoutingConnectionFactory routingConnectionFactory =
+					(AbstractRoutingConnectionFactory) getConnectionFactory();
 			Object lookupKey;
 			if (rootObject != null) {
 				lookupKey = expression.getValue(this.evaluationContext, rootObject);
@@ -1096,14 +1096,9 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				if (connectionFactory != null) {
 					return connectionFactory;
 				}
-
-				if (getConnectionFactory() instanceof AbstractRoutingConnectionFactory) {
-					final AbstractRoutingConnectionFactory abstractRoutingCf =
-							(AbstractRoutingConnectionFactory) getConnectionFactory();
-					if (!abstractRoutingCf.isLenientFallback()) {
-						throw new IllegalStateException("Cannot determine target ConnectionFactory for lookup key ["
-								+ lookupKey + "]");
-					}
+				else if (!routingConnectionFactory.isLenientFallback()) {
+					throw new IllegalStateException("Cannot determine target ConnectionFactory for lookup key ["
+							+ lookupKey + "]");
 				}
 			}
 		}

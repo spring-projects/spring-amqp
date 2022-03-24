@@ -53,6 +53,8 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 
 	private Boolean returns;
 
+	private boolean consistentConfirmsReturns = true;
+
 	/**
 	 * Specify the map of target ConnectionFactories, with the lookup key as key.
 	 * <p>The key can be of arbitrary type; this class implements the
@@ -124,10 +126,13 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 		if (this.returns == null) {
 			this.returns = cf.isPublisherReturns();
 		}
-		Assert.isTrue(this.confirms.booleanValue() == cf.isPublisherConfirms(),
-				"Target connection factories must have the same setting for publisher confirms");
-		Assert.isTrue(this.returns.booleanValue() == cf.isPublisherReturns(),
-				"Target connection factories must have the same setting for publisher returns");
+
+		if (consistentConfirmsReturns) {
+			Assert.isTrue(this.confirms.booleanValue() == cf.isPublisherConfirms(),
+					"Target connection factories must have the same setting for publisher confirms");
+			Assert.isTrue(this.returns.booleanValue() == cf.isPublisherReturns(),
+					"Target connection factories must have the same setting for publisher returns");
+		}
 	}
 
 	@Override
@@ -227,6 +232,10 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	@Override
 	public ConnectionFactory getTargetConnectionFactory(Object key) {
 		return this.targetConnectionFactories.get(key);
+	}
+
+	public void setConsistentConfirmsReturns(boolean consistentConfirmsReturns) {
+		this.consistentConfirmsReturns = consistentConfirmsReturns;
 	}
 
 	/**

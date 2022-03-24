@@ -32,12 +32,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
+import org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
-import org.springframework.amqp.rabbit.connection.DelegatingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.PooledChannelConnectionFactory;
-import org.springframework.amqp.rabbit.connection.RoutingConnectionFactory;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.expression.Expression;
@@ -65,7 +64,7 @@ class RabbitTemplateRoutingConnectionFactoryIntegrationTests {
 
 		PooledChannelConnectionFactory pooledChannelConnectionFactory = new PooledChannelConnectionFactory(cf);
 
-		Map<Object, AbstractConnectionFactory> connectionFactoryMap = new HashMap<>(2);
+		Map<Object, ConnectionFactory> connectionFactoryMap = new HashMap<>(2);
 		connectionFactoryMap.put("true", cachingConnectionFactory);
 		connectionFactoryMap.put("false", pooledChannelConnectionFactory);
 
@@ -82,16 +81,13 @@ class RabbitTemplateRoutingConnectionFactoryIntegrationTests {
 	@AfterEach
 	void cleanUp() {
 		rabbitTemplate.destroy();
-		((FlexibleRoutingConnectionFactory) rabbitTemplate.getConnectionFactory())
-				.destroy();
 	}
 
 	@Test
 	void sendWithoutConfirmsTest() {
 		final String payload = UUID.randomUUID().toString();
 		rabbitTemplate.convertAndSend(ROUTE, (Object) payload, new CorrelationData());
-		assertThat(rabbitTemplate.getUnconfirmedCount())
-				.isZero();
+		assertThat(rabbitTemplate.getUnconfirmedCount()).isZero();
 
 		final Message received = rabbitTemplate.receive(ROUTE, Duration.ofSeconds(3).toMillis());
 		assertThat(received).isNotNull();
@@ -108,11 +104,9 @@ class RabbitTemplateRoutingConnectionFactoryIntegrationTests {
 
 		final CorrelationData correlationData = new CorrelationData();
 		rabbitTemplate.send(ROUTE, message, correlationData);
-		assertThat(rabbitTemplate.getUnconfirmedCount())
-				.isEqualTo(1);
+		assertThat(rabbitTemplate.getUnconfirmedCount()).isEqualTo(1);
 
-		final CorrelationData.Confirm confirm = correlationData.getFuture()
-				.get(10, TimeUnit.SECONDS);
+		final CorrelationData.Confirm confirm = correlationData.getFuture().get(10, TimeUnit.SECONDS);
 
 		assertThat(confirm.isAck()).isTrue();
 
@@ -123,29 +117,19 @@ class RabbitTemplateRoutingConnectionFactoryIntegrationTests {
 		assertThat(receivedPayload).isEqualTo(payload);
 	}
 
-	static class FlexibleRoutingConnectionFactory extends DelegatingConnectionFactory
-			implements ConnectionFactory, RoutingConnectionFactory {
-
-		private final AbstractConnectionFactory defaultConnectionFactory;
-
-		private final Map<Object, AbstractConnectionFactory> connectionFactories;
+	static class FlexibleRoutingConnectionFactory extends AbstractRoutingConnectionFactory {
 
 		FlexibleRoutingConnectionFactory(AbstractConnectionFactory defaultConnectionFactory,
-				Map<Object, AbstractConnectionFactory> connectionFactories) {
-			super(defaultConnectionFactory);
-			this.defaultConnectionFactory = defaultConnectionFactory;
-			this.connectionFactories = connectionFactories;
+				Map<Object, ConnectionFactory> connectionFactories) {
+			super();
+			super.setConsistentConfirmsReturns(false);
+			super.setDefaultTargetConnectionFactory(defaultConnectionFactory);
+			super.setTargetConnectionFactories(connectionFactories);
 		}
 
 		@Override
-		public ConnectionFactory getTargetConnectionFactory(Object key) {
-			return connectionFactories.getOrDefault(key, defaultConnectionFactory);
+		protected Object determineCurrentLookupKey() {
+			return null;
 		}
-
-		void destroy() {
-			defaultConnectionFactory.destroy();
-			connectionFactories.forEach((key, value) -> value.destroy());
-		}
-
 	}
 }

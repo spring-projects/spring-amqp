@@ -289,7 +289,7 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 							case "isConfirmSelected":
 								return confirmSelected.get();
 							case "isPublisherConfirms":
-								return ThreadChannelConnectionFactory.this.isPublisherConfirms();
+								return false;
 						}
 						return null;
 					};

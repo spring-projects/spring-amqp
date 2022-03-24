@@ -137,8 +137,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory im
 		if (this.connection == null || !this.connection.isOpen()) {
 			Connection bareConnection = createBareConnection(); // NOSONAR - see destroy()
 			this.connection = new ConnectionWrapper(bareConnection.getDelegate(), getCloseTimeout(), // NOSONAR
-					this.simplePublisherConfirms, this.poolConfigurer, getChannelListener(), // NOSONAR
-					this.isPublisherConfirms()); // NOSONAR
+					this.simplePublisherConfirms, this.poolConfigurer, getChannelListener()); // NOSONAR
 			getConnectionListener().onCreate(this.connection);
 		}
 		return this.connection;
@@ -176,11 +175,8 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory im
 
 		private final ChannelListener channelListener;
 
-		private final boolean publisherConfirms;
-
 		ConnectionWrapper(com.rabbitmq.client.Connection delegate, int closeTimeout, boolean simplePublisherConfirms,
-				BiConsumer<GenericObjectPool<Channel>, Boolean> configurer, ChannelListener channelListener,
-				boolean publisherConfirms) {
+				BiConsumer<GenericObjectPool<Channel>, Boolean> configurer, ChannelListener channelListener) {
 
 			super(delegate, closeTimeout);
 			GenericObjectPool<Channel> pool = new GenericObjectPool<>(new ChannelFactory());
@@ -191,7 +187,6 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory im
 			this.txChannels = pool;
 			this.simplePublisherConfirms = simplePublisherConfirms;
 			this.channelListener = channelListener;
-			this.publisherConfirms = publisherConfirms;
 		}
 
 		@Override
@@ -227,7 +222,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory im
 						case "isConfirmSelected":
 							return confirmSelected.get();
 						case "isPublisherConfirms":
-							return this.publisherConfirms;
+							return false;
 						}
 						return null;
 					};
