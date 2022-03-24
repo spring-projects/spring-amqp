@@ -244,7 +244,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	 * </p>
 	 * <p>
 	 * Note that in any case the values between {@link ConnectionFactory#isPublisherConfirms()} and
-	 * {@link ConnectionFactory#isPublisherReturns()} don't need to equals between each other.
+	 * {@link ConnectionFactory#isPublisherReturns()} don't need to be equals between each other.
 	 * </p>
 	 * @param consistentConfirmsReturns true to validate, false to not validate.
 	 * @since 2.4.4
