@@ -647,7 +647,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				boolean finished = this.cancellationLock.await(getShutdownTimeout(), TimeUnit.MILLISECONDS);
 				if (finished) {
 					logger.info("Successfully waited for workers to finish.");
-				} else {
+				}
+				else {
 					logger.info("Workers not finished.");
 					if (isForceCloseChannel()) {
 						canceledConsumers.forEach(consumer -> {
