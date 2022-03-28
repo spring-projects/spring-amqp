@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,6 +109,7 @@ import io.micrometer.core.instrument.Timer.Sample;
  * @author Arnaud Cogoluègnes
  * @author Artem Bilan
  * @author Mohammad Hewedy
+ * @author Mat Jaggard
  */
 public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		implements MessageListenerContainer, ApplicationContextAware, BeanNameAware, DisposableBean,
@@ -1331,10 +1332,14 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			throw convertRabbitAccessException(ex);
 		}
 		finally {
-			synchronized (this.lifecycleMonitor) {
-				this.running = false;
-				this.lifecycleMonitor.notifyAll();
-			}
+			setNotRunning();
+		}
+	}
+
+	protected void setNotRunning() {
+		synchronized (this.lifecycleMonitor) {
+			this.running = false;
+			this.lifecycleMonitor.notifyAll();
 		}
 	}
 
@@ -1420,20 +1425,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			throw convertRabbitAccessException(ex);
 		}
 		finally {
-			synchronized (this.lifecycleMonitor) {
-				this.running = false;
-				this.lifecycleMonitor.notifyAll();
-			}
-		}
-	}
-
-	@Override
-	public void stop(Runnable callback) {
-		try {
-			stop();
-		}
-		finally {
-			callback.run();
+			setNotRunning();
 		}
 	}
 

@@ -611,7 +611,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	@Override
 	public void stop(Runnable callback) {
-		shutdownAndWaitOrCallback(callback);
+		shutdownAndWaitOrCallback(() -> {
+			setNotRunning();
+			callback.run();
+		});
 	}
 
 	private void shutdownAndWaitOrCallback(@Nullable Runnable callback) {
