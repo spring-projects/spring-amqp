@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 the original author or authors.
+ * Copyright 2015-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -350,7 +350,7 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	}
 
 	@Override
-	public void destroy() {
+	public void resetConnection() {
 		Exception lastException = null;
 		for (ConnectionFactory connectionFactory : this.nodeFactories.values()) {
 			if (connectionFactory instanceof DisposableBean) {
@@ -365,6 +365,11 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 		if (lastException != null) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(lastException);
 		}
+	}
+
+	@Override
+	public void destroy() {
+		resetConnection();
 	}
 
 }

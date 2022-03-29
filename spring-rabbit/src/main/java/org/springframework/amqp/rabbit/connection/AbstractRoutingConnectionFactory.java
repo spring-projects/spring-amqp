@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -38,7 +39,7 @@ import org.springframework.util.Assert;
  * @since 1.3
  */
 public abstract class AbstractRoutingConnectionFactory implements ConnectionFactory, RoutingConnectionFactory,
-		InitializingBean {
+		InitializingBean, DisposableBean {
 
 	private final Map<Object, ConnectionFactory> targetConnectionFactories =
 			new ConcurrentHashMap<Object, ConnectionFactory>();
@@ -259,5 +260,16 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	 */
 	@Nullable
 	protected abstract Object determineCurrentLookupKey();
+
+	@Override
+	public void destroy() {
+		resetConnection();
+	}
+
+	@Override
+	public void resetConnection() {
+		this.targetConnectionFactories.values().forEach(factory -> factory.resetConnection());
+		this.defaultTargetConnectionFactory.resetConnection();
+	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -882,6 +882,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 * used to force a reconnect to the primary broker after failing over to a secondary
 	 * broker.
 	 */
+	@Override
 	public void resetConnection() {
 		synchronized (this.connectionMonitor) {
 			if (this.connection.target != null) {
