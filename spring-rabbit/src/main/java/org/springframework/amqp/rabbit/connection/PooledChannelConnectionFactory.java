@@ -149,6 +149,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory im
 	 * used to force a reconnect to the primary broker after failing over to a secondary
 	 * broker.
 	 */
+	@Override
 	public void resetConnection() {
 		destroy();
 	}
