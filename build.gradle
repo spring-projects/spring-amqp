@@ -48,7 +48,7 @@ ext {
 	googleJsr305Version = '3.0.2'
 	hamcrestVersion = '2.2'
 	hibernateValidationVersion = '6.2.3.Final'
-	jacksonBomVersion = '2.13.2'
+	jacksonBomVersion = '2.13.2.20220328'
 	jaywayJsonPathVersion = '2.6.0'
 	junit4Version = '4.13.2'
 	junitJupiterVersion = '5.8.2'
