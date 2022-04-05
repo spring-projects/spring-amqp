@@ -364,7 +364,7 @@ A `ConnectionFactory` can be created quickly and conveniently by using the rabbi
 In most cases, this approach is preferable, since the framework can choose the best defaults for you.
 The created instance is a `CachingConnectionFactory`.
 Keep in mind that the default cache size for channels is 25.
-If you want more channels to be cachedm, set a larger value by setting the 'channelCacheSize' property.
+If you want more channels to be cached, set a larger value by setting the 'channelCacheSize' property.
 In XML it would look like as follows:
 
 ====
