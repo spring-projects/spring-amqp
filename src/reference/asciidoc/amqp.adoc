@@ -514,7 +514,7 @@ You can use this exception in the `RetryPolicy` to recover the operation after s
 ===== Configuring the Underlying Client Connection Factory
 
 The `CachingConnectionFactory` uses an instance of the Rabbit client `ConnectionFactory`.
-A number of configuration properties are passed through (`host, port, userName, password, requestedHeartBeat, and connectionTimeout` for example) when setting the equivalent property on the `CachingConnectionFactory`.
+A number of configuration properties are passed through (`host`, `port`, `userName`, `password`, `requestedHeartBeat`, and `connectionTimeout` for example) when setting the equivalent property on the `CachingConnectionFactory`.
 To set other properties (`clientProperties`, for example), you can define an instance of the Rabbit factory and provide a reference to it by using the appropriate constructor of the `CachingConnectionFactory`.
 When using the namespace (<<connections,as described earlier>>), you need to provide a reference to the configured factory in the `connection-factory` attribute.
 For convenience, a factory bean is provided to assist in configuring the connection factory in a Spring application context, as discussed in <<rabbitconnectionfactorybean-configuring-ssl,the next section>>.
