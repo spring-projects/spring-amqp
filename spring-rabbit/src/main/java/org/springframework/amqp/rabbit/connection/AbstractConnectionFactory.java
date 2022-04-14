@@ -212,7 +212,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	@Override
 	public void onApplicationEvent(ContextClosedEvent event) {
-		if (getApplicationContext().equals(event.getApplicationContext())) {
+		if (event.getApplicationContext().equals(getApplicationContext())) {
 			this.contextStopped = true;
 		}
 		if (this.publisherConnectionFactory != null) {
