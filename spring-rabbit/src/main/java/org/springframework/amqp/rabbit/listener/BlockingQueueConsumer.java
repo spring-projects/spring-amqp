@@ -554,7 +554,8 @@ public class BlockingQueueConsumer {
 					Connection connection = null; // NOSONAR - RabbitUtils
 					Channel channelForCheck = null;
 					try {
-						channelForCheck = this.connectionFactory.createConnection().createChannel(false);
+						connection = this.connectionFactory.createConnection();
+						channelForCheck = connection.createChannel(false);
 						channelForCheck.queueDeclarePassive(queueToCheck);
 						if (logger.isInfoEnabled()) {
 							logger.info("Queue '" + queueToCheck + "' is now available");
