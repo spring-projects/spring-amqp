@@ -1944,6 +1944,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	@Nullable
 	private Message doSendAndReceiveWithDirect(String exchange, String routingKey, Message message,
 			@Nullable CorrelationData correlationData) {
+
 		ConnectionFactory connectionFactory = obtainTargetConnectionFactory(
 				this.sendConnectionFactorySelectorExpression, message);
 		if (this.usePublisherConnection && connectionFactory.getPublisherConnectionFactory() != null) {
@@ -1957,7 +1958,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		boolean cancelConsumer = false;
 		try {
 			Channel channel = channelHolder.getChannel();
-			if (isPublisherConfirmsOrReturns(connectionFactory)) {
+			if (isPublisherConfirmsOrReturns(connectionFactory)) { // NOSONAR false positive NP dereference
 				addListener(channel);
 			}
 			Message reply = doSendAndReceiveAsListener(exchange, routingKey, message, correlationData, channel,
