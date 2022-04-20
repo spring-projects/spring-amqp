@@ -1079,7 +1079,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));
 	}
 
-	private ConnectionFactory obtainTargetConnectionFactory(Expression expression, Object rootObject) {
+	private ConnectionFactory obtainTargetConnectionFactory(Expression expression, @Nullable Object rootObject) {
 		if (expression != null && getConnectionFactory() instanceof AbstractRoutingConnectionFactory) {
 			AbstractRoutingConnectionFactory routingConnectionFactory =
 					(AbstractRoutingConnectionFactory) getConnectionFactory();
