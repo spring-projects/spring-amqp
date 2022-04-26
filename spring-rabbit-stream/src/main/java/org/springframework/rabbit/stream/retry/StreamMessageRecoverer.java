@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,27 +14,35 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.retry;
+package org.springframework.rabbit.stream.retry;
 
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.rabbit.retry.MessageRecoverer;
+
+import com.rabbitmq.stream.MessageHandler.Context;
 
 /**
  * Implementations of this interface can handle failed messages after retries are
  * exhausted.
  *
- * @author Dave Syer
  * @author Gary Russell
+ * @since 2.4.5
  *
  */
 @FunctionalInterface
-public interface MessageRecoverer {
+public interface StreamMessageRecoverer extends MessageRecoverer {
+
+	@Override
+	default void recover(Message message, Throwable cause) {
+	}
 
 	/**
 	 * Callback for message that was consumed but failed all retry attempts.
 	 *
-	 * @param message the message to recover
-	 * @param cause the cause of the error
+	 * @param message the message to recover.
+	 * @param context the context.
+	 * @param cause the cause of the error.
 	 */
-	void recover(Message message, Throwable cause);
+	void recover(com.rabbitmq.stream.Message message, Context context, Throwable cause);
 
 }

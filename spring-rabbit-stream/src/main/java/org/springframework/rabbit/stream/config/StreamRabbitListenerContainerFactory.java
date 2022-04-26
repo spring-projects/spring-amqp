@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2021-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,15 @@ package org.springframework.rabbit.stream.config;
 
 import java.lang.reflect.Method;
 
+import org.aopalliance.aop.Advice;
+
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.config.BaseRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.config.ContainerCustomizer;
 import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
+import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.rabbit.stream.listener.ConsumerCustomizer;
 import org.springframework.rabbit.stream.listener.StreamListenerContainer;
@@ -96,9 +99,10 @@ public class StreamRabbitListenerContainerFactory
 							});
 		}
 		StreamListenerContainer container = createContainerInstance();
-		if (this.consumerCustomizer != null) {
-			container.setConsumerCustomizer(this.consumerCustomizer);
-		}
+		Advice[] adviceChain = getAdviceChain();
+		JavaUtils.INSTANCE
+				.acceptIfNotNull(this.consumerCustomizer, container::setConsumerCustomizer)
+				.acceptIfNotNull(adviceChain, container::setAdviceChain);
 		applyCommonOverrides(endpoint, container);
 		if (this.containerCustomizer != null) {
 			this.containerCustomizer.configure(container);

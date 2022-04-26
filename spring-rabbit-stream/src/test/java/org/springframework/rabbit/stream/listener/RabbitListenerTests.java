@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2021-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 
@@ -30,6 +31,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -38,9 +40,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.rabbit.stream.config.StreamRabbitListenerContainerFactory;
 import org.springframework.rabbit.stream.producer.RabbitStreamTemplate;
+import org.springframework.rabbit.stream.retry.StreamRetryOperationsInterceptorFactoryBean;
 import org.springframework.rabbit.stream.support.StreamMessageProperties;
+import org.springframework.retry.interceptor.RetryOperationsInterceptor;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
@@ -64,15 +69,6 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 	@Autowired
 	Config config;
 
-//	@AfterAll - causes test to throw errors - need to investigate
-	static void deleteQueues() {
-		try (Environment environment = Config.environment()) {
-			environment.deleteStream("test.stream.queue1");
-			environment.deleteStream("test.stream.queue2");
-			environment.deleteStream("stream.created.over.amqp");
-		}
-	}
-
 	@Test
 	void simple(@Autowired RabbitStreamTemplate template) throws Exception {
 		Future<Boolean> future = template.convertAndSend("foo");
@@ -87,8 +83,8 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 		future = template.convertAndSend("bar", msg -> null);
 		assertThat(future.get(10, TimeUnit.SECONDS)).isFalse();
 		assertThat(this.config.latch1.await(10, TimeUnit.SECONDS)).isTrue();
-		assertThat(this.config.received).containsExactly("foo", "bar", "baz", "qux");
-		assertThat(this.config.id).isEqualTo("test");
+		assertThat(this.config.received).containsExactly("foo", "foo", "bar", "baz", "qux");
+		assertThat(this.config.id).isEqualTo("testNative");
 	}
 
 	@Test
@@ -97,6 +93,8 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 		assertThat(this.config.latch2.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.config.receivedNative).isNotNull();
 		assertThat(this.config.context).isNotNull();
+		assertThat(this.config.latch3.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.config.latch4.await(10, TimeUnit.SECONDS)).isTrue();
 	}
 
 	@Test
@@ -110,11 +108,17 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 	@EnableRabbit
 	public static class Config {
 
-		final CountDownLatch latch1 = new CountDownLatch(4);
+		final CountDownLatch latch1 = new CountDownLatch(5);
 
 		final CountDownLatch latch2 = new CountDownLatch(1);
 
+		final CountDownLatch latch3 = new CountDownLatch(3);
+
+		final CountDownLatch latch4 = new CountDownLatch(1);
+
 		final List<String> received = new ArrayList<>();
+
+		final AtomicBoolean first = new AtomicBoolean(true);
 
 		volatile Message receivedNative;
 
@@ -133,12 +137,23 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 		SmartLifecycle creator(Environment env) {
 			return new SmartLifecycle() {
 
+				boolean running;
+
 				@Override
 				public void stop() {
+					clean(env);
+					this.running = false;
 				}
 
 				@Override
 				public void start() {
+					clean(env);
+					env.streamCreator().stream("test.stream.queue1").create();
+					env.streamCreator().stream("test.stream.queue2").create();
+					this.running = true;
+				}
+
+				private void clean(Environment env) {
 					try {
 						env.deleteStream("test.stream.queue1");
 					}
@@ -149,47 +164,76 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 					}
 					catch (Exception e) {
 					}
-					env.streamCreator().stream("test.stream.queue1").create();
-					env.streamCreator().stream("test.stream.queue2").create();
+					try {
+						env.deleteStream("stream.created.over.amqp");
+					}
+					catch (Exception e) {
+					}
 				}
 
 				@Override
 				public boolean isRunning() {
-					return false;
+					return this.running;
 				}
 			};
 		}
 
 		@Bean
 		RabbitListenerContainerFactory<StreamListenerContainer> rabbitListenerContainerFactory(Environment env) {
-			return new StreamRabbitListenerContainerFactory(env);
+			StreamRabbitListenerContainerFactory factory = new StreamRabbitListenerContainerFactory(env);
+			factory.setAdviceChain(RetryInterceptorBuilder.stateless().build());
+			return factory;
 		}
 
 		@RabbitListener(queues = "test.stream.queue1")
 		void listen(String in) {
 			this.received.add(in);
 			this.latch1.countDown();
+			if (first.getAndSet(false)) {
+				throw new RuntimeException("fail first");
+			}
 		}
 
 		@Bean
-		RabbitListenerContainerFactory<StreamListenerContainer> nativeFactory(Environment env) {
+		public StreamRetryOperationsInterceptorFactoryBean sfb() {
+			StreamRetryOperationsInterceptorFactoryBean rfb = new StreamRetryOperationsInterceptorFactoryBean();
+			rfb.setStreamMessageRecoverer((msg, context, throwable) -> {
+				this.latch4.countDown();
+			});
+			return rfb;
+		}
+
+		@Bean
+		@DependsOn("sfb")
+		RabbitListenerContainerFactory<StreamListenerContainer> nativeFactory(Environment env,
+				RetryOperationsInterceptor retry) {
+
 			StreamRabbitListenerContainerFactory factory = new StreamRabbitListenerContainerFactory(env);
 			factory.setNativeListener(true);
 			factory.setConsumerCustomizer((id, builder) -> {
-				builder.name("myConsumer")
+				builder.name(id)
 						.offset(OffsetSpecification.first())
 						.manualTrackingStrategy();
-				this.id = id;
+				if (id.equals("testNative")) {
+					this.id = id;
+				}
 			});
+			factory.setAdviceChain(retry);
 			return factory;
 		}
 
-		@RabbitListener(id = "test", queues = "test.stream.queue2", containerFactory = "nativeFactory")
+		@RabbitListener(id = "testNative", queues = "test.stream.queue2", containerFactory = "nativeFactory")
 		void nativeMsg(Message in, Context context) {
 			this.receivedNative = in;
 			this.context = context;
 			this.latch2.countDown();
 			context.storeOffset();
+		}
+
+		@RabbitListener(id = "testNativeFail", queues = "test.stream.queue2", containerFactory = "nativeFactory")
+		void nativeMsgFail(Message in, Context context) {
+			this.latch3.countDown();
+			throw new RuntimeException("fail all");
 		}
 
 		@Bean

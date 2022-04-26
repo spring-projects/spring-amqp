@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 the original author or authors.
+ * Copyright 2014-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
-import org.springframework.lang.Nullable;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.util.Assert;
 import org.springframework.util.ErrorHandler;
@@ -85,8 +84,6 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	private Integer prefetchCount;
 
 	private Boolean globalQos;
-
-	private Advice[] adviceChain;
 
 	private BackOff recoveryBackOff;
 
@@ -180,23 +177,6 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	 */
 	public void setPrefetchCount(Integer prefetch) {
 		this.prefetchCount = prefetch;
-	}
-
-	/**
-	 * @return the advice chain that was set. Defaults to {@code null}.
-	 * @since 1.7.4
-	 */
-	@Nullable
-	public Advice[] getAdviceChain() {
-		return this.adviceChain == null ? null : Arrays.copyOf(this.adviceChain, this.adviceChain.length);
-	}
-
-	/**
-	 * @param adviceChain the advice chain to set.
-	 * @see AbstractMessageListenerContainer#setAdviceChain
-	 */
-	public void setAdviceChain(Advice... adviceChain) {
-		this.adviceChain = adviceChain == null ? null : Arrays.copyOf(adviceChain, adviceChain.length);
 	}
 
 	/**
@@ -354,6 +334,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		if (this.messageConverter != null && endpoint != null && endpoint.getMessageConverter() == null) {
 			endpoint.setMessageConverter(this.messageConverter);
 		}
+		Advice[] adviceChain = getAdviceChain();
 		javaUtils
 			.acceptIfNotNull(this.acknowledgeMode, instance::setAcknowledgeMode)
 			.acceptIfNotNull(this.channelTransacted, instance::setChannelTransacted)
@@ -363,7 +344,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 			.acceptIfNotNull(this.prefetchCount, instance::setPrefetchCount)
 			.acceptIfNotNull(this.globalQos, instance::setGlobalQos)
 			.acceptIfNotNull(getDefaultRequeueRejected(), instance::setDefaultRequeueRejected)
-			.acceptIfNotNull(this.adviceChain, instance::setAdviceChain)
+			.acceptIfNotNull(adviceChain, instance::setAdviceChain)
 			.acceptIfNotNull(this.recoveryBackOff, instance::setRecoveryBackOff)
 			.acceptIfNotNull(this.mismatchedQueuesFatal, instance::setMismatchedQueuesFatal)
 			.acceptIfNotNull(this.missingQueuesFatal, instance::setMissingQueuesFatal)
