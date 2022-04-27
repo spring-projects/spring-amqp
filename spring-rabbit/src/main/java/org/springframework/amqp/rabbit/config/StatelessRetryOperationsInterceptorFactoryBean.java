@@ -46,7 +46,7 @@ import org.springframework.retry.support.RetryTemplate;
  */
 public class StatelessRetryOperationsInterceptorFactoryBean extends AbstractRetryOperationsInterceptorFactoryBean {
 
-	private static Log logger = LogFactory.getLog(StatelessRetryOperationsInterceptorFactoryBean.class);
+	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR
 
 	@Override
 	public RetryOperationsInterceptor getObject() {
@@ -63,21 +63,23 @@ public class StatelessRetryOperationsInterceptorFactoryBean extends AbstractRetr
 	}
 
 	@SuppressWarnings("unchecked")
-	private MethodInvocationRecoverer<?> createRecoverer() {
-		return (args, cause) -> {
-			MessageRecoverer messageRecoverer = getMessageRecoverer();
-			Object arg = args[1];
-			if (messageRecoverer == null) {
-				logger.warn("Message(s) dropped on recovery: " + arg, cause);
-			}
-			else if (arg instanceof Message) {
-				messageRecoverer.recover((Message) arg, cause);
-			}
-			else if (arg instanceof List && messageRecoverer instanceof MessageBatchRecoverer) {
-				((MessageBatchRecoverer) messageRecoverer).recover((List<Message>) arg, cause);
-			}
-			return null;
-		};
+	protected MethodInvocationRecoverer<?> createRecoverer() {
+		return this::recover;
+	}
+
+	protected Object recover(Object[] args, Throwable cause) {
+		MessageRecoverer messageRecoverer = getMessageRecoverer();
+		Object arg = args[1];
+		if (messageRecoverer == null) {
+			this.logger.warn("Message(s) dropped on recovery: " + arg, cause);
+		}
+		else if (arg instanceof Message) {
+			messageRecoverer.recover((Message) arg, cause);
+		}
+		else if (arg instanceof List && messageRecoverer instanceof MessageBatchRecoverer) {
+			((MessageBatchRecoverer) messageRecoverer).recover((List<Message>) arg, cause);
+		}
+		return null;
 	}
 
 	@Override
