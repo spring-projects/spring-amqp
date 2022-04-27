@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2021-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,10 @@ package org.springframework.amqp.rabbit.config;
 
 import java.util.Arrays;
 
+import org.aopalliance.aop.Advice;
+
 import org.springframework.amqp.core.MessagePostProcessor;
+import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
@@ -48,6 +51,8 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	private RetryTemplate retryTemplate;
 
 	private RecoveryCallback<?> recoveryCallback;
+
+	private Advice[] adviceChain;
 
 	@Override
 	public abstract C createListenerContainer(RabbitListenerEndpoint endpoint);
@@ -127,6 +132,23 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 				messageListener.setConverterWinsContentType(endpoint.isConverterWinsContentType());
 			}
 		}
+	}
+
+	/**
+	 * @return the advice chain that was set. Defaults to {@code null}.
+	 * @since 1.7.4
+	 */
+	@Nullable
+	public Advice[] getAdviceChain() {
+		return this.adviceChain == null ? null : Arrays.copyOf(this.adviceChain, this.adviceChain.length);
+	}
+
+	/**
+	 * @param adviceChain the advice chain to set.
+	 * @see AbstractMessageListenerContainer#setAdviceChain
+	 */
+	public void setAdviceChain(Advice... adviceChain) {
+		this.adviceChain = adviceChain == null ? null : Arrays.copyOf(adviceChain, adviceChain.length);
 	}
 
 }

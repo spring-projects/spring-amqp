@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2021-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.rabbit.stream.listener;
 
+import org.aopalliance.aop.Advice;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -23,6 +24,8 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
+import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.lang.Nullable;
 import org.springframework.rabbit.stream.support.StreamMessageProperties;
@@ -61,6 +64,10 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	private boolean autoStartup = true;
 
 	private MessageListener messageListener;
+
+	private StreamMessageListener streamListener;
+
+	private Advice[] adviceChain;
 
 	/**
 	 * Construct an instance using the provided environment.
@@ -154,6 +161,18 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	public boolean isAutoStartup() {
 		return this.autoStartup;
 	}
+
+	/**
+	 * Set an advice chain to apply to the listener.
+	 * @param advices the advice chain.
+	 * @since 2.4.5
+	 */
+	public void setAdviceChain(Advice... advices) {
+		Assert.notNull(advices, "'advices' cannot be null");
+		Assert.noNullElements(advices, "'advices' cannot have null elements");
+		this.adviceChain = advices;
+	}
+
 	@Override
 	@Nullable
 	public Object getMessageListener() {
@@ -183,26 +202,46 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 
 	@Override
 	public void setupMessageListener(MessageListener messageListener) {
-		this.messageListener = messageListener;
+		adviseIfNeeded(messageListener);
 		this.builder.messageHandler((context, message) -> {
-			if (messageListener instanceof StreamMessageListener) {
-				((StreamMessageListener) messageListener).onStreamMessage(message, context);
+			if (this.streamListener != null) {
+				this.streamListener.onStreamMessage(message, context);
 			}
 			else {
 				Message message2 = this.streamConverter.toMessage(message, new StreamMessageProperties(context));
-				if (messageListener instanceof ChannelAwareMessageListener) {
+				if (this.messageListener instanceof ChannelAwareMessageListener) {
 					try {
-						((ChannelAwareMessageListener) messageListener).onMessage(message2, null);
+						((ChannelAwareMessageListener) this.messageListener).onMessage(message2, null);
 					}
 					catch (Exception e) { // NOSONAR
 						this.logger.error("Listner threw an exception", e);
 					}
 				}
 				else {
-					messageListener.onMessage(message2);
+					this.messageListener.onMessage(message2);
 				}
 			}
 		});
+	}
+
+	private void adviseIfNeeded(MessageListener messageListener) {
+		this.messageListener = messageListener;
+		if (messageListener instanceof StreamMessageListener) {
+			this.streamListener = (StreamMessageListener) messageListener;
+		}
+		if (this.adviceChain != null && this.adviceChain.length > 0) {
+			ProxyFactory factory = new ProxyFactory(messageListener);
+			for (Advice advice : this.adviceChain) {
+				factory.addAdvisor(new DefaultPointcutAdvisor(advice));
+			}
+			factory.setInterfaces(messageListener.getClass().getInterfaces());
+			if (this.streamListener != null) {
+				this.streamListener = (StreamMessageListener) factory.getProxy(getClass().getClassLoader());
+			}
+			else {
+				this.messageListener = (MessageListener) factory.getProxy(getClass().getClassLoader());
+			}
+		}
 	}
 
 }

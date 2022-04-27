@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2021-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 import org.springframework.amqp.rabbit.listener.adapter.InvocationResult;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
+import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.rabbit.stream.listener.StreamMessageListener;
 
 import com.rabbitmq.stream.Message;
@@ -60,7 +61,7 @@ public class StreamMessageListenerAdapter extends MessagingMessageListenerAdapte
 			}
 		}
 		catch (Exception ex) {
-			this.logger.error("Failed to invoke listener", ex);
+			throw new ListenerExecutionFailedException("Failed to invoke listener", ex);
 		}
 	}
 

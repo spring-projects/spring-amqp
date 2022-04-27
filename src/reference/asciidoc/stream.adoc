@@ -136,3 +136,24 @@ void nativeMsg(Message in, Context context) {
 }
 ----
 ====
+
+Version 2.4.5 added the `adviceChain` property to the `StreamListenerContainer` (and its factory).
+A new factory bean is also provided to create a stateless retry interceptor with an optional `StreamMessageRecoverer` for use when consuming raw stream messages.
+
+====
+[source, java]
+----
+@Bean
+public StreamRetryOperationsInterceptorFactoryBean sfb(RetryTemplate retryTemplate) {
+    StreamRetryOperationsInterceptorFactoryBean rfb =
+            new StreamRetryOperationsInterceptorFactoryBean();
+    rfb.setRetryOperations(retryTemplate);
+    rfb.setStreamMessageRecoverer((msg, context, throwable) -> {
+        ...
+    });
+    return rfb;
+}
+----
+====
+
+IMPORTANT: Stateful retry is not supported with this container.
