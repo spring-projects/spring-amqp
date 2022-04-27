@@ -165,6 +165,7 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	/**
 	 * Set an advice chain to apply to the listener.
 	 * @param advices the advice chain.
+	 * @since 2.4.5
 	 */
 	public void setAdviceChain(Advice... advices) {
 		Assert.notNull(advices, "'advices' cannot be null");
