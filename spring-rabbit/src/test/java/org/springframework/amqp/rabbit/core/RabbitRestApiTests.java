@@ -17,8 +17,10 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.awaitility.Awaitility.await;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -29,6 +31,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
@@ -217,7 +220,12 @@ public class RabbitRestApiTests {
 		assertThat(exchangeToAssert.getName()).isEqualTo(testExchange.getName());
 		assertThat(exchangeToAssert.getType()).isEqualTo(testExchange.getType());
 		this.rabbitRestClient.deleteExchange("/", testExchange.getName());
-		assertThat(this.rabbitRestClient.getExchange("/", exchangeName)).isNull();
+		// 6.0.0 REST compatibility
+//		assertThat(this.rabbitRestClient.getExchange("/", exchangeName)).isNull();
+		RabbitTemplate template = new RabbitTemplate(this.connectionFactory);
+		assertThatExceptionOfType(AmqpException.class)
+				.isThrownBy(() -> template.execute(channel -> channel.exchangeDeclarePassive(exchangeName)))
+				.withCauseExactlyInstanceOf(IOException.class);
 	}
 
 }

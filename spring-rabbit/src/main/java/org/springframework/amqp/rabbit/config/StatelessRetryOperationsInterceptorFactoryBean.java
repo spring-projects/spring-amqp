@@ -67,6 +67,7 @@ public class StatelessRetryOperationsInterceptorFactoryBean extends AbstractRetr
 		return this::recover;
 	}
 
+	@SuppressWarnings("unchecked")
 	protected Object recover(Object[] args, Throwable cause) {
 		MessageRecoverer messageRecoverer = getMessageRecoverer();
 		Object arg = args[1];
