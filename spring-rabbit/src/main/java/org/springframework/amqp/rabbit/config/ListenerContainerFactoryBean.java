@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
@@ -60,6 +61,8 @@ import org.springframework.util.backoff.BackOff;
  */
 public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMessageListenerContainer>
 		implements ApplicationContextAware, BeanNameAware, ApplicationEventPublisherAware, SmartLifecycle {
+
+	private final Map<String, String> micrometerTags = new HashMap<>();
 
 	private ApplicationContext applicationContext;
 
@@ -170,6 +173,12 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 	private Long retryDeclarationInterval;
 
 	private Boolean consumerBatchEnabled;
+
+	private Boolean micrometerEnabled;
+
+	private ContainerCustomizer<SimpleMessageListenerContainer> smlcCustomizer;
+
+	private ContainerCustomizer<DirectMessageListenerContainer> dmlcCustomizer;
 
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
@@ -427,6 +436,44 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 		this.retryDeclarationInterval = retryDeclarationInterval;
 	}
 
+	/**
+	 * Set to false to disable micrometer listener timers.
+	 * @param micrometerEnabled false to disable.
+	 * @since 2.4.6
+	 */
+	public void setMicrometerEnabled(boolean enabled) {
+		this.micrometerEnabled = enabled;
+	}
+
+	/**
+	 * Set additional tags for the Micrometer listener timers.
+	 * @param tags the tags.
+	 * @since 2.4.6
+	 */
+	public void setMicrometerTags(Map<String, String> tags) {
+		this.micrometerTags.putAll(tags);
+	}
+
+	/**
+	 * Set a {@link ContainerCustomizer} that is invoked after a container is created and
+	 * configured to enable further customization of the container.
+	 * @param containerCustomizer the customizer.
+	 * @since 2.4.6
+	 */
+	public void setSMLCCustomizer(ContainerCustomizer<SimpleMessageListenerContainer> customizer) {
+		this.smlcCustomizer = customizer;
+	}
+
+	/**
+	 * Set a {@link ContainerCustomizer} that is invoked after a container is created and
+	 * configured to enable further customization of the container.
+	 * @param containerCustomizer the customizer.
+	 * @since 2.4.6
+	 */
+	public void setDMLCCustomizer(ContainerCustomizer<DirectMessageListenerContainer> customizer) {
+		this.dmlcCustomizer = customizer;
+	}
+
 	@Override
 	public Class<?> getObjectType() {
 		return this.listenerContainer == null
@@ -478,7 +525,16 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 					.acceptIfNotNull(this.autoDeclare, container::setAutoDeclare)
 					.acceptIfNotNull(this.failedDeclarationRetryInterval, container::setFailedDeclarationRetryInterval)
 					.acceptIfNotNull(this.exclusiveConsumerExceptionLogger,
-							container::setExclusiveConsumerExceptionLogger);
+							container::setExclusiveConsumerExceptionLogger)
+					.acceptIfNotNull(this.micrometerEnabled, container::setMicrometerEnabled)
+					.acceptIfCondition(this.micrometerTags.size() > 0, this.micrometerTags,
+							container::setMicrometerTags);
+			if (this.smlcCustomizer != null && this.type.equals(Type.simple)) {
+				this.smlcCustomizer.configure((SimpleMessageListenerContainer) container);
+			}
+			else if (this.dmlcCustomizer != null && this.type.equals(Type.direct)) {
+				this.dmlcCustomizer.configure((DirectMessageListenerContainer) container);
+			}
 			container.afterPropertiesSet();
 			this.listenerContainer = container;
 		}
