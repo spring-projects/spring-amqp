@@ -22,6 +22,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.ApplicationContext;
@@ -54,16 +55,19 @@ final class MicrometerHolder {
 		if (context == null) {
 			throw new IllegalStateException("No micrometer registry present");
 		}
-		Map<String, MeterRegistry> registries = context.getBeansOfType(MeterRegistry.class, false, false);
-		registries = filterRegistries(registries, context);
-		if (registries.size() == 1) {
-			this.registry = registries.values().iterator().next();
+		try {
+			this.registry = context.getBeanProvider(MeterRegistry.class).getIfUnique();
+		}
+		catch (NoUniqueBeanDefinitionException ex) {
+			throw new IllegalStateException(ex);
+		}
+		if (this.registry != null) {
 			this.listenerId = listenerId;
 			this.tags = tags;
 		}
 		else {
 			throw new IllegalStateException("No micrometer registry present (or more than one and "
-					+ "not one marked with @Primary)");
+					+ "there is not exactly one marked with @Primary)");
 		}
 	}
 

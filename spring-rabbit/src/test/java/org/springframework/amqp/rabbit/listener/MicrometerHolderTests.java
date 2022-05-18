@@ -45,15 +45,14 @@ public class MicrometerHolderTests {
 		ApplicationContext context = new AnnotationConfigApplicationContext(Config1.class);
 		assertThatIllegalStateException().isThrownBy(() -> new MicrometerHolder(context, "", Collections.emptyMap()))
 				.withMessage("No micrometer registry present (or more than one and "
-						+ "not one marked with @Primary)");
+						+ "there is not exactly one marked with @Primary)");
 	}
 
 	@Test
 	void twoPrimaries() {
 		ApplicationContext context = new AnnotationConfigApplicationContext(Config2.class);
 		assertThatIllegalStateException().isThrownBy(() -> new MicrometerHolder(context, "", Collections.emptyMap()))
-				.withMessage("No micrometer registry present (or more than one and "
-					+ "not one marked with @Primary)");
+				.withMessageContaining("more than one 'primary' bean");
 	}
 
 	@Test
