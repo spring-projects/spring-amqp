@@ -16,17 +16,12 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import java.util.Collections;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.lang.Nullable;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -68,37 +63,6 @@ final class MicrometerHolder {
 		else {
 			throw new IllegalStateException("No micrometer registry present (or more than one and "
 					+ "there is not exactly one marked with @Primary)");
-		}
-	}
-
-	private Map<String, MeterRegistry> filterRegistries(Map<String, MeterRegistry> registries,
-			ApplicationContext context) {
-
-		if (registries.size() == 1) {
-			return registries;
-		}
-		MeterRegistry primary = null;
-		if (context instanceof ConfigurableApplicationContext) {
-			BeanDefinitionRegistry bdr = (BeanDefinitionRegistry) ((ConfigurableApplicationContext) context)
-					.getBeanFactory();
-			for (Entry<String, MeterRegistry> entry : registries.entrySet()) {
-				BeanDefinition beanDefinition = bdr.getBeanDefinition(entry.getKey());
-				if (beanDefinition.isPrimary()) {
-					if (primary != null) {
-						primary = null;
-						break;
-					}
-					else {
-						primary = entry.getValue();
-					}
-				}
-			}
-		}
-		if (primary != null) {
-			return Collections.singletonMap("primary", primary);
-		}
-		else {
-			return registries;
 		}
 	}
 
