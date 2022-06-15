@@ -865,6 +865,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		consumer.setBackOffExecution(getRecoveryBackOff().start());
 		consumer.setShutdownTimeout(getShutdownTimeout());
 		consumer.setApplicationEventPublisher(getApplicationEventPublisher());
+		consumer.setMessageAckListener(getMessageAckListener());
 		return consumer;
 	}
 
@@ -1044,7 +1045,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			executeWithList(channel, messages, deliveryTag, consumer);
 		}
 
-		return consumer.commitIfNecessary(isChannelLocallyTransacted(), getMessageAckListener());
+		return consumer.commitIfNecessary(isChannelLocallyTransacted());
 
 	}
 

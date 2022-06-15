@@ -327,9 +327,10 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	}
 
 	/**
-	 * Set a {@link MessageAckListener} to use when ack a message(messages) in {@link AcknowledgeMode#AUTO} mode.
+	 * Set a {@link MessageAckListener} to use when ack a message(messages) in
+	 * {@link AcknowledgeMode#AUTO} mode.
 	 * @param messageAckListener the messageAckListener.
-	 * @see AbstractMessageListenerContainer#setMessageAckListener(MessageAckListener)
+	 * @since 2.4.6
 	 */
 	public void setMessageAckListener(MessageAckListener messageAckListener) {
 		this.messageAckListener = messageAckListener;

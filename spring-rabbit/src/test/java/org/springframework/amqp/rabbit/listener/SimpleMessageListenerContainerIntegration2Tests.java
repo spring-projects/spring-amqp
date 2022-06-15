@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -693,18 +693,15 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		this.container = createContainer((ChannelAwareMessageListener) (m, c) -> {
 		}, false, this.queue.getName());
 		this.container.setAcknowledgeMode(AcknowledgeMode.AUTO);
+		this.container.setMessageAckListener((success, deliveryTag, cause) -> {
+			calledTimes.incrementAndGet();
+			ackDeliveryTag.set(deliveryTag);
+			ackSuccess.set(success);
+			ackCause.set(cause);
+			latch.countDown();
+		});
 		this.container.afterPropertiesSet();
 		this.container.start();
-		this.container.setMessageAckListener(new MessageAckListener() {
-			@Override
-			public void onComplete(boolean success, long deliveryTag, Throwable cause) throws Exception {
-				calledTimes.incrementAndGet();
-				ackDeliveryTag.set(deliveryTag);
-				ackSuccess.set(success);
-				ackCause.set(cause);
-				latch.countDown();
-			}
-		});
 		int messageCount = 5;
 		for (int i = 0; i < messageCount; i++) {
 			this.template.convertAndSend(this.queue.getName(), "foo");
@@ -729,18 +726,15 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		this.container.setBatchSize(5);
 		this.container.setConsumerBatchEnabled(true);
 		this.container.setAcknowledgeMode(AcknowledgeMode.AUTO);
+		this.container.setMessageAckListener((success, deliveryTag, cause) -> {
+			calledTimes.incrementAndGet();
+			ackDeliveryTag.set(deliveryTag);
+			ackSuccess.set(success);
+			ackCause.set(cause);
+			latch.countDown();
+		});
 		this.container.afterPropertiesSet();
 		this.container.start();
-		this.container.setMessageAckListener(new MessageAckListener() {
-			@Override
-			public void onComplete(boolean success, long deliveryTag, Throwable cause) throws Exception {
-				calledTimes.incrementAndGet();
-				ackDeliveryTag.set(deliveryTag);
-				ackSuccess.set(success);
-				ackCause.set(cause);
-				latch.countDown();
-			}
-		});
 		int messageCount = 5;
 		for (int i = 0; i < messageCount; i++) {
 			this.template.convertAndSend(this.queue.getName(), "foo");

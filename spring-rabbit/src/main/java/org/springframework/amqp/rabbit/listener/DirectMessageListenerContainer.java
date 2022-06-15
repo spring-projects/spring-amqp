@@ -1195,7 +1195,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		 * @param now the current time.
 		 * @throws IOException if one occurs.
 		 */
-		synchronized void ackIfNecessary(long now) throws Exception {
+		synchronized void ackIfNecessary(long now) throws Exception { // NOSONAR
 			if (this.pendingAcks >= this.messagesPerAck || (
 					this.pendingAcks > 0 && (now - this.lastAck > this.ackTimeout || this.canceled))) {
 				sendAck(now);
@@ -1227,7 +1227,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 
-		protected synchronized void sendAck(long now) throws Exception {
+		protected synchronized void sendAck(long now) throws Exception { // NOSONAR
 			sendAckWithNotify(this.latestDeferredDeliveryTag, true);
 			this.lastAck = now;
 			this.pendingAcks = 0;
@@ -1238,14 +1238,15 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		 * @param deliveryTag DeliveryTag of this ack.
 		 * @param multiple Whether multiple ack.
 		 * @throws Exception Occured when ack.
+		 * @Since 2.4.6
 		 */
-		private void sendAckWithNotify(long deliveryTag, boolean multiple) throws Exception {
+		private void sendAckWithNotify(long deliveryTag, boolean multiple) throws Exception { // NOSONAR
 			try {
 				getChannel().basicAck(deliveryTag, multiple);
-				notifyMessageAckListener(getMessageAckListener(), true, deliveryTag, null);
+				notifyMessageAckListener(true, deliveryTag, null);
 			}
 			catch (Exception e) {
-				notifyMessageAckListener(getMessageAckListener(), false, deliveryTag, e);
+				notifyMessageAckListener(false, deliveryTag, e);
 				throw e;
 			}
 		}
@@ -1256,16 +1257,11 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		 * @param success Whether ack succeeded.
 		 * @param deliveryTag The deliveryTag of ack.
 		 * @param cause If an exception occurs.
+		 * @since 2.4.6
 		 */
-		private void notifyMessageAckListener(@Nullable MessageAckListener messageAckListener,
-											  boolean success,
-											  long deliveryTag,
-											  @Nullable Throwable cause) {
-			if (messageAckListener == null) {
-				return;
-			}
+		private void notifyMessageAckListener(boolean success, long deliveryTag, @Nullable Throwable cause) {
 			try {
-				messageAckListener.onComplete(success, deliveryTag, cause);
+				getMessageAckListener().onComplete(success, deliveryTag, cause);
 			}
 			catch (Exception e) {
 				this.logger.error("An exception occured on MessageAckListener.", e);

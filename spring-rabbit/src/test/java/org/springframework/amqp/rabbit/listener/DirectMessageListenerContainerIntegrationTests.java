@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2021 the original author or authors.
+ * Copyright 2016-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -739,15 +739,12 @@ public class DirectMessageListenerContainerIntegrationTests {
 			public void onMessage(Message message) {
 			}
 		});
-		container.setMessageAckListener(new MessageAckListener() {
-			@Override
-			public void onComplete(boolean success, long deliveryTag, Throwable cause) throws Exception {
-				calledTimes.incrementAndGet();
-				ackDeliveryTag.set(deliveryTag);
-				ackSuccess.set(success);
-				ackCause.set(cause);
-				latch.countDown();
-			}
+		container.setMessageAckListener((success, deliveryTag, cause) -> {
+			calledTimes.incrementAndGet();
+			ackDeliveryTag.set(deliveryTag);
+			ackSuccess.set(success);
+			ackCause.set(cause);
+			latch.countDown();
 		});
 		container.start();
 		RabbitTemplate rabbitTemplate = new RabbitTemplate(cf);
@@ -779,15 +776,12 @@ public class DirectMessageListenerContainerIntegrationTests {
 				cf.resetConnection();
 			}
 		});
-		container.setMessageAckListener(new MessageAckListener() {
-			@Override
-			public void onComplete(boolean success, long deliveryTag, Throwable cause) throws Exception {
-				called.set(true);
-				ackDeliveryTag.set(deliveryTag);
-				ackSuccess.set(success);
-				ackCause.set(cause);
-				latch.countDown();
-			}
+		container.setMessageAckListener((success, deliveryTag, cause) -> {
+			called.set(true);
+			ackDeliveryTag.set(deliveryTag);
+			ackSuccess.set(success);
+			ackCause.set(cause);
+			latch.countDown();
 		});
 		container.start();
 		new RabbitTemplate(cf).convertAndSend(Q1, "foo");
@@ -813,15 +807,12 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.setMessagesPerAck(messageCount);
 		container.setMessageListener(message -> {
 		});
-		container.setMessageAckListener(new MessageAckListener() {
-			@Override
-			public void onComplete(boolean success, long deliveryTag, Throwable cause) throws Exception {
-				calledTimes.incrementAndGet();
-				ackDeliveryTag.set(deliveryTag);
-				ackSuccess.set(success);
-				ackCause.set(cause);
-				latch.countDown();
-			}
+		container.setMessageAckListener((success, deliveryTag, cause) -> {
+			calledTimes.incrementAndGet();
+			ackDeliveryTag.set(deliveryTag);
+			ackSuccess.set(success);
+			ackCause.set(cause);
+			latch.countDown();
 		});
 		container.start();
 		RabbitTemplate rabbitTemplate = new RabbitTemplate(cf);

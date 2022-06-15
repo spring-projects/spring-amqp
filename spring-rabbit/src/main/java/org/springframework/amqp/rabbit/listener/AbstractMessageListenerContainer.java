@@ -252,7 +252,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private boolean asyncReplies;
 
-	private MessageAckListener messageAckListener;
+	private MessageAckListener messageAckListener = (success, deliveryTag, cause) -> { };
 
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
@@ -1191,8 +1191,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
-	 * Set a {@link MessageAckListener} to use when ack a message(messages) in {@link AcknowledgeMode#AUTO} mode.
+	 * Set a {@link MessageAckListener} to use when ack a message(messages) in
+	 * {@link AcknowledgeMode#AUTO} mode.
 	 * @param messageAckListener the messageAckListener.
+	 * @since 2.4.6
 	 * @see MessageAckListener
 	 * @see AcknowledgeMode
 	 */
