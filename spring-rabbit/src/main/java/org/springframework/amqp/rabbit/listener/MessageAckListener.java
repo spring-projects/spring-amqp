@@ -23,7 +23,7 @@ import org.springframework.lang.Nullable;
  * A listener for message ack when using {@link AcknowledgeMode#AUTO}.
  *
  * @author Cao Weibo
- * @see AbstractMessageListenerContainer#setMessageAckListener(MessageAckListener)
+ * @since 2.4.6
  */
 @FunctionalInterface
 public interface MessageAckListener {

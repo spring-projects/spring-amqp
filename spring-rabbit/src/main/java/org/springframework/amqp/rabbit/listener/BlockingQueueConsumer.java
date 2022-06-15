@@ -65,6 +65,7 @@ import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.lang.Nullable;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.backoff.BackOffExecution;
 
@@ -173,6 +174,8 @@ public class BlockingQueueConsumer {
 
 	volatile boolean declaring; // NOSONAR package protected
 
+	private MessageAckListener messageAckListener;
+
 	/**
 	 * Create a consumer. The consumer must not attempt to use
 	 * the connection factory or communicate with the broker
@@ -189,6 +192,7 @@ public class BlockingQueueConsumer {
 			MessagePropertiesConverter messagePropertiesConverter,
 			ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter, AcknowledgeMode acknowledgeMode,
 			boolean transactional, int prefetchCount, String... queues) {
+
 		this(connectionFactory, messagePropertiesConverter, activeObjectCounter,
 				acknowledgeMode, transactional, prefetchCount, true, queues);
 	}
@@ -397,6 +401,17 @@ public class BlockingQueueConsumer {
 	 */
 	public void setConsumeDelay(long consumeDelay) {
 		this.consumeDelay = consumeDelay;
+	}
+
+	/**
+	 * Set a {@link MessageAckListener} to use when ack a message(messages) in
+	 * {@link AcknowledgeMode#AUTO} mode.
+	 * @param messageAckListener the messageAckListener.
+	 * @since 2.4.6
+	 */
+	public void setMessageAckListener(MessageAckListener messageAckListener) {
+		Assert.notNull(messageAckListener, "'messageAckListener' cannot be null");
+		this.messageAckListener = messageAckListener;
 	}
 
 	/**
@@ -841,7 +856,7 @@ public class BlockingQueueConsumer {
 	 * @return true if at least one delivery tag exists.
 	 * @throws IOException Any IOException.
 	 */
-	public boolean commitIfNecessary(boolean localTx, MessageAckListener messageAckListener) throws IOException {
+	public boolean commitIfNecessary(boolean localTx) throws IOException {
 		if (this.deliveryTags.isEmpty()) {
 			return false;
 		}
@@ -860,11 +875,11 @@ public class BlockingQueueConsumer {
 				long deliveryTag = new ArrayList<Long>(this.deliveryTags).get(this.deliveryTags.size() - 1);
 				try {
 					this.channel.basicAck(deliveryTag, true);
-					notifyMessageAckListener(messageAckListener, true, deliveryTag, null);
+					notifyMessageAckListener(true, deliveryTag, null);
 				}
 				catch (Exception e) {
 					logger.error("Error acking.", e);
-					notifyMessageAckListener(messageAckListener, false, deliveryTag, e);
+					notifyMessageAckListener(false, deliveryTag, e);
 				}
 			}
 
@@ -883,24 +898,18 @@ public class BlockingQueueConsumer {
 	}
 
 	/**
-	 * Notify MessageAckListener set on the relevant message listener.
-	 * @param messageAckListener MessageAckListener set on the message listener.
+	 * Notify MessageAckListener set on message listener.
 	 * @param success Whether ack succeeded.
 	 * @param deliveryTag The deliveryTag of ack.
 	 * @param cause If an exception occurs.
+	 * @since 2.4.6
 	 */
-	private void notifyMessageAckListener(@Nullable MessageAckListener messageAckListener,
-										  boolean success,
-										  long deliveryTag,
-										  @Nullable Throwable cause) {
-		if (messageAckListener == null) {
-			return;
-		}
+	private void notifyMessageAckListener(boolean success, long deliveryTag, @Nullable Throwable cause) {
 		try {
-			messageAckListener.onComplete(success, deliveryTag, cause);
+			this.messageAckListener.onComplete(success, deliveryTag, cause);
 		}
 		catch (Exception e) {
-			logger.error("An exception occured on MessageAckListener.", e);
+			logger.error("An exception occured in MessageAckListener.", e);
 		}
 	}
 
