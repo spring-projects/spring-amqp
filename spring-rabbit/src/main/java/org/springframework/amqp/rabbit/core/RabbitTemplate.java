@@ -1222,7 +1222,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			}
 			return null;
 		}, obtainTargetConnectionFactory(this.receiveConnectionFactorySelectorExpression, queueName));
-		logReceived(message);
+		logReceived("Received: ", message);
 		return message;
 	}
 
@@ -1261,7 +1261,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				return buildMessageFromDelivery(delivery);
 			}
 		}, obtainTargetConnectionFactory(this.receiveConnectionFactorySelectorExpression, null));
-		logReceived(message);
+		logReceived("Received: ", message);
 		return message;
 	}
 
@@ -1412,7 +1412,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				receiveMessage = buildMessageFromDelivery(delivery);
 			}
 		}
-		logReceived(receiveMessage);
+		logReceived("Received: ", receiveMessage);
 		return receiveMessage;
 	}
 
@@ -1467,12 +1467,21 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		return delivery;
 	}
 
-	private void logReceived(@Nullable Message message) {
-		if (message == null) {
-			logger.debug("Received no message");
-		}
-		else if (logger.isDebugEnabled()) {
-			logger.debug("Received: " + message);
+	/**
+	 * Log a received message. The default implementation logs the full message at DEBUG
+	 * level. Override this method to change that behavior.
+	 * @param prefix a prefix, e.g. "Received: " or "Reply: ".
+	 * @param message the message.
+	 * @since 2.4.6
+	 */
+	protected void logReceived(String prefix, @Nullable Message message) {
+		if (logger.isDebugEnabled()) {
+			if (message == null) {
+				logger.debug(prefix + "no message");
+			}
+			else {
+				logger.debug(prefix + message);
+			}
 		}
 	}
 
@@ -2091,9 +2100,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 		doSend(channel, exchange, routingKey, message, mandatory, correlationData);
 		reply = this.replyTimeout < 0 ? pendingReply.get() : pendingReply.get(this.replyTimeout, TimeUnit.MILLISECONDS);
-		if (this.logger.isDebugEnabled()) {
-			this.logger.debug("Reply: " + reply);
-		}
+		logReceived("Reply: ", reply);
 		if (reply == null) {
 			replyTimedOut(message.getMessageProperties().getCorrelationId());
 		}
