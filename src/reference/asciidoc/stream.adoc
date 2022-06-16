@@ -157,3 +157,27 @@ public StreamRetryOperationsInterceptorFactoryBean sfb(RetryTemplate retryTempla
 ====
 
 IMPORTANT: Stateful retry is not supported with this container.
+
+==== Super Streams
+
+A Super Stream is an abstract concept for a partitioned stream, implemented by binding a number of stream queues to an exchange having an argument `x-super-stream: true`.
+
+===== Provisioning
+
+For convenience, a super stream can be provisioned by defining a single bean of type `SuperStream`.
+
+====
+[source, java]
+----
+@Bean
+SuperStream superStream() {
+    return new SuperStream("my.super.stream", 3);
+}
+----
+====
+
+The `RabbitAdmin` detects this bean and will declare the exchange (`my.super.stream`) and 3 queues (partitions) - `my.super-stream-n` where `n` is `0`, `1`, `2`, bound with routing keys equal to `n`.
+
+===== Consuming Super Streams with Single Active Consumers
+
+TBD.

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.rabbit.stream.listener;
+package org.springframework.rabbit.stream.support;
 
 import java.time.Duration;
 
@@ -48,15 +48,15 @@ public abstract class AbstractIntegrationTests {
 		}
 	}
 
-	static int amqpPort() {
+	public static int amqpPort() {
 		return RABBITMQ != null ? RABBITMQ.getMappedPort(5672) : 5672;
 	}
 
-	static int managementPort() {
+	public static int managementPort() {
 		return RABBITMQ != null ? RABBITMQ.getMappedPort(15672) : 15672;
 	}
 
-	static int streamPort() {
+	public static int streamPort() {
 		return RABBITMQ != null ? RABBITMQ.getMappedPort(5552) : 5552;
 	}
 
