@@ -172,7 +172,7 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	public void setAdviceChain(Advice... advices) {
 		Assert.notNull(advices, "'advices' cannot be null");
 		Assert.noNullElements(advices, "'advices' cannot have null elements");
-		this.adviceChain = Arrays.copyOf(adviceChain, adviceChain.length);
+		this.adviceChain = Arrays.copyOf(advices, advices.length);
 	}
 
 	@Override
