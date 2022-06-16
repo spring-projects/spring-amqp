@@ -16,6 +16,8 @@
 
 package org.springframework.rabbit.stream.listener;
 
+import java.util.Arrays;
+
 import org.aopalliance.aop.Advice;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -170,7 +172,7 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	public void setAdviceChain(Advice... advices) {
 		Assert.notNull(advices, "'advices' cannot be null");
 		Assert.noNullElements(advices, "'advices' cannot have null elements");
-		this.adviceChain = advices;
+		this.adviceChain = Arrays.copyOf(adviceChain, adviceChain.length);
 	}
 
 	@Override
