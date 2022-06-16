@@ -44,6 +44,7 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.rabbit.stream.config.StreamRabbitListenerContainerFactory;
 import org.springframework.rabbit.stream.producer.RabbitStreamTemplate;
 import org.springframework.rabbit.stream.retry.StreamRetryOperationsInterceptorFactoryBean;
+import org.springframework.rabbit.stream.support.AbstractIntegrationTests;
 import org.springframework.rabbit.stream.support.StreamMessageProperties;
 import org.springframework.retry.interceptor.RetryOperationsInterceptor;
 import org.springframework.test.annotation.DirtiesContext;

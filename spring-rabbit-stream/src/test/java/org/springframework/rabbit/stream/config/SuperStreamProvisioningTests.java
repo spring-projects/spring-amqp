@@ -31,7 +31,7 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.rabbit.stream.listener.AbstractIntegrationTests;
+import org.springframework.rabbit.stream.support.AbstractIntegrationTests;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 /**
@@ -59,7 +59,7 @@ public class SuperStreamProvisioningTests extends AbstractIntegrationTests {
 
 		@Bean
 		CachingConnectionFactory cf() {
-			return new CachingConnectionFactory("localhost");
+			return new CachingConnectionFactory("localhost", amqpPort());
 		}
 
 		@Bean

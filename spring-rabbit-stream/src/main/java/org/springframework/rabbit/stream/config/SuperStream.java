@@ -17,6 +17,7 @@
 package org.springframework.rabbit.stream.config;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -46,7 +47,7 @@ public class SuperStream extends Declarables {
 		super(declarables(name, partitions));
 	}
 
-	private static Declarable[] declarables(String name, int partitions) {
+	private static Collection<Declarable> declarables(String name, int partitions) {
 		List<Declarable> declarables = new ArrayList<>();
 		String[] rks = IntStream.range(0, partitions).mapToObj(String::valueOf).toArray(String[]::new);
 		declarables.add(new DirectExchange(name, true, false, Map.of("x-super-stream", true)));
@@ -57,7 +58,7 @@ public class SuperStream extends Declarables {
 			declarables.add(new Binding(q.getName(), DestinationType.QUEUE, name, rk,
 					Map.of("x-stream-partition-order", i)));
 		}
-		return declarables.toArray(new Declarable[0]);
+		return declarables;
 	}
 
 }
