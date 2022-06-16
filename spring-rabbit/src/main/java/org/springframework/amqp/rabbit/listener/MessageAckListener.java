@@ -23,6 +23,7 @@ import org.springframework.lang.Nullable;
  * A listener for message ack when using {@link AcknowledgeMode#AUTO}.
  *
  * @author Cao Weibo
+ * @author Gary Russell
  * @since 2.4.6
  */
 @FunctionalInterface
@@ -33,9 +34,7 @@ public interface MessageAckListener {
 	 * @param success Whether ack succeed.
 	 * @param deliveryTag The deliveryTag of ack.
 	 * @param cause The cause of failed ack.
-	 *
-	 * @throws Exception the exception during callback.
 	 */
-	void onComplete(boolean success, long deliveryTag, @Nullable Throwable cause) throws Exception;
+	void onComplete(boolean success, long deliveryTag, @Nullable Throwable cause);
 
 }
