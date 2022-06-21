@@ -20,6 +20,9 @@ See <<async-template>> for more information.
 ==== Stream Support Changes
 
 `RabbitStreamOperations2` and `RabbitStreamTemplate2` have been deprecated in favor of `RabbitStreamOperations` and `RabbitStreamTemplate` respectively.
+
+Super streams and single active consumers thereon are now supported.
+
 See <<stream-support>> for more information.
 
 ==== `@RabbitListener` Changes
