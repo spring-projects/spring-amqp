@@ -182,4 +182,21 @@ The `RabbitAdmin` detects this bean and will declare the exchange (`my.super.str
 
 ===== Consuming Super Streams with Single Active Consumers
 
-TBD.
+Invoke the `superStream` method on the listener container to enable a single active consumer on a super stream.
+
+====
+[source, java]
+----
+@Bean
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+StreamListenerContainer container(Environment env, String name) {
+    StreamListenerContainer container = new StreamListenerContainer(env);
+    container.superStream("ss.sac", "myConsumer");
+    container.setupMessageListener(msg -> {
+        ...
+    });
+    container.setConsumerCustomizer((id, builder) -> builder.offset(OffsetSpecification.last()));
+    return container;
+}
+----
+====

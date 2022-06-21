@@ -97,6 +97,19 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	}
 
 	/**
+	 * Enable Single Active Consumer on a Super Stream.
+	 * @param superStream the stream.
+	 * @param name the consumer name.
+	 * @since 3.0
+	 */
+	public void superStream(String superStream, String name) {
+		Assert.notNull(superStream, "'superStream' cannot be null");
+		this.builder.superStream(superStream)
+				.singleActiveConsumer()
+				.name(name);
+	}
+
+	/**
 	 * Get a {@link StreamMessageConverter} used to convert a
 	 * {@link com.rabbitmq.stream.Message} to a
 	 * {@link org.springframework.amqp.core.Message}.
