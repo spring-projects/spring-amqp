@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2021 the original author or authors.
+ * Copyright 2016-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,12 @@ package org.springframework.amqp.rabbit.listener;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -510,7 +511,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			processMonitorTask();
-		}, this.monitorInterval);
+		}, Duration.ofMillis(this.monitorInterval));
 	}
 
 	private void checkIdle(long idleEventInterval, long now) {
@@ -578,7 +579,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			this.logger.error("Cannot connect to server", e);
 			if (e.getCause() instanceof AmqpApplicationContextClosedException) {
 				this.logger.error("Application context is closed, terminating");
-				this.taskScheduler.schedule(this::stop, new Date());
+				this.taskScheduler.schedule(this::stop, Instant.now());
 			}
 			this.consumersToRestart.addAll(restartableConsumers);
 			if (this.logger.isTraceEnabled()) {
@@ -612,7 +613,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 							shutdown();
 							this.logger.error("Failed to start container - fatal error or backOffs exhausted",
 									e);
-							this.taskScheduler.schedule(this::stop, new Date());
+							this.taskScheduler.schedule(this::stop, Instant.now());
 							break;
 						}
 						this.logger.error("Error creating consumer; retrying in " + nextBackOff, e);
