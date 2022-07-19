@@ -211,7 +211,7 @@ public class RabbitMessagingTemplateTests {
 
 		assertThatThrownBy(() -> messagingTemplate.convertAndSend("myQueue", "msg to convert"))
 			.isExactlyInstanceOf(org.springframework.messaging.converter.MessageConversionException.class)
-			.hasMessageContaining("Test exception");
+			.hasStackTraceContaining("Test exception");
 	}
 
 	@Test
