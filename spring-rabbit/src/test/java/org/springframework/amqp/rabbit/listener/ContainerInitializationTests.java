@@ -63,7 +63,7 @@ public class ContainerInitializationTests {
 		}
 		catch (ApplicationContextException e) {
 			assertThat(e.getCause().getCause()).isInstanceOf(IllegalStateException.class);
-			assertThat(e.getMessage()).contains("When 'mismatchedQueuesFatal' is 'true', there must be "
+			assertThat(e.getCause().getMessage()).contains("When 'mismatchedQueuesFatal' is 'true', there must be "
 					+ "exactly one AmqpAdmin in the context or you must inject one into this container; found: 0");
 		}
 	}
