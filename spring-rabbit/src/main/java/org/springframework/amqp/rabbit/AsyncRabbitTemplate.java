@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2021 the original author or authors.
+ * Copyright 2016-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -741,7 +741,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 						throw new IllegalStateException("'AsyncRabbitTemplate' must be started.");
 					}
 					this.timeoutTask = AsyncRabbitTemplate.this.taskScheduler.schedule(new TimeoutTask(),
-							new Date(System.currentTimeMillis() + AsyncRabbitTemplate.this.receiveTimeout));
+							Instant.now().plusMillis(AsyncRabbitTemplate.this.receiveTimeout));
 				}
 			}
 			else {

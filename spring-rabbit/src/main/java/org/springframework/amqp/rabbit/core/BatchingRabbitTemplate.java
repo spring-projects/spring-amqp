@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.batch.MessageBatch;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
+import org.springframework.lang.Nullable;
 import org.springframework.scheduling.TaskScheduler;
 
 /**
@@ -74,12 +75,12 @@ public class BatchingRabbitTemplate extends RabbitTemplate {
 	}
 
 	@Override
-	public synchronized void send(String exchange, String routingKey, Message message, CorrelationData correlationData)
-			throws AmqpException {
+	public synchronized void send(String exchange, String routingKey, Message message,
+			@Nullable CorrelationData correlationData) throws AmqpException {
 
 		if (correlationData != null) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Cannot use batching with correlation data");
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("Cannot use batching with correlation data");
 			}
 			super.send(exchange, routingKey, message, correlationData);
 		}
@@ -93,7 +94,7 @@ public class BatchingRabbitTemplate extends RabbitTemplate {
 			}
 			Date next = this.batchingStrategy.nextRelease();
 			if (next != null) {
-				this.scheduledTask = this.scheduler.schedule((Runnable) () -> releaseBatches(), next);
+				this.scheduledTask = this.scheduler.schedule((Runnable) () -> releaseBatches(), next.toInstant());
 			}
 		}
 	}
