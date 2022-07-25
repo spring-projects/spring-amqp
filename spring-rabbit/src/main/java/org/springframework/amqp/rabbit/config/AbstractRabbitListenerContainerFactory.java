@@ -369,7 +369,8 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 			.acceptIfNotNull(this.phase, instance::setPhase)
 			.acceptIfNotNull(this.afterReceivePostProcessors, instance::setAfterReceivePostProcessors)
 			.acceptIfNotNull(this.deBatchingEnabled, instance::setDeBatchingEnabled)
-			.acceptIfNotNull(this.messageAckListener, instance::setMessageAckListener);
+			.acceptIfNotNull(this.messageAckListener, instance::setMessageAckListener)
+			.acceptIfNotNull(this.batchingStrategy, instance::setBatchingStrategy);
 		if (this.batchListener && this.deBatchingEnabled == null) {
 			// turn off container debatching by default for batch listeners
 			instance.setDeBatchingEnabled(false);
@@ -378,7 +379,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 			javaUtils
 				.acceptIfNotNull(endpoint.getTaskExecutor(), instance::setTaskExecutor)
 				.acceptIfNotNull(endpoint.getAckMode(), instance::setAcknowledgeMode)
-				.acceptIfNotNull(this.batchingStrategy, endpoint::setBatchingStrategy);
+				.acceptIfNotNull(endpoint.getBatchingStrategy(), instance::setBatchingStrategy);
 			instance.setListenerId(endpoint.getId());
 			endpoint.setBatchListener(this.batchListener);
 		}

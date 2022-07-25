@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.MessagePostProcessor;
+import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer;
@@ -35,6 +36,7 @@ import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -70,12 +72,17 @@ public class RabbitListenerContainerFactoryTests {
 		SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
 		endpoint.setMessageListener(this.messageListener);
 		endpoint.setQueueNames("myQueue");
+		BatchingStrategy bs1 = mock(BatchingStrategy.class);
+		this.factory.setBatchingStrategy(bs1);
+		BatchingStrategy bs2 = mock(BatchingStrategy.class);
+		endpoint.setBatchingStrategy(bs2);
 
 		SimpleMessageListenerContainer container = this.factory.createListenerContainer(endpoint);
 
 		assertBasicConfig(container);
 		assertThat(container.getMessageListener()).isEqualTo(messageListener);
 		assertThat(container.getQueueNames()[0]).isEqualTo("myQueue");
+		assertThat(TestUtils.getPropertyValue(container, "batchingStrategy")).isSameAs(bs2);
 	}
 
 	@Test
@@ -89,6 +96,8 @@ public class RabbitListenerContainerFactoryTests {
 		this.factory.setTaskExecutor(executor);
 		this.factory.setTransactionManager(transactionManager);
 		this.factory.setBatchSize(10);
+		BatchingStrategy bs1 = mock(BatchingStrategy.class);
+		this.factory.setBatchingStrategy(bs1);
 		this.factory.setConcurrentConsumers(2);
 		this.factory.setMaxConcurrentConsumers(5);
 		this.factory.setStartConsumerMinInterval(2000L);
@@ -115,6 +124,7 @@ public class RabbitListenerContainerFactoryTests {
 		SimpleMessageListenerContainer container = this.factory.createListenerContainer(endpoint);
 
 		assertBasicConfig(container);
+		assertThat(TestUtils.getPropertyValue(container, "batchingStrategy")).isSameAs(bs1);
 		DirectFieldAccessor fieldAccessor = new DirectFieldAccessor(container);
 		assertThat(fieldAccessor.getPropertyValue("taskExecutor")).isSameAs(executor);
 		assertThat(fieldAccessor.getPropertyValue("transactionManager")).isSameAs(transactionManager);
