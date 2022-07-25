@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 the original author or authors.
+  * Copyright 2014-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -261,8 +261,8 @@ public class BatchingRabbitTemplateTests {
 		if (asList) {
 			container.setMessageListener((BatchMessageListener) messages -> {
 				received.addAll(messages);
-				lastInBatch.add(false);
-				lastInBatch.add(true);
+				lastInBatch.add(messages.get(0).getMessageProperties().isLastInBatch());
+				lastInBatch.add(messages.get(1).getMessageProperties().isLastInBatch());
 				batchSize.set(messages.size());
 				latch.countDown();
 			});
