@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.converter.MessageConversionException;
+import org.springframework.beans.BeanUtils;
 import org.springframework.util.Assert;
 
 /**
@@ -184,10 +185,16 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 			byte[] body = new byte[length];
 			byteBuffer.get(body);
 			messageProperties.setContentLength(length);
-			// Caveat - shared MessageProperties.
-			Message fragment = new Message(body, messageProperties);
-			if (!byteBuffer.hasRemaining()) {
-				messageProperties.setLastInBatch(true);
+			// Caveat - shared MessageProperties, except for last
+			Message fragment;
+			if (byteBuffer.hasRemaining()) {
+				 fragment = new Message(body, messageProperties);
+			}
+			else {
+				MessageProperties lastProperties = new MessageProperties();
+				BeanUtils.copyProperties(messageProperties, lastProperties);
+				lastProperties.setLastInBatch(true);
+				fragment = new Message(body, lastProperties);
 			}
 			fragmentConsumer.accept(fragment);
 		}
