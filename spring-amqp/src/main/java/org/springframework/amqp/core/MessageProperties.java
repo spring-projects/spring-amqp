@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,6 +138,15 @@ public class MessageProperties implements Serializable {
 
 	public void setHeader(String key, Object value) {
 		this.headers.put(key, value);
+	}
+
+	/**
+	 * Set headers.
+	 * @param headers the headers.
+	 * @since 2.4.7
+	 */
+	public void setHeaders(Map<String, Object> headers) {
+		this.headers.putAll(headers);
 	}
 
 	/**
