@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -114,7 +114,6 @@ public interface RabbitListenerEndpoint {
 	 * @since 2.2
 	 */
 	default void setBatchListener(boolean batchListener) {
-		// NOSONAR empty
 	}
 
 	/**
@@ -124,7 +123,16 @@ public interface RabbitListenerEndpoint {
 	 * @see #setBatchListener(boolean)
 	 */
 	default void setBatchingStrategy(BatchingStrategy batchingStrategy) {
-		// NOSONAR empty
+	}
+
+	/**
+	 * Return this endpoint's batching strategy, or null.
+	 * @return the strategy.
+	 * @since 2.4.7
+	 */
+	@Nullable
+	default BatchingStrategy getBatchingStrategy() {
+		return null;
 	}
 
 	/**
