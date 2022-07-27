@@ -10,3 +10,9 @@ This version requires Spring Framework 6.0 and Java 17
 ==== Remoting
 
 The remoting feature (using RMI) is no longer supported.
+
+==== AsyncRabbitTemplate
+
+The `AsyncRabbitTemplate2`, which was added in 2.4.7 to aid migration to this release, is deprecated in favor of `AsyncRabbitTemplate`.
+The `AsyncRabbitTemplate` now returns `CompletableFuture` s instead of `ListenableFuture` s.
+See <<async-template>> for more information.

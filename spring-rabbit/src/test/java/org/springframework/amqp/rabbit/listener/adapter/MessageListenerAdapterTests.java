@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import static org.mockito.Mockito.verify;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -43,8 +44,6 @@ import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.retry.RetryPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.util.concurrent.ListenableFuture;
-import org.springframework.util.concurrent.SettableListenableFuture;
 
 import com.rabbitmq.client.Channel;
 import reactor.core.publisher.Mono;
@@ -220,13 +219,13 @@ public class MessageListenerAdapterTests {
 	}
 
 	@Test
-	public void testListenableFutureReturn() throws Exception {
+	public void testCompletableFutureReturn() throws Exception {
 		class Delegate {
 
 			@SuppressWarnings("unused")
-			public ListenableFuture<String> myPojoMessageMethod(String input) {
-				SettableListenableFuture<String> future = new SettableListenableFuture<>();
-				future.set("processed" + input);
+			public CompletableFuture<String> myPojoMessageMethod(String input) {
+				CompletableFuture<String> future = new CompletableFuture<>();
+				future.complete("processed" + input);
 				return future;
 			}
 

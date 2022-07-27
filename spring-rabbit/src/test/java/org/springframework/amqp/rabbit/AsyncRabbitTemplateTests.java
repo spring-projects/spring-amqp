@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 the original author or authors.
+ * Copyright 2016-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,15 +19,18 @@ package org.springframework.amqp.rabbit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.Mockito.mock;
 
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 
 import org.junit.jupiter.api.Test;
 
@@ -38,14 +41,13 @@ import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
-import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitMessageFuture;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
+import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
@@ -59,8 +61,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.springframework.util.concurrent.ListenableFuture;
-import org.springframework.util.concurrent.ListenableFutureCallback;
 
 /**
  * @author Gary Russell
@@ -90,7 +90,7 @@ public class AsyncRabbitTemplateTests {
 	@Test
 	public void testConvert1Arg() throws Exception {
 		final AtomicBoolean mppCalled = new AtomicBoolean();
-		ListenableFuture<String> future = this.asyncTemplate.convertSendAndReceive("foo", m -> {
+		CompletableFuture<String> future = this.asyncTemplate.convertSendAndReceive("foo", m -> {
 			mppCalled.set(true);
 			return m;
 		});
@@ -101,8 +101,8 @@ public class AsyncRabbitTemplateTests {
 	@Test
 	public void testConvert1ArgDirect() throws Exception {
 		this.latch.set(new CountDownLatch(1));
-		ListenableFuture<String> future1 = this.asyncDirectTemplate.convertSendAndReceive("foo");
-		ListenableFuture<String> future2 = this.asyncDirectTemplate.convertSendAndReceive("bar");
+		CompletableFuture<String> future1 = this.asyncDirectTemplate.convertSendAndReceive("foo");
+		CompletableFuture<String> future2 = this.asyncDirectTemplate.convertSendAndReceive("bar");
 		this.latch.get().countDown();
 		checkConverterResult(future1, "FOO");
 		checkConverterResult(future2, "BAR");
@@ -127,19 +127,19 @@ public class AsyncRabbitTemplateTests {
 
 	@Test
 	public void testConvert2Args() throws Exception {
-		ListenableFuture<String> future = this.asyncTemplate.convertSendAndReceive(this.requests.getName(), "foo");
+		CompletableFuture<String> future = this.asyncTemplate.convertSendAndReceive(this.requests.getName(), "foo");
 		checkConverterResult(future, "FOO");
 	}
 
 	@Test
 	public void testConvert3Args() throws Exception {
-		ListenableFuture<String> future = this.asyncTemplate.convertSendAndReceive("", this.requests.getName(), "foo");
+		CompletableFuture<String> future = this.asyncTemplate.convertSendAndReceive("", this.requests.getName(), "foo");
 		checkConverterResult(future, "FOO");
 	}
 
 	@Test
 	public void testConvert4Args() throws Exception {
-		ListenableFuture<String> future = this.asyncTemplate.convertSendAndReceive("", this.requests.getName(), "foo",
+		CompletableFuture<String> future = this.asyncTemplate.convertSendAndReceive("", this.requests.getName(), "foo",
 				message -> {
 					String body = new String(message.getBody());
 					return new Message((body + "bar").getBytes(), message.getMessageProperties());
@@ -149,15 +149,15 @@ public class AsyncRabbitTemplateTests {
 
 	@Test
 	public void testMessage1Arg() throws Exception {
-		ListenableFuture<Message> future = this.asyncTemplate.sendAndReceive(getFooMessage());
+		CompletableFuture<Message> future = this.asyncTemplate.sendAndReceive(getFooMessage());
 		checkMessageResult(future, "FOO");
 	}
 
 	@Test
 	public void testMessage1ArgDirect() throws Exception {
 		this.latch.set(new CountDownLatch(1));
-		ListenableFuture<Message> future1 = this.asyncDirectTemplate.sendAndReceive(getFooMessage());
-		ListenableFuture<Message> future2 = this.asyncDirectTemplate.sendAndReceive(getFooMessage());
+		CompletableFuture<Message> future1 = this.asyncDirectTemplate.sendAndReceive(getFooMessage());
+		CompletableFuture<Message> future2 = this.asyncDirectTemplate.sendAndReceive(getFooMessage());
 		this.latch.get().countDown();
 		Message reply1 = checkMessageResult(future1, "FOO");
 		assertThat(reply1.getMessageProperties().getConsumerQueue()).isEqualTo(Address.AMQ_RABBITMQ_REPLY_TO);
@@ -183,13 +183,13 @@ public class AsyncRabbitTemplateTests {
 
 	@Test
 	public void testMessage2Args() throws Exception {
-		ListenableFuture<Message> future = this.asyncTemplate.sendAndReceive(this.requests.getName(), getFooMessage());
+		CompletableFuture<Message> future = this.asyncTemplate.sendAndReceive(this.requests.getName(), getFooMessage());
 		checkMessageResult(future, "FOO");
 	}
 
 	@Test
 	public void testMessage3Args() throws Exception {
-		ListenableFuture<Message> future = this.asyncTemplate.sendAndReceive("", this.requests.getName(),
+		CompletableFuture<Message> future = this.asyncTemplate.sendAndReceive("", this.requests.getName(),
 				getFooMessage());
 		checkMessageResult(future, "FOO");
 	}
@@ -197,7 +197,7 @@ public class AsyncRabbitTemplateTests {
 	@SuppressWarnings("unchecked")
 	@Test
 	public void testCancel() {
-		ListenableFuture<String> future = this.asyncTemplate.convertSendAndReceive("foo");
+		CompletableFuture<String> future = this.asyncTemplate.convertSendAndReceive("foo");
 		future.cancel(false);
 		assertThat(TestUtils.getPropertyValue(asyncTemplate, "pending", Map.class)).hasSize(0);
 	}
@@ -206,7 +206,7 @@ public class AsyncRabbitTemplateTests {
 	public void testMessageCustomCorrelation() throws Exception {
 		Message message = getFooMessage();
 		message.getMessageProperties().setCorrelationId("foo");
-		ListenableFuture<Message> future = this.asyncTemplate.sendAndReceive(message);
+		CompletableFuture<Message> future = this.asyncTemplate.sendAndReceive(message);
 		Message result = checkMessageResult(future, "FOO");
 		assertThat(result.getMessageProperties().getCorrelationId()).isEqualTo("foo");
 	}
@@ -221,7 +221,7 @@ public class AsyncRabbitTemplateTests {
 	@DirtiesContext
 	public void testReturn() throws Exception {
 		this.asyncTemplate.setMandatory(true);
-		ListenableFuture<String> future = this.asyncTemplate.convertSendAndReceive(this.requests.getName() + "x",
+		CompletableFuture<String> future = this.asyncTemplate.convertSendAndReceive(this.requests.getName() + "x",
 				"foo");
 		try {
 			future.get(10, TimeUnit.SECONDS);
@@ -237,7 +237,7 @@ public class AsyncRabbitTemplateTests {
 	@DirtiesContext
 	public void testReturnDirect() throws Exception {
 		this.asyncDirectTemplate.setMandatory(true);
-		ListenableFuture<String> future = this.asyncDirectTemplate.convertSendAndReceive(this.requests.getName() + "x",
+		CompletableFuture<String> future = this.asyncDirectTemplate.convertSendAndReceive(this.requests.getName() + "x",
 				"foo");
 		try {
 			future.get(10, TimeUnit.SECONDS);
@@ -254,7 +254,7 @@ public class AsyncRabbitTemplateTests {
 	public void testConvertWithConfirm() throws Exception {
 		this.asyncTemplate.setEnableConfirms(true);
 		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("sleep");
-		ListenableFuture<Boolean> confirm = future.getConfirm();
+		CompletableFuture<Boolean> confirm = future.getConfirm();
 		assertThat(confirm).isNotNull();
 		assertThat(confirm.get(10, TimeUnit.SECONDS)).isTrue();
 		checkConverterResult(future, "SLEEP");
@@ -266,7 +266,7 @@ public class AsyncRabbitTemplateTests {
 		this.asyncTemplate.setEnableConfirms(true);
 		RabbitMessageFuture future = this.asyncTemplate
 				.sendAndReceive(new SimpleMessageConverter().toMessage("sleep", new MessageProperties()));
-		ListenableFuture<Boolean> confirm = future.getConfirm();
+		CompletableFuture<Boolean> confirm = future.getConfirm();
 		assertThat(confirm).isNotNull();
 		assertThat(confirm.get(10, TimeUnit.SECONDS)).isTrue();
 		checkMessageResult(future, "SLEEP");
@@ -277,7 +277,7 @@ public class AsyncRabbitTemplateTests {
 	public void testConvertWithConfirmDirect() throws Exception {
 		this.asyncDirectTemplate.setEnableConfirms(true);
 		RabbitConverterFuture<String> future = this.asyncDirectTemplate.convertSendAndReceive("sleep");
-		ListenableFuture<Boolean> confirm = future.getConfirm();
+		CompletableFuture<Boolean> confirm = future.getConfirm();
 		assertThat(confirm).isNotNull();
 		assertThat(confirm.get(10, TimeUnit.SECONDS)).isTrue();
 		checkConverterResult(future, "SLEEP");
@@ -289,7 +289,7 @@ public class AsyncRabbitTemplateTests {
 		this.asyncDirectTemplate.setEnableConfirms(true);
 		RabbitMessageFuture future = this.asyncDirectTemplate
 				.sendAndReceive(new SimpleMessageConverter().toMessage("sleep", new MessageProperties()));
-		ListenableFuture<Boolean> confirm = future.getConfirm();
+		CompletableFuture<Boolean> confirm = future.getConfirm();
 		assertThat(confirm).isNotNull();
 		assertThat(confirm.get(10, TimeUnit.SECONDS)).isTrue();
 		checkMessageResult(future, "SLEEP");
@@ -300,9 +300,9 @@ public class AsyncRabbitTemplateTests {
 	@DirtiesContext
 	public void testReceiveTimeout() throws Exception {
 		this.asyncTemplate.setReceiveTimeout(500);
-		ListenableFuture<String> future = this.asyncTemplate.convertSendAndReceive("noReply");
+		CompletableFuture<String> future = this.asyncTemplate.convertSendAndReceive("noReply");
 		TheCallback callback = new TheCallback();
-		future.addCallback(callback);
+		future.whenComplete(callback);
 		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(1);
 		try {
 			future.get(10, TimeUnit.SECONDS);
@@ -323,7 +323,7 @@ public class AsyncRabbitTemplateTests {
 		this.asyncTemplate.setReceiveTimeout(100);
 		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("sleep");
 		TheCallback callback = new TheCallback();
-		future.addCallback(callback);
+		future.whenComplete(callback);
 		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(1);
 		try {
 			future.get(10, TimeUnit.SECONDS);
@@ -342,7 +342,7 @@ public class AsyncRabbitTemplateTests {
 		 * map when it times out. However, there is a small race condition where
 		 * the reply arrives at the same time as the timeout.
 		 */
-		future.set("foo");
+		future.complete("foo");
 		assertThat(callback.result).isNull();
 	}
 
@@ -353,7 +353,7 @@ public class AsyncRabbitTemplateTests {
 		this.asyncTemplate.setReceiveTimeout(5000);
 		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("noReply");
 		TheCallback callback = new TheCallback();
-		future.addCallback(callback);
+		future.whenComplete(callback);
 		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(1);
 		this.asyncTemplate.stop();
 		// Second stop() to be sure that it is idempotent
@@ -375,54 +375,76 @@ public class AsyncRabbitTemplateTests {
 		 * should never happen because the container is stopped before canceling
 		 * and the future is removed from the pending map.
 		 */
-		future.set("foo");
+		future.complete("foo");
 		assertThat(callback.result).isNull();
 	}
 
-	private void checkConverterResult(ListenableFuture<String> future, String expected) throws InterruptedException {
+	@Test
+	void ctorCoverage() {
+		AsyncRabbitTemplate template = new AsyncRabbitTemplate(mock(ConnectionFactory.class), "ex", "rk");
+		assertThat(template).extracting(t -> t.getRabbitTemplate())
+				.extracting("exchange")
+				.isEqualTo("ex");
+		assertThat(template).extracting(t -> t.getRabbitTemplate())
+				.extracting("routingKey")
+				.isEqualTo("rk");
+		template = new AsyncRabbitTemplate(mock(ConnectionFactory.class), "ex", "rk", "rq");
+		assertThat(template).extracting(t -> t.getRabbitTemplate())
+				.extracting("exchange")
+				.isEqualTo("ex");
+		assertThat(template).extracting(t -> t.getRabbitTemplate())
+				.extracting("routingKey")
+				.isEqualTo("rk");
+		assertThat(template)
+				.extracting("replyAddress")
+				.isEqualTo("rq");
+		assertThat(template).extracting("container")
+				.extracting("queueNames")
+				.isEqualTo(new String[] { "rq" });
+		template = new AsyncRabbitTemplate(mock(ConnectionFactory.class), "ex", "rk", "rq", "ra");
+		assertThat(template).extracting(t -> t.getRabbitTemplate())
+				.extracting("exchange")
+				.isEqualTo("ex");
+		assertThat(template).extracting(t -> t.getRabbitTemplate())
+				.extracting("routingKey")
+				.isEqualTo("rk");
+		assertThat(template)
+				.extracting("replyAddress")
+				.isEqualTo("ra");
+		assertThat(template).extracting("container")
+				.extracting("queueNames")
+				.isEqualTo(new String[] { "rq" });
+		template = new AsyncRabbitTemplate(mock(RabbitTemplate.class), mock(AbstractMessageListenerContainer.class),
+				"rq");
+		assertThat(template)
+				.extracting("replyAddress")
+				.isEqualTo("rq");
+	}
+
+	private void checkConverterResult(CompletableFuture<String> future, String expected) throws InterruptedException {
 		final CountDownLatch cdl = new CountDownLatch(1);
 		final AtomicReference<String> resultRef = new AtomicReference<>();
-		future.addCallback(new ListenableFutureCallback<String>() {
-
-			@Override
-			public void onSuccess(String result) {
-				resultRef.set(result);
-				cdl.countDown();
-			}
-
-			@Override
-			public void onFailure(Throwable ex) {
-				cdl.countDown();
-			}
-
+		future.whenComplete((result, ex) -> {
+			resultRef.set(result);
+			cdl.countDown();
 		});
 		assertThat(cdl.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(resultRef.get()).isEqualTo(expected);
 	}
 
-	private Message checkMessageResult(ListenableFuture<Message> future, String expected) throws InterruptedException {
+	private Message checkMessageResult(CompletableFuture<Message> future, String expected) throws InterruptedException {
 		final CountDownLatch cdl = new CountDownLatch(1);
 		final AtomicReference<Message> resultRef = new AtomicReference<>();
-		future.addCallback(new ListenableFutureCallback<Message>() {
-
-			@Override
-			public void onSuccess(Message result) {
-				resultRef.set(result);
-				cdl.countDown();
-			}
-
-			@Override
-			public void onFailure(Throwable ex) {
-				cdl.countDown();
-			}
-
+		future.whenComplete((result, ex) -> {
+			resultRef.set(result);
+			cdl.countDown();
 		});
 		assertThat(cdl.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(new String(resultRef.get().getBody())).isEqualTo(expected);
 		return resultRef.get();
 	}
 
-	public static class TheCallback implements ListenableFutureCallback<String> {
+	public static class TheCallback implements BiConsumer<String, Throwable> {
 
 		private final CountDownLatch latch = new CountDownLatch(1);
 
@@ -430,14 +452,10 @@ public class AsyncRabbitTemplateTests {
 
 		private volatile Throwable ex;
 
-		@Override
-		public void onSuccess(String result) {
-			this.result = result;
-			latch.countDown();
-		}
 
 		@Override
-		public void onFailure(Throwable ex) {
+		public void accept(String result, Throwable ex) {
+			this.result = result;
 			this.ex = ex;
 			latch.countDown();
 		}

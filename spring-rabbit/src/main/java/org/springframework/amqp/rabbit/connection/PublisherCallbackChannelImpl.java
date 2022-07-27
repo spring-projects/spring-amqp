@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -955,7 +955,7 @@ public class PublisherCallbackChannelImpl
 				if (pendingConfirm != null) {
 					CorrelationData correlationData = pendingConfirm.getCorrelationData();
 					if (correlationData != null) {
-						correlationData.getFuture().set(new Confirm(ack, pendingConfirm.getCause()));
+						correlationData.getFuture().complete(new Confirm(ack, pendingConfirm.getCause()));
 						if (StringUtils.hasText(correlationData.getId())) {
 							this.pendingReturns.remove(correlationData.getId()); // NOSONAR never null
 						}
@@ -991,7 +991,7 @@ public class PublisherCallbackChannelImpl
 					PendingConfirm value = entry.getValue();
 					CorrelationData correlationData = value.getCorrelationData();
 					if (correlationData != null) {
-						correlationData.getFuture().set(new Confirm(ack, value.getCause()));
+						correlationData.getFuture().complete(new Confirm(ack, value.getCause()));
 						if (StringUtils.hasText(correlationData.getId())) {
 							this.pendingReturns.remove(correlationData.getId()); // NOSONAR never null
 						}
