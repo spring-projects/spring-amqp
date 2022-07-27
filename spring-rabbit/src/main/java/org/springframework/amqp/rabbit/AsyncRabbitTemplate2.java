@@ -37,7 +37,6 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.ReturnedMessage;
-import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitFuture;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.connection.PublisherCallbackChannel;
@@ -294,7 +293,7 @@ public class AsyncRabbitTemplate2 implements AsyncAmqpTemplate2, ChannelAwareMes
 	}
 
 	/**
-	 * Set to true to enable publisher confirms. When enabled, the {@link RabbitFuture}
+	 * Set to true to enable publisher confirms. When enabled, the {@link RabbitFuture2}
 	 * returned by the send and receive operation will have a
 	 * {@code CompletableFuture<Boolean>} in its {@code confirm} property.
 	 * @param enableConfirms true to enable publisher confirms.
@@ -768,7 +767,7 @@ public class AsyncRabbitTemplate2 implements AsyncAmqpTemplate2, ChannelAwareMes
 	}
 
 	/**
-	 * A {@link RabbitFuture} with a return type of {@link Message}.
+	 * A {@link RabbitFuture2} with a return type of {@link Message}.
 	 * @since 1.6
 	 */
 	public class RabbitMessageFuture2 extends RabbitFuture2<Message> {
@@ -780,7 +779,7 @@ public class AsyncRabbitTemplate2 implements AsyncAmqpTemplate2, ChannelAwareMes
 	}
 
 	/**
-	 * A {@link RabbitFuture} with a return type of the template's
+	 * A {@link RabbitFuture2} with a return type of the template's
 	 * generic parameter.
 	 * @param <C> the type.
 	 * @since 1.6
