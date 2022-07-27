@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2021 the original author or authors.
+ * Copyright 2015-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.listener.adapter;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.concurrent.CompletableFuture;
 
 import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
@@ -50,7 +51,8 @@ public class HandlerAdapter {
 		this.delegatingHandler = null;
 		this.asyncReplies = (AbstractAdaptableMessageListener.monoPresent
 				&& MonoHandler.isMono(invokerHandlerMethod.getMethod().getReturnType()))
-			|| ListenableFuture.class.isAssignableFrom(invokerHandlerMethod.getMethod().getReturnType());
+			|| ListenableFuture.class.isAssignableFrom(invokerHandlerMethod.getMethod().getReturnType())
+			|| CompletableFuture.class.isAssignableFrom(invokerHandlerMethod.getMethod().getReturnType());
 	}
 
 	/**

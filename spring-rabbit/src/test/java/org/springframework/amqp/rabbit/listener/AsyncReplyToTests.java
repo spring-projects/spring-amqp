@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2021-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.listener;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -97,7 +98,7 @@ public class AsyncReplyToTests {
 				.build());
 		assertThat(config.dmlcLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		registry.getListenerContainer("dmlc").stop();
-		assertThat(admin.getQueueInfo("async2").getMessageCount()).isEqualTo(1);
+		assertThat(admin.getQueueInfo("async2").getMessageCount()).isEqualTo(0);
 	 }
 
 	@Configuration
@@ -114,8 +115,10 @@ public class AsyncReplyToTests {
 		}
 
 		@RabbitListener(id = "dmlc", queues = "async2", containerFactory = "dmlcf")
-		ListenableFuture<String> listen2(String in, Channel channel) {
-			return new SettableListenableFuture<>();
+		CompletableFuture<String> listen2(String in, Channel channel) {
+			CompletableFuture<String> future = new CompletableFuture<>();
+			future.complete("test");
+			return future;
 		}
 
 		@Bean

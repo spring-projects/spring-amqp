@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -935,6 +935,7 @@ public class PublisherCallbackChannelImpl
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	private void doProcessAck(long seq, boolean ack, boolean multiple, boolean remove) {
 		if (multiple) {
 			processMultipleAck(seq, ack);
@@ -971,6 +972,7 @@ public class PublisherCallbackChannelImpl
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	private void processMultipleAck(long seq, boolean ack) {
 		/*
 		 * Piggy-backed ack - extract all Listeners for this and earlier

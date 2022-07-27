@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 the original author or authors.
+ * Copyright 2016-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
-import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
+import org.springframework.amqp.rabbit.AsyncRabbitTemplate2;
+import org.springframework.amqp.rabbit.AsyncRabbitTemplate2.RabbitConverterFuture2;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -63,7 +63,7 @@ public class ComplexTypeJsonIntegrationTests {
 	private RabbitTemplate rabbitTemplate;
 
 	@Autowired
-	private AsyncRabbitTemplate asyncTemplate;
+	private AsyncRabbitTemplate2 asyncTemplate;
 
 	private static Foo<Bar<Baz, Qux>> makeAFoo() {
 		Foo<Bar<Baz, Qux>> foo = new Foo<>();
@@ -137,7 +137,7 @@ public class ComplexTypeJsonIntegrationTests {
 				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { }));
 	}
 
-	private void verifyFooBarBazQux(RabbitConverterFuture<Foo<Bar<Baz, Qux>>> future) throws Exception {
+	private void verifyFooBarBazQux(RabbitConverterFuture2<Foo<Bar<Baz, Qux>>> future) throws Exception {
 		verifyFooBarBazQux(future.get(10, TimeUnit.SECONDS));
 	}
 
@@ -169,8 +169,8 @@ public class ComplexTypeJsonIntegrationTests {
 		}
 
 		@Bean
-		public AsyncRabbitTemplate asyncTemplate() {
-			return new AsyncRabbitTemplate(template());
+		public AsyncRabbitTemplate2 asyncTemplate() {
+			return new AsyncRabbitTemplate2(template());
 		}
 
 		@Bean
