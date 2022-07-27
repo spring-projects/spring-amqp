@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 the original author or authors.
+ * Copyright 2018-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,8 +36,8 @@ import org.springframework.amqp.ImmediateRequeueAmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
-import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
+import org.springframework.amqp.rabbit.AsyncRabbitTemplate2;
+import org.springframework.amqp.rabbit.AsyncRabbitTemplate2.RabbitConverterFuture2;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -53,8 +54,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.springframework.util.concurrent.ListenableFuture;
-import org.springframework.util.concurrent.SettableListenableFuture;
 
 import reactor.core.publisher.Mono;
 
@@ -75,7 +74,7 @@ public class AsyncListenerTests {
 	private RabbitTemplate rabbitTemplate;
 
 	@Autowired
-	private AsyncRabbitTemplate asyncTemplate;
+	private AsyncRabbitTemplate2 asyncTemplate;
 
 	@Autowired
 	private Queue queue1;
@@ -107,7 +106,7 @@ public class AsyncListenerTests {
 	@Test
 	public void testAsyncListener() throws Exception {
 		assertThat(this.rabbitTemplate.convertSendAndReceive(this.queue1.getName(), "foo")).isEqualTo("FOO");
-		RabbitConverterFuture<Object> future = this.asyncTemplate.convertSendAndReceive(this.queue1.getName(), "foo");
+		RabbitConverterFuture2<Object> future = this.asyncTemplate.convertSendAndReceive(this.queue1.getName(), "foo");
 		assertThat(future.get(10, TimeUnit.SECONDS)).isEqualTo("FOO");
 		assertThat(this.config.typeId).isEqualTo("java.lang.String");
 		assertThat(this.rabbitTemplate.convertSendAndReceive(this.queue2.getName(), "foo")).isEqualTo("FOO");
@@ -194,8 +193,8 @@ public class AsyncListenerTests {
 		}
 
 		@Bean
-		public AsyncRabbitTemplate asyncTemplate() {
-			return new AsyncRabbitTemplate(rabbitTemplate());
+		public AsyncRabbitTemplate2 asyncTemplate() {
+			return new AsyncRabbitTemplate2(rabbitTemplate());
 		}
 
 		@Bean
@@ -284,13 +283,13 @@ public class AsyncListenerTests {
 		private final AtomicBoolean first7 = new AtomicBoolean(true);
 
 		@RabbitListener(id = "foo", queues = "#{queue1.name}")
-		public ListenableFuture<String> listen1(String foo) {
-			SettableListenableFuture<String> future = new SettableListenableFuture<>();
+		public CompletableFuture<String> listen1(String foo) {
+			CompletableFuture<String> future = new CompletableFuture<>();
 			if (fooFirst.getAndSet(false)) {
-				future.setException(new RuntimeException("Future.exception"));
+				future.completeExceptionally(new RuntimeException("Future.exception"));
 			}
 			else {
-				future.set(foo.toUpperCase());
+				future.complete(foo.toUpperCase());
 			}
 			return future;
 		}
@@ -311,17 +310,17 @@ public class AsyncListenerTests {
 		}
 
 		@RabbitListener(id = "qux", queues = "#{queue4.name}")
-		public ListenableFuture<Void> listen4(@SuppressWarnings("unused") String foo) {
-			SettableListenableFuture<Void> future = new SettableListenableFuture<>();
-			future.set(null);
+		public CompletableFuture<Void> listen4(@SuppressWarnings("unused") String foo) {
+			CompletableFuture<Void> future = new CompletableFuture<>();
+			future.complete(null);
 			this.latch4.countDown();
 			return future;
 		}
 
 		@RabbitListener(id = "fiz", queues = "#{queue5.name}")
-		public ListenableFuture<Void> listen5(@SuppressWarnings("unused") String foo) {
-			SettableListenableFuture<Void> future = new SettableListenableFuture<>();
-			future.setException(new AmqpRejectAndDontRequeueException("asyncToDLQ"));
+		public CompletableFuture<Void> listen5(@SuppressWarnings("unused") String foo) {
+			CompletableFuture<Void> future = new CompletableFuture<>();
+			future.completeExceptionally(new AmqpRejectAndDontRequeueException("asyncToDLQ"));
 			return future;
 		}
 
@@ -331,9 +330,9 @@ public class AsyncListenerTests {
 		}
 
 		@RabbitListener(id = "fix", queues = "#{queue6.name}", containerFactory = "dontRequeueFactory")
-		public ListenableFuture<Void> listen6(@SuppressWarnings("unused") String foo) {
-			SettableListenableFuture<Void> future = new SettableListenableFuture<>();
-			future.setException(new IllegalStateException("asyncDefaultToDLQ"));
+		public CompletableFuture<Void> listen6(@SuppressWarnings("unused") String foo) {
+			CompletableFuture<Void> future = new CompletableFuture<>();
+			future.completeExceptionally(new IllegalStateException("asyncDefaultToDLQ"));
 			return future;
 		}
 
@@ -344,13 +343,13 @@ public class AsyncListenerTests {
 
 		@RabbitListener(id = "overrideFactoryRequeue", queues = "#{queue7.name}",
 				containerFactory = "dontRequeueFactory")
-		public ListenableFuture<String> listen7(@SuppressWarnings("unused") String foo) {
-			SettableListenableFuture<String> future = new SettableListenableFuture<>();
+		public CompletableFuture<String> listen7(@SuppressWarnings("unused") String foo) {
+			CompletableFuture<String> future = new CompletableFuture<>();
 			if (this.first7.compareAndSet(true, false)) {
-				future.setException(new ImmediateRequeueAmqpException("asyncOverrideDefaultToDLQ"));
+				future.completeExceptionally(new ImmediateRequeueAmqpException("asyncOverrideDefaultToDLQ"));
 			}
 			else {
-				future.set("listen7");
+				future.complete("listen7");
 			}
 			return future;
 		}

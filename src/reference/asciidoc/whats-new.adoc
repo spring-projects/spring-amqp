@@ -11,6 +11,9 @@ See <<change-history>> for changes in previous versions.
 `MessageProperties` is now available for argument matching.
 See <<async-annotation-driven-enable-signature>> for more information.
 
+Async reply types now include `CompleteableFuture`
+See <<async-returns>> for more information.
+
 ==== `RabbitAdmin` Changes
 
 A new property `recoverManualDeclarations` allows recovery of manually declared queues/exchanges/bindings.
@@ -25,3 +28,8 @@ See <<remoting>> for more information.
 
 The `Jackson2JsonMessageConverter` can now determine the charset from the `contentEncoding` header.
 See <<json-message-converter>> for more information.
+
+==== AsyncRabbitTemplate
+
+The `AsyncRabbitTemplate` is deprecated in favor of `AsyncRabbitTemplate2` which returns `CompletableFuture` s instead of `ListenableFuture` s.
+See <<async-template>> for more information.

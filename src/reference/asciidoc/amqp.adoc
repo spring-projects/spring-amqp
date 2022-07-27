@@ -3570,6 +3570,7 @@ IMPORTANT: Containers created this way are normal `@Bean` instances and are not 
 ===== Asynchronous `@RabbitListener` Return Types
 
 Starting with version 2.1, `@RabbitListener` (and `@RabbitHandler`) methods can be specified with asynchronous return types `ListenableFuture<?>` and `Mono<?>`, letting the reply be sent asynchronously.
+`CompletableFuture<?>` was added in 2.4.7 and `ListenableFuture<?>` will be removed in 3.0.
 
 IMPORTANT: The listener container factory must be configured with `AcknowledgeMode.MANUAL` so that the consumer thread will not ack the message; instead, the asynchronous completion will ack or nack the message when the async operation completes.
 When the async result is completed with an error, whether the message is requeued or not depends on the exception type thrown, the container configuration, and the container error handler.
@@ -4646,6 +4647,9 @@ See <<direct-reply-to>> to use direct reply-to with the synchronous `RabbitTempl
 Version 2.0 introduced variants of these methods (`convertSendAndReceiveAsType`) that take an additional `ParameterizedTypeReference` argument to convert complex returned types.
 You must configure the underlying `RabbitTemplate` with a `SmartMessageConverter`.
 See <<json-complex>> for more information.
+
+Starting with version 2.4.7, the `AsyncRabbitTemplate` is deprecated in favor of `AsyncRabbitTemplate2` which returns `CompletableFuture` s instead of `ListenableFuture` s.
+In 3.0, `AsyncRabbitTemplate2` will be renamed to `AsyncRabbitTemplate`.
 
 [[remoting]]
 ===== Spring Remoting with AMQP

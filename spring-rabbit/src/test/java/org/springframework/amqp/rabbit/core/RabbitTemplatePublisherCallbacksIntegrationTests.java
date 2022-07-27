@@ -839,14 +839,14 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		admin.declareQueue(queue);
 		CorrelationData cd1 = new CorrelationData();
 		this.templateWithConfirmsEnabled.convertAndSend("", queue.getName(), "foo", cd1);
-		assertThat(cd1.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
+		assertThat(cd1.getCompletableFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
 		CorrelationData cd2 = new CorrelationData();
 		this.templateWithConfirmsEnabled.convertAndSend("", queue.getName(), "bar", cd2);
-		assertThat(cd2.getFuture().get(10, TimeUnit.SECONDS).isAck()).isFalse();
+		assertThat(cd2.getCompletableFuture().get(10, TimeUnit.SECONDS).isAck()).isFalse();
 		CorrelationData cd3 = new CorrelationData();
 		this.templateWithConfirmsEnabled.convertAndSend("NO_EXCHANGE_HERE", queue.getName(), "foo", cd3);
-		assertThat(cd3.getFuture().get(10, TimeUnit.SECONDS).isAck()).isFalse();
-		assertThat(cd3.getFuture().get().getReason()).contains("NOT_FOUND");
+		assertThat(cd3.getCompletableFuture().get(10, TimeUnit.SECONDS).isAck()).isFalse();
+		assertThat(cd3.getCompletableFuture().get().getReason()).contains("NOT_FOUND");
 		CorrelationData cd4 = new CorrelationData("42");
 		AtomicBoolean resent = new AtomicBoolean();
 		AtomicReference<String> callbackThreadName = new AtomicReference<>();
@@ -858,7 +858,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			callbackLatch.countDown();
 		});
 		this.templateWithConfirmsAndReturnsEnabled.convertAndSend("", "NO_QUEUE_HERE", "foo", cd4);
-		assertThat(cd4.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
+		assertThat(cd4.getCompletableFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
 		assertThat(callbackLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(cd4.getReturned()).isNotNull();
 		assertThat(resent.get()).isTrue();

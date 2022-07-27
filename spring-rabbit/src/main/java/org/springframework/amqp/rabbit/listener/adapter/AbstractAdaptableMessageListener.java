@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 the original author or authors.
+ * Copyright 2014-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -385,6 +386,21 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 							basicAck(request, channel);
 						},
 						t -> asyncFailure(request, channel, t));
+			}
+			else if (resultArg.getReturnValue() instanceof CompletableFuture) {
+				if (!this.isManualAck) {
+					this.logger.warn("Container AcknowledgeMode must be MANUAL for a Future<?> return type; "
+							+ "otherwise the container will ack the message immediately");
+				}
+				((CompletableFuture<?>) resultArg.getReturnValue()).whenComplete((r, t) -> {
+						if (t == null) {
+							asyncSuccess(resultArg, request, channel, source, r);
+							basicAck(request, channel);
+						}
+						else {
+							asyncFailure(request, channel, t);
+						}
+				});
 			}
 			else if (monoPresent && MonoHandler.isMono(resultArg.getReturnValue())) {
 				if (!this.isManualAck) {
