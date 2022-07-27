@@ -387,7 +387,7 @@ project('spring-rabbit') {
 		optionalApi "ch.qos.logback:logback-classic:$logbackVersion"
 		optionalApi 'org.apache.logging.log4j:log4j-core'
 		optionalApi 'io.micrometer:micrometer-core'
-		optionalApi 'io.micrometer:micrometer-tracing-api'
+		optionalApi 'io.micrometer:micrometer-tracing'
 		// Spring Data projection message binding support
 		optionalApi ("org.springframework.data:spring-data-commons") {
 			exclude group: 'org.springframework'
