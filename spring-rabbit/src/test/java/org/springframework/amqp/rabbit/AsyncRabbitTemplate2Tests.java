@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.Mockito.mock;
 
 import java.util.Map;
 import java.util.UUID;
@@ -46,6 +47,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
+import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
@@ -375,6 +377,48 @@ public class AsyncRabbitTemplate2Tests {
 		 */
 		future.complete("foo");
 		assertThat(callback.result).isNull();
+	}
+
+	@Test
+	void ctorCoverage() {
+		AsyncRabbitTemplate2 template = new AsyncRabbitTemplate2(mock(ConnectionFactory.class), "ex", "rk");
+		assertThat(template).extracting(t -> t.getRabbitTemplate())
+				.extracting("exchange")
+				.isEqualTo("ex");
+		assertThat(template).extracting(t -> t.getRabbitTemplate())
+				.extracting("routingKey")
+				.isEqualTo("rk");
+		template = new AsyncRabbitTemplate2(mock(ConnectionFactory.class), "ex", "rk", "rq");
+		assertThat(template).extracting(t -> t.getRabbitTemplate())
+				.extracting("exchange")
+				.isEqualTo("ex");
+		assertThat(template).extracting(t -> t.getRabbitTemplate())
+				.extracting("routingKey")
+				.isEqualTo("rk");
+		assertThat(template)
+				.extracting("replyAddress")
+				.isEqualTo("rq");
+		assertThat(template).extracting("container")
+				.extracting("queueNames")
+				.isEqualTo(new String[] { "rq" });
+		template = new AsyncRabbitTemplate2(mock(ConnectionFactory.class), "ex", "rk", "rq", "ra");
+		assertThat(template).extracting(t -> t.getRabbitTemplate())
+				.extracting("exchange")
+				.isEqualTo("ex");
+		assertThat(template).extracting(t -> t.getRabbitTemplate())
+				.extracting("routingKey")
+				.isEqualTo("rk");
+		assertThat(template)
+				.extracting("replyAddress")
+				.isEqualTo("ra");
+		assertThat(template).extracting("container")
+				.extracting("queueNames")
+				.isEqualTo(new String[] { "rq" });
+		template = new AsyncRabbitTemplate2(mock(RabbitTemplate.class), mock(AbstractMessageListenerContainer.class),
+				"rq");
+		assertThat(template)
+				.extracting("replyAddress")
+				.isEqualTo("rq");
 	}
 
 	private void checkConverterResult(CompletableFuture<String> future, String expected) throws InterruptedException {
