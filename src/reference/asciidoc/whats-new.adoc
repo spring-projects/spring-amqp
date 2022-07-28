@@ -33,3 +33,8 @@ See <<json-message-converter>> for more information.
 
 The `AsyncRabbitTemplate` is deprecated in favor of `AsyncRabbitTemplate2` which returns `CompletableFuture` s instead of `ListenableFuture` s.
 See <<async-template>> for more information.
+
+==== Stream Support Changes
+
+`RabbitStreamOperations` and `RabbitStreamTemplate` have been deprecated in favor of `RabbitStreamOperations2` and `RabbitStreamTemplate2` respectively; they return `CompletableFuture` instead of `ListenableFuture`.
+See <<stream-support>> for more information.
