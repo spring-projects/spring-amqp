@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.springframework.amqp.core.AsyncAmqpTemplate2;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
@@ -32,7 +33,7 @@ import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer
  *
  */
 @Deprecated
-public class AsyncRabbitTemplate2 extends AsyncRabbitTemplate {
+public class AsyncRabbitTemplate2 extends AsyncRabbitTemplate implements AsyncAmqpTemplate2 {
 
 	public AsyncRabbitTemplate2(ConnectionFactory connectionFactory, String exchange, String routingKey,
 			String replyQueue, String replyAddress) {

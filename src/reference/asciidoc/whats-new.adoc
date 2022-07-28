@@ -16,3 +16,8 @@ The remoting feature (using RMI) is no longer supported.
 The `AsyncRabbitTemplate2`, which was added in 2.4.7 to aid migration to this release, is deprecated in favor of `AsyncRabbitTemplate`.
 The `AsyncRabbitTemplate` now returns `CompletableFuture` s instead of `ListenableFuture` s.
 See <<async-template>> for more information.
+
+==== Stream Support Changes
+
+`RabbitStreamOperations2` and `RabbitStreamTemplate2` have been deprecated in favor of `RabbitStreamOperations` and `RabbitStreamTemplate` respectively.
+See <<stream-support>> for more information.

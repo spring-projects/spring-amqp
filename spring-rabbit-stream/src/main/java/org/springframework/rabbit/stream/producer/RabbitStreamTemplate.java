@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2021-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.rabbit.stream.producer;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -27,8 +29,6 @@ import org.springframework.rabbit.stream.support.StreamMessageProperties;
 import org.springframework.rabbit.stream.support.converter.DefaultStreamMessageConverter;
 import org.springframework.rabbit.stream.support.converter.StreamMessageConverter;
 import org.springframework.util.Assert;
-import org.springframework.util.concurrent.ListenableFuture;
-import org.springframework.util.concurrent.SettableListenableFuture;
 
 import com.rabbitmq.stream.ConfirmationHandler;
 import com.rabbitmq.stream.Constants;
@@ -138,27 +138,27 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 
 
 	@Override
-	public ListenableFuture<Boolean> send(Message message) {
-		SettableListenableFuture<Boolean> future = new SettableListenableFuture<>();
+	public CompletableFuture<Boolean> send(Message message) {
+		CompletableFuture<Boolean> future = new CompletableFuture<>();
 		createOrGetProducer().send(this.streamConverter.fromMessage(message), handleConfirm(future));
 		return future;
 	}
 
 	@Override
-	public ListenableFuture<Boolean> convertAndSend(Object message) {
+	public CompletableFuture<Boolean> convertAndSend(Object message) {
 		return convertAndSend(message, null);
 	}
 
 	@Override
-	public ListenableFuture<Boolean> convertAndSend(Object message, @Nullable MessagePostProcessor mpp) {
+	public CompletableFuture<Boolean> convertAndSend(Object message, @Nullable MessagePostProcessor mpp) {
 		Message message2 = this.messageConverter.toMessage(message, new StreamMessageProperties());
 		Assert.notNull(message2, "The message converter returned null");
 		if (mpp != null) {
 			message2 = mpp.postProcessMessage(message2);
 			if (message2 == null) {
 				this.logger.debug("Message Post Processor returned null, message not sent");
-				SettableListenableFuture<Boolean> future = new SettableListenableFuture<>();
-				future.set(false);
+				CompletableFuture<Boolean> future = new CompletableFuture<>();
+				future.complete(false);
 				return future;
 			}
 		}
@@ -167,8 +167,8 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 
 
 	@Override
-	public ListenableFuture<Boolean> send(com.rabbitmq.stream.Message message) {
-		SettableListenableFuture<Boolean> future = new SettableListenableFuture<>();
+	public CompletableFuture<Boolean> send(com.rabbitmq.stream.Message message) {
+		CompletableFuture<Boolean> future = new CompletableFuture<>();
 		createOrGetProducer().send(message, handleConfirm(future));
 		return future;
 	}
@@ -178,10 +178,10 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 		return createOrGetProducer().messageBuilder();
 	}
 
-	private ConfirmationHandler handleConfirm(SettableListenableFuture<Boolean> future) {
+	private ConfirmationHandler handleConfirm(CompletableFuture<Boolean> future) {
 		return confStatus -> {
 			if (confStatus.isConfirmed()) {
-				future.set(true);
+				future.complete(true);
 			}
 			else {
 				int code = confStatus.getCode();
@@ -203,7 +203,7 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 					errorMessage = "Unknown code: " + code;
 					break;
 				}
-				future.setException(new StreamSendException(errorMessage, code));
+				future.completeExceptionally(new StreamSendException(errorMessage, code));
 			}
 		};
 	}

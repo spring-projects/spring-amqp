@@ -16,13 +16,14 @@
 
 package org.springframework.rabbit.stream.producer;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.lang.Nullable;
 import org.springframework.rabbit.stream.support.converter.StreamMessageConverter;
-import org.springframework.util.concurrent.ListenableFuture;
 
 import com.rabbitmq.stream.MessageBuilder;
 
@@ -40,14 +41,14 @@ public interface RabbitStreamOperations extends AutoCloseable {
 	 * @param message the message.
 	 * @return a future to indicate success/failure.
 	 */
-	ListenableFuture<Boolean> send(Message message);
+	CompletableFuture<Boolean> send(Message message);
 
 	/**
 	 * Convert to and send a Spring AMQP message.
 	 * @param message the payload.
 	 * @return a future to indicate success/failure.
 	 */
-	ListenableFuture<Boolean> convertAndSend(Object message);
+	CompletableFuture<Boolean> convertAndSend(Object message);
 
 	/**
 	 * Convert to and send a Spring AMQP message. If a {@link MessagePostProcessor} is
@@ -57,7 +58,7 @@ public interface RabbitStreamOperations extends AutoCloseable {
 	 * @param mpp a message post processor.
 	 * @return a future to indicate success/failure.
 	 */
-	ListenableFuture<Boolean> convertAndSend(Object message, @Nullable MessagePostProcessor mpp);
+	CompletableFuture<Boolean> convertAndSend(Object message, @Nullable MessagePostProcessor mpp);
 
 	/**
 	 * Send a native stream message.
@@ -65,7 +66,7 @@ public interface RabbitStreamOperations extends AutoCloseable {
 	 * @return a future to indicate success/failure.
 	 * @see #messageBuilder()
 	 */
-	ListenableFuture<Boolean> send(com.rabbitmq.stream.Message message);
+	CompletableFuture<Boolean> send(com.rabbitmq.stream.Message message);
 
 	/**
 	 * Return the producer's {@link MessageBuilder} to create native stream messages.

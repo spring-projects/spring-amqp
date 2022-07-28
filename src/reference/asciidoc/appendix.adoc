@@ -44,6 +44,11 @@ See <<async-template>> for more information.
 The `Jackson2JsonMessageConverter` can now determine the charset from the `contentEncoding` header.
 See <<json-message-converter>> for more information.
 
+==== Stream Support Changes
+
+`RabbitStreamOperations` and `RabbitStreamTemplate` have been deprecated in favor of `RabbitStreamOperations2` and `RabbitStreamTemplate2` respectively; they return `CompletableFuture` instead of `ListenableFuture`.
+See <<stream-support>> for more information.
+
 ==== Changes in 2.3 Since 2.2
 
 This section describes the changes between version 2.2 and version 2.3.
