@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 the original author or authors.
+ * Copyright 2016-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.Mockito.mock;
 
 import java.util.Map;
 import java.util.UUID;
@@ -40,14 +41,13 @@ import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.AsyncRabbitTemplate2.RabbitConverterFuture2;
-import org.springframework.amqp.rabbit.AsyncRabbitTemplate2.RabbitMessageFuture2;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
+import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
@@ -253,7 +253,7 @@ public class AsyncRabbitTemplate2Tests {
 	@DirtiesContext
 	public void testConvertWithConfirm() throws Exception {
 		this.asyncTemplate.setEnableConfirms(true);
-		RabbitConverterFuture2<String> future = this.asyncTemplate.convertSendAndReceive("sleep");
+		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("sleep");
 		CompletableFuture<Boolean> confirm = future.getConfirm();
 		assertThat(confirm).isNotNull();
 		assertThat(confirm.get(10, TimeUnit.SECONDS)).isTrue();
@@ -264,7 +264,7 @@ public class AsyncRabbitTemplate2Tests {
 	@DirtiesContext
 	public void testMessageWithConfirm() throws Exception {
 		this.asyncTemplate.setEnableConfirms(true);
-		RabbitMessageFuture2 future = this.asyncTemplate
+		RabbitMessageFuture future = this.asyncTemplate
 				.sendAndReceive(new SimpleMessageConverter().toMessage("sleep", new MessageProperties()));
 		CompletableFuture<Boolean> confirm = future.getConfirm();
 		assertThat(confirm).isNotNull();
@@ -276,7 +276,7 @@ public class AsyncRabbitTemplate2Tests {
 	@DirtiesContext
 	public void testConvertWithConfirmDirect() throws Exception {
 		this.asyncDirectTemplate.setEnableConfirms(true);
-		RabbitConverterFuture2<String> future = this.asyncDirectTemplate.convertSendAndReceive("sleep");
+		RabbitConverterFuture<String> future = this.asyncDirectTemplate.convertSendAndReceive("sleep");
 		CompletableFuture<Boolean> confirm = future.getConfirm();
 		assertThat(confirm).isNotNull();
 		assertThat(confirm.get(10, TimeUnit.SECONDS)).isTrue();
@@ -287,7 +287,7 @@ public class AsyncRabbitTemplate2Tests {
 	@DirtiesContext
 	public void testMessageWithConfirmDirect() throws Exception {
 		this.asyncDirectTemplate.setEnableConfirms(true);
-		RabbitMessageFuture2 future = this.asyncDirectTemplate
+		RabbitMessageFuture future = this.asyncDirectTemplate
 				.sendAndReceive(new SimpleMessageConverter().toMessage("sleep", new MessageProperties()));
 		CompletableFuture<Boolean> confirm = future.getConfirm();
 		assertThat(confirm).isNotNull();
@@ -321,7 +321,7 @@ public class AsyncRabbitTemplate2Tests {
 	@DirtiesContext
 	public void testReplyAfterReceiveTimeout() throws Exception {
 		this.asyncTemplate.setReceiveTimeout(100);
-		RabbitConverterFuture2<String> future = this.asyncTemplate.convertSendAndReceive("sleep");
+		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("sleep");
 		TheCallback callback = new TheCallback();
 		future.whenComplete(callback);
 		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(1);
@@ -351,7 +351,7 @@ public class AsyncRabbitTemplate2Tests {
 	@DirtiesContext
 	public void testStopCancelled() throws Exception {
 		this.asyncTemplate.setReceiveTimeout(5000);
-		RabbitConverterFuture2<String> future = this.asyncTemplate.convertSendAndReceive("noReply");
+		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("noReply");
 		TheCallback callback = new TheCallback();
 		future.whenComplete(callback);
 		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(1);
@@ -377,6 +377,48 @@ public class AsyncRabbitTemplate2Tests {
 		 */
 		future.complete("foo");
 		assertThat(callback.result).isNull();
+	}
+
+	@Test
+	void ctorCoverage() {
+		AsyncRabbitTemplate2 template = new AsyncRabbitTemplate2(mock(ConnectionFactory.class), "ex", "rk");
+		assertThat(template).extracting(t -> t.getRabbitTemplate())
+				.extracting("exchange")
+				.isEqualTo("ex");
+		assertThat(template).extracting(t -> t.getRabbitTemplate())
+				.extracting("routingKey")
+				.isEqualTo("rk");
+		template = new AsyncRabbitTemplate2(mock(ConnectionFactory.class), "ex", "rk", "rq");
+		assertThat(template).extracting(t -> t.getRabbitTemplate())
+				.extracting("exchange")
+				.isEqualTo("ex");
+		assertThat(template).extracting(t -> t.getRabbitTemplate())
+				.extracting("routingKey")
+				.isEqualTo("rk");
+		assertThat(template)
+				.extracting("replyAddress")
+				.isEqualTo("rq");
+		assertThat(template).extracting("container")
+				.extracting("queueNames")
+				.isEqualTo(new String[] { "rq" });
+		template = new AsyncRabbitTemplate2(mock(ConnectionFactory.class), "ex", "rk", "rq", "ra");
+		assertThat(template).extracting(t -> t.getRabbitTemplate())
+				.extracting("exchange")
+				.isEqualTo("ex");
+		assertThat(template).extracting(t -> t.getRabbitTemplate())
+				.extracting("routingKey")
+				.isEqualTo("rk");
+		assertThat(template)
+				.extracting("replyAddress")
+				.isEqualTo("ra");
+		assertThat(template).extracting("container")
+				.extracting("queueNames")
+				.isEqualTo(new String[] { "rq" });
+		template = new AsyncRabbitTemplate2(mock(RabbitTemplate.class), mock(AbstractMessageListenerContainer.class),
+				"rq");
+		assertThat(template)
+				.extracting("replyAddress")
+				.isEqualTo("rq");
 	}
 
 	private void checkConverterResult(CompletableFuture<String> future, String expected) throws InterruptedException {

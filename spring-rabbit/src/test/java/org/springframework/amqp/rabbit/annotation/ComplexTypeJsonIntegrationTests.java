@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate2;
-import org.springframework.amqp.rabbit.AsyncRabbitTemplate2.RabbitConverterFuture2;
+import org.springframework.amqp.rabbit.RabbitConverterFuture;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -137,7 +137,7 @@ public class ComplexTypeJsonIntegrationTests {
 				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { }));
 	}
 
-	private void verifyFooBarBazQux(RabbitConverterFuture2<Foo<Bar<Baz, Qux>>> future) throws Exception {
+	private void verifyFooBarBazQux(RabbitConverterFuture<Foo<Bar<Baz, Qux>>> future) throws Exception {
 		verifyFooBarBazQux(future.get(10, TimeUnit.SECONDS));
 	}
 
