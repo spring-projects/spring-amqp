@@ -119,7 +119,7 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 	public synchronized Connection createConnection() throws AmqpException {
 		if (this.connection == null || !this.connection.isOpen()) {
 			Connection bareConnection = createBareConnection(); // NOSONAR - see destroy()
-			this.connection = new ConnectionWrapper(bareConnection.getDelegate(), getCloseTimeout());
+			this.connection = new ConnectionWrapper(bareConnection.getDelegate(), getCloseTimeout()); // NOSONAR
 			getConnectionListener().onCreate(this.connection);
 		}
 		return this.connection;
