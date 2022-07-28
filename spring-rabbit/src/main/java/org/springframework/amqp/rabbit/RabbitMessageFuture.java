@@ -25,6 +25,8 @@ import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerCont
 
 /**
  * A {@link RabbitFuture} with a return type of {@link Message}.
+ *
+ * @author Gary Russell
  * @since 2.4.7
  */
 public class RabbitMessageFuture extends RabbitFuture<Message> {

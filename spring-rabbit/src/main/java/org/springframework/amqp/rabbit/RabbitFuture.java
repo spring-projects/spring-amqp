@@ -27,6 +27,8 @@ import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerCont
 /**
  * Base class for {@link CompletableFuture}s returned by {@link AsyncRabbitTemplate2}.
  * @param <T> the type.
+ *
+ * @author Gary Russell
  * @since 2.4.7
  */
 public abstract class RabbitFuture<T> extends CompletableFuture<T> {

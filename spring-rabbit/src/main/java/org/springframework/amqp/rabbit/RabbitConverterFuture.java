@@ -28,6 +28,8 @@ import org.springframework.core.ParameterizedTypeReference;
  * A {@link RabbitFuture} with a return type of the template's
  * generic parameter.
  * @param <C> the type.
+ *
+ * @author Gary Russell
  * @since 2.4.7
  */
 public class RabbitConverterFuture<C> extends RabbitFuture<C> {
