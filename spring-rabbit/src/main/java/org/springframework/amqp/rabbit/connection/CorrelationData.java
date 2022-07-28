@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@
 package org.springframework.amqp.rabbit.connection;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import org.springframework.amqp.core.Correlation;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.ReturnedMessage;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-import org.springframework.util.concurrent.SettableListenableFuture;
 
 /**
  * Base class for correlating publisher confirms to sent messages. Use the
@@ -41,7 +41,7 @@ import org.springframework.util.concurrent.SettableListenableFuture;
  */
 public class CorrelationData implements Correlation {
 
-	private final SettableListenableFuture<Confirm> future = new SettableListenableFuture<>();
+	private final CompletableFuture<Confirm> future = new CompletableFuture<>();
 
 	private volatile String id;
 
@@ -91,7 +91,18 @@ public class CorrelationData implements Correlation {
 	 * @return the future.
 	 * @since 2.1
 	 */
-	public SettableListenableFuture<Confirm> getFuture() {
+	public CompletableFuture<Confirm> getFuture() {
+		return this.future;
+	}
+
+	/**
+	 * Return a future to check the success/failure of the publish operation.
+	 * @return the future.
+	 * @since 2.4.7
+	 * @deprecated in favor of {@link #getFuture()}.
+	 */
+	@Deprecated
+	public CompletableFuture<Confirm> getCompletableFuture() {
 		return this.future;
 	}
 

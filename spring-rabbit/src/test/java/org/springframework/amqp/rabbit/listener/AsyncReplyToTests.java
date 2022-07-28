@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2021-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.listener;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -44,8 +45,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.springframework.util.concurrent.ListenableFuture;
-import org.springframework.util.concurrent.SettableListenableFuture;
 
 import com.rabbitmq.client.Channel;
 
@@ -97,7 +96,7 @@ public class AsyncReplyToTests {
 				.build());
 		assertThat(config.dmlcLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		registry.getListenerContainer("dmlc").stop();
-		assertThat(admin.getQueueInfo("async2").getMessageCount()).isEqualTo(1);
+		assertThat(admin.getQueueInfo("async2").getMessageCount()).isEqualTo(0);
 	 }
 
 	@Configuration
@@ -109,13 +108,15 @@ public class AsyncReplyToTests {
 		volatile CountDownLatch dmlcLatch = new CountDownLatch(1);
 
 		@RabbitListener(id = "smlc", queues = "async1", containerFactory = "smlcf")
-		ListenableFuture<String> listen1(String in, Channel channel) {
-			return new SettableListenableFuture<>();
+		CompletableFuture<String> listen1(String in, Channel channel) {
+			return new CompletableFuture<>();
 		}
 
 		@RabbitListener(id = "dmlc", queues = "async2", containerFactory = "dmlcf")
-		ListenableFuture<String> listen2(String in, Channel channel) {
-			return new SettableListenableFuture<>();
+		CompletableFuture<String> listen2(String in, Channel channel) {
+			CompletableFuture<String> future = new CompletableFuture<>();
+			future.complete("test");
+			return future;
 		}
 
 		@Bean
