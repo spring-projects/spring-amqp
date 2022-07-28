@@ -292,7 +292,7 @@ public class AsyncRabbitTemplate2 implements AsyncAmqpTemplate2, ChannelAwareMes
 	}
 
 	/**
-	 * Set to true to enable publisher confirms. When enabled, the {@link RabbitFuture2}
+	 * Set to true to enable publisher confirms. When enabled, the {@link RabbitFuture}
 	 * returned by the send and receive operation will have a
 	 * {@code CompletableFuture<Boolean>} in its {@code confirm} property.
 	 * @param enableConfirms true to enable publisher confirms.
