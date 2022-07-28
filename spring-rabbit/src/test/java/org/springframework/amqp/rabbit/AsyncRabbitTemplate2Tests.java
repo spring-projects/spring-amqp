@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 the original author or authors.
+ * Copyright 2016-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,6 @@ import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.AsyncRabbitTemplate2.RabbitConverterFuture2;
-import org.springframework.amqp.rabbit.AsyncRabbitTemplate2.RabbitMessageFuture2;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -253,7 +251,7 @@ public class AsyncRabbitTemplate2Tests {
 	@DirtiesContext
 	public void testConvertWithConfirm() throws Exception {
 		this.asyncTemplate.setEnableConfirms(true);
-		RabbitConverterFuture2<String> future = this.asyncTemplate.convertSendAndReceive("sleep");
+		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("sleep");
 		CompletableFuture<Boolean> confirm = future.getConfirm();
 		assertThat(confirm).isNotNull();
 		assertThat(confirm.get(10, TimeUnit.SECONDS)).isTrue();
@@ -264,7 +262,7 @@ public class AsyncRabbitTemplate2Tests {
 	@DirtiesContext
 	public void testMessageWithConfirm() throws Exception {
 		this.asyncTemplate.setEnableConfirms(true);
-		RabbitMessageFuture2 future = this.asyncTemplate
+		RabbitMessageFuture future = this.asyncTemplate
 				.sendAndReceive(new SimpleMessageConverter().toMessage("sleep", new MessageProperties()));
 		CompletableFuture<Boolean> confirm = future.getConfirm();
 		assertThat(confirm).isNotNull();
@@ -276,7 +274,7 @@ public class AsyncRabbitTemplate2Tests {
 	@DirtiesContext
 	public void testConvertWithConfirmDirect() throws Exception {
 		this.asyncDirectTemplate.setEnableConfirms(true);
-		RabbitConverterFuture2<String> future = this.asyncDirectTemplate.convertSendAndReceive("sleep");
+		RabbitConverterFuture<String> future = this.asyncDirectTemplate.convertSendAndReceive("sleep");
 		CompletableFuture<Boolean> confirm = future.getConfirm();
 		assertThat(confirm).isNotNull();
 		assertThat(confirm.get(10, TimeUnit.SECONDS)).isTrue();
@@ -287,7 +285,7 @@ public class AsyncRabbitTemplate2Tests {
 	@DirtiesContext
 	public void testMessageWithConfirmDirect() throws Exception {
 		this.asyncDirectTemplate.setEnableConfirms(true);
-		RabbitMessageFuture2 future = this.asyncDirectTemplate
+		RabbitMessageFuture future = this.asyncDirectTemplate
 				.sendAndReceive(new SimpleMessageConverter().toMessage("sleep", new MessageProperties()));
 		CompletableFuture<Boolean> confirm = future.getConfirm();
 		assertThat(confirm).isNotNull();
@@ -321,7 +319,7 @@ public class AsyncRabbitTemplate2Tests {
 	@DirtiesContext
 	public void testReplyAfterReceiveTimeout() throws Exception {
 		this.asyncTemplate.setReceiveTimeout(100);
-		RabbitConverterFuture2<String> future = this.asyncTemplate.convertSendAndReceive("sleep");
+		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("sleep");
 		TheCallback callback = new TheCallback();
 		future.whenComplete(callback);
 		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(1);
@@ -351,7 +349,7 @@ public class AsyncRabbitTemplate2Tests {
 	@DirtiesContext
 	public void testStopCancelled() throws Exception {
 		this.asyncTemplate.setReceiveTimeout(5000);
-		RabbitConverterFuture2<String> future = this.asyncTemplate.convertSendAndReceive("noReply");
+		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("noReply");
 		TheCallback callback = new TheCallback();
 		future.whenComplete(callback);
 		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(1);

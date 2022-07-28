@@ -37,7 +37,7 @@ import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate2;
-import org.springframework.amqp.rabbit.AsyncRabbitTemplate2.RabbitConverterFuture2;
+import org.springframework.amqp.rabbit.RabbitConverterFuture;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -106,7 +106,7 @@ public class AsyncListenerTests {
 	@Test
 	public void testAsyncListener() throws Exception {
 		assertThat(this.rabbitTemplate.convertSendAndReceive(this.queue1.getName(), "foo")).isEqualTo("FOO");
-		RabbitConverterFuture2<Object> future = this.asyncTemplate.convertSendAndReceive(this.queue1.getName(), "foo");
+		RabbitConverterFuture<Object> future = this.asyncTemplate.convertSendAndReceive(this.queue1.getName(), "foo");
 		assertThat(future.get(10, TimeUnit.SECONDS)).isEqualTo("FOO");
 		assertThat(this.config.typeId).isEqualTo("java.lang.String");
 		assertThat(this.rabbitTemplate.convertSendAndReceive(this.queue2.getName(), "foo")).isEqualTo("FOO");
