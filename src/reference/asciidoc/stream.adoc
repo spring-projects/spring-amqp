@@ -67,6 +67,8 @@ The `ProducerCustomizer` provides a mechanism to customize the producer before i
 
 Refer to the https://rabbitmq.github.io/rabbitmq-stream-java-client/stable/htmlsingle/[Java Client Documentation] about customizing the `Environment` and `Producer`.
 
+IMPORTANT: In version 2.4.7 `RabbitStreamOperations2` and `RabbitStreamTemplate2` were added to assist migration to this version; `RabbitStreamOperations2` and `RabbitStreamTemplate2` are now deprecated in favor of `RabbitStreamOperations` and `RabbitStreamTemplate` respectively.
+
 ==== Receiving Messages
 
 Asynchronous message reception is provided by the `StreamListenerContainer` (and the `StreamRabbitListenerContainerFactory` when using `@RabbitListener`).
