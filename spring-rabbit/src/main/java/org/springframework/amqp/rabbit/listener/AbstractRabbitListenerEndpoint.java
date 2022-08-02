@@ -84,7 +84,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 
 	private TaskExecutor taskExecutor;
 
-	private boolean batchListener;
+	private Boolean batchListener;
 
 	private BatchingStrategy batchingStrategy;
 
@@ -293,7 +293,21 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 		this.taskExecutor = taskExecutor;
 	}
 
+	/**
+	 * True if this endpoint is for a batch listener.
+	 * @return true if batch.
+	 */
 	public boolean isBatchListener() {
+		return this.batchListener == null ? false : this.batchListener;
+	}
+
+	/**
+	 * True if this endpoint is for a batch listener.
+	 * @return {@link Boolean#TRUE} if batch.
+	 * @since 3.0
+	 */
+	@Nullable
+	public Boolean getBatchListener() {
 		return this.batchListener;
 	}
 

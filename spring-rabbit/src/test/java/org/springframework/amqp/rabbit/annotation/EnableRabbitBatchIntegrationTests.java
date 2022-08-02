@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 the original author or authors.
+ * Copyright 2019-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,7 +143,7 @@ public class EnableRabbitBatchIntegrationTests {
 		public SimpleRabbitListenerContainerFactory consumerBatchContainerFactory() {
 			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 			factory.setConnectionFactory(connectionFactory());
-			factory.setBatchListener(true);
+			factory.setBatchListener(false);
 			factory.setConsumerBatchEnabled(true);
 			factory.setBatchSize(2);
 			return factory;
@@ -202,7 +202,7 @@ public class EnableRabbitBatchIntegrationTests {
 			this.fooMessagesLatch.countDown();
 		}
 
-		@RabbitListener(queues = "batch.3", containerFactory = "consumerBatchContainerFactory")
+		@RabbitListener(queues = "batch.3", containerFactory = "consumerBatchContainerFactory", batch = "true")
 		public void listen3(List<Foo> in) {
 			this.foosConsumerBatchToo = in;
 			this.fooConsumerBatchTooLatch.countDown();

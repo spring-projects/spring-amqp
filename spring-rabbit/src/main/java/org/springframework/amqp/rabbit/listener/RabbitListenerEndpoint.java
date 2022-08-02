@@ -117,6 +117,14 @@ public interface RabbitListenerEndpoint {
 	}
 
 	/**
+	 * Whether this endpoint is for a batch listener.
+	 * @return {@link Boolean#TRUE} if batch.
+	 * @since 3.0
+	 */
+	@Nullable
+	Boolean getBatchListener();
+
+	/**
 	 * Set a {@link BatchingStrategy} to use when debatching messages.
 	 * @param batchingStrategy the batching strategy.
 	 * @since 2.2
