@@ -461,6 +461,9 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		resolvePostProcessor(endpoint, rabbitListener, target, beanName);
 		resolveMessageConverter(endpoint, rabbitListener, target, beanName);
 		resolveReplyContentType(endpoint, rabbitListener);
+		if (StringUtils.hasText(rabbitListener.batch())) {
+			endpoint.setBatchListener(Boolean.parseBoolean(rabbitListener.batch()));
+		}
 		RabbitListenerContainerFactory<?> factory = resolveContainerFactory(rabbitListener, target, beanName);
 
 		this.registrar.registerEndpoint(endpoint, factory);

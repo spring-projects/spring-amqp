@@ -381,7 +381,9 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 				.acceptIfNotNull(endpoint.getAckMode(), instance::setAcknowledgeMode)
 				.acceptIfNotNull(endpoint.getBatchingStrategy(), instance::setBatchingStrategy);
 			instance.setListenerId(endpoint.getId());
-			endpoint.setBatchListener(this.batchListener);
+			if (endpoint.getBatchListener() == null) {
+				endpoint.setBatchListener(this.batchListener);
+			}
 		}
 		applyCommonOverrides(endpoint, instance);
 

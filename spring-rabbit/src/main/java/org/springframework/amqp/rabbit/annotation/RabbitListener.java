@@ -332,4 +332,18 @@ public @interface RabbitListener {
 	 */
 	String converterWinsContentType() default "true";
 
+	/**
+	 * Override the container factory's {@code batchListener} property. The listener
+	 * method signature should receive a {@code List<?>}; refer to the reference
+	 * documentation. This allows a single container factory to be used for both record
+	 * and batch listeners; previously separate container factories were required.
+	 * @return "true" for the annotated method to be a batch listener or "false" for a
+	 * single message listener. If not set, the container factory setting is used. SpEL and
+	 * property place holders are not supported because the listener type cannot be
+	 * variable.
+	 * @since 3.0
+	 * @see Boolean#parseBoolean(String)
+	 */
+	String batch() default "";
+
 }

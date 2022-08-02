@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 the original author or authors.
+ * Copyright 2014-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,7 +130,7 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 	protected MessagingMessageListenerAdapter createMessageListener(MessageListenerContainer container) {
 		Assert.state(this.messageHandlerMethodFactory != null,
 				"Could not create message listener - MessageHandlerMethodFactory not set");
-		MessagingMessageListenerAdapter messageListener = createMessageListenerInstance();
+		MessagingMessageListenerAdapter messageListener = createMessageListenerInstance(getBatchListener());
 		messageListener.setHandlerAdapter(configureListenerAdapter(messageListener));
 		String replyToAddress = getDefaultReplyToAddress();
 		if (replyToAddress != null) {
@@ -159,11 +159,12 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 
 	/**
 	 * Create an empty {@link MessagingMessageListenerAdapter} instance.
+	 * @param batch whether this endpoint is for a batch listener.
 	 * @return the {@link MessagingMessageListenerAdapter} instance.
 	 */
-	protected MessagingMessageListenerAdapter createMessageListenerInstance() {
-		return this.adapterProvider.getAdapter(isBatchListener(), this.bean, this.method, this.returnExceptions,
-					this.errorHandler, getBatchingStrategy());
+	protected MessagingMessageListenerAdapter createMessageListenerInstance(@Nullable Boolean batch) {
+		return this.adapterProvider.getAdapter(batch == null ? isBatchListener() : batch, this.bean, this.method,
+				this.returnExceptions, this.errorHandler, getBatchingStrategy());
 	}
 
 	@Nullable
