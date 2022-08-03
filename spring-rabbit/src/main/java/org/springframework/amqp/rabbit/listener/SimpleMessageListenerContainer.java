@@ -1192,6 +1192,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		@Override // NOSONAR - complexity - many catch blocks
 		public void run() { // NOSONAR - line count
 			if (!isActive()) {
+				this.start.countDown();
 				return;
 			}
 
