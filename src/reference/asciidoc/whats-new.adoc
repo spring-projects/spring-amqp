@@ -21,3 +21,10 @@ See <<async-template>> for more information.
 
 `RabbitStreamOperations2` and `RabbitStreamTemplate2` have been deprecated in favor of `RabbitStreamOperations` and `RabbitStreamTemplate` respectively.
 See <<stream-support>> for more information.
+
+==== `@RabbitListener` Changes
+
+Batch listeners can now consume `Collection<?>` as well as `List<?>`.
+The batch messaging adapter now ensures that the method is suitable for consuming batches.
+When setting the container factory `consumerBatchEnabled` to `true`, the `batchListener` property is also set to `true`.
+See <<receiving-batch>> for more infoprmation.
