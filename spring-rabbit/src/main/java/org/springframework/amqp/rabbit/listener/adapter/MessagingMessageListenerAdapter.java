@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.amqp.core.MessageProperties;
@@ -328,6 +329,8 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 		private boolean isAmqpMessageList;
 
+		private boolean isCollection;
+
 		MessagingMessageConverterAdapter(Object bean, Method method, boolean batch) {
 			this.bean = bean;
 			this.method = method;
@@ -392,6 +395,12 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 					if (genericParameterType == null) {
 						genericParameterType = extractGenericParameterTypFromMethodParameter(methodParameter);
+						if (this.isBatch && !this.isCollection) {
+							throw new IllegalStateException(
+									"Mis-configuration; a batch listener must consume a List<?> or "
+									+ "Collection<?> for method: " + this.method);
+						}
+
 					}
 					else {
 						if (MessagingMessageListenerAdapter.this.logger.isDebugEnabled()) {
@@ -435,9 +444,11 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 					genericParameterType = ((ParameterizedType) genericParameterType).getActualTypeArguments()[0];
 				}
 				else if (this.isBatch
-						&& parameterizedType.getRawType().equals(List.class)
-						&& parameterizedType.getActualTypeArguments().length == 1) {
+						&& ((parameterizedType.getRawType().equals(List.class)
+								|| parameterizedType.getRawType().equals(Collection.class))
+								&& parameterizedType.getActualTypeArguments().length == 1)) {
 
+					this.isCollection = true;
 					Type paramType = parameterizedType.getActualTypeArguments()[0];
 					boolean messageHasGeneric = paramType instanceof ParameterizedType
 							&& ((ParameterizedType) paramType).getRawType().equals(Message.class);

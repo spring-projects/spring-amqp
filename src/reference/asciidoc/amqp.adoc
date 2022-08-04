@@ -3422,7 +3422,7 @@ Adding a `group` attribute causes a bean of type `Collection<MessageListenerCont
 ===== @RabbitListener with Batching
 
 When receiving a <<template-batching, a batch>> of messages, the de-batching is normally performed by the container and the listener is invoked with one message at at time.
-Starting with version 2.2, you can configure the listener container factory and listener to receive the entire batch in one call, simply set the factory's `batchListener` property, and make the method payload parameter a `List`:
+Starting with version 2.2, you can configure the listener container factory and listener to receive the entire batch in one call, simply set the factory's `batchListener` property, and make the method payload parameter a `List` or `Collection`:
 
 ====
 [source, java]
@@ -3486,20 +3486,17 @@ When using `consumerBatchEnabled` with `@RabbitListener`:
 ----
 @RabbitListener(queues = "batch.1", containerFactory = "consumerBatchContainerFactory")
 public void consumerBatch1(List<Message> amqpMessages) {
-    this.amqpMessagesReceived = amqpMessages;
-    this.batch1Latch.countDown();
+    ...
 }
 
 @RabbitListener(queues = "batch.2", containerFactory = "consumerBatchContainerFactory")
 public void consumerBatch2(List<org.springframework.messaging.Message<Invoice>> messages) {
-    this.messagingMessagesReceived = messages;
-    this.batch2Latch.countDown();
+    ...
 }
 
 @RabbitListener(queues = "batch.3", containerFactory = "consumerBatchContainerFactory")
 public void consumerBatch3(List<Invoice> strings) {
-    this.batch3Strings = strings;
-    this.batch3Latch.countDown();
+    ...
 }
 ----
 ====
@@ -3510,6 +3507,12 @@ public void consumerBatch3(List<Invoice> strings) {
 
 You can also add a `Channel` parameter, often used when using `MANUAL` ack mode.
 This is not very useful with the third example because you don't have access to the `delivery_tag` property.
+
+Spring Boot provides a configuration property for `consumerBatchEnabled` and `batchSize`, but not for `batchListener`.
+Starting with version 3.0, setting `consumerBatchEnabled` to `true` on the container factory also sets `batchListener` to `true`.
+When `consumerBatchEnabled` is `true`, the listener **must** be a batch listener.
+
+Starting with version 3.0, listener methods can consume `Collection<?>` or `List<?>`.
 
 [[using-container-factories]]
 ===== Using Container Factories
