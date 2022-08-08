@@ -4081,6 +4081,38 @@ converter to determine the type.
 IMPORTANT: Starting with version 1.6.11, `Jackson2JsonMessageConverter` and, therefore, `DefaultJackson2JavaTypeMapper` (`DefaultClassMapper`) provide the `trustedPackages` option to overcome https://pivotal.io/security/cve-2017-4995[Serialization Gadgets] vulnerability.
 By default and for backward compatibility, the `Jackson2JsonMessageConverter` trusts all packages -- that is, it uses `*` for the option.
 
+Starting with version 2.4.7, the converter can be configured to return `Optional.empty()` if Jackson returns `null` after deserializing the message body.
+This facilitates `@RabbitListener` s to receive null payloads, in two ways:
+
+====
+[source, java]
+----
+@RabbitListener(queues = "op.1")
+void listen(@Payload(required = false) Thing payload) {
+    handleOptional(payload); // payload might be null
+}
+
+@RabbitListener(queues = "op.2")
+void listen(Optional<Thing> optional) {
+    handleOptional(optional.orElse(this.emptyThing));
+}
+----
+====
+
+To enable this feature, set `setNullAsOptionalEmpty` to `true`; when `false` (default), the converter falls back to the raw message body (`byte[]`).
+
+====
+[source, java]
+----
+@Bean
+Jackson2JsonMessageConverter converter() {
+    Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
+    converter.setNullAsOptionalEmpty(true);
+    return converter;
+}
+----
+====
+
 [[jackson-abstract]]
 ====== Deserializing Abstract Classes
 

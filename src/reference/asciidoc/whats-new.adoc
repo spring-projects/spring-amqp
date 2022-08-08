@@ -28,3 +28,6 @@ Batch listeners can now consume `Collection<?>` as well as `List<?>`.
 The batch messaging adapter now ensures that the method is suitable for consuming batches.
 When setting the container factory `consumerBatchEnabled` to `true`, the `batchListener` property is also set to `true`.
 See <<receiving-batch>> for more infoprmation.
+
+`MessageConverter` s can now return `Optional.empty()` for a null value; this is currently implemented by the `Jackson2JsonMessageConverter`.
+See <<Jackson2JsonMessageConverter-from-message>> for more information.
