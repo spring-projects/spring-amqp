@@ -21,6 +21,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -96,6 +97,8 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 
 	private boolean alwaysConvertToInferredType;
 
+	private boolean nullAsOptionalEmpty;
+
 	/**
 	 * Construct with the provided {@link ObjectMapper} instance.
 	 * @param objectMapper the {@link ObjectMapper} to use.
@@ -148,6 +151,15 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 		this.supportedCTCharset = this.supportedContentType.getParameter("charset");
 	}
 
+	/**
+	 * When true, if jackson decodes the body as {@code null} convert to {@link Optional#empty()}
+	 * instead of returning the original body. Default false.
+	 * @param nullAsOptionalEmpty true to return empty.
+	 * @since 2.4.7
+	 */
+	public void setNullAsOptionalEmpty(boolean nullAsOptionalEmpty) {
+		this.nullAsOptionalEmpty = nullAsOptionalEmpty;
+	}
 
 	@Nullable
 	public ClassMapper getClassMapper() {
@@ -316,7 +328,12 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 			}
 		}
 		if (content == null) {
-			content = message.getBody();
+			if (this.nullAsOptionalEmpty) {
+				content = Optional.empty();
+			}
+			else {
+				content = message.getBody();
+			}
 		}
 		return content;
 	}
