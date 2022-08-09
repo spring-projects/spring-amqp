@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.annotation;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -73,6 +75,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.context.expression.StandardBeanExpressionResolver;
+import org.springframework.core.MethodParameter;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.annotation.MergedAnnotations;
@@ -82,9 +85,14 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.env.Environment;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.format.support.DefaultFormattingConversionService;
 import org.springframework.lang.Nullable;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.converter.GenericMessageConverter;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
+import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
+import org.springframework.messaging.handler.annotation.support.PayloadMethodArgumentResolver;
 import org.springframework.messaging.handler.invocation.HandlerMethodArgumentResolver;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 import org.springframework.util.Assert;
@@ -92,6 +100,7 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.validation.ObjectError;
 import org.springframework.validation.Validator;
 
 /**
@@ -977,6 +986,9 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	 */
 	private class RabbitHandlerMethodFactoryAdapter implements MessageHandlerMethodFactory {
 
+		private final DefaultFormattingConversionService defaultFormattingConversionService =
+				new DefaultFormattingConversionService();
+
 		private MessageHandlerMethodFactory factory;
 
 		RabbitHandlerMethodFactoryAdapter() {
@@ -1005,20 +1017,70 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				defaultFactory.setValidator(validator);
 			}
 			defaultFactory.setBeanFactory(RabbitListenerAnnotationBeanPostProcessor.this.beanFactory);
-			DefaultConversionService conversionService = new DefaultConversionService();
-			conversionService.addConverter(
+			this.defaultFormattingConversionService.addConverter(
 					new BytesToStringConverter(RabbitListenerAnnotationBeanPostProcessor.this.charset));
-			defaultFactory.setConversionService(conversionService);
+			defaultFactory.setConversionService(this.defaultFormattingConversionService);
 
-			List<HandlerMethodArgumentResolver> customArgumentsResolver =
-					new ArrayList<>(RabbitListenerAnnotationBeanPostProcessor.this.registrar.getCustomMethodArgumentResolvers());
+			List<HandlerMethodArgumentResolver> customArgumentsResolver = new ArrayList<>(
+					RabbitListenerAnnotationBeanPostProcessor.this.registrar.getCustomMethodArgumentResolvers());
 			defaultFactory.setCustomArgumentResolvers(customArgumentsResolver);
+			GenericMessageConverter messageConverter = new GenericMessageConverter(
+					this.defaultFormattingConversionService);
+			defaultFactory.setMessageConverter(messageConverter);
+			// Has to be at the end - look at PayloadMethodArgumentResolver documentation
+			customArgumentsResolver.add(new OptionalEmptyAwarePayloadArgumentResolver(messageConverter, validator));
 			defaultFactory.afterPropertiesSet();
 			return defaultFactory;
 		}
 
 	}
 
+	private static class OptionalEmptyAwarePayloadArgumentResolver extends PayloadMethodArgumentResolver {
+
+		OptionalEmptyAwarePayloadArgumentResolver(
+				org.springframework.messaging.converter.MessageConverter messageConverter,
+				@Nullable Validator validator) {
+
+			super(messageConverter, validator);
+		}
+
+		@Override
+		public Object resolveArgument(MethodParameter parameter, Message<?> message) throws Exception { // NOSONAR
+			Object resolved = null;
+			try {
+				resolved = super.resolveArgument(parameter, message);
+			}
+			catch (MethodArgumentNotValidException ex) {
+				if (message.getPayload().equals(Optional.empty())) {
+					Type type = parameter.getGenericParameterType();
+					List<ObjectError> allErrors = ex.getBindingResult().getAllErrors();
+					if (allErrors.size() == 1
+							&& allErrors.get(0).getDefaultMessage().equals("Payload value must not be empty")) {
+						return Optional.empty();
+					}
+				}
+				throw ex;
+			}
+			/*
+			 * Replace Optional.empty() list elements with null.
+			 */
+			if (resolved instanceof List) {
+				List<?> list = ((List<?>) resolved);
+				for (int i = 0; i < list.size(); i++) {
+					if (list.get(i).equals(Optional.empty())) {
+						list.set(i, null);
+					}
+				}
+			}
+			return resolved;
+		}
+
+		@Override
+		protected boolean isEmptyPayload(Object payload) {
+			return payload == null || payload.equals(Optional.empty());
+		}
+
+	}
 	/**
 	 * The metadata holder of the class with {@link RabbitListener}
 	 * and {@link RabbitHandler} annotations.

@@ -21,6 +21,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
@@ -404,7 +405,15 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 					}
 				}
 			}
+			return checkOptional(genericParameterType);
+		}
 
+		protected Type checkOptional(Type genericParameterType) {
+			if (genericParameterType instanceof ParameterizedType
+					&& ((ParameterizedType) genericParameterType).getRawType().equals(Optional.class)) {
+
+				return ((ParameterizedType) genericParameterType).getActualTypeArguments()[0];
+			}
 			return genericParameterType;
 		}
 
