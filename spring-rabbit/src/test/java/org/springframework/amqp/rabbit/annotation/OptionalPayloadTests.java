@@ -33,7 +33,6 @@ import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFacto
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunningSupport;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
@@ -103,13 +102,7 @@ public class OptionalPayloadTests {
 
 		@Bean
 		ConnectionFactory rabbitConnectionFactory() {
-			BrokerRunningSupport brokerRunning = RabbitAvailableCondition.getBrokerRunning();
-			CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
-			connectionFactory.setHost(brokerRunning.getHostName());
-			connectionFactory.setPort(brokerRunning.getPort());
-			connectionFactory.setUsername(brokerRunning.getUser());
-			connectionFactory.setPassword(brokerRunning.getPassword());
-			return connectionFactory;
+			return new CachingConnectionFactory(RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
 		}
 
 		@Bean
