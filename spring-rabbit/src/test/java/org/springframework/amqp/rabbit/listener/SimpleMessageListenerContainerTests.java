@@ -107,6 +107,7 @@ import com.rabbitmq.client.PossibleAuthenticationFailureException;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Mohammad Hewedy
+ * @author Yansong Ren
  */
 public class SimpleMessageListenerContainerTests {
 
