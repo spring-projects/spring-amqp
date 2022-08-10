@@ -18,7 +18,6 @@ package org.springframework.amqp.rabbit.annotation;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -100,6 +99,7 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
 import org.springframework.validation.Validator;
 
@@ -1055,11 +1055,15 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			}
 			catch (MethodArgumentNotValidException ex) {
 				if (message.getPayload().equals(Optional.empty())) {
-					Type type = parameter.getGenericParameterType();
-					List<ObjectError> allErrors = ex.getBindingResult().getAllErrors();
-					if (allErrors.size() == 1
-							&& allErrors.get(0).getDefaultMessage().equals("Payload value must not be empty")) {
-						return Optional.empty();
+					BindingResult bindingResult = ex.getBindingResult();
+					if (bindingResult != null) {
+						List<ObjectError> allErrors = bindingResult.getAllErrors();
+						if (allErrors.size() == 1) {
+							String defaultMessage = allErrors.get(0).getDefaultMessage();
+							if ("Payload value must not be empty".equals(defaultMessage)) {
+								return Optional.empty();
+							}
+						}
 					}
 				}
 				throw ex;
