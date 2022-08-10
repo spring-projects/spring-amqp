@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,6 +86,7 @@ import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.DirectFieldAccessor;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
@@ -106,6 +107,7 @@ import com.rabbitmq.client.PossibleAuthenticationFailureException;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Mohammad Hewedy
+ * @author Yansong Ren
  */
 public class SimpleMessageListenerContainerTests {
 
@@ -731,6 +733,30 @@ public class SimpleMessageListenerContainerTests {
 		verifyNoMoreInteractions(listener);
 	}
 
+	@Test
+	void testWithConsumerStartWhenNotActive() {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel = mock(Channel.class);
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(false)).willReturn(channel);
+
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		// overwrite task execute. shutdown container before task execute.
+		TestExecutor testExecutor = new TestExecutor(container);
+		container.setTaskExecutor(testExecutor);
+		container.start();
+
+		// then add queue for trigger container shutdown
+		container.addQueueNames("bar");
+
+		// valid the 'start' countdown is 0.  lastTask is AsyncMessageProcessingConsumer
+		Runnable lastTask = testExecutor.getLastTask();
+		CountDownLatch start = TestUtils.getPropertyValue(lastTask, "start", CountDownLatch.class);
+
+		assertThat(start.getCount()).isEqualTo(0L);
+	}
+
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,
 			final boolean cancel, final CountDownLatch latch) {
 		return invocation -> {
@@ -782,6 +808,35 @@ public class SimpleMessageListenerContainerTests {
 		protected void doRollback(DefaultTransactionStatus status) throws TransactionException {
 		}
 
+	}
+
+	@SuppressWarnings("serial")
+	private static final class TestExecutor extends SimpleAsyncTaskExecutor {
+
+		private final SimpleMessageListenerContainer simpleMessageListenerContainer;
+
+		private int shutdownCount = 0;
+
+		private Runnable lastTask = null;
+
+		private TestExecutor(SimpleMessageListenerContainer simpleMessageListenerContainer) {
+			this.simpleMessageListenerContainer = simpleMessageListenerContainer;
+		}
+
+		public Runnable getLastTask() {
+			return lastTask;
+		}
+
+		@Override
+		public void execute(Runnable task) {
+			// skip the first execution
+			if (++shutdownCount > 1) {
+				lastTask = task;
+				// before execute, shutdown the container for test
+				this.simpleMessageListenerContainer.shutdown();
+			}
+			super.execute(task);
+		}
 	}
 
 }
