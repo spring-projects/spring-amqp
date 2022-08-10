@@ -18,6 +18,8 @@ package org.springframework.amqp.rabbit.annotation;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -1051,7 +1053,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				resolved = super.resolveArgument(parameter, message);
 			}
 			catch (MethodArgumentNotValidException ex) {
-				if (message.getPayload().equals(Optional.empty())) {
+				Type type = parameter.getGenericParameterType();
+				if (isOptional(message, type)) {
 					BindingResult bindingResult = ex.getBindingResult();
 					if (bindingResult != null) {
 						List<ObjectError> allErrors = bindingResult.getAllErrors();
@@ -1077,6 +1080,12 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				}
 			}
 			return resolved;
+		}
+
+		private boolean isOptional(Message<?> message, Type type) {
+			return (Optional.class.equals(type) || (type instanceof ParameterizedType
+						&& Optional.class.equals(((ParameterizedType) type).getRawType())))
+					&& message.getPayload().equals(Optional.empty());
 		}
 
 		@Override
