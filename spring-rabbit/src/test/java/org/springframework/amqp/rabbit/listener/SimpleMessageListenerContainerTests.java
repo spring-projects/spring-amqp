@@ -811,7 +811,7 @@ public class SimpleMessageListenerContainerTests {
 	}
 
 	@SuppressWarnings("serial")
-	private class TestExecutor extends SimpleAsyncTaskExecutor {
+	private static final class TestExecutor extends SimpleAsyncTaskExecutor {
 
 		private final SimpleMessageListenerContainer simpleMessageListenerContainer;
 
