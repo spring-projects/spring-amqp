@@ -36,11 +36,11 @@ import org.springframework.lang.Nullable;
  * @since 3.0
  *
  */
-public class RabbitRuntimeHintsRegistrar implements RuntimeHintsRegistrar {
+public class RabbitRuntimeHints implements RuntimeHintsRegistrar {
 
 	@Override
 	public void registerHints(RuntimeHints hints, @Nullable	ClassLoader classLoader) {
-		RuntimeHintsUtils.registerAnnotation(hints, RabbitListener.class);
+		RuntimeHintsUtils.registerSynthesizedAnnotation(hints, RabbitListener.class);
 		ProxyHints proxyHints = hints.proxies();
 		proxyHints.registerJdkProxy(ChannelProxy.class);
 		proxyHints.registerJdkProxy(ChannelProxy.class, PublisherCallbackChannel.class);
