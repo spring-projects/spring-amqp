@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 the original author or authors.
+ * Copyright 2016-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ import org.springframework.amqp.rabbit.test.mockito.LambdaAnswer.ValueToReturn;
 import org.springframework.amqp.rabbit.test.mockito.LatchCountDownAndCallRealMethodAnswer;
 import org.springframework.aop.framework.ProxyFactoryBean;
 import org.springframework.core.annotation.AnnotationAttributes;
-import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.core.annotation.MergedAnnotations;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.util.Assert;
@@ -172,9 +172,9 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 
 		@Override
 		public Object invoke(MethodInvocation invocation) throws Throwable {
-			boolean isListenerMethod =
-					AnnotationUtils.findAnnotation(invocation.getMethod(), RabbitListener.class) != null
-					|| AnnotationUtils.findAnnotation(invocation.getMethod(), RabbitHandler.class) != null;
+			MergedAnnotations annotations = MergedAnnotations.from(invocation.getMethod());
+			boolean isListenerMethod = annotations.isPresent(RabbitListener.class)
+					|| annotations.isPresent(RabbitHandler.class);
 			try {
 				Object result = invocation.proceed();
 				if (isListenerMethod) {
