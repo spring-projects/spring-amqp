@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 the original author or authors.
+ * Copyright 2016-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,6 +140,11 @@ public class ExampleRabbitListenerCaptureTest {
 		}
 
 		@Bean
+		public Queue queue3() {
+			return new AnonymousQueue();
+		}
+
+		@Bean
 		public RabbitAdmin admin(ConnectionFactory cf) {
 			return new RabbitAdmin(cf);
 		}
@@ -168,6 +173,7 @@ public class ExampleRabbitListenerCaptureTest {
 		}
 
 		@RabbitListener(id = "bar", queues = "#{queue2.name}")
+		@RabbitListener(id = "bar2", queues = "#{queue3.name}")
 		public void foo(@Payload String foo, @Header("amqp_receivedRoutingKey") String rk) {
 			if (!failed && foo.equals("ex")) {
 				failed = true;
