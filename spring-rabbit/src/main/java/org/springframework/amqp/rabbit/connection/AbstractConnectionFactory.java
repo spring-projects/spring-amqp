@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -139,7 +139,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	private List<Address> addresses;
 
-	private AddressShuffleMode addressShuffleMode = AddressShuffleMode.NONE;
+	private AddressShuffleMode addressShuffleMode = AddressShuffleMode.RANDOM;
 
 	private int closeTimeout = DEFAULT_CLOSE_TIMEOUT;
 
@@ -525,17 +525,20 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	/**
 	 * When {@link #setAddresses(String) addresses} are provided and there is more than
-	 * one, set to true to shuffle the list before opening a new connection so that the
-	 * connection to the broker will be attempted in random order.
+	 * one, set to true (default) to shuffle the list before opening a new connection so
+	 * that the connection to the broker will be attempted in random order.
 	 * @param shuffleAddresses true to shuffle the list.
 	 * @since 2.1.8
-	 * @deprecated since 2.3 in favor of
+	 * @deprecated since 2.3 in favor of {@link #setAddressShuffleMode(AddressShuffleMode)}.
 	 * @see Collections#shuffle(List)
-	 * {@link #setAddressShuffleMode(AddressShuffleMode)}.
 	 */
 	@Deprecated
 	public void setShuffleAddresses(boolean shuffleAddresses) {
-		setAddressShuffleMode(AddressShuffleMode.RANDOM);
+		if (shuffleAddresses) {
+			setAddressShuffleMode(AddressShuffleMode.RANDOM);
+		} else {
+			setAddressShuffleMode(AddressShuffleMode.NONE);
+		}
 	}
 
 	/**

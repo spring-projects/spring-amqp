@@ -609,8 +609,8 @@ public CachingConnectionFactory ccf() {
 ----
 ====
 
-The underlying connection factory will attempt to connect to each host, in order, whenever a new connection is established.
-Starting with version 2.1.8, the connection order can be made random by setting the `addressShuffleMode` property to `RANDOM`; the shuffle will be applied before creating any new connection.
+The underlying connection factory will attempt to connect to a host, by choosing a random address, whenever a new connection is established.
+
 Starting with version 2.6, the `INORDER` shuffle mode was added, which means the first address is moved to the end after a connection is created.
 You may wish to use this mode with the https://github.com/rabbitmq/rabbitmq-sharding[RabbitMQ Sharding Plugin] with `CacheMode.CONNECTION` and suitable concurrency if you wish to consume from all shards on all nodes.
 
@@ -621,7 +621,7 @@ You may wish to use this mode with the https://github.com/rabbitmq/rabbitmq-shar
 public CachingConnectionFactory ccf() {
     CachingConnectionFactory ccf = new CachingConnectionFactory();
     ccf.setAddresses("host1:5672,host2:5672,host3:5672");
-    ccf.setAddressShuffleMode(AddressShuffleMode.RANDOM);
+    ccf.setAddressShuffleMode(AddressShuffleMode.INORDER);
     return ccf;
 }
 ----
