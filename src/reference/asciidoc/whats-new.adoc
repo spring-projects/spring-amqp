@@ -31,3 +31,8 @@ See <<receiving-batch>> for more infoprmation.
 
 `MessageConverter` s can now return `Optional.empty()` for a null value; this is currently implemented by the `Jackson2JsonMessageConverter`.
 See <<Jackson2JsonMessageConverter-from-message>> for more information.
+
+==== Connection Factory Changes
+
+The default `addressShuffleMode` in `AbstractConnectionFactory` is now `RANDOM`. This results in connecting to a random host when multiple addresses are provided.
+See <<cluster>> for more information.

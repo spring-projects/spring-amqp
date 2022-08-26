@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
@@ -65,6 +66,7 @@ import org.apache.commons.logging.Log;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatcher;
 import org.mockito.InOrder;
 
 import org.springframework.amqp.AmqpConnectException;
@@ -1657,8 +1659,10 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ccf.createConnection();
 		verify(mock).isAutomaticRecoveryEnabled();
 		verify(mock).setAutomaticRecoveryEnabled(false);
-		verify(mock).newConnection(isNull(),
-				eq(Arrays.asList(new Address("mq1"), new Address("mq2"))), anyString());
+		verify(mock).newConnection(
+				isNull(),
+				argThat((ArgumentMatcher<List<Address>>) a -> a.size() == 2 && a.contains(new Address("mq1")) && a.contains(new Address("mq2"))),
+				anyString());
 		verifyNoMoreInteractions(mock);
 	}
 
