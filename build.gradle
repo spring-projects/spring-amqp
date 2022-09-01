@@ -34,7 +34,7 @@ ext {
 	linkScmUrl           = 'https://github.com/spring-projects/spring-amqp'
 	linkScmConnection    = 'git://github.com/spring-projects/spring-amqp.git'
 	linkScmDevConnection = 'git@github.com:spring-projects/spring-amqp.git'
-	docResourcesVersion = '0.2.1.RELEASE'
+	springAsciidoctorBackendsVersion = '0.0.3'
 
 	modifiedFiles =
 			files(grgit.status().unstaged.modified).filter{ f -> f.name.endsWith('.java') || f.name.endsWith('.kt') }
@@ -487,18 +487,15 @@ project('spring-rabbit-test') {
 }
 
 configurations {
-	docs
+	asciidoctorExtensions
 }
 
 dependencies {
-	docs "io.spring.docresources:spring-doc-resources:${docResourcesVersion}@zip"
+	asciidoctorExtensions "io.spring.asciidoctor.backends:spring-asciidoctor-backends:${springAsciidoctorBackendsVersion}"
 }
 
 task prepareAsciidocBuild(type: Sync) {
-	dependsOn configurations.docs
-	from {
-		configurations.docs.collect { zipTree(it) }
-	}
+	dependsOn configurations.asciidoctorExtensions
 	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 	from 'src/reference/asciidoc/'
 	into "$buildDir/asciidoc"
@@ -529,6 +526,10 @@ asciidoctor {
 	dependsOn asciidoctorPdf
 	baseDirFollowsSourceFile()
 	sourceDir "$buildDir/asciidoc"
+	configurations 'asciidoctorExtensions'
+	outputOptions {
+		backends "spring-html"
+	}
 	resources {
 		from(sourceDir) {
 			include 'images/*', 'css/**', 'js/**'
