@@ -524,24 +524,6 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	/**
-	 * When {@link #setAddresses(String) addresses} are provided and there is more than
-	 * one, set to true (default) to shuffle the list before opening a new connection so
-	 * that the connection to the broker will be attempted in random order.
-	 * @param shuffleAddresses true to shuffle the list.
-	 * @since 2.1.8
-	 * @deprecated since 2.3 in favor of {@link #setAddressShuffleMode(AddressShuffleMode)}.
-	 * @see Collections#shuffle(List)
-	 */
-	@Deprecated
-	public void setShuffleAddresses(boolean shuffleAddresses) {
-		if (shuffleAddresses) {
-			setAddressShuffleMode(AddressShuffleMode.RANDOM);
-		} else {
-			setAddressShuffleMode(AddressShuffleMode.NONE);
-		}
-	}
-
-	/**
 	 * Set the mode for shuffling addresses.
 	 * @param addressShuffleMode the address shuffle mode.
 	 * @since 2.3
