@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.rabbit.aot;
 
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.PublisherCallbackChannel;
 import org.springframework.aop.SpringProxy;
@@ -25,7 +24,6 @@ import org.springframework.aot.hint.ProxyHints;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.aot.hint.TypeReference;
-import org.springframework.aot.hint.support.RuntimeHintsUtils;
 import org.springframework.core.DecoratingProxy;
 import org.springframework.lang.Nullable;
 
@@ -40,7 +38,6 @@ public class RabbitRuntimeHints implements RuntimeHintsRegistrar {
 
 	@Override
 	public void registerHints(RuntimeHints hints, @Nullable	ClassLoader classLoader) {
-		RuntimeHintsUtils.registerSynthesizedAnnotation(hints, RabbitListener.class);
 		ProxyHints proxyHints = hints.proxies();
 		proxyHints.registerJdkProxy(ChannelProxy.class);
 		proxyHints.registerJdkProxy(ChannelProxy.class, PublisherCallbackChannel.class);
