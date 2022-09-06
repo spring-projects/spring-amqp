@@ -387,6 +387,7 @@ project('spring-rabbit') {
 		optionalApi "ch.qos.logback:logback-classic:$logbackVersion"
 		optionalApi 'org.apache.logging.log4j:log4j-core'
 		optionalApi 'io.micrometer:micrometer-core'
+		api 'io.micrometer:micrometer-observation'
 		optionalApi 'io.micrometer:micrometer-tracing'
 		// Spring Data projection message binding support
 		optionalApi ("org.springframework.data:spring-data-commons") {
@@ -398,6 +399,7 @@ project('spring-rabbit') {
 		testApi project(':spring-rabbit-junit')
 		testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
 		testImplementation "org.hibernate.validator:hibernate-validator:$hibernateValidationVersion"
+        testImplementation 'io.micrometer:micrometer-observation-test'
 		testImplementation 'io.micrometer:micrometer-tracing-bridge-brave'
 		testImplementation 'io.micrometer:micrometer-tracing-test'
 		testImplementation 'io.micrometer:micrometer-tracing-integration-test'

@@ -6,7 +6,7 @@
 		</Console>
 	</Appenders>
 	<Loggers>
-		<Logger name="org.springframework.amqp.rabbit" level="info"/>
+		<Logger name="org.springframework.amqp.rabbit" level="debug"/>
 		<Logger name="org.springframework.beans.factory" level="info"/>
 		<Root level="info">
 			<AppenderRef ref="STDOUT" />

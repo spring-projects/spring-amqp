@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,13 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.ApplicationContext;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * @author Mark Fisher
@@ -39,6 +42,8 @@ public abstract class RabbitAccessor implements InitializingBean {
 	private volatile ConnectionFactory connectionFactory;
 
 	private volatile boolean transactional;
+
+	private ObservationRegistry observationRegistry;
 
 	public boolean isChannelTransacted() {
 		return this.transactional;
@@ -111,6 +116,19 @@ public abstract class RabbitAccessor implements InitializingBean {
 
 	protected RuntimeException convertRabbitAccessException(Exception ex) {
 		return RabbitExceptionTranslator.convertRabbitAccessException(ex);
+	}
+
+	protected void obtainObservationRegistry(@Nullable ApplicationContext appContext) {
+		if (this.observationRegistry == null && appContext != null) {
+			ObjectProvider<ObservationRegistry> registry =
+					appContext.getBeanProvider(ObservationRegistry.class);
+			this.observationRegistry = registry.getIfUnique();
+		}
+	}
+
+	@Nullable
+	protected ObservationRegistry getObservationRegistry() {
+		return this.observationRegistry;
 	}
 
 }
