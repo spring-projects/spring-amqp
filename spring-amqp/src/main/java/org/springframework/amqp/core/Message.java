@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,16 +72,6 @@ public class Message implements Serializable {
 		Assert.notNull(messageProperties, "'messageProperties' cannot be null");
 		this.body = body; //NOSONAR
 		this.messageProperties = messageProperties;
-	}
-
-	/**
-	 * No longer used.
-	 * @param patterns the patterns.
-	 * @since 1.5.7
-	 * @deprecated toString() no longer deserializes the body.
-	 */
-	@Deprecated
-	public static void addAllowedListPatterns(String... patterns) {
 	}
 
 	/**

@@ -397,45 +397,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 	}
 
-	/**
-	 * Use full (correlated) publisher confirms, with correlation data and a callback for
-	 * each message.
-	 * @param publisherConfirms true for full publisher returns,
-	 * @since 1.1
-	 * @deprecated in favor of {@link #setPublisherConfirmType(ConfirmType)}.
-	 * @see #setSimplePublisherConfirms(boolean)
-	 */
-	@Deprecated
-	public void setPublisherConfirms(boolean publisherConfirms) {
-		Assert.isTrue(!publisherConfirms || !ConfirmType.SIMPLE.equals(this.confirmType),
-				"Cannot set both publisherConfirms and simplePublisherConfirms");
-		if (publisherConfirms) {
-			setPublisherConfirmType(ConfirmType.CORRELATED);
-		}
-		else if (this.confirmType.equals(ConfirmType.CORRELATED)) {
-			setPublisherConfirmType(ConfirmType.NONE);
-		}
-	}
-
-	/**
-	 * Use simple publisher confirms where the template simply waits for completion.
-	 * @param simplePublisherConfirms true for confirms.
-	 * @since 2.1
-	 * @deprecated in favor of {@link #setPublisherConfirmType(ConfirmType)}.
-	 * @see #setPublisherConfirms(boolean)
-	 */
-	@Deprecated
-	public void setSimplePublisherConfirms(boolean simplePublisherConfirms) {
-		Assert.isTrue(!simplePublisherConfirms || !ConfirmType.CORRELATED.equals(this.confirmType),
-				"Cannot set both publisherConfirms and simplePublisherConfirms");
-		if (simplePublisherConfirms) {
-			setPublisherConfirmType(ConfirmType.SIMPLE);
-		}
-		else if (this.confirmType.equals(ConfirmType.SIMPLE)) {
-			setPublisherConfirmType(ConfirmType.NONE);
-		}
-	}
-
 	@Override
 	public boolean isSimplePublisherConfirms() {
 		return this.confirmType.equals(ConfirmType.SIMPLE);

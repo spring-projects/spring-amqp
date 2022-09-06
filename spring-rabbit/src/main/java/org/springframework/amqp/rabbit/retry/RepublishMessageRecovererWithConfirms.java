@@ -108,7 +108,6 @@ public class RepublishMessageRecovererWithConfirms extends RepublishMessageRecov
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	private void doSendCorrelated(String exchange, String routingKey, Message message) {
 		CorrelationData cd = new CorrelationData();
 		if (exchange != null) {

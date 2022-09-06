@@ -471,29 +471,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	/**
 	 * Set a callback to receive returned messages.
 	 * @param returnCallback the callback.
-	 * @deprecated in favor of {@link #setReturnsCallback(ReturnsCallback)}.
 	 */
-	@Deprecated
-	public void setReturnCallback(ReturnCallback returnCallback) {
-		ReturnCallback delegate = this.returnsCallback == null ? null : this.returnsCallback.delegate();
-		Assert.state(this.returnsCallback == null || delegate == null || delegate.equals(returnCallback),
-				"Only one ReturnCallback is supported by each RabbitTemplate");
-		this.returnsCallback = new ReturnsCallback() {
-
-			@Override
-			public void returnedMessage(ReturnedMessage returned) {
-				returnCallback.returnedMessage(returned.getMessage(), returned.getReplyCode(), returned.getReplyText(),
-						returned.getExchange(), returned.getRoutingKey());
-			}
-
-			@Override
-			public ReturnCallback delegate() {
-				return returnCallback;
-			}
-
-		};
-	}
-
 	public void setReturnsCallback(ReturnsCallback returnCallback) {
 		Assert.state(this.returnsCallback == null || this.returnsCallback.equals(returnCallback),
 				"Only one ReturnCallback is supported by each RabbitTemplate");
@@ -2585,18 +2563,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	@SuppressWarnings("deprecation")
-	public void handleReturn(int replyCode,
-			String replyText,
-			String exchange,
-			String routingKey,
-			BasicProperties properties,
-			byte[] body) {
-
-		handleReturn(new Return(replyCode, replyText, exchange, routingKey, properties, body));
-	}
-
-	@Override
 	public void handleReturn(Return returned) {
 		ReturnsCallback callback = this.returnsCallback;
 		if (callback == null) {
@@ -2681,17 +2647,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			restoreProperties(message, pendingReply);
 			pendingReply.reply(message);
 		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @deprecated - use {@link #onMessage(Message, Channel)}.
-	 */
-	@Deprecated
-	@Override
-	public void onMessage(Message message) {
-		onMessage(message, null);
 	}
 
 	private void restoreProperties(Message message, PendingReply pendingReply) {
@@ -2857,79 +2812,17 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	/**
 	 * A callback for returned messages.
 	 *
-	 * @deprecated in favor of {@link #returnedMessage(ReturnedMessage)} which is
-	 * easier to use with lambdas.
-	 */
-	@Deprecated
-	@FunctionalInterface
-	public interface ReturnCallback {
-
-		/**
-		 * Returned message callback.
-		 * @param message the returned message.
-		 * @param replyCode the reply code.
-		 * @param replyText the reply text.
-		 * @param exchange the exchange.
-		 * @param routingKey the routing key.
-		 */
-		void returnedMessage(Message message, int replyCode, String replyText, String exchange, String routingKey);
-
-		/**
-		 * Returned message callback.
-		 * @param returned the returned message and metadata.
-		 */
-		@SuppressWarnings("deprecation")
-		default void returnedMessage(ReturnedMessage returned) {
-			returnedMessage(returned.getMessage(), returned.getReplyCode(), returned.getReplyText(),
-					returned.getExchange(), returned.getRoutingKey());
-		}
-
-	}
-
-	/**
-	 * A callback for returned messages.
-	 *
 	 * @since 2.3
 	 */
 	@FunctionalInterface
-	public interface ReturnsCallback extends ReturnCallback {
-
-		/**
-		 * Returned message callback.
-		 * @param message the returned message.
-		 * @param replyCode the reply code.
-		 * @param replyText the reply text.
-		 * @param exchange the exchange.
-		 * @param routingKey the routing key.
-		 * @deprecated in favor of {@link #returnedMessage(ReturnedMessage)} which is
-		 * easier to use with lambdas.
-		 */
-		@Override
-		@Deprecated
-		default void returnedMessage(Message message, int replyCode, String replyText, String exchange,
-				String routingKey) {
-
-			throw new UnsupportedOperationException(
-					"This should never be called, please open a GitHub issue with a stack trace");
-		};
+	public interface ReturnsCallback {
 
 		/**
 		 * Returned message callback.
 		 * @param returned the returned message and metadata.
 		 */
-		@Override
 		void returnedMessage(ReturnedMessage returned);
 
-		/**
-		 * Internal use only; transitional during deprecation.
-		 * @return the legacy delegate.
-		 * @deprecated - will be removed with {@link ReturnCallback}.
-		 */
-		@Deprecated
-		@Nullable
-		default ReturnCallback delegate() {
-			return null;
-		}
-
 	}
+
 }

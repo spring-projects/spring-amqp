@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 the original author or authors.
+ * Copyright 2016-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,17 +46,6 @@ public class LambdaAnswer<T> extends ForwardsInvocations {
 	private final Set<Exception> exceptions = Collections.synchronizedSet(new LinkedHashSet<>());
 
 	private final boolean hasDelegate;
-
-	/**
-	 * Deprecated.
-	 * @param callRealMethod true to call the real method.
-	 * @param callback the callback.
-	 * @deprecated in favor of {@link #LambdaAnswer(boolean, ValueToReturn, Object)}.
-	 */
-	@Deprecated
-	public LambdaAnswer(boolean callRealMethod, ValueToReturn<T> callback) {
-		this(callRealMethod, callback, null);
-	}
 
 	/**
 	 * Construct an instance with the provided properties. Use the test harness to get an

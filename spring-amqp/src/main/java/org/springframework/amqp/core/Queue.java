@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,14 +31,6 @@ import org.springframework.util.StringUtils;
  * @see AmqpAdmin
  */
 public class Queue extends AbstractDeclarable implements Cloneable {
-
-	/**
-	 * Argument key for the master locator.
-	 * @since 2.1
-	 * @deprecated in favor of {@link #X_QUEUE_LEADER_LOCATOR}.
-	 */
-	@Deprecated
-	public static final String X_QUEUE_MASTER_LOCATOR = "x-queue-master-locator";
 
 	/**
 	 * Argument key for the queue leader locator.
@@ -163,22 +155,6 @@ public class Queue extends AbstractDeclarable implements Cloneable {
 	 */
 	public String getActualName() {
 		return this.actualName;
-	}
-
-	/**
-	 * Set the master locator strategy argument for this queue.
-	 * @param locator the locator; null to clear the argument.
-	 * @since 2.1
-	 * @deprecated in favor of {@link #setLeaderLocator(String)}.
-	 */
-	@Deprecated
-	public final void setMasterLocator(@Nullable String locator) {
-		if (locator == null) {
-			removeArgument(X_QUEUE_LEADER_LOCATOR);
-		}
-		else {
-			addArgument(X_QUEUE_LEADER_LOCATOR, locator);
-		}
 	}
 
 	/**

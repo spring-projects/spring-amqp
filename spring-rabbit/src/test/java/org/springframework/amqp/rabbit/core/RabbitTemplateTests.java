@@ -61,7 +61,6 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
-import org.springframework.amqp.core.ReturnedMessage;
 import org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.AfterCompletionFailedException;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -71,7 +70,6 @@ import org.springframework.amqp.rabbit.connection.PublisherCallbackChannel;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.SimpleRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnsCallback;
 import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.SerializationUtils;
@@ -578,26 +576,6 @@ public class RabbitTemplateTests {
 		template.invoke(t -> null);
 		verify(pcf).createConnection();
 		verify(conn).createChannel(true);
-	}
-
-	@SuppressWarnings("deprecation")
-	@Test
-	public void testReturnsFallback() {
-		RabbitTemplate template = new RabbitTemplate();
-		AtomicBoolean called = new AtomicBoolean();
-		template.setReturnCallback((message, replyCode, replyText, exchange, routingKey) -> {
-			called.set(true);
-		});
-		ReturnsCallback cb = TestUtils.getPropertyValue(template, "returnsCallback", ReturnsCallback.class);
-		cb.returnedMessage(new ReturnedMessage(null, 0, null, null, null));
-		assertThat(called.get()).isTrue();
-		assertThatIllegalStateException().isThrownBy(() ->
-				template.setReturnCallback(mock(RabbitTemplate.ReturnCallback.class)));
-		RabbitTemplate template2 = new RabbitTemplate();
-		org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnCallback callback =
-				mock(org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnCallback.class);
-		template2.setReturnCallback(callback);
-		template2.setReturnCallback(callback);
 	}
 
 	@Test

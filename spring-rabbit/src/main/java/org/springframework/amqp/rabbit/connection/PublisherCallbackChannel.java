@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbit.connection;
 import java.util.Collection;
 import java.util.function.Consumer;
 
-import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Return;
 
@@ -117,35 +116,9 @@ public interface PublisherCallbackChannel extends Channel {
 
 		/**
 		 * Handle a returned message.
-		 * @param replyCode the reply code.
-		 * @param replyText the reply text.
-		 * @param exchange the exchange.
-		 * @param routingKey the routing key.
-		 * @param properties the message properties.
-		 * @param body the message body.
-		 * @deprecated in favor of {@link #handleReturn(Return)}.
-		 */
-		@Deprecated
-		default void handleReturn(int replyCode,
-				String replyText,
-				String exchange,
-				String routingKey,
-				AMQP.BasicProperties properties,
-				byte[] body) {
-
-			throw new UnsupportedOperationException(
-					"This should never be called; please open a GitHub issue with a stack trace");
-		}
-
-		/**
-		 * Handle a returned message.
 		 * @param returned the message and metadata.
 		 */
-		@SuppressWarnings("deprecation")
-		default void handleReturn(Return returned) {
-			handleReturn(returned.getReplyCode(), returned.getReplyText(), returned.getExchange(),
-					returned.getRoutingKey(), returned.getProperties(), returned.getBody());
-		}
+		void handleReturn(Return returned);
 
 		/**
 		 * When called, this listener should remove all references to the

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2021 the original author or authors.
+ * Copyright 2016-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,17 +45,6 @@ public class LatchCountDownAndCallRealMethodAnswer extends ForwardsInvocations {
 	private final Set<Exception> exceptions = Collections.synchronizedSet(new LinkedHashSet<>());
 
 	private final boolean hasDelegate;
-
-	/**
-	 * Get an instance with no delegate.
-	 * @param count to set in a {@link CountDownLatch}.
-	 * @deprecated in favor of
-	 * {@link #LatchCountDownAndCallRealMethodAnswer(int, Object)}.
-	 */
-	@Deprecated
-	public LatchCountDownAndCallRealMethodAnswer(int count) {
-		this(count, null);
-	}
 
 	/**
 	 * Get an instance with the provided properties. Use the test harness to get an

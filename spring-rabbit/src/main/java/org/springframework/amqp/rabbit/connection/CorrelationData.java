@@ -20,7 +20,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import org.springframework.amqp.core.Correlation;
-import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.ReturnedMessage;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -99,42 +98,11 @@ public class CorrelationData implements Correlation {
 	 * Return a future to check the success/failure of the publish operation.
 	 * @return the future.
 	 * @since 2.4.7
-	 * @deprecated in favor of {@link #getFuture()}.
+	 * @deprecated as of 3.0, in favor of {@link #getFuture()}.
 	 */
 	@Deprecated
 	public CompletableFuture<Confirm> getCompletableFuture() {
 		return this.future;
-	}
-
-	/**
-	 * Return a returned message, if any; requires a unique
-	 * {@link #CorrelationData(String) id}. Guaranteed to be populated before the future
-	 * is set.
-	 * @return the message or null.
-	 * @since 2.1
-	 * @deprecated in favor of {@link #getReturned()}.
-	 */
-	@Deprecated
-	@Nullable
-	public Message getReturnedMessage() {
-		if (this.returnedMessage == null) {
-			return null;
-		}
-		else {
-			return this.returnedMessage.getMessage();
-		}
-	}
-
-	/**
-	 * Set a returned message for this correlation data.
-	 * @param returnedMessage the returned message.
-	 * @since 1.7.13
-	 * @deprecated in favor of {@link #setReturned(ReturnedMessage)}.
-	 */
-	@Deprecated
-	public void setReturnedMessage(Message returnedMessage) {
-		this.returnedMessage = new ReturnedMessage(returnedMessage, 0, "not available", "not available",
-				"not available");
 	}
 
 	/**
