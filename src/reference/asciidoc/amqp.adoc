@@ -987,14 +987,12 @@ image::images/cacheStats.png[align="center"]
 Since the first version of Spring AMQP, the framework has provided its own connection and channel recovery in the event of a broker failure.
 Also, as discussed in <<broker-configuration>>, the `RabbitAdmin` re-declares any infrastructure beans (queues and others) when the connection is re-established.
 It therefore does not rely on the https://www.rabbitmq.com/api-guide.html#recovery[auto-recovery] that is now provided by the `amqp-client` library.
-Spring AMQP now uses the `4.0.x` version of `amqp-client`, which has auto recovery enabled by default.
-Spring AMQP can still use its own recovery mechanisms if you wish, disabling it in the client, (by setting the `automaticRecoveryEnabled` property on the underlying `RabbitMQ connectionFactory` to `false`).
-However, the framework is completely compatible with auto-recovery being enabled.
-This means any consumers you create within your code (perhaps via `RabbitTemplate.execute()`) can be recovered automatically.
+The `amqp-client`, has auto recovery enabled by default.
+There are some incompatibilities between the two recovery mechanisms so, by default, Spring sets the `automaticRecoveryEnabled` property on the underlying `RabbitMQ connectionFactory` to `false`.
+Even if the property is `true`, Spring effectively disables it, by immediately closing any recovered connections.
 
-IMPORTANT: Only elements (queues, exchanges, bindings) that are defined as beans will be re-declared after a connection failure.
-Elements declared by invoking `RabbitAdmin.declare*()` methods directly from user code are unknown to the framework and therefore cannot be recovered.
-If you have a need for a variable number of declarations, consider defining a bean, or beans, of type `Declarables`, as discussed in <<collection-declaration>>.
+IMPORTANT: By default, only elements (queues, exchanges, bindings) that are defined as beans will be re-declared after a connection failure.
+See <<declarable-recovery>> for how to change that behavior.
 
 [[custom-client-props]]
 ==== Adding Custom Client Connection Properties
@@ -5405,7 +5403,7 @@ Normally, the `RabbitAdmin` (s) only recover queues/exchanges/bindings that are 
 When the connection is re-established, the admin will redeclare the entities.
 Normally, entities created by calling `admin.declareQueue(...)`, `admin.declareExchange(...)` and `admin.declareBinding(...)` will not be recovered.
 
-Starting with version 2.4, the admin has a new property `redeclareManualDeclarations`; when true, the admin will recover these entities in addition to the beans in the application context.
+Starting with version 2.4, the admin has a new property `redeclareManualDeclarations`; when `true`, the admin will recover these entities in addition to the beans in the application context.
 
 Recovery of individual declarations will not be performed if `deleteQueue(...)`, `deleteExchange(...)` or `removeBinding(...)` is called.
 Associated bindings are removed from the recoverable entities when queues and exchanges are deleted.
