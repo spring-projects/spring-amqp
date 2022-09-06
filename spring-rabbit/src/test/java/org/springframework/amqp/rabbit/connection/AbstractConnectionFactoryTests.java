@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2020 the original author or authors.
+ * Copyright 2010-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import org.apache.commons.logging.Log;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.AddressShuffleMode;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
@@ -104,6 +105,7 @@ public abstract class AbstractConnectionFactoryTests {
 		verify(mockConnectionFactory, times(1)).newConnection(any(ExecutorService.class), anyString());
 
 		connectionFactory.setAddresses("foo:5672,bar:5672");
+		connectionFactory.setAddressShuffleMode(AddressShuffleMode.NONE);
 		con = connectionFactory.createConnection();
 		assertThat(called.get()).isEqualTo(1);
 		captor = ArgumentCaptor.forClass(String.class);
