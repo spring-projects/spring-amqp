@@ -1161,18 +1161,22 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
-	 * Set to false to disable micrometer listener timers.
+	 * Set to false to disable micrometer listener timers. When true, ignored
+	 * if {@link #setObservationEnabled(boolean)} is set to true.
 	 * @param micrometerEnabled false to disable.
 	 * @since 2.2
+	 * @see #setObservationEnabled(boolean)
 	 */
 	public void setMicrometerEnabled(boolean micrometerEnabled) {
 		this.micrometerEnabled = micrometerEnabled;
 	}
 
 	/**
-	 * Enable observation via micrometer.
+	 * Enable observation via micrometer; disables basic Micrometer timers enabled
+	 * by {@link #setMicrometerEnabled(boolean)}.
 	 * @param observationEnabled true to enable.
 	 * @since 3.0
+	 * @see #setMicrometerEnabled(boolean)
 	 */
 	public void setObservationEnabled(boolean observationEnabled) {
 		this.observationEnabled = observationEnabled;
