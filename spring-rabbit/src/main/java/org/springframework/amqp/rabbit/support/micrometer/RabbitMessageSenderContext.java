@@ -31,14 +31,22 @@ public class RabbitMessageSenderContext extends SenderContext<Message> {
 
 	private final String beanName;
 
-	public RabbitMessageSenderContext(Message message, String beanName) {
+	private final String destination;
+
+	public RabbitMessageSenderContext(Message message, String beanName, String destination) {
 		super((carrier, key, value) -> message.getMessageProperties().setHeader(key, value));
 		setCarrier(message);
 		this.beanName = beanName;
+		this.destination = destination;
 	}
 
 	public String getBeanName() {
 		return this.beanName;
+	}
+
+	@Override
+	public String getContextualName() {
+		return this.destination + " send";
 	}
 
 }

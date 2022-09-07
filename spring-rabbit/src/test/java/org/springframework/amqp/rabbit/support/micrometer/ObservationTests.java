@@ -77,12 +77,14 @@ public class ObservationTests {
 		assertThat(spans).hasSize(4);
 		SimpleSpan span = spans.poll();
 		assertThat(span.getTags()).containsEntry("bean.name", "template");
+		assertThat(span.getName()).isEqualTo("/observation.testQ1 send");
 		span = spans.poll();
 		assertThat(span.getTags())
 				.containsAllEntriesOf(Map.of("listener.id", "obs1", "foo", "some foo value", "bar", "some bar value"));
 		assertThat(span.getName()).isEqualTo("observation.testQ1 receive");
 		span = spans.poll();
 		assertThat(span.getTags()).containsEntry("bean.name", "template");
+		assertThat(span.getName()).isEqualTo("/observation.testQ2 send");
 		span = spans.poll();
 		assertThat(span.getTags())
 				.containsAllEntriesOf(Map.of("listener.id", "obs2", "foo", "some foo value", "bar", "some bar value"));

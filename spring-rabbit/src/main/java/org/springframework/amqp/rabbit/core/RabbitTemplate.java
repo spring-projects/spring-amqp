@@ -2439,7 +2439,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 		else {
 			observation = RabbitTemplateObservation.TEMPLATE_OBSERVATION.observation(registry,
-						new RabbitMessageSenderContext(message, this.beanName))
+						new RabbitMessageSenderContext(message, this.beanName, exch + "/" + rKey))
 					.observationConvention(this.observationConvention);
 		}
 		observation.observe(() -> sendToRabbit(channel, exch, rKey, mandatory, message));
