@@ -271,8 +271,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	private boolean observationEnabled;
 
-	private RabbitTemplateObservationConvention observationConvention =
-			new RabbitTemplateObservationConvention(null, null);
+	private RabbitTemplateObservationConvention observationConvention = new RabbitTemplateObservationConvention();
 
 	private volatile boolean usingFastReplyTo;
 

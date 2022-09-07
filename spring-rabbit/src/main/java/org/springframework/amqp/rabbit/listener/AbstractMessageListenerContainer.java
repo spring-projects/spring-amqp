@@ -261,8 +261,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private MessageAckListener messageAckListener = (success, deliveryTag, cause) -> { };
 
-	private RabbitListenerObservationConvention observationConvention =
-			new RabbitListenerObservationConvention(null, null);
+	private RabbitListenerObservationConvention observationConvention = new RabbitListenerObservationConvention();
 
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {

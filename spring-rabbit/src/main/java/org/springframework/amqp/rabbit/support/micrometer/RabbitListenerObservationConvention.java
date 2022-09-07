@@ -16,38 +16,18 @@
 
 package org.springframework.amqp.rabbit.support.micrometer;
 
-import org.springframework.lang.Nullable;
-
-import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 import io.micrometer.observation.Observation.Context;
 import io.micrometer.observation.Observation.ObservationConvention;
 
 /**
- * {@link ObservationConvention} for Rabbit listener key values. Allows users
- * to add {@link KeyValue}s to the observations.
+ * {@link ObservationConvention} for Rabbit listener key values.
  *
  * @author Gary Russell
  * @since 3.0
  *
  */
 public class RabbitListenerObservationConvention implements ObservationConvention<RabbitMessageReceiverContext> {
-
-	private final KeyValues lowCardinality;
-
-	private final KeyValues highCardinality;
-
-	/**
-	 * Create an instance with the provided {@link KeyValues}.
-	 * @param lowCardinality the low cardinality {@link KeyValues}.
-	 * @param highCardinality the high cardinality {@link KeyValues}.
-	 */
-	public RabbitListenerObservationConvention(@Nullable KeyValues lowCardinality,
-			@Nullable KeyValues highCardinality) {
-
-		this.lowCardinality = lowCardinality != null ? KeyValues.of(lowCardinality) : KeyValues.empty();
-		this.highCardinality = highCardinality != null ? KeyValues.of(highCardinality) : KeyValues.empty();
-	}
 
 	@Override
 	public boolean supportsContext(Context context) {
@@ -56,14 +36,13 @@ public class RabbitListenerObservationConvention implements ObservationConventio
 
 	@Override
 	public KeyValues getLowCardinalityKeyValues(RabbitMessageReceiverContext context) {
-		return this.lowCardinality
-				.and(RabbitListenerObservation.ListenerLowCardinalityTags.LISTENER_ID.asString(),
+		return KeyValues.of(RabbitListenerObservation.ListenerLowCardinalityTags.LISTENER_ID.asString(),
 						context.getListenerId());
 	}
 
 	@Override
 	public KeyValues getHighCardinalityKeyValues(RabbitMessageReceiverContext context) {
-		return KeyValues.of(this.highCardinality);
+		return KeyValues.empty();
 	}
 
 }

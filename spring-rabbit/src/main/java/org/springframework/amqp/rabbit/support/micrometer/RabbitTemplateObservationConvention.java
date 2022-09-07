@@ -16,40 +16,18 @@
 
 package org.springframework.amqp.rabbit.support.micrometer;
 
-import org.springframework.lang.Nullable;
-
-import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 import io.micrometer.observation.Observation.Context;
 import io.micrometer.observation.Observation.ObservationConvention;
 
 /**
- * {@link ObservationConvention} for Rabbit template key values. Allows users
- * to add {@link KeyValue}s to the observations.
+ * {@link ObservationConvention} for Rabbit template key values.
  *
  * @author Gary Russell
  * @since 3.0
  *
  */
 public class RabbitTemplateObservationConvention implements ObservationConvention<RabbitMessageSenderContext> {
-
-	@Nullable
-	private final KeyValues lowCardinality;
-
-	@Nullable
-	private final KeyValues highCardinality;
-
-	/**
-	 * Create an instance with the provided {@link KeyValues}.
-	 * @param lowCardinality the low cardinality {@link KeyValues}.
-	 * @param highCardinality the high cardinality {@link KeyValues}.
-	 */
-	public RabbitTemplateObservationConvention(@Nullable KeyValues lowCardinality,
-			@Nullable KeyValues highCardinality) {
-
-		this.lowCardinality = lowCardinality != null ? KeyValues.of(lowCardinality) : KeyValues.empty();
-		this.highCardinality = highCardinality != null ? KeyValues.of(highCardinality) : KeyValues.empty();
-	}
 
 	@Override
 	public boolean supportsContext(Context context) {
@@ -58,14 +36,13 @@ public class RabbitTemplateObservationConvention implements ObservationConventio
 
 	@Override
 	public KeyValues getLowCardinalityKeyValues(RabbitMessageSenderContext context) {
-		return this.lowCardinality
-				.and(RabbitTemplateObservation.TemplateLowCardinalityTags.BEAN_NAME.asString(),
+		return KeyValues.of(RabbitTemplateObservation.TemplateLowCardinalityTags.BEAN_NAME.asString(),
 						context.getBeanName());
 	}
 
 	@Override
 	public KeyValues getHighCardinalityKeyValues(RabbitMessageSenderContext context) {
-		return KeyValues.of(this.highCardinality);
+		return KeyValues.empty();
 	}
 
 }
