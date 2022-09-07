@@ -58,9 +58,7 @@ public class RabbitTemplateObservationConvention implements ObservationConventio
 
 	@Override
 	public KeyValues getLowCardinalityKeyValues(RabbitMessageSenderContext context) {
-		return this.lowCardinality
-					.and(RabbitTemplateObservation.TemplateLowCardinalityTags.BEAN_NAME.asString(),
-							context.getBeanName());
+		return KeyValues.of(this.lowCardinality);
 	}
 
 	@Override

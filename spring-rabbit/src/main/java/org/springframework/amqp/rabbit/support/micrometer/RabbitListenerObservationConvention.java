@@ -63,9 +63,7 @@ public class RabbitListenerObservationConvention implements ObservationConventio
 
 	@Override
 	public KeyValues getHighCardinalityKeyValues(RabbitMessageReceiverContext context) {
-		return this.highCardinality
-					.and(RabbitListenerObservation.ListenerLowCardinalityTags.LISTENER_ID.asString(),
-							context.getListenerId());
+		return KeyValues.of(this.highCardinality);
 	}
 
 }
