@@ -39,11 +39,6 @@ public enum RabbitTemplateObservation implements DocumentedObservation {
 		}
 
 		@Override
-		public String getContextualName() {
-			return "RabbitTemplate Observation";
-		}
-
-		@Override
 		public KeyName[] getLowCardinalityKeyNames() {
 			return TemplateLowCardinalityTags.values();
 		}

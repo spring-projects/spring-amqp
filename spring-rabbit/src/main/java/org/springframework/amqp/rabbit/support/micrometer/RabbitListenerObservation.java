@@ -39,11 +39,6 @@ public enum RabbitListenerObservation implements DocumentedObservation {
 		}
 
 		@Override
-		public String getContextualName() {
-			return "RabbitListener Observation";
-		}
-
-		@Override
 		public KeyName[] getLowCardinalityKeyNames() {
 			return ListenerLowCardinalityTags.values();
 		}
