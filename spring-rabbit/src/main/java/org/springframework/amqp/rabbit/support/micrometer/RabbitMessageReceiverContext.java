@@ -31,13 +31,13 @@ public class RabbitMessageReceiverContext extends ReceiverContext<Message> {
 
 	private final String listenerId;
 
-	private final String queue;
+	private final Message message;
 
-	public RabbitMessageReceiverContext(Message message, String listenerId, String queue) {
+	public RabbitMessageReceiverContext(Message message, String listenerId) {
 		super((carrier, key) -> carrier.getMessageProperties().getHeader(key));
 		setCarrier(message);
+		this.message = message;
 		this.listenerId = listenerId;
-		this.queue = queue;
 	}
 
 	public String getListenerId() {
@@ -46,7 +46,7 @@ public class RabbitMessageReceiverContext extends ReceiverContext<Message> {
 
 	@Override
 	public String getContextualName() {
-		return this.queue + " receive";
+		return message.getMessageProperties().getConsumerQueue() + " receive";
 	}
 
 }

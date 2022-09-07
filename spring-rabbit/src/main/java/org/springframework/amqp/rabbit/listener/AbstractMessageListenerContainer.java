@@ -1542,8 +1542,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		else {
 			Message message = (Message) data;
 			observation = RabbitListenerObservation.LISTENER_OBSERVATION.observation(registry,
-						new RabbitMessageReceiverContext(message, getListenerId(),
-								message.getMessageProperties().getConsumerQueue()))
+						new RabbitMessageReceiverContext(message, getListenerId()))
 					.observationConvention(this.observationConvention);
 		}
 		observation.observe(() -> executeListenerAndHandleException(channel, data));
