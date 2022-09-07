@@ -80,12 +80,14 @@ public class ObservationTests {
 		span = spans.poll();
 		assertThat(span.getTags())
 				.containsAllEntriesOf(Map.of("listener.id", "obs1", "foo", "some foo value", "bar", "some bar value"));
+		assertThat(span.getName()).isEqualTo("observation.testQ1 receive");
 		span = spans.poll();
 		assertThat(span.getTags()).containsEntry("bean.name", "template");
 		span = spans.poll();
 		assertThat(span.getTags())
-				.containsAllEntriesOf(Map.of("listener.id", "obs2", "foo", "some foo value", "bar", "some bar value"));	}
-
+				.containsAllEntriesOf(Map.of("listener.id", "obs2", "foo", "some foo value", "bar", "some bar value"));
+		assertThat(span.getName()).isEqualTo("observation.testQ2 receive");
+	}
 
 	@Configuration
 	@EnableRabbit

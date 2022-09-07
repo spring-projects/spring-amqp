@@ -1540,8 +1540,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			observation = Observation.NOOP;
 		}
 		else {
+			Message message = (Message) data;
 			observation = RabbitListenerObservation.LISTENER_OBSERVATION.observation(registry,
-						new RabbitMessageReceiverContext((Message) data, getListenerId()))
+						new RabbitMessageReceiverContext(message, getListenerId(),
+								message.getMessageProperties().getConsumerQueue()))
 					.observationConvention(this.observationConvention);
 		}
 		observation.observe(() -> executeListenerAndHandleException(channel, data));
