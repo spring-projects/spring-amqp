@@ -63,7 +63,7 @@ import org.springframework.amqp.rabbit.listener.support.ContainerUtils;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
-import org.springframework.amqp.rabbit.support.micrometer.MessageReceiverContext;
+import org.springframework.amqp.rabbit.support.micrometer.AmqpMessageReceiverContext;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservation;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservationConvention;
 import org.springframework.amqp.support.ConditionalExceptionLogger;
@@ -1535,7 +1535,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		}
 		else {
 			observation = RabbitListenerObservation.LISTENER_OBSERVATION.observation(registry,
-						new MessageReceiverContext((Message) data))
+						new AmqpMessageReceiverContext((Message) data))
 					.lowCardinalityKeyValue(RabbitListenerObservation.ListenerLowCardinalityTags.LISTENER_ID.asString(),
 							getListenerId());
 			if (this.observationConvention != null) {

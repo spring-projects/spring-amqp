@@ -74,7 +74,7 @@ import org.springframework.amqp.rabbit.support.ListenerContainerAware;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.rabbit.support.ValueExpression;
-import org.springframework.amqp.rabbit.support.micrometer.MessageSenderContext;
+import org.springframework.amqp.rabbit.support.micrometer.AmqpMessageSenderContext;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitTemplateObservation;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitTemplateObservationConvention;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -2416,7 +2416,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			logger.debug("Publishing message [" + messageToUse
 					+ "] on exchange [" + exch + "], routingKey = [" + rKey + "]");
 		}
-		observeTheSend(channel, message, mandatory, exch, rKey, messageToUse);
+		observeTheSend(channel, messageToUse, mandatory, exch, rKey);
 		// Check if commit needed
 		if (isChannelLocallyTransacted(channel)) {
 			// Transacted channel created by this template -> commit.
@@ -2424,8 +2424,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 	}
 
-	protected void observeTheSend(Channel channel, Message message, boolean mandatory, String exch, String rKey,
-			Message messageToUse) {
+	protected void observeTheSend(Channel channel, Message message, boolean mandatory, String exch, String rKey) {
 
 		if (!this.observationRegistryObtained) {
 			obtainObservationRegistry(this.applicationContext);
@@ -2438,14 +2437,14 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 		else {
 			observation = RabbitTemplateObservation.TEMPLATE_OBSERVATION.observation(registry,
-						new MessageSenderContext(message))
+						new AmqpMessageSenderContext(message))
 					.lowCardinalityKeyValue(RabbitTemplateObservation.TemplateLowCardinalityTags.BEAN_NAME.asString(),
 							this.beanName);
 			if (this.observationConvention != null) {
 				observation.observationConvention(this.observationConvention);
 			}
 		}
-		observation.observe(() -> sendToRabbit(channel, exch, rKey, mandatory, messageToUse));
+		observation.observe(() -> sendToRabbit(channel, exch, rKey, mandatory, message));
 	}
 
 	/**

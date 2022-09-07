@@ -399,7 +399,7 @@ project('spring-rabbit') {
 		testApi project(':spring-rabbit-junit')
 		testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
 		testImplementation "org.hibernate.validator:hibernate-validator:$hibernateValidationVersion"
-        testImplementation 'io.micrometer:micrometer-observation-test'
+		testImplementation 'io.micrometer:micrometer-observation-test'
 		testImplementation 'io.micrometer:micrometer-tracing-bridge-brave'
 		testImplementation 'io.micrometer:micrometer-tracing-test'
 		testImplementation 'io.micrometer:micrometer-tracing-integration-test'

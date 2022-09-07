@@ -18,20 +18,21 @@ package org.springframework.amqp.rabbit.support.micrometer;
 
 import org.springframework.amqp.core.Message;
 
-import io.micrometer.observation.transport.ReceiverContext;
+import io.micrometer.observation.transport.SenderContext;
 
 /**
- * {@link ReceiverContext} for {@link Message}s.
+ * {@link SenderContext} for {@link Message}s.
  *
  * @author Gary Russell
- * @since 2.8
+ * @since 3.0
  *
  */
-public class MessageReceiverContext extends ReceiverContext<Message> {
+public class AmqpMessageSenderContext extends SenderContext<Message> {
 
-	public MessageReceiverContext(Message message) {
-		super((carrier, key) -> carrier.getMessageProperties().getHeader(key));
+	public AmqpMessageSenderContext(Message message) {
+		super((carrier, key, value) -> message.getMessageProperties().setHeader(key, value));
 		setCarrier(message);
+
 	}
 
 }

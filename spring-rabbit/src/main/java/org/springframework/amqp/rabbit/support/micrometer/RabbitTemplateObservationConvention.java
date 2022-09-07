@@ -31,7 +31,7 @@ import io.micrometer.observation.Observation.ObservationConvention;
  * @since 3.0
  *
  */
-public class RabbitTemplateObservationConvention implements ObservationConvention<MessageSenderContext> {
+public class RabbitTemplateObservationConvention implements ObservationConvention<AmqpMessageSenderContext> {
 
 	@Nullable
 	private final KeyValues lowCardinality;
@@ -53,18 +53,18 @@ public class RabbitTemplateObservationConvention implements ObservationConventio
 
 	@Override
 	public boolean supportsContext(Context context) {
-		return context instanceof MessageReceiverContext;
+		return context instanceof AmqpMessageSenderContext;
 	}
 
 	@Override
-	public KeyValues getLowCardinalityKeyValues(MessageSenderContext context) {
+	public KeyValues getLowCardinalityKeyValues(AmqpMessageSenderContext context) {
 		return this.lowCardinality == null
 				? ObservationConvention.super.getLowCardinalityKeyValues(context)
 				: this.lowCardinality;
 	}
 
 	@Override
-	public KeyValues getHighCardinalityKeyValues(MessageSenderContext context) {
+	public KeyValues getHighCardinalityKeyValues(AmqpMessageSenderContext context) {
 		return this.highCardinality == null
 				? ObservationConvention.super.getHighCardinalityKeyValues(context)
 				: this.highCardinality;
