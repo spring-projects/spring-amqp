@@ -27,11 +27,18 @@ import io.micrometer.observation.transport.ReceiverContext;
  * @since 2.8
  *
  */
-public class AmqpMessageReceiverContext extends ReceiverContext<Message> {
+public class RabbitMessageReceiverContext extends ReceiverContext<Message> {
 
-	public AmqpMessageReceiverContext(Message message) {
+	private final String listenerId;
+
+	public RabbitMessageReceiverContext(Message message, String listenerId) {
 		super((carrier, key) -> carrier.getMessageProperties().getHeader(key));
 		setCarrier(message);
+		this.listenerId = listenerId;
+	}
+
+	public String getListenerId() {
+		return this.listenerId;
 	}
 
 }

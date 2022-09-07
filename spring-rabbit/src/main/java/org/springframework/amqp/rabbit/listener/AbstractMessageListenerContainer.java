@@ -63,9 +63,9 @@ import org.springframework.amqp.rabbit.listener.support.ContainerUtils;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
-import org.springframework.amqp.rabbit.support.micrometer.AmqpMessageReceiverContext;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservation;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservationConvention;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitMessageReceiverContext;
 import org.springframework.amqp.support.ConditionalExceptionLogger;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.postprocessor.MessagePostProcessorUtils;
@@ -261,7 +261,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private MessageAckListener messageAckListener = (success, deliveryTag, cause) -> { };
 
-	private RabbitListenerObservationConvention observationConvention;
+	private RabbitListenerObservationConvention observationConvention =
+			new RabbitListenerObservationConvention(null, null);
 
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
@@ -1183,6 +1184,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @since 3.0
 	 */
 	public void setObservationConvention(RabbitListenerObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "'observationConvention' cannot be null");
 		this.observationConvention = observationConvention;
 	}
 
@@ -1535,12 +1537,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		}
 		else {
 			observation = RabbitListenerObservation.LISTENER_OBSERVATION.observation(registry,
-						new AmqpMessageReceiverContext((Message) data))
-					.lowCardinalityKeyValue(RabbitListenerObservation.ListenerLowCardinalityTags.LISTENER_ID.asString(),
-							getListenerId());
-			if (this.observationConvention != null) {
-				observation.observationConvention(this.observationConvention);
-			}
+						new RabbitMessageReceiverContext((Message) data, getListenerId()))
+					.observationConvention(this.observationConvention);
 		}
 		observation.observe(() -> executeListenerAndHandleException(channel, data));
 	}

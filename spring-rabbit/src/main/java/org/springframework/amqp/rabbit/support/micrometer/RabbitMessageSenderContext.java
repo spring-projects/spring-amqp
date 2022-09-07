@@ -27,12 +27,18 @@ import io.micrometer.observation.transport.SenderContext;
  * @since 3.0
  *
  */
-public class AmqpMessageSenderContext extends SenderContext<Message> {
+public class RabbitMessageSenderContext extends SenderContext<Message> {
 
-	public AmqpMessageSenderContext(Message message) {
+	private final String beanName;
+
+	public RabbitMessageSenderContext(Message message, String beanName) {
 		super((carrier, key, value) -> message.getMessageProperties().setHeader(key, value));
 		setCarrier(message);
+		this.beanName = beanName;
+	}
 
+	public String getBeanName() {
+		return this.beanName;
 	}
 
 }

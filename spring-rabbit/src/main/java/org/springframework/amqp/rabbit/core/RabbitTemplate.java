@@ -74,7 +74,7 @@ import org.springframework.amqp.rabbit.support.ListenerContainerAware;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.rabbit.support.ValueExpression;
-import org.springframework.amqp.rabbit.support.micrometer.AmqpMessageSenderContext;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitMessageSenderContext;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitTemplateObservation;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitTemplateObservationConvention;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -271,7 +271,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	private boolean observationEnabled;
 
-	private RabbitTemplateObservationConvention observationConvention;
+	private RabbitTemplateObservationConvention observationConvention =
+			new RabbitTemplateObservationConvention(null, null);
 
 	private volatile boolean usingFastReplyTo;
 
@@ -332,6 +333,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @since 3.0
 	 */
 	public void setObservationConvention(RabbitTemplateObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "'observationConvention' cannot be null");
 		this.observationConvention = observationConvention;
 	}
 
@@ -2437,12 +2439,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 		else {
 			observation = RabbitTemplateObservation.TEMPLATE_OBSERVATION.observation(registry,
-						new AmqpMessageSenderContext(message))
-					.lowCardinalityKeyValue(RabbitTemplateObservation.TemplateLowCardinalityTags.BEAN_NAME.asString(),
-							this.beanName);
-			if (this.observationConvention != null) {
-				observation.observationConvention(this.observationConvention);
-			}
+						new RabbitMessageSenderContext(message, this.beanName))
+					.observationConvention(this.observationConvention);
 		}
 		observation.observe(() -> sendToRabbit(channel, exch, rKey, mandatory, message));
 	}

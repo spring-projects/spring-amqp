@@ -31,7 +31,7 @@ import io.micrometer.observation.Observation.ObservationConvention;
  * @since 3.0
  *
  */
-public class RabbitTemplateObservationConvention implements ObservationConvention<AmqpMessageSenderContext> {
+public class RabbitTemplateObservationConvention implements ObservationConvention<RabbitMessageSenderContext> {
 
 	@Nullable
 	private final KeyValues lowCardinality;
@@ -47,27 +47,27 @@ public class RabbitTemplateObservationConvention implements ObservationConventio
 	public RabbitTemplateObservationConvention(@Nullable KeyValues lowCardinality,
 			@Nullable KeyValues highCardinality) {
 
-		this.lowCardinality = lowCardinality;
-		this.highCardinality = highCardinality;
+		this.lowCardinality = lowCardinality != null ? KeyValues.of(lowCardinality) : KeyValues.empty();
+		this.highCardinality = highCardinality != null ? KeyValues.of(highCardinality) : KeyValues.empty();
 	}
 
 	@Override
 	public boolean supportsContext(Context context) {
-		return context instanceof AmqpMessageSenderContext;
+		return context instanceof RabbitMessageSenderContext;
 	}
 
 	@Override
-	public KeyValues getLowCardinalityKeyValues(AmqpMessageSenderContext context) {
-		return this.lowCardinality == null
-				? ObservationConvention.super.getLowCardinalityKeyValues(context)
-				: this.lowCardinality;
+	public KeyValues getLowCardinalityKeyValues(RabbitMessageSenderContext context) {
+		return this.lowCardinality
+					.and(RabbitTemplateObservation.TemplateLowCardinalityTags.BEAN_NAME.asString(),
+							context.getBeanName());
 	}
 
 	@Override
-	public KeyValues getHighCardinalityKeyValues(AmqpMessageSenderContext context) {
-		return this.highCardinality == null
-				? ObservationConvention.super.getHighCardinalityKeyValues(context)
-				: this.highCardinality;
+	public KeyValues getHighCardinalityKeyValues(RabbitMessageSenderContext context) {
+		return this.highCardinality
+					.and(RabbitTemplateObservation.TemplateLowCardinalityTags.BEAN_NAME.asString(),
+							context.getBeanName());
 	}
 
 }

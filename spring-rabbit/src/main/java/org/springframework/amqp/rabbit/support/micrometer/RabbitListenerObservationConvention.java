@@ -31,12 +31,10 @@ import io.micrometer.observation.Observation.ObservationConvention;
  * @since 3.0
  *
  */
-public class RabbitListenerObservationConvention implements ObservationConvention<AmqpMessageReceiverContext> {
+public class RabbitListenerObservationConvention implements ObservationConvention<RabbitMessageReceiverContext> {
 
-	@Nullable
 	private final KeyValues lowCardinality;
 
-	@Nullable
 	private final KeyValues highCardinality;
 
 	/**
@@ -47,27 +45,27 @@ public class RabbitListenerObservationConvention implements ObservationConventio
 	public RabbitListenerObservationConvention(@Nullable KeyValues lowCardinality,
 			@Nullable KeyValues highCardinality) {
 
-		this.lowCardinality = lowCardinality;
-		this.highCardinality = highCardinality;
+		this.lowCardinality = lowCardinality != null ? KeyValues.of(lowCardinality) : KeyValues.empty();
+		this.highCardinality = highCardinality != null ? KeyValues.of(highCardinality) : KeyValues.empty();
 	}
 
 	@Override
 	public boolean supportsContext(Context context) {
-		return context instanceof AmqpMessageReceiverContext;
+		return context instanceof RabbitMessageReceiverContext;
 	}
 
 	@Override
-	public KeyValues getLowCardinalityKeyValues(AmqpMessageReceiverContext context) {
-		return this.lowCardinality == null
-				? ObservationConvention.super.getLowCardinalityKeyValues(context)
-				: this.lowCardinality;
+	public KeyValues getLowCardinalityKeyValues(RabbitMessageReceiverContext context) {
+		return this.lowCardinality
+				.and(RabbitListenerObservation.ListenerLowCardinalityTags.LISTENER_ID.asString(),
+						context.getListenerId());
 	}
 
 	@Override
-	public KeyValues getHighCardinalityKeyValues(AmqpMessageReceiverContext context) {
-		return this.highCardinality == null
-				? ObservationConvention.super.getHighCardinalityKeyValues(context)
-				: this.highCardinality;
+	public KeyValues getHighCardinalityKeyValues(RabbitMessageReceiverContext context) {
+		return this.highCardinality
+					.and(RabbitListenerObservation.ListenerLowCardinalityTags.LISTENER_ID.asString(),
+							context.getListenerId());
 	}
 
 }
