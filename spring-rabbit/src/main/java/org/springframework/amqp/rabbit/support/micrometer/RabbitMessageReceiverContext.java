@@ -46,7 +46,7 @@ public class RabbitMessageReceiverContext extends ReceiverContext<Message> {
 
 	@Override
 	public String getContextualName() {
-		return message.getMessageProperties().getConsumerQueue() + " receive";
+		return this.message.getMessageProperties().getConsumerQueue() + " receive";
 	}
 
 }
