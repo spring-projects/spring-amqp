@@ -440,7 +440,7 @@ project('spring-rabbit-stream') {
 		testRuntimeOnly "org.xerial.snappy:snappy-java:$snappyVersion"
 		testRuntimeOnly "org.lz4:lz4-java:$lz4Version"
 		testRuntimeOnly "com.github.luben:zstd-jni:$zstdJniVersion"
-		testImplementation "org.testcontainers:rabbitmq:1.15.3"
+		testImplementation "org.testcontainers:rabbitmq:1.17.3"
 		testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 	}
 
