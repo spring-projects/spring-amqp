@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Declarables;
@@ -56,7 +55,6 @@ import com.rabbitmq.stream.OffsetSpecification;
  *
  */
 @SpringJUnitConfig
-@Disabled
 public class SuperStreamSACTests extends AbstractIntegrationTests {
 
 	@Test
