@@ -24,7 +24,7 @@ import io.micrometer.observation.transport.ReceiverContext;
  * {@link ReceiverContext} for {@link Message}s.
  *
  * @author Gary Russell
- * @since 2.8
+ * @since 3.0
  *
  */
 public class RabbitMessageReceiverContext extends ReceiverContext<Message> {
