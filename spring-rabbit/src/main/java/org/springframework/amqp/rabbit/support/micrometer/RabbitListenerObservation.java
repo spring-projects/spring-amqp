@@ -17,6 +17,8 @@
 package org.springframework.amqp.rabbit.support.micrometer;
 
 import io.micrometer.common.docs.KeyName;
+import io.micrometer.observation.Observation.Context;
+import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.docs.DocumentedObservation;
 
 /**
@@ -33,8 +35,14 @@ public enum RabbitListenerObservation implements DocumentedObservation {
 	 */
 	LISTENER_OBSERVATION {
 
+
 		@Override
-		public String getName() {
+		public Class<? extends ObservationConvention<? extends Context>> getDefaultConvention() {
+			return RabbitListenerObservationConvention.class;
+		}
+
+		@Override
+		public String getPrefix() {
 			return "spring.rabbit.listener";
 		}
 

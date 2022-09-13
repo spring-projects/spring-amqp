@@ -18,7 +18,7 @@ package org.springframework.amqp.rabbit.support.micrometer;
 
 import io.micrometer.common.KeyValues;
 import io.micrometer.observation.Observation.Context;
-import io.micrometer.observation.Observation.ObservationConvention;
+import io.micrometer.observation.ObservationConvention;
 
 /**
  * {@link ObservationConvention} for Rabbit template key values.
