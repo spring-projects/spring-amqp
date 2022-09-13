@@ -42,9 +42,7 @@ import com.rabbitmq.stream.ProducerBuilder;
  *
  * @author Gary Russell
  * @since 2.4
- * @deprecated in favor of {@link RabbitStreamTemplate2}.
  */
-@Deprecated
 public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAware {
 
 	protected final LogAccessor logger = new LogAccessor(getClass()); // NOSONAR

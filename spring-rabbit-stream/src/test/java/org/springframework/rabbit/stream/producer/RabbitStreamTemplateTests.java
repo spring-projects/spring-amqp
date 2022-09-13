@@ -23,7 +23,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -31,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.rabbit.stream.support.converter.StreamMessageConverter;
+import org.springframework.util.concurrent.ListenableFuture;
 
 import com.rabbitmq.stream.ConfirmationHandler;
 import com.rabbitmq.stream.ConfirmationStatus;
@@ -81,7 +81,7 @@ public class RabbitStreamTemplateTests {
 			handler.handle(status);
 			return null;
 		}).given(producer).send(any(), any());
-		try (RabbitStreamTemplate2 template = new RabbitStreamTemplate2(env, "foo")) {
+		try (RabbitStreamTemplate template = new RabbitStreamTemplate(env, "foo")) {
 			SimpleMessageConverter messageConverter = new SimpleMessageConverter();
 			template.setMessageConverter(messageConverter);
 			assertThat(template.messageConverter()).isSameAs(messageConverter);
@@ -89,25 +89,25 @@ public class RabbitStreamTemplateTests {
 			given(converter.fromMessage(any())).willReturn(mock(Message.class));
 			template.setStreamConverter(converter);
 			assertThat(template.streamMessageConverter()).isSameAs(converter);
-			CompletableFuture<Boolean> future = template.convertAndSend("foo");
+			ListenableFuture<Boolean> future = template.convertAndSend("foo");
 			assertThat(future.get()).isTrue();
-			CompletableFuture<Boolean> future1 = template.convertAndSend("foo");
+			ListenableFuture<Boolean> future1 = template.convertAndSend("foo");
 			assertThatExceptionOfType(ExecutionException.class).isThrownBy(() -> future1.get())
 					.withCauseExactlyInstanceOf(StreamSendException.class)
 					.withStackTraceContaining("Message Enqueueing Failed");
-			CompletableFuture<Boolean> future2 = template.convertAndSend("foo");
+			ListenableFuture<Boolean> future2 = template.convertAndSend("foo");
 			assertThatExceptionOfType(ExecutionException.class).isThrownBy(() -> future2.get())
 					.withCauseExactlyInstanceOf(StreamSendException.class)
 					.withStackTraceContaining("Producer Closed");
-			CompletableFuture<Boolean> future3 = template.convertAndSend("foo");
+			ListenableFuture<Boolean> future3 = template.convertAndSend("foo");
 			assertThatExceptionOfType(ExecutionException.class).isThrownBy(() -> future3.get())
 					.withCauseExactlyInstanceOf(StreamSendException.class)
 					.withStackTraceContaining("Producer Not Available");
-			CompletableFuture<Boolean> future4 = template.convertAndSend("foo");
+			ListenableFuture<Boolean> future4 = template.convertAndSend("foo");
 			assertThatExceptionOfType(ExecutionException.class).isThrownBy(() -> future4.get())
 					.withCauseExactlyInstanceOf(StreamSendException.class)
 					.withStackTraceContaining("Publish Confirm Timeout");
-			CompletableFuture<Boolean> future5 = template.convertAndSend("foo");
+			ListenableFuture<Boolean> future5 = template.convertAndSend("foo");
 			assertThatExceptionOfType(ExecutionException.class).isThrownBy(() -> future5.get())
 					.withCauseExactlyInstanceOf(StreamSendException.class)
 					.withStackTraceContaining("Unknown code: " + -1);

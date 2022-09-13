@@ -89,9 +89,7 @@ import com.rabbitmq.client.Channel;
  * @author Artem Bilan
  *
  * @since 1.6
- * @deprecated in favor of {@link AsyncRabbitTemplate2}.
  */
-@Deprecated
 public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessageListener, ReturnsCallback,
 		ConfirmCallback, BeanNameAware, SmartLifecycle {
 
