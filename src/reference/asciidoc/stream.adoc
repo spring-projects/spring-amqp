@@ -16,13 +16,13 @@ The `RabbitStreamTemplate` provides a subset of the `RabbitTemplate` (AMQP) func
 ----
 public interface RabbitStreamOperations extends AutoCloseable {
 
-	ListenableFuture<Boolean> send(Message message);
+	ConvertableFuture<Boolean> send(Message message);
 
-	ListenableFuture<Boolean> convertAndSend(Object message);
+	ConvertableFuture<Boolean> convertAndSend(Object message);
 
-	ListenableFuture<Boolean> convertAndSend(Object message, @Nullable MessagePostProcessor mpp);
+	ConvertableFuture<Boolean> convertAndSend(Object message, @Nullable MessagePostProcessor mpp);
 
-	ListenableFuture<Boolean> send(com.rabbitmq.stream.Message message);
+	ConvertableFuture<Boolean> send(com.rabbitmq.stream.Message message);
 
 	MessageBuilder messageBuilder();
 
@@ -67,7 +67,7 @@ The `ProducerCustomizer` provides a mechanism to customize the producer before i
 
 Refer to the https://rabbitmq.github.io/rabbitmq-stream-java-client/stable/htmlsingle/[Java Client Documentation] about customizing the `Environment` and `Producer`.
 
-IMPORTANT: In version 2.4.7 `RabbitStreamOperations2` and `RabbitStreamTemplate2` were added to assist migration to this version; `RabbitStreamOperations2` and `RabbitStreamTemplate2` are now deprecated in favor of `RabbitStreamOperations` and `RabbitStreamTemplate` respectively.
+IMPORTANT: Starting with version 3.0, the method return types are `CompletableFuture` instead of `ListenableFuture`.
 
 ==== Receiving Messages
 

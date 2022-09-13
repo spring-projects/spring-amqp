@@ -4677,7 +4677,7 @@ Version 2.0 introduced variants of these methods (`convertSendAndReceiveAsType`)
 You must configure the underlying `RabbitTemplate` with a `SmartMessageConverter`.
 See <<json-complex>> for more information.
 
-The `AsyncRabbitTemplate2` (added to assist with migration to this release) is now deprecated in favor of `AsyncRabbitTemplate` which now returns `CompletableFuture` s instead of `ListenableFuture` s.
+IMPORTANT: Starting with version 3.0, the `AsyncRabbitTemplate` methods now return `CompletableFuture` s instead of `ListenableFuture` s.
 
 [[remoting]]
 ===== Spring Remoting with AMQP
