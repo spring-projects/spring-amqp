@@ -36,8 +36,8 @@ import org.springframework.amqp.ImmediateRequeueAmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.AsyncRabbitTemplate2;
-import org.springframework.amqp.rabbit.RabbitConverterFuture;
+import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
+import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -74,7 +74,7 @@ public class AsyncListenerTests {
 	private RabbitTemplate rabbitTemplate;
 
 	@Autowired
-	private AsyncRabbitTemplate2 asyncTemplate;
+	private AsyncRabbitTemplate asyncTemplate;
 
 	@Autowired
 	private Queue queue1;
@@ -193,8 +193,8 @@ public class AsyncListenerTests {
 		}
 
 		@Bean
-		public AsyncRabbitTemplate2 asyncTemplate() {
-			return new AsyncRabbitTemplate2(rabbitTemplate());
+		public AsyncRabbitTemplate asyncTemplate() {
+			return new AsyncRabbitTemplate(rabbitTemplate());
 		}
 
 		@Bean

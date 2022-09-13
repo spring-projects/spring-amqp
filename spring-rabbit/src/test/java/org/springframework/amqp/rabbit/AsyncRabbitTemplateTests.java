@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022 the original author or authors.
+ * Copyright 2016-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,8 @@ import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
+import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitMessageFuture;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -69,7 +71,6 @@ import org.springframework.util.concurrent.ListenableFutureCallback;
 @SpringJUnitConfig
 @DirtiesContext
 @RabbitAvailable
-@SuppressWarnings("deprecation")
 public class AsyncRabbitTemplateTests {
 
 	@Autowired
@@ -252,7 +253,7 @@ public class AsyncRabbitTemplateTests {
 	@DirtiesContext
 	public void testConvertWithConfirm() throws Exception {
 		this.asyncTemplate.setEnableConfirms(true);
-		org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("sleep");
+		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("sleep");
 		ListenableFuture<Boolean> confirm = future.getConfirm();
 		assertThat(confirm).isNotNull();
 		assertThat(confirm.get(10, TimeUnit.SECONDS)).isTrue();
@@ -263,7 +264,7 @@ public class AsyncRabbitTemplateTests {
 	@DirtiesContext
 	public void testMessageWithConfirm() throws Exception {
 		this.asyncTemplate.setEnableConfirms(true);
-		org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitMessageFuture future = this.asyncTemplate
+		RabbitMessageFuture future = this.asyncTemplate
 				.sendAndReceive(new SimpleMessageConverter().toMessage("sleep", new MessageProperties()));
 		ListenableFuture<Boolean> confirm = future.getConfirm();
 		assertThat(confirm).isNotNull();
@@ -275,7 +276,7 @@ public class AsyncRabbitTemplateTests {
 	@DirtiesContext
 	public void testConvertWithConfirmDirect() throws Exception {
 		this.asyncDirectTemplate.setEnableConfirms(true);
-		org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture<String> future = this.asyncDirectTemplate.convertSendAndReceive("sleep");
+		RabbitConverterFuture<String> future = this.asyncDirectTemplate.convertSendAndReceive("sleep");
 		ListenableFuture<Boolean> confirm = future.getConfirm();
 		assertThat(confirm).isNotNull();
 		assertThat(confirm.get(10, TimeUnit.SECONDS)).isTrue();
@@ -286,7 +287,7 @@ public class AsyncRabbitTemplateTests {
 	@DirtiesContext
 	public void testMessageWithConfirmDirect() throws Exception {
 		this.asyncDirectTemplate.setEnableConfirms(true);
-		org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitMessageFuture future = this.asyncDirectTemplate
+		RabbitMessageFuture future = this.asyncDirectTemplate
 				.sendAndReceive(new SimpleMessageConverter().toMessage("sleep", new MessageProperties()));
 		ListenableFuture<Boolean> confirm = future.getConfirm();
 		assertThat(confirm).isNotNull();
@@ -320,7 +321,7 @@ public class AsyncRabbitTemplateTests {
 	@DirtiesContext
 	public void testReplyAfterReceiveTimeout() throws Exception {
 		this.asyncTemplate.setReceiveTimeout(100);
-		org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("sleep");
+		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("sleep");
 		TheCallback callback = new TheCallback();
 		future.addCallback(callback);
 		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(1);
@@ -350,7 +351,7 @@ public class AsyncRabbitTemplateTests {
 	@DirtiesContext
 	public void testStopCancelled() throws Exception {
 		this.asyncTemplate.setReceiveTimeout(5000);
-		org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("noReply");
+		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("noReply");
 		TheCallback callback = new TheCallback();
 		future.addCallback(callback);
 		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(1);

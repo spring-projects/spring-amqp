@@ -42,7 +42,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.rabbit.stream.config.StreamRabbitListenerContainerFactory;
-import org.springframework.rabbit.stream.producer.RabbitStreamTemplate2;
+import org.springframework.rabbit.stream.producer.RabbitStreamTemplate;
 import org.springframework.rabbit.stream.retry.StreamRetryOperationsInterceptorFactoryBean;
 import org.springframework.rabbit.stream.support.StreamMessageProperties;
 import org.springframework.retry.interceptor.RetryOperationsInterceptor;
@@ -70,7 +70,7 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 	Config config;
 
 	@Test
-	void simple(@Autowired RabbitStreamTemplate2 template) throws Exception {
+	void simple(@Autowired RabbitStreamTemplate template) throws Exception {
 		Future<Boolean> future = template.convertAndSend("foo");
 		assertThat(future.get(10, TimeUnit.SECONDS)).isTrue();
 		future = template.convertAndSend("bar", msg -> msg);
@@ -247,8 +247,8 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 		}
 
 		@Bean
-		RabbitStreamTemplate2 streamTemplate1(Environment env) {
-			RabbitStreamTemplate2 template = new RabbitStreamTemplate2(env, "test.stream.queue1");
+		RabbitStreamTemplate streamTemplate1(Environment env) {
+			RabbitStreamTemplate template = new RabbitStreamTemplate(env, "test.stream.queue1");
 			template.setProducerCustomizer((name, builder) -> builder.name("test"));
 			return template;
 		}
