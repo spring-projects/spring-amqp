@@ -95,17 +95,6 @@ public class CorrelationData implements Correlation {
 	}
 
 	/**
-	 * Return a future to check the success/failure of the publish operation.
-	 * @return the future.
-	 * @since 2.4.7
-	 * @deprecated as of 3.0, in favor of {@link #getFuture()}.
-	 */
-	@Deprecated
-	public CompletableFuture<Confirm> getCompletableFuture() {
-		return this.future;
-	}
-
-	/**
 	 * Get the returned message and metadata, if any. Guaranteed to be populated before
 	 * the future is set.
 	 * @return the {@link ReturnedMessage}.

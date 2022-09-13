@@ -34,11 +34,6 @@ Support remoting using Spring Framework’s RMI support is deprecated and will b
 The `Jackson2JsonMessageConverter` can now determine the charset from the `contentEncoding` header.
 See <<json-message-converter>> for more information.
 
-==== AsyncRabbitTemplate
-
-The `AsyncRabbitTemplate` is deprecated in favor of `AsyncRabbitTemplate2` which returns `CompletableFuture` s instead of `ListenableFuture` s.
-See <<async-template>> for more information.
-
 ==== Message Converter Changes
 
 The `Jackson2JsonMessageConverter` can now determine the charset from the `contentEncoding` header.
