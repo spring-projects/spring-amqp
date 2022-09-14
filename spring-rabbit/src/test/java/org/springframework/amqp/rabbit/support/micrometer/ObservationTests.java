@@ -113,12 +113,12 @@ public class ObservationTests {
 		rler.getListenerContainer("obs1").stop();
 		rler.getListenerContainer("obs1").start();
 		template.convertAndSend("observation.testQ1", "test");
-		assertThat(listener.latch1.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(listener.latch2.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(listener.message)
 				.extracting(msg -> msg.getMessageProperties().getHeaders())
 				.hasFieldOrPropertyWithValue("foo", "some foo value")
 				.hasFieldOrPropertyWithValue("bar", "some bar value");
-		assertThat(spans).hasSize(8);
+		assertThat(spans).hasSize(4);
 		span = spans.poll();
 		assertThat(span.getTags()).containsEntry("bean.name", "template");
 		assertThat(span.getTags()).containsEntry("foo", "bar");
