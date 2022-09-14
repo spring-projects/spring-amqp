@@ -148,7 +148,7 @@ public class ObservationTests {
 						KeyValues.of("bean.name", "template", "foo", "bar"))
 				.hasTimerWithNameAndTags("spring.rabbit.listener", KeyValues.of("listener.id", "obs1"))
 				.hasTimerWithNameAndTags("spring.rabbit.listener",
-						KeyValues.of("listener.id", "obs1", "baz","qux"))
+						KeyValues.of("listener.id", "obs1", "baz", "qux"))
 				.hasTimerWithNameAndTags("spring.rabbit.listener", KeyValues.of("listener.id", "obs2"));
 	}
 
