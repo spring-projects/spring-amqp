@@ -114,6 +114,7 @@ import com.rabbitmq.client.Return;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
 import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.ObservationRegistry;
 
 /**
@@ -271,7 +272,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	private boolean observationEnabled;
 
-	private RabbitTemplateObservationConvention observationConvention = new RabbitTemplateObservationConvention();
+	@Nullable
+	private ObservationConvention<RabbitMessageSenderContext> observationConvention;
 
 	private volatile boolean usingFastReplyTo;
 
@@ -331,8 +333,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @param observationConvention the convention.
 	 * @since 3.0
 	 */
-	public void setObservationConvention(RabbitTemplateObservationConvention observationConvention) {
-		Assert.notNull(observationConvention, "'observationConvention' cannot be null");
+	public void setObservationConvention(ObservationConvention<RabbitMessageSenderContext> observationConvention) {
 		this.observationConvention = observationConvention;
 	}
 
@@ -2437,9 +2438,10 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			observation = Observation.NOOP;
 		}
 		else {
-			observation = RabbitTemplateObservation.TEMPLATE_OBSERVATION.observation(registry,
-						new RabbitMessageSenderContext(message, this.beanName, exch + "/" + rKey))
-					.observationConvention(this.observationConvention);
+			observation = RabbitTemplateObservation.TEMPLATE_OBSERVATION.observation(this.observationConvention,
+					RabbitTemplateObservationConvention.INSTANCE,
+						new RabbitMessageSenderContext(message, this.beanName, exch + "/" + rKey), registry);
+
 		}
 		observation.observe(() -> sendToRabbit(channel, exch, rKey, mandatory, message));
 	}

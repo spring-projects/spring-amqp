@@ -95,6 +95,7 @@ import org.springframework.util.backoff.FixedBackOff;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ShutdownSignalException;
 import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.ObservationRegistry;
 
 /**
@@ -261,7 +262,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private MessageAckListener messageAckListener = (success, deliveryTag, cause) -> { };
 
-	private RabbitListenerObservationConvention observationConvention = new RabbitListenerObservationConvention();
+	@Nullable
+	private ObservationConvention<RabbitMessageReceiverContext> observationConvention;
 
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
@@ -1186,8 +1188,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @param observationConvention the convention.
 	 * @since 3.0
 	 */
-	public void setObservationConvention(RabbitListenerObservationConvention observationConvention) {
-		Assert.notNull(observationConvention, "'observationConvention' cannot be null");
+	public void setObservationConvention(ObservationConvention<RabbitMessageReceiverContext> observationConvention) {
 		this.observationConvention = observationConvention;
 	}
 
@@ -1540,9 +1541,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		}
 		else {
 			Message message = (Message) data;
-			observation = RabbitListenerObservation.LISTENER_OBSERVATION.observation(registry,
-						new RabbitMessageReceiverContext(message, getListenerId()))
-					.observationConvention(this.observationConvention);
+			observation = RabbitListenerObservation.LISTENER_OBSERVATION.observation(this.observationConvention,
+					RabbitListenerObservationConvention.INSTANCE,
+						new RabbitMessageReceiverContext(message, getListenerId()), registry);
 		}
 		observation.observe(() -> executeListenerAndHandleException(channel, data));
 	}

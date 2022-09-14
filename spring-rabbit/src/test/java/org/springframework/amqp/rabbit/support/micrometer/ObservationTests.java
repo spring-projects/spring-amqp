@@ -35,12 +35,15 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
+import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.Nullable;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
+import io.micrometer.common.KeyValues;
 import io.micrometer.observation.ObservationHandler;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
@@ -65,10 +68,11 @@ public class ObservationTests {
 
 	@Test
 	void endToEnd(@Autowired Listener listener, @Autowired RabbitTemplate template,
-			@Autowired SimpleTracer tracer) throws InterruptedException {
+			@Autowired SimpleTracer tracer, @Autowired RabbitListenerEndpointRegistry rler)
+					throws InterruptedException {
 
 		template.convertAndSend("observation.testQ1", "test");
-		assertThat(listener.latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(listener.latch1.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(listener.message)
 				.extracting(msg -> msg.getMessageProperties().getHeaders())
 				.hasFieldOrPropertyWithValue("foo", "some foo value")
@@ -88,6 +92,50 @@ public class ObservationTests {
 		span = spans.poll();
 		assertThat(span.getTags())
 				.containsAllEntriesOf(Map.of("listener.id", "obs2", "foo", "some foo value", "bar", "some bar value"));
+		assertThat(span.getName()).isEqualTo("observation.testQ2 receive");
+		template.setObservationConvention(new RabbitTemplateObservationConvention() {
+
+			@Override
+			public KeyValues getLowCardinalityKeyValues(RabbitMessageSenderContext context) {
+				return super.getLowCardinalityKeyValues(context).and("foo", "bar");
+			}
+
+		});
+		((AbstractMessageListenerContainer) rler.getListenerContainer("obs1")).setObservationConvention(
+				new RabbitListenerObservationConvention() {
+
+					@Override
+					public KeyValues getLowCardinalityKeyValues(RabbitMessageReceiverContext context) {
+						return super.getLowCardinalityKeyValues(context).and("baz", "qux");
+					}
+
+				});
+		rler.getListenerContainer("obs1").stop();
+		rler.getListenerContainer("obs1").start();
+		template.convertAndSend("observation.testQ1", "test");
+		assertThat(listener.latch1.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(listener.message)
+				.extracting(msg -> msg.getMessageProperties().getHeaders())
+				.hasFieldOrPropertyWithValue("foo", "some foo value")
+				.hasFieldOrPropertyWithValue("bar", "some bar value");
+		assertThat(spans).hasSize(8);
+		span = spans.poll();
+		assertThat(span.getTags()).containsEntry("bean.name", "template");
+		assertThat(span.getTags()).containsEntry("foo", "bar");
+		assertThat(span.getName()).isEqualTo("/observation.testQ1 send");
+		span = spans.poll();
+		assertThat(span.getTags())
+				.containsAllEntriesOf(Map.of("listener.id", "obs1", "foo", "some foo value", "bar", "some bar value",
+						"baz", "qux"));
+		assertThat(span.getName()).isEqualTo("observation.testQ1 receive");
+		span = spans.poll();
+		assertThat(span.getTags()).containsEntry("bean.name", "template");
+		assertThat(span.getTags()).containsEntry("foo", "bar");
+		assertThat(span.getName()).isEqualTo("/observation.testQ2 send");
+		span = spans.poll();
+		assertThat(span.getTags())
+				.containsAllEntriesOf(Map.of("listener.id", "obs2", "foo", "some foo value", "bar", "some bar value"));
+		assertThat(span.getTags()).doesNotContainEntry("baz", "qux");
 		assertThat(span.getName()).isEqualTo("observation.testQ2 receive");
 	}
 
@@ -175,7 +223,9 @@ public class ObservationTests {
 
 		private final RabbitTemplate template;
 
-		final CountDownLatch latch = new CountDownLatch(1);
+		final CountDownLatch latch1 = new CountDownLatch(1);
+
+		final CountDownLatch latch2 = new CountDownLatch(2);
 
 		volatile Message message;
 
@@ -185,13 +235,14 @@ public class ObservationTests {
 
 		@RabbitListener(id = "obs1", queues = "observation.testQ1")
 		void listen1(Message in) {
-			template.send("observation.testQ2", in);
+			this.template.send("observation.testQ2", in);
 		}
 
 		@RabbitListener(id = "obs2", queues = "observation.testQ2")
 		void listen2(Message in) {
 			this.message = in;
-			latch.countDown();
+			this.latch1.countDown();
+			this.latch2.countDown();
 		}
 
 	}

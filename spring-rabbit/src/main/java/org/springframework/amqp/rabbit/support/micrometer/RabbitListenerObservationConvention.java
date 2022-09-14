@@ -29,6 +29,11 @@ import io.micrometer.observation.ObservationConvention;
  */
 public class RabbitListenerObservationConvention implements ObservationConvention<RabbitMessageReceiverContext> {
 
+	/**
+	 * A singleton instance of the convention.
+	 */
+	public static RabbitListenerObservationConvention INSTANCE = new RabbitListenerObservationConvention();
+
 	@Override
 	public boolean supportsContext(Context context) {
 		return context instanceof RabbitMessageReceiverContext;
