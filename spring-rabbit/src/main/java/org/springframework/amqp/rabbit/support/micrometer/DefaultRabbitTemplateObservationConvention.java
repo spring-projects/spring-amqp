@@ -30,7 +30,8 @@ public class DefaultRabbitTemplateObservationConvention implements RabbitTemplat
 	/**
 	 * A singleton instance of the convention.
 	 */
-	public static DefaultRabbitTemplateObservationConvention INSTANCE = new DefaultRabbitTemplateObservationConvention();
+	public static final DefaultRabbitTemplateObservationConvention INSTANCE =
+			new DefaultRabbitTemplateObservationConvention();
 
 	@Override
 	public KeyValues getLowCardinalityKeyValues(RabbitMessageSenderContext context) {
