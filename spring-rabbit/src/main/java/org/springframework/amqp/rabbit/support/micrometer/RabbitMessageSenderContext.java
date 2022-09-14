@@ -45,6 +45,11 @@ public class RabbitMessageSenderContext extends SenderContext<Message> {
 	}
 
 	@Override
+	public String getName() {
+		return "spring.rabbit.template";
+	}
+
+	@Override
 	public String getContextualName() {
 		return this.destination + " send";
 	}

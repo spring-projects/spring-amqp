@@ -44,6 +44,10 @@ import org.springframework.lang.Nullable;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import io.micrometer.common.KeyValues;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.micrometer.core.tck.MeterRegistryAssert;
 import io.micrometer.observation.ObservationHandler;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
@@ -68,7 +72,8 @@ public class ObservationTests {
 
 	@Test
 	void endToEnd(@Autowired Listener listener, @Autowired RabbitTemplate template,
-			@Autowired SimpleTracer tracer, @Autowired RabbitListenerEndpointRegistry rler)
+			@Autowired SimpleTracer tracer, @Autowired RabbitListenerEndpointRegistry rler,
+			@Autowired MeterRegistry meterRegistry)
 					throws InterruptedException {
 
 		template.convertAndSend("observation.testQ1", "test");
@@ -137,6 +142,14 @@ public class ObservationTests {
 				.containsAllEntriesOf(Map.of("listener.id", "obs2", "foo", "some foo value", "bar", "some bar value"));
 		assertThat(span.getTags()).doesNotContainEntry("baz", "qux");
 		assertThat(span.getName()).isEqualTo("observation.testQ2 receive");
+		MeterRegistryAssert.assertThat(meterRegistry)
+				.hasTimerWithNameAndTags("spring.rabbit.template", KeyValues.of("bean.name", "template"))
+				.hasTimerWithNameAndTags("spring.rabbit.template",
+						KeyValues.of("bean.name", "template", "foo", "bar"))
+				.hasTimerWithNameAndTags("spring.rabbit.listener", KeyValues.of("listener.id", "obs1"))
+				.hasTimerWithNameAndTags("spring.rabbit.listener",
+						KeyValues.of("listener.id", "obs1", "baz","qux"))
+				.hasTimerWithNameAndTags("spring.rabbit.listener", KeyValues.of("listener.id", "obs2"));
 	}
 
 	@Configuration
@@ -169,7 +182,12 @@ public class ObservationTests {
 		}
 
 		@Bean
-		ObservationRegistry observationRegistry(Tracer tracer, Propagator propagator) {
+		MeterRegistry meterRegistry() {
+			return new SimpleMeterRegistry();
+		}
+
+		@Bean
+		ObservationRegistry observationRegistry(Tracer tracer, Propagator propagator, MeterRegistry meterRegistry) {
 			TestObservationRegistry observationRegistry = TestObservationRegistry.create();
 			observationRegistry.observationConfig().observationHandler(
 					// Composite will pick the first matching handler
@@ -179,7 +197,8 @@ public class ObservationTests {
 							// This is responsible for creating a span on the receiver side
 							new PropagatingReceiverTracingObservationHandler<>(tracer, propagator),
 							// This is responsible for creating a default span
-							new DefaultTracingObservationHandler(tracer)));
+							new DefaultTracingObservationHandler(tracer)))
+					.observationHandler(new DefaultMeterObservationHandler(meterRegistry));
 			return observationRegistry;
 		}
 

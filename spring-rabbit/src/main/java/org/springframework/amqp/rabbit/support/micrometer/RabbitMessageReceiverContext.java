@@ -45,6 +45,11 @@ public class RabbitMessageReceiverContext extends ReceiverContext<Message> {
 	}
 
 	@Override
+	public String getName() {
+		return "spring.rabbit.listener";
+	}
+
+	@Override
 	public String getContextualName() {
 		return this.message.getMessageProperties().getConsumerQueue() + " receive";
 	}
