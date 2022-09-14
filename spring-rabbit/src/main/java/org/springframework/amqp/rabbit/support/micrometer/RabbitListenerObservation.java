@@ -38,7 +38,7 @@ public enum RabbitListenerObservation implements DocumentedObservation {
 
 		@Override
 		public Class<? extends ObservationConvention<? extends Context>> getDefaultConvention() {
-			return RabbitListenerObservationConvention.class;
+			return DefaultRabbitListenerObservationConvention.class;
 		}
 
 		@Override

@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.rabbit.support.micrometer;
 
-import io.micrometer.common.KeyValues;
 import io.micrometer.observation.Observation.Context;
 import io.micrometer.observation.ObservationConvention;
 
@@ -27,27 +26,11 @@ import io.micrometer.observation.ObservationConvention;
  * @since 3.0
  *
  */
-public class RabbitTemplateObservationConvention implements ObservationConvention<RabbitMessageSenderContext> {
-
-	/**
-	 * A singleton instance of the convention.
-	 */
-	public static RabbitTemplateObservationConvention INSTANCE = new RabbitTemplateObservationConvention();
+public interface RabbitTemplateObservationConvention extends ObservationConvention<RabbitMessageSenderContext> {
 
 	@Override
-	public boolean supportsContext(Context context) {
+	default boolean supportsContext(Context context) {
 		return context instanceof RabbitMessageSenderContext;
-	}
-
-	@Override
-	public KeyValues getLowCardinalityKeyValues(RabbitMessageSenderContext context) {
-		return KeyValues.of(RabbitTemplateObservation.TemplateLowCardinalityTags.BEAN_NAME.asString(),
-						context.getBeanName());
-	}
-
-	@Override
-	public KeyValues getHighCardinalityKeyValues(RabbitMessageSenderContext context) {
-		return KeyValues.empty();
 	}
 
 }

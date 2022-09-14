@@ -74,6 +74,7 @@ import org.springframework.amqp.rabbit.support.ListenerContainerAware;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.rabbit.support.ValueExpression;
+import org.springframework.amqp.rabbit.support.micrometer.DefaultRabbitTemplateObservationConvention;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitMessageSenderContext;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitTemplateObservation;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitTemplateObservationConvention;
@@ -114,7 +115,6 @@ import com.rabbitmq.client.Return;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
 import io.micrometer.observation.Observation;
-import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.ObservationRegistry;
 
 /**
@@ -273,7 +273,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	private boolean observationEnabled;
 
 	@Nullable
-	private ObservationConvention<RabbitMessageSenderContext> observationConvention;
+	private RabbitTemplateObservationConvention observationConvention;
 
 	private volatile boolean usingFastReplyTo;
 
@@ -333,7 +333,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @param observationConvention the convention.
 	 * @since 3.0
 	 */
-	public void setObservationConvention(ObservationConvention<RabbitMessageSenderContext> observationConvention) {
+	public void setObservationConvention(RabbitTemplateObservationConvention observationConvention) {
 		this.observationConvention = observationConvention;
 	}
 
@@ -2439,7 +2439,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 		else {
 			observation = RabbitTemplateObservation.TEMPLATE_OBSERVATION.observation(this.observationConvention,
-					RabbitTemplateObservationConvention.INSTANCE,
+					DefaultRabbitTemplateObservationConvention.INSTANCE,
 						new RabbitMessageSenderContext(message, this.beanName, exch + "/" + rKey), registry);
 
 		}

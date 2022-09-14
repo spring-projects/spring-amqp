@@ -93,7 +93,7 @@ public class ObservationTests {
 		assertThat(span.getTags())
 				.containsAllEntriesOf(Map.of("listener.id", "obs2", "foo", "some foo value", "bar", "some bar value"));
 		assertThat(span.getName()).isEqualTo("observation.testQ2 receive");
-		template.setObservationConvention(new RabbitTemplateObservationConvention() {
+		template.setObservationConvention(new DefaultRabbitTemplateObservationConvention() {
 
 			@Override
 			public KeyValues getLowCardinalityKeyValues(RabbitMessageSenderContext context) {
@@ -102,7 +102,7 @@ public class ObservationTests {
 
 		});
 		((AbstractMessageListenerContainer) rler.getListenerContainer("obs1")).setObservationConvention(
-				new RabbitListenerObservationConvention() {
+				new DefaultRabbitListenerObservationConvention() {
 
 					@Override
 					public KeyValues getLowCardinalityKeyValues(RabbitMessageReceiverContext context) {

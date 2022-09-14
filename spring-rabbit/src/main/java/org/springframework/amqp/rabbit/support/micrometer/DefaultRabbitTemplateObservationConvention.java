@@ -16,21 +16,31 @@
 
 package org.springframework.amqp.rabbit.support.micrometer;
 
-import io.micrometer.observation.Observation.Context;
-import io.micrometer.observation.ObservationConvention;
+import io.micrometer.common.KeyValues;
 
 /**
- * {@link ObservationConvention} for Rabbit listener key values.
+ * Default {@link RabbitTemplateObservationConvention} for Rabbit template key values.
  *
  * @author Gary Russell
  * @since 3.0
  *
  */
-public interface RabbitListenerObservationConvention extends ObservationConvention<RabbitMessageReceiverContext> {
+public class DefaultRabbitTemplateObservationConvention implements RabbitTemplateObservationConvention {
+
+	/**
+	 * A singleton instance of the convention.
+	 */
+	public static DefaultRabbitTemplateObservationConvention INSTANCE = new DefaultRabbitTemplateObservationConvention();
 
 	@Override
-	default boolean supportsContext(Context context) {
-		return context instanceof RabbitMessageReceiverContext;
+	public KeyValues getLowCardinalityKeyValues(RabbitMessageSenderContext context) {
+		return KeyValues.of(RabbitTemplateObservation.TemplateLowCardinalityTags.BEAN_NAME.asString(),
+						context.getBeanName());
+	}
+
+	@Override
+	public KeyValues getHighCardinalityKeyValues(RabbitMessageSenderContext context) {
+		return KeyValues.empty();
 	}
 
 }

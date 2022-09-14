@@ -63,6 +63,7 @@ import org.springframework.amqp.rabbit.listener.support.ContainerUtils;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
+import org.springframework.amqp.rabbit.support.micrometer.DefaultRabbitListenerObservationConvention;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservation;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservationConvention;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitMessageReceiverContext;
@@ -95,7 +96,6 @@ import org.springframework.util.backoff.FixedBackOff;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ShutdownSignalException;
 import io.micrometer.observation.Observation;
-import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.ObservationRegistry;
 
 /**
@@ -263,7 +263,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private MessageAckListener messageAckListener = (success, deliveryTag, cause) -> { };
 
 	@Nullable
-	private ObservationConvention<RabbitMessageReceiverContext> observationConvention;
+	private RabbitListenerObservationConvention observationConvention;
 
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
@@ -1188,7 +1188,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @param observationConvention the convention.
 	 * @since 3.0
 	 */
-	public void setObservationConvention(ObservationConvention<RabbitMessageReceiverContext> observationConvention) {
+	public void setObservationConvention(RabbitListenerObservationConvention observationConvention) {
 		this.observationConvention = observationConvention;
 	}
 
@@ -1542,7 +1542,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		else {
 			Message message = (Message) data;
 			observation = RabbitListenerObservation.LISTENER_OBSERVATION.observation(this.observationConvention,
-					RabbitListenerObservationConvention.INSTANCE,
+					DefaultRabbitListenerObservationConvention.INSTANCE,
 						new RabbitMessageReceiverContext(message, getListenerId()), registry);
 		}
 		observation.observe(() -> executeListenerAndHandleException(channel, data));
