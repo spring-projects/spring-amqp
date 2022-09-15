@@ -54,11 +54,6 @@ import io.micrometer.tracing.test.simple.SpansAssert;
 public class ObservationIntegrationTests extends SampleTestRunner {
 
 	@Override
-	public TracingSetup[] getTracingSetup() {
-		return new TracingSetup[]{ TracingSetup.IN_MEMORY_BRAVE };
-	}
-
-	@Override
 	public SampleTestRunnerConsumer yourCode() {
 		// template -> listener -> template -> listener
 		return (bb, meterRegistry) -> {
