@@ -11,6 +11,11 @@ This version requires Spring Framework 6.0 and Java 17
 
 The remoting feature (using RMI) is no longer supported.
 
+==== Observation
+
+Enabling observation for timers and tracing using Micrometer is now supported.
+See <<observation>> for more information.
+
 ==== AsyncRabbitTemplate
 
 The `AsyncRabbitTemplate2`, which was added in 2.4.7 to aid migration to this release, is deprecated in favor of `AsyncRabbitTemplate`.
