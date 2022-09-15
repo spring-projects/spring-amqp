@@ -44,4 +44,9 @@ public class DefaultRabbitTemplateObservationConvention implements RabbitTemplat
 		return KeyValues.empty();
 	}
 
+	@Override
+	public String getContextualName(RabbitMessageSenderContext context) {
+		return context.getDestination() + " send";
+	}
+
 }
