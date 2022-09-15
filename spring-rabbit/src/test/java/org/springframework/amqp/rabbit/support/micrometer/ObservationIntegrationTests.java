@@ -29,7 +29,6 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
-import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -62,7 +61,6 @@ public class ObservationIntegrationTests extends SampleTestRunner {
 				applicationContext.registerBean(ObservationRegistry.class, () -> observationRegistry);
 				applicationContext.register(Config.class);
 				applicationContext.refresh();
-				RabbitListenerEndpointRegistry bean = applicationContext.getBean(RabbitListenerEndpointRegistry.class);
 				applicationContext.getBean(RabbitTemplate.class).convertAndSend("int.observation.testQ1", "test");
 				assertThat(applicationContext.getBean(Listener.class).latch1.await(10, TimeUnit.SECONDS)).isTrue();
 			}
@@ -87,7 +85,6 @@ public class ObservationIntegrationTests extends SampleTestRunner {
 			MeterRegistryAssert.assertThat(getMeterRegistry())
 					.hasTimerWithNameAndTags("spring.rabbit.template", KeyValues.of("bean.name", "template"))
 					.hasTimerWithNameAndTags("spring.rabbit.template", KeyValues.of("bean.name", "template"))
-					.hasTimerWithNameAndTags("spring.rabbit.listener", KeyValues.of("listener.id", "obs1"))
 					.hasTimerWithNameAndTags("spring.rabbit.listener", KeyValues.of("listener.id", "obs1"))
 					.hasTimerWithNameAndTags("spring.rabbit.listener", KeyValues.of("listener.id", "obs2"));
 		};
