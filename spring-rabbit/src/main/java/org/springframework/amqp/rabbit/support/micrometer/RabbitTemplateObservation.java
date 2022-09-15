@@ -64,7 +64,7 @@ public enum RabbitTemplateObservation implements DocumentedObservation {
 
 			@Override
 			public String asString() {
-				return "bean.name";
+				return "spring.rabbit.template.name";
 			}
 
 		}

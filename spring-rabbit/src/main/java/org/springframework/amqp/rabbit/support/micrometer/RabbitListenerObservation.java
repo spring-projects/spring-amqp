@@ -65,7 +65,7 @@ public enum RabbitListenerObservation implements DocumentedObservation {
 
 			@Override
 			public String asString() {
-				return "listener.id";
+				return "spring.rabbit.listener.id";
 			}
 
 		}

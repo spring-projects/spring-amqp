@@ -85,18 +85,20 @@ public class ObservationTests {
 		Deque<SimpleSpan> spans = tracer.getSpans();
 		assertThat(spans).hasSize(4);
 		SimpleSpan span = spans.poll();
-		assertThat(span.getTags()).containsEntry("bean.name", "template");
+		assertThat(span.getTags()).containsEntry("spring.rabbit.template.name", "template");
 		assertThat(span.getName()).isEqualTo("/observation.testQ1 send");
 		span = spans.poll();
 		assertThat(span.getTags())
-				.containsAllEntriesOf(Map.of("listener.id", "obs1", "foo", "some foo value", "bar", "some bar value"));
+				.containsAllEntriesOf(
+						Map.of("spring.rabbit.listener.id", "obs1", "foo", "some foo value", "bar", "some bar value"));
 		assertThat(span.getName()).isEqualTo("observation.testQ1 receive");
 		span = spans.poll();
-		assertThat(span.getTags()).containsEntry("bean.name", "template");
+		assertThat(span.getTags()).containsEntry("spring.rabbit.template.name", "template");
 		assertThat(span.getName()).isEqualTo("/observation.testQ2 send");
 		span = spans.poll();
 		assertThat(span.getTags())
-				.containsAllEntriesOf(Map.of("listener.id", "obs2", "foo", "some foo value", "bar", "some bar value"));
+				.containsAllEntriesOf(
+						Map.of("spring.rabbit.listener.id", "obs2", "foo", "some foo value", "bar", "some bar value"));
 		assertThat(span.getName()).isEqualTo("observation.testQ2 receive");
 		template.setObservationConvention(new DefaultRabbitTemplateObservationConvention() {
 
@@ -125,31 +127,33 @@ public class ObservationTests {
 				.hasFieldOrPropertyWithValue("bar", "some bar value");
 		assertThat(spans).hasSize(4);
 		span = spans.poll();
-		assertThat(span.getTags()).containsEntry("bean.name", "template");
+		assertThat(span.getTags()).containsEntry("spring.rabbit.template.name", "template");
 		assertThat(span.getTags()).containsEntry("foo", "bar");
 		assertThat(span.getName()).isEqualTo("/observation.testQ1 send");
 		span = spans.poll();
 		assertThat(span.getTags())
-				.containsAllEntriesOf(Map.of("listener.id", "obs1", "foo", "some foo value", "bar", "some bar value",
-						"baz", "qux"));
+				.containsAllEntriesOf(Map.of("spring.rabbit.listener.id", "obs1", "foo", "some foo value", "bar",
+						"some bar value", "baz", "qux"));
 		assertThat(span.getName()).isEqualTo("observation.testQ1 receive");
 		span = spans.poll();
-		assertThat(span.getTags()).containsEntry("bean.name", "template");
+		assertThat(span.getTags()).containsEntry("spring.rabbit.template.name", "template");
 		assertThat(span.getTags()).containsEntry("foo", "bar");
 		assertThat(span.getName()).isEqualTo("/observation.testQ2 send");
 		span = spans.poll();
 		assertThat(span.getTags())
-				.containsAllEntriesOf(Map.of("listener.id", "obs2", "foo", "some foo value", "bar", "some bar value"));
+				.containsAllEntriesOf(
+						Map.of("spring.rabbit.listener.id", "obs2", "foo", "some foo value", "bar", "some bar value"));
 		assertThat(span.getTags()).doesNotContainEntry("baz", "qux");
 		assertThat(span.getName()).isEqualTo("observation.testQ2 receive");
 		MeterRegistryAssert.assertThat(meterRegistry)
-				.hasTimerWithNameAndTags("spring.rabbit.template", KeyValues.of("bean.name", "template"))
 				.hasTimerWithNameAndTags("spring.rabbit.template",
-						KeyValues.of("bean.name", "template", "foo", "bar"))
-				.hasTimerWithNameAndTags("spring.rabbit.listener", KeyValues.of("listener.id", "obs1"))
+						KeyValues.of("spring.rabbit.template.name", "template"))
+				.hasTimerWithNameAndTags("spring.rabbit.template",
+						KeyValues.of("spring.rabbit.template.name", "template", "foo", "bar"))
+				.hasTimerWithNameAndTags("spring.rabbit.listener", KeyValues.of("spring.rabbit.listener.id", "obs1"))
 				.hasTimerWithNameAndTags("spring.rabbit.listener",
-						KeyValues.of("listener.id", "obs1", "baz", "qux"))
-				.hasTimerWithNameAndTags("spring.rabbit.listener", KeyValues.of("listener.id", "obs2"));
+						KeyValues.of("spring.rabbit.listener.id", "obs1", "baz", "qux"))
+				.hasTimerWithNameAndTags("spring.rabbit.listener", KeyValues.of("spring.rabbit.listener.id", "obs2"));
 	}
 
 	@Configuration

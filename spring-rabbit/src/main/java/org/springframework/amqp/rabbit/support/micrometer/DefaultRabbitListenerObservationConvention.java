@@ -40,11 +40,6 @@ public class DefaultRabbitListenerObservationConvention implements RabbitListene
 	}
 
 	@Override
-	public KeyValues getHighCardinalityKeyValues(RabbitMessageReceiverContext context) {
-		return KeyValues.empty();
-	}
-
-	@Override
 	public String getContextualName(RabbitMessageReceiverContext context) {
 		return context.getSource() + " receive";
 	}

@@ -71,22 +71,26 @@ public class ObservationIntegrationTests extends SampleTestRunner {
 					.hasSize(4);
 			SpanAssert.assertThat(finishedSpans.get(0))
 					.hasKindEqualTo(Kind.PRODUCER)
-					.hasTag("bean.name", "template");
+					.hasTag("spring.rabbit.template.name", "template");
 			SpanAssert.assertThat(finishedSpans.get(1))
 					.hasKindEqualTo(Kind.PRODUCER)
-					.hasTag("bean.name", "template");
+					.hasTag("spring.rabbit.template.name", "template");
 			SpanAssert.assertThat(finishedSpans.get(2))
 					.hasKindEqualTo(Kind.CONSUMER)
-					.hasTag("listener.id", "obs1");
+					.hasTag("spring.rabbit.listener.id", "obs1");
 			SpanAssert.assertThat(finishedSpans.get(3))
 					.hasKindEqualTo(Kind.CONSUMER)
-					.hasTag("listener.id", "obs2");
+					.hasTag("spring.rabbit.listener.id", "obs2");
 
 			MeterRegistryAssert.assertThat(getMeterRegistry())
-					.hasTimerWithNameAndTags("spring.rabbit.template", KeyValues.of("bean.name", "template"))
-					.hasTimerWithNameAndTags("spring.rabbit.template", KeyValues.of("bean.name", "template"))
-					.hasTimerWithNameAndTags("spring.rabbit.listener", KeyValues.of("listener.id", "obs1"))
-					.hasTimerWithNameAndTags("spring.rabbit.listener", KeyValues.of("listener.id", "obs2"));
+					.hasTimerWithNameAndTags("spring.rabbit.template",
+							KeyValues.of("spring.rabbit.template.name", "template"))
+					.hasTimerWithNameAndTags("spring.rabbit.template",
+							KeyValues.of("spring.rabbit.template.name", "template"))
+					.hasTimerWithNameAndTags("spring.rabbit.listener",
+							KeyValues.of("spring.rabbit.listener.id", "obs1"))
+					.hasTimerWithNameAndTags("spring.rabbit.listener",
+							KeyValues.of("spring.rabbit.listener.id", "obs2"));
 		};
 	}
 
