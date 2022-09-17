@@ -44,11 +44,6 @@ public class RabbitMessageReceiverContext extends ReceiverContext<Message> {
 		return this.listenerId;
 	}
 
-	@Override
-	public String getName() {
-		return "spring.rabbit.listener";
-	}
-
 	/**
 	 * Return the source (queue) for this message.
 	 * @return the source.

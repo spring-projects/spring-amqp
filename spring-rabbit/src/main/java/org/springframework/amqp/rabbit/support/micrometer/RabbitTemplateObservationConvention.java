@@ -33,4 +33,9 @@ public interface RabbitTemplateObservationConvention extends ObservationConventi
 		return context instanceof RabbitMessageSenderContext;
 	}
 
+	@Override
+	default String getName() {
+		return "spring.rabbit.template";
+	}
+
 }

@@ -44,11 +44,6 @@ public class RabbitMessageSenderContext extends SenderContext<Message> {
 		return this.beanName;
 	}
 
-	@Override
-	public String getName() {
-		return "spring.rabbit.template";
-	}
-
 	/**
 	 * Return the destination - {@code exchange/routingKey}.
 	 * @return the destination.

@@ -33,4 +33,9 @@ public interface RabbitListenerObservationConvention extends ObservationConventi
 		return context instanceof RabbitMessageReceiverContext;
 	}
 
+	@Override
+	default String getName() {
+		return "spring.rabbit.listener";
+	}
+
 }
