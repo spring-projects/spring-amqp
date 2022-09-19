@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
@@ -32,7 +33,6 @@ import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.messaging.Message;
 
 import io.micrometer.common.KeyValues;
 import io.micrometer.core.tck.MeterRegistryAssert;
@@ -132,8 +132,6 @@ public class ObservationIntegrationTests extends SampleTestRunner {
 
 		final CountDownLatch latch1 = new CountDownLatch(1);
 
-		volatile Message message;
-
 		public Listener(RabbitTemplate template) {
 			this.template = template;
 		}
@@ -145,7 +143,6 @@ public class ObservationIntegrationTests extends SampleTestRunner {
 
 		@RabbitListener(id = "obs2", queues = "int.observation.testQ2")
 		void listen2(Message in) {
-			this.message = in;
 			this.latch1.countDown();
 		}
 
