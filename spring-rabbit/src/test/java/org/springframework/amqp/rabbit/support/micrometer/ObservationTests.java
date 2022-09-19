@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.support.micrometer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.util.Arrays;
 import java.util.Deque;
@@ -87,6 +88,8 @@ public class ObservationTests {
 		SimpleSpan span = spans.poll();
 		assertThat(span.getTags()).containsEntry("spring.rabbit.template.name", "template");
 		assertThat(span.getName()).isEqualTo("/observation.testQ1 send");
+		SimpleSpan last1 = spans.peekFirst();
+		await().until(() -> last1.getTags().size() == 3);
 		span = spans.poll();
 		assertThat(span.getTags())
 				.containsAllEntriesOf(
@@ -139,6 +142,8 @@ public class ObservationTests {
 		assertThat(span.getTags()).containsEntry("spring.rabbit.template.name", "template");
 		assertThat(span.getTags()).containsEntry("foo", "bar");
 		assertThat(span.getName()).isEqualTo("/observation.testQ2 send");
+		SimpleSpan last2 = spans.peekFirst();
+		await().until(() -> last2.getTags().size() == 3);
 		span = spans.poll();
 		assertThat(span.getTags())
 				.containsAllEntriesOf(
