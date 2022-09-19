@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.junit.jupiter.api.Test;
@@ -103,7 +104,9 @@ public class RetryInterceptorBuilderSupportTests {
 						.build();
 
 		assertThat(TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts")).isEqualTo(5);
-		assertThat(TestUtils.getPropertyValue(interceptor, "retryOperations.backOffPolicy.backOffPeriod")).isEqualTo(1000L);
+		assertThat(TestUtils
+				.getPropertyValue(interceptor, "retryOperations.backOffPolicy.backOffPeriod", Supplier.class).get())
+						.isEqualTo(1000L);
 	}
 
 	@Test
@@ -120,7 +123,9 @@ public class RetryInterceptorBuilderSupportTests {
 						.build();
 
 		assertThat(TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts")).isEqualTo(5);
-		assertThat(TestUtils.getPropertyValue(interceptor, "retryOperations.backOffPolicy.backOffPeriod")).isEqualTo(1000L);
+		assertThat(TestUtils
+				.getPropertyValue(interceptor, "retryOperations.backOffPolicy.backOffPeriod", Supplier.class).get())
+						.isEqualTo(1000L);
 		final AtomicInteger count = new AtomicInteger();
 		Foo delegate = createDelegate(interceptor, count);
 		Message message = MessageBuilder.withBody("".getBytes()).setMessageId("foo").setRedelivered(false).build();
