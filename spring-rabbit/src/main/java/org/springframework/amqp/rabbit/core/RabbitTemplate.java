@@ -74,6 +74,10 @@ import org.springframework.amqp.rabbit.support.ListenerContainerAware;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.rabbit.support.ValueExpression;
+import org.springframework.amqp.rabbit.support.micrometer.DefaultRabbitTemplateObservationConvention;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitMessageSenderContext;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitTemplateObservation;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitTemplateObservationConvention;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.support.converter.SmartMessageConverter;
@@ -83,6 +87,8 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.context.expression.MapAccessor;
 import org.springframework.core.ParameterizedTypeReference;
@@ -108,6 +114,8 @@ import com.rabbitmq.client.GetResponse;
 import com.rabbitmq.client.Return;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * <p>
@@ -152,7 +160,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @since 1.0
  */
 public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
-		implements BeanFactoryAware, RabbitOperations, ChannelAwareMessageListener,
+		implements BeanFactoryAware, RabbitOperations, ChannelAwareMessageListener, ApplicationContextAware,
 		ListenerContainerAware, PublisherCallbackChannel.Listener, BeanNameAware, DisposableBean {
 
 	private static final String UNCHECKED = "unchecked";
@@ -197,6 +205,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			new HashMap<>();
 
 	private final AtomicInteger containerInstance = new AtomicInteger();
+
+	private ApplicationContext applicationContext;
 
 	private String exchange = DEFAULT_EXCHANGE;
 
@@ -258,13 +268,20 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	private ErrorHandler replyErrorHandler;
 
+	private boolean useChannelForCorrelation;
+
+	private boolean observationEnabled;
+
+	@Nullable
+	private RabbitTemplateObservationConvention observationConvention;
+
 	private volatile boolean usingFastReplyTo;
 
 	private volatile boolean evaluatedFastReplyTo;
 
 	private volatile boolean isListener;
 
-	private boolean useChannelForCorrelation;
+	private volatile boolean observationRegistryObtained;
 
 	/**
 	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
@@ -295,6 +312,29 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		if (connectionFactory instanceof ThreadChannelConnectionFactory) {
 			this.usePublisherConnection = true;
 		}
+	}
+
+	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+		this.applicationContext = applicationContext;
+	}
+
+	/**
+	 * Enable observation via micrometer.
+	 * @param observationEnabled true to enable.
+	 * @since 3.0
+	 */
+	public void setObservationEnabled(boolean observationEnabled) {
+		this.observationEnabled = observationEnabled;
+	}
+
+	/**
+	 * Set an observation convention; used to add additional key/values to observations.
+	 * @param observationConvention the convention.
+	 * @since 3.0
+	 */
+	public void setObservationConvention(RabbitTemplateObservationConvention observationConvention) {
+		this.observationConvention = observationConvention;
 	}
 
 	/**
@@ -2348,7 +2388,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @throws IOException If thrown by RabbitMQ API methods.
 	 */
 	public void doSend(Channel channel, String exchangeArg, String routingKeyArg, Message message,
-			boolean mandatory, @Nullable CorrelationData correlationData) throws IOException {
+			boolean mandatory, @Nullable CorrelationData correlationData) {
 
 		String exch = nullSafeExchange(exchangeArg);
 		String rKey = nullSafeRoutingKey(routingKeyArg);
@@ -2378,12 +2418,32 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			logger.debug("Publishing message [" + messageToUse
 					+ "] on exchange [" + exch + "], routingKey = [" + rKey + "]");
 		}
-		sendToRabbit(channel, exch, rKey, mandatory, messageToUse);
+		observeTheSend(channel, messageToUse, mandatory, exch, rKey);
 		// Check if commit needed
 		if (isChannelLocallyTransacted(channel)) {
 			// Transacted channel created by this template -> commit.
 			RabbitUtils.commitIfNecessary(channel);
 		}
+	}
+
+	protected void observeTheSend(Channel channel, Message message, boolean mandatory, String exch, String rKey) {
+
+		if (!this.observationRegistryObtained) {
+			obtainObservationRegistry(this.applicationContext);
+			this.observationRegistryObtained = true;
+		}
+		Observation observation;
+		ObservationRegistry registry = getObservationRegistry();
+		if (!this.observationEnabled || registry == null) {
+			observation = Observation.NOOP;
+		}
+		else {
+			observation = RabbitTemplateObservation.TEMPLATE_OBSERVATION.observation(this.observationConvention,
+					DefaultRabbitTemplateObservationConvention.INSTANCE,
+						new RabbitMessageSenderContext(message, this.beanName, exch + "/" + rKey), registry);
+
+		}
+		observation.observe(() -> sendToRabbit(channel, exch, rKey, mandatory, message));
 	}
 
 	/**
@@ -2407,10 +2467,16 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	protected void sendToRabbit(Channel channel, String exchange, String routingKey, boolean mandatory,
-			Message message) throws IOException {
+			Message message) {
+
 		BasicProperties convertedMessageProperties = this.messagePropertiesConverter
 				.fromMessageProperties(message.getMessageProperties(), this.encoding);
-		channel.basicPublish(exchange, routingKey, mandatory, convertedMessageProperties, message.getBody());
+		try {
+			channel.basicPublish(exchange, routingKey, mandatory, convertedMessageProperties, message.getBody());
+		}
+		catch (IOException ex) {
+			throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
+		}
 	}
 
 	private void setupConfirm(Channel channel, Message message, @Nullable CorrelationData correlationDataArg) {

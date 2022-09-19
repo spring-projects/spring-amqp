@@ -63,6 +63,10 @@ import org.springframework.amqp.rabbit.listener.support.ContainerUtils;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
+import org.springframework.amqp.rabbit.support.micrometer.DefaultRabbitListenerObservationConvention;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservation;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservationConvention;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitMessageReceiverContext;
 import org.springframework.amqp.support.ConditionalExceptionLogger;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.postprocessor.MessagePostProcessorUtils;
@@ -91,6 +95,8 @@ import org.springframework.util.backoff.FixedBackOff;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ShutdownSignalException;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * @author Mark Pollack
@@ -240,6 +246,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private boolean micrometerEnabled = true;
 
+	private boolean observationEnabled = false;
+
 	private boolean isBatchListener;
 
 	private long consumeDelay;
@@ -253,6 +261,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private boolean asyncReplies;
 
 	private MessageAckListener messageAckListener = (success, deliveryTag, cause) -> { };
+
+	@Nullable
+	private RabbitListenerObservationConvention observationConvention;
 
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
@@ -1151,12 +1162,34 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
-	 * Set to false to disable micrometer listener timers.
+	 * Set to false to disable micrometer listener timers. When true, ignored
+	 * if {@link #setObservationEnabled(boolean)} is set to true.
 	 * @param micrometerEnabled false to disable.
 	 * @since 2.2
+	 * @see #setObservationEnabled(boolean)
 	 */
 	public void setMicrometerEnabled(boolean micrometerEnabled) {
 		this.micrometerEnabled = micrometerEnabled;
+	}
+
+	/**
+	 * Enable observation via micrometer; disables basic Micrometer timers enabled
+	 * by {@link #setMicrometerEnabled(boolean)}.
+	 * @param observationEnabled true to enable.
+	 * @since 3.0
+	 * @see #setMicrometerEnabled(boolean)
+	 */
+	public void setObservationEnabled(boolean observationEnabled) {
+		this.observationEnabled = observationEnabled;
+	}
+
+	/**
+	 * Set an observation convention; used to add additional key/values to observations.
+	 * @param observationConvention the convention.
+	 * @since 3.0
+	 */
+	public void setObservationConvention(RabbitListenerObservationConvention observationConvention) {
+		this.observationConvention = observationConvention;
 	}
 
 	/**
@@ -1230,7 +1263,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		validateConfiguration();
 		initialize();
 		try {
-			if (this.micrometerHolder == null && MICROMETER_PRESENT && this.micrometerEnabled
+			if (this.micrometerHolder == null && MICROMETER_PRESENT && this.micrometerEnabled && !this.observationEnabled
 					&& this.applicationContext != null) {
 				String id = getListenerId();
 				if (id == null) {
@@ -1402,6 +1435,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				}
 			}
 		}
+		obtainObservationRegistry(this.applicationContext);
 		try {
 			logger.debug("Starting Rabbit listener container.");
 			configureAdminIfNeeded();
@@ -1499,8 +1533,23 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @see #invokeListener
 	 * @see #handleListenerException
 	 */
-	@SuppressWarnings(UNCHECKED)
 	protected void executeListener(Channel channel, Object data) {
+		Observation observation;
+		ObservationRegistry registry = getObservationRegistry();
+		if (!this.observationEnabled || data instanceof List || registry == null) {
+			observation = Observation.NOOP;
+		}
+		else {
+			Message message = (Message) data;
+			observation = RabbitListenerObservation.LISTENER_OBSERVATION.observation(this.observationConvention,
+					DefaultRabbitListenerObservationConvention.INSTANCE,
+						new RabbitMessageReceiverContext(message, getListenerId()), registry);
+		}
+		observation.observe(() -> executeListenerAndHandleException(channel, data));
+	}
+
+	@SuppressWarnings(UNCHECKED)
+	protected void executeListenerAndHandleException(Channel channel, Object data) {
 		if (!isRunning()) {
 			if (logger.isWarnEnabled()) {
 				logger.warn(
