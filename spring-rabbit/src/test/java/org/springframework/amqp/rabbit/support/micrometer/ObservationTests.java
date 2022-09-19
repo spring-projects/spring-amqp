@@ -88,16 +88,17 @@ public class ObservationTests {
 		SimpleSpan span = spans.poll();
 		assertThat(span.getTags()).containsEntry("spring.rabbit.template.name", "template");
 		assertThat(span.getName()).isEqualTo("/observation.testQ1 send");
-		SimpleSpan last1 = spans.peekFirst();
-		await().until(() -> last1.getTags().size() == 3);
+		await().until(() -> spans.peekFirst().getTags().size() == 3);
 		span = spans.poll();
 		assertThat(span.getTags())
 				.containsAllEntriesOf(
 						Map.of("spring.rabbit.listener.id", "obs1", "foo", "some foo value", "bar", "some bar value"));
 		assertThat(span.getName()).isEqualTo("observation.testQ1 receive");
+		await().until(() -> spans.peekFirst().getTags().size() == 1);
 		span = spans.poll();
 		assertThat(span.getTags()).containsEntry("spring.rabbit.template.name", "template");
 		assertThat(span.getName()).isEqualTo("/observation.testQ2 send");
+		await().until(() -> spans.peekFirst().getTags().size() == 3);
 		span = spans.poll();
 		assertThat(span.getTags())
 				.containsAllEntriesOf(
@@ -133,17 +134,18 @@ public class ObservationTests {
 		assertThat(span.getTags()).containsEntry("spring.rabbit.template.name", "template");
 		assertThat(span.getTags()).containsEntry("foo", "bar");
 		assertThat(span.getName()).isEqualTo("/observation.testQ1 send");
+		await().until(() -> spans.peekFirst().getTags().size() == 4);
 		span = spans.poll();
 		assertThat(span.getTags())
 				.containsAllEntriesOf(Map.of("spring.rabbit.listener.id", "obs1", "foo", "some foo value", "bar",
 						"some bar value", "baz", "qux"));
 		assertThat(span.getName()).isEqualTo("observation.testQ1 receive");
+		await().until(() -> spans.peekFirst().getTags().size() == 2);
 		span = spans.poll();
 		assertThat(span.getTags()).containsEntry("spring.rabbit.template.name", "template");
 		assertThat(span.getTags()).containsEntry("foo", "bar");
 		assertThat(span.getName()).isEqualTo("/observation.testQ2 send");
-		SimpleSpan last2 = spans.peekFirst();
-		await().until(() -> last2.getTags().size() == 3);
+		await().until(() -> spans.peekFirst().getTags().size() == 3);
 		span = spans.poll();
 		assertThat(span.getTags())
 				.containsAllEntriesOf(
