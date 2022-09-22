@@ -73,7 +73,7 @@ public class SuperStream extends Declarables {
 		declarables.add(new DirectExchange(name, true, false, Map.of("x-super-stream", true)));
 		for (int i = 0; i < partitions; i++) {
 			String rk = rks.get(i);
-			Queue q = new Queue(name + "-" + rk, true, false, false, Map.of("x-queue-type", "stream"));
+			Queue q = new Queue(name + "-" + i, true, false, false, Map.of("x-queue-type", "stream"));
 			declarables.add(q);
 			declarables.add(new Binding(q.getName(), DestinationType.QUEUE, name, rk,
 					Map.of("x-stream-partition-order", i)));
