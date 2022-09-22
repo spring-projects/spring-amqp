@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 
@@ -69,9 +71,9 @@ public class SuperStreamSACTests extends AbstractIntegrationTests {
 		container2.start();
 		StreamListenerContainer container3 = context.getBean(StreamListenerContainer.class, env, "three");
 		container3.start();
-		template.convertAndSend("ss.sac.test", "0", "foo");
-		template.convertAndSend("ss.sac.test", "1", "bar");
-		template.convertAndSend("ss.sac.test", "2", "baz");
+		template.convertAndSend("ss.sac.test", "rk-0", "foo");
+		template.convertAndSend("ss.sac.test", "rk-1", "bar");
+		template.convertAndSend("ss.sac.test", "rk-2", "baz");
 		assertThat(config.latch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(config.messages.keySet()).contains("one", "two", "three");
 		assertThat(config.info).contains("one:foo", "two:bar", "three:baz");
@@ -112,7 +114,9 @@ public class SuperStreamSACTests extends AbstractIntegrationTests {
 
 		@Bean
 		SuperStream superStream() {
-			return new SuperStream("ss.sac.test", 3);
+			return new SuperStream("ss.sac.test", 3, (q, i) -> IntStream.range(0, i)
+					.mapToObj(j -> "rk-" + j)
+					.collect(Collectors.toList()));
 		}
 
 		@Bean
