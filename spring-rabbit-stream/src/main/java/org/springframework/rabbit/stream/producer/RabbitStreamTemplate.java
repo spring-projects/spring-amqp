@@ -17,6 +17,7 @@
 package org.springframework.rabbit.stream.producer;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -52,6 +53,8 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 
 	private final String streamName;
 
+	private Function<com.rabbitmq.stream.Message, String> superStreamRouting;
+
 	private MessageConverter messageConverter = new SimpleMessageConverter();
 
 	private StreamMessageConverter streamConverter = new DefaultStreamMessageConverter();
@@ -80,7 +83,13 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 	private synchronized Producer createOrGetProducer() {
 		if (this.producer == null) {
 			ProducerBuilder builder = this.environment.producerBuilder();
-			builder.stream(this.streamName);
+			if (this.superStreamRouting == null) {
+				builder.stream(this.streamName);
+			}
+			else {
+				builder.superStream(this.streamName)
+						.routing(this.superStreamRouting);
+			}
 			this.producerCustomizer.accept(this.beanName, builder);
 			this.producer = builder.build();
 			if (!this.streamConverterSet) {
@@ -95,6 +104,16 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 	public synchronized void setBeanName(String name) {
 		this.beanName = name;
 	}
+
+	/**
+	 * Add a routing function, making the stream a super stream.
+	 * @param superStreamRouting the routing function.
+	 * @since 3.0
+	 */
+	public void setSuperStreamRouting(Function<com.rabbitmq.stream.Message, String> superStreamRouting) {
+		this.superStreamRouting = superStreamRouting;
+	}
+
 
 	/**
 	 * Set a converter for {@link #convertAndSend(Object)} operations.
