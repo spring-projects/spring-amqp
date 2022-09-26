@@ -22,6 +22,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -111,6 +113,29 @@ public class RabbitStreamTemplateTests {
 			assertThatExceptionOfType(ExecutionException.class).isThrownBy(() -> future5.get())
 					.withCauseExactlyInstanceOf(StreamSendException.class)
 					.withStackTraceContaining("Unknown code: " + -1);
+		}
+	}
+
+	@Test
+	void superStream() {
+		Environment env = mock(Environment.class);
+		ProducerBuilder pb = mock(ProducerBuilder.class);
+		given(pb.superStream(any())).willReturn(pb);
+		given(env.producerBuilder()).willReturn(pb);
+		Producer producer = mock(Producer.class);
+		given(pb.build()).willReturn(producer);
+		try (RabbitStreamTemplate template = new RabbitStreamTemplate(env, "foo")) {
+			SimpleMessageConverter messageConverter = new SimpleMessageConverter();
+			template.setMessageConverter(messageConverter);
+			assertThat(template.messageConverter()).isSameAs(messageConverter);
+			StreamMessageConverter converter = mock(StreamMessageConverter.class);
+			given(converter.fromMessage(any())).willReturn(mock(Message.class));
+			template.setStreamConverter(converter);
+			template.setSuperStreamRouting(msg -> "bar");
+			template.convertAndSend("x");
+			verify(pb).superStream("foo");
+			verify(pb).routing(any());
+			verify(pb, never()).stream("foo");
 		}
 	}
 
