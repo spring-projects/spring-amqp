@@ -18,8 +18,9 @@ package org.springframework.rabbit.stream.support;
 
 import java.time.Duration;
 
+import org.junit.jupiter.api.AfterAll;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.containers.RabbitMQContainer;
 
 /**
  * @author Gary Russell
@@ -33,13 +34,14 @@ public abstract class AbstractIntegrationTests {
 	static {
 		if (System.getProperty("spring.rabbit.use.local.server") == null
 				&& System.getenv("SPRING_RABBIT_USE_LOCAL_SERVER") == null) {
-			String image = "pivotalrabbitmq/rabbitmq-stream";
+			String image = "rabbitmq:3.11";
 			String cache = System.getenv().get("IMAGE_CACHE");
 			if (cache != null) {
 				image = cache + image;
 			}
-			RABBITMQ = new GenericContainer<>(DockerImageName.parse(image))
+			RABBITMQ = new RabbitMQContainer(image)
 						.withExposedPorts(5672, 15672, 5552)
+						.withPluginsEnabled("rabbitmq_stream", "rabbitmq_management")
 						.withStartupTimeout(Duration.ofMinutes(2));
 			RABBITMQ.start();
 		}
@@ -58,6 +60,11 @@ public abstract class AbstractIntegrationTests {
 
 	public static int streamPort() {
 		return RABBITMQ != null ? RABBITMQ.getMappedPort(5552) : 5552;
+	}
+
+	@AfterAll
+	static void shutDown() {
+		RABBITMQ.close();
 	}
 
 }

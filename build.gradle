@@ -58,7 +58,7 @@ ext {
 	micrometerVersion = '1.10.0-M6'
 	micrometerTracingVersion = '1.0.0-M8'
 	mockitoVersion = '4.8.0'
-	rabbitmqStreamVersion = '0.7.0'
+	rabbitmqStreamVersion = '0.8.0'
 	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.16.0'
 	rabbitmqHttpClientVersion = '3.12.1'
 	reactorVersion = '2022.0.0-M6'
