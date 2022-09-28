@@ -42,28 +42,22 @@ public abstract class AbstractIntegrationTests {
 						.withExposedPorts(5672, 15672, 5552)
 						.withPluginsEnabled("rabbitmq_stream", "rabbitmq_management")
 						.withStartupTimeout(Duration.ofMinutes(2));
-			System.out.println("Created");
 			RABBITMQ.start();
-			System.out.println("Started");
 		}
 		else {
 			RABBITMQ = null;
 		}
-		System.out.println(RABBITMQ);
 	}
 
 	public static int amqpPort() {
-		System.out.println("amqp:" + RABBITMQ);
 		return RABBITMQ != null ? RABBITMQ.getMappedPort(5672) : 5672;
 	}
 
 	public static int managementPort() {
-		System.out.println("mgmt:" + RABBITMQ);
 		return RABBITMQ != null ? RABBITMQ.getMappedPort(15672) : 15672;
 	}
 
 	public static int streamPort() {
-		System.out.println("stream:" + RABBITMQ);
 		return RABBITMQ != null ? RABBITMQ.getMappedPort(5552) : 5552;
 	}
 
