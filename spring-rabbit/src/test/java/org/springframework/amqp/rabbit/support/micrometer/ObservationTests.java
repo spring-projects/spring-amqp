@@ -38,6 +38,8 @@ import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservation.DefaultRabbitListenerObservationConvention;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitTemplateObservation.DefaultRabbitTemplateObservationConvention;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -16,10 +16,11 @@
 
 package org.springframework.amqp.rabbit.support.micrometer;
 
+import io.micrometer.common.KeyValues;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.observation.Observation.Context;
 import io.micrometer.observation.ObservationConvention;
-import io.micrometer.observation.docs.DocumentedObservation;
+import io.micrometer.observation.docs.ObservationDocumentation;
 
 /**
  * Spring Rabbit Observation for listeners.
@@ -28,7 +29,7 @@ import io.micrometer.observation.docs.DocumentedObservation;
  * @since 3.0
  *
  */
-public enum RabbitListenerObservation implements DocumentedObservation {
+public enum RabbitListenerObservation implements ObservationDocumentation {
 
 	/**
 	 * Observation for Rabbit listeners.
@@ -68,6 +69,30 @@ public enum RabbitListenerObservation implements DocumentedObservation {
 				return "spring.rabbit.listener.id";
 			}
 
+		}
+
+	}
+
+	/**
+	 * Default {@link RabbitListenerObservationConvention} for Rabbit listener key values.
+	 */
+	public static class DefaultRabbitListenerObservationConvention implements RabbitListenerObservationConvention {
+
+		/**
+		 * A singleton instance of the convention.
+		 */
+		public static final DefaultRabbitListenerObservationConvention INSTANCE =
+				new DefaultRabbitListenerObservationConvention();
+
+		@Override
+		public KeyValues getLowCardinalityKeyValues(RabbitMessageReceiverContext context) {
+			return KeyValues.of(RabbitListenerObservation.ListenerLowCardinalityTags.LISTENER_ID.asString(),
+							context.getListenerId());
+		}
+
+		@Override
+		public String getContextualName(RabbitMessageReceiverContext context) {
+			return context.getSource() + " receive";
 		}
 
 	}

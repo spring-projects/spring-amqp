@@ -35,6 +35,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
@@ -74,9 +75,9 @@ import org.springframework.amqp.rabbit.support.ListenerContainerAware;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.rabbit.support.ValueExpression;
-import org.springframework.amqp.rabbit.support.micrometer.DefaultRabbitTemplateObservationConvention;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitMessageSenderContext;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitTemplateObservation;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitTemplateObservation.DefaultRabbitTemplateObservationConvention;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitTemplateObservationConvention;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
@@ -2428,21 +2429,16 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	protected void observeTheSend(Channel channel, Message message, boolean mandatory, String exch, String rKey) {
 
-		if (!this.observationRegistryObtained) {
+		if (!this.observationRegistryObtained && this.observationEnabled) {
 			obtainObservationRegistry(this.applicationContext);
 			this.observationRegistryObtained = true;
 		}
-		Observation observation;
 		ObservationRegistry registry = getObservationRegistry();
-		if (!this.observationEnabled || registry == null) {
-			observation = Observation.NOOP;
-		}
-		else {
-			observation = RabbitTemplateObservation.TEMPLATE_OBSERVATION.observation(this.observationConvention,
-					DefaultRabbitTemplateObservationConvention.INSTANCE,
+		Observation observation = RabbitTemplateObservation.TEMPLATE_OBSERVATION.observation(this.observationConvention,
+				DefaultRabbitTemplateObservationConvention.INSTANCE,
+					(Supplier<RabbitMessageSenderContext>) () ->
 						new RabbitMessageSenderContext(message, this.beanName, exch + "/" + rKey), registry);
 
-		}
 		observation.observe(() -> sendToRabbit(channel, exch, rKey, mandatory, message));
 	}
 

@@ -25,6 +25,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Queue;
@@ -99,6 +100,7 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 	}
 
 	@Test
+	@Disabled("Temporary until SF uses Micrometer snaps")
 	void queueOverAmqp() throws Exception {
 		Client client = new Client("http://guest:guest@localhost:" + managementPort() + "/api");
 		QueueInfo queue = client.getQueue("/", "stream.created.over.amqp");

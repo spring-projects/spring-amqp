@@ -1,0 +1,38 @@
+[[observability-spans]]
+=== Observability - Spans
+
+Below you can find a list of all spans declared by this project.
+
+[[observability-spans-listener-observation]]
+==== Listener Observation Span
+
+> Observation for Rabbit listeners.
+
+**Span name** `spring.rabbit.listener` (defined by convention class `RabbitListenerObservation$DefaultRabbitListenerObservationConvention`).
+
+Name of the enclosing class `RabbitListenerObservation`.
+
+IMPORTANT: All tags and event names must be prefixed with `spring.rabbit.listener` prefix!
+
+.Tag Keys
+|===
+|Name | Description
+|`spring.rabbit.listener.id`|Listener id.
+|===
+
+[[observability-spans-template-observation]]
+==== Template Observation Span
+
+> Observation for `RabbitTemplate` s.
+
+**Span name** `spring.rabbit.template` (defined by convention class `RabbitTemplateObservation$DefaultRabbitTemplateObservationConvention`).
+
+Name of the enclosing class `RabbitTemplateObservation`.
+
+IMPORTANT: All tags and event names must be prefixed with `spring.rabbit.template` prefix!
+
+.Tag Keys
+|===
+|Name | Description
+|`spring.rabbit.template.name`|Bean name of the template.
+|===
