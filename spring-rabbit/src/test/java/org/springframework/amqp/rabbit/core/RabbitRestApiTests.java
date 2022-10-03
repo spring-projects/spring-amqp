@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2020 the original author or authors.
+ * Copyright 2015-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.AmqpException;
@@ -56,6 +57,7 @@ import com.rabbitmq.http.client.domain.QueueInfo;
  *
  */
 @RabbitAvailable(management = true)
+@Disabled("Temporary until SF uses Micrometer snaps")
 public class RabbitRestApiTests {
 
 	private final CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");

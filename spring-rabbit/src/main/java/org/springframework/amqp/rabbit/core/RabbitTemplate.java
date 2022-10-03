@@ -35,7 +35,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
@@ -2436,8 +2435,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		ObservationRegistry registry = getObservationRegistry();
 		Observation observation = RabbitTemplateObservation.TEMPLATE_OBSERVATION.observation(this.observationConvention,
 				DefaultRabbitTemplateObservationConvention.INSTANCE,
-					(Supplier<RabbitMessageSenderContext>) () ->
-						new RabbitMessageSenderContext(message, this.beanName, exch + "/" + rKey), registry);
+					() -> new RabbitMessageSenderContext(message, this.beanName, exch + "/" + rKey), registry);
 
 		observation.observe(() -> sendToRabbit(channel, exch, rKey, mandatory, message));
 	}

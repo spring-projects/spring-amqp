@@ -28,7 +28,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.aopalliance.aop.Advice;
@@ -1539,12 +1538,15 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	protected void executeListener(Channel channel, Object data) {
 		Observation observation;
 		ObservationRegistry registry = getObservationRegistry();
-		Message message = (Message) data;
-		observation = RabbitListenerObservation.LISTENER_OBSERVATION.observation(this.observationConvention,
-				DefaultRabbitListenerObservationConvention.INSTANCE,
-					(Supplier<RabbitMessageReceiverContext>) () ->
-						new RabbitMessageReceiverContext(message, getListenerId()), registry);
-		observation.observe(() -> executeListenerAndHandleException(channel, data));
+		if (data instanceof Message message) {
+			observation = RabbitListenerObservation.LISTENER_OBSERVATION.observation(this.observationConvention,
+					DefaultRabbitListenerObservationConvention.INSTANCE,
+						() -> new RabbitMessageReceiverContext(message, getListenerId()), registry);
+			observation.observe(() -> executeListenerAndHandleException(channel, data));
+		}
+		else {
+			executeListenerAndHandleException(channel, data);
+		}
 	}
 
 	@SuppressWarnings(UNCHECKED)
