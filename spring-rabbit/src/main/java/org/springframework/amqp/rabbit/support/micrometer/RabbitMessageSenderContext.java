@@ -40,6 +40,11 @@ public class RabbitMessageSenderContext extends SenderContext<Message> {
 		this.destination = destination;
 	}
 
+	@Override
+	public String getRemoteServiceName() {
+		return "RabbitMQ";
+	}
+
 	public String getBeanName() {
 		return this.beanName;
 	}

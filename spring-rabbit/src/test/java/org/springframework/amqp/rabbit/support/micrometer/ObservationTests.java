@@ -86,7 +86,7 @@ public class ObservationTests {
 				.hasFieldOrPropertyWithValue("foo", "some foo value")
 				.hasFieldOrPropertyWithValue("bar", "some bar value");
 		Deque<SimpleSpan> spans = tracer.getSpans();
-		assertThat(spans).hasSize(4);
+		await().until(() -> spans.size() == 4);
 		SimpleSpan span = spans.poll();
 		assertThat(span.getTags()).containsEntry("spring.rabbit.template.name", "template");
 		assertThat(span.getName()).isEqualTo("/observation.testQ1 send");
