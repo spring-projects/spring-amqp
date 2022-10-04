@@ -38,11 +38,7 @@ public class RabbitMessageSenderContext extends SenderContext<Message> {
 		setCarrier(message);
 		this.beanName = beanName;
 		this.destination = destination;
-	}
-
-	@Override
-	public String getRemoteServiceName() {
-		return "RabbitMQ";
+		setRemoteServiceName("RabbitMQ");
 	}
 
 	public String getBeanName() {
