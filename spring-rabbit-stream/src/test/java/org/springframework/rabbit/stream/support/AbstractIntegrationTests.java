@@ -33,7 +33,7 @@ public abstract class AbstractIntegrationTests {
 	static {
 		if (System.getProperty("spring.rabbit.use.local.server") == null
 				&& System.getenv("SPRING_RABBIT_USE_LOCAL_SERVER") == null) {
-			String image = "rabbitmq:3.11";
+			String image = "rabbitmq:3.11-management";
 			String cache = System.getenv().get("IMAGE_CACHE");
 			if (cache != null) {
 				image = cache + image;

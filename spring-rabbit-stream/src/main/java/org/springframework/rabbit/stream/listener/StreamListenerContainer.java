@@ -16,10 +16,11 @@
 
 package org.springframework.rabbit.stream.listener;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 
 import org.aopalliance.aop.Advice;
-import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.core.Message;
@@ -29,6 +30,7 @@ import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.beans.factory.BeanNameAware;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.rabbit.stream.support.StreamMessageProperties;
 import org.springframework.rabbit.stream.support.converter.DefaultStreamMessageConverter;
@@ -49,15 +51,21 @@ import com.rabbitmq.stream.Environment;
  */
 public class StreamListenerContainer implements MessageListenerContainer, BeanNameAware {
 
-	protected Log logger = LogFactory.getLog(getClass()); // NOSONAR
+	protected LogAccessor logger = new LogAccessor(LogFactory.getLog(getClass())); // NOSONAR
 
 	private final ConsumerBuilder builder;
+
+	private final Collection<Consumer> consumers = new ArrayList<>();
 
 	private StreamMessageConverter streamConverter;
 
 	private ConsumerCustomizer consumerCustomizer = (id, con) -> { };
 
-	private Consumer consumer;
+	private boolean simpleStream;
+
+	private boolean superStream;
+
+	private int concurrency = 1;
 
 	private String listenerId;
 
@@ -96,22 +104,41 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	 */
 	@Override
 	public void setQueueNames(String... queueNames) {
+		Assert.isTrue(!this.superStream, "setQueueNames() and superStream() are mutually exclusive");
 		Assert.isTrue(queueNames != null && queueNames.length == 1, "Only one stream is supported");
 		this.builder.stream(queueNames[0]);
+		this.simpleStream = true;
 	}
 
 	/**
-	 * Enable Single Active Consumer on a Super Stream.
+	 * Enable Single Active Consumer on a Super Stream, with one consumer.
 	 * Mutually exclusive with {@link #setQueueNames(String...)}.
-	 * @param superStream the stream.
+	 * @param streamName the stream.
 	 * @param name the consumer name.
 	 * @since 3.0
 	 */
-	public void superStream(String superStream, String name) {
-		Assert.notNull(superStream, "'superStream' cannot be null");
-		this.builder.superStream(superStream)
+	public void superStream(String streamName, String name) {
+		superStream(streamName, name, 1);
+	}
+
+	/**
+	 * Enable Single Active Consumer on a Super Stream with the provided number of consumers.
+	 * There must be at least that number of partitions in the Super Stream.
+	 * Mutually exclusive with {@link #setQueueNames(String...)}.
+	 * @param streamName the stream.
+	 * @param name the consumer name.
+	 * @param consumers the number of consumers.
+	 * @since 3.0
+	 */
+	public void superStream(String streamName, String name, int consumers) {
+		Assert.isTrue(consumers > 0, () -> "'concurrency' must be greater than zero, not " + consumers);
+		this.concurrency = consumers;
+		Assert.isTrue(!this.simpleStream, "setQueueNames() and superStream() are mutually exclusive");
+		Assert.notNull(streamName, "'superStream' cannot be null");
+		this.builder.superStream(streamName)
 				.singleActiveConsumer()
 				.name(name);
+		this.superStream = true;
 	}
 
 	/**
@@ -201,23 +228,35 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 
 	@Override
 	public synchronized boolean isRunning() {
-		return this.consumer != null;
+		return this.consumers.size() > 0;
 	}
 
 	@Override
 	public synchronized void start() {
-		if (this.consumer == null) {
+		if (this.consumers.size() == 0) {
 			this.consumerCustomizer.accept(getListenerId(), this.builder);
-			this.consumer = this.builder.build();
+			if (this.simpleStream) {
+				this.consumers.add(this.builder.build());
+			}
+			else {
+				for (int i = 0; i < this.concurrency; i++) {
+					this.consumers.add(this.builder.build());
+				}
+			}
 		}
 	}
 
 	@Override
 	public synchronized void stop() {
-		if (this.consumer != null) {
-			this.consumer.close();
-			this.consumer = null;
-		}
+		this.consumers.forEach(consumer -> {
+			try {
+				consumer.close();
+			}
+			catch (RuntimeException ex) {
+				this.logger.error(ex, "Failed to close consumer");
+			}
+		});
+		this.consumers.clear();
 	}
 
 	@Override
@@ -233,8 +272,8 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 					try {
 						((ChannelAwareMessageListener) this.messageListener).onMessage(message2, null);
 					}
-					catch (Exception e) { // NOSONAR
-						this.logger.error("Listner threw an exception", e);
+					catch (Exception ex) { // NOSONAR
+						this.logger.error(ex, "Listner threw an exception");
 					}
 				}
 				else {
