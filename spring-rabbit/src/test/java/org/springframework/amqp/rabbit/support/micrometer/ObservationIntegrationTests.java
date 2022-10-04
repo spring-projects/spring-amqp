@@ -78,10 +78,14 @@ public class ObservationIntegrationTests extends SampleTestRunner {
 					.collect(Collectors.toList());
 			SpanAssert.assertThat(producerSpans.get(0))
 					.hasTag("spring.rabbit.template.name", "template");
+			SpanAssert.assertThat(producerSpans.get(0))
+					.hasRemoteServiceNameEqualTo("RabbitMQ");
 			SpanAssert.assertThat(producerSpans.get(1))
 					.hasTag("spring.rabbit.template.name", "template");
 			SpanAssert.assertThat(consumerSpans.get(0))
 					.hasTagWithKey("spring.rabbit.listener.id");
+			SpanAssert.assertThat(consumerSpans.get(0))
+					.hasRemoteServiceNameEqualTo("RabbitMQ");
 			assertThat(consumerSpans.get(0).getTags().get("spring.rabbit.listener.id")).isIn("obs1", "obs2");
 			SpanAssert.assertThat(consumerSpans.get(1))
 					.hasTagWithKey("spring.rabbit.listener.id");
