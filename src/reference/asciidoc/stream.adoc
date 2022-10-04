@@ -216,6 +216,7 @@ RabbitStreamTemplate streamTemplate(Environment env) {
 
 You can also publish over AMQP, using the `RabbitTemplate`.
 
+[[super-stream-consumer]]
 ===== Consuming Super Streams with Single Active Consumers
 
 Invoke the `superStream` method on the listener container to enable a single active consumer on a super stream.
@@ -227,7 +228,7 @@ Invoke the `superStream` method on the listener container to enable a single act
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 StreamListenerContainer container(Environment env, String name) {
     StreamListenerContainer container = new StreamListenerContainer(env);
-    container.superStream("ss.sac", "myConsumer");
+    container.superStream("ss.sac", "myConsumer", 3); // concurrency = 3
     container.setupMessageListener(msg -> {
         ...
     });
@@ -236,3 +237,6 @@ StreamListenerContainer container(Environment env, String name) {
 }
 ----
 ====
+
+IMPORTANT: At this time, when the concurrency is greater than 1, the actual concurrency is further controlled by the `Environment`; to achieve full concurrency, set the environment's `maxConsumersByConnection` to 1.
+See https://rabbitmq.github.io/rabbitmq-stream-java-client/snapshot/htmlsingle/#configuring-the-environment[Configuring the Environment].

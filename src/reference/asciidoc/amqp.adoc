@@ -5741,7 +5741,7 @@ Enable this feature by calling `ConnectionFactoryUtils.enableAfterCompletionFail
 ==== Message Listener Container Configuration
 
 There are quite a few options for configuring a `SimpleMessageListenerContainer` (SMLC) and a `DirectMessageListenerContainer` (DMLC) related to transactions and quality of service, and some of them interact with each other.
-Properties that apply to the SMLC, DMLC, or `StreamListenerContainer` (StLC) (see <<stream-support>> are indicated by the check mark in the appropriate column.
+Properties that apply to the SMLC, DMLC, or `StreamListenerContainer` (StLC) (see <<stream-support>>) are indicated by the check mark in the appropriate column.
 See <<choose-container>> for information to help you decide which container is appropriate for your application.
 
 The following table shows the container property names and their equivalent attribute names (in parentheses) when using the namespace to configure a `<rabbit:listener-container/>`.
@@ -5894,10 +5894,11 @@ a|
 
 |The number of concurrent consumers to initially start for each listener.
 See <<listener-concurrency>>.
+For the `StLC`, concurrency is controlled via an overloaded `superStream` method; see <<super-stream-consumer>>.
 
 a|image::images/tickmark.png[]
 a|
-a|
+a|image::images/tickmark.png[]
 
 |[[connectionFactory]]<<connectionFactory,`connectionFactory`>> +
 (connection-factory)
