@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 the original author or authors.
+ * Copyright 2015-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Queue;
@@ -35,6 +36,7 @@ import org.springframework.amqp.rabbit.junit.RabbitAvailable;
  * @author Gary Russell
  */
 @RabbitAvailable(management = true)
+@Disabled("Temporary until SF uses Micrometer snaps")
 public class LocalizedQueueConnectionFactoryIntegrationTests {
 
 	private LocalizedQueueConnectionFactory lqcf;
@@ -61,6 +63,7 @@ public class LocalizedQueueConnectionFactoryIntegrationTests {
 	}
 
 	@Test
+	@Disabled("Temporary until SF uses Micrometer snaps")
 	public void testConnect() throws Exception {
 		RabbitAdmin admin = new RabbitAdmin(this.lqcf);
 		Queue queue = new Queue(UUID.randomUUID().toString(), false, false, true);

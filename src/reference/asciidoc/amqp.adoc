@@ -3764,9 +3764,9 @@ The timers are named `spring.rabbitmq.listener` and have the following tags:
 
 You can add additional tags using the `micrometerTags` container property.
 
-Also see <<observation>>.
+Also see <<micrometer-observation>>.
 
-[[observation]]
+[[micrometer-observation]]
 ===== Micrometer Observation
 
 Using Micrometer for observation is now supported, since version 3.0, for the `RabbitTemplate` and listener containers.
@@ -3780,6 +3780,8 @@ To add tags to timers/traces, configure a custom `RabbitTemplateObservationConve
 The default implementations add the `bean.name` tag for template observations and `listener.id` tag for containers.
 
 You can either subclass `DefaultRabbitTemplateObservationConvention` or `DefaultRabbitListenerObservationConvention` or provide completely new implementations.
+
+See <<observation-gen>> for more details.
 
 [[containers-and-broker-named-queues]]
 ==== Containers and Broker-Named queues

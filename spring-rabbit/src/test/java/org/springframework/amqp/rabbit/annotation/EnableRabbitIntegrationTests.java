@@ -47,6 +47,7 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -832,6 +833,7 @@ public class EnableRabbitIntegrationTests {
 	}
 
 	@Test
+	@Disabled("Temporary until SF uses Micrometer snaps")
 	public void deadLetterOnDefaultExchange() {
 		this.rabbitTemplate.convertAndSend("amqp656", "foo");
 		assertThat(this.rabbitTemplate.receiveAndConvert("amqp656dlq", 10000)).isEqualTo("foo");

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 the original author or authors.
+ * Copyright 2019-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
-import org.slf4j.LoggerFactory;
 
 /**
  * Utility methods for JUnit rules and conditions.
@@ -109,11 +108,12 @@ public final class JUnitUtils {
 		ctx.updateLoggers();
 
 		Map<String, ch.qos.logback.classic.Level> oldLbLevels = new HashMap<>();
-		categories.forEach(cat -> {
-			ch.qos.logback.classic.Logger lbLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(cat);
-			oldLbLevels.put(cat, lbLogger.getLevel());
-			lbLogger.setLevel(ch.qos.logback.classic.Level.toLevel(level.name()));
-		});
+// TODO: Fix
+//		categories.forEach(cat -> {
+//			ch.qos.logback.classic.Logger lbLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(cat);
+//			oldLbLevels.put(cat, lbLogger.getLevel());
+//			lbLogger.setLevel(ch.qos.logback.classic.Level.toLevel(level.name()));
+//		});
 		LOGGER.info("++++++++++++++++++++++++++++ "
 				+ "Overridden log level setting for: "
 				+ classes.stream()
@@ -137,8 +137,8 @@ public final class JUnitUtils {
 				((Logger) LogManager.getLogger(key)).setLevel(value);
 			}
 		});
-		container.oldLbLevels.forEach((key, value) ->
-				((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(key)).setLevel(value));
+//		container.oldLbLevels.forEach((key, value) ->
+//				((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(key)).setLevel(value));
 	}
 
 	public static class LevelsContainer {

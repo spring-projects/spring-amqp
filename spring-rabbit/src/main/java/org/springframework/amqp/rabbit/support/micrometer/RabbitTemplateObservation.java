@@ -16,10 +16,11 @@
 
 package org.springframework.amqp.rabbit.support.micrometer;
 
+import io.micrometer.common.KeyValues;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.observation.Observation.Context;
 import io.micrometer.observation.ObservationConvention;
-import io.micrometer.observation.docs.DocumentedObservation;
+import io.micrometer.observation.docs.ObservationDocumentation;
 
 /**
  * Spring RabbitMQ Observation for {@link org.springframework.amqp.rabbit.core.RabbitTemplate}.
@@ -28,10 +29,10 @@ import io.micrometer.observation.docs.DocumentedObservation;
  * @since 3.0
  *
  */
-public enum RabbitTemplateObservation implements DocumentedObservation {
+public enum RabbitTemplateObservation implements ObservationDocumentation {
 
 	/**
-	 * {@link org.springframework.kafka.core.KafkaTemplate} observation.
+	 * Observation for RabbitTemplates.
 	 */
 	TEMPLATE_OBSERVATION {
 
@@ -67,6 +68,30 @@ public enum RabbitTemplateObservation implements DocumentedObservation {
 				return "spring.rabbit.template.name";
 			}
 
+		}
+
+	}
+
+	/**
+	 * Default {@link RabbitTemplateObservationConvention} for Rabbit template key values.
+	 */
+	public static class DefaultRabbitTemplateObservationConvention implements RabbitTemplateObservationConvention {
+
+		/**
+		 * A singleton instance of the convention.
+		 */
+		public static final DefaultRabbitTemplateObservationConvention INSTANCE =
+				new DefaultRabbitTemplateObservationConvention();
+
+		@Override
+		public KeyValues getLowCardinalityKeyValues(RabbitMessageSenderContext context) {
+			return KeyValues.of(RabbitTemplateObservation.TemplateLowCardinalityTags.BEAN_NAME.asString(),
+							context.getBeanName());
+		}
+
+		@Override
+		public String getContextualName(RabbitMessageSenderContext context) {
+			return context.getDestination() + " send";
 		}
 
 	}

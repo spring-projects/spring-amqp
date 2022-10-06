@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
@@ -69,18 +70,28 @@ public class ObservationIntegrationTests extends SampleTestRunner {
 			SpansAssert.assertThat(finishedSpans)
 					.haveSameTraceId()
 					.hasSize(4);
-			SpanAssert.assertThat(finishedSpans.get(0))
-					.hasKindEqualTo(Kind.PRODUCER)
+			List<FinishedSpan> producerSpans = finishedSpans.stream()
+					.filter(span -> span.getKind().equals(Kind.PRODUCER))
+					.collect(Collectors.toList());
+			List<FinishedSpan> consumerSpans = finishedSpans.stream()
+					.filter(span -> span.getKind().equals(Kind.CONSUMER))
+					.collect(Collectors.toList());
+			SpanAssert.assertThat(producerSpans.get(0))
 					.hasTag("spring.rabbit.template.name", "template");
-			SpanAssert.assertThat(finishedSpans.get(1))
-					.hasKindEqualTo(Kind.PRODUCER)
+			SpanAssert.assertThat(producerSpans.get(0))
+					.hasRemoteServiceNameEqualTo("RabbitMQ");
+			SpanAssert.assertThat(producerSpans.get(1))
 					.hasTag("spring.rabbit.template.name", "template");
-			SpanAssert.assertThat(finishedSpans.get(2))
-					.hasKindEqualTo(Kind.CONSUMER)
-					.hasTag("spring.rabbit.listener.id", "obs1");
-			SpanAssert.assertThat(finishedSpans.get(3))
-					.hasKindEqualTo(Kind.CONSUMER)
-					.hasTag("spring.rabbit.listener.id", "obs2");
+			SpanAssert.assertThat(consumerSpans.get(0))
+					.hasTagWithKey("spring.rabbit.listener.id");
+			SpanAssert.assertThat(consumerSpans.get(0))
+					.hasRemoteServiceNameEqualTo("RabbitMQ");
+			assertThat(consumerSpans.get(0).getTags().get("spring.rabbit.listener.id")).isIn("obs1", "obs2");
+			SpanAssert.assertThat(consumerSpans.get(1))
+					.hasTagWithKey("spring.rabbit.listener.id");
+			assertThat(consumerSpans.get(1).getTags().get("spring.rabbit.listener.id")).isIn("obs1", "obs2");
+			assertThat(consumerSpans.get(0).getTags().get("spring.rabbit.listener.id"))
+					.isNotEqualTo(consumerSpans.get(1).getTags().get("spring.rabbit.listener.id"));
 
 			MeterRegistryAssert.assertThat(getMeterRegistry())
 					.hasTimerWithNameAndTags("spring.rabbit.template",

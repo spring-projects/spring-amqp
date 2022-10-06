@@ -1,3 +1,14 @@
+[appendix]
+[[observation-gen]]
+== Micrometer Observation Documentation
+
+include::_metrics.adoc[]
+
+include::_spans.adoc[]
+
+include::_conventions.adoc[]
+
+[appendix]
 [[change-history]]
 == Change History
 

@@ -67,5 +67,4 @@ In addition to this reference documentation, there exist a number of other resou
 
 include::further-reading.adoc[]
 
-[appendix]
 include::appendix.adoc[]

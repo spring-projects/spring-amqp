@@ -43,7 +43,7 @@ public abstract class RabbitAccessor implements InitializingBean {
 
 	private volatile boolean transactional;
 
-	private ObservationRegistry observationRegistry;
+	private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
 	public boolean isChannelTransacted() {
 		return this.transactional;
@@ -119,7 +119,7 @@ public abstract class RabbitAccessor implements InitializingBean {
 	}
 
 	protected void obtainObservationRegistry(@Nullable ApplicationContext appContext) {
-		if (this.observationRegistry == null && appContext != null) {
+		if (appContext != null) {
 			ObjectProvider<ObservationRegistry> registry =
 					appContext.getBeanProvider(ObservationRegistry.class);
 			this.observationRegistry = registry.getIfUnique();
