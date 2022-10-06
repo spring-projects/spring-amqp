@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.AmqpException;
@@ -57,7 +56,6 @@ import com.rabbitmq.http.client.domain.QueueInfo;
  *
  */
 @RabbitAvailable(management = true)
-@Disabled("Temporary until SF uses Micrometer snaps")
 public class RabbitRestApiTests {
 
 	private final CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");

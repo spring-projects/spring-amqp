@@ -26,7 +26,6 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.AmqpIOException;
@@ -63,7 +62,6 @@ import com.rabbitmq.http.client.domain.ExchangeInfo;
  * @author Artem Bilan
  */
 @RabbitAvailable(management = true)
-@Disabled("Temporary until SF uses Micrometer snaps")
 public class RabbitAdminIntegrationTests {
 
 	private final CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
