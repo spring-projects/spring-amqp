@@ -46,6 +46,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -99,6 +100,7 @@ import com.rabbitmq.http.client.domain.QueueInfo;
  *
  */
 @RabbitAvailable(management = true)
+@Disabled("Temporary until SF uses Micrometer snaps")
 public class RabbitAdminTests {
 
 	@Test

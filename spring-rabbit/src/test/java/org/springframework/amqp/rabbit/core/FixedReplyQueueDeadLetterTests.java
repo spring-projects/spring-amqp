@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Binding;
@@ -63,6 +64,7 @@ import com.rabbitmq.http.client.domain.QueueInfo;
 @SpringJUnitConfig
 @DirtiesContext
 @RabbitAvailable(management = true)
+@Disabled("Temporary until SF uses Micrometer snaps")
 public class FixedReplyQueueDeadLetterTests {
 
 	private static BrokerRunningSupport brokerRunning;
