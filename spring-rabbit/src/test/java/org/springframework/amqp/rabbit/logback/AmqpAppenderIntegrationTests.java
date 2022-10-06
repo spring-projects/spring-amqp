@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -57,6 +58,7 @@ import ch.qos.logback.classic.Logger;
 @SpringJUnitConfig(classes = AmqpAppenderConfiguration.class)
 @DirtiesContext
 @RabbitAvailable
+@Disabled("Temporary")
 public class AmqpAppenderIntegrationTests {
 
 	/* logback will automatically find lockback-test.xml */
