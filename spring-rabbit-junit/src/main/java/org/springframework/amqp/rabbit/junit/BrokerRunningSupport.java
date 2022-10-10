@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,11 @@
 package org.springframework.amqp.rabbit.junit;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,13 +33,17 @@ import java.util.concurrent.TimeoutException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.MediaType;
 import org.springframework.util.Base64Utils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunctions;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriUtils;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.http.client.Client;
 
 /**
  * A class that can be used to prevent integration tests from failing if the Rabbit broker application is
@@ -372,13 +379,31 @@ public final class BrokerRunningSupport {
 			}
 		}
 		if (this.management) {
-			Client client = new Client(getAdminUri(), this.adminUser, this.adminPassword);
-			if (!client.alivenessTest("/")) {
+			if (!alivenessTest()) {
 				throw new BrokerNotAliveException("Aliveness test failed for localhost:15672 guest/quest; "
 						+ "management not available");
 			}
 		}
 		return channel;
+	}
+
+	private boolean alivenessTest() throws URISyntaxException {
+		WebClient client = WebClient.builder()
+				.filter(ExchangeFilterFunctions.basicAuthentication(this.adminUser, this.adminPassword))
+				.build();
+		URI uri = new URI(getAdminUri())
+				.resolve("/api/aliveness-test/" + UriUtils.encodePathSegment("/", StandardCharsets.UTF_8));
+		HashMap<String, String> result = client.get()
+				.uri(uri)
+				.accept(MediaType.APPLICATION_JSON)
+				.retrieve()
+				.bodyToMono(new ParameterizedTypeReference<HashMap<String, String>>() {
+				})
+				.block(Duration.ofSeconds(10)); // NOSONAR magic#
+		if (result != null) {
+			return result.get("status").equals("ok");
+		}
+		return false;
 	}
 
 	public static boolean fatal() {

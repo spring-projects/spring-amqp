@@ -22,7 +22,6 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Queue;
@@ -36,7 +35,6 @@ import org.springframework.amqp.rabbit.junit.RabbitAvailable;
  * @author Gary Russell
  */
 @RabbitAvailable(management = true)
-@Disabled("Temporary until SF uses Micrometer snaps")
 public class LocalizedQueueConnectionFactoryIntegrationTests {
 
 	private LocalizedQueueConnectionFactory lqcf;
@@ -63,7 +61,6 @@ public class LocalizedQueueConnectionFactoryIntegrationTests {
 	}
 
 	@Test
-	@Disabled("Temporary until SF uses Micrometer snaps")
 	public void testConnect() throws Exception {
 		RabbitAdmin admin = new RabbitAdmin(this.lqcf);
 		Queue queue = new Queue(UUID.randomUUID().toString(), false, false, true);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2020 the original author or authors.
+ * Copyright 2015-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,20 +42,28 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.internal.stubbing.answers.CallsRealMethods;
 
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ClientHttpConnector;
+import org.springframework.test.web.reactive.server.HttpHandlerConnector;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Consumer;
-import com.rabbitmq.http.client.Client;
-import com.rabbitmq.http.client.domain.QueueInfo;
+import reactor.core.publisher.Mono;
 
 
 /**
  * @author Gary Russell
  * @author Artem Bilan
  */
+@RabbitAvailable(queues = "local")
 public class LocalizedQueueConnectionFactoryTests {
 
 	private final Map<String, Channel> channels = new HashMap<String, Channel>();
@@ -76,8 +84,8 @@ public class LocalizedQueueConnectionFactoryTests {
 		String username = "guest";
 		String password = "guest";
 		final AtomicBoolean firstServer = new AtomicBoolean(true);
-		final Client client1 = doCreateClient(adminUris[0], username, password, nodes[0]);
-		final Client client2 = doCreateClient(adminUris[1], username, password, nodes[1]);
+		final WebClient client1 = doCreateClient(adminUris[0], username, password, nodes[0]);
+		final WebClient client2 = doCreateClient(adminUris[1], username, password, nodes[1]);
 		final Map<String, ConnectionFactory> mockCFs = new HashMap<String, ConnectionFactory>();
 		CountDownLatch latch1 = new CountDownLatch(1);
 		CountDownLatch latch2 = new CountDownLatch(1);
@@ -87,16 +95,19 @@ public class LocalizedQueueConnectionFactoryTests {
 				adminUris, nodes, vhost, username, password, false, null) {
 
 			@Override
-			protected Client createClient(String adminUri, String username, String password) {
-				return firstServer.get() ? client1 : client2;
-			}
-
-			@Override
 			protected ConnectionFactory createConnectionFactory(String address, String node) {
 				return mockCFs.get(address);
 			}
 
 		};
+		lqcf.setNodeLocator(new DefaultNodeLocator() {
+
+			@Override
+			protected WebClient createClient(String username, String password) {
+				return firstServer.get() ? client1 : client2;
+			}
+
+		});
 		Map<?, ?> nodeAddress = TestUtils.getPropertyValue(lqcf, "nodeToAddress", Map.class);
 		assertThat(nodeAddress.get("rabbit@foo")).isEqualTo(rabbit1);
 		assertThat(nodeAddress.get("rabbit@bar")).isEqualTo(rabbit2);
@@ -144,12 +155,32 @@ public class LocalizedQueueConnectionFactoryTests {
 		return false;
 	}
 
-	private Client doCreateClient(String uri, String username, String password, String node) {
-		Client client = mock(Client.class);
-		QueueInfo queueInfo = new QueueInfo();
-		queueInfo.setNode(node);
-		given(client.getQueue("/", "q")).willReturn(queueInfo);
-		return client;
+	private WebClient doCreateClient(String uri, String username, String password, String node) {
+		ClientHttpConnector httpConnector =
+				new HttpHandlerConnector((request, response) -> {
+					response.setStatusCode(HttpStatus.OK);
+					response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+					Mono<DataBuffer> json = Mono
+							.just(response.bufferFactory().wrap(("{\"node\":\"" + node + "\"}").getBytes()));
+					return response.writeWith(json)
+							.then(Mono.defer(response::setComplete));
+				});
+
+		return WebClient.builder()
+				.clientConnector(httpConnector)
+				.build();
+	}
+
+	@Test
+	void findLocal() {
+		ConnectionFactory defaultCf = mock(ConnectionFactory.class);
+		LocalizedQueueConnectionFactory lqcf = new LocalizedQueueConnectionFactory(defaultCf,
+				Map.of("rabbit@localhost", "localhost:5672"), new String[] { "http://localhost:15672" },
+				"/", "guest", "guest", false, null);
+		ConnectionFactory cf = lqcf.getTargetConnectionFactory("[local]");
+		RabbitAdmin admin = new RabbitAdmin(cf);
+		assertThat(admin.getQueueProperties("local")).isNotNull();
+		lqcf.destroy();
 	}
 
 	@Test
@@ -182,8 +213,8 @@ public class LocalizedQueueConnectionFactoryTests {
 		given(channel.isOpen()).willReturn(true, false);
 		willAnswer(invocation -> {
 			String tag = UUID.randomUUID().toString();
-			consumers.put(address, invocation.getArgument(6));
-			consumerTags.put(address, tag);
+			this.consumers.put(address, invocation.getArgument(6));
+			this.consumerTags.put(address, tag);
 			if (latch != null) {
 				latch.countDown();
 			}

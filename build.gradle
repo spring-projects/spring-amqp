@@ -44,7 +44,7 @@ ext {
 	assertkVersion = '0.24'
 	awaitilityVersion = '4.2.0'
 	commonsCompressVersion = '1.20'
-	commonsHttpClientVersion = '4.5.13'
+	commonsHttpClientVersion = '5.1.3'
 	commonsPoolVersion = '2.11.1'
 	googleJsr305Version = '3.0.2'
 	hamcrestVersion = '2.2'
@@ -62,7 +62,6 @@ ext {
 	mockitoVersion = '4.8.0'
 	rabbitmqStreamVersion = '0.8.0'
 	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.16.0'
-	rabbitmqHttpClientVersion = '3.12.1'
 	reactorVersion = '2022.0.0-SNAPSHOT'
 	snappyVersion = '1.1.8.4'
 	springDataVersion = '2022.0.0-SNAPSHOT'
@@ -384,11 +383,12 @@ project('spring-rabbit') {
 
 		api project(':spring-amqp')
 		api "com.rabbitmq:amqp-client:$rabbitmqVersion"
-		optionalApi "com.rabbitmq:http-client:$rabbitmqHttpClientVersion"
 		optionalApi 'org.springframework:spring-aop'
 		api 'org.springframework:spring-context'
 		api 'org.springframework:spring-messaging'
 		api 'org.springframework:spring-tx'
+		optionalApi 'org.springframework:spring-web'
+		optionalApi 'org.springframework:spring-webflux'
 		optionalApi 'io.projectreactor:reactor-core'
 		optionalApi "ch.qos.logback:logback-classic:$logbackVersion"
 		optionalApi 'org.apache.logging.log4j:log4j-core'
@@ -410,7 +410,7 @@ project('spring-rabbit') {
 		testImplementation 'io.micrometer:micrometer-tracing-test'
 		testImplementation 'io.micrometer:micrometer-tracing-integration-test'
 		testRuntimeOnly 'org.springframework:spring-web'
-		testRuntimeOnly "org.apache.httpcomponents:httpclient:$commonsHttpClientVersion"
+		testRuntimeOnly "org.apache.httpcomponents.client5:httpclient5:$commonsHttpClientVersion"
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core'
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind'
 		testRuntimeOnly 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
@@ -465,14 +465,13 @@ project('spring-rabbit-stream') {
 
 		api project(':spring-rabbit')
 		api "com.rabbitmq:stream-client:$rabbitmqStreamVersion"
-		optionalApi "com.rabbitmq:http-client:$rabbitmqHttpClientVersion"
 
 		testApi project(':spring-rabbit-junit')
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core'
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind'
 		testRuntimeOnly 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
 		testRuntimeOnly 'com.fasterxml.jackson.module:jackson-module-kotlin'
-		testRuntimeOnly "org.apache.httpcomponents:httpclient:$commonsHttpClientVersion"
+		testRuntimeOnly "org.apache.httpcomponents.client5:httpclient5:$commonsHttpClientVersion"
 		testRuntimeOnly "org.apache.commons:commons-compress:$commonsCompressVersion"
 		testRuntimeOnly "org.xerial.snappy:snappy-java:$snappyVersion"
 		testRuntimeOnly "org.lz4:lz4-java:$lz4Version"
@@ -494,16 +493,15 @@ project('spring-rabbit-junit') {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
 		}
 		api "com.rabbitmq:amqp-client:$rabbitmqVersion"
-		api ("com.rabbitmq:http-client:$rabbitmqHttpClientVersion") {
-			exclude group: 'org.springframework', module: 'spring-web'
-		}
 		api 'org.springframework:spring-web'
+		api 'org.springframework:spring-webflux'
 		api 'org.junit.jupiter:junit-jupiter-api'
 		api "org.assertj:assertj-core:$assertjVersion"
 		optionalApi "ch.qos.logback:logback-classic:$logbackVersion"
 		optionalApi 'org.apache.logging.log4j:log4j-core'
 		compileOnly 'org.apiguardian:apiguardian-api:1.0.0'
-
+		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core'
+		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind'
 	}
 
 }

@@ -795,6 +795,42 @@ public LocalizedQueueConnectionFactory queueAffinityCF(
 Notice that the first three parameters are arrays of `addresses`, `adminUris`, and `nodes`.
 These are positional in that, when a container attempts to connect to a queue, it uses the admin API to determine which node is the lead for the queue and connects to the address in the same array position as that node.
 
+IMPORTANT: Starting with version 3.0, the RabbitMQ `http-client` is no longer used to access the Rest API.
+Instead, by default, the `WebClient` from Spring Webflux is used; it is not added to the class path by default.
+
+.Maven
+====
+[source,xml,subs="+attributes"]
+----
+<dependency>
+  <groupId>org.springframework.amqp</groupId>
+  <artifactId>spring-rabbit</artifactId>
+</dependency>
+----
+====
+.Gradle
+====
+[source,groovy,subs="+attributes"]
+----
+compile 'org.springframework.amqp:spring-rabbit'
+----
+====
+
+You can also use other REST technology by extending `DefaultNodeLocator` and overriding its `restCall` method.
+
+====
+[source, java]
+----
+lqcf.setNodeLocator(new DefaultNodeLocator() {
+
+    @Override
+    public HashMap<String, Object> restCall(String username, String password, URI uri) {
+        ...
+    });
+});
+----
+====
+
 [[cf-pub-conf-ret]]
 ===== Publisher Confirms and Returns
 
