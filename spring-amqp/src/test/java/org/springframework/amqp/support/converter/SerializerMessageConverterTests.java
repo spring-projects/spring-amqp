@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import static org.mockito.Mockito.verify;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -33,7 +34,6 @@ import org.mockito.Mockito;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.utils.test.TestUtils;
-import org.springframework.core.NestedIOException;
 import org.springframework.core.serializer.DefaultDeserializer;
 import org.springframework.core.serializer.Deserializer;
 
@@ -178,7 +178,7 @@ public class SerializerMessageConverterTests extends AllowedListDeserializingMes
 		body[10] = 'z';
 		assertThatThrownBy(() -> converter.fromMessage(message))
 			.isExactlyInstanceOf(MessageConversionException.class)
-			.hasCauseExactlyInstanceOf(NestedIOException.class);
+			.hasCauseExactlyInstanceOf(IOException.class);
 	}
 
 }

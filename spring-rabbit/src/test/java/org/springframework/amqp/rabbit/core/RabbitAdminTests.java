@@ -84,8 +84,6 @@ import org.springframework.retry.support.RetryTemplate;
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
-import com.rabbitmq.http.client.Client;
-import com.rabbitmq.http.client.domain.QueueInfo;
 
 /**
  * @author Mark Pollack
@@ -99,7 +97,7 @@ import com.rabbitmq.http.client.domain.QueueInfo;
  *
  */
 @RabbitAvailable(management = true)
-public class RabbitAdminTests {
+public class RabbitAdminTests extends NeedsManagementTests {
 
 	@Test
 	public void testSettingOfNullConnectionFactory() {
@@ -373,17 +371,16 @@ public class RabbitAdminTests {
 		RabbitAdmin admin = new RabbitAdmin(cf);
 		AnonymousQueue queue = new AnonymousQueue();
 		admin.declareQueue(queue);
-		Client client = new Client("http://guest:guest@localhost:15672/api");
 		AnonymousQueue queue1 = queue;
-		QueueInfo info = await().until(() -> client.getQueue("/", queue1.getName()), inf -> inf != null);
-		assertThat(info.getArguments().get(Queue.X_QUEUE_LEADER_LOCATOR)).isEqualTo("client-local");
+		Map<String, Object> info = await().until(() -> queueInfo(queue1.getName()), inf -> inf != null);
+		assertThat(arguments(info).get(Queue.X_QUEUE_LEADER_LOCATOR)).isEqualTo("client-local");
 
 		queue = new AnonymousQueue();
 		queue.setLeaderLocator(null);
 		admin.declareQueue(queue);
 		AnonymousQueue queue2 = queue;
-		info = await().until(() -> client.getQueue("/", queue2.getName()), inf -> inf != null);
-		assertThat(info.getArguments().get(Queue.X_QUEUE_LEADER_LOCATOR)).isNull();
+		info = await().until(() -> queueInfo(queue2.getName()), inf -> inf != null);
+		assertThat(arguments(info).get(Queue.X_QUEUE_LEADER_LOCATOR)).isNull();
 		cf.destroy();
 	}
 

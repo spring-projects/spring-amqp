@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,10 @@
 package org.springframework.amqp.rabbit.junit;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,14 +31,28 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.http.HttpHost;
+import org.apache.http.client.AuthCache;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.client.BasicAuthCache;
+import org.apache.http.protocol.BasicHttpContext;
+import org.apache.http.protocol.HttpContext;
 
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.client.support.BasicAuthenticationInterceptor;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Base64Utils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriUtils;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.http.client.Client;
 
 /**
  * A class that can be used to prevent integration tests from failing if the Rabbit broker application is
@@ -372,13 +388,37 @@ public final class BrokerRunningSupport {
 			}
 		}
 		if (this.management) {
-			Client client = new Client(getAdminUri(), this.adminUser, this.adminPassword);
-			if (!client.alivenessTest("/")) {
+			if (!alivenessTest()) {
 				throw new BrokerNotAliveException("Aliveness test failed for localhost:15672 guest/quest; "
 						+ "management not available");
 			}
 		}
 		return channel;
+	}
+
+	private boolean alivenessTest() throws URISyntaxException {
+		URI uri = new URI(getAdminUri())
+				.resolve("/api/aliveness-test/" + UriUtils.encodePathSegment("/", StandardCharsets.UTF_8));
+		HttpHost host = new HttpHost(uri.getHost(), uri.getPort());
+		RestTemplate template = new RestTemplate(new HttpComponentsClientHttpRequestFactory() {
+
+			@Override
+			@Nullable
+			protected HttpContext createHttpContext(HttpMethod httpMethod, URI uri) {
+				AuthCache cache = new BasicAuthCache();
+				BasicScheme scheme = new BasicScheme();
+				cache.put(host, scheme);
+				BasicHttpContext context = new BasicHttpContext();
+				context.setAttribute(HttpClientContext.AUTH_CACHE, cache);
+				return context;
+			}
+
+		});
+		template.getInterceptors().add(new BasicAuthenticationInterceptor(this.adminUser, this.adminPassword));
+		ResponseEntity<String> response = template.exchange(uri, HttpMethod.GET, null, String.class);
+		return response.getStatusCode().equals(HttpStatus.OK)
+				? response.getBody().equals("{\"status\":\"ok\"}")
+				: false;
 	}
 
 	public static boolean fatal() {
