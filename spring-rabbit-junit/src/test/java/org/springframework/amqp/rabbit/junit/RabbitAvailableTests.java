@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import com.rabbitmq.client.ConnectionFactory;
  * @since 2.0.2
  *
  */
-@RabbitAvailable(queues = "rabbitAvailableTests.queue")
+@RabbitAvailable(queues = "rabbitAvailableTests.queue", management = true)
 public class RabbitAvailableTests {
 
 	@Test

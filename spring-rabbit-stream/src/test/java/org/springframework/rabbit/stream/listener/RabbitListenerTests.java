@@ -18,8 +18,13 @@ package org.springframework.rabbit.stream.listener;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +46,8 @@ import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.MediaType;
 import org.springframework.rabbit.stream.config.StreamRabbitListenerContainerFactory;
 import org.springframework.rabbit.stream.producer.RabbitStreamTemplate;
 import org.springframework.rabbit.stream.retry.StreamRetryOperationsInterceptorFactoryBean;
@@ -48,9 +55,10 @@ import org.springframework.rabbit.stream.support.StreamMessageProperties;
 import org.springframework.retry.interceptor.RetryOperationsInterceptor;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunctions;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriUtils;
 
-import com.rabbitmq.http.client.Client;
-import com.rabbitmq.http.client.domain.QueueInfo;
 import com.rabbitmq.stream.Address;
 import com.rabbitmq.stream.Environment;
 import com.rabbitmq.stream.Message;
@@ -97,11 +105,38 @@ public class RabbitListenerTests extends AbstractIntegrationTests {
 		assertThat(this.config.latch4.await(10, TimeUnit.SECONDS)).isTrue();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	void queueOverAmqp() throws Exception {
-		Client client = new Client("http://guest:guest@localhost:" + managementPort() + "/api");
-		QueueInfo queue = client.getQueue("/", "stream.created.over.amqp");
-		assertThat(queue.getArguments().get("x-queue-type")).isEqualTo("stream");
+		WebClient client = WebClient.builder()
+				.filter(ExchangeFilterFunctions.basicAuthentication("guest", "guest"))
+				.build();
+		Map<String, Object> queue = queueInfo("stream.created.over.amqp");
+		assertThat(((Map<String, Object>) queue.get("arguments")).get("x-queue-type")).isEqualTo("stream");
+	}
+
+	private Map<String, Object> queueInfo(String queueName) throws URISyntaxException {
+		WebClient client = createClient("guest", "guest");
+		URI uri = queueUri(queueName);
+		return client.get()
+				.uri(uri)
+				.accept(MediaType.APPLICATION_JSON)
+				.retrieve()
+				.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
+				})
+				.block(Duration.ofSeconds(10));
+	}
+
+	private URI queueUri(String queue) throws URISyntaxException {
+		URI uri = new URI("http://localhost:" + managementPort() + "/api")
+				.resolve("/api/queues/" + UriUtils.encodePathSegment("/", StandardCharsets.UTF_8) + "/" + queue);
+		return uri;
+	}
+
+	private WebClient createClient(String adminUser, String adminPassword) {
+		return WebClient.builder()
+				.filter(ExchangeFilterFunctions.basicAuthentication(adminUser, adminPassword))
+				.build();
 	}
 
 	@Configuration(proxyBeanMethods = false)
