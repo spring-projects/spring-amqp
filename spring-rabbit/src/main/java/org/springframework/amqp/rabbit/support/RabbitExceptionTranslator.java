@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,11 +54,11 @@ public final class RabbitExceptionTranslator {
 		if (ex instanceof AmqpException) {
 			return (AmqpException) ex;
 		}
-		if (ex instanceof ShutdownSignalException) {
-			return new AmqpConnectException((ShutdownSignalException) ex);
+		if (ex instanceof ShutdownSignalException sigEx) {
+			return new AmqpConnectException(sigEx);
 		}
-		if (ex instanceof ConnectException) {
-			return new AmqpConnectException((ConnectException) ex);
+		if (ex instanceof ConnectException connEx) {
+			return new AmqpConnectException(connEx);
 		}
 		if (ex instanceof PossibleAuthenticationFailureException) {
 			return new AmqpAuthenticationException(ex);
@@ -66,8 +66,8 @@ public final class RabbitExceptionTranslator {
 		if (ex instanceof UnsupportedEncodingException) {
 			return new AmqpUnsupportedEncodingException(ex);
 		}
-		if (ex instanceof IOException) {
-			return new AmqpIOException((IOException) ex);
+		if (ex instanceof IOException ioEx) {
+			return new AmqpIOException(ioEx);
 		}
 		if (ex instanceof TimeoutException) {
 			return new AmqpTimeoutException(ex);

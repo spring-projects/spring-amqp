@@ -550,8 +550,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 			com.rabbitmq.client.Connection rabbitConnection = connect(connectionName);
 
 			Connection connection = new SimpleConnection(rabbitConnection, this.closeTimeout);
-			if (rabbitConnection instanceof AutorecoveringConnection) {
-				((AutorecoveringConnection) rabbitConnection).addRecoveryListener(new RecoveryListener() {
+			if (rabbitConnection instanceof AutorecoveringConnection auto) {
+				auto.addRecoveryListener(new RecoveryListener() {
 
 					@Override
 					public void handleRecoveryStarted(Recoverable recoverable) {
@@ -573,8 +573,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 			if (this.logger.isInfoEnabled()) {
 				this.logger.info("Created new connection: " + connectionName + "/" + connection);
 			}
-			if (this.recoveryListener != null && rabbitConnection instanceof AutorecoveringConnection) {
-				((AutorecoveringConnection) rabbitConnection).addRecoveryListener(this.recoveryListener);
+			if (this.recoveryListener != null && rabbitConnection instanceof AutorecoveringConnection auto) {
+				auto.addRecoveryListener(this.recoveryListener);
 			}
 
 			if (this.applicationEventPublisher != null) {
@@ -717,8 +717,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 		@Override
 		public void log(Log logger, String message, Throwable t) {
-			if (t instanceof ShutdownSignalException) {
-				ShutdownSignalException cause = (ShutdownSignalException) t;
+			if (t instanceof ShutdownSignalException cause) {
 				if (RabbitUtils.isPassiveDeclarationChannelClose(cause)) {
 					if (logger.isDebugEnabled()) {
 						logger.debug(message + ": " + cause.getMessage());

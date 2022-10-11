@@ -109,8 +109,8 @@ public class SimpleConnection implements Connection, NetworkConnection {
 
 	@Override
 	public int getLocalPort() {
-		if (this.delegate instanceof NetworkConnection) {
-			return ((NetworkConnection) this.delegate).getLocalPort();
+		if (this.delegate instanceof NetworkConnection networkConn) {
+			return networkConn.getLocalPort();
 		}
 		return 0;
 	}
@@ -127,8 +127,8 @@ public class SimpleConnection implements Connection, NetworkConnection {
 
 	@Override
 	public InetAddress getLocalAddress() {
-		if (this.delegate instanceof NetworkConnection) {
-			return ((NetworkConnection) this.delegate).getLocalAddress();
+		if (this.delegate instanceof NetworkConnection networkConn) {
+			return networkConn.getLocalAddress();
 		}
 		return null;
 	}

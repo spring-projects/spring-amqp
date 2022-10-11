@@ -179,8 +179,8 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 	@Nullable
 	Object prepareSwitchContext(UUID uuid) {
 		Object pubContext = null;
-		if (getPublisherConnectionFactory() instanceof ThreadChannelConnectionFactory) {
-			pubContext = ((ThreadChannelConnectionFactory) getPublisherConnectionFactory()).prepareSwitchContext(uuid); // NOSONAR
+		if (getPublisherConnectionFactory() instanceof ThreadChannelConnectionFactory tccf) {
+			pubContext = tccf.prepareSwitchContext(uuid);
 		}
 		Context context = ((ConnectionWrapper) createConnection()).prepareSwitchContext();
 		if (context.getNonTx() == null && context.getTx() == null) {
@@ -214,8 +214,8 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 
 	boolean doSwitch(Object toSwitch) {
 		boolean switched = false;
-		if (getPublisherConnectionFactory() instanceof ThreadChannelConnectionFactory) {
-			switched = ((ThreadChannelConnectionFactory) getPublisherConnectionFactory()).doSwitch(toSwitch); // NOSONAR
+		if (getPublisherConnectionFactory() instanceof ThreadChannelConnectionFactory tccf) {
+			switched = tccf.doSwitch(toSwitch); // NOSONAR
 		}
 		Context context = this.contextSwitches.remove(toSwitch);
 		this.switchesInProgress.remove(toSwitch);

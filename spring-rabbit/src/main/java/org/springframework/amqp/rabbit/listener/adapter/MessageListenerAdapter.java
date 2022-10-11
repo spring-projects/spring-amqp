@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -269,12 +269,12 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 		// In that case, the adapter will simply act as a pass-through.
 		Object delegateListener = getDelegate();
 		if (!delegateListener.equals(this)) {
-			if (delegateListener instanceof ChannelAwareMessageListener) {
-				((ChannelAwareMessageListener) delegateListener).onMessage(message, channel);
+			if (delegateListener instanceof ChannelAwareMessageListener chaml) {
+				chaml.onMessage(message, channel);
 				return;
 			}
-			else if (delegateListener instanceof MessageListener) {
-				((MessageListener) delegateListener).onMessage(message);
+			else if (delegateListener instanceof MessageListener messageListener) {
+				messageListener.onMessage(message);
 				return;
 			}
 		}
@@ -367,8 +367,8 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 		}
 		catch (InvocationTargetException ex) {
 			Throwable targetEx = ex.getTargetException();
-			if (targetEx instanceof IOException) {
-				throw new AmqpIOException((IOException) targetEx); // NOSONAR lost stack trace
+			if (targetEx instanceof IOException iox) {
+				throw new AmqpIOException(iox); // NOSONAR lost stack trace
 			}
 			else {
 				throw new ListenerExecutionFailedException("Listener method '" // NOSONAR lost stack trace

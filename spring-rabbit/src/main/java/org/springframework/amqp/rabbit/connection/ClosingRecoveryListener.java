@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 the original author or authors.
+ * Copyright 2018-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,14 +79,13 @@ public final class ClosingRecoveryListener implements RecoveryListener {
 	 */
 	public static void addRecoveryListenerIfNecessary(Channel channel) {
 		AutorecoveringChannel autorecoveringChannel = null;
-		if (channel instanceof ChannelProxy) {
-			if (((ChannelProxy) channel).getTargetChannel() instanceof AutorecoveringChannel) {
-				autorecoveringChannel = (AutorecoveringChannel) ((ChannelProxy) channel)
-						.getTargetChannel();
+		if (channel instanceof ChannelProxy proxy) {
+			if (proxy.getTargetChannel() instanceof AutorecoveringChannel auto) {
+				autorecoveringChannel = auto;
 			}
 		}
-		else if (channel instanceof AutorecoveringChannel) {
-			autorecoveringChannel = (AutorecoveringChannel) channel;
+		else if (channel instanceof AutorecoveringChannel auto) {
+			autorecoveringChannel = auto;
 		}
 		if (autorecoveringChannel != null
 				&& hasListener.putIfAbsent(autorecoveringChannel, Boolean.TRUE) == null) {

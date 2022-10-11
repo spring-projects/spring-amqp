@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -264,8 +264,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			Iterator<Entry<String, Declarable>> iterator = this.manualDeclarables.entrySet().iterator();
 			while (iterator.hasNext()) {
 				Entry<String, Declarable> next = iterator.next();
-				if (next.getValue() instanceof Binding) {
-					Binding binding = (Binding) next.getValue();
+				if (next.getValue() instanceof Binding binding) {
 					if ((!binding.isDestinationQueue() && binding.getDestination().equals(exchangeName))
 							|| binding.getExchange().equals(exchangeName)) {
 						iterator.remove();
@@ -363,8 +362,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			Iterator<Entry<String, Declarable>> iterator = this.manualDeclarables.entrySet().iterator();
 			while (iterator.hasNext()) {
 				Entry<String, Declarable> next = iterator.next();
-				if (next.getValue() instanceof Binding) {
-					Binding binding = (Binding) next.getValue();
+				if (next.getValue() instanceof Binding binding) {
 					if (binding.isDestinationQueue() && binding.getDestination().equals(queueName)) {
 						iterator.remove();
 					}
@@ -472,8 +470,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 							e);
 				}
 				try {
-					if (channel instanceof ChannelProxy) {
-						((ChannelProxy) channel).getTargetChannel().close();
+					if (channel instanceof ChannelProxy proxy) {
+						proxy.getTargetChannel().close();
 					}
 				}
 				catch (@SuppressWarnings(UNUSED) TimeoutException e1) {
@@ -592,8 +590,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 				backOffPolicy.setMaxInterval(DECLARE_MAX_RETRY_INTERVAL);
 				this.retryTemplate.setBackOffPolicy(backOffPolicy);
 			}
-			if (this.connectionFactory instanceof CachingConnectionFactory &&
-					((CachingConnectionFactory) this.connectionFactory).getCacheMode() == CacheMode.CONNECTION) {
+			if (this.connectionFactory instanceof CachingConnectionFactory ccf &&
+					ccf.getCacheMode() == CacheMode.CONNECTION) {
 				this.logger.warn("RabbitAdmin auto declaration is not supported with CacheMode.CONNECTION");
 				return;
 			}
@@ -698,11 +696,11 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			synchronized (this.manualDeclarables) {
 				this.logger.debug("Redeclaring manually declared Declarables");
 				for (Declarable dec : this.manualDeclarables.values()) {
-					if (dec instanceof Queue) {
-						declareQueue((Queue) dec);
+					if (dec instanceof Queue queue) {
+						declareQueue(queue);
 					}
-					else if (dec instanceof Exchange) {
-						declareExchange((Exchange) dec);
+					else if (dec instanceof Exchange exch) {
+						declareExchange(exch);
 					}
 					else {
 						declareBinding((Binding) dec);
@@ -731,14 +729,14 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 				.values();
 		declarables.forEach(d -> {
 			d.getDeclarables().forEach(declarable -> {
-				if (declarable instanceof Exchange) {
-					contextExchanges.add((Exchange) declarable);
+				if (declarable instanceof Exchange exch) {
+					contextExchanges.add(exch);
 				}
-				else if (declarable instanceof Queue) {
-					contextQueues.add((Queue) declarable);
+				else if (declarable instanceof Queue queue) {
+					contextQueues.add(queue);
 				}
-				else if (declarable instanceof Binding) {
-					contextBindings.add((Binding) declarable);
+				else if (declarable instanceof Binding binding) {
+					contextBindings.add(binding);
 				}
 			});
 		});
@@ -847,8 +845,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			this.logger.error("Exception while declaring queue: '" + queue.getName() + "'");
 		}
 		try {
-			if (channel instanceof ChannelProxy) {
-				((ChannelProxy) channel).getTargetChannel().close();
+			if (channel instanceof ChannelProxy proxy) {
+				proxy.getTargetChannel().close();
 			}
 		}
 		catch (IOException | TimeoutException e1) {

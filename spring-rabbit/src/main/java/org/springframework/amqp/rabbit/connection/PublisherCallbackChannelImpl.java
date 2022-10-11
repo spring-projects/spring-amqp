@@ -179,8 +179,8 @@ public class PublisherCallbackChannelImpl
 	@Override
 	public void close(int closeCode, String closeMessage) throws IOException, TimeoutException {
 		this.delegate.close(closeCode, closeMessage);
-		if (this.delegate instanceof AutorecoveringChannel) {
-			ClosingRecoveryListener.removeChannel((AutorecoveringChannel) this.delegate);
+		if (this.delegate instanceof AutorecoveringChannel auto) {
+			ClosingRecoveryListener.removeChannel(auto);
 		}
 	}
 

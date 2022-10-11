@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 the original author or authors.
+ * Copyright 2014-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -188,8 +188,8 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 		Assert.state(this.endpointRegistry != null, "No registry available");
 		synchronized (this.endpointDescriptors) {
 			for (AmqpListenerEndpointDescriptor descriptor : this.endpointDescriptors) {
-				if (descriptor.endpoint instanceof MultiMethodRabbitListenerEndpoint && this.validator != null) {
-					((MultiMethodRabbitListenerEndpoint) descriptor.endpoint).setValidator(this.validator);
+				if (descriptor.endpoint instanceof MultiMethodRabbitListenerEndpoint multi && this.validator != null) {
+					multi.setValidator(this.validator);
 				}
 				this.endpointRegistry.registerListenerContainer(// NOSONAR never null
 						descriptor.endpoint, resolveContainerFactory(descriptor));

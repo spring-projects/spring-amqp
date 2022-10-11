@@ -739,8 +739,8 @@ public class BlockingQueueConsumer {
 				}
 				catch (IllegalArgumentException e) {
 					try {
-						if (this.channel instanceof ChannelProxy) {
-							((ChannelProxy) this.channel).getTargetChannel().close();
+						if (this.channel instanceof ChannelProxy proxy) {
+							proxy.getTargetChannel().close();
 						}
 					}
 					catch (TimeoutException e1) {

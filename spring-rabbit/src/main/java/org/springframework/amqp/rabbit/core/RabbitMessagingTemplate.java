@@ -213,8 +213,8 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	protected void doSend(String destination, Message<?> message) {
 		try {
 			Object correlation = message.getHeaders().get(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION);
-			if (correlation instanceof CorrelationData) {
-				this.rabbitTemplate.send(destination, createMessage(message), (CorrelationData) correlation);
+			if (correlation instanceof CorrelationData corrData) {
+				this.rabbitTemplate.send(destination, createMessage(message), corrData);
 			}
 			else {
 				this.rabbitTemplate.send(destination, createMessage(message));
@@ -228,8 +228,8 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	protected void doSend(String exchange, String routingKey, Message<?> message) {
 		try {
 			Object correlation = message.getHeaders().get(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION);
-			if (correlation instanceof CorrelationData) {
-				this.rabbitTemplate.send(exchange, routingKey, createMessage(message), (CorrelationData) correlation);
+			if (correlation instanceof CorrelationData corrData) {
+				this.rabbitTemplate.send(exchange, routingKey, createMessage(message), corrData);
 			}
 			else {
 				this.rabbitTemplate.send(exchange, routingKey, createMessage(message));
@@ -324,8 +324,8 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 
 	@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 	protected MessagingException convertAmqpException(RuntimeException ex) {
-		if (ex instanceof MessagingException) {
-			return (MessagingException) ex;
+		if (ex instanceof MessagingException mex) {
+			return mex;
 		}
 		if (ex instanceof org.springframework.amqp.support.converter.MessageConversionException) {
 			return new MessageConversionException(ex.getMessage(), ex);

@@ -300,11 +300,13 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			}
 		}
 		else {
-			if (!(result instanceof org.springframework.amqp.core.Message)) {
+			if (result instanceof org.springframework.amqp.core.Message msg) {
+				return msg;
+			}
+			else {
 				throw new MessageConversionException("No MessageConverter specified - cannot handle message ["
 						+ result + "]");
 			}
-			return (org.springframework.amqp.core.Message) result;
 		}
 	}
 
@@ -417,10 +419,8 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		}
 
 		protected Type checkOptional(Type genericParameterType) {
-			if (genericParameterType instanceof ParameterizedType
-					&& ((ParameterizedType) genericParameterType).getRawType().equals(Optional.class)) {
-
-				return ((ParameterizedType) genericParameterType).getActualTypeArguments()[0];
+			if (genericParameterType instanceof ParameterizedType pType && pType.getRawType().equals(Optional.class)) {
+				return pType.getActualTypeArguments()[0];
 			}
 			return genericParameterType;
 		}
@@ -436,8 +436,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 					|| parameterType.equals(org.springframework.amqp.core.Message.class)) {
 				return false;
 			}
-			if (parameterType instanceof ParameterizedType) {
-				ParameterizedType parameterizedType = (ParameterizedType) parameterType;
+			if (parameterType instanceof ParameterizedType parameterizedType) {
 				if (parameterizedType.getRawType().equals(Message.class)) {
 					return !(parameterizedType.getActualTypeArguments()[0] instanceof WildcardType);
 				}
@@ -447,8 +446,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 		private Type extractGenericParameterTypFromMethodParameter(MethodParameter methodParameter) {
 			Type genericParameterType = methodParameter.getGenericParameterType();
-			if (genericParameterType instanceof ParameterizedType) {
-				ParameterizedType parameterizedType = (ParameterizedType) genericParameterType;
+			if (genericParameterType instanceof ParameterizedType parameterizedType) {
 				if (parameterizedType.getRawType().equals(Message.class)) {
 					genericParameterType = ((ParameterizedType) genericParameterType).getActualTypeArguments()[0];
 				}
@@ -459,8 +457,8 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 					this.isCollection = true;
 					Type paramType = parameterizedType.getActualTypeArguments()[0];
-					boolean messageHasGeneric = paramType instanceof ParameterizedType
-							&& ((ParameterizedType) paramType).getRawType().equals(Message.class);
+					boolean messageHasGeneric = paramType instanceof ParameterizedType pType
+							&& pType.getRawType().equals(Message.class);
 					this.isMessageList = paramType.equals(Message.class) || messageHasGeneric;
 					this.isAmqpMessageList = paramType.equals(org.springframework.amqp.core.Message.class);
 					if (messageHasGeneric) {
