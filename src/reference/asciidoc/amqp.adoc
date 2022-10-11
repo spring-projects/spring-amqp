@@ -796,7 +796,9 @@ Notice that the first three parameters are arrays of `addresses`, `adminUris`, a
 These are positional in that, when a container attempts to connect to a queue, it uses the admin API to determine which node is the lead for the queue and connects to the address in the same array position as that node.
 
 IMPORTANT: Starting with version 3.0, the RabbitMQ `http-client` is no longer used to access the Rest API.
-Instead, by default, the `WebClient` from Spring Webflux is used; which is not added to the class path by default.
+Instead, by default, the `WebClient` from Spring Webflux is used if `spring-webflux` is on the class path; otherwise a `RestTemplate` is used.
+
+To add `WebFlux` to the class path:
 
 .Maven
 ====
@@ -821,7 +823,7 @@ You can also use other REST technology by implementing `LocalizedQueueConnection
 ====
 [source, java]
 ----
-lqcf.setNodeLocator(new DefaultNodeLocator<MyClient>() {
+lqcf.setNodeLocator(new NodeLocator<MyClient>() {
 
     @Override
     public MyClient createClient(String userName, String password) {
@@ -836,6 +838,8 @@ lqcf.setNodeLocator(new DefaultNodeLocator<MyClient>() {
 });
 ----
 ====
+
+The framework provides the `WebFluxNodeLocator` and `RestTemplateNodeLocator`, with the default as discussed above.
 
 [[cf-pub-conf-ret]]
 ===== Publisher Confirms and Returns

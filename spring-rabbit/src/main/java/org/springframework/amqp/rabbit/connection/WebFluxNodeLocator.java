@@ -21,10 +21,12 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.Map;
 
 import org.springframework.amqp.rabbit.connection.LocalizedQueueConnectionFactory.NodeLocator;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
+import org.springframework.lang.Nullable;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunctions;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriUtils;
@@ -39,7 +41,8 @@ import org.springframework.web.util.UriUtils;
 public class WebFluxNodeLocator implements NodeLocator<WebClient> {
 
 	@Override
-	public HashMap<String, Object> restCall(WebClient client, String baseUri, String vhost, String queue)
+	@Nullable
+	public Map<String, Object> restCall(WebClient client, String baseUri, String vhost, String queue)
 			throws URISyntaxException {
 
 		URI uri = new URI(baseUri)

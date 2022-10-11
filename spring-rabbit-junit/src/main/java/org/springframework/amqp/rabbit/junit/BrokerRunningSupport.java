@@ -17,11 +17,16 @@
 package org.springframework.amqp.rabbit.junit;
 
 import java.io.IOException;
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -33,12 +38,8 @@ import java.util.concurrent.TimeoutException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.MediaType;
 import org.springframework.util.Base64Utils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.client.ExchangeFilterFunctions;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriUtils;
 
 import com.rabbitmq.client.Channel;
@@ -388,22 +389,35 @@ public final class BrokerRunningSupport {
 	}
 
 	private boolean alivenessTest() throws URISyntaxException {
-		WebClient client = WebClient.builder()
-				.filter(ExchangeFilterFunctions.basicAuthentication(this.adminUser, this.adminPassword))
+		HttpClient client = HttpClient.newBuilder()
+				.authenticator(new Authenticator() {
+
+					@Override
+					protected PasswordAuthentication getPasswordAuthentication() {
+						return new PasswordAuthentication(getAdminUser(), getAdminPassword().toCharArray());
+					}
+
+				})
 				.build();
 		URI uri = new URI(getAdminUri())
 				.resolve("/api/aliveness-test/" + UriUtils.encodePathSegment("/", StandardCharsets.UTF_8));
-		HashMap<String, String> result = client.get()
+		HttpRequest request = HttpRequest.newBuilder()
+				.GET()
 				.uri(uri)
-				.accept(MediaType.APPLICATION_JSON)
-				.retrieve()
-				.bodyToMono(new ParameterizedTypeReference<HashMap<String, String>>() {
-				})
-				.block(Duration.ofSeconds(10)); // NOSONAR magic#
-		if (result != null) {
-			return result.get("status").equals("ok");
+				.build();
+		HttpResponse<String> response;
+		try {
+			response = client.send(request, BodyHandlers.ofString());
 		}
-		return false;
+		catch (IOException ex) {
+			LOGGER.error("Exception checking admin aliveness", ex);
+			return false;
+		}
+		catch (InterruptedException ex) {
+			Thread.currentThread().interrupt();
+			return false;
+		}
+		return response.body().contentEquals("{\"status\":\"ok\"}");
 	}
 
 	public static boolean fatal() {
