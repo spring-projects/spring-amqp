@@ -438,6 +438,7 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 
 		/**
 		 * Retrieve a map of queue properties using the RabbitMQ Management REST API.
+		 * @param client the client.
 		 * @param baseUri the base uri.
 		 * @param vhost the virtual host.
 		 * @param queue the queue name.
