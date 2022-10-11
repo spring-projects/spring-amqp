@@ -390,6 +390,7 @@ project('spring-rabbit') {
 		optionalApi 'org.springframework:spring-webflux'
 		optionalApi "org.apache.httpcomponents.client5:httpclient5:$commonsHttpClientVersion"
 		optionalApi 'io.projectreactor:reactor-core'
+		optionalApi 'io.projectreactor.netty:reactor-netty-http'
 		optionalApi "ch.qos.logback:logback-classic:$logbackVersion"
 		optionalApi 'org.apache.logging.log4j:log4j-core'
 		optionalApi 'io.micrometer:micrometer-core'
