@@ -17,7 +17,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
+import java.net.URISyntaxException;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -35,7 +35,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-import org.springframework.web.util.UriUtils;
 
 /**
  * A {@link RoutingConnectionFactory} that determines the node on which a queue is located and
@@ -83,7 +82,7 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 
 	private final String trustStorePassPhrase;
 
-	private NodeLocator nodeLocator = new DefaultNodeLocator();
+	private NodeLocator<?> nodeLocator = new WebFluxNodeLocator();
 
 	/**
 	 * @param defaultConnectionFactory the fallback connection factory to use if the queue
@@ -206,7 +205,7 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	 * @param nodeLocator the locator.
 	 * @since 2.4.8
 	 */
-	public void setNodeLocator(NodeLocator nodeLocator) {
+	public void setNodeLocator(NodeLocator<?> nodeLocator) {
 		this.nodeLocator = nodeLocator;
 	}
 
@@ -254,7 +253,8 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	public ConnectionFactory getTargetConnectionFactory(Object key) {
 		String queue = ((String) key);
 		queue = queue.substring(1, queue.length() - 1);
-		Assert.isTrue(!queue.contains(","), () -> "Cannot use LocalizedQueueConnectionFactory with more than one queue: " + key);
+		Assert.isTrue(!queue.contains(","),
+				() -> "Cannot use LocalizedQueueConnectionFactory with more than one queue: " + key);
 		ConnectionFactory connectionFactory = determineConnectionFactory(queue);
 		if (connectionFactory == null) {
 			return this.defaultConnectionFactory;
@@ -345,10 +345,11 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 
 	/**
 	 * Used to obtain a connection factory for the queue leader.
+	 *
+	 * @param <T> the client type.
 	 * @since 2.4.8
 	 */
-	@FunctionalInterface
-	public interface NodeLocator {
+	public interface NodeLocator<T> {
 
 		LogAccessor LOGGER = new LogAccessor(LogFactory.getLog(NodeLocator.class));
 
@@ -364,8 +365,10 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 		 * @return a connection factory, if the leader node was found; null otherwise.
 		 */
 		@Nullable
-		default ConnectionFactory locate(String[] adminUris, Map<String, String> nodeToAddress, String vhost, String username,
-				String password, String queue, FactoryFinder factoryFunction) {
+		default ConnectionFactory locate(String[] adminUris, Map<String, String> nodeToAddress, String vhost,
+				String username, String password, String queue, FactoryFinder factoryFunction) {
+
+			T client = createClient(username, password);
 
 			for (int i = 0; i < adminUris.length; i++) {
 				String adminUri = adminUris[i];
@@ -373,15 +376,15 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 					adminUri += "/api/";
 				}
 				try {
-					URI uri = new URI(adminUri)
-							.resolve("/api/queues/" + UriUtils.encodePathSegment(vhost, StandardCharsets.UTF_8) + "/"
-									+ queue);
-					HashMap<String, Object> queueInfo = restCall(username, password, uri);
+					String uri = new URI(adminUri)
+							.resolve("/api/queues/").toString();
+					HashMap<String, Object> queueInfo = restCall(client, uri, vhost, queue);
 					if (queueInfo != null) {
 						String node = (String) queueInfo.get("node");
 						if (node != null) {
 							String nodeUri = nodeToAddress.get(node);
 							if (uri != null) {
+								close(client);
 								return factoryFunction.locate(queue, node, nodeUri);
 							}
 							if (LOGGER.isDebugEnabled()) {
@@ -399,17 +402,35 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 				}
 			}
 			LOGGER.warn("Failed to determine queue location for: " + queue + ", using default connection factory");
+			close(client);
 			return null;
 		}
 
 		/**
-		 * Retrieve a map of queue properties using the RabbitMQ Management REST API.
-		 * @param username the user name.
+		 * Create a client for subsequent use.
+		 * @param userName the user name.
 		 * @param password the password.
-		 * @param uri the uri.
-		 * @return the map of queue properties.
+		 * @return the client.
 		 */
-		HashMap<String, Object> restCall(String username, String password, URI uri);
+		T createClient(String userName, String password);
+
+		/**
+		 * Close the client.
+		 * @param client the client.
+		 */
+		default void close(T client) {
+		}
+
+		/**
+		 * Retrieve a map of queue properties using the RabbitMQ Management REST API.
+		 * @param baseUri the base uri.
+		 * @param vhost the virtual host.
+		 * @param queue the queue name.
+		 * @return the map of queue properties.
+		 * @throws URISyntaxException if the syntax is bad.
+		 */
+		HashMap<String, Object> restCall(T client, String baseUri, String vhost, String queue)
+				throws URISyntaxException;
 
 	}
 

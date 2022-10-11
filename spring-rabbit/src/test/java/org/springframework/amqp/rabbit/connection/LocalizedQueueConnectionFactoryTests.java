@@ -42,8 +42,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.internal.stubbing.answers.CallsRealMethods;
 
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
-import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
@@ -63,7 +61,6 @@ import reactor.core.publisher.Mono;
  * @author Gary Russell
  * @author Artem Bilan
  */
-@RabbitAvailable(queues = "local")
 public class LocalizedQueueConnectionFactoryTests {
 
 	private final Map<String, Channel> channels = new HashMap<String, Channel>();
@@ -100,10 +97,10 @@ public class LocalizedQueueConnectionFactoryTests {
 			}
 
 		};
-		lqcf.setNodeLocator(new DefaultNodeLocator() {
+		lqcf.setNodeLocator(new WebFluxNodeLocator() {
 
 			@Override
-			protected WebClient createClient(String username, String password) {
+			public WebClient createClient(String username, String password) {
 				return firstServer.get() ? client1 : client2;
 			}
 
@@ -169,18 +166,6 @@ public class LocalizedQueueConnectionFactoryTests {
 		return WebClient.builder()
 				.clientConnector(httpConnector)
 				.build();
-	}
-
-	@Test
-	void findLocal() {
-		ConnectionFactory defaultCf = mock(ConnectionFactory.class);
-		LocalizedQueueConnectionFactory lqcf = new LocalizedQueueConnectionFactory(defaultCf,
-				Map.of("rabbit@localhost", "localhost:5672"), new String[] { "http://localhost:15672" },
-				"/", "guest", "guest", false, null);
-		ConnectionFactory cf = lqcf.getTargetConnectionFactory("[local]");
-		RabbitAdmin admin = new RabbitAdmin(cf);
-		assertThat(admin.getQueueProperties("local")).isNotNull();
-		lqcf.destroy();
 	}
 
 	@Test

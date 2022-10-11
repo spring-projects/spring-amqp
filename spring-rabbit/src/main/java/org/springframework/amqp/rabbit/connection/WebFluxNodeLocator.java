@@ -17,6 +17,8 @@
 package org.springframework.amqp.rabbit.connection;
 
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.HashMap;
 
@@ -25,19 +27,23 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunctions;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriUtils;
 
 /**
- * Default {@link NodeLocator} using the Spring WebFlux {@link WebClient}.
+ * A {@link NodeLocator} using the Spring WebFlux {@link WebClient}.
  *
  * @author Gary Russell
  * @since 2.4.8
  *
  */
-public class DefaultNodeLocator implements NodeLocator {
+public class WebFluxNodeLocator implements NodeLocator<WebClient> {
 
 	@Override
-	public HashMap<String, Object> restCall(String username, String password, URI uri) {
-		WebClient client = createClient(username, password);
+	public HashMap<String, Object> restCall(WebClient client, String baseUri, String vhost, String queue)
+			throws URISyntaxException {
+
+		URI uri = new URI(baseUri)
+				.resolve("/api/queues/" + UriUtils.encodePathSegment(vhost, StandardCharsets.UTF_8) + "/" + queue);
 		HashMap<String, Object> queueInfo = client.get()
 				.uri(uri)
 				.accept(MediaType.APPLICATION_JSON)
@@ -54,7 +60,8 @@ public class DefaultNodeLocator implements NodeLocator {
 	 * @param password the password.
 	 * @return The client.
 	 */
-	protected WebClient createClient(String username, String password) {
+	@Override
+	public WebClient createClient(String username, String password) {
 		return WebClient.builder()
 				.filter(ExchangeFilterFunctions.basicAuthentication(username, password))
 				.build();
