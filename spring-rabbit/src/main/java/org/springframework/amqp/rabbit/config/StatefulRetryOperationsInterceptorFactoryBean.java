@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,11 +104,11 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 			if (messageRecoverer == null) {
 				logger.warn("Message(s) dropped on recovery: " + arg, cause);
 			}
-			else if (arg instanceof Message) {
-				messageRecoverer.recover((Message) arg, cause);
+			else if (arg instanceof Message msg) {
+				messageRecoverer.recover(msg, cause);
 			}
-			else if (arg instanceof List && messageRecoverer instanceof MessageBatchRecoverer) {
-				((MessageBatchRecoverer) messageRecoverer).recover((List<Message>) arg, cause);
+			else if (arg instanceof List && messageRecoverer instanceof MessageBatchRecoverer recoverer) {
+				recoverer.recover((List<Message>) arg, cause);
 			}
 			// This is actually a normal outcome. It means the recovery was successful, but we don't want to consume
 			// any more messages until the acks and commits are sent for this (problematic) message...
@@ -137,8 +137,8 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 	private Message argToMessage(Object[] args) {
 		Object arg = args[1];
 		Message message = null;
-		if (arg instanceof Message) {
-			message = (Message) arg;
+		if (arg instanceof Message msg) {
+			message = msg;
 		}
 		else if (arg instanceof List) {
 			message = ((List<Message>) arg).get(0);

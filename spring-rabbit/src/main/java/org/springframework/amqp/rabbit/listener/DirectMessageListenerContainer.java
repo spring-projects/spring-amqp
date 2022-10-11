@@ -963,8 +963,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			this.queue = queue;
 			this.index = index;
 			this.ackRequired = !getAcknowledgeMode().isAutoAck() && !getAcknowledgeMode().isManual();
-			if (channel instanceof ChannelProxy) {
-				this.targetChannel = ((ChannelProxy) channel).getTargetChannel();
+			if (channel instanceof ChannelProxy proxy) {
+				this.targetChannel = proxy.getTargetChannel();
 			}
 			else {
 				this.targetChannel = null;
@@ -1050,9 +1050,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				try {
 					executeListenerInTransaction(data, deliveryTag);
 				}
-				catch (WrappedTransactionException e) {
-					if (e.getCause() instanceof Error) {
-						throw (Error) e.getCause();
+				catch (WrappedTransactionException ex) {
+					if (ex.getCause() instanceof Error error) {
+						throw error;
 					}
 				}
 				catch (Exception e) {

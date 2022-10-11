@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 the original author or authors.
+ * Copyright 2014-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,8 +131,8 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 	public void handleError(Throwable t) {
 		log(t);
 		if (!this.causeChainContainsARADRE(t) && this.exceptionStrategy.isFatal(t)) {
-			if (this.discardFatalsWithXDeath && t instanceof ListenerExecutionFailedException) {
-				Message failed = ((ListenerExecutionFailedException) t).getFailedMessage();
+			if (this.discardFatalsWithXDeath && t instanceof ListenerExecutionFailedException lefe) {
+				Message failed = lefe.getFailedMessage();
 				if (failed != null) {
 					List<Map<String, ?>> xDeath = failed.getMessageProperties().getXDeathHeader();
 					if (xDeath != null && xDeath.size() > 0) {
@@ -205,8 +205,8 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 					&& !(cause instanceof MethodArgumentResolutionException)) {
 				cause = cause.getCause();
 			}
-			if (t instanceof ListenerExecutionFailedException && isCauseFatal(cause)) {
-				logFatalException((ListenerExecutionFailedException) t, cause);
+			if (t instanceof ListenerExecutionFailedException lefe && isCauseFatal(cause)) {
+				logFatalException(lefe, cause);
 				return true;
 			}
 			return false;

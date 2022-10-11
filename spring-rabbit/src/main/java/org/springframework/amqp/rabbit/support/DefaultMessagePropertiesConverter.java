@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,8 +92,8 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 				String key = entry.getKey();
 				if (MessageProperties.X_DELAY.equals(key)) {
 					Object value = entry.getValue();
-					if (value instanceof Integer) {
-						target.setReceivedDelay((Integer) value);
+					if (value instanceof Integer integ) {
+						target.setReceivedDelay(integ);
 					}
 				}
 				else {
@@ -192,8 +192,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		if (!valid && value != null) {
 			value = value.toString();
 		}
-		else if (value instanceof Object[]) {
-			Object[] array = (Object[]) value;
+		else if (value instanceof Object[] array) {
 			Object[] writableArray = new Object[array.length];
 			for (int i = 0; i < writableArray.length; i++) {
 				writableArray[i] = convertHeaderValueIfNecessary(array[i]);
@@ -216,8 +215,8 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 			}
 			value = writableMap;
 		}
-		else if (value instanceof Class) {
-			value = ((Class<?>) value).getName();
+		else if (value instanceof Class<?> clazz) {
+			value = clazz.getName();
 		}
 		return value;
 	}
@@ -254,8 +253,8 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	 */
 	private Object convertLongStringIfNecessary(Object valueArg, String charset) {
 		Object value = valueArg;
-		if (value instanceof LongString) {
-			value = convertLongString((LongString) value, charset);
+		if (value instanceof LongString longStr) {
+			value = convertLongString(longStr, charset);
 		}
 		else if (value instanceof List<?>) {
 			List<Object> convertedList = new ArrayList<Object>(((List<?>) value).size());

@@ -1291,8 +1291,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				}
 				else {
 					this.target.close();
-					if (this.target instanceof AutorecoveringChannel) {
-						ClosingRecoveryListener.removeChannel((AutorecoveringChannel) this.target);
+					if (this.target instanceof AutorecoveringChannel auto) {
+						ClosingRecoveryListener.removeChannel(auto);
 					}
 				}
 			}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -156,8 +156,8 @@ public abstract class RabbitUtils {
 	}
 
 	public static void closeMessageConsumer(Channel channel, Collection<String> consumerTags, boolean transactional) {
-		if (!channel.isOpen() && !(channel instanceof ChannelProxy
-					&& ((ChannelProxy) channel).getTargetChannel() instanceof AutorecoveringChannel)
+		if (!channel.isOpen() && !(channel instanceof ChannelProxy proxy
+					&& proxy.getTargetChannel() instanceof AutorecoveringChannel)
 				&& !(channel instanceof AutorecoveringChannel)) {
 			return;
 		}
@@ -251,9 +251,9 @@ public abstract class RabbitUtils {
 	 */
 	public static boolean isNormalShutdown(ShutdownSignalException sig) {
 		Method shutdownReason = sig.getReason();
-		return shutdownReason instanceof AMQP.Connection.Close
-				&& AMQP.REPLY_SUCCESS == ((AMQP.Connection.Close) shutdownReason).getReplyCode()
-				&& "OK".equals(((AMQP.Connection.Close) shutdownReason).getReplyText());
+		return shutdownReason instanceof AMQP.Connection.Close closeReason
+				&& AMQP.REPLY_SUCCESS == closeReason.getReplyCode()
+				&& "OK".equals(closeReason.getReplyText());
 	}
 
 	/**
@@ -265,9 +265,9 @@ public abstract class RabbitUtils {
 	public static boolean isNormalChannelClose(ShutdownSignalException sig) {
 		Method shutdownReason = sig.getReason();
 		return isNormalShutdown(sig) ||
-				(shutdownReason instanceof AMQP.Channel.Close
-					&& AMQP.REPLY_SUCCESS == ((AMQP.Channel.Close) shutdownReason).getReplyCode()
-					&& "OK".equals(((AMQP.Channel.Close) shutdownReason).getReplyText()));
+				(shutdownReason instanceof AMQP.Channel.Close closeReason
+					&& AMQP.REPLY_SUCCESS == closeReason.getReplyCode()
+					&& "OK".equals(closeReason.getReplyText()));
 	}
 
 	/**
@@ -278,11 +278,11 @@ public abstract class RabbitUtils {
 	 */
 	public static boolean isPassiveDeclarationChannelClose(ShutdownSignalException sig) {
 		Method shutdownReason = sig.getReason();
-		return shutdownReason instanceof AMQP.Channel.Close // NOSONAR boolean complexity
-				&& AMQP.NOT_FOUND == ((AMQP.Channel.Close) shutdownReason).getReplyCode()
-				&& ((((AMQP.Channel.Close) shutdownReason).getClassId() == EXCHANGE_CLASS_ID_40
-					|| ((AMQP.Channel.Close) shutdownReason).getClassId() == QUEUE_CLASS_ID_50)
-					&& ((AMQP.Channel.Close) shutdownReason).getMethodId() == DECLARE_METHOD_ID_10);
+		return shutdownReason instanceof AMQP.Channel.Close closeReason // NOSONAR boolean complexity
+				&& AMQP.NOT_FOUND == closeReason.getReplyCode()
+				&& ((closeReason.getClassId() == EXCHANGE_CLASS_ID_40
+					|| closeReason.getClassId() == QUEUE_CLASS_ID_50)
+					&& closeReason.getMethodId() == DECLARE_METHOD_ID_10);
 	}
 
 	/**
@@ -294,11 +294,11 @@ public abstract class RabbitUtils {
 	 */
 	public static boolean isExclusiveUseChannelClose(ShutdownSignalException sig) {
 		Method shutdownReason = sig.getReason();
-		return shutdownReason instanceof AMQP.Channel.Close // NOSONAR boolean complexity
-				&& AMQP.ACCESS_REFUSED == ((AMQP.Channel.Close) shutdownReason).getReplyCode()
-				&& ((AMQP.Channel.Close) shutdownReason).getClassId() == BASIC_CLASS_ID_60
-				&& ((AMQP.Channel.Close) shutdownReason).getMethodId() == CONSUME_METHOD_ID_20
-				&& ((AMQP.Channel.Close) shutdownReason).getReplyText().contains("exclusive");
+		return shutdownReason instanceof AMQP.Channel.Close closeReason // NOSONAR boolean complexity
+				&& AMQP.ACCESS_REFUSED == closeReason.getReplyCode()
+				&& closeReason.getClassId() == BASIC_CLASS_ID_60
+				&& closeReason.getMethodId() == CONSUME_METHOD_ID_20
+				&& closeReason.getReplyText().contains("exclusive");
 	}
 
 	/**
@@ -324,10 +324,10 @@ public abstract class RabbitUtils {
 		}
 		else {
 			Method shutdownReason = sig.getReason();
-			return shutdownReason instanceof AMQP.Channel.Close
-					&& AMQP.PRECONDITION_FAILED == ((AMQP.Channel.Close) shutdownReason).getReplyCode()
-					&& ((AMQP.Channel.Close) shutdownReason).getClassId() == QUEUE_CLASS_ID_50
-					&& ((AMQP.Channel.Close) shutdownReason).getMethodId() == DECLARE_METHOD_ID_10;
+			return shutdownReason instanceof AMQP.Channel.Close closeReason
+					&& AMQP.PRECONDITION_FAILED == closeReason.getReplyCode()
+					&& closeReason.getClassId() == QUEUE_CLASS_ID_50
+					&& closeReason.getMethodId() == DECLARE_METHOD_ID_10;
 		}
 	}
 
@@ -354,10 +354,10 @@ public abstract class RabbitUtils {
 		}
 		else {
 			Method shutdownReason = sig.getReason();
-			return shutdownReason instanceof AMQP.Connection.Close
-					&& AMQP.COMMAND_INVALID == ((AMQP.Connection.Close) shutdownReason).getReplyCode()
-					&& ((AMQP.Connection.Close) shutdownReason).getClassId() == EXCHANGE_CLASS_ID_40
-					&& ((AMQP.Connection.Close) shutdownReason).getMethodId() == DECLARE_METHOD_ID_10;
+			return shutdownReason instanceof AMQP.Connection.Close closeReason
+					&& AMQP.COMMAND_INVALID == closeReason.getReplyCode()
+					&& closeReason.getClassId() == EXCHANGE_CLASS_ID_40
+					&& closeReason.getMethodId() == DECLARE_METHOD_ID_10;
 		}
 	}
 

@@ -627,8 +627,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	@Override
 	public ConnectionFactory getConnectionFactory() {
 		ConnectionFactory connectionFactory = super.getConnectionFactory();
-		if (connectionFactory instanceof RoutingConnectionFactory) {
-			ConnectionFactory targetConnectionFactory = ((RoutingConnectionFactory) connectionFactory)
+		if (connectionFactory instanceof RoutingConnectionFactory rcf) {
+			ConnectionFactory targetConnectionFactory = rcf
 					.getTargetConnectionFactory(getRoutingLookupKey()); // NOSONAR never null
 			if (targetConnectionFactory != null) {
 				return targetConnectionFactory;
@@ -696,9 +696,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	@Nullable
 	protected RoutingConnectionFactory getRoutingConnectionFactory() {
-		return super.getConnectionFactory() instanceof RoutingConnectionFactory
-				? (RoutingConnectionFactory) super.getConnectionFactory()
-				: null;
+		return super.getConnectionFactory() instanceof RoutingConnectionFactory rcf ? rcf  : null;
 	}
 
 	/**
@@ -1565,20 +1563,20 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		try {
 			doExecuteListener(channel, data);
 			if (sample != null) {
-				this.micrometerHolder.success(sample, data instanceof Message
-						? ((Message) data).getMessageProperties().getConsumerQueue()
+				this.micrometerHolder.success(sample, data instanceof Message message
+						? message.getMessageProperties().getConsumerQueue()
 						: queuesAsListString());
 			}
 		}
 		catch (RuntimeException ex) {
 			if (sample != null) {
-				this.micrometerHolder.failure(sample, data instanceof Message
-						? ((Message) data).getMessageProperties().getConsumerQueue()
+				this.micrometerHolder.failure(sample, data instanceof Message message
+						? message.getMessageProperties().getConsumerQueue()
 						: queuesAsListString(), ex.getClass().getSimpleName());
 			}
 			Message message;
-			if (data instanceof Message) {
-				message = (Message) data;
+			if (data instanceof Message msg) {
+				message = msg;
 			}
 			else {
 				message = ((List<Message>) data).get(0);
@@ -1604,8 +1602,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	private void doExecuteListener(Channel channel, Object data) {
-		if (data instanceof Message) {
-			Message message = (Message) data;
+		if (data instanceof Message message) {
 			if (this.afterReceivePostProcessors != null) {
 				for (MessagePostProcessor processor : this.afterReceivePostProcessors) {
 					message = processor.postProcessMessage(message);
@@ -1639,10 +1636,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	protected void actualInvokeListener(Channel channel, Object data) {
 		Object listener = getMessageListener();
-		if (listener instanceof ChannelAwareMessageListener) {
-			doInvokeListener((ChannelAwareMessageListener) listener, channel, data);
+		if (listener instanceof ChannelAwareMessageListener chaml) {
+			doInvokeListener(chaml, channel, data);
 		}
-		else if (listener instanceof MessageListener) {
+		else if (listener instanceof MessageListener msgListener) {
 			boolean bindChannel = isExposeListenerChannel() && isChannelLocallyTransacted();
 			if (bindChannel) {
 				RabbitResourceHolder resourceHolder = new RabbitResourceHolder(channel, false);
@@ -1651,7 +1648,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 						resourceHolder);
 			}
 			try {
-				doInvokeListener((MessageListener) listener, data);
+				doInvokeListener(msgListener, data);
 			}
 			finally {
 				if (bindChannel) {
@@ -2149,8 +2146,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 		@Override
 		public void log(Log logger, String message, Throwable t) {
-			if (t instanceof ShutdownSignalException) {
-				ShutdownSignalException cause = (ShutdownSignalException) t;
+			if (t instanceof ShutdownSignalException cause) {
 				if (RabbitUtils.isExclusiveUseChannelClose(cause)) {
 					if (logger.isWarnEnabled()) {
 						logger.warn(message + ": " + cause.toString());

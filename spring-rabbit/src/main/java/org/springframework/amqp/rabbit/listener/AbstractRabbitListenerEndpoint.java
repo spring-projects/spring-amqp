@@ -99,9 +99,9 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
 		this.beanFactory = beanFactory;
-		if (beanFactory instanceof ConfigurableListableBeanFactory) {
-			this.resolver = ((ConfigurableListableBeanFactory) beanFactory).getBeanExpressionResolver();
-			this.expressionContext = new BeanExpressionContext((ConfigurableListableBeanFactory) beanFactory, null);
+		if (beanFactory instanceof ConfigurableListableBeanFactory clbf) {
+			this.resolver = clbf.getBeanExpressionResolver();
+			this.expressionContext = new BeanExpressionContext(clbf, null);
 		}
 		this.beanResolver = new BeanFactoryResolver(beanFactory);
 	}
@@ -301,6 +301,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 		return this.batchListener == null ? false : this.batchListener;
 	}
 
+	@Override
 	/**
 	 * True if this endpoint is for a batch listener.
 	 * @return {@link Boolean#TRUE} if batch.
@@ -389,9 +390,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	public void setupListenerContainer(MessageListenerContainer listenerContainer) {
 		Collection<String> qNames = getQueueNames();
 		boolean queueNamesEmpty = qNames.isEmpty();
-		if (listenerContainer instanceof AbstractMessageListenerContainer) {
-			AbstractMessageListenerContainer container = (AbstractMessageListenerContainer) listenerContainer;
-
+		if (listenerContainer instanceof AbstractMessageListenerContainer container) {
 			boolean queuesEmpty = getQueues().isEmpty();
 			if (!queuesEmpty && !queueNamesEmpty) {
 				throw new IllegalStateException("Queues or queue names must be provided but not both for " + this);

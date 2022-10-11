@@ -374,12 +374,12 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	 */
 	protected void handleResult(InvocationResult resultArg, Message request, Channel channel, Object source) {
 		if (channel != null) {
-			if (resultArg.getReturnValue() instanceof CompletableFuture) {
+			if (resultArg.getReturnValue() instanceof CompletableFuture<?> completable) {
 				if (!this.isManualAck) {
 					this.logger.warn("Container AcknowledgeMode must be MANUAL for a Future<?> return type; "
 							+ "otherwise the container will ack the message immediately");
 				}
-				((CompletableFuture<?>) resultArg.getReturnValue()).whenComplete((r, t) -> {
+				completable.whenComplete((r, t) -> {
 						if (t == null) {
 							asyncSuccess(resultArg, request, channel, source, r);
 							basicAck(request, channel);
@@ -498,11 +498,13 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 			return convert(result, genericType, converter);
 		}
 		else {
-			if (!(result instanceof Message)) {
+			if (result instanceof Message msg) {
+				return msg;
+			}
+			else {
 				throw new MessageConversionException("No MessageConverter specified - cannot handle message ["
 						+ result + "]");
 			}
-			return (Message) result;
 		}
 	}
 
@@ -593,8 +595,8 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 		Object value = expression.getValue(this.evalContext, new ReplyExpressionRoot(request, source, result));
 		Assert.state(value instanceof String || value instanceof Address,
 				"response expression must evaluate to a String or Address");
-		if (value instanceof String) {
-			replyTo = new Address((String) value);
+		if (value instanceof String sValue) {
+			replyTo = new Address(sValue);
 		}
 		else {
 			replyTo = (Address) value;

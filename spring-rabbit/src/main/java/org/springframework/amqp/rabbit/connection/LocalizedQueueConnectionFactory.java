@@ -339,9 +339,9 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	public void resetConnection() {
 		Exception lastException = null;
 		for (ConnectionFactory connectionFactory : this.nodeFactories.values()) {
-			if (connectionFactory instanceof DisposableBean) {
+			if (connectionFactory instanceof DisposableBean disposable) {
 				try {
-					((DisposableBean) connectionFactory).destroy();
+					disposable.destroy();
 				}
 				catch (Exception e) {
 					lastException = e;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,8 +79,8 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 
 	@Override
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-		if (applicationContext instanceof ConfigurableApplicationContext) {
-			this.applicationContext = (ConfigurableApplicationContext) applicationContext;
+		if (applicationContext instanceof ConfigurableApplicationContext configurable) {
+			this.applicationContext = configurable;
 		}
 	}
 
@@ -209,9 +209,9 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 	@Override
 	public void destroy() {
 		for (MessageListenerContainer listenerContainer : getListenerContainers()) {
-			if (listenerContainer instanceof DisposableBean) {
+			if (listenerContainer instanceof DisposableBean disposable) {
 				try {
-					((DisposableBean) listenerContainer).destroy();
+					disposable.destroy();
 				}
 				catch (Exception ex) {
 					this.logger.warn("Failed to destroy listener container [" + listenerContainer + "]", ex);

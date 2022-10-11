@@ -1098,9 +1098,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	private ConnectionFactory obtainTargetConnectionFactory(Expression expression, @Nullable Object rootObject) {
-		if (expression != null && getConnectionFactory() instanceof AbstractRoutingConnectionFactory) {
-			AbstractRoutingConnectionFactory routingConnectionFactory =
-					(AbstractRoutingConnectionFactory) getConnectionFactory();
+		if (expression != null && getConnectionFactory() instanceof AbstractRoutingConnectionFactory routingCF) {
 			Object lookupKey;
 			if (rootObject != null) {
 				lookupKey = expression.getValue(this.evaluationContext, rootObject);
@@ -1109,11 +1107,11 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				lookupKey = expression.getValue(this.evaluationContext);
 			}
 			if (lookupKey != null) {
-				ConnectionFactory connectionFactory = routingConnectionFactory.getTargetConnectionFactory(lookupKey);
+				ConnectionFactory connectionFactory = routingCF.getTargetConnectionFactory(lookupKey);
 				if (connectionFactory != null) {
 					return connectionFactory;
 				}
-				else if (!routingConnectionFactory.isLenientFallback()) {
+				else if (!routingCF.isLenientFallback()) {
 					throw new IllegalStateException("Cannot determine target ConnectionFactory for lookup key ["
 							+ lookupKey + "]");
 				}
@@ -1843,8 +1841,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	protected Message convertMessageIfNecessary(final Object object) {
-		if (object instanceof Message) {
-			return (Message) object;
+		if (object instanceof Message msg) {
+			return msg;
 		}
 		return getRequiredMessageConverter().toMessage(object, new MessageProperties());
 	}
@@ -2316,8 +2314,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	private ConfirmListener addConfirmListener(@Nullable com.rabbitmq.client.ConfirmCallback acks,
 			@Nullable com.rabbitmq.client.ConfirmCallback nacks, Channel channel) {
 		ConfirmListener listener = null;
-		if (acks != null && nacks != null && channel instanceof ChannelProxy
-				&& ((ChannelProxy) channel).isConfirmSelected()) {
+		if (acks != null && nacks != null && channel instanceof ChannelProxy proxy
+				&& proxy.isConfirmSelected()) {
 			listener = channel.addConfirmListener(acks, nacks);
 		}
 		return listener;
@@ -2474,14 +2472,13 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	private void setupConfirm(Channel channel, Message message, @Nullable CorrelationData correlationDataArg) {
-		final boolean publisherConfirms = channel instanceof ChannelProxy
-				&& ((ChannelProxy) channel).isPublisherConfirms();
+		final boolean publisherConfirms = channel instanceof ChannelProxy proxy
+				&& proxy.isPublisherConfirms();
 
 		if ((publisherConfirms || this.confirmCallback != null)
-				&& channel instanceof PublisherCallbackChannel) {
+				&& channel instanceof PublisherCallbackChannel publisherCallbackChannel) {
 			long nextPublishSeqNo = channel.getNextPublishSeqNo();
 			if (nextPublishSeqNo > 0) {
-				PublisherCallbackChannel publisherCallbackChannel = (PublisherCallbackChannel) channel;
 				CorrelationData correlationData = this.correlationDataPostProcessor != null
 						? this.correlationDataPostProcessor.postProcess(message, correlationDataArg)
 						: correlationDataArg;
@@ -2497,7 +2494,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				logger.debug("Factory does not have confirms enabled");
 			}
 		}
-		else if (channel instanceof ChannelProxy && ((ChannelProxy) channel).isConfirmSelected()) {
+		else if (channel instanceof ChannelProxy proxy && proxy.isConfirmSelected()) {
 			long nextPublishSeqNo = channel.getNextPublishSeqNo();
 			message.getMessageProperties().setPublishSequenceNumber(nextPublishSeqNo);
 		}
@@ -2596,9 +2593,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @since 2.0
 	 */
 	public void addListener(Channel channel) {
-		if (channel instanceof PublisherCallbackChannel) {
-			PublisherCallbackChannel publisherCallbackChannel = (PublisherCallbackChannel) channel;
-			Channel key = channel instanceof ChannelProxy ? ((ChannelProxy) channel).getTargetChannel() : channel;
+		if (channel instanceof PublisherCallbackChannel publisherCallbackChannel) {
+			Channel key = channel instanceof ChannelProxy proxy ? proxy.getTargetChannel() : channel;
 			if (this.publisherConfirmChannels.putIfAbsent(key, this) == null) {
 				publisherCallbackChannel.addListener(this);
 				if (logger.isDebugEnabled()) {
@@ -2760,8 +2756,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		};
 		channel.basicConsume(queueName, consumer);
 		if (!latch.await(timeoutMillis, TimeUnit.MILLISECONDS)) {
-			if (channel instanceof ChannelProxy) {
-				((ChannelProxy) channel).getTargetChannel().close();
+			if (channel instanceof ChannelProxy proxy) {
+				proxy.getTargetChannel().close();
 			}
 			future.completeExceptionally(
 					new ConsumeOkNotReceivedException("Blocking receive, consumer failed to consume within "

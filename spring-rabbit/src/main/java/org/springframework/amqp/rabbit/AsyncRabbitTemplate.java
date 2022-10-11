@@ -581,8 +581,8 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 						MessageConverter messageConverter = this.template.getMessageConverter();
 						RabbitConverterFuture<Object> rabbitFuture = (RabbitConverterFuture<Object>) future;
 						Object converted = rabbitFuture.getReturnType() != null
-								&& messageConverter instanceof SmartMessageConverter
-								? ((SmartMessageConverter) messageConverter).fromMessage(message,
+								&& messageConverter instanceof SmartMessageConverter smart
+								? smart.fromMessage(message,
 								rabbitFuture.getReturnType())
 								: messageConverter.fromMessage(message);
 						rabbitFuture.complete(converted);

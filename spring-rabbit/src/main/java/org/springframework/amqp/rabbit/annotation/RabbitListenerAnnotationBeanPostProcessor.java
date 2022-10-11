@@ -229,9 +229,9 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
 		this.beanFactory = beanFactory;
-		if (beanFactory instanceof ConfigurableListableBeanFactory) {
-			this.resolver = ((ConfigurableListableBeanFactory) beanFactory).getBeanExpressionResolver();
-			this.expressionContext = new BeanExpressionContext((ConfigurableListableBeanFactory) beanFactory, null);
+		if (beanFactory instanceof ConfigurableListableBeanFactory clbf) {
+			this.resolver = clbf.getBeanExpressionResolver();
+			this.expressionContext = new BeanExpressionContext(clbf, null);
 		}
 	}
 
@@ -265,9 +265,9 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	public void afterSingletonsInstantiated() {
 		this.registrar.setBeanFactory(this.beanFactory);
 
-		if (this.beanFactory instanceof ListableBeanFactory) {
+		if (this.beanFactory instanceof ListableBeanFactory lbf) {
 			Map<String, RabbitListenerConfigurer> instances =
-					((ListableBeanFactory) this.beanFactory).getBeansOfType(RabbitListenerConfigurer.class);
+					lbf.getBeansOfType(RabbitListenerConfigurer.class);
 			for (RabbitListenerConfigurer configurer : instances.values()) {
 				configurer.configureRabbitListeners(this.registrar);
 			}
@@ -445,8 +445,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		String group = rabbitListener.group();
 		if (StringUtils.hasText(group)) {
 			Object resolvedGroup = resolveExpression(group);
-			if (resolvedGroup instanceof String) {
-				endpoint.setGroup((String) resolvedGroup);
+			if (resolvedGroup instanceof String str) {
+				endpoint.setGroup(str);
 			}
 		}
 		String autoStartup = rabbitListener.autoStartup();
@@ -483,8 +483,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	private void resolveErrorHandler(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener) {
 		Object errorHandler = resolveExpression(rabbitListener.errorHandler());
-		if (errorHandler instanceof RabbitListenerErrorHandler) {
-			endpoint.setErrorHandler((RabbitListenerErrorHandler) errorHandler);
+		if (errorHandler instanceof RabbitListenerErrorHandler rleh) {
+			endpoint.setErrorHandler(rleh);
 		}
 		else {
 			String errorHandlerBeanName = resolveExpressionAsString(rabbitListener.errorHandler(), "errorHandler");
@@ -499,11 +499,11 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		String ackModeAttr = rabbitListener.ackMode();
 		if (StringUtils.hasText(ackModeAttr)) {
 			Object ackMode = resolveExpression(ackModeAttr);
-			if (ackMode instanceof String) {
-				endpoint.setAckMode(AcknowledgeMode.valueOf((String) ackMode));
+			if (ackMode instanceof String str) {
+				endpoint.setAckMode(AcknowledgeMode.valueOf(str));
 			}
-			else if (ackMode instanceof AcknowledgeMode) {
-				endpoint.setAckMode((AcknowledgeMode) ackMode);
+			else if (ackMode instanceof AcknowledgeMode mode) {
+				endpoint.setAckMode(mode);
 			}
 			else {
 				Assert.isNull(ackMode, "ackMode must resolve to a String or AcknowledgeMode");
@@ -513,8 +513,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	private void resolveAdmin(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener, Object adminTarget) {
 		Object resolved = resolveExpression(rabbitListener.admin());
-		if (resolved instanceof AmqpAdmin) {
-			endpoint.setAdmin((AmqpAdmin) resolved);
+		if (resolved instanceof AmqpAdmin admin) {
+			endpoint.setAdmin(admin);
 		}
 		else {
 			String rabbitAdmin = resolveExpressionAsString(rabbitListener.admin(), "admin");
@@ -538,8 +538,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 		RabbitListenerContainerFactory<?> factory = null;
 		Object resolved = resolveExpression(rabbitListener.containerFactory());
-		if (resolved instanceof RabbitListenerContainerFactory) {
-			return (RabbitListenerContainerFactory<?>) resolved;
+		if (resolved instanceof RabbitListenerContainerFactory<?> rlcf) {
+			return rlcf;
 		}
 		String containerFactoryBeanName = resolveExpressionAsString(rabbitListener.containerFactory(),
 				"containerFactory");
@@ -561,8 +561,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			Object execTarget, String beanName) {
 
 		Object resolved = resolveExpression(rabbitListener.executor());
-		if (resolved instanceof TaskExecutor) {
-			endpoint.setTaskExecutor((TaskExecutor) resolved);
+		if (resolved instanceof TaskExecutor tex) {
+			endpoint.setTaskExecutor(tex);
 		}
 		else {
 			String execBeanName = resolveExpressionAsString(rabbitListener.executor(), "executor");
@@ -583,8 +583,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			Object target, String beanName) {
 
 		Object resolved = resolveExpression(rabbitListener.replyPostProcessor());
-		if (resolved instanceof ReplyPostProcessor) {
-			endpoint.setReplyPostProcessor((ReplyPostProcessor) resolved);
+		if (resolved instanceof ReplyPostProcessor rpp) {
+			endpoint.setReplyPostProcessor(rpp);
 		}
 		else {
 			String ppBeanName = resolveExpressionAsString(rabbitListener.replyPostProcessor(), "replyPostProcessor");
@@ -605,8 +605,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			Object target, String beanName) {
 
 		Object resolved = resolveExpression(rabbitListener.messageConverter());
-		if (resolved instanceof MessageConverter) {
-			endpoint.setMessageConverter((MessageConverter) resolved);
+		if (resolved instanceof MessageConverter converter) {
+			endpoint.setMessageConverter(converter);
 		}
 		else {
 			String mcBeanName = resolveExpressionAsString(rabbitListener.messageConverter(), "messageConverter");
@@ -704,20 +704,20 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			String what) {
 
 		Object resolvedValueToUse = resolvedValue;
-		if (resolvedValue instanceof String[]) {
-			resolvedValueToUse = Arrays.asList((String[]) resolvedValue);
+		if (resolvedValue instanceof String[] strings) {
+			resolvedValueToUse = Arrays.asList(strings);
 		}
-		if (queues != null && resolvedValueToUse instanceof Queue) {
+		if (queues != null && resolvedValueToUse instanceof Queue q) {
 			if (!names.isEmpty()) {
 				// revert to the previous behavior of just using the name when there is mixture of String and Queue
-				names.add(((Queue) resolvedValueToUse).getName());
+				names.add(q.getName());
 			}
 			else {
-				queues.add((Queue) resolvedValueToUse);
+				queues.add(q);
 			}
 		}
-		else if (resolvedValueToUse instanceof String) {
-			names.add((String) resolvedValueToUse);
+		else if (resolvedValueToUse instanceof String str) {
+			names.add(str);
 		}
 		else if (resolvedValueToUse instanceof Iterable) {
 			for (Object object : (Iterable<Object>) resolvedValueToUse) {
@@ -858,8 +858,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				Object type = resolveExpression(arg.type());
 				Class<?> typeClass;
 				String typeName;
-				if (type instanceof Class) {
-					typeClass = (Class<?>) type;
+				if (type instanceof Class<?> clazz) {
+					typeClass = clazz;
 					typeName = typeClass.getName();
 				}
 				else {
@@ -924,12 +924,11 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	private boolean resolveExpressionAsBoolean(String value, boolean defaultValue) {
 		Object resolved = resolveExpression(value);
-		if (resolved instanceof Boolean) {
-			return (Boolean) resolved;
+		if (resolved instanceof Boolean bool) {
+			return bool;
 		}
-		else if (resolved instanceof String) {
-			final String s = (String) resolved;
-			return StringUtils.hasText(s) ? Boolean.parseBoolean(s) : defaultValue;
+		else if (resolved instanceof String str) {
+			return StringUtils.hasText(str) ? Boolean.parseBoolean(str) : defaultValue;
 		}
 		else {
 			return defaultValue;
@@ -938,8 +937,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	protected String resolveExpressionAsString(String value, String attribute) {
 		Object resolved = resolveExpression(value);
-		if (resolved instanceof String) {
-			return (String) resolved;
+		if (resolved instanceof String str) {
+			return str;
 		}
 		else {
 			throw new IllegalStateException("The [" + attribute + "] must resolve to a String. "
@@ -952,8 +951,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			return null;
 		}
 		Object resolved = resolveExpression(value);
-		if (resolved instanceof String) {
-			return (String) resolved;
+		if (resolved instanceof String str) {
+			return str;
 		}
 		else if (resolved instanceof Integer) {
 			return resolved.toString();
@@ -977,8 +976,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	 * @see ConfigurableBeanFactory#resolveEmbeddedValue
 	 */
 	private String resolve(String value) {
-		if (this.beanFactory != null && this.beanFactory instanceof ConfigurableBeanFactory) {
-			return ((ConfigurableBeanFactory) this.beanFactory).resolveEmbeddedValue(value);
+		if (this.beanFactory != null && this.beanFactory instanceof ConfigurableBeanFactory cbf) {
+			return cbf.resolveEmbeddedValue(value);
 		}
 		return value;
 	}
@@ -1086,8 +1085,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 
 		private boolean isOptional(Message<?> message, Type type) {
-			return (Optional.class.equals(type) || (type instanceof ParameterizedType
-						&& Optional.class.equals(((ParameterizedType) type).getRawType())))
+			return (Optional.class.equals(type) || (type instanceof ParameterizedType pType
+						&& Optional.class.equals(pType.getRawType())))
 					&& message.getPayload().equals(Optional.empty());
 		}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 the original author or authors.
+ * Copyright 2014-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -952,10 +952,10 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		private void doSend(RabbitTemplate rabbitTemplate, final Event event, ILoggingEvent logEvent, String name,
 				MessageProperties amqpProps, String routingKey) {
 			byte[] msgBody;
-			if (AmqpAppender.this.abbreviator != null && logEvent instanceof LoggingEvent) {
-				((LoggingEvent) logEvent).setLoggerName(AmqpAppender.this.abbreviator.abbreviate(name));
+			if (AmqpAppender.this.abbreviator != null && logEvent instanceof LoggingEvent logEv) {
+				logEv.setLoggerName(AmqpAppender.this.abbreviator.abbreviate(name));
 				msgBody = encodeMessage(logEvent);
-				((LoggingEvent) logEvent).setLoggerName(name);
+				logEv.setLoggerName(name);
 			}
 			else {
 				msgBody = encodeMessage(logEvent);
