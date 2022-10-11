@@ -35,6 +35,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
 
 /**
  * A {@link RoutingConnectionFactory} that determines the node on which a queue is located and
@@ -53,6 +54,13 @@ import org.springframework.util.Assert;
  * @since 1.2
  */
 public class LocalizedQueueConnectionFactory implements ConnectionFactory, RoutingConnectionFactory, DisposableBean {
+
+	private static final boolean USING_WEBFLUX;
+
+	static {
+		USING_WEBFLUX = ClassUtils.isPresent("org.springframework.web.reactive.function.client.WebClient",
+				LocalizedQueueConnectionFactory.class.getClassLoader());
+	}
 
 	private final Log logger = LogFactory.getLog(getClass());
 
@@ -82,7 +90,7 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 
 	private final String trustStorePassPhrase;
 
-	private NodeLocator<?> nodeLocator = new WebFluxNodeLocator();
+	private NodeLocator<?> nodeLocator;
 
 	/**
 	 * @param defaultConnectionFactory the fallback connection factory to use if the queue
@@ -190,6 +198,12 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 		this.trustStore = trustStore;
 		this.keyStorePassPhrase = keyStorePassPhrase;
 		this.trustStorePassPhrase = trustStorePassPhrase;
+		if (USING_WEBFLUX) {
+			this.nodeLocator = new WebFluxNodeLocator();
+		}
+		else {
+			this.nodeLocator = new RestTemplateNodeLocator();
+		}
 	}
 
 	private static Map<String, String> nodesAddressesToMap(String[] nodes, String[] addresses) {
@@ -206,6 +220,7 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	 * @since 2.4.8
 	 */
 	public void setNodeLocator(NodeLocator<?> nodeLocator) {
+		Assert.notNull(nodeLocator, "'nodeLocator' cannot be null");
 		this.nodeLocator = nodeLocator;
 	}
 
@@ -378,7 +393,7 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 				try {
 					String uri = new URI(adminUri)
 							.resolve("/api/queues/").toString();
-					HashMap<String, Object> queueInfo = restCall(client, uri, vhost, queue);
+					Map<String, Object> queueInfo = restCall(client, uri, vhost, queue);
 					if (queueInfo != null) {
 						String node = (String) queueInfo.get("node");
 						if (node != null) {
@@ -423,13 +438,15 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 
 		/**
 		 * Retrieve a map of queue properties using the RabbitMQ Management REST API.
+		 * @param client the client.
 		 * @param baseUri the base uri.
 		 * @param vhost the virtual host.
 		 * @param queue the queue name.
 		 * @return the map of queue properties.
 		 * @throws URISyntaxException if the syntax is bad.
 		 */
-		HashMap<String, Object> restCall(T client, String baseUri, String vhost, String queue)
+		@Nullable
+		Map<String, Object> restCall(T client, String baseUri, String vhost, String queue)
 				throws URISyntaxException;
 
 	}
