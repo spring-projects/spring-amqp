@@ -26,8 +26,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Binding;
@@ -40,9 +38,7 @@ import org.springframework.amqp.core.QueueBuilder.LeaderLocator;
 import org.springframework.amqp.core.QueueBuilder.Overflow;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.junit.BrokerRunningSupport;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
-import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,10 +46,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-
-import com.rabbitmq.http.client.Client;
-import com.rabbitmq.http.client.domain.ExchangeInfo;
-import com.rabbitmq.http.client.domain.QueueInfo;
 
 /**
  *
@@ -64,21 +56,13 @@ import com.rabbitmq.http.client.domain.QueueInfo;
 @SpringJUnitConfig
 @DirtiesContext
 @RabbitAvailable(management = true)
-@Disabled("Temporary until SF uses Micrometer snaps")
-public class FixedReplyQueueDeadLetterTests {
-
-	private static BrokerRunningSupport brokerRunning;
+public class FixedReplyQueueDeadLetterTests extends NeedsManagementTests {
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
 
 	@Autowired
 	private DeadListener deadListener;
-
-	@BeforeAll
-	static void setUp() {
-		brokerRunning = RabbitAvailableCondition.getBrokerRunning();
-	}
 
 	@AfterAll
 	static void tearDown() {
@@ -100,10 +84,8 @@ public class FixedReplyQueueDeadLetterTests {
 
 	@Test
 	void testQueueArgs1() throws MalformedURLException, URISyntaxException, InterruptedException {
-		Client client = new Client(brokerRunning.getAdminUri(), brokerRunning.getAdminUser(),
-				brokerRunning.getAdminPassword());
-		QueueInfo queue = await().until(() -> client.getQueue("/", "all.args.1"), que -> que != null);
-		Map<String, Object> arguments = queue.getArguments();
+		Map<String, Object> queue = await().until(() -> queueInfo("all.args.1"), que -> que != null);
+		Map<String, Object> arguments = arguments(queue);
 		assertThat(arguments.get("x-message-ttl")).isEqualTo(1000);
 		assertThat(arguments.get("x-expires")).isEqualTo(200_000);
 		assertThat(arguments.get("x-max-length")).isEqualTo(42);
@@ -119,10 +101,8 @@ public class FixedReplyQueueDeadLetterTests {
 
 	@Test
 	void testQueueArgs2() throws MalformedURLException, URISyntaxException, InterruptedException {
-		Client client = new Client(brokerRunning.getAdminUri(), brokerRunning.getAdminUser(),
-				brokerRunning.getAdminPassword());
-		QueueInfo queue = await().until(() -> client.getQueue("/", "all.args.2"), que -> que != null);
-		Map<String, Object> arguments = queue.getArguments();
+		Map<String, Object> queue = await().until(() -> queueInfo("all.args.2"), que -> que != null);
+		Map<String, Object> arguments = arguments(queue);
 		assertThat(arguments.get("x-message-ttl")).isEqualTo(1000);
 		assertThat(arguments.get("x-expires")).isEqualTo(200_000);
 		assertThat(arguments.get("x-max-length")).isEqualTo(42);
@@ -136,11 +116,9 @@ public class FixedReplyQueueDeadLetterTests {
 	}
 
 	@Test
-	void testQueueArgs3() throws MalformedURLException, URISyntaxException, InterruptedException {
-		Client client = new Client(brokerRunning.getAdminUri(), brokerRunning.getAdminUser(),
-				brokerRunning.getAdminPassword());
-		QueueInfo queue = await().until(() -> client.getQueue("/", "all.args.3"), que -> que != null);
-		Map<String, Object> arguments = queue.getArguments();
+	void testQueueArgs3() throws URISyntaxException {
+		Map<String, Object> queue = await().until(() -> queueInfo("all.args.3"), que -> que != null);
+		Map<String, Object> arguments = arguments(queue);
 		assertThat(arguments.get("x-message-ttl")).isEqualTo(1000);
 		assertThat(arguments.get("x-expires")).isEqualTo(200_000);
 		assertThat(arguments.get("x-max-length")).isEqualTo(42);
@@ -152,19 +130,17 @@ public class FixedReplyQueueDeadLetterTests {
 		assertThat(arguments.get("x-queue-mode")).isEqualTo("lazy");
 		assertThat(arguments.get(Queue.X_QUEUE_LEADER_LOCATOR)).isEqualTo(LeaderLocator.random.getValue());
 
-		ExchangeInfo exchange = client.getExchange("/", "dlx.test.requestEx");
-		assertThat(exchange.getArguments().get("alternate-exchange")).isEqualTo("alternate");
+		Map<String, Object> exchange = exchangeInfo("dlx.test.requestEx");
+		assertThat(arguments(exchange).get("alternate-exchange")).isEqualTo("alternate");
 	}
 
 	/*
 	 * Does not require a 3.8 broker - they are just arbitrary arguments.
 	 */
 	@Test
-	void testQuorumArgs() throws MalformedURLException, URISyntaxException, InterruptedException {
-		Client client = new Client(brokerRunning.getAdminUri(), brokerRunning.getAdminUser(),
-				brokerRunning.getAdminPassword());
-		QueueInfo queue = await().until(() -> client.getQueue("/", "test.quorum"), que -> que != null);
-		Map<String, Object> arguments = queue.getArguments();
+	void testQuorumArgs() {
+		Map<String, Object> queue = await().until(() -> queueInfo("test.quorum"), que -> que != null);
+		Map<String, Object> arguments = arguments(queue);
 		assertThat(arguments.get("x-queue-type")).isEqualTo("quorum");
 		assertThat(arguments.get("x-delivery-limit")).isEqualTo(10);
 	}

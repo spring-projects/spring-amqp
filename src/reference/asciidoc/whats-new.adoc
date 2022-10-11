@@ -43,3 +43,6 @@ See <<Jackson2JsonMessageConverter-from-message>> for more information.
 
 The default `addressShuffleMode` in `AbstractConnectionFactory` is now `RANDOM`. This results in connecting to a random host when multiple addresses are provided.
 See <<cluster>> for more information.
+
+The `LocalizedQueueConnectionFactory` no longer uses the RabbitMQ `http-client` library to determine which node is the leader for a queue.
+See <<queue-affinity>> for more information.

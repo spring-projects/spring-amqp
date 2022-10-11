@@ -47,7 +47,6 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -68,6 +67,7 @@ import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionNameStrategy;
 import org.springframework.amqp.rabbit.connection.SimplePropertyValueConnectionNameStrategy;
+import org.springframework.amqp.rabbit.core.NeedsManagementTests;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.BrokerRunningSupport;
@@ -143,8 +143,6 @@ import org.springframework.validation.Validator;
 import org.springframework.validation.annotation.Validated;
 
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.http.client.Client;
-import com.rabbitmq.http.client.domain.QueueInfo;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -180,7 +178,7 @@ import jakarta.validation.Valid;
 		"test.custom.argument", "test.arg.validation",
 		"manual.acks.1", "manual.acks.2", "erit.batch.1", "erit.batch.2", "erit.batch.3", "erit.mp.arg" },
 		purgeAfterEach = false)
-public class EnableRabbitIntegrationTests {
+public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -833,16 +831,14 @@ public class EnableRabbitIntegrationTests {
 	}
 
 	@Test
-	@Disabled("Temporary until SF uses Micrometer snaps")
 	public void deadLetterOnDefaultExchange() {
 		this.rabbitTemplate.convertAndSend("amqp656", "foo");
 		assertThat(this.rabbitTemplate.receiveAndConvert("amqp656dlq", 10000)).isEqualTo("foo");
 		try {
-			Client rabbitRestClient = new Client("http://localhost:15672/api/", "guest", "guest");
-			QueueInfo amqp656 = rabbitRestClient.getQueue("/", "amqp656");
+			Map<String, Object> amqp656 = await().until(() -> queueInfo("amqp656"), q -> q != null);
 			if (amqp656 != null) {
-				assertThat(amqp656.getArguments().get("test-empty")).isEqualTo("");
-				assertThat(amqp656.getArguments().get("test-null")).isEqualTo("undefined");
+				assertThat(arguments(amqp656).get("test-empty")).isEqualTo("");
+				assertThat(arguments(amqp656).get("test-null")).isEqualTo("undefined");
 			}
 		}
 		catch (Exception e) {

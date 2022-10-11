@@ -17,12 +17,13 @@
 package org.springframework.amqp.rabbit.connection;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Queue;
@@ -35,8 +36,7 @@ import org.springframework.amqp.rabbit.junit.RabbitAvailable;
  *
  * @author Gary Russell
  */
-@RabbitAvailable(management = true)
-@Disabled("Temporary until SF uses Micrometer snaps")
+@RabbitAvailable(management = true, queues = "local")
 public class LocalizedQueueConnectionFactoryIntegrationTests {
 
 	private LocalizedQueueConnectionFactory lqcf;
@@ -63,7 +63,6 @@ public class LocalizedQueueConnectionFactoryIntegrationTests {
 	}
 
 	@Test
-	@Disabled("Temporary until SF uses Micrometer snaps")
 	public void testConnect() throws Exception {
 		RabbitAdmin admin = new RabbitAdmin(this.lqcf);
 		Queue queue = new Queue(UUID.randomUUID().toString(), false, false, true);
@@ -73,6 +72,18 @@ public class LocalizedQueueConnectionFactoryIntegrationTests {
 		template.convertAndSend("", queue.getName(), "foo");
 		assertThat(template.receiveAndConvert(queue.getName())).isEqualTo("foo");
 		admin.deleteQueue(queue.getName());
+	}
+
+	@Test
+	void findLocal() {
+		ConnectionFactory defaultCf = mock(ConnectionFactory.class);
+		LocalizedQueueConnectionFactory lqcf = new LocalizedQueueConnectionFactory(defaultCf,
+				Map.of("rabbit@localhost", "localhost:5672"), new String[] { "http://localhost:15672" },
+				"/", "guest", "guest", false, null);
+		ConnectionFactory cf = lqcf.getTargetConnectionFactory("[local]");
+		RabbitAdmin admin = new RabbitAdmin(cf);
+		assertThat(admin.getQueueProperties("local")).isNotNull();
+		lqcf.destroy();
 	}
 
 }

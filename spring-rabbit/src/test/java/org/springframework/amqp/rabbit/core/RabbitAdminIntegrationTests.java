@@ -22,11 +22,11 @@ import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.AmqpIOException;
@@ -52,8 +52,6 @@ import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.http.client.Client;
-import com.rabbitmq.http.client.domain.ExchangeInfo;
 
 /**
  * @author Dave Syer
@@ -63,8 +61,7 @@ import com.rabbitmq.http.client.domain.ExchangeInfo;
  * @author Artem Bilan
  */
 @RabbitAvailable(management = true)
-@Disabled("Temporary until SF uses Micrometer snaps")
-public class RabbitAdminIntegrationTests {
+public class RabbitAdminIntegrationTests extends NeedsManagementTests {
 
 	private final CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 
@@ -258,9 +255,9 @@ public class RabbitAdminIntegrationTests {
 		exchange.setInternal(true);
 		rabbitAdmin.declareExchange(exchange);
 
-		ExchangeInfo exchange2 = getExchange(exchangeName);
-		assertThat(exchange2.getType()).isEqualTo(ExchangeTypes.DIRECT);
-		assertThat(exchange2.isInternal()).isTrue();
+		Map<String, Object> exchange2 = getExchange(exchangeName);
+		assertThat(exchange2.get("type")).isEqualTo(ExchangeTypes.DIRECT);
+		assertThat(exchange2.get("internal")).isEqualTo(Boolean.TRUE);
 
 		boolean result = rabbitAdmin.deleteExchange(exchangeName);
 
@@ -370,6 +367,7 @@ public class RabbitAdminIntegrationTests {
 		this.rabbitAdmin.deleteQueue(queue.getName());
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testDeclareDelayedExchange() throws Exception {
 		DirectExchange exchange = new DirectExchange("test.delayed.exchange");
@@ -415,18 +413,17 @@ public class RabbitAdminIntegrationTests {
 		assertThat(received.getMessageProperties().getReceivedDelay()).isEqualTo(Integer.valueOf(1000));
 		assertThat(System.currentTimeMillis() - t1).isGreaterThan(950L);
 
-		ExchangeInfo exchange2 = getExchange(exchangeName);
-		assertThat(exchange2.getArguments().get("x-delayed-type")).isEqualTo(ExchangeTypes.DIRECT);
-		assertThat(exchange2.getType()).isEqualTo("x-delayed-message");
+		Map<String, Object> exchange2 = getExchange(exchangeName);
+		assertThat(arguments(exchange2).get("x-delayed-type")).isEqualTo(ExchangeTypes.DIRECT);
+		assertThat(exchange2.get("type")).isEqualTo("x-delayed-message");
 
 		this.rabbitAdmin.deleteQueue(queue.getName());
 		this.rabbitAdmin.deleteExchange(exchangeName);
 	}
 
-	private ExchangeInfo getExchange(String exchangeName) throws Exception {
-		Client rabbitRestClient = new Client("http://localhost:15672/api/", "guest", "guest");
+	private Map<String, Object> getExchange(String exchangeName) throws Exception {
 		return await().pollDelay(Duration.ZERO)
-				.until(() -> rabbitRestClient.getExchange("/", exchangeName), exch -> exch != null);
+				.until(() -> exchangeInfo(exchangeName), exch -> exch != null);
 	}
 
 	/**
