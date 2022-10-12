@@ -28,10 +28,10 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.junit.AbstractTestContainerTests;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.rabbit.stream.support.AbstractIntegrationTests;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 /**
@@ -40,7 +40,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
  *
  */
 @SpringJUnitConfig
-public class SuperStreamProvisioningTests extends AbstractIntegrationTests {
+public class SuperStreamProvisioningTests extends AbstractTestContainerTests {
 
 	@Test
 	void provision(@Autowired Declarables declarables, @Autowired CachingConnectionFactory cf,

@@ -37,6 +37,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.junit.AbstractTestContainerTests;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.ApplicationContext;
@@ -44,7 +45,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.rabbit.stream.config.SuperStream;
-import org.springframework.rabbit.stream.support.AbstractIntegrationTests;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import com.rabbitmq.stream.Address;
@@ -57,7 +57,7 @@ import com.rabbitmq.stream.OffsetSpecification;
  *
  */
 @SpringJUnitConfig
-public class SuperStreamSACTests extends AbstractIntegrationTests {
+public class SuperStreamSACTests extends AbstractTestContainerTests {
 
 	@Test
 	void superStream(@Autowired ApplicationContext context, @Autowired RabbitTemplate template,
