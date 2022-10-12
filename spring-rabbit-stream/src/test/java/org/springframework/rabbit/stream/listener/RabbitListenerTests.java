@@ -40,6 +40,7 @@ import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.junit.AbstractTestContainerTests;
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.SmartLifecycle;
@@ -51,7 +52,6 @@ import org.springframework.http.MediaType;
 import org.springframework.rabbit.stream.config.StreamRabbitListenerContainerFactory;
 import org.springframework.rabbit.stream.producer.RabbitStreamTemplate;
 import org.springframework.rabbit.stream.retry.StreamRetryOperationsInterceptorFactoryBean;
-import org.springframework.rabbit.stream.support.AbstractIntegrationTests;
 import org.springframework.rabbit.stream.support.StreamMessageProperties;
 import org.springframework.retry.interceptor.RetryOperationsInterceptor;
 import org.springframework.test.annotation.DirtiesContext;
@@ -73,7 +73,7 @@ import com.rabbitmq.stream.OffsetSpecification;
  */
 @SpringJUnitConfig
 @DirtiesContext
-public class RabbitListenerTests extends AbstractIntegrationTests {
+public class RabbitListenerTests extends AbstractTestContainerTests {
 
 	@Autowired
 	Config config;

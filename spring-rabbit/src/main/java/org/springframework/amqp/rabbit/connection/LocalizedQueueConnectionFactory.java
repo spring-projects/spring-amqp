@@ -398,7 +398,7 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 						String node = (String) queueInfo.get("node");
 						if (node != null) {
 							String nodeUri = nodeToAddress.get(node);
-							if (uri != null) {
+							if (nodeUri != null) {
 								close(client);
 								return factoryFunction.locate(queue, node, nodeUri);
 							}

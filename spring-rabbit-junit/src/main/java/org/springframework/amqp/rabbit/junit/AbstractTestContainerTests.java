@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package org.springframework.rabbit.stream.support;
+package org.springframework.amqp.rabbit.junit;
 
 import java.time.Duration;
 
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.RabbitMQContainer;
 
 /**
@@ -26,9 +25,9 @@ import org.testcontainers.containers.RabbitMQContainer;
  * @since 2.4
  *
  */
-public abstract class AbstractIntegrationTests {
+public abstract class AbstractTestContainerTests {
 
-	static final GenericContainer<?> RABBITMQ;
+	protected static final RabbitMQContainer RABBITMQ;
 
 	static {
 		if (System.getProperty("spring.rabbit.use.local.server") == null
@@ -40,7 +39,7 @@ public abstract class AbstractIntegrationTests {
 			}
 			RABBITMQ = new RabbitMQContainer(image)
 						.withExposedPorts(5672, 15672, 5552)
-						.withPluginsEnabled("rabbitmq_stream", "rabbitmq_management")
+						.withPluginsEnabled("rabbitmq_stream")
 						.withStartupTimeout(Duration.ofMinutes(2));
 			RABBITMQ.start();
 		}
@@ -50,7 +49,7 @@ public abstract class AbstractIntegrationTests {
 	}
 
 	public static int amqpPort() {
-		return RABBITMQ != null ? RABBITMQ.getMappedPort(5672) : 5672;
+		return RABBITMQ != null ? RABBITMQ.getAmqpPort() : 5672;
 	}
 
 	public static int managementPort() {
@@ -59,6 +58,10 @@ public abstract class AbstractIntegrationTests {
 
 	public static int streamPort() {
 		return RABBITMQ != null ? RABBITMQ.getMappedPort(5552) : 5552;
+	}
+
+	public static String restUri() {
+		return RABBITMQ.getHttpUrl() + "/api/";
 	}
 
 }
