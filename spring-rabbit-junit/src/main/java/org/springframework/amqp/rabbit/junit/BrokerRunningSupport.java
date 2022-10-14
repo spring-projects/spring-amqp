@@ -419,7 +419,7 @@ public final class BrokerRunningSupport {
 			body = response.getBody();
 		}
 		return body != null
-				? response.getBody().equals("{\"status\":\"ok\"}")
+				? body.equals("{\"status\":\"ok\"}")
 				: false;
 	}
 
