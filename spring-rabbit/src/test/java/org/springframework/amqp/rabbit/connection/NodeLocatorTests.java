@@ -58,6 +58,62 @@ public class NodeLocatorTests {
 					return Map.of("node", "a@b");
 				}
 			}
+
+		});
+		ConnectionFactory factory = nodeLocator.locate(new String[] { "http://foo", "http://bar" },
+				Map.of("a@b", "baz"), null, "q", null, null, (q, n, u) -> {
+					return null;
+		});
+		verify(nodeLocator, times(2)).restCall(any(), any(), any(), any());
+	}
+
+	@Test
+	@DisplayName("rest returned null")
+	void nullInfo() throws URISyntaxException {
+
+		NodeLocator<Object> nodeLocator = spy(new NodeLocator<Object>() {
+
+			@Override
+			public Object createClient(String userName, String password) {
+				return null;
+			}
+
+			@Override
+			@Nullable
+			public Map<String, Object> restCall(Object client, String baseUri, String vhost, String queue) {
+				if (baseUri.contains("foo")) {
+					return null;
+				}
+				else {
+					return Map.of("node", "a@b");
+				}
+			}
+
+		});
+		ConnectionFactory factory = nodeLocator.locate(new String[] { "http://foo", "http://bar" },
+				Map.of("a@b", "baz"), null, "q", null, null, (q, n, u) -> {
+					return null;
+		});
+		verify(nodeLocator, times(2)).restCall(any(), any(), any(), any());
+	}
+
+	@Test
+	@DisplayName("queue not found")
+	void notFound() throws URISyntaxException {
+
+		NodeLocator<Object> nodeLocator = spy(new NodeLocator<Object>() {
+
+			@Override
+			public Object createClient(String userName, String password) {
+				return null;
+			}
+
+			@Override
+			@Nullable
+			public Map<String, Object> restCall(Object client, String baseUri, String vhost, String queue) {
+				return null;
+			}
+
 		});
 		ConnectionFactory factory = nodeLocator.locate(new String[] { "http://foo", "http://bar" },
 				Map.of("a@b", "baz"), null, "q", null, null, (q, n, u) -> {
