@@ -38,6 +38,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.util.Base64Utils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriUtils;
@@ -379,11 +380,9 @@ public final class BrokerRunningSupport {
 				channel.queueDeclare(queueName, true, false, false, null);
 			}
 		}
-		if (this.management) {
-			if (!alivenessTest()) {
-				throw new BrokerNotAliveException("Aliveness test failed for localhost:15672 guest/quest; "
-						+ "management not available");
-			}
+		if (this.management && !alivenessTest()) {
+			throw new BrokerNotAliveException("Aliveness test failed for localhost:15672 guest/quest; "
+					+ "management not available");
 		}
 		return channel;
 	}
@@ -417,7 +416,11 @@ public final class BrokerRunningSupport {
 			Thread.currentThread().interrupt();
 			return false;
 		}
-		return response.body().contentEquals("{\"status\":\"ok\"}");
+		String body = null;
+		if (response.statusCode() == HttpStatus.OK.value()) {
+			response.body();
+		}
+		return body != null && body.contentEquals("{\"status\":\"ok\"}");
 	}
 
 	public static boolean fatal() {
