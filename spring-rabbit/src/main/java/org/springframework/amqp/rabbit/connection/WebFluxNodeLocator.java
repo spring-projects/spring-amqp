@@ -54,7 +54,7 @@ public class WebFluxNodeLocator implements NodeLocator<WebClient> {
 				.bodyToMono(new ParameterizedTypeReference<HashMap<String, Object>>() {
 				})
 				.block(Duration.ofSeconds(10)); // NOSONAR magic#
-		return queueInfo;
+		return queueInfo != null ? queueInfo : null;
 	}
 
 	/**

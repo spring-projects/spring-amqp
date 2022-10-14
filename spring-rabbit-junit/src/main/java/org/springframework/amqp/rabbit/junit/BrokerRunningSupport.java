@@ -387,11 +387,9 @@ public final class BrokerRunningSupport {
 				channel.queueDeclare(queueName, true, false, false, null);
 			}
 		}
-		if (this.management) {
-			if (!alivenessTest()) {
-				throw new BrokerNotAliveException("Aliveness test failed for localhost:15672 guest/quest; "
-						+ "management not available");
-			}
+		if (this.management && !alivenessTest()) {
+			throw new BrokerNotAliveException("Aliveness test failed for localhost:15672 guest/quest; "
+					+ "management not available");
 		}
 		return channel;
 	}
@@ -416,7 +414,11 @@ public final class BrokerRunningSupport {
 		});
 		template.getInterceptors().add(new BasicAuthenticationInterceptor(this.adminUser, this.adminPassword));
 		ResponseEntity<String> response = template.exchange(uri, HttpMethod.GET, null, String.class);
-		return response.getStatusCode().equals(HttpStatus.OK)
+		String body = null;
+		if (response.getStatusCode().equals(HttpStatus.OK)) {
+			body = response.getBody();
+		}
+		return body != null
 				? response.getBody().equals("{\"status\":\"ok\"}")
 				: false;
 	}
