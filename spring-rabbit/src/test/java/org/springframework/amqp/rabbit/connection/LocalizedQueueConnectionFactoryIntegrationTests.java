@@ -32,7 +32,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.junit.AbstractTestContainerTests;
+import org.springframework.amqp.rabbit.junit.BrokerRunningSupport;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
+import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunctions;
@@ -63,12 +65,15 @@ public class LocalizedQueueConnectionFactoryIntegrationTests extends AbstractTes
 		this.defaultAdmin = new RabbitAdmin(this.defaultConnectionFactory);
 		this.testContainerFactory = new CachingConnectionFactory("localhost", amqpPort());
 		this.testContainerAdmin = new RabbitAdmin(this.testContainerFactory);
-		String[] addresses = new String[] { "localhost:5672", "localhost:" + amqpPort() };
-		String[] adminUris = new String[] { "http://localhost:15672", "http://localhost:" + managementPort() };
-		String[] nodes = new String[] { "rabbit@localhost", findTcNode() };
+		BrokerRunningSupport brokerRunning = RabbitAvailableCondition.getBrokerRunning();
+
+		String[] addresses = new String[] { brokerRunning.getHostName() + ":" + brokerRunning.getPort(),
+				RABBITMQ.getHost() + ":" + RABBITMQ.getAmqpPort() };
+		String[] adminUris = new String[] { brokerRunning.getAdminUri(), RABBITMQ.getHttpUrl() };
+		String[] nodes = new String[] { findLocalNode(), findTcNode() };
 		String vhost = "/";
-		String username = "guest";
-		String password = "guest";
+		String username = brokerRunning.getAdminUser();
+		String password = brokerRunning.getAdminPassword();
 		this.lqcf = new LocalizedQueueConnectionFactory(defaultConnectionFactory, addresses,
 				adminUris, nodes, vhost, username, password, false, null);
 	}
@@ -100,9 +105,11 @@ public class LocalizedQueueConnectionFactoryIntegrationTests extends AbstractTes
 	@Test
 	void findLocal() {
 		ConnectionFactory defaultCf = mock(ConnectionFactory.class);
+		BrokerRunningSupport brokerRunning = RabbitAvailableCondition.getBrokerRunning();
 		LocalizedQueueConnectionFactory lqcf = new LocalizedQueueConnectionFactory(defaultCf,
-				Map.of("rabbit@localhost", "localhost:5672"), new String[] { "http://localhost:15672" },
-				"/", "guest", "guest", false, null);
+				Map.of(findLocalNode(), brokerRunning.getHostName() + ":" + brokerRunning.getPort()),
+				new String[] { brokerRunning.getAdminUri() },
+				"/", brokerRunning.getAdminUser(), brokerRunning.getAdminPassword(), false, null);
 		ConnectionFactory cf = lqcf.getTargetConnectionFactory("[local]");
 		RabbitAdmin admin = new RabbitAdmin(cf);
 		assertThat(admin.getQueueProperties("local")).isNotNull();
@@ -139,5 +146,32 @@ public class LocalizedQueueConnectionFactoryIntegrationTests extends AbstractTes
 		return (String) queueInfo.get("node");
 	}
 
+	private String findLocalNode() {
+		AnonymousQueue queue = new AnonymousQueue();
+		this.defaultAdmin.declareQueue(queue);
+		URI uri;
+		BrokerRunningSupport brokerRunning = RabbitAvailableCondition.getBrokerRunning();
+		try {
+			uri = new URI(brokerRunning.getAdminUri())
+					.resolve("/api/queues/" + UriUtils.encodePathSegment("/", StandardCharsets.UTF_8) + "/"
+							+ queue.getName());
+		}
+		catch (URISyntaxException ex) {
+			throw new IllegalStateException(ex);
+		}
+		WebClient client = WebClient.builder()
+				.filter(ExchangeFilterFunctions.basicAuthentication(brokerRunning.getAdminUser(),
+						brokerRunning.getAdminPassword()))
+				.build();
+		Map<String, Object> queueInfo = client.get()
+				.uri(uri)
+				.accept(MediaType.APPLICATION_JSON)
+				.retrieve()
+				.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
+				})
+				.block(Duration.ofSeconds(10));
+		this.defaultAdmin.deleteQueue(queue.getName());
+		return (String) queueInfo.get("node");
+	}
 
 }
