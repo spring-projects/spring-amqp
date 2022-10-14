@@ -380,14 +380,13 @@ public final class BrokerRunningSupport {
 				channel.queueDeclare(queueName, true, false, false, null);
 			}
 		}
-		if (this.management && !alivenessTest()) {
-			throw new BrokerNotAliveException("Aliveness test failed for localhost:15672 guest/quest; "
-					+ "management not available");
+		if (this.management) {
+			alivenessTest();
 		}
 		return channel;
 	}
 
-	private boolean alivenessTest() throws URISyntaxException {
+	private void alivenessTest() throws URISyntaxException {
 		HttpClient client = HttpClient.newBuilder()
 				.authenticator(new Authenticator() {
 
@@ -409,18 +408,22 @@ public final class BrokerRunningSupport {
 			response = client.send(request, BodyHandlers.ofString());
 		}
 		catch (IOException ex) {
-			LOGGER.error("Exception checking admin aliveness", ex);
-			return false;
+			throw new BrokerNotAliveException("Failed to check aliveness", ex);
 		}
 		catch (InterruptedException ex) {
 			Thread.currentThread().interrupt();
-			return false;
+			throw new BrokerNotAliveException("Interrupted while checking aliveness", ex);
 		}
 		String body = null;
 		if (response.statusCode() == HttpStatus.OK.value()) {
-			response.body();
+			body = response.body();
 		}
-		return body != null && body.contentEquals("{\"status\":\"ok\"}");
+		if (body == null || !body.contentEquals("{\"status\":\"ok\"}")) {
+			throw new BrokerNotAliveException("Aliveness test failed for " + uri.toString()
+					+ " user: " + getAdminUser() + " pw: " + getAdminPassword()
+					+ " status: " + response.statusCode() + " body: " + body
+					+ "; management not available");
+		}
 	}
 
 	public static boolean fatal() {
