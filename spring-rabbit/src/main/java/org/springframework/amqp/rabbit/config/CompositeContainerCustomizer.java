@@ -12,7 +12,7 @@ public class CompositeContainerCustomizer<C extends MessageListenerContainer> im
 	private final List<ContainerCustomizer<C>> customizers;
 
 	public CompositeContainerCustomizer(List<ContainerCustomizer<C>> customizers) {
-		Assert.notNull(customizers, "At lease one customizers must be present");
+		Assert.notNull(customizers, "At least one customizer must be present");
 		this.customizers = customizers;
 	}
 
