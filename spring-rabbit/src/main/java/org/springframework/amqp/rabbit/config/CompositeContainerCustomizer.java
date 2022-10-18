@@ -30,6 +30,8 @@ import org.springframework.util.Assert;
  *
  * @author Rene Felgentraeger
  * @author Gary Russell
+ *
+ * @since 2.4.8
  */
 public class CompositeContainerCustomizer<C extends MessageListenerContainer> implements ContainerCustomizer<C> {
 
