@@ -2597,6 +2597,8 @@ NOTE: For information to help you choose between `SimpleRabbitListenerContainerF
 Starting wih version 2.2.2, you can provide a `ContainerCustomizer` implementation (as shown above).
 This can be used to further configure the container after it has been created and configured; you can use this, for example, to set properties that are not exposed by the container factory.
 
+Version 2.4.8 provides the `CompositeContainerCustomizer` for situations where you wish to apply multiple customizers.
+
 By default, the infrastructure looks for a bean named `rabbitListenerContainerFactory` as the source for the factory to use to create message listener containers.
 In this case, and ignoring the RabbitMQ infrastructure setup, the `processOrder` method can be invoked with a core poll size of three threads and a maximum pool size of ten threads.
 
