@@ -192,7 +192,7 @@ subprojects { subproject ->
 	}
 
 	// enable all compiler warnings; individual projects may customize further
-	ext.xLintArg = '-Xlint:all,-options,-processing'
+	ext.xLintArg = '-Xlint:all,-options,-processing,-deprecation'
 	[compileJava, compileTestJava]*.options*.compilerArgs = [xLintArg]
 
 	publishing {

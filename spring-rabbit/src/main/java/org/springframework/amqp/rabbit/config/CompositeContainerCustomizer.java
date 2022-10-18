@@ -23,7 +23,7 @@ import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.util.Assert;
 
 /**
- * Implementation of {@link ContainerCustomizer<C>} providing the configuration of
+ * Implementation of {@link ContainerCustomizer} providing the configuration of
  * multiple customizers at the same time.
  *
  * @param <C> the container type.
@@ -48,7 +48,7 @@ public class CompositeContainerCustomizer<C extends MessageListenerContainer> im
 
 	@Override
 	public void configure(C container) {
-		customizers.forEach(c -> c.configure(container));
+		this.customizers.forEach(c -> c.configure(container));
 	}
 
 }
