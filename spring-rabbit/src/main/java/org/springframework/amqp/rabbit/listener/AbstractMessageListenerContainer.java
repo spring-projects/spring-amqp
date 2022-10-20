@@ -28,6 +28,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import org.aopalliance.aop.Advice;
@@ -146,6 +147,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private final Map<String, String> micrometerTags = new HashMap<>();
 
 	private ContainerDelegate proxy = this.delegate;
+
+	private final AtomicBoolean logDeclarationException = new AtomicBoolean(true);
 
 	private long shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
 
@@ -1960,12 +1963,18 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		if (!this.lazyLoad && admin != null && isAutoDeclare()) {
 			try {
 				attemptDeclarations(admin);
+				this.logDeclarationException.set(true);
 			}
 			catch (Exception e) {
 				if (RabbitUtils.isMismatchedQueueArgs(e)) {
 					throw new FatalListenerStartupException("Mismatched queues", e);
 				}
-				logger.error("Failed to check/redeclare auto-delete queue(s).", e);
+				if (this.logDeclarationException.getAndSet(false)) {
+					this.logger.error("Failed to check/redeclare auto-delete queue(s).", e);
+				}
+				else {
+					this.logger.error("Failed to check/redeclare auto-delete queue(s).");
+				}
 			}
 		}
 	}
