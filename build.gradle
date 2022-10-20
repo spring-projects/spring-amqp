@@ -56,7 +56,7 @@ ext {
 	log4jVersion = '2.19.0'
 	logbackVersion = '1.4.4'
 	lz4Version = '1.8.0'
-	micrometerDocsVersion = '1.0.0-RC1'
+	micrometerDocsVersion = '1.0.0-SNAPSHOT'
 	micrometerVersion = '1.10.0-RC1'
 	micrometerTracingVersion = '1.0.0-RC1'
 	mockitoVersion = '4.8.0'
@@ -419,35 +419,7 @@ project('spring-rabbit') {
 		testRuntimeOnly ("junit:junit:$junit4Version") {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
 
-		adoc "io.micrometer:micrometer-docs-generator-spans:$micrometerDocsVersion"
-		adoc "io.micrometer:micrometer-docs-generator-metrics:$micrometerDocsVersion"
-
 		}
-
-		def inputDir = file('src/main/java/org/springframework/amqp/rabbit/support/micrometer').absolutePath
-		def outputDir = rootProject.file('src/reference/asciidoc').absolutePath
-
-		task generateObservabilityMetricsDocs(type: JavaExec) {
-			onlyIf { !isCI }
-			mainClass = 'io.micrometer.docs.metrics.DocsFromSources'
-			inputs.dir(inputDir)
-			outputs.dir(outputDir)
-			classpath configurations.adoc
-			args inputDir, '.*', outputDir
-		}
-
-		task generateObservabilitySpansDocs(type: JavaExec) {
-			onlyIf { !isCI }
-			mainClass = 'io.micrometer.docs.spans.DocsFromSources'
-			inputs.dir(inputDir)
-			outputs.dir(outputDir)
-			classpath configurations.adoc
-			args inputDir, '.*', outputDir
-		}
-
-		// javadoc {
-		// 	finalizedBy generateObservabilityMetricsDocs, generateObservabilitySpansDocs
-		// }
 
 	}
 
@@ -522,10 +494,12 @@ project('spring-rabbit-test') {
 
 configurations {
 	asciidoctorExtensions
+	micrometerDocs
 }
 
 dependencies {
 	asciidoctorExtensions "io.spring.asciidoctor.backends:spring-asciidoctor-backends:${springAsciidoctorBackendsVersion}"
+	micrometerDocs "io.micrometer:micrometer-docs-generator:$micrometerDocsVersion"
 }
 
 task prepareAsciidocBuild(type: Sync) {
@@ -535,8 +509,28 @@ task prepareAsciidocBuild(type: Sync) {
 	into "$buildDir/asciidoc"
 }
 
+def observationInputDir = file('spring-rabbit/src/main/java/org/springframework/amqp/rabbit/support/micrometer').absolutePath
+def generatedDocsDir = file("$buildDir/docs/generated").absolutePath
+
+task generateObservabilityDocs(type: JavaExec) {
+	mainClass = 'io.micrometer.docs.DocsGeneratorCommand'
+	inputs.dir(observationInputDir)
+	outputs.dir(generatedDocsDir)
+	classpath configurations.micrometerDocs
+	args observationInputDir, /.+/, generatedDocsDir
+}
+
+task filterMetricsDocsContent(type: Copy) {
+	dependsOn generateObservabilityDocs
+	from generatedDocsDir
+	include '_*.adoc'
+	into generatedDocsDir
+	rename { filename -> filename.replace '_', '' }
+	filter { line -> line.replaceAll('org.springframework.amqp.rabbit.support.micrometer.', '').replaceAll('^Fully qualified n', 'N') }
+}
+
 asciidoctorPdf {
-	dependsOn prepareAsciidocBuild
+	dependsOn prepareAsciidocBuild, filterMetricsDocsContent
 	baseDirFollowsSourceFile()
 
 	asciidoctorj {
