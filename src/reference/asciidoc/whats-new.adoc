@@ -14,7 +14,7 @@ The remoting feature (using RMI) is no longer supported.
 ==== Observation
 
 Enabling observation for timers and tracing using Micrometer is now supported.
-See <<observation>> for more information.
+See <<micrometer-observation>> for more information.
 
 ==== AsyncRabbitTemplate
 

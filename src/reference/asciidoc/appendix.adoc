@@ -2,17 +2,17 @@
 [[observation-gen]]
 == Micrometer Observation Documentation
 
-include::_metrics.adoc[]
+include::../docs/generated/metrics.adoc[]
 
-include::_spans.adoc[]
+include::../docs/generated/spans.adoc[]
 
-include::_conventions.adoc[]
+include::../docs/generated/conventions.adoc[]
 
 [appendix]
 [[change-history]]
 == Change History
 
-This section describes what changes have been made as versions have changed.
+This section describes changes that have been made as versions have changed.
 
 === Current Release
 
