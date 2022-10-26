@@ -307,8 +307,7 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 		}
 
 		private void handleClose(Channel channel, boolean transactional) {
-
-			if (transactional && this.txChannels.get() == null ? true : this.channels.get() == null) {
+			if ((transactional && this.txChannels.get() == null) || (!transactional && this.channels.get() == null)) {
 				physicalClose(channel);
 			}
 			else {

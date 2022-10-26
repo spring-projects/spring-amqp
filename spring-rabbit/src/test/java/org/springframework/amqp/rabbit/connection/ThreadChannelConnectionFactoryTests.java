@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 the original author or authors.
+ * Copyright 2020-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,6 +108,36 @@ public class ThreadChannelConnectionFactoryTests {
 				.isFalse();
 		assertThat(((Channel) TestUtils.getPropertyValue(conn, "txChannels", ThreadLocal.class).get()).isOpen())
 				.isFalse();
+	}
+
+	@Test
+	void testClose() throws Exception {
+		ConnectionFactory rabbitConnectionFactory = new ConnectionFactory();
+		rabbitConnectionFactory.setHost("localhost");
+		ThreadChannelConnectionFactory tccf = new ThreadChannelConnectionFactory(rabbitConnectionFactory);
+		Connection conn = tccf.createConnection();
+		Channel chann1 = conn.createChannel(false);
+		Channel targetChannel1 = ((ChannelProxy) chann1).getTargetChannel();
+		chann1.close();
+		Channel chann2 = conn.createChannel(false);
+		Channel targetChannel2 = ((ChannelProxy) chann2).getTargetChannel();
+		assertThat(chann2).isSameAs(chann1);
+		assertThat(targetChannel2).isSameAs(targetChannel1);
+	}
+
+	@Test
+	void testTxClose() throws Exception {
+		ConnectionFactory rabbitConnectionFactory = new ConnectionFactory();
+		rabbitConnectionFactory.setHost("localhost");
+		ThreadChannelConnectionFactory tccf = new ThreadChannelConnectionFactory(rabbitConnectionFactory);
+		Connection conn = tccf.createConnection();
+		Channel chann1 = conn.createChannel(true);
+		Channel targetChannel1 = ((ChannelProxy) chann1).getTargetChannel();
+		chann1.close();
+		Channel chann2 = conn.createChannel(true);
+		Channel targetChannel2 = ((ChannelProxy) chann2).getTargetChannel();
+		assertThat(chann2).isSameAs(chann1);
+		assertThat(targetChannel2).isSameAs(targetChannel1);
 	}
 
 	@Test
