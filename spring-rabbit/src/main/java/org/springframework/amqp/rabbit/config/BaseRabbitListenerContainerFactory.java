@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.config;
 
 import java.util.Arrays;
+import java.util.function.Function;
 
 import org.aopalliance.aop.Advice;
 
@@ -26,6 +27,7 @@ import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.adapter.AbstractAdaptableMessageListener;
+import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.retry.RecoveryCallback;
@@ -53,6 +55,8 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	private RecoveryCallback<?> recoveryCallback;
 
 	private Advice[] adviceChain;
+
+	private Function<String, ReplyPostProcessor> replyPostProcessorProvider;
 
 	@Override
 	public abstract C createListenerContainer(RabbitListenerEndpoint endpoint);
@@ -108,6 +112,17 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 		this.recoveryCallback = recoveryCallback;
 	}
 
+	/**
+	 * Set a function to provide a reply post processor; it will be used if there is no
+	 * replyPostProcessor on the rabbit listener annotation. The input parameter is the
+	 * listener id.
+	 * @param replyPostProcessorProvider the post processor.
+	 * @since 3.0
+	 */
+	public void setReplyPostProcessorProvider(Function<String, ReplyPostProcessor> replyPostProcessorProvider) {
+		this.replyPostProcessorProvider = replyPostProcessorProvider;
+	}
+
 	protected void applyCommonOverrides(@Nullable RabbitListenerEndpoint endpoint, C instance) {
 		if (endpoint != null) { // endpoint settings overriding default factory settings
 			JavaUtils.INSTANCE
@@ -130,6 +145,11 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 						.acceptIfNotNull(endpoint.getReplyPostProcessor(), messageListener::setReplyPostProcessor)
 						.acceptIfNotNull(endpoint.getReplyContentType(), messageListener::setReplyContentType);
 				messageListener.setConverterWinsContentType(endpoint.isConverterWinsContentType());
+				if (endpoint.getReplyPostProcessor() == null && this.replyPostProcessorProvider != null) {
+					JavaUtils.INSTANCE
+							.acceptIfNotNull(this.replyPostProcessorProvider.apply(endpoint.getId()),
+									messageListener::setReplyPostProcessor);
+				}
 			}
 		}
 	}

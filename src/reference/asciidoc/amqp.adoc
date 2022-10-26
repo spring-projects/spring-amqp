@@ -3144,6 +3144,22 @@ public ReplyPostProcessor echoCustomHeader() {
 ----
 ====
 
+Starting with version 3.0, you can configure the post processor on the container factory instead of on the annotation.
+
+====
+[source, java]
+----
+factory.setReplyPostProcessorProvider(id -> (req, resp) -> {
+    resp.getMessageProperties().setHeader("myHeader", req.getMessageProperties().getHeader("myHeader"));
+    return resp;
+});
+----
+====
+
+The `id` parameter is the listener id.
+
+A setting on the annotation will supersede the factory setting.
+
 The `@SendTo` value is assumed as a reply `exchange` and `routingKey` pair that follows the `exchange/routingKey` pattern,
 where one of those parts can be omitted.
 The valid values are as follows:
