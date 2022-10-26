@@ -237,6 +237,9 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 	@Autowired
 	private MultiListenerValidatedJsonBean multiValidated;
 
+	@Autowired
+	private ReplyPostProcessor rpp;
+
 	@BeforeAll
 	public static void setUp() {
 		System.setProperty(RabbitListenerAnnotationBeanPostProcessor.RABBIT_EMPTY_STRING_ARGUMENTS_PROPERTY,
@@ -310,6 +313,8 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		this.registry.start();
 		assertThat(listenerContainer.isRunning()).isTrue();
 		listenerContainer.stop();
+		assertThat(listenerContainer.getMessageListener()).extracting("replyPostProcessor")
+				.isSameAs(this.rpp);
 	}
 
 	@Test
@@ -1690,12 +1695,20 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		}
 
 		@Bean
-		public SimpleRabbitListenerContainerFactory rabbitAutoStartFalseListenerContainerFactory() {
+		public SimpleRabbitListenerContainerFactory rabbitAutoStartFalseListenerContainerFactory(
+				ReplyPostProcessor rpp) {
+
 			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 			factory.setConnectionFactory(rabbitConnectionFactory());
 			factory.setReceiveTimeout(10L);
 			factory.setAutoStartup(false);
+			factory.setReplyPostProcessorProvider(id -> rpp);
 			return factory;
+		}
+
+		@Bean
+		ReplyPostProcessor rpp() {
+			return (in, out) -> out;
 		}
 
 		@Bean

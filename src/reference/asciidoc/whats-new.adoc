@@ -37,7 +37,10 @@ When setting the container factory `consumerBatchEnabled` to `true`, the `batchL
 See <<receiving-batch>> for more infoprmation.
 
 `MessageConverter` s can now return `Optional.empty()` for a null value; this is currently implemented by the `Jackson2JsonMessageConverter`.
-See <<Jackson2JsonMessageConverter-from-message>> for more information.
+See <<Jackson2JsonMessageConverter-from-message>> for more information
+
+You can now configure a `ReplyPostProcessor` via the container factory rather than via a property on `@RabbitListener`.
+See <<async-annotation-driven-reply>> for more information.
 
 ==== Connection Factory Changes
 
