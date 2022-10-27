@@ -6783,7 +6783,7 @@ The default `MessageRecoverer` consumes the errant message and emits a `WARN` me
 
 Starting with version 1.3, a new `RepublishMessageRecoverer` is provided, to allow publishing of failed messages after retries are exhausted.
 
-When a recoverer consumes the final exception, the message is ack'd and is not sent to the dead letter exchange, if any.
+When a recoverer consumes the final exception, the message is ack'd and is not sent to the dead letter exchange by the broker, if configured.
 
 NOTE: When `RepublishMessageRecoverer` is used on the consumer side, the received message has `deliveryMode` in the `receivedDeliveryMode` message property.
 In this case the `deliveryMode` is `null`.
@@ -6834,6 +6834,9 @@ Starting with versions 2.1.13, 2.2.3, the exception message is included in this 
 * if the stack trace is small, the message will be truncated (plus `...`) to fit in the available bytes (but the message within the stack trace itself is truncated to 97 bytes plus `...`).
 
 Whenever a truncation of any kind occurs, the original exception will be logged to retain the complete information.
+The evaluation is performed after the headers are enhanced so information such as the exception type can be used in the expressions.
+
+Starting with version 2.4.8, the error exchange and routing key can be provided as SpEL expressions, with the `Message` being the root object for the evaluation.
 
 Starting with version 2.3.3, a new subclass `RepublishMessageRecovererWithConfirms` is provided; this supports both styles of publisher confirms and will wait for the confirmation before returning (or throw an exception if not confirmed or the message is returned).
 

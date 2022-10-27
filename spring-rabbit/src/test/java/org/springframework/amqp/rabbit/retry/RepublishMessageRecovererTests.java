@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
 
 /**
  * @author James Carr
@@ -42,7 +43,7 @@ import org.springframework.amqp.core.MessageProperties;
  * @since 1.3
  */
 @ExtendWith(MockitoExtension.class)
-public class RepublishMessageRecovererTest {
+public class RepublishMessageRecovererTests {
 
 	private final Message message = new Message("".getBytes(), new MessageProperties());
 
@@ -149,6 +150,31 @@ public class RepublishMessageRecovererTest {
 		recoverer.recover(this.message, this.cause);
 
 		assertThat(this.message.getMessageProperties().getDeliveryMode()).isEqualTo(MessageDeliveryMode.NON_PERSISTENT);
+	}
+
+	@Test
+	void dynamicExRk() {
+		this.recoverer = new RepublishMessageRecoverer(this.amqpTemplate,
+				new SpelExpressionParser().parseExpression("messageProperties.headers.get('errorExchange')"),
+				new SpelExpressionParser().parseExpression("messageProperties.headers.get('errorRK')"));
+		this.message.getMessageProperties().setHeader("errorExchange", "ex");
+		this.message.getMessageProperties().setHeader("errorRK", "rk");
+
+		this.recoverer.recover(this.message, this.cause);
+
+		verify(this.amqpTemplate).send("ex", "rk", this.message);
+	}
+
+	@Test
+	void dynamicRk() {
+		this.recoverer = new RepublishMessageRecoverer(this.amqpTemplate, null,
+				new SpelExpressionParser().parseExpression("messageProperties.headers.get('errorRK')"));
+		this.message.getMessageProperties().setHeader("errorExchange", "ex");
+		this.message.getMessageProperties().setHeader("errorRK", "rk");
+
+		this.recoverer.recover(this.message, this.cause);
+
+		verify(this.amqpTemplate).send("rk", this.message);
 	}
 
 }
