@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 the original author or authors.
+ * Copyright 2014-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,10 @@ import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.expression.EvaluationContext;
+import org.springframework.expression.Expression;
+import org.springframework.expression.common.LiteralExpression;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -68,9 +72,11 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 
 	protected final AmqpTemplate errorTemplate; // NOSONAR
 
-	protected final String errorRoutingKey; // NOSONAR
+	protected final Expression errorRoutingKeyExpression; // NOSONAR
 
-	protected final String errorExchangeName; // NOSONAR
+	protected final Expression errorExchangeNameExpression; // NOSONAR
+
+	protected final EvaluationContext evaluationContext = new StandardEvaluationContext();
 
 	private String errorRoutingKeyPrefix = "error.";
 
@@ -80,19 +86,48 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 
 	private MessageDeliveryMode deliveryMode = MessageDeliveryMode.PERSISTENT;
 
+	/**
+	 * Create an instance with the provided template.
+	 * @param errorTemplate the template.
+	 */
 	public RepublishMessageRecoverer(AmqpTemplate errorTemplate) {
-		this(errorTemplate, null, null);
+		this(errorTemplate, (String) null, (String) null);
 	}
 
+	/**
+	 * Create an instance with the provided properties.
+	 * @param errorTemplate the template.
+	 * @param errorExchange the exchange.
+	 */
 	public RepublishMessageRecoverer(AmqpTemplate errorTemplate, String errorExchange) {
 		this(errorTemplate, errorExchange, null);
 	}
 
+	/**
+	 * Create an instance with the provided properties. If the exchange or routing key is null,
+	 * the template's default will be used.
+	 * @param errorTemplate the template.
+	 * @param errorExchange the exchange.
+	 * @param errorRoutingKey the routing key.
+	 */
 	public RepublishMessageRecoverer(AmqpTemplate errorTemplate, String errorExchange, String errorRoutingKey) {
+		this(errorTemplate, new LiteralExpression(errorExchange), new LiteralExpression(errorRoutingKey));
+	}
+
+	/**
+	 * Create an instance with the provided properties. If the exchange or routing key
+	 * evaluate to null, the template's default will be used.
+	 * @param errorTemplate the template.
+	 * @param errorExchange the exchange expression, evaluated against the message.
+	 * @param errorRoutingKey the routing key, evaluated against the message.
+	 */
+	public RepublishMessageRecoverer(AmqpTemplate errorTemplate, @Nullable Expression errorExchange,
+			@Nullable Expression errorRoutingKey) {
+
 		Assert.notNull(errorTemplate, "'errorTemplate' cannot be null");
 		this.errorTemplate = errorTemplate;
-		this.errorExchangeName = errorExchange;
-		this.errorRoutingKey = errorRoutingKey;
+		this.errorExchangeNameExpression = errorExchange != null ? errorExchange : new LiteralExpression(null);
+		this.errorRoutingKeyExpression = errorRoutingKey != null ? errorRoutingKey : new LiteralExpression(null);
 		if (!(this.errorTemplate instanceof RabbitTemplate)) {
 			this.maxStackTraceLength = Integer.MAX_VALUE;
 		}
@@ -175,17 +210,17 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 			messageProperties.setDeliveryMode(this.deliveryMode);
 		}
 
-		if (null != this.errorExchangeName) {
-			String routingKey = this.errorRoutingKey != null ? this.errorRoutingKey
-					: this.prefixedOriginalRoutingKey(message);
-			doSend(this.errorExchangeName, routingKey, message);
+		String exchangeName = this.errorExchangeNameExpression.getValue(this.evaluationContext, message, String.class);
+		String rk = this.errorRoutingKeyExpression.getValue(this.evaluationContext, message, String.class);
+		String routingKey = rk != null ? rk : this.prefixedOriginalRoutingKey(message);
+		if (null != exchangeName) {
+			doSend(exchangeName, routingKey, message);
 			if (this.logger.isWarnEnabled()) {
-				this.logger.warn("Republishing failed message to exchange '" + this.errorExchangeName
+				this.logger.warn("Republishing failed message to exchange '" + exchangeName
 						+ "' with routing key " + routingKey);
 			}
 		}
 		else {
-			final String routingKey = this.prefixedOriginalRoutingKey(message);
 			doSend(null, routingKey, message);
 			if (this.logger.isWarnEnabled()) {
 				this.logger.warn("Republishing failed message to the template's default exchange with routing key "
@@ -271,11 +306,24 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 		return null;
 	}
 
-	private String prefixedOriginalRoutingKey(Message message) {
+	/**
+	 * The default behavior of this method is to append the received routing key to the
+	 * {@link #setErrorRoutingKeyPrefix(String) routingKeyPrefix}. This is only invoked
+	 * if the routing key is null.
+	 * @param message the message.
+	 * @return the routing key.
+	 */
+	protected String prefixedOriginalRoutingKey(Message message) {
 		return this.errorRoutingKeyPrefix + message.getMessageProperties().getReceivedRoutingKey();
 	}
 
-	private String getStackTraceAsString(Throwable cause) {
+	/**
+	 * Create a String representation of the stack trace.
+	 * @param cause the throwable.
+	 * @return the String.
+	 * @since  2.4.8
+	 */
+	protected String getStackTraceAsString(Throwable cause) {
 		StringWriter stringWriter = new StringWriter();
 		PrintWriter printWriter = new PrintWriter(stringWriter, true);
 		cause.printStackTrace(printWriter);
