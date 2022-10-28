@@ -323,12 +323,12 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	}
 
 	private TypeMetadata buildMetadata(Class<?> targetClass) {
-		Collection<RabbitListener> classLevelListeners = findListenerAnnotations(targetClass);
+		List<RabbitListener> classLevelListeners = findListenerAnnotations(targetClass);
 		final boolean hasClassLevelListeners = classLevelListeners.size() > 0;
 		final List<ListenerMethod> methods = new ArrayList<>();
 		final List<Method> multiMethods = new ArrayList<>();
 		ReflectionUtils.doWithMethods(targetClass, method -> {
-			Collection<RabbitListener> listenerAnnotations = findListenerAnnotations(method);
+			List<RabbitListener> listenerAnnotations = findListenerAnnotations(method);
 			if (listenerAnnotations.size() > 0) {
 				methods.add(new ListenerMethod(method,
 						listenerAnnotations.toArray(new RabbitListener[listenerAnnotations.size()])));
@@ -349,7 +349,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				classLevelListeners.toArray(new RabbitListener[classLevelListeners.size()]));
 	}
 
-	private Collection<RabbitListener> findListenerAnnotations(AnnotatedElement element) {
+	private List<RabbitListener> findListenerAnnotations(AnnotatedElement element) {
 		return MergedAnnotations.from(element, SearchStrategy.TYPE_HIERARCHY)
 				.stream(RabbitListener.class)
 				.map(ann -> ann.synthesize())
