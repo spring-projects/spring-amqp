@@ -110,7 +110,9 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 	 * @param errorExchange the exchange.
 	 * @param errorRoutingKey the routing key.
 	 */
-	public RepublishMessageRecoverer(AmqpTemplate errorTemplate, String errorExchange, String errorRoutingKey) {
+	public RepublishMessageRecoverer(AmqpTemplate errorTemplate, @Nullable String errorExchange,
+			@Nullable String errorRoutingKey) {
+
 		this(errorTemplate, new LiteralExpression(errorExchange), new LiteralExpression(errorRoutingKey));
 	}
 
@@ -126,8 +128,8 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 
 		Assert.notNull(errorTemplate, "'errorTemplate' cannot be null");
 		this.errorTemplate = errorTemplate;
-		this.errorExchangeNameExpression = errorExchange != null ? errorExchange : new LiteralExpression(null);
-		this.errorRoutingKeyExpression = errorRoutingKey != null ? errorRoutingKey : new LiteralExpression(null);
+		this.errorExchangeNameExpression = errorExchange != null ? errorExchange : new LiteralExpression(null); // NOSONAR
+		this.errorRoutingKeyExpression = errorRoutingKey != null ? errorRoutingKey : new LiteralExpression(null); // NOSONAR
 		if (!(this.errorTemplate instanceof RabbitTemplate)) {
 			this.maxStackTraceLength = Integer.MAX_VALUE;
 		}
