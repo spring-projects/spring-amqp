@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.junit;
 import java.time.Duration;
 
 import org.testcontainers.containers.RabbitMQContainer;
+import org.testcontainers.utility.DockerImageName;
 
 /**
  * @author Gary Russell
@@ -37,7 +38,9 @@ public abstract class AbstractTestContainerTests {
 			if (cache != null) {
 				image = cache + image;
 			}
-			RABBITMQ = new RabbitMQContainer(image)
+			DockerImageName imageName = DockerImageName.parse(image)
+					.asCompatibleSubstituteFor("rabbitmq");
+			RABBITMQ = new RabbitMQContainer(imageName)
 						.withExposedPorts(5672, 15672, 5552)
 						.withPluginsEnabled("rabbitmq_stream")
 						.withStartupTimeout(Duration.ofMinutes(2));
