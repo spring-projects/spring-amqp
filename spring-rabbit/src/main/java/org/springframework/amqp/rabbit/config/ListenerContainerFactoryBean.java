@@ -212,11 +212,11 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 	}
 
 	public void setQueueNames(String... queueName) { // NOSONAR
-		this.queueNames = queueName;
+		this.queueNames = queueName; // NOSONAR
 	}
 
 	public void setQueues(Queue... queues) { // NOSONAR
-		this.queues = queues;
+		this.queues = queues; // NOSONAR
 	}
 
 	public void setExposeListenerChannel(boolean exposeListenerChannel) {
@@ -236,11 +236,11 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 	}
 
 	public void setAdviceChain(Advice... adviceChain) { // NOSONAR
-		this.adviceChain = adviceChain;
+		this.adviceChain = adviceChain; // NOSONAR
 	}
 
 	public void setAfterReceivePostProcessors(MessagePostProcessor... afterReceivePostProcessors) { // NOSONAR
-		this.afterReceivePostProcessors = afterReceivePostProcessors;
+		this.afterReceivePostProcessors = afterReceivePostProcessors; // NOSONAR
 	}
 
 	public void setAutoStartup(boolean autoStartup) {

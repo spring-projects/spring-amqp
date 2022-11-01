@@ -130,7 +130,7 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	 * @param consumers the number of consumers.
 	 * @since 3.0
 	 */
-	public void superStream(String streamName, String name, int consumers) {
+	public synchronized void superStream(String streamName, String name, int consumers) {
 		Assert.isTrue(consumers > 0, () -> "'concurrency' must be greater than zero, not " + consumers);
 		this.concurrency = consumers;
 		Assert.isTrue(!this.simpleStream, "setQueueNames() and superStream() are mutually exclusive");

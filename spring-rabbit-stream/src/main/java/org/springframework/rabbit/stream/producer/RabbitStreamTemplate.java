@@ -110,7 +110,7 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 	 * @param superStreamRouting the routing function.
 	 * @since 3.0
 	 */
-	public void setSuperStreamRouting(Function<com.rabbitmq.stream.Message, String> superStreamRouting) {
+	public synchronized void setSuperStreamRouting(Function<com.rabbitmq.stream.Message, String> superStreamRouting) {
 		this.superStreamRouting = superStreamRouting;
 	}
 

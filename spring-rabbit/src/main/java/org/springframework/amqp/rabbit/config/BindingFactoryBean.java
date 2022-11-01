@@ -77,7 +77,7 @@ public class BindingFactoryBean implements FactoryBean<Binding> {
 	}
 
 	public void setAdminsThatShouldDeclare(AmqpAdmin... admins) { // NOSONAR
-		this.adminsThatShouldDeclare = admins;
+		this.adminsThatShouldDeclare = admins; // NOSONAR
 	}
 
 	@Override
