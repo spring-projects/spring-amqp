@@ -159,7 +159,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private TransactionAttribute transactionAttribute = new DefaultTransactionAttribute();
 
-	@Nullable
 	private String beanName = "not.a.Spring.bean";
 
 	private Executor taskExecutor = new SimpleAsyncTaskExecutor();
@@ -706,7 +705,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * The 'id' attribute of the listener.
 	 * @return the id (or the container bean name if no id set).
 	 */
-	@Nullable
 	public String getListenerId() {
 		return this.listenerId != null ? this.listenerId : this.beanName;
 	}

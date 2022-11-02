@@ -17,7 +17,6 @@
 package org.springframework.amqp.rabbit.support.micrometer;
 
 import org.springframework.amqp.core.Message;
-import org.springframework.lang.Nullable;
 
 import io.micrometer.observation.transport.ReceiverContext;
 
@@ -30,12 +29,11 @@ import io.micrometer.observation.transport.ReceiverContext;
  */
 public class RabbitMessageReceiverContext extends ReceiverContext<Message> {
 
-	@Nullable
 	private final String listenerId;
 
 	private final Message message;
 
-	public RabbitMessageReceiverContext(Message message, @Nullable String listenerId) {
+	public RabbitMessageReceiverContext(Message message, String listenerId) {
 		super((carrier, key) -> carrier.getMessageProperties().getHeader(key));
 		setCarrier(message);
 		this.message = message;
@@ -43,7 +41,6 @@ public class RabbitMessageReceiverContext extends ReceiverContext<Message> {
 		setRemoteServiceName("RabbitMQ");
 	}
 
-	@Nullable
 	public String getListenerId() {
 		return this.listenerId;
 	}

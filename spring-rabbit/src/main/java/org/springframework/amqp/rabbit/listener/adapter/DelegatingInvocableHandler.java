@@ -136,13 +136,13 @@ public class DelegatingInvocableHandler {
 		this.resolver = beanExpressionResolver;
 		this.beanExpressionContext = beanExpressionContext;
 		this.validator = validator == null ? null : new PayloadValidator(validator);
-		boolean asyncReplies;
-		asyncReplies = defaultHandler != null && isAsyncReply(defaultHandler);
+		boolean asyncRepl;
+		asyncRepl = defaultHandler != null && isAsyncReply(defaultHandler);
 		Iterator<InvocableHandlerMethod> iterator = handlers.iterator();
 		while (iterator.hasNext()) {
-			asyncReplies |= isAsyncReply(iterator.next());
+			asyncRepl |= isAsyncReply(iterator.next());
 		}
-		this.asyncReplies = asyncReplies;
+		this.asyncReplies = asyncRepl;
 	}
 
 	private boolean isAsyncReply(InvocableHandlerMethod method) {
