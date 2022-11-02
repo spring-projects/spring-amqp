@@ -1642,7 +1642,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		if (listener instanceof ChannelAwareMessageListener chaml) {
 			doInvokeListener(chaml, channel, data);
 		}
-		else if (listener instanceof MessageListener msgListener) {
+		else if (listener instanceof MessageListener msgListener) { // NOSONAR
 			boolean bindChannel = isExposeListenerChannel() && isChannelLocallyTransacted();
 			if (bindChannel) {
 				RabbitResourceHolder resourceHolder = new RabbitResourceHolder(channel, false);

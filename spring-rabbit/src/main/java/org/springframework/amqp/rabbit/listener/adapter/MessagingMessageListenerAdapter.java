@@ -436,10 +436,9 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 					|| parameterType.equals(org.springframework.amqp.core.Message.class)) {
 				return false;
 			}
-			if (parameterType instanceof ParameterizedType parameterizedType) {
-				if (parameterizedType.getRawType().equals(Message.class)) {
-					return !(parameterizedType.getActualTypeArguments()[0] instanceof WildcardType);
-				}
+			if (parameterType instanceof ParameterizedType parameterizedType &&
+					(parameterizedType.getRawType().equals(Message.class))) {
+				return !(parameterizedType.getActualTypeArguments()[0] instanceof WildcardType);
 			}
 			return !parameterType.equals(Message.class); // could be Message without a generic type
 		}

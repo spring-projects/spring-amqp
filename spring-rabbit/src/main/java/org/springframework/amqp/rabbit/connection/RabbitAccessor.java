@@ -126,7 +126,6 @@ public abstract class RabbitAccessor implements InitializingBean {
 		}
 	}
 
-	@Nullable
 	protected ObservationRegistry getObservationRegistry() {
 		return this.observationRegistry;
 	}

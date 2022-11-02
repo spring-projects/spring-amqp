@@ -264,11 +264,10 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			Iterator<Entry<String, Declarable>> iterator = this.manualDeclarables.entrySet().iterator();
 			while (iterator.hasNext()) {
 				Entry<String, Declarable> next = iterator.next();
-				if (next.getValue() instanceof Binding binding) {
-					if ((!binding.isDestinationQueue() && binding.getDestination().equals(exchangeName))
-							|| binding.getExchange().equals(exchangeName)) {
-						iterator.remove();
-					}
+				if (next.getValue() instanceof Binding binding &&
+						((!binding.isDestinationQueue() && binding.getDestination().equals(exchangeName))
+							|| binding.getExchange().equals(exchangeName))) {
+					iterator.remove();
 				}
 			}
 		}
@@ -362,10 +361,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			Iterator<Entry<String, Declarable>> iterator = this.manualDeclarables.entrySet().iterator();
 			while (iterator.hasNext()) {
 				Entry<String, Declarable> next = iterator.next();
-				if (next.getValue() instanceof Binding binding) {
-					if (binding.isDestinationQueue() && binding.getDestination().equals(queueName)) {
-						iterator.remove();
-					}
+				if (next.getValue() instanceof Binding binding &&
+						(binding.isDestinationQueue() && binding.getDestination().equals(queueName))) {
+					iterator.remove();
 				}
 			}
 		}

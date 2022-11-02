@@ -113,7 +113,7 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 	public RepublishMessageRecoverer(AmqpTemplate errorTemplate, @Nullable String errorExchange,
 			@Nullable String errorRoutingKey) {
 
-		this(errorTemplate, new LiteralExpression(errorExchange), new LiteralExpression(errorRoutingKey));
+		this(errorTemplate, new LiteralExpression(errorExchange), new LiteralExpression(errorRoutingKey)); // NOSONAR
 	}
 
 	/**

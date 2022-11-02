@@ -30,6 +30,7 @@ import io.micrometer.observation.transport.ReceiverContext;
  */
 public class RabbitMessageReceiverContext extends ReceiverContext<Message> {
 
+	@Nullable
 	private final String listenerId;
 
 	private final Message message;

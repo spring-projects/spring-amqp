@@ -103,7 +103,7 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	 * Mutually exclusive with {@link #superStream(String, String)}.
 	 */
 	@Override
-	public void setQueueNames(String... queueNames) {
+	public synchronized void setQueueNames(String... queueNames) {
 		Assert.isTrue(!this.superStream, "setQueueNames() and superStream() are mutually exclusive");
 		Assert.isTrue(queueNames != null && queueNames.length == 1, "Only one stream is supported");
 		this.builder.stream(queueNames[0]);

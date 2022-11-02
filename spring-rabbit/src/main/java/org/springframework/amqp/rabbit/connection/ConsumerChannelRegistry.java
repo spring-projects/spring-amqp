@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,7 +101,7 @@ public final class ConsumerChannelRegistry {
 	public static Channel getConsumerChannel(ConnectionFactory connectionFactory) {
 		ChannelHolder channelHolder = consumerChannel.get();
 		Channel channel = null;
-		if (channelHolder != null && channelHolder.getConnectionFactory() == connectionFactory) {
+		if (channelHolder != null && channelHolder.getConnectionFactory().equals(connectionFactory)) {
 			channel = channelHolder.getChannel();
 		}
 		return channel;
