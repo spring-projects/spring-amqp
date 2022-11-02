@@ -43,6 +43,7 @@ public class RabbitMessageReceiverContext extends ReceiverContext<Message> {
 		setRemoteServiceName("RabbitMQ");
 	}
 
+	@Nullable
 	public String getListenerId() {
 		return this.listenerId;
 	}
