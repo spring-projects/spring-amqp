@@ -49,7 +49,7 @@ ext {
 	googleJsr305Version = '3.0.2'
 	hamcrestVersion = '2.2'
 	hibernateValidationVersion = '7.0.5.Final'
-	jacksonBomVersion = '2.13.4.20221013'
+	jacksonBomVersion = '2.14.0'
 	jaywayJsonPathVersion = '2.7.0'
 	junit4Version = '4.13.2'
 	junitJupiterVersion = '5.9.1'
