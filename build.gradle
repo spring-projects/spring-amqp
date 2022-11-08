@@ -33,7 +33,7 @@ description = 'Spring AMQP'
 
 ext {
 	linkHomepage = 'https://projects.spring.io/spring-amqp'
-	linkCi	   = 'https://build.spring.io/browse/AMQP'
+	linkCi       = 'https://build.spring.io/browse/AMQP'
 	linkIssue    = 'https://jira.spring.io/browse/AMQP'
 	linkScmUrl           = 'https://github.com/spring-projects/spring-amqp'
 	linkScmConnection    = 'git://github.com/spring-projects/spring-amqp.git'
@@ -73,7 +73,7 @@ ext {
 	testContainersVersion = '1.17.5'
 	zstdJniVersion = '1.5.0-2'
 
-    javaProjects = subprojects - project(':spring-amqp-bom')
+	javaProjects = subprojects - project(':spring-amqp-bom')
 }
 
 nohttp {
