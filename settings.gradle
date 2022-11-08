@@ -1,6 +1,7 @@
 rootProject.name = 'spring-amqp-dist'
 
 include 'spring-amqp'
+include 'spring-amqp-bom'
 include 'spring-rabbit'
 include 'spring-rabbit-stream'
 include 'spring-rabbit-junit'

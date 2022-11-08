@@ -33,7 +33,7 @@ description = 'Spring AMQP'
 
 ext {
 	linkHomepage = 'https://projects.spring.io/spring-amqp'
-	linkCi       = 'https://build.spring.io/browse/AMQP'
+	linkCi	   = 'https://build.spring.io/browse/AMQP'
 	linkIssue    = 'https://jira.spring.io/browse/AMQP'
 	linkScmUrl           = 'https://github.com/spring-projects/spring-amqp'
 	linkScmConnection    = 'git://github.com/spring-projects/spring-amqp.git'
@@ -72,6 +72,8 @@ ext {
 	springRetryVersion = '2.0.0-RC1'
 	testContainersVersion = '1.17.5'
 	zstdJniVersion = '1.5.0-2'
+
+    javaProjects = subprojects - project(':spring-amqp-bom')
 }
 
 nohttp {
@@ -125,10 +127,10 @@ ext {
 	] as String[]
 }
 
-subprojects { subproject ->
+configure(javaProjects) { subproject ->
 	apply plugin: 'java-library'
 	apply plugin: 'java'
-	apply from:   "${rootProject.projectDir}/publish-maven.gradle"
+	apply from:   "${rootProject.projectDir}/gradle/publish-maven.gradle"
 	apply plugin: 'eclipse'
 	apply plugin: 'idea'
 	apply plugin: 'project-report'
@@ -376,6 +378,33 @@ project('spring-amqp') {
 
 }
 
+project('spring-amqp-bom') {
+	description = 'Spring for RabbitMQ (Bill of Materials)'
+
+	apply plugin: 'java-platform'
+	apply from: "${rootDir}/gradle/publish-maven.gradle"
+
+	dependencies {
+		constraints {
+			javaProjects.sort { "$it.name" }.each {
+				api it
+			}
+		}
+	}
+
+	publishing {
+		publications {
+			mavenJava(MavenPublication) {
+				from components.javaPlatform
+			}
+		}
+	}
+
+	sonarqube {
+		skipProject = true
+	}
+}
+
 project('spring-rabbit') {
 	description = 'Spring RabbitMQ Support'
 
@@ -618,11 +647,11 @@ task api(type: Javadoc) {
 		addBooleanOption('Xdoclint:syntax', true) // only check syntax with doclint
 	}
 
-	source subprojects.collect { project ->
+	source javaProjects.collect { project ->
 		project.sourceSets.main.allJava
 	}
 	destinationDir = new File(buildDir, 'api')
-	classpath = files(subprojects.collect { project ->
+	classpath = files(javaProjects.collect { project ->
 		project.sourceSets.main.compileClasspath
 	})
 }
@@ -633,7 +662,7 @@ task schemaZip(type: Zip) {
 	description = "Builds -${archiveClassifier} archive containing all " +
 		"XSDs for deployment at static.springframework.org/schema."
 
-	subprojects.each { subproject ->
+	javaProjects.each { subproject ->
 		def Set files = new HashSet()
 		def Properties schemas = new Properties();
 		def shortName = subproject.name.replaceFirst("${rootProject.name}-", '')
@@ -717,7 +746,7 @@ task distZip(type: Zip, dependsOn: [docsZip, schemaZip]) {
 		into "${baseDir}/schema"
 	}
 
-	subprojects.each { subproject ->
+	javaProjects.each { subproject ->
 		into ("${baseDir}/libs") {
 			from subproject.jar
 			from subproject.sourcesJar
@@ -769,7 +798,7 @@ task dist(dependsOn: assemble) {
 	description = 'Builds -dist, -docs and -schema distribution archives.'
 }
 
-apply from: "${rootProject.projectDir}/publish-maven.gradle"
+apply from: "${rootProject.projectDir}/gradle/publish-maven.gradle"
 
 publishing {
 	publications {
