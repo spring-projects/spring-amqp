@@ -756,7 +756,7 @@ task distZip(type: Zip, dependsOn: [docsZip, schemaZip]) {
 
 	from(project(':spring-amqp-bom').generatePomFileForMavenJavaPublication) {
 		into "${baseDir}/libs"
-		rename 'pom-default.xml', "spring-integration-bom-${project.version}.xml"
+		rename 'pom-default.xml', "spring-amqp-bom-${project.version}.xml"
 	}
 
 }
