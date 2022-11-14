@@ -3552,7 +3552,7 @@ public void consumerBatch3(List<Invoice> strings) {
 
 * the first is called with the raw, unconverted `org.springframework.amqp.core.Message` s received.
 * the second is called with the `org.springframework.messaging.Message<?>` s with converted payloads and mapped headers/properties.
-* the third is called with the converted payloads, with no access to headers/properteis.
+* the third is called with the converted payloads, with no access to headers/properties.
 
 You can also add a `Channel` parameter, often used when using `MANUAL` ack mode.
 This is not very useful with the third example because you don't have access to the `delivery_tag` property.
