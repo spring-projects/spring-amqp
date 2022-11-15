@@ -206,6 +206,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	private final AtomicInteger containerInstance = new AtomicInteger();
 
+	private final Map<String, Object> consumerArgs = new HashMap<>();
+
 	private ApplicationContext applicationContext;
 
 	private String exchange = DEFAULT_EXCHANGE;
@@ -952,6 +954,33 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				.stream()
 				.mapToInt(channel -> ((PublisherCallbackChannel) channel).getPendingConfirmsCount(this))
 				.sum();
+	}
+
+	/**
+	 * When using receive methods with a non-zero timeout, a
+	 * {@link com.rabbitmq.client.Consumer} is created to receive the message. Use this
+	 * property to add arguments to the consumer (e.g. {@code x-priority}).
+	 * @param arg the argument name to pass into the {@code basicConsume} operation.
+	 * @param value the argument value to pass into the {@code basicConsume} operation.
+	 * @since 2.4.8
+	 * @see #removeConsumerArg(String)
+	 */
+	public void addConsumerArg(String arg, Object value) {
+		this.consumerArgs.put(arg, value);
+	}
+
+	/**
+	 * When using receive methods with a non-zero timeout, a
+	 * {@link com.rabbitmq.client.Consumer} is created to receive the message. Use this
+	 * method to remove an argument from those passed into the {@code basicConsume}
+	 * operation.
+	 * @param arg the argument name.
+	 * @return the previous value.
+	 * @since 2.4.8
+	 * @see #addConsumerArg(String, Object)
+	 */
+	public Object removeConsumerArg(String arg) {
+		return this.consumerArgs.remove(arg);
 	}
 
 	@Override
@@ -2754,7 +2783,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			}
 
 		};
-		channel.basicConsume(queueName, consumer);
+		channel.basicConsume(queueName, false, this.consumerArgs, consumer);
 		if (!latch.await(timeoutMillis, TimeUnit.MILLISECONDS)) {
 			if (channel instanceof ChannelProxy proxy) {
 				proxy.getTargetChannel().close();

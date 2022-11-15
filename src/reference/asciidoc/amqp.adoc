@@ -1886,10 +1886,13 @@ By default, if no message is available, `null` is returned immediately.
 There is no blocking.
 Starting with version 1.5, you can set a `receiveTimeout`, in milliseconds, and the receive methods block for up to that long, waiting for a message.
 A value less than zero means block indefinitely (or at least until the connection to the broker is lost).
-Version 1.6 introduced variants of the `receive` methods that let the timeout be passed in on each call.
+Version 1.6 introduced variants of the `receive` methods that allows the timeout be passed in on each call.
 
 CAUTION: Since the receive operation creates a new `QueueingConsumer` for each message, this technique is not really appropriate for high-volume environments.
 Consider using an asynchronous consumer or a `receiveTimeout` of zero for those use cases.
+
+Starting with version 2.4.8, when using a non-zero timeout, you can specify arguments passed into the `basicConsume` method used to associate the consumer with the channel.
+For example: `template.addConsumerArg("x-priority", 10)`.
 
 There are four simple `receive` methods available.
 As with the `Exchange` on the sending side, there is a method that requires that a default queue property has been set
