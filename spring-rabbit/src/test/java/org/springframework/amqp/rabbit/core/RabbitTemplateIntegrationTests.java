@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -335,8 +335,10 @@ public class RabbitTemplateIntegrationTests {
 			}
 
 			@Override
-			public String basicConsume(String queue, Consumer callback) throws IOException {
-				return super.basicConsume(queue, new MockConsumer(callback));
+			public String basicConsume(String queue, boolean autoAck, Map<String, Object> args, Consumer callback)
+					throws IOException {
+
+				return super.basicConsume(queue, autoAck, args, new MockConsumer(callback));
 			}
 
 		}
