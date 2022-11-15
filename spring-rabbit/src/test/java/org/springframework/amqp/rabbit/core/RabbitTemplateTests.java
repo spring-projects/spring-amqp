@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
@@ -49,6 +50,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import org.springframework.amqp.AmqpAuthenticationException;
@@ -656,6 +658,37 @@ public class RabbitTemplateTests {
 		assertThatExceptionOfType(AfterCompletionFailedException.class)
 			.isThrownBy(() -> ConnectionFactoryUtils.checkAfterCompletion());
 		ConnectionFactoryUtils.enableAfterCompletionFailureCapture(false);
+	}
+
+	@Test
+	void consumerArgs() throws Exception {
+		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
+		Connection mockConnection = mock(Connection.class);
+		Channel mockChannel = mock(Channel.class);
+
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
+		given(mockConnection.isOpen()).willReturn(true);
+		given(mockConnection.createChannel()).willReturn(mockChannel);
+		willAnswer(inv -> {
+			Consumer consumer = inv.getArgument(3);
+			consumer.handleConsumeOk("tag");
+			return null;
+		}).given(mockChannel).basicConsume(any(), anyBoolean(), anyMap(), any());
+
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		connectionFactory.setExecutor(mock(ExecutorService.class));
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		assertThat(template.receive("foo", 1)).isNull();
+		@SuppressWarnings("unchecked")
+		ArgumentCaptor<Map<String, Object>> argsCaptor = ArgumentCaptor.forClass(Map.class);
+		verify(mockChannel).basicConsume(eq("foo"), eq(false), argsCaptor.capture(), any());
+		assertThat(argsCaptor.getValue()).isEmpty();
+		template.addConsumerArg("x-priority", 10);
+		assertThat(template.receive("foo", 1)).isNull();
+		assertThat(argsCaptor.getValue()).containsEntry("x-priority", 10);
+		assertThat(template.removeConsumerArg("x-priority")).isEqualTo(10);
+		assertThat(template.receive("foo", 1)).isNull();
+		assertThat(argsCaptor.getValue()).isEmpty();
 	}
 
 	@SuppressWarnings("serial")
