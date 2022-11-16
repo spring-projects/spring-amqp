@@ -23,7 +23,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.springframework.amqp.rabbit.connection.LocalizedQueueConnectionFactory.NodeLocator;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.lang.Nullable;

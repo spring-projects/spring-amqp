@@ -30,7 +30,6 @@ import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.protocol.BasicHttpContext;
 import org.apache.hc.core5.http.protocol.HttpContext;
 
-import org.springframework.amqp.rabbit.connection.LocalizedQueueConnectionFactory.NodeLocator;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

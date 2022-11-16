@@ -27,7 +27,6 @@ import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import org.springframework.amqp.rabbit.connection.LocalizedQueueConnectionFactory.NodeLocator;
 import org.springframework.lang.Nullable;
 
 /**

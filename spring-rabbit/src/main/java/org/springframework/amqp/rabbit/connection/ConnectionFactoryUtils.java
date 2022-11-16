@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.springframework.transaction.support.ResourceHolderSynchronization;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
 
 import com.rabbitmq.client.Channel;
 
@@ -42,6 +43,13 @@ import com.rabbitmq.client.Channel;
  * @author Artem Bilan
  */
 public final class ConnectionFactoryUtils {
+
+	private static final boolean USING_WEBFLUX;
+
+	static {
+		USING_WEBFLUX = ClassUtils.isPresent("org.springframework.web.reactive.function.client.WebClient",
+				ConnectionFactoryUtils.class.getClassLoader());
+	}
 
 	private static final ThreadLocal<AfterCompletionFailedException> COMPLETION_EXCEPTIONS = new ThreadLocal<>();
 
@@ -250,6 +258,15 @@ public final class ConnectionFactoryUtils {
 			}
 		}
 		return connectionFactory.createConnection();
+	}
+
+	static NodeLocator<?> nodeLocator() {
+		if (USING_WEBFLUX) {
+			return new WebFluxNodeLocator();
+		}
+		else {
+			return new RestTemplateNodeLocator();
+		}
 	}
 
 	/**
