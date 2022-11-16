@@ -44,12 +44,9 @@ import com.rabbitmq.client.Channel;
  */
 public final class ConnectionFactoryUtils {
 
-	private static final boolean USING_WEBFLUX;
-
-	static {
-		USING_WEBFLUX = ClassUtils.isPresent("org.springframework.web.reactive.function.client.WebClient",
+	private static final boolean WEB_FLUX_PRESENT =
+			ClassUtils.isPresent("org.springframework.web.reactive.function.client.WebClient",
 				ConnectionFactoryUtils.class.getClassLoader());
-	}
 
 	private static final ThreadLocal<AfterCompletionFailedException> COMPLETION_EXCEPTIONS = new ThreadLocal<>();
 
@@ -261,7 +258,7 @@ public final class ConnectionFactoryUtils {
 	}
 
 	static NodeLocator<?> nodeLocator() {
-		if (USING_WEBFLUX) {
+		if (WEB_FLUX_PRESENT) {
 			return new WebFluxNodeLocator();
 		}
 		else {
