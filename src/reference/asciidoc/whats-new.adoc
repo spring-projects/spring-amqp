@@ -16,6 +16,12 @@ The remoting feature (using RMI) is no longer supported.
 Enabling observation for timers and tracing using Micrometer is now supported.
 See <<micrometer-observation>> for more information.
 
+[[x30-Native]]
+==== Native Images
+
+Support for creating native images is provided.
+See <<native-images>> for more information.
+
 ==== AsyncRabbitTemplate
 
 IMPORTANT: The `AsyncRabbitTemplate` now returns `CompletableFuture` s instead of `ListenableFuture` s.
