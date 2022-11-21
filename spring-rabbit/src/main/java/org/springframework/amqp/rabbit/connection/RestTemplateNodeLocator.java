@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.rabbit.connection;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -82,15 +81,6 @@ public class RestTemplateNodeLocator implements NodeLocator<RestTemplateHolder> 
 				.resolve("/api/queues/" + UriUtils.encodePathSegment(vhost, StandardCharsets.UTF_8) + "/" + queue);
 		ResponseEntity<Map> response = client.template.exchange(uri, HttpMethod.GET, null, Map.class);
 		return response.getStatusCode().equals(HttpStatus.OK) ? response.getBody() : null;
-	}
-
-	@Override
-	public void close(RestTemplateHolder client) {
-		try {
-			client.template.close();
-		}
-		catch (IOException e) {
-		}
 	}
 
 }
