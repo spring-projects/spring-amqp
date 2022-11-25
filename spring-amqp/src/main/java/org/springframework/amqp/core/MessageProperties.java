@@ -315,13 +315,22 @@ public class MessageProperties implements Serializable {
 		this.receivedDeliveryMode = receivedDeliveryMode;
 	}
 
-	// why not a Date or long?
+	/**
+	 * Set the message expiration. This is a String property per the AMQP 0.9.1 spec. For
+	 * RabbitMQ, this is a String representation of the message time to live in
+	 * milliseconds.
+	 * @param expiration the expiration.
+	 */
 	public void setExpiration(String expiration) {
 		this.expiration = expiration;
 	}
 
-	// NOTE qpid Java broker qpid 0.8/1.0 .NET: is a long.
-	// 0.8 Spec has: expiration (shortstr)
+	/**
+	 * Get the message expiration. This is a String property per the AMQP 0.9.1 spec. For
+	 * RabbitMQ, this is a String representation of the message time to live in
+	 * milliseconds.
+	 * @return the expiration.
+	 */
 	public String getExpiration() {
 		return this.expiration;
 	}
