@@ -6629,15 +6629,12 @@ When using exclusive consumers, other containers try to consume from the queues 
 
 Version 1.3 introduced a number of improvements for handling multiple queues in a listener container.
 
-The container must be configured to listen on at least one queue.
-This was the case previously, too, but now queues can be added and removed at runtime.
-The container recycles (cancels and re-creates) the consumers when any pre-fetched messages have been processed.
+Container can be initially configured to listen on zero queues.
+Queues can be added and removed at runtime.
+The `SimpleMessageListenerContainer` recycles (cancels and re-creates) all consumers when any pre-fetched messages have been processed.
+The `DirectMessageListenerContainer` creates/cancels individual consumer(s) for each queue without affecting consumers on other queues.
 See the https://docs.spring.io/spring-amqp/docs/latest-ga/api/org/springframework/amqp/rabbit/listener/AbstractMessageListenerContainer.html[Javadoc] for the `addQueues`, `addQueueNames`, `removeQueues` and `removeQueueNames` methods.
-When removing queues, at least one queue must remain.
 
-A consumer now starts if any of its queues are available.
-Previously, the container would stop if any queues were unavailable.
-Now, this is only the case if none of the queues are available.
 If not all queues are available, the container tries to passively declare (and consume from) the missing queues every 60 seconds.
 
 Also, if a consumer receives a cancel from the broker (for example, if a queue is deleted) the consumer tries to recover, and the recovered consumer continues to process messages from any other configured queues.
