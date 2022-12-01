@@ -169,15 +169,10 @@ public class MessageProperties implements Serializable {
 		this.timestamp = timestamp; //NOSONAR
 	}
 
-	// NOTE qpid java timestamp is long, presumably can convert to Date.
 	public Date getTimestamp() {
 		return this.timestamp; //NOSONAR
 	}
 
-	// NOTE Not forward compatible with qpid 1.0 .NET
-	// qpid 0.8 .NET/Java: is a string
-	// qpid 1.0 .NET: MessageId property on class MessageProperties and is UUID
-	// There is an 'ID' stored IMessage class and is an int.
 	public void setMessageId(String messageId) {
 		this.messageId = messageId;
 	}
@@ -190,9 +185,6 @@ public class MessageProperties implements Serializable {
 		this.userId = userId;
 	}
 
-	// NOTE Note forward compatible with qpid 1.0 .NET
-	// qpid 0.8 .NET/java: is a string
-	// qpid 1.0 .NET: getUserId is byte[]
 	public String getUserId() {
 		return this.userId;
 	}
@@ -218,9 +210,6 @@ public class MessageProperties implements Serializable {
 		return this.appId;
 	}
 
-	// NOTE not forward compatible with qpid 1.0 .NET
-	// qpid 0.8 .NET/Java: is a string
-	// qpid 1.0 .NET: is not present
 	public void setClusterId(String clusterId) {
 		this.clusterId = clusterId;
 	}
@@ -233,7 +222,6 @@ public class MessageProperties implements Serializable {
 		this.type = type;
 	}
 
-	// NOTE structureType is int in Qpid
 	public String getType() {
 		return this.type;
 	}
