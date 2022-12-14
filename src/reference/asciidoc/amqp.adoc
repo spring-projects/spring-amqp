@@ -3976,7 +3976,7 @@ See <<java-deserialization>> for important information.
 ====== Converting To a `Message`
 
 When converting to a `Message` from an arbitrary Java Object, the `SimpleMessageConverter` likewise deals with byte arrays, strings, and serializable instances.
-It converts each of these to bytes (in the case of byte arrays, there is nothing to convert), and it ses the content-type property accordingly.
+It converts each of these to bytes (in the case of byte arrays, there is nothing to convert), and it sets the content-type property accordingly.
 If the `Object` to be converted does not match one of those types, the `Message` body is null.
 
 [[serializer-message-converter]]
