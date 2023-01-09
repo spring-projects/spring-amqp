@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 the original author or authors.
+ * Copyright 2021-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.junit;
 import java.time.Duration;
 
 import org.testcontainers.containers.RabbitMQContainer;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -26,6 +27,7 @@ import org.testcontainers.utility.DockerImageName;
  * @since 2.4
  *
  */
+@Testcontainers(disabledWithoutDocker = true)
 public abstract class AbstractTestContainerTests {
 
 	protected static final RabbitMQContainer RABBITMQ;

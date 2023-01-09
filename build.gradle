@@ -70,7 +70,7 @@ ext {
 	springDataVersion = '2022.0.0'
 	springVersion = project.hasProperty('springVersion') ? project.springVersion : '6.0.0'
 	springRetryVersion = '2.0.0'
-	testContainersVersion = '1.17.6'
+	testcontainersVersion = '1.17.6'
 	zstdJniVersion = '1.5.0-2'
 
 	javaProjects = subprojects - project(':spring-amqp-bom')
@@ -104,6 +104,7 @@ allprojects {
 			mavenBom "org.springframework.data:spring-data-bom:$springDataVersion"
 			mavenBom "io.micrometer:micrometer-bom:$micrometerVersion"
 			mavenBom "io.micrometer:micrometer-tracing-bom:$micrometerTracingVersion"
+			mavenBom "org.testcontainers:testcontainers-bom:$testcontainersVersion"
 		}
 	}
 
@@ -443,7 +444,8 @@ project('spring-rabbit') {
 		testImplementation 'io.micrometer:micrometer-tracing-bridge-brave'
 		testImplementation 'io.micrometer:micrometer-tracing-test'
 		testImplementation 'io.micrometer:micrometer-tracing-integration-test'
-		testImplementation "org.testcontainers:rabbitmq:$testContainersVersion"
+		testImplementation "org.testcontainers:rabbitmq"
+		testImplementation 'org.testcontainers:junit-jupiter'
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core'
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind'
 		testRuntimeOnly 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
@@ -480,7 +482,7 @@ project('spring-rabbit-stream') {
 		testRuntimeOnly "org.xerial.snappy:snappy-java:$snappyVersion"
 		testRuntimeOnly "org.lz4:lz4-java:$lz4Version"
 		testRuntimeOnly "com.github.luben:zstd-jni:$zstdJniVersion"
-		testImplementation "org.testcontainers:rabbitmq:$testContainersVersion"
+		testImplementation "org.testcontainers:rabbitmq"
 		testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 		testImplementation 'org.springframework:spring-webflux'
 	}
@@ -501,7 +503,8 @@ project('spring-rabbit-junit') {
 		api 'org.springframework:spring-web'
 		api 'org.junit.jupiter:junit-jupiter-api'
 		api "org.assertj:assertj-core:$assertjVersion"
-		optionalApi "org.testcontainers:rabbitmq:$testContainersVersion"
+		optionalApi "org.testcontainers:rabbitmq"
+		optionalApi "org.testcontainers:junit-jupiter"
 		optionalApi "ch.qos.logback:logback-classic:$logbackVersion"
 		optionalApi 'org.apache.logging.log4j:log4j-core'
 		compileOnly 'org.apiguardian:apiguardian-api:1.0.0'
