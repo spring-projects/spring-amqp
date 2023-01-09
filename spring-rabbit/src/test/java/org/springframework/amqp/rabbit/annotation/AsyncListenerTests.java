@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2022 the original author or authors.
+ * Copyright 2018-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,7 +104,7 @@ public class AsyncListenerTests {
 	private RabbitListenerEndpointRegistry registry;
 
 	@Test
-	public void testAsyncListener() throws Exception {
+	public void testAsyncListener(@Autowired RabbitListenerEndpointRegistry registry) throws Exception {
 		assertThat(this.rabbitTemplate.convertSendAndReceive(this.queue1.getName(), "foo")).isEqualTo("FOO");
 		RabbitConverterFuture<Object> future = this.asyncTemplate.convertSendAndReceive(this.queue1.getName(), "foo");
 		assertThat(future.get(10, TimeUnit.SECONDS)).isEqualTo("FOO");
@@ -118,6 +118,10 @@ public class AsyncListenerTests {
 		assertThat(this.config.contentTypeId).isEqualTo("java.lang.String");
 		this.rabbitTemplate.convertAndSend(this.queue4.getName(), "foo");
 		assertThat(listener.latch4.await(10, TimeUnit.SECONDS));
+		assertThat(TestUtils.getPropertyValue(registry.getListenerContainer("foo"), "asyncReplies", Boolean.class))
+				.isTrue();
+		assertThat(TestUtils.getPropertyValue(registry.getListenerContainer("bar"), "asyncReplies", Boolean.class))
+				.isTrue();
 	}
 
 	@Test
