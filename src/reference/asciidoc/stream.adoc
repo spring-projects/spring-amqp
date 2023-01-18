@@ -61,7 +61,7 @@ The `MessageConverter` is used in the `convertAndSend` methods to convert the ob
 
 The `StreamMessageConverter` is used to convert from a Spring AMQP `Message` to a native stream `Message`.
 
-You can also send native stream `Message` s directly; with the `messageBuilder()` method provding access to the `Producer` 's message builder.
+You can also send native stream `Message` s directly; with the `messageBuilder()` method providing access to the `Producer` 's message builder.
 
 The `ProducerCustomizer` provides a mechanism to customize the producer before it is built.
 

@@ -924,7 +924,7 @@ See <<polling-consumer>> for more information.
 ====== Mandatory with `sendAndReceive` Methods
 
 When the `mandatory` flag is set when using the `sendAndReceive` and `convertSendAndReceive` methods, the calling thread
-throws an `AmqpMessageReturnedException` if the request message cannot be deliverted.
+throws an `AmqpMessageReturnedException` if the request message cannot be delivered.
 See <<reply-timeout>> for more information.
 
 ====== Improper Reply Listener Configuration

@@ -21,7 +21,7 @@ This is not necessary when using, for example `@SpringBootTest` since Spring Boo
 
 Beans that are registered are:
 
-* `CachingConnectionFactory` (`autoConnectionFactory`). If `@RabbitEnabled` is present, its connectionn factory is used.
+* `CachingConnectionFactory` (`autoConnectionFactory`). If `@RabbitEnabled` is present, its connection factory is used.
 * `RabbitTemplate` (`autoRabbitTemplate`)
 * `RabbitAdmin` (`autoRabbitAdmin`)
 * `RabbitListenerContainerFactory` (`autoContainerFactory`)

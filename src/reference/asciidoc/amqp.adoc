@@ -1612,7 +1612,7 @@ The second obtains the `username` property from a connection factory bean in the
 
 Starting with version 2.0.2, you can set the `usePublisherConnection` property to `true` to use a different connection to that used by listener containers, when possible.
 This is to avoid consumers being blocked when a producer is blocked for any reason.
-The connection factories maintain a second internal connection factory for this purpose; by default it is the same type as the main factory, but can be set explicity if you wish to use a different factory type for publishing.
+The connection factories maintain a second internal connection factory for this purpose; by default it is the same type as the main factory, but can be set explicitly if you wish to use a different factory type for publishing.
 If the rabbit template is running in a transaction started by the listener container, the container's channel is used, regardless of this setting.
 
 IMPORTANT: In general, you should not use a `RabbitAdmin` with a template that has this set to `true`.
@@ -2598,7 +2598,7 @@ It creates `DirectMessageListenerContainer` instances.
 
 NOTE: For information to help you choose between `SimpleRabbitListenerContainerFactory` and `DirectRabbitListenerContainerFactory`, see <<choose-container>>.
 
-Starting wih version 2.2.2, you can provide a `ContainerCustomizer` implementation (as shown above).
+Starting with version 2.2.2, you can provide a `ContainerCustomizer` implementation (as shown above).
 This can be used to further configure the container after it has been created and configured; you can use this, for example, to set properties that are not exposed by the container factory.
 
 Version 2.4.8 provides the `CompositeContainerCustomizer` for situations where you wish to apply multiple customizers.
@@ -3112,7 +3112,7 @@ public Message<OrderStatus> processOrder(Order order) {
 ====
 
 Alternatively, you can use a `MessagePostProcessor` in the `beforeSendReplyMessagePostProcessors` container factory property to add more headers.
-Starting with version 2.2.3, the called bean/method is made avaiable in the reply message, which can be used in a message post processor to communicate the information back to the caller:
+Starting with version 2.2.3, the called bean/method is made available in the reply message, which can be used in a message post processor to communicate the information back to the caller:
 
 ====
 [source, java]
@@ -5338,7 +5338,7 @@ The properties are available as attributes in the namespace, as shown in the fol
 NOTE: By default, the `auto-declare` attribute is `true` and, if the `declared-by` is not supplied (or is empty), then all `RabbitAdmin` instances declare the object (as long as the admin's `auto-startup` attribute is `true`, the default, and the admin's `explicit-declarations-only` attribute is false).
 
 Similarly, you can use Java-based `@Configuration` to achieve the same effect.
-In the following example, the components are declared by `admin1` but not by`admin2`:
+In the following example, the components are declared by `admin1` but not by `admin2`:
 
 ====
 [source,java]
@@ -5973,7 +5973,7 @@ a|image::images/tickmark.png[]
 (connection-factory)
 
 |A reference to the `ConnectionFactory`.
-When configuring byusing the XML namespace, the default referenced bean name is `rabbitConnectionFactory`.
+When configuring by using the XML namespace, the default referenced bean name is `rabbitConnectionFactory`.
 
 a|image::images/tickmark.png[]
 a|image::images/tickmark.png[]
