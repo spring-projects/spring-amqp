@@ -443,6 +443,18 @@ public class SimpleMessageListenerContainerTests {
 	}
 
 	@Test
+	public void testCallbackIsRunOnStopAlsoWhenContainerIsStoppingForAbort() throws InterruptedException {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		ReflectionTestUtils.setField(container, "containerStoppingForAbort", new AtomicReference<>(new Thread()));
+
+		final CountDownLatch countDownLatch = new CountDownLatch(1);
+		container.stop(countDownLatch::countDown);
+		assertThat(countDownLatch.await(100, TimeUnit.MILLISECONDS)).isTrue();
+	}
+
+	@Test
 	public void testWithConnectionPerListenerThread() throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory =
 				mock(com.rabbitmq.client.ConnectionFactory.class);

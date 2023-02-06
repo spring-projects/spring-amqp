@@ -622,6 +622,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		Thread thread = this.containerStoppingForAbort.get();
 		if (thread != null && !thread.equals(Thread.currentThread())) {
 			logger.info("Shutdown ignored - container is stopping due to an aborted consumer");
+			runCallbackIfNotNull(callback);
 			return;
 		}
 
@@ -641,9 +642,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			else {
 				logger.info("Shutdown ignored - container is already stopped");
-				if (callback != null) {
-					getTaskExecutor().execute(callback);
-				}
+				runCallbackIfNotNull(callback);
 				return;
 			}
 		}
@@ -677,15 +676,19 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				this.cancellationLock.deactivate();
 			}
 
-			if (callback != null) {
-				callback.run();
-			}
+			runCallbackIfNotNull(callback);
 		};
 		if (callback == null) {
 			awaitShutdown.run();
 		}
 		else {
 			getTaskExecutor().execute(awaitShutdown);
+		}
+	}
+
+	private void runCallbackIfNotNull(@Nullable Runnable callback) {
+		if (callback != null) {
+			callback.run();
 		}
 	}
 
