@@ -79,6 +79,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Alex Panchenko
  * @author Mat Jaggard
  * @author Yansong Ren
+ * @author Tim Bourquin
  *
  * @since 1.0
  */
