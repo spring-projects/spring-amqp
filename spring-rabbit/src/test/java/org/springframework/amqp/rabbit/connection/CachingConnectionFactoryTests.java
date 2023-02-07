@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,6 +102,28 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		CachingConnectionFactory ccf = new CachingConnectionFactory(connectionFactory);
 		ccf.setExecutor(mock(ExecutorService.class));
 		return ccf;
+	}
+
+	@Test
+	void stringRepresentation() {
+		CachingConnectionFactory ccf = new CachingConnectionFactory("someHost", 1234);
+		assertThat(ccf.toString()).contains(", host=someHost, port=1234")
+				.doesNotContain("addresses");
+		ccf.setAddresses("h1:1234,h2:1235");
+		assertThat(ccf.toString()).contains(", addresses=[h1:1234, h2:1235]")
+				.doesNotContain("host")
+				.doesNotContain("port");
+		ccf.setAddressResolver(() -> List.of(new Address("h3", 1236), new Address("h4", 1237)));
+		assertThat(ccf.toString()).contains(", addresses=[h3:1236, h4:1237]")
+				.doesNotContain("host")
+				.doesNotContain("port");
+		ccf.setAddressResolver(() ->  {
+			throw new IOException("test");
+		});
+		ccf.setPort(0);
+		assertThat(ccf.toString()).contains(", host=AddressResolver threw exception: test")
+				.doesNotContain("addresses")
+				.doesNotContain("port");
 	}
 
 	@Test
