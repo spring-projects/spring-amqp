@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,6 +79,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Alex Panchenko
  * @author Mat Jaggard
  * @author Yansong Ren
+ * @author Tim Bourquin
  *
  * @since 1.0
  */
@@ -622,6 +623,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		Thread thread = this.containerStoppingForAbort.get();
 		if (thread != null && !thread.equals(Thread.currentThread())) {
 			logger.info("Shutdown ignored - container is stopping due to an aborted consumer");
+			runCallbackIfNotNull(callback);
 			return;
 		}
 
@@ -641,6 +643,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			else {
 				logger.info("Shutdown ignored - container is already stopped");
+				runCallbackIfNotNull(callback);
 				return;
 			}
 		}
@@ -674,15 +677,19 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				this.cancellationLock.deactivate();
 			}
 
-			if (callback != null) {
-				callback.run();
-			}
+			runCallbackIfNotNull(callback);
 		};
 		if (callback == null) {
 			awaitShutdown.run();
 		}
 		else {
 			getTaskExecutor().execute(awaitShutdown);
+		}
+	}
+
+	private void runCallbackIfNotNull(@Nullable Runnable callback) {
+		if (callback != null) {
+			callback.run();
 		}
 	}
 
