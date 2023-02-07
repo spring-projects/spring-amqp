@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -303,6 +303,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	@Override
+	@Nullable
 	public String getHost() {
 		return this.rabbitConnectionFactory.getHost();
 	}
@@ -352,6 +353,11 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		this.logger.info("setAddresses() called with an empty value, will be using the host+port "
 				+ " or addressResolver properties for connections");
 		this.addresses = null;
+	}
+
+	@Nullable
+	protected List<Address> getAddresses() throws IOException {
+		return this.addressResolver != null ? this.addressResolver.getAddresses() : this.addresses;
 	}
 
 	/**

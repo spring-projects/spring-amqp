@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
+import com.rabbitmq.client.Address;
 import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.BlockedListener;
 import com.rabbitmq.client.Channel;
@@ -1003,8 +1004,21 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	@Override
 	public String toString() {
-		return "CachingConnectionFactory [channelCacheSize=" + this.channelCacheSize + ", host=" + getHost()
-				+ ", port=" + getPort() + ", active=" + this.active
+		String host = getHost();
+		int port = getPort();
+		List<Address> addresses = null;
+		try {
+			addresses = getAddresses();
+		}
+		catch (IOException ex) {
+			host = "AddressResolver threw exception: " + ex.getMessage();
+		}
+		return "CachingConnectionFactory [channelCacheSize=" + this.channelCacheSize
+				+ (addresses != null
+					? ", addresses=" + addresses
+					: (host != null ? ", host=" + host : "")
+						+ (port > 0 ? ", port=" + port : ""))
+				+ ", active=" + this.active
 				+ " " + super.toString() + "]";
 	}
 
