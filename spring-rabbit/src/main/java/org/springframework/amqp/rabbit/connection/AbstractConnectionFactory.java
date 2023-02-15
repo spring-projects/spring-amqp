@@ -356,7 +356,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	@Nullable
-	protected List<Address> getAddresses() throws IOException {
+	protected synchronized List<Address> getAddresses() throws IOException {
 		return this.addressResolver != null ? this.addressResolver.getAddresses() : this.addresses;
 	}
 
