@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +40,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.util.Base64Utils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriUtils;
 
@@ -447,7 +447,7 @@ public final class BrokerRunningSupport {
 		ByteBuffer bb = ByteBuffer.wrap(new byte[SIXTEEN]);
 		bb.putLong(uuid.getMostSignificantBits())
 		  .putLong(uuid.getLeastSignificantBits());
-		return "SpringBrokerRunning." + Base64Utils.encodeToUrlSafeString(bb.array()).replaceAll("=", "");
+		return "SpringBrokerRunning." + Base64.getUrlEncoder().encodeToString(bb.array()).replaceAll("=", "");
 	}
 
 	private boolean isDefaultQueue(String queue) {

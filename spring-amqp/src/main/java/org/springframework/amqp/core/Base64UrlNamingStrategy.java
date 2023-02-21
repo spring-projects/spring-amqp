@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 the original author or authors.
+ * Copyright 2018-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@
 package org.springframework.amqp.core;
 
 import java.nio.ByteBuffer;
+import java.util.Base64;
 import java.util.UUID;
 
 import org.springframework.util.Assert;
-import org.springframework.util.Base64Utils;
 
 /**
  * Generates names with the form {@code <prefix><base64url>} where 'prefix' is
@@ -66,7 +66,7 @@ public class Base64UrlNamingStrategy implements NamingStrategy {
 		bb.putLong(uuid.getMostSignificantBits())
 		  .putLong(uuid.getLeastSignificantBits());
 		// Convert to base64 and remove trailing =
-		return this.prefix + Base64Utils.encodeToUrlSafeString(bb.array())
+		return this.prefix + Base64.getUrlEncoder().encodeToString(bb.array())
 								.replaceAll("=", "");
 	}
 
