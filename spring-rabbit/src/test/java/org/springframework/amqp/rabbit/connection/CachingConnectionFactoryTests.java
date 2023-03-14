@@ -1907,4 +1907,39 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verify(mockConnectionFactory).newConnection(any(ExecutorService.class), eq(resolver), anyString());
 	}
 
+	@Test
+	void nullShutdownCause() {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		AbstractConnectionFactory cf = createConnectionFactory(mockConnectionFactory);
+		AtomicBoolean connShutDown = new AtomicBoolean();
+		cf.addConnectionListener(new ConnectionListener() {
+
+			@Override
+			public void onCreate(Connection connection) {
+			}
+
+			@Override
+			public void onShutDown(ShutdownSignalException signal) {
+				connShutDown.set(true);
+			}
+
+		});
+		AtomicBoolean chanShutDown = new AtomicBoolean();
+		cf.addChannelListener(new ChannelListener() {
+
+			@Override
+			public void onCreate(Channel channel, boolean transactional) {
+			}
+
+			@Override
+			public void onShutDown(ShutdownSignalException signal) {
+				chanShutDown.set(true);
+			}
+
+		});
+		cf.shutdownCompleted(new ShutdownSignalException(false, false, null, chanShutDown));
+		assertThat(connShutDown.get()).isTrue();
+		assertThat(chanShutDown.get()).isFalse();
+	}
+
 }
