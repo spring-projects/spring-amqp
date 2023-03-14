@@ -55,6 +55,7 @@ import org.springframework.util.StringUtils;
 import com.rabbitmq.client.Address;
 import com.rabbitmq.client.AddressResolver;
 import com.rabbitmq.client.BlockedListener;
+import com.rabbitmq.client.Method;
 import com.rabbitmq.client.Recoverable;
 import com.rabbitmq.client.RecoveryListener;
 import com.rabbitmq.client.ShutdownListener;
@@ -660,7 +661,11 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	@Override
 	public void shutdownCompleted(ShutdownSignalException cause) {
-		int protocolClassId = cause.getReason().protocolClassId();
+		Method reason = cause.getReason();
+		int protocolClassId = RabbitUtils.CONNECTION_PROTOCOL_CLASS_ID_10;
+		if (reason != null) {
+			protocolClassId = reason.protocolClassId();
+		}
 		if (protocolClassId == RabbitUtils.CHANNEL_PROTOCOL_CLASS_ID_20) {
 			this.closeExceptionLogger.log(this.logger, "Shutdown Signal", cause);
 			getChannelListener().onShutDown(cause);
@@ -668,7 +673,6 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		else if (protocolClassId == RabbitUtils.CONNECTION_PROTOCOL_CLASS_ID_10) {
 			getConnectionListener().onShutDown(cause);
 		}
-
 	}
 
 	@Override
