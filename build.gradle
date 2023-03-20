@@ -63,7 +63,7 @@ ext {
 	reactorVersion = '2020.0.28'
 	snappyVersion = '1.1.8.4'
 	springDataCommonsVersion = '2.6.10'
-	springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.3.25'
+	springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.3.26'
 	springRetryVersion = '1.3.4'
 	zstdJniVersion = '1.5.0-2'
 }
