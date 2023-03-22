@@ -642,6 +642,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@Override // NOSONAR complexity
 	public void initialize() {
 
+		redeclareManualDeclarables();
+
 		if (this.applicationContext == null) {
 			this.logger.debug("no ApplicationContext has been set, cannot auto-declare Exchanges, Queues, and Bindings");
 			return;
@@ -694,6 +696,14 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			declareBindings(channel, bindings.toArray(new Binding[bindings.size()]));
 			return null;
 		});
+		this.logger.debug("Declarations finished");
+
+	}
+
+	/**
+	 * Process manual declarables.
+	 */
+	private void redeclareManualDeclarables() {
 		if (this.manualDeclarables.size() > 0) {
 			synchronized (this.manualDeclarables) {
 				this.logger.debug("Redeclaring manually declared Declarables");
@@ -710,7 +720,6 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 				}
 			}
 		}
-		this.logger.debug("Declarations finished");
 
 	}
 
