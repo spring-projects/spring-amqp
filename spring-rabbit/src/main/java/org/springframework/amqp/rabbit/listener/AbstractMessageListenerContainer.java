@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -42,6 +42,7 @@ import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.BatchMessageListener;
+import org.springframework.amqp.core.Declarables;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -1932,9 +1933,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		ApplicationContext context = this.getApplicationContext();
 		if (context != null) {
 			Set<String> queueNames = getQueueNamesAsSet();
-			Map<String, Queue> queueBeans = context.getBeansOfType(Queue.class);
-			for (Entry<String, Queue> entry : queueBeans.entrySet()) {
-				Queue queue = entry.getValue();
+			Collection<Queue> queueBeans = new LinkedHashSet<>(
+					context.getBeansOfType(Queue.class, false, false).values());
+			Map<String, Declarables> declarables = context.getBeansOfType(Declarables.class, false, false);
+			declarables.values().forEach(dec -> queueBeans.addAll(dec.getDeclarablesByType(Queue.class)));
+			for (Queue queue : queueBeans) {
 				if (isMismatchedQueuesFatal() || (queueNames.contains(queue.getName()) &&
 						admin.getQueueProperties(queue.getName()) == null)) {
 					if (logger.isDebugEnabled()) {
