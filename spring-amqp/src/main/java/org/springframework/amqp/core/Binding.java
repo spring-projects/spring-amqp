@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.amqp.core;
 import java.util.Map;
 
 import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 /**
  * Simple container collecting information to describe a binding. Takes String destination and exchange names as
@@ -50,18 +51,33 @@ public class Binding extends AbstractDeclarable {
 		EXCHANGE;
 	}
 
+	@Nullable
 	private final String destination;
 
 	private final String exchange;
 
+	@Nullable
 	private final String routingKey;
 
 	private final DestinationType destinationType;
 
+	@Nullable
+	private final Queue lazyQueue;
+
 	public Binding(String destination, DestinationType destinationType, String exchange, String routingKey,
 			@Nullable Map<String, Object> arguments) {
 
+		this(null, destination, destinationType, exchange, routingKey, arguments);
+	}
+
+	public Binding(@Nullable Queue lazyQueue, @Nullable String destination, DestinationType destinationType,
+			String exchange, @Nullable String routingKey, @Nullable Map<String, Object> arguments) {
+
 		super(arguments);
+		Assert.isTrue(lazyQueue == null || destinationType.equals(DestinationType.QUEUE),
+				"'lazyQueue' must be null for destination type " + destinationType);
+		Assert.isTrue(lazyQueue != null || destination != null, "`destination` cannot be null");
+		this.lazyQueue = lazyQueue;
 		this.destination = destination;
 		this.destinationType = destinationType;
 		this.exchange = exchange;
@@ -69,7 +85,12 @@ public class Binding extends AbstractDeclarable {
 	}
 
 	public String getDestination() {
-		return this.destination;
+		if (this.lazyQueue != null) {
+			return this.lazyQueue.getActualName();
+		}
+		else {
+			return this.destination;
+		}
 	}
 
 	public DestinationType getDestinationType() {
@@ -81,6 +102,9 @@ public class Binding extends AbstractDeclarable {
 	}
 
 	public String getRoutingKey() {
+		if (this.routingKey == null && this.lazyQueue != null) {
+			return this.lazyQueue.getActualName();
+		}
 		return this.routingKey;
 	}
 
