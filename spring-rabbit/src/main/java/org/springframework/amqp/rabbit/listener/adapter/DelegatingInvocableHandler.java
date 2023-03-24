@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2022 the original author or authors.
+ * Copyright 2015-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.handler.annotation.support.PayloadMethodArgumentResolver;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 import org.springframework.util.Assert;
+import org.springframework.util.ReflectionUtils;
 import org.springframework.validation.Validator;
 
 
@@ -204,7 +205,9 @@ public class DelegatingInvocableHandler {
 		if (handler == null) {
 			handler = findHandlerForPayload(payloadClass);
 			if (handler == null) {
-				throw new AmqpException("No method found for " + payloadClass);
+				ReflectionUtils.rethrowRuntimeException(
+						new NoSuchMethodException("No listener method found in " + this.bean.getClass().getName()
+								+ " for " + payloadClass));
 			}
 			this.cachedHandlers.putIfAbsent(payloadClass, handler); //NOSONAR
 			setupReplyTo(handler);

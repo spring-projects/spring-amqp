@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2022 the original author or authors.
+ * Copyright 2014-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import java.lang.reflect.UndeclaredThrowableException;
 import java.util.List;
 import java.util.Map;
 
@@ -200,9 +201,9 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 		@Override
 		public boolean isFatal(Throwable t) {
 			Throwable cause = t.getCause();
-			while (cause instanceof MessagingException
-					&& !(cause instanceof org.springframework.messaging.converter.MessageConversionException)
-					&& !(cause instanceof MethodArgumentResolutionException)) {
+			while ((cause instanceof MessagingException || cause instanceof  UndeclaredThrowableException)
+					&& !isCauseFatal(cause)) {
+
 				cause = cause.getCause();
 			}
 			if (t instanceof ListenerExecutionFailedException lefe && isCauseFatal(cause)) {
