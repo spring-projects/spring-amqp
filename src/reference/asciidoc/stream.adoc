@@ -6,6 +6,31 @@ Version 2.4 introduces initial support for the https://github.com/rabbitmq/rabbi
 * `RabbitStreamTemplate`
 * `StreamListenerContainer`
 
+Add the `spring-rabbit-stream` dependency to your project:
+
+.maven
+====
+[source,xml,subs="+attributes"]
+----
+<dependency>
+  <groupId>org.springframework.amqp</groupId>
+  <artifactId>spring-rabbit-stream</artifactId>
+  <version>{project-version}</version>
+</dependency>
+----
+====
+
+.gradle
+====
+[source,groovy,subs="+attributes"]
+----
+compile 'org.springframework.amqp:spring-rabbit-stream:{project-version}'
+----
+====
+
+Provision the queues as normal, using a `RabbitAdmin` bean, using the `QueueBuilder.stream()` method to designate the queue type.
+See <<stream-examples>>.
+
 ==== Sending Messages
 
 The `RabbitStreamTemplate` provides a subset of the `RabbitTemplate` (AMQP) functionality.
@@ -97,6 +122,7 @@ Refer to the https://rabbitmq.github.io/rabbitmq-stream-java-client/stable/htmls
 When using `@RabbitListener`, configure a `StreamRabbitListenerContainerFactory`; at this time, most `@RabbitListener` properties (`concurrency`, etc) are ignored. Only `id`, `queues`, `autoStartup` and `containerFactory` are supported.
 In addition, `queues` can only contain one stream name.
 
+[[stream-examples]]
 ==== Examples
 
 ====
@@ -135,6 +161,20 @@ RabbitListenerContainerFactory<StreamListenerContainer> nativeFactory(Environmen
 void nativeMsg(Message in, Context context) {
     ...
     context.storeOffset();
+}
+
+@Bean
+Queue stream() {
+    return QueueBuilder.durable("test.stream.queue1")
+            .stream()
+            .build();    
+}
+
+@Bean
+Queue stream() {
+    return QueueBuilder.durable("test.stream.queue2")
+            .stream()
+            .build();    
 }
 ----
 ====
