@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ public class CorrelationData implements Correlation {
 
 	/**
 	 * Get the returned message and metadata, if any. Guaranteed to be populated before
-	 * the future is set.
+	 * the future is completed.
 	 * @return the {@link ReturnedMessage}.
 	 * @since 2.3.3
 	 */
