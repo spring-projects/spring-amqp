@@ -419,9 +419,9 @@ public interface AmqpTemplate {
 	 * and attempt to receive a response. Implementations will normally set the reply-to
 	 * header to an exclusive queue and wait up for some time limited by a timeout.
 	 *
-	 * @param message a message to send
-	 * @return the response if there is one
-	 * @throws AmqpException if there is a problem
+	 * @param message a message to send.
+	 * @return the response; or null if the reply times out.
+	 * @throws AmqpException if there is a problem.
 	 */
 	@Nullable
 	Message sendAndReceive(Message message) throws AmqpException;
@@ -431,10 +431,10 @@ public interface AmqpTemplate {
 	 * and attempt to receive a response. Implementations will normally set the reply-to
 	 * header to an exclusive queue and wait up for some time limited by a timeout.
 	 *
-	 * @param routingKey the routing key
-	 * @param message a message to send
-	 * @return the response if there is one
-	 * @throws AmqpException if there is a problem
+	 * @param routingKey the routing key.
+	 * @param message a message to send.
+	 * @return the response; or null if the reply times out.
+	 * @throws AmqpException if there is a problem.
 	 */
 	@Nullable
 	Message sendAndReceive(String routingKey, Message message) throws AmqpException;
@@ -445,11 +445,11 @@ public interface AmqpTemplate {
 	 * reply-to header to an exclusive queue and wait up for some time limited by a
 	 * timeout.
 	 *
-	 * @param exchange the name of the exchange
-	 * @param routingKey the routing key
-	 * @param message a message to send
-	 * @return the response if there is one
-	 * @throws AmqpException if there is a problem
+	 * @param exchange the name of the exchange.
+	 * @param routingKey the routing key.
+	 * @param message a message to send.
+	 * @return the response; or null if the reply times out.
+	 * @throws AmqpException if there is a problem.
 	 */
 	@Nullable
 	Message sendAndReceive(String exchange, String routingKey, Message message) throws AmqpException;
@@ -462,9 +462,9 @@ public interface AmqpTemplate {
 	 * converting that to a Java object. Implementations will normally set the reply-to
 	 * header to an exclusive queue and wait up for some time limited by a timeout.
 	 *
-	 * @param message a message to send
-	 * @return the response if there is one
-	 * @throws AmqpException if there is a problem
+	 * @param message a message to send.
+	 * @return the response; or null if the reply times out.
+	 * @throws AmqpException if there is a problem.
 	 */
 	@Nullable
 	Object convertSendAndReceive(Object message) throws AmqpException;
@@ -475,10 +475,10 @@ public interface AmqpTemplate {
 	 * converting that to a Java object. Implementations will normally set the reply-to
 	 * header to an exclusive queue and wait up for some time limited by a timeout.
 	 *
-	 * @param routingKey the routing key
-	 * @param message a message to send
-	 * @return the response if there is one
-	 * @throws AmqpException if there is a problem
+	 * @param routingKey the routing key.
+	 * @param message a message to send.
+	 * @return the response; or null if the reply times out.
+	 * @throws AmqpException if there is a problem.
 	 */
 	@Nullable
 	Object convertSendAndReceive(String routingKey, Object message) throws AmqpException;
@@ -489,11 +489,11 @@ public interface AmqpTemplate {
 	 * converting that to a Java object. Implementations will normally set the reply-to
 	 * header to an exclusive queue and wait up for some time limited by a timeout.
 	 *
-	 * @param exchange the name of the exchange
-	 * @param routingKey the routing key
-	 * @param message a message to send
-	 * @return the response if there is one
-	 * @throws AmqpException if there is a problem
+	 * @param exchange the name of the exchange.
+	 * @param routingKey the routing key.
+	 * @param message a message to send.
+	 * @return the response; or null if the reply times out.
+	 * @throws AmqpException if there is a problem.
 	 */
 	@Nullable
 	Object convertSendAndReceive(String exchange, String routingKey, Object message) throws AmqpException;
@@ -504,10 +504,10 @@ public interface AmqpTemplate {
 	 * converting that to a Java object. Implementations will normally set the reply-to
 	 * header to an exclusive queue and wait up for some time limited by a timeout.
 	 *
-	 * @param message a message to send
-	 * @param messagePostProcessor a processor to apply to the message before it is sent
-	 * @return the response if there is one
-	 * @throws AmqpException if there is a problem
+	 * @param message a message to send.
+	 * @param messagePostProcessor a processor to apply to the message before it is sent.
+	 * @return the response; or null if the reply times out.
+	 * @throws AmqpException if there is a problem.
 	 */
 	@Nullable
 	Object convertSendAndReceive(Object message, MessagePostProcessor messagePostProcessor) throws AmqpException;
@@ -518,11 +518,11 @@ public interface AmqpTemplate {
 	 * converting that to a Java object. Implementations will normally set the reply-to
 	 * header to an exclusive queue and wait up for some time limited by a timeout.
 	 *
-	 * @param routingKey the routing key
-	 * @param message a message to send
-	 * @param messagePostProcessor a processor to apply to the message before it is sent
-	 * @return the response if there is one
-	 * @throws AmqpException if there is a problem
+	 * @param routingKey the routing key.
+	 * @param message a message to send.
+	 * @param messagePostProcessor a processor to apply to the message before it is sent.
+	 * @return the response; or null if the reply times out.
+	 * @throws AmqpException if there is a problem.
 	 */
 	@Nullable
 	Object convertSendAndReceive(String routingKey, Object message, MessagePostProcessor messagePostProcessor)
@@ -534,12 +534,12 @@ public interface AmqpTemplate {
 	 * converting that to a Java object. Implementations will normally set the reply-to
 	 * header to an exclusive queue and wait up for some time limited by a timeout.
 	 *
-	 * @param exchange the name of the exchange
-	 * @param routingKey the routing key
-	 * @param message a message to send
-	 * @param messagePostProcessor a processor to apply to the message before it is sent
-	 * @return the response if there is one
-	 * @throws AmqpException if there is a problem
+	 * @param exchange the name of the exchange.
+	 * @param routingKey the routing key.
+	 * @param message a message to send.
+	 * @param messagePostProcessor a processor to apply to the message before it is sent.
+	 * @return the response; or null if the reply times out.
+	 * @throws AmqpException if there is a problem.
 	 */
 	@Nullable
 	Object convertSendAndReceive(String exchange, String routingKey, Object message,
@@ -555,7 +555,7 @@ public interface AmqpTemplate {
 	 * @param message a message to send.
 	 * @param responseType the type to convert the reply to.
 	 * @param <T> the type.
-	 * @return the response if there is one.
+	 * @return the response; or null if the reply times out.
 	 * @throws AmqpException if there is a problem.
 	 * @since 2.0
 	 */
@@ -569,12 +569,12 @@ public interface AmqpTemplate {
 	 * converting that to a Java object. Implementations will normally set the reply-to
 	 * header to an exclusive queue and wait up for some time limited by a timeout.
 	 * Requires a {@link org.springframework.amqp.support.converter.SmartMessageConverter}.
-	 * @param routingKey the routing key
-	 * @param message a message to send
+	 * @param routingKey the routing key.
+	 * @param message a message to send.
 	 * @param responseType the type to convert the reply to.
 	 * @param <T> the type.
-	 * @return the response if there is one
-	 * @throws AmqpException if there is a problem
+	 * @return the response; or null if the reply times out.
+	 * @throws AmqpException if there is a problem.
 	 * @since 2.0
 	 */
 	@Nullable
@@ -587,13 +587,13 @@ public interface AmqpTemplate {
 	 * converting that to a Java object. Implementations will normally set the reply-to
 	 * header to an exclusive queue and wait up for some time limited by a timeout.
 	 * Requires a {@link org.springframework.amqp.support.converter.SmartMessageConverter}.
-	 * @param exchange the name of the exchange
-	 * @param routingKey the routing key
-	 * @param message a message to send
+	 * @param exchange the name of the exchange.
+	 * @param routingKey the routing key.
+	 * @param message a message to send.
 	 * @param responseType the type to convert the reply to.
 	 * @param <T> the type.
-	 * @return the response if there is one
-	 * @throws AmqpException if there is a problem
+ 	 * @return the response; or null if the reply times out.
+	 * @throws AmqpException if there is a problem.
 	 * @since 2.0
 	 */
 	@Nullable
@@ -606,12 +606,12 @@ public interface AmqpTemplate {
 	 * converting that to a Java object. Implementations will normally set the reply-to
 	 * header to an exclusive queue and wait up for some time limited by a timeout.
 	 * Requires a {@link org.springframework.amqp.support.converter.SmartMessageConverter}.
-	 * @param message a message to send
-	 * @param messagePostProcessor a processor to apply to the message before it is sent
+	 * @param message a message to send.
+	 * @param messagePostProcessor a processor to apply to the message before it is sent.
 	 * @param responseType the type to convert the reply to.
 	 * @param <T> the type.
-	 * @return the response if there is one
-	 * @throws AmqpException if there is a problem
+	 * @return the response; or null if the reply times out.
+	 * @throws AmqpException if there is a problem.
 	 * @since 2.0
 	 */
 	@Nullable
@@ -624,13 +624,13 @@ public interface AmqpTemplate {
 	 * converting that to a Java object. Implementations will normally set the reply-to
 	 * header to an exclusive queue and wait up for some time limited by a timeout.
 	 * Requires a {@link org.springframework.amqp.support.converter.SmartMessageConverter}.
-	 * @param routingKey the routing key
-	 * @param message a message to send
-	 * @param messagePostProcessor a processor to apply to the message before it is sent
+	 * @param routingKey the routing key.
+	 * @param message a message to send.
+	 * @param messagePostProcessor a processor to apply to the message before it is sent.
 	 * @param responseType the type to convert the reply to.
 	 * @param <T> the type.
-	 * @return the response if there is one
-	 * @throws AmqpException if there is a problem
+	 * @return the response; or null if the reply times out.
+	 * @throws AmqpException if there is a problem.
 	 * @since 2.0
 	 */
 	@Nullable
@@ -644,14 +644,14 @@ public interface AmqpTemplate {
 	 * converting that to a Java object. Implementations will normally set the reply-to
 	 * header to an exclusive queue and wait up for some time limited by a timeout.
 	 * Requires a {@link org.springframework.amqp.support.converter.SmartMessageConverter}.
-	 * @param exchange the name of the exchange
-	 * @param routingKey the routing key
-	 * @param message a message to send
-	 * @param messagePostProcessor a processor to apply to the message before it is sent
+	 * @param exchange the name of the exchange.
+	 * @param routingKey the routing key.
+	 * @param message a message to send.
+	 * @param messagePostProcessor a processor to apply to the message before it is sent.
 	 * @param responseType the type to convert the reply to.
 	 * @param <T> the type.
-	 * @return the response if there is one
-	 * @throws AmqpException if there is a problem
+	 * @return the response; or null if the reply times out.
+	 * @throws AmqpException if there is a problem.
 	 * @since 2.0
 	 */
 	@Nullable
