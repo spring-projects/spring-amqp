@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -731,6 +731,16 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 */
 	public void resetAllManualDeclarations() {
 		this.manualDeclarables.clear();
+	}
+
+	/**
+	 * Return the manually declared AMQP objects.
+	 * @return the manually declared AMQP objects.
+	 * @since 2.4.13
+	 */
+	@Override
+	public Map<String, Declarable> getManualDeclarables() {
+		return Collections.unmodifiableMap(this.manualDeclarables);
 	}
 
 	private void processDeclarables(Collection<Exchange> contextExchanges, Collection<Queue> contextQueues,

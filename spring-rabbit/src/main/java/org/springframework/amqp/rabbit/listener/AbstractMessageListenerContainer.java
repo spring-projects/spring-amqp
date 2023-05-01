@@ -604,6 +604,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		return this.beanName;
 	}
 
+	@Nullable
 	protected final ApplicationContext getApplicationContext() {
 		return this.applicationContext;
 	}
@@ -1930,14 +1931,20 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	private void attemptDeclarations(AmqpAdmin admin) {
-		ApplicationContext context = this.getApplicationContext();
+		ApplicationContext context = getApplicationContext();
 		if (context != null) {
 			Set<String> queueNames = getQueueNamesAsSet();
-			Collection<Queue> queueBeans = new LinkedHashSet<>(
+			Collection<Queue> queues = new LinkedHashSet<>(
 					context.getBeansOfType(Queue.class, false, false).values());
 			Map<String, Declarables> declarables = context.getBeansOfType(Declarables.class, false, false);
-			declarables.values().forEach(dec -> queueBeans.addAll(dec.getDeclarablesByType(Queue.class)));
-			for (Queue queue : queueBeans) {
+			declarables.values().forEach(dec -> queues.addAll(dec.getDeclarablesByType(Queue.class)));
+			admin.getManualDeclarables()
+					.values()
+					.stream()
+					.filter(Queue.class::isInstance)
+					.map(Queue.class::cast)
+					.forEach(queues::add);
+			for (Queue queue : queues) {
 				if (isMismatchedQueuesFatal() || (queueNames.contains(queue.getName()) &&
 						admin.getQueueProperties(queue.getName()) == null)) {
 					if (logger.isDebugEnabled()) {
