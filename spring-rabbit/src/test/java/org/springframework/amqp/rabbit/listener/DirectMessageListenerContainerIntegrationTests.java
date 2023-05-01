@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022 the original author or authors.
+ * Copyright 2016-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -539,16 +539,20 @@ public class DirectMessageListenerContainerIntegrationTests {
 	private void testRecoverDeletedQueueGuts(boolean autoDeclare, BrokerRunningSupport brokerRunning) throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
+		GenericApplicationContext context = new GenericApplicationContext();
+		RabbitAdmin rabbitAdmin = new RabbitAdmin(cf);
 		if (autoDeclare) {
-			GenericApplicationContext context = new GenericApplicationContext();
 			context.getBeanFactory().registerSingleton("foo", new Queue(Q1));
-			RabbitAdmin rabbitAdmin = new RabbitAdmin(cf);
-			rabbitAdmin.setApplicationContext(context);
-			context.getBeanFactory().registerSingleton("admin", rabbitAdmin);
-			context.refresh();
-			container.setApplicationContext(context);
 		}
-		container.setAutoDeclare(autoDeclare);
+		else {
+			rabbitAdmin.setRedeclareManualDeclarations(true);
+			rabbitAdmin.declareQueue(new Queue(Q1));
+		}
+		rabbitAdmin.setApplicationContext(context);
+		context.refresh();
+		container.setApplicationContext(context);
+
+		container.setAmqpAdmin(rabbitAdmin);
 		container.setQueueNames(Q1, Q2);
 		container.setConsumersPerQueue(2);
 		container.setConsumersPerQueue(2);
@@ -565,11 +569,6 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q2, 2)).isTrue();
 		assertThat(activeConsumerCount(container, 2)).isTrue();
 		assertThat(restartConsumerCount(container, 2)).isTrue();
-		RabbitAdmin rabbitAdmin = new RabbitAdmin(cf);
-		if (!autoDeclare) {
-			Thread.sleep(2000);
-			rabbitAdmin.declareQueue(new Queue(Q1));
-		}
 		assertThat(consumersOnQueue(Q1, 2)).isTrue();
 		assertThat(consumersOnQueue(Q2, 2)).isTrue();
 		assertThat(activeConsumerCount(container, 4)).isTrue();
