@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2022 the original author or authors.
+ * Copyright 2014-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -339,7 +339,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 					multiMethods.add(method);
 				}
 			}
-		}, ReflectionUtils.USER_DECLARED_METHODS);
+		}, ReflectionUtils.USER_DECLARED_METHODS
+				.and(meth -> !meth.getDeclaringClass().getName().contains("$MockitoMock$")));
 		if (methods.isEmpty() && multiMethods.isEmpty()) {
 			return TypeMetadata.EMPTY;
 		}
@@ -352,6 +353,17 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	private List<RabbitListener> findListenerAnnotations(AnnotatedElement element) {
 		return MergedAnnotations.from(element, SearchStrategy.TYPE_HIERARCHY)
 				.stream(RabbitListener.class)
+				.filter(tma -> {
+					Object source = tma.getSource();
+					String name = "";
+					if (source instanceof Class<?> clazz) {
+						name = clazz.getName();
+					}
+					else if (source instanceof Method method) {
+						name = method.getDeclaringClass().getName();
+					}
+					return !name.contains("$MockitoMock$");
+				})
 				.map(ann -> ann.synthesize())
 				.collect(Collectors.toList());
 	}

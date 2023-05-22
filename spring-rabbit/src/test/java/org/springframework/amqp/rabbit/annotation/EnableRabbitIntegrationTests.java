@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2022 the original author or authors.
+ * Copyright 2014-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,12 @@ package org.springframework.amqp.rabbit.annotation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -389,6 +393,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		rabbitTemplate.convertAndSend("multi.exch", "multi.rk", bar);
 		assertThat(this.rabbitTemplate.receiveAndConvert("sendTo.replies"))
 				.isEqualTo("CRASHCRASH Test reply from error handler");
+		verify(this.multi, times(2)).bar(any());
 		bar.field = "bar";
 		Baz baz = new Baz();
 		baz.field = "baz";
@@ -404,7 +409,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		this.rabbitTemplate.setAfterReceivePostProcessors(mpp);
 		assertThat(rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", qux)).isEqualTo("QUX: qux: multi.rk");
 		assertThat(beanMethodHeaders).hasSize(2);
-		assertThat(beanMethodHeaders.get(0)).isEqualTo("MultiListenerBean");
+		assertThat(beanMethodHeaders.get(0)).contains("$MultiListenerBean");
 		assertThat(beanMethodHeaders.get(1)).isEqualTo("qux");
 		this.rabbitTemplate.removeAfterReceivePostProcessor(mpp);
 		assertThat(rabbitTemplate.convertSendAndReceive("multi.exch.tx", "multi.rk.tx", bar)).isEqualTo("BAR: barbar");
@@ -1978,7 +1983,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 		@Bean
 		public MultiListenerBean multiListener() {
-			return new MultiListenerBean();
+			return spy(new MultiListenerBean());
 		}
 
 		@Bean
