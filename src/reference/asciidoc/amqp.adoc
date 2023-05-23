@@ -745,7 +745,7 @@ See <<cf-pub-conf-ret>> for more information about ensuring message delivery.
 When using HA queues in a cluster, for the best performance, you may want to connect to the physical broker
 where the lead queue resides.
 The `CachingConnectionFactory` can be configured with multiple broker addresses.
-This is to fail over and the client attempts to connect in order.
+This is to fail over and the client attempts to connect in accordance with the configured `AddressShuffleMode` order.
 The `LocalizedQueueConnectionFactory` uses the REST API provided by the management plugin to determine which node is the lead for the queue.
 It then creates (or retrieves from a cache) a `CachingConnectionFactory` that connects to just that node.
 If the connection fails, the new lead node is determined and the consumer connects to it.
