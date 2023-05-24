@@ -40,7 +40,7 @@ See <<stream-support>> for more information.
 Batch listeners can now consume `Collection<?>` as well as `List<?>`.
 The batch messaging adapter now ensures that the method is suitable for consuming batches.
 When setting the container factory `consumerBatchEnabled` to `true`, the `batchListener` property is also set to `true`.
-See <<receiving-batch>> for more infoprmation.
+See <<receiving-batch>> for more information.
 
 `MessageConverter` s can now return `Optional.empty()` for a null value; this is currently implemented by the `Jackson2JsonMessageConverter`.
 See <<Jackson2JsonMessageConverter-from-message>> for more information
@@ -48,9 +48,13 @@ See <<Jackson2JsonMessageConverter-from-message>> for more information
 You can now configure a `ReplyPostProcessor` via the container factory rather than via a property on `@RabbitListener`.
 See <<async-annotation-driven-reply>> for more information.
 
+The `@RabbitListener` (and `@RabbitHandler`) methods can now be as a Kotlin `suspend` functions.
+See <<async-returns>> for more information.
+
 ==== Connection Factory Changes
 
-The default `addressShuffleMode` in `AbstractConnectionFactory` is now `RANDOM`. This results in connecting to a random host when multiple addresses are provided.
+The default `addressShuffleMode` in `AbstractConnectionFactory` is now `RANDOM`.
+This results in connecting to a random host when multiple addresses are provided.
 See <<cluster>> for more information.
 
 The `LocalizedQueueConnectionFactory` no longer uses the RabbitMQ `http-client` library to determine which node is the leader for a queue.

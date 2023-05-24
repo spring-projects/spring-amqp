@@ -56,6 +56,7 @@ ext {
 	jaywayJsonPathVersion = '2.7.0'
 	junit4Version = '4.13.2'
 	junitJupiterVersion = '5.9.2'
+	kotlinCoroutinesVersion = '1.6.4'
 	log4jVersion = '2.19.0'
 	logbackVersion = '1.4.4'
 	lz4Version = '1.8.0'
@@ -436,6 +437,7 @@ project('spring-rabbit') {
 		}
 		optionalApi "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
 		optionalApi "org.apache.commons:commons-pool2:$commonsPoolVersion"
+		optionalApi "org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$kotlinCoroutinesVersion"
 
 		testApi project(':spring-rabbit-junit')
 		testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
