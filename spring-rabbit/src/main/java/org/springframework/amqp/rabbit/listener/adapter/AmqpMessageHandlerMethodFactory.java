@@ -22,7 +22,6 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.core.KotlinDetector;
 import org.springframework.core.MethodParameter;
 import org.springframework.lang.Nullable;
