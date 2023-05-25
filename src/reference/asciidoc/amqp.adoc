@@ -3075,7 +3075,7 @@ Each queue needed a separate property.
 ====== Reply Management
 
 The existing support in `MessageListenerAdapter` already lets your method have a non-void return type.
-When that is the case, the result of the invocation is encapsulated in a message sent to the the address specified in the `ReplyToAddress` header of the original message, or to the default address configured on the listener.
+When that is the case, the result of the invocation is encapsulated in a message sent to the address specified in the `ReplyToAddress` header of the original message, or to the default address configured on the listener.
 You can set that default address by using the `@SendTo` annotation of the messaging abstraction.
 
 Assuming our `processOrder` method should now return an `OrderStatus`, we can write it as follows to automatically send a reply:
@@ -3634,6 +3634,10 @@ If some exception occurs within the listener method that prevents creation of th
 
 Starting with versions 2.2.21, 2.3.13, 2.4.1, the `AcknowledgeMode` will be automatically set the `MANUAL` when async return types are detected.
 In addition, incoming messages with fatal exceptions will be negatively acknowledged individually, previously any prior unacknowledged message were also negatively acknowledged.
+
+Starting with version 2.4.16, the `@RabbitListener` (and `@RabbitHandler`) methods can be marked with Kotlin `suspend` and the whole handling process and reply producing (optional) happens on respective Kotlin coroutine.
+The above mentioned rules about `AcknowledgeMode.MANUAL` still apply.
+The `org.jetbrains.kotlinx:kotlinx-coroutines-reactor` dependency must be present in classpath to allow `suspend` function invocations.
 
 [[threading]]
 ===== Threading and Asynchronous Consumers
