@@ -48,8 +48,11 @@ See <<Jackson2JsonMessageConverter-from-message>> for more information
 You can now configure a `ReplyPostProcessor` via the container factory rather than via a property on `@RabbitListener`.
 See <<async-annotation-driven-reply>> for more information.
 
-The `@RabbitListener` (and `@RabbitHandler`) methods can now be as a Kotlin `suspend` functions.
+The `@RabbitListener` (and `@RabbitHandler`) methods can now be declared as Kotlin `suspend` functions.
 See <<async-returns>> for more information.
+
+Starting with version 3.0.5, listeners with async return types (including Kotlin suspend functions) invoke the `RabbitListenerErrorHandler` (if configured) after a failure.
+Previously, the error handler was only invoked with synchronous invocations.
 
 ==== Connection Factory Changes
 

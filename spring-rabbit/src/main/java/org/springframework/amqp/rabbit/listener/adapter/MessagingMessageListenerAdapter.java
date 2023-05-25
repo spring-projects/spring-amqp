@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -158,6 +158,20 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			handleException(amqpMessage, channel, message, new ListenerExecutionFailedException(
 					"Failed to convert message", ex, amqpMessage));
 		}
+	}
+
+	@Override
+	protected void asyncFailure(org.springframework.amqp.core.Message request, Channel channel, Throwable t,
+			Object source) {
+
+		try {
+			handleException(request, channel, (Message<?>) source,
+					new ListenerExecutionFailedException("Async Fail", t, request));
+			return;
+		}
+		catch (Exception ex) {
+		}
+		super.asyncFailure(request, channel, t, source);
 	}
 
 	private void handleException(org.springframework.amqp.core.Message amqpMessage, Channel channel,
