@@ -141,6 +141,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private final Map<String, String> micrometerTags = new HashMap<>();
 
+	private final AtomicBoolean logDeclarationException = new AtomicBoolean(true);
+
 	protected final AtomicBoolean stopNow = new AtomicBoolean(); // NOSONAR
 
 	private ContainerDelegate proxy = this.delegate;
