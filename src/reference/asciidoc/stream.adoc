@@ -28,8 +28,38 @@ compile 'org.springframework.amqp:spring-rabbit-stream:{project-version}'
 ----
 ====
 
-Provision the queues as normal, using a `RabbitAdmin` bean, using the `QueueBuilder.stream()` method to designate the queue type.
-See <<stream-examples>>.
+You can provision the queues as normal, using a `RabbitAdmin` bean, using the `QueueBuilder.stream()` method to designate the queue type.
+For example:
+
+====
+[source, java]
+----
+@Bean
+Queue stream() {
+    return QueueBuilder.durable("stream.queue1")
+            .stream()
+            .build();    
+}
+----
+====
+
+However, this will only work if you are also using non-stream components (such as the `SimpleMessageListenerContainer` or `DirectMessageListenerContainer`) because the admin is triggered to declare the defined beans when an AMQP connection is opened.
+If your application only uses stream components, or you wish to use advanced stream configuration features, you should configure a `StreamAdmin` instead:
+
+====
+[source, java]
+----
+@Bean
+StreamAdmin streamAdmin(Environment env) {
+    return new StreamAdmin(env, sc -> {
+        sc.stream("stream.queue1").maxAge(Duration.ofHours(2)).create();
+        sc.stream("stream.queue2").create();
+    });
+}
+----
+====
+
+Refer to the RabbitMQ documentation for more information about the `StreamCreator`.
 
 ==== Sending Messages
 
