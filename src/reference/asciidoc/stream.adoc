@@ -71,13 +71,13 @@ The `RabbitStreamTemplate` provides a subset of the `RabbitTemplate` (AMQP) func
 ----
 public interface RabbitStreamOperations extends AutoCloseable {
 
-	ConvertableFuture<Boolean> send(Message message);
+	CompletableFuture<Boolean> send(Message message);
 
-	ConvertableFuture<Boolean> convertAndSend(Object message);
+	CompletableFuture<Boolean> convertAndSend(Object message);
 
-	ConvertableFuture<Boolean> convertAndSend(Object message, @Nullable MessagePostProcessor mpp);
+	CompletableFuture<Boolean> convertAndSend(Object message, @Nullable MessagePostProcessor mpp);
 
-	ConvertableFuture<Boolean> send(com.rabbitmq.stream.Message message);
+	CompletableFuture<Boolean> send(com.rabbitmq.stream.Message message);
 
 	MessageBuilder messageBuilder();
 
