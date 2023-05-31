@@ -569,7 +569,7 @@ task filterMetricsDocsContent(type: Copy) {
 	include '_*.adoc'
 	into generatedDocsDir
 	rename { filename -> filename.replace '_', '' }
-	filter { line -> line.replaceAll('org.springframework.amqp.rabbit.support.micrometer.', '').replaceAll('^Fully qualified n', 'N') }
+	filter { line -> line.replaceAll('org.springframework.*.micrometer.', '').replaceAll('^Fully qualified n', 'N') }
 }
 
 asciidoctorPdf {
