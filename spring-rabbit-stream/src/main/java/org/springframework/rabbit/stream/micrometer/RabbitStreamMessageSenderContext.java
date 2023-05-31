@@ -16,6 +16,8 @@
 
 package org.springframework.rabbit.stream.micrometer;
 
+import java.util.Map;
+
 import com.rabbitmq.stream.Message;
 import io.micrometer.observation.transport.SenderContext;
 
@@ -34,7 +36,10 @@ public class RabbitStreamMessageSenderContext extends SenderContext<Message> {
 
 	public RabbitStreamMessageSenderContext(Message message, String beanName, String destination) {
 		super((carrier, key, value) -> {
-			message.getApplicationProperties().put(key, value);
+			Map<String, Object> props = message.getApplicationProperties();
+			if (props != null) {
+				props.put(key, value);
+			}
 		});
 		setCarrier(message);
 		this.beanName = beanName;

@@ -17,6 +17,7 @@
 package org.springframework.rabbit.stream.micrometer;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservation;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservationConvention;
@@ -43,12 +44,15 @@ public class RabbitStreamMessageReceiverContext extends ReceiverContext<Message>
 
 	public RabbitStreamMessageReceiverContext(Message message, String listenerId, String stream) {
 		super((carrier, key) -> {
-			Object value = carrier.getApplicationProperties().get(key);
-			if (value instanceof String string) {
-				return string;
-			}
-			else if (value instanceof byte[] bytes) {
-				return new String(bytes, StandardCharsets.UTF_8);
+			Map<String, Object> props = carrier.getApplicationProperties();
+			if (props != null) {
+				Object value = carrier.getApplicationProperties().get(key);
+				if (value instanceof String string) {
+					return string;
+				}
+				else if (value instanceof byte[] bytes) {
+					return new String(bytes, StandardCharsets.UTF_8);
+				}
 			}
 			return null;
 		});
