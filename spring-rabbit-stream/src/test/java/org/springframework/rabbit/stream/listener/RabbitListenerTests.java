@@ -116,6 +116,8 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 			throws InterruptedException {
 
 		template.convertAndSend("test.stream.queue2", "foo");
+		// Send a second to ensure the timer exists before the assertion
+		template.convertAndSend("test.stream.queue2", "bar");
 		assertThat(this.config.latch2.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.config.receivedNative).isNotNull();
 		assertThat(this.config.context).isNotNull();
@@ -170,9 +172,9 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 
 		final CountDownLatch latch1 = new CountDownLatch(9);
 
-		final CountDownLatch latch2 = new CountDownLatch(2);
+		final CountDownLatch latch2 = new CountDownLatch(4);
 
-		final CountDownLatch latch3 = new CountDownLatch(3);
+		final CountDownLatch latch3 = new CountDownLatch(6);
 
 		final CountDownLatch latch4 = new CountDownLatch(1);
 
