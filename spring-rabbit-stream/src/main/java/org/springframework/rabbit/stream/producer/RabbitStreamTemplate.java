@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 the original author or authors.
+ * Copyright 2021-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,17 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanNameAware;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
+import org.springframework.rabbit.stream.micrometer.RabbitStreamMessageSenderContext;
+import org.springframework.rabbit.stream.micrometer.RabbitStreamTemplateObservation;
+import org.springframework.rabbit.stream.micrometer.RabbitStreamTemplateObservation.DefaultRabbitStreamTemplateObservationConvention;
+import org.springframework.rabbit.stream.micrometer.RabbitStreamTemplateObservationConvention;
 import org.springframework.rabbit.stream.support.StreamMessageProperties;
 import org.springframework.rabbit.stream.support.converter.DefaultStreamMessageConverter;
 import org.springframework.rabbit.stream.support.converter.StreamMessageConverter;
@@ -37,6 +45,8 @@ import com.rabbitmq.stream.Environment;
 import com.rabbitmq.stream.MessageBuilder;
 import com.rabbitmq.stream.Producer;
 import com.rabbitmq.stream.ProducerBuilder;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * Default implementation of {@link RabbitStreamOperations}.
@@ -45,9 +55,11 @@ import com.rabbitmq.stream.ProducerBuilder;
  * @since 2.4
  *
  */
-public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAware {
+public class RabbitStreamTemplate implements RabbitStreamOperations, ApplicationContextAware, BeanNameAware {
 
 	protected final LogAccessor logger = new LogAccessor(getClass()); // NOSONAR
+
+	private ApplicationContext applicationContext;
 
 	private final Environment environment;
 
@@ -66,6 +78,15 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 	private String beanName;
 
 	private ProducerCustomizer producerCustomizer = (name, builder) -> { };
+
+	private boolean observationEnabled;
+
+	@Nullable
+	private RabbitStreamTemplateObservationConvention observationConvention;
+
+	private volatile boolean observationRegistryObtained;
+
+	private ObservationRegistry observationRegistry;
 
 	/**
 	 * Construct an instance with the provided {@link Environment}.
@@ -98,6 +119,11 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 			}
 		}
 		return this.producer;
+	}
+
+	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+		this.applicationContext = applicationContext;
 	}
 
 	@Override
@@ -144,6 +170,16 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 		this.producerCustomizer = producerCustomizer;
 	}
 
+	/**
+	 * Set to true to enable Micrometer observation.
+	 * @param observationEnabled true to enable.
+	 * @since 3.0.5
+	 */
+	public void setObservationEnabled(boolean observationEnabled) {
+		this.observationEnabled = observationEnabled;
+	}
+
+
 	@Override
 	public MessageConverter messageConverter() {
 		return this.messageConverter;
@@ -159,7 +195,7 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 	@Override
 	public CompletableFuture<Boolean> send(Message message) {
 		CompletableFuture<Boolean> future = new CompletableFuture<>();
-		createOrGetProducer().send(this.streamConverter.fromMessage(message), handleConfirm(future));
+		observeSend(this.streamConverter.fromMessage(message), future);
 		return future;
 	}
 
@@ -188,8 +224,37 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 	@Override
 	public CompletableFuture<Boolean> send(com.rabbitmq.stream.Message message) {
 		CompletableFuture<Boolean> future = new CompletableFuture<>();
-		createOrGetProducer().send(message, handleConfirm(future));
+		observeSend(message, future);
 		return future;
+	}
+
+	private void observeSend(com.rabbitmq.stream.Message message, CompletableFuture<Boolean> future) {
+		Observation observation = RabbitStreamTemplateObservation.TEMPLATE_OBSERVATION.observation(
+				this.observationConvention, DefaultRabbitStreamTemplateObservationConvention.INSTANCE,
+				() -> new RabbitStreamMessageSenderContext(message, this.beanName, this.streamName),
+					obtainObservationRegistry());
+		observation.start();
+		try {
+			createOrGetProducer().send(message, handleConfirm(future, observation));
+		}
+		catch (Exception ex) {
+			observation.error(ex);
+			observation.stop();
+			future.completeExceptionally(ex);
+		}
+	}
+
+	@Nullable
+	private ObservationRegistry obtainObservationRegistry() {
+		if (!this.observationRegistryObtained && this.observationEnabled && this.applicationContext != null) {
+			if (this.applicationContext != null) {
+				ObjectProvider<ObservationRegistry> registry =
+						this.applicationContext.getBeanProvider(ObservationRegistry.class);
+				this.observationRegistry = registry.getIfUnique();
+			}
+			this.observationRegistryObtained = true;
+		}
+		return this.observationRegistry;
 	}
 
 	@Override
@@ -197,10 +262,11 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 		return createOrGetProducer().messageBuilder();
 	}
 
-	private ConfirmationHandler handleConfirm(CompletableFuture<Boolean> future) {
+	private ConfirmationHandler handleConfirm(CompletableFuture<Boolean> future, Observation observation) {
 		return confStatus -> {
 			if (confStatus.isConfirmed()) {
 				future.complete(true);
+				observation.stop();
 			}
 			else {
 				int code = confStatus.getCode();
@@ -222,7 +288,10 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, BeanNameAwa
 					errorMessage = "Unknown code: " + code;
 					break;
 				}
-				future.completeExceptionally(new StreamSendException(errorMessage, code));
+				StreamSendException ex = new StreamSendException(errorMessage, code);
+				observation.error(ex);
+				observation.stop();
+				future.completeExceptionally(ex);
 			}
 		};
 	}

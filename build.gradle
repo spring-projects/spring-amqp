@@ -474,6 +474,7 @@ project('spring-rabbit-stream') {
 
 		api project(':spring-rabbit')
 		api "com.rabbitmq:stream-client:$rabbitmqStreamVersion"
+		optionalApi 'io.micrometer:micrometer-core'
 
 		testApi project(':spring-rabbit-junit')
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core'
@@ -488,6 +489,8 @@ project('spring-rabbit-stream') {
 		testImplementation "org.testcontainers:junit-jupiter"
 		testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 		testImplementation 'org.springframework:spring-webflux'
+		testImplementation 'io.micrometer:micrometer-test'
+		testImplementation 'io.micrometer:micrometer-observation-test'
 	}
 
 }

@@ -36,7 +36,7 @@ import io.micrometer.core.instrument.Timer.Sample;
  * @since 2.4.6
  *
  */
-final class MicrometerHolder {
+public final class MicrometerHolder {
 
 	private final ConcurrentMap<String, Timer> timers = new ConcurrentHashMap<>();
 
@@ -66,11 +66,11 @@ final class MicrometerHolder {
 		}
 	}
 
-	Object start() {
+	public Object start() {
 		return Timer.start(this.registry);
 	}
 
-	void success(Object sample, String queue) {
+	public void success(Object sample, String queue) {
 		Timer timer = this.timers.get(queue + "none");
 		if (timer == null) {
 			timer = buildTimer(this.listenerId, "success", queue, "none");
@@ -78,7 +78,7 @@ final class MicrometerHolder {
 		((Sample) sample).stop(timer);
 	}
 
-	void failure(Object sample, String queue, String exception) {
+	public void failure(Object sample, String queue, String exception) {
 		Timer timer = this.timers.get(queue + exception);
 		if (timer == null) {
 			timer = buildTimer(this.listenerId, "failure", queue, exception);

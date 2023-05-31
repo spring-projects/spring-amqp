@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 the original author or authors.
+ * Copyright 2021-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,13 +25,21 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
-import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.MicrometerHolder;
+import org.springframework.amqp.rabbit.listener.ObservableListenerContainer;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
+import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservation;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservation.DefaultRabbitListenerObservationConvention;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitMessageReceiverContext;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
-import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
+import org.springframework.rabbit.stream.micrometer.RabbitStreamListenerObservation;
+import org.springframework.rabbit.stream.micrometer.RabbitStreamListenerObservation.DefaultRabbitStreamListenerObservationConvention;
+import org.springframework.rabbit.stream.micrometer.RabbitStreamListenerObservationConvention;
+import org.springframework.rabbit.stream.micrometer.RabbitStreamMessageReceiverContext;
 import org.springframework.rabbit.stream.support.StreamMessageProperties;
 import org.springframework.rabbit.stream.support.converter.DefaultStreamMessageConverter;
 import org.springframework.rabbit.stream.support.converter.StreamMessageConverter;
@@ -41,6 +49,8 @@ import com.rabbitmq.stream.Codec;
 import com.rabbitmq.stream.Consumer;
 import com.rabbitmq.stream.ConsumerBuilder;
 import com.rabbitmq.stream.Environment;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * A listener container for RabbitMQ Streams.
@@ -49,7 +59,7 @@ import com.rabbitmq.stream.Environment;
  * @since 2.4
  *
  */
-public class StreamListenerContainer implements MessageListenerContainer, BeanNameAware {
+public class StreamListenerContainer extends ObservableListenerContainer {
 
 	protected LogAccessor logger = new LogAccessor(LogFactory.getLog(getClass())); // NOSONAR
 
@@ -67,10 +77,6 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 
 	private int concurrency = 1;
 
-	private String listenerId;
-
-	private String beanName;
-
 	private boolean autoStartup = true;
 
 	private MessageListener messageListener;
@@ -78,6 +84,11 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	private StreamMessageListener streamListener;
 
 	private Advice[] adviceChain;
+
+	private String streamName;
+
+	@Nullable
+	private RabbitStreamListenerObservationConvention observationConvention;
 
 	/**
 	 * Construct an instance using the provided environment.
@@ -108,6 +119,7 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 		Assert.isTrue(queueNames != null && queueNames.length == 1, "Only one stream is supported");
 		this.builder.stream(queueNames[0]);
 		this.simpleStream = true;
+		this.streamName = queueNames[0];
 	}
 
 	/**
@@ -139,6 +151,7 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 				.singleActiveConsumer()
 				.name(name);
 		this.superStream = true;
+		this.streamName = streamName;
 	}
 
 	/**
@@ -171,34 +184,6 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 		this.consumerCustomizer = consumerCustomizer;
 	}
 
-	/**
-	 * The 'id' attribute of the listener.
-	 * @return the id (or the container bean name if no id set).
-	 */
-	@Nullable
-	public String getListenerId() {
-		return this.listenerId != null ? this.listenerId : this.beanName;
-	}
-
-	@Override
-	public void setListenerId(String listenerId) {
-		this.listenerId = listenerId;
-	}
-
-	/**
-	 * Return the bean name.
-	 * @return the bean name.
-	 */
-	@Nullable
-	public String getBeanName() {
-		return this.beanName;
-	}
-
-	@Override
-	public void setBeanName(String beanName) {
-		this.beanName = beanName;
-	}
-
 	@Override
 	public void setAutoStartup(boolean autoStart) {
 		this.autoStartup = autoStart;
@@ -224,6 +209,22 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	@Nullable
 	public Object getMessageListener() {
 		return this.messageListener;
+	}
+
+	/**
+	 * Set a RabbitStreamListenerObservationConvention; used to add additional key/values
+	 * to observations when using a {@link StreamMessageListener}.
+	 * @param observationConvention the convention.
+	 * @since 3.0.5
+	 */
+	public void setObservationConvention(RabbitStreamListenerObservationConvention observationConvention) {
+		this.observationConvention = observationConvention;
+	}
+
+	@Override
+	public void afterPropertiesSet() {
+		checkMicrometer();
+		checkObservation();
 	}
 
 	@Override
@@ -263,21 +264,77 @@ public class StreamListenerContainer implements MessageListenerContainer, BeanNa
 	public void setupMessageListener(MessageListener messageListener) {
 		adviseIfNeeded(messageListener);
 		this.builder.messageHandler((context, message) -> {
+			ObservationRegistry registry = getObservationRegistry();
+			Object sample = null;
+			MicrometerHolder micrometerHolder = getMicrometerHolder();
+			if (micrometerHolder != null) {
+				sample = micrometerHolder.start();
+			}
 			if (this.streamListener != null) {
-				this.streamListener.onStreamMessage(message, context);
+				Observation observation =
+						RabbitStreamListenerObservation.LISTENER_OBSERVATION.observation(this.observationConvention,
+								DefaultRabbitStreamListenerObservationConvention.INSTANCE,
+								() -> new RabbitStreamMessageReceiverContext(message, getListenerId(), this.streamName),
+								registry);
+				Object finalSample = sample;
+				observation.observe(() -> {
+					try {
+						this.streamListener.onStreamMessage(message, context);
+						if (finalSample != null) {
+							micrometerHolder.success(finalSample, this.streamName);
+						}
+					}
+					catch (RuntimeException rtex) {
+						if (finalSample != null) {
+							micrometerHolder.failure(finalSample, this.streamName, rtex.getClass().getSimpleName());
+						}
+						throw rtex;
+					}
+					catch (Exception ex) {
+						if (finalSample != null) {
+							micrometerHolder.failure(finalSample, this.streamName, ex.getClass().getSimpleName());
+						}
+						throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
+					}
+				});
 			}
 			else {
 				Message message2 = this.streamConverter.toMessage(message, new StreamMessageProperties(context));
+				Observation observation =
+						RabbitListenerObservation.LISTENER_OBSERVATION.observation(getObservationConvention(),
+								DefaultRabbitListenerObservationConvention.INSTANCE,
+								() -> new RabbitMessageReceiverContext(message2, getListenerId()), registry);
 				if (this.messageListener instanceof ChannelAwareMessageListener) {
 					try {
-						((ChannelAwareMessageListener) this.messageListener).onMessage(message2, null);
+						Object finalSample = sample;
+						observation.observe(() -> {
+							try {
+								((ChannelAwareMessageListener) this.messageListener).onMessage(message2, null);
+								if (finalSample != null) {
+									micrometerHolder.success(finalSample, this.streamName);
+								}
+							}
+							catch (RuntimeException rtex) {
+								if (finalSample != null) {
+									micrometerHolder.failure(finalSample, this.streamName,
+											rtex.getClass().getSimpleName());
+								}
+								throw rtex;
+							}
+							catch (Exception ex) {
+								if (finalSample != null) {
+									micrometerHolder.failure(finalSample, this.streamName, ex.getClass().getSimpleName());
+								}
+								throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
+							}
+						});
 					}
 					catch (Exception ex) { // NOSONAR
-						this.logger.error(ex, "Listner threw an exception");
+						this.logger.error(ex, "Listener threw an exception");
 					}
 				}
 				else {
-					this.messageListener.onMessage(message2);
+					observation.observe(() -> this.messageListener.onMessage(message2));
 				}
 			}
 		});

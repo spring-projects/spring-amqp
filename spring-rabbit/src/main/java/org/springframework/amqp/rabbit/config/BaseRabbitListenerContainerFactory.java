@@ -28,7 +28,11 @@ import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.adapter.AbstractAdaptableMessageListener;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservationConvention;
 import org.springframework.amqp.utils.JavaUtils;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.lang.Nullable;
 import org.springframework.retry.RecoveryCallback;
 import org.springframework.retry.support.RetryTemplate;
@@ -44,7 +48,7 @@ import org.springframework.util.Assert;
  *
  */
 public abstract class BaseRabbitListenerContainerFactory<C extends MessageListenerContainer>
-	implements RabbitListenerContainerFactory<C> {
+	implements RabbitListenerContainerFactory<C>, ApplicationContextAware {
 
 	private Boolean defaultRequeueRejected;
 
@@ -57,6 +61,14 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	private Advice[] adviceChain;
 
 	private Function<String, ReplyPostProcessor> replyPostProcessorProvider;
+
+	private Boolean micrometerEnabled;
+
+	private Boolean observationEnabled;
+
+	private RabbitListenerObservationConvention observationConvention;
+
+	private ApplicationContext applicationContext;
 
 	@Override
 	public abstract C createListenerContainer(RabbitListenerEndpoint endpoint);
@@ -169,6 +181,58 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	 */
 	public void setAdviceChain(Advice... adviceChain) {
 		this.adviceChain = adviceChain == null ? null : Arrays.copyOf(adviceChain, adviceChain.length);
+	}
+
+	/**
+	 * Set to false to disable micrometer listener timers. When true, ignored
+	 * if {@link #setObservationEnabled(boolean)} is set to true.
+	 * @param micrometerEnabled false to disable.
+	 * @since 3.0
+	 * @see #setObservationEnabled(boolean)
+	 */
+	public void setMicrometerEnabled(boolean micrometerEnabled) {
+		this.micrometerEnabled = micrometerEnabled;
+	}
+
+	protected Boolean getMicrometerEnabled() {
+		return this.micrometerEnabled;
+	}
+
+	/**
+	 * Enable observation via micrometer; disables basic Micrometer timers enabled
+	 * by {@link #setMicrometerEnabled(boolean)}.
+	 * @param observationEnabled true to enable.
+	 * @since 3.0
+	 * @see #setMicrometerEnabled(boolean)
+	 */
+	public void setObservationEnabled(boolean observationEnabled) {
+		this.observationEnabled = observationEnabled;
+	}
+
+	protected Boolean getObservationEnabled() {
+		return this.observationEnabled;
+	}
+
+	/**
+	 * Set an observation convention; used to add additional key/values to observations.
+	 * @param observationConvention the convention.
+	 * @since 3.0
+	 */
+	public void setObservationConvention(RabbitListenerObservationConvention observationConvention) {
+		this.observationConvention = observationConvention;
+	}
+
+	protected RabbitListenerObservationConvention getObservationConvention() {
+		return this.observationConvention;
+	}
+
+	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+		this.applicationContext = applicationContext;
+	}
+
+	protected ApplicationContext getApplicationContext() {
+		return this.applicationContext;
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2455,7 +2455,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	protected void observeTheSend(Channel channel, Message message, boolean mandatory, String exch, String rKey) {
 
-		if (!this.observationRegistryObtained && this.observationEnabled) {
+		if (!this.observationRegistryObtained && this.observationEnabled && this.applicationContext != null) {
 			obtainObservationRegistry(this.applicationContext);
 			this.observationRegistryObtained = true;
 		}
