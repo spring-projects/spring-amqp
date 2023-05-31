@@ -552,7 +552,7 @@ task prepareAsciidocBuild(type: Sync) {
 	into "$buildDir/asciidoc"
 }
 
-def observationInputDir = file('spring-rabbit/src/main/java/org/springframework/amqp/rabbit/support/micrometer').absolutePath
+def observationInputDir = project.rootDir.absolutePath
 def generatedDocsDir = file("$buildDir/docs/generated").absolutePath
 
 task generateObservabilityDocs(type: JavaExec) {
