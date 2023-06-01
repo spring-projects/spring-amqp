@@ -52,7 +52,6 @@ import org.springframework.amqp.rabbit.batch.SimpleBatchingStrategy;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
-import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.RoutingConnectionFactory;
@@ -76,10 +75,7 @@ import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactoryUtils;
-import org.springframework.beans.factory.BeanNameAware;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
@@ -89,7 +85,6 @@ import org.springframework.transaction.interceptor.DefaultTransactionAttribute;
 import org.springframework.transaction.interceptor.TransactionAttribute;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
-import org.springframework.util.ClassUtils;
 import org.springframework.util.ErrorHandler;
 import org.springframework.util.StringUtils;
 import org.springframework.util.backoff.BackOff;
@@ -113,9 +108,8 @@ import io.micrometer.observation.ObservationRegistry;
  * @author Mohammad Hewedy
  * @author Mat Jaggard
  */
-public abstract class AbstractMessageListenerContainer extends RabbitAccessor
-		implements MessageListenerContainer, ApplicationContextAware, BeanNameAware, DisposableBean,
-		ApplicationEventPublisherAware {
+public abstract class AbstractMessageListenerContainer extends ObservableListenerContainer
+		implements ApplicationEventPublisherAware {
 
 	private static final int EXIT_99 = 99;
 
@@ -134,9 +128,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	public static final long DEFAULT_SHUTDOWN_TIMEOUT = 5000;
 
-	private static final boolean MICROMETER_PRESENT = ClassUtils.isPresent(
-			"io.micrometer.core.instrument.MeterRegistry", AbstractMessageListenerContainer.class.getClassLoader());
-
 	private final Object lifecycleMonitor = new Object();
 
 	private final ContainerDelegate delegate = this::actualInvokeListener;
@@ -144,8 +135,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	protected final Object consumersMonitor = new Object(); //NOSONAR
 
 	private final Map<String, Object> consumerArgs = new HashMap<>();
-
-	private final Map<String, String> micrometerTags = new HashMap<>();
 
 	private ContainerDelegate proxy = this.delegate;
 
@@ -159,8 +148,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private PlatformTransactionManager transactionManager;
 
 	private TransactionAttribute transactionAttribute = new DefaultTransactionAttribute();
-
-	private String beanName = "not.a.Spring.bean";
 
 	private Executor taskExecutor = new SimpleAsyncTaskExecutor();
 
@@ -208,10 +195,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private Collection<MessagePostProcessor> afterReceivePostProcessors;
 
-	private ApplicationContext applicationContext;
-
-	private String listenerId;
-
 	private Advice[] adviceChain = new Advice[0];
 
 	@Nullable
@@ -244,12 +227,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private String errorHandlerLoggerName = getClass().getName();
 
 	private BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(0, 0, 0L);
-
-	private MicrometerHolder micrometerHolder;
-
-	private boolean micrometerEnabled = true;
-
-	private boolean observationEnabled = false;
 
 	private boolean isBatchListener;
 
@@ -606,29 +583,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	@Override
-	public void setBeanName(String beanName) {
-		this.beanName = beanName;
-	}
-
-	/**
-	 * @return The bean name that this listener container has been assigned in its containing bean factory, if any.
-	 */
-	@Nullable
-	protected final String getBeanName() {
-		return this.beanName;
-	}
-
-	@Nullable
-	protected final ApplicationContext getApplicationContext() {
-		return this.applicationContext;
-	}
-
-	@Override
-	public final void setApplicationContext(ApplicationContext applicationContext) {
-		this.applicationContext = applicationContext;
-	}
-
-	@Override
 	public ConnectionFactory getConnectionFactory() {
 		ConnectionFactory connectionFactory = super.getConnectionFactory();
 		if (connectionFactory instanceof RoutingConnectionFactory rcf) {
@@ -701,19 +655,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	@Nullable
 	protected RoutingConnectionFactory getRoutingConnectionFactory() {
 		return super.getConnectionFactory() instanceof RoutingConnectionFactory rcf ? rcf  : null;
-	}
-
-	/**
-	 * The 'id' attribute of the listener.
-	 * @return the id (or the container bean name if no id set).
-	 */
-	public String getListenerId() {
-		return this.listenerId != null ? this.listenerId : this.beanName;
-	}
-
-	@Override
-	public void setListenerId(String listenerId) {
-		this.listenerId = listenerId;
 	}
 
 	/**
@@ -1152,39 +1093,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
-	 * Set additional tags for the Micrometer listener timers.
-	 * @param tags the tags.
-	 * @since 2.2
-	 */
-	public void setMicrometerTags(Map<String, String> tags) {
-		if (tags != null) {
-			this.micrometerTags.putAll(tags);
-		}
-	}
-
-	/**
-	 * Set to false to disable micrometer listener timers. When true, ignored
-	 * if {@link #setObservationEnabled(boolean)} is set to true.
-	 * @param micrometerEnabled false to disable.
-	 * @since 2.2
-	 * @see #setObservationEnabled(boolean)
-	 */
-	public void setMicrometerEnabled(boolean micrometerEnabled) {
-		this.micrometerEnabled = micrometerEnabled;
-	}
-
-	/**
-	 * Enable observation via micrometer; disables basic Micrometer timers enabled
-	 * by {@link #setMicrometerEnabled(boolean)}.
-	 * @param observationEnabled true to enable.
-	 * @since 3.0
-	 * @see #setMicrometerEnabled(boolean)
-	 */
-	public void setObservationEnabled(boolean observationEnabled) {
-		this.observationEnabled = observationEnabled;
-	}
-
-	/**
 	 * Set an observation convention; used to add additional key/values to observations.
 	 * @param observationConvention the convention.
 	 * @since 3.0
@@ -1263,16 +1171,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 						"channelTransacted=false");
 		validateConfiguration();
 		initialize();
-		try {
-			if (this.micrometerHolder == null && MICROMETER_PRESENT && this.micrometerEnabled && !this.observationEnabled
-					&& this.applicationContext != null) {
-				this.micrometerHolder = new MicrometerHolder(this.applicationContext, getListenerId(),
-						this.micrometerTags);
-			}
-		}
-		catch (IllegalStateException e) {
-			this.logger.debug("Could not enable micrometer timers", e);
-		}
+		checkMicrometer();
 		if (this.isAsyncReplies() && !AcknowledgeMode.MANUAL.equals(this.acknowledgeMode)) {
 			this.acknowledgeMode = AcknowledgeMode.MANUAL;
 		}
@@ -1311,9 +1210,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	@Override
 	public void destroy() {
 		shutdown();
-		if (this.micrometerHolder != null) {
-			this.micrometerHolder.destroy();
-		}
+		super.destroy();
 	}
 
 	// -------------------------------------------------------------------------
@@ -1432,9 +1329,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				}
 			}
 		}
-		if (this.observationEnabled) {
-			obtainObservationRegistry(this.applicationContext);
-		}
+		checkObservation();
 		try {
 			logger.debug("Starting Rabbit listener container.");
 			configureAdminIfNeeded();
@@ -1556,20 +1451,21 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			throw new MessageRejectedWhileStoppingException();
 		}
 		Object sample = null;
-		if (this.micrometerHolder != null) {
-			sample = this.micrometerHolder.start();
+		MicrometerHolder micrometerHolder = getMicrometerHolder();
+		if (micrometerHolder != null) {
+			sample = micrometerHolder.start();
 		}
 		try {
 			doExecuteListener(channel, data);
 			if (sample != null) {
-				this.micrometerHolder.success(sample, data instanceof Message message
+				micrometerHolder.success(sample, data instanceof Message message
 						? message.getMessageProperties().getConsumerQueue()
 						: queuesAsListString());
 			}
 		}
 		catch (RuntimeException ex) {
 			if (sample != null) {
-				this.micrometerHolder.failure(sample, data instanceof Message message
+				micrometerHolder.failure(sample, data instanceof Message message
 						? message.getMessageProperties().getConsumerQueue()
 						: queuesAsListString(), ex.getClass().getSimpleName());
 			}
@@ -1866,9 +1762,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	protected void configureAdminIfNeeded() {
-		if (this.amqpAdmin == null && this.applicationContext != null) {
+		ApplicationContext applicationContext = getApplicationContext();
+		if (this.amqpAdmin == null && applicationContext != null) {
 			Map<String, AmqpAdmin> admins =
-					BeanFactoryUtils.beansOfTypeIncludingAncestors(this.applicationContext, AmqpAdmin.class,
+					BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, AmqpAdmin.class,
 							false, false);
 			if (admins.size() == 1) {
 				this.amqpAdmin = admins.values().iterator().next();

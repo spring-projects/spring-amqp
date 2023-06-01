@@ -474,6 +474,7 @@ project('spring-rabbit-stream') {
 
 		api project(':spring-rabbit')
 		api "com.rabbitmq:stream-client:$rabbitmqStreamVersion"
+		optionalApi 'io.micrometer:micrometer-core'
 
 		testApi project(':spring-rabbit-junit')
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core'
@@ -488,6 +489,10 @@ project('spring-rabbit-stream') {
 		testImplementation "org.testcontainers:junit-jupiter"
 		testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 		testImplementation 'org.springframework:spring-webflux'
+		testImplementation 'io.micrometer:micrometer-observation-test'
+		testImplementation 'io.micrometer:micrometer-tracing-bridge-brave'
+		testImplementation 'io.micrometer:micrometer-tracing-test'
+		testImplementation 'io.micrometer:micrometer-tracing-integration-test'
 	}
 
 }
@@ -547,7 +552,7 @@ task prepareAsciidocBuild(type: Sync) {
 	into "$buildDir/asciidoc"
 }
 
-def observationInputDir = file('spring-rabbit/src/main/java/org/springframework/amqp/rabbit/support/micrometer').absolutePath
+def observationInputDir = project.rootDir.absolutePath
 def generatedDocsDir = file("$buildDir/docs/generated").absolutePath
 
 task generateObservabilityDocs(type: JavaExec) {
@@ -564,7 +569,7 @@ task filterMetricsDocsContent(type: Copy) {
 	include '_*.adoc'
 	into generatedDocsDir
 	rename { filename -> filename.replace '_', '' }
-	filter { line -> line.replaceAll('org.springframework.amqp.rabbit.support.micrometer.', '').replaceAll('^Fully qualified n', 'N') }
+	filter { line -> line.replaceAll('org.springframework.*.micrometer.', '').replaceAll('^Fully qualified n', 'N') }
 }
 
 asciidoctorPdf {

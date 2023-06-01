@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2022 the original author or authors.
+ * Copyright 2014-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,6 @@ import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservat
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.utils.JavaUtils;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -101,8 +99,6 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 	private ApplicationEventPublisher applicationEventPublisher;
 
-	private ApplicationContext applicationContext;
-
 	private Boolean autoStartup;
 
 	private Integer phase;
@@ -118,10 +114,6 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	private Boolean deBatchingEnabled;
 
 	private MessageAckListener messageAckListener;
-
-	private Boolean micrometerEnabled;
-
-	private Boolean observationEnabled;
 
 	private RabbitListenerObservationConvention observationConvention;
 
@@ -248,11 +240,6 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		this.applicationEventPublisher = applicationEventPublisher;
 	}
 
-	@Override
-	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-		this.applicationContext = applicationContext;
-	}
-
 	/**
 	 * @param autoStartup true for auto startup.
 	 * @see AbstractMessageListenerContainer#setAutoStartup(boolean)
@@ -344,28 +331,6 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	}
 
 	/**
-	 * Set to false to disable micrometer listener timers. When true, ignored
-	 * if {@link #setObservationEnabled(boolean)} is set to true.
-	 * @param micrometerEnabled false to disable.
-	 * @since 3.0
-	 * @see #setObservationEnabled(boolean)
-	 */
-	public void setMicrometerEnabled(boolean micrometerEnabled) {
-		this.micrometerEnabled = micrometerEnabled;
-	}
-
-	/**
-	 * Enable observation via micrometer; disables basic Micrometer timers enabled
-	 * by {@link #setMicrometerEnabled(boolean)}.
-	 * @param observationEnabled true to enable.
-	 * @since 3.0
-	 * @see #setMicrometerEnabled(boolean)
-	 */
-	public void setObservationEnabled(boolean observationEnabled) {
-		this.observationEnabled = observationEnabled;
-	}
-
-	/**
 	 * Set an observation convention; used to add additional key/values to observations.
 	 * @param observationConvention the convention.
 	 * @since 3.0
@@ -389,7 +354,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		javaUtils
 			.acceptIfNotNull(this.acknowledgeMode, instance::setAcknowledgeMode)
 			.acceptIfNotNull(this.channelTransacted, instance::setChannelTransacted)
-			.acceptIfNotNull(this.applicationContext, instance::setApplicationContext)
+			.acceptIfNotNull(getApplicationContext(), instance::setApplicationContext)
 			.acceptIfNotNull(this.taskExecutor, instance::setTaskExecutor)
 			.acceptIfNotNull(this.transactionManager, instance::setTransactionManager)
 			.acceptIfNotNull(this.prefetchCount, instance::setPrefetchCount)
@@ -409,8 +374,8 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 			.acceptIfNotNull(this.deBatchingEnabled, instance::setDeBatchingEnabled)
 			.acceptIfNotNull(this.messageAckListener, instance::setMessageAckListener)
 			.acceptIfNotNull(this.batchingStrategy, instance::setBatchingStrategy)
-			.acceptIfNotNull(this.micrometerEnabled, instance::setMicrometerEnabled)
-			.acceptIfNotNull(this.observationEnabled, instance::setObservationEnabled)
+			.acceptIfNotNull(getMicrometerEnabled(), instance::setMicrometerEnabled)
+			.acceptIfNotNull(getObservationEnabled(), instance::setObservationEnabled)
 			.acceptIfNotNull(this.observationConvention, instance::setObservationConvention);
 		if (this.batchListener && this.deBatchingEnabled == null) {
 			// turn off container debatching by default for batch listeners

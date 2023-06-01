@@ -104,8 +104,8 @@ public class DefaultStreamMessageConverter implements StreamMessageConverter {
 				.acceptIfNotNull(mProps.getGroupId(), propsBuilder::groupId)
 				.acceptIfNotNull(mProps.getGroupSequence(), propsBuilder::groupSequence)
 				.acceptIfNotNull(mProps.getReplyToGroupId(), propsBuilder::replyToGroupId);
+		ApplicationPropertiesBuilder appPropsBuilder = builder.applicationProperties();
 		if (mProps.getHeaders().size() > 0) {
-			ApplicationPropertiesBuilder appPropsBuilder = builder.applicationProperties();
 			mProps.getHeaders().forEach((key, val) -> {
 				mapProp(key, val, appPropsBuilder);
 			});

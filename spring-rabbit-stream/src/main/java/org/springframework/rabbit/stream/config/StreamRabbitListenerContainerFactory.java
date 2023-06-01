@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 the original author or authors.
+ * Copyright 2021-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.rabbit.stream.listener.ConsumerCustomizer;
 import org.springframework.rabbit.stream.listener.StreamListenerContainer;
 import org.springframework.rabbit.stream.listener.adapter.StreamMessageListenerAdapter;
+import org.springframework.rabbit.stream.micrometer.RabbitStreamListenerObservationConvention;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.stream.Environment;
@@ -52,6 +53,8 @@ public class StreamRabbitListenerContainerFactory
 	private ConsumerCustomizer consumerCustomizer;
 
 	private ContainerCustomizer<StreamListenerContainer> containerCustomizer;
+
+	private RabbitStreamListenerObservationConvention streamListenerObservationConvention;
 
 	/**
 	 * Construct an instance using the provided environment.
@@ -87,6 +90,18 @@ public class StreamRabbitListenerContainerFactory
 		this.containerCustomizer = containerCustomizer;
 	}
 
+	/**
+	 * Set a {@link RabbitStreamListenerObservationConvention} that is used when receiving
+	 * native stream messages.
+	 * @param streamListenerObservationConvention the convention.
+	 * @since 3.0.5
+	 */
+	public void setStreamListenerObservationConvention(
+			RabbitStreamListenerObservationConvention streamListenerObservationConvention) {
+
+		this.streamListenerObservationConvention = streamListenerObservationConvention;
+	}
+
 	@Override
 	public StreamListenerContainer createListenerContainer(RabbitListenerEndpoint endpoint) {
 		if (endpoint instanceof MethodRabbitListenerEndpoint && this.nativeListener) {
@@ -101,8 +116,12 @@ public class StreamRabbitListenerContainerFactory
 		StreamListenerContainer container = createContainerInstance();
 		Advice[] adviceChain = getAdviceChain();
 		JavaUtils.INSTANCE
+				.acceptIfNotNull(getApplicationContext(), container::setApplicationContext)
 				.acceptIfNotNull(this.consumerCustomizer, container::setConsumerCustomizer)
-				.acceptIfNotNull(adviceChain, container::setAdviceChain);
+				.acceptIfNotNull(adviceChain, container::setAdviceChain)
+				.acceptIfNotNull(getMicrometerEnabled(), container::setMicrometerEnabled)
+				.acceptIfNotNull(getObservationEnabled(), container::setObservationEnabled)
+				.acceptIfNotNull(this.streamListenerObservationConvention, container::setObservationConvention);
 		applyCommonOverrides(endpoint, container);
 		if (this.containerCustomizer != null) {
 			this.containerCustomizer.configure(container);

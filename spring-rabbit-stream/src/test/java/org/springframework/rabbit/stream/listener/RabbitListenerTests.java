@@ -66,6 +66,12 @@ import com.rabbitmq.stream.Environment;
 import com.rabbitmq.stream.Message;
 import com.rabbitmq.stream.MessageHandler.Context;
 import com.rabbitmq.stream.OffsetSpecification;
+import io.micrometer.common.KeyValues;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.micrometer.core.tck.MeterRegistryAssert;
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * @author Gary Russell
@@ -80,7 +86,7 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 	Config config;
 
 	@Test
-	void simple(@Autowired RabbitStreamTemplate template) throws Exception {
+	void simple(@Autowired RabbitStreamTemplate template, @Autowired MeterRegistry meterRegistry) throws Exception {
 		Future<Boolean> future = template.convertAndSend("foo");
 		assertThat(future.get(10, TimeUnit.SECONDS)).isTrue();
 		future = template.convertAndSend("bar", msg -> msg);
@@ -95,16 +101,35 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 		assertThat(this.config.latch1.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.config.received).containsExactly("foo", "foo", "bar", "baz", "qux");
 		assertThat(this.config.id).isEqualTo("testNative");
+		MeterRegistryAssert.assertThat(meterRegistry)
+				.hasTimerWithNameAndTags("spring.rabbit.stream.template",
+						KeyValues.of("spring.rabbit.stream.template.name", "streamTemplate1"))
+				.hasTimerWithNameAndTags("spring.rabbit.stream.listener",
+						KeyValues.of("spring.rabbit.stream.listener.id", "obs"))
+				.hasTimerWithNameAndTags("spring.rabbitmq.listener",
+						KeyValues.of("listener.id", "notObs")
+								.and("queue", "test.stream.queue1"));
 	}
 
 	@Test
-	void nativeMsg(@Autowired RabbitTemplate template) throws InterruptedException {
+	void nativeMsg(@Autowired RabbitTemplate template, @Autowired MeterRegistry meterRegistry)
+			throws InterruptedException {
+
 		template.convertAndSend("test.stream.queue2", "foo");
+		// Send a second to ensure the timer exists before the assertion
+		template.convertAndSend("test.stream.queue2", "bar");
 		assertThat(this.config.latch2.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.config.receivedNative).isNotNull();
 		assertThat(this.config.context).isNotNull();
 		assertThat(this.config.latch3.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.config.latch4.await(10, TimeUnit.SECONDS)).isTrue();
+		MeterRegistryAssert.assertThat(meterRegistry)
+				.hasTimerWithNameAndTags("spring.rabbit.stream.listener",
+						KeyValues.of("spring.rabbit.stream.listener.id", "testObsNative"))
+				.hasTimerWithNameAndTags("spring.rabbitmq.listener",
+						KeyValues.of("listener.id", "testNative"))
+				.hasTimerWithNameAndTags("spring.rabbitmq.listener",
+						KeyValues.of("listener.id", "testNativeFail"));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -145,11 +170,11 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 	@EnableRabbit
 	public static class Config {
 
-		final CountDownLatch latch1 = new CountDownLatch(5);
+		final CountDownLatch latch1 = new CountDownLatch(9);
 
-		final CountDownLatch latch2 = new CountDownLatch(1);
+		final CountDownLatch latch2 = new CountDownLatch(4);
 
-		final CountDownLatch latch3 = new CountDownLatch(3);
+		final CountDownLatch latch3 = new CountDownLatch(6);
 
 		final CountDownLatch latch4 = new CountDownLatch(1);
 
@@ -162,6 +187,18 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 		volatile Context context;
 
 		volatile String id;
+
+		@Bean
+		MeterRegistry meterReg() {
+			return new SimpleMeterRegistry();
+		}
+
+		@Bean
+		ObservationRegistry obsReg(MeterRegistry meterRegistry) {
+			ObservationRegistry registry = ObservationRegistry.create();
+			registry.observationConfig().observationHandler(new DefaultMeterObservationHandler(meterRegistry));
+			return registry;
+		}
 
 		@Bean
 		static Environment environment() {
@@ -227,7 +264,6 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 					return 0;
 				}
 
-
 			};
 		}
 
@@ -238,13 +274,30 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 			return factory;
 		}
 
-		@RabbitListener(queues = "test.stream.queue1")
+		@Bean
+		RabbitListenerContainerFactory<StreamListenerContainer> observableFactory(Environment env) {
+			StreamRabbitListenerContainerFactory factory = new StreamRabbitListenerContainerFactory(env);
+			factory.setObservationEnabled(true);
+			factory.setConsumerCustomizer((id, builder) -> {
+				builder.name(id)
+						.offset(OffsetSpecification.first())
+						.manualTrackingStrategy();
+			});
+			return factory;
+		}
+
+		@RabbitListener(id = "notObs", queues = "test.stream.queue1")
 		void listen(String in) {
 			this.received.add(in);
 			this.latch1.countDown();
 			if (first.getAndSet(false)) {
 				throw new RuntimeException("fail first");
 			}
+		}
+
+		@RabbitListener(id = "obs", queues = "test.stream.queue1", containerFactory = "observableFactory")
+		void listenObs(String in) {
+			this.latch1.countDown();
 		}
 
 		@Bean
@@ -275,6 +328,21 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 			return factory;
 		}
 
+		@Bean
+		RabbitListenerContainerFactory<StreamListenerContainer> nativeObsFactory(Environment env,
+				RetryOperationsInterceptor retry) {
+
+			StreamRabbitListenerContainerFactory factory = new StreamRabbitListenerContainerFactory(env);
+			factory.setNativeListener(true);
+			factory.setObservationEnabled(true);
+			factory.setConsumerCustomizer((id, builder) -> {
+				builder.name(id)
+						.offset(OffsetSpecification.first())
+						.manualTrackingStrategy();
+			});
+			return factory;
+		}
+
 		@RabbitListener(id = "testNative", queues = "test.stream.queue2", containerFactory = "nativeFactory")
 		void nativeMsg(Message in, Context context) {
 			this.receivedNative = in;
@@ -287,6 +355,14 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 		void nativeMsgFail(Message in, Context context) {
 			this.latch3.countDown();
 			throw new RuntimeException("fail all");
+		}
+
+		@RabbitListener(id = "testObsNative", queues = "test.stream.queue2", containerFactory = "nativeObsFactory")
+		void nativeObsMsg(Message in, Context context) {
+			this.receivedNative = in;
+			this.context = context;
+			this.latch2.countDown();
+			context.storeOffset();
 		}
 
 		@Bean
@@ -303,6 +379,7 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 		RabbitStreamTemplate streamTemplate1(Environment env) {
 			RabbitStreamTemplate template = new RabbitStreamTemplate(env, "test.stream.queue1");
 			template.setProducerCustomizer((name, builder) -> builder.name("test"));
+			template.setObservationEnabled(true);
 			return template;
 		}
 
