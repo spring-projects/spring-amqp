@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 the original author or authors.
+ * Copyright 2021-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,7 +121,6 @@ public class StreamRabbitListenerContainerFactory
 				.acceptIfNotNull(adviceChain, container::setAdviceChain)
 				.acceptIfNotNull(getMicrometerEnabled(), container::setMicrometerEnabled)
 				.acceptIfNotNull(getObservationEnabled(), container::setObservationEnabled)
-				.acceptIfNotNull(getObservationConvention(), container::setObservationConvention)
 				.acceptIfNotNull(this.streamListenerObservationConvention, container::setObservationConvention);
 		applyCommonOverrides(endpoint, container);
 		if (this.containerCustomizer != null) {

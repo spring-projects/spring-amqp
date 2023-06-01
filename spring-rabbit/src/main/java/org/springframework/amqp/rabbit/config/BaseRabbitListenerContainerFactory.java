@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 the original author or authors.
+ * Copyright 2021-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.adapter.AbstractAdaptableMessageListener;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
-import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservationConvention;
 import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -65,8 +64,6 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	private Boolean micrometerEnabled;
 
 	private Boolean observationEnabled;
-
-	private RabbitListenerObservationConvention observationConvention;
 
 	private ApplicationContext applicationContext;
 
@@ -211,19 +208,6 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 
 	protected Boolean getObservationEnabled() {
 		return this.observationEnabled;
-	}
-
-	/**
-	 * Set an observation convention; used to add additional key/values to observations.
-	 * @param observationConvention the convention.
-	 * @since 3.0
-	 */
-	public void setObservationConvention(RabbitListenerObservationConvention observationConvention) {
-		this.observationConvention = observationConvention;
-	}
-
-	protected RabbitListenerObservationConvention getObservationConvention() {
-		return this.observationConvention;
 	}
 
 	@Override

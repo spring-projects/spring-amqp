@@ -29,9 +29,6 @@ import org.springframework.amqp.rabbit.listener.MicrometerHolder;
 import org.springframework.amqp.rabbit.listener.ObservableListenerContainer;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
-import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservation;
-import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservation.DefaultRabbitListenerObservationConvention;
-import org.springframework.amqp.rabbit.support.micrometer.RabbitMessageReceiverContext;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.core.log.LogAccessor;
@@ -270,13 +267,13 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 			if (micrometerHolder != null) {
 				sample = micrometerHolder.start();
 			}
+			Observation observation =
+					RabbitStreamListenerObservation.STREAM_LISTENER_OBSERVATION.observation(this.observationConvention,
+							DefaultRabbitStreamListenerObservationConvention.INSTANCE,
+							() -> new RabbitStreamMessageReceiverContext(message, getListenerId(), this.streamName),
+							registry);
+			Object finalSample = sample;
 			if (this.streamListener != null) {
-				Observation observation =
-						RabbitStreamListenerObservation.STREAM_LISTENER_OBSERVATION.observation(this.observationConvention,
-								DefaultRabbitStreamListenerObservationConvention.INSTANCE,
-								() -> new RabbitStreamMessageReceiverContext(message, getListenerId(), this.streamName),
-								registry);
-				Object finalSample = sample;
 				observation.observe(() -> {
 					try {
 						this.streamListener.onStreamMessage(message, context);
@@ -300,13 +297,8 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 			}
 			else {
 				Message message2 = this.streamConverter.toMessage(message, new StreamMessageProperties(context));
-				Observation observation =
-						RabbitListenerObservation.LISTENER_OBSERVATION.observation(getObservationConvention(),
-								DefaultRabbitListenerObservationConvention.INSTANCE,
-								() -> new RabbitMessageReceiverContext(message2, getListenerId()), registry);
 				if (this.messageListener instanceof ChannelAwareMessageListener) {
 					try {
-						Object finalSample = sample;
 						observation.observe(() -> {
 							try {
 								((ChannelAwareMessageListener) this.messageListener).onMessage(message2, null);

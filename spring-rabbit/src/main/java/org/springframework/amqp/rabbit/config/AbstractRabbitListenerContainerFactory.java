@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2022 the original author or authors.
+ * Copyright 2014-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.MessageAckListener;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservationConvention;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.utils.JavaUtils;
@@ -113,6 +114,8 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	private Boolean deBatchingEnabled;
 
 	private MessageAckListener messageAckListener;
+
+	private RabbitListenerObservationConvention observationConvention;
 
 	/**
 	 * @param connectionFactory The connection factory.
@@ -327,6 +330,15 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		this.messageAckListener = messageAckListener;
 	}
 
+	/**
+	 * Set an observation convention; used to add additional key/values to observations.
+	 * @param observationConvention the convention.
+	 * @since 3.0
+	 */
+	public void setObservationConvention(RabbitListenerObservationConvention observationConvention) {
+		this.observationConvention = observationConvention;
+	}
+
 	@Override
 	public C createListenerContainer(RabbitListenerEndpoint endpoint) {
 		C instance = createContainerInstance();
@@ -364,7 +376,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 			.acceptIfNotNull(this.batchingStrategy, instance::setBatchingStrategy)
 			.acceptIfNotNull(getMicrometerEnabled(), instance::setMicrometerEnabled)
 			.acceptIfNotNull(getObservationEnabled(), instance::setObservationEnabled)
-			.acceptIfNotNull(getObservationConvention(), instance::setObservationConvention);
+			.acceptIfNotNull(this.observationConvention, instance::setObservationConvention);
 		if (this.batchListener && this.deBatchingEnabled == null) {
 			// turn off container debatching by default for batch listeners
 			instance.setDeBatchingEnabled(false);

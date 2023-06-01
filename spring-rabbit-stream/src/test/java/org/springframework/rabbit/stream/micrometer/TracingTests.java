@@ -92,8 +92,8 @@ public class TracingTests extends SampleTestRunner {
 					.hasRemoteServiceNameEqualTo("RabbitMQ Stream");
 			assertThat(consumerSpans.get(0).getTags().get("spring.rabbit.stream.listener.id")).isIn("one", "two");
 			SpanAssert.assertThat(consumerSpans.get(1))
-					.hasTagWithKey("spring.rabbit.listener.id");
-			assertThat(consumerSpans.get(1).getTags().get("spring.rabbit.listener.id")).isIn("one", "two");
+					.hasTagWithKey("spring.rabbit.stream.listener.id");
+			assertThat(consumerSpans.get(1).getTags().get("spring.rabbit.stream.listener.id")).isIn("one", "two");
 			assertThat(consumerSpans.get(0).getTags().get("spring.rabbit.stream.listener.id"))
 					.isNotEqualTo(consumerSpans.get(1).getTags().get("spring.rabbit.stream.listener.id"));
 		};

@@ -66,6 +66,7 @@ import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservation;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservation.DefaultRabbitListenerObservationConvention;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservationConvention;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitMessageReceiverContext;
 import org.springframework.amqp.support.ConditionalExceptionLogger;
 import org.springframework.amqp.support.ConsumerTagStrategy;
@@ -240,6 +241,9 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	private boolean asyncReplies;
 
 	private MessageAckListener messageAckListener = (success, deliveryTag, cause) -> { };
+
+	@Nullable
+	private RabbitListenerObservationConvention observationConvention;
 
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
@@ -1089,6 +1093,15 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	}
 
 	/**
+	 * Set an observation convention; used to add additional key/values to observations.
+	 * @param observationConvention the convention.
+	 * @since 3.0
+	 */
+	public void setObservationConvention(RabbitListenerObservationConvention observationConvention) {
+		this.observationConvention = observationConvention;
+	}
+
+	/**
 	 * Get the consumeDelay - a time to wait before consuming in ms.
 	 * @return the consume delay.
 	 * @since 2.3
@@ -1418,7 +1431,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		Observation observation;
 		ObservationRegistry registry = getObservationRegistry();
 		if (data instanceof Message message) {
-			observation = RabbitListenerObservation.LISTENER_OBSERVATION.observation(getObservationConvention(),
+			observation = RabbitListenerObservation.LISTENER_OBSERVATION.observation(this.observationConvention,
 					DefaultRabbitListenerObservationConvention.INSTANCE,
 						() -> new RabbitMessageReceiverContext(message, getListenerId()), registry);
 			observation.observe(() -> executeListenerAndHandleException(channel, data));

@@ -104,8 +104,8 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 		MeterRegistryAssert.assertThat(meterRegistry)
 				.hasTimerWithNameAndTags("spring.rabbit.stream.template",
 						KeyValues.of("spring.rabbit.stream.template.name", "streamTemplate1"))
-				.hasTimerWithNameAndTags("spring.rabbit.listener",
-						KeyValues.of("spring.rabbit.listener.id", "obs"))
+				.hasTimerWithNameAndTags("spring.rabbit.stream.listener",
+						KeyValues.of("spring.rabbit.stream.listener.id", "obs"))
 				.hasTimerWithNameAndTags("spring.rabbitmq.listener",
 						KeyValues.of("listener.id", "notObs")
 								.and("queue", "test.stream.queue1"));

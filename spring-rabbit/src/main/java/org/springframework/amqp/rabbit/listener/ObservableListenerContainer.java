@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
-import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservationConvention;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
@@ -49,9 +48,6 @@ public abstract class ObservableListenerContainer extends RabbitAccessor
 
 	private boolean observationEnabled = false;
 
-	@Nullable
-	private RabbitListenerObservationConvention observationConvention;
-
 	private String beanName = "not.a.Spring.bean";
 
 	private String listenerId;
@@ -68,10 +64,6 @@ public abstract class ObservableListenerContainer extends RabbitAccessor
 
 	protected MicrometerHolder getMicrometerHolder() {
 		return this.micrometerHolder;
-	}
-
-	public RabbitListenerObservationConvention getObservationConvention() {
-		return this.observationConvention;
 	}
 
 	/**
@@ -105,15 +97,6 @@ public abstract class ObservableListenerContainer extends RabbitAccessor
 	 */
 	public void setObservationEnabled(boolean observationEnabled) {
 		this.observationEnabled = observationEnabled;
-	}
-
-	/**
-	 * Set an observation convention; used to add additional key/values to observations.
-	 * @param observationConvention the convention.
-	 * @since 3.0
-	 */
-	public void setObservationConvention(RabbitListenerObservationConvention observationConvention) {
-		this.observationConvention = observationConvention;
 	}
 
 	protected void checkMicrometer() {
