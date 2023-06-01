@@ -2455,7 +2455,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	protected void observeTheSend(Channel channel, Message message, boolean mandatory, String exch, String rKey) {
 
-		if (!this.observationRegistryObtained && this.observationEnabled && this.applicationContext != null) {
+		if (!this.observationRegistryObtained && this.observationEnabled) {
 			obtainObservationRegistry(this.applicationContext);
 			this.observationRegistryObtained = true;
 		}

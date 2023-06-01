@@ -229,7 +229,7 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 	}
 
 	private void observeSend(com.rabbitmq.stream.Message message, CompletableFuture<Boolean> future) {
-		Observation observation = RabbitStreamTemplateObservation.TEMPLATE_OBSERVATION.observation(
+		Observation observation = RabbitStreamTemplateObservation.STREAM_TEMPLATE_OBSERVATION.observation(
 				this.observationConvention, DefaultRabbitStreamTemplateObservationConvention.INSTANCE,
 				() -> new RabbitStreamMessageSenderContext(message, this.beanName, this.streamName),
 					obtainObservationRegistry());
@@ -246,7 +246,7 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 
 	@Nullable
 	private ObservationRegistry obtainObservationRegistry() {
-		if (!this.observationRegistryObtained && this.observationEnabled && this.applicationContext != null) {
+		if (!this.observationRegistryObtained && this.observationEnabled) {
 			if (this.applicationContext != null) {
 				ObjectProvider<ObservationRegistry> registry =
 						this.applicationContext.getBeanProvider(ObservationRegistry.class);

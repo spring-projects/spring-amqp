@@ -37,7 +37,7 @@ public enum RabbitStreamTemplateObservation implements ObservationDocumentation 
 	/**
 	 * Observation for {@link RabbitStreamTemplate}s.
 	 */
-	TEMPLATE_OBSERVATION {
+	STREAM_TEMPLATE_OBSERVATION {
 
 		@Override
 		public Class<? extends ObservationConvention<? extends Context>> getDefaultConvention() {
@@ -46,7 +46,7 @@ public enum RabbitStreamTemplateObservation implements ObservationDocumentation 
 
 		@Override
 		public String getPrefix() {
-			return "spring.rabbit.template";
+			return "spring.rabbit.stream.template";
 		}
 
 		@Override
@@ -68,7 +68,7 @@ public enum RabbitStreamTemplateObservation implements ObservationDocumentation 
 
 			@Override
 			public String asString() {
-				return "spring.rabbit.template.name";
+				return "spring.rabbit.stream.template.name";
 			}
 
 		}

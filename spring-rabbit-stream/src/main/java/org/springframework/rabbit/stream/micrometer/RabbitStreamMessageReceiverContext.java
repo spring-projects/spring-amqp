@@ -60,7 +60,7 @@ public class RabbitStreamMessageReceiverContext extends ReceiverContext<Message>
 		this.message = message;
 		this.listenerId = listenerId;
 		this.stream = stream;
-		setRemoteServiceName("RabbitMQ");
+		setRemoteServiceName("RabbitMQ Stream");
 	}
 
 	public String getListenerId() {

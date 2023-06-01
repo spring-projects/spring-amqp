@@ -36,7 +36,7 @@ public interface RabbitStreamTemplateObservationConvention
 
 	@Override
 	default String getName() {
-		return "spring.rabbit.template";
+		return "spring.rabbit.stream.template";
 	}
 
 }

@@ -272,7 +272,7 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 			}
 			if (this.streamListener != null) {
 				Observation observation =
-						RabbitStreamListenerObservation.LISTENER_OBSERVATION.observation(this.observationConvention,
+						RabbitStreamListenerObservation.STREAM_LISTENER_OBSERVATION.observation(this.observationConvention,
 								DefaultRabbitStreamListenerObservationConvention.INSTANCE,
 								() -> new RabbitStreamMessageReceiverContext(message, getListenerId(), this.streamName),
 								registry);

@@ -36,7 +36,7 @@ public interface RabbitStreamListenerObservationConvention
 
 	@Override
 	default String getName() {
-		return "spring.rabbit.listener";
+		return "spring.rabbit.stream.listener";
 	}
 
 }

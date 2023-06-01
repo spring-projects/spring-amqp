@@ -23,6 +23,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.testcontainers.junit.jupiter.Testcontainers;
+
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.junit.AbstractTestContainerTests;
@@ -52,6 +54,7 @@ import io.micrometer.tracing.test.simple.SpansAssert;
  * @since 3.0.5
  *
  */
+@Testcontainers(disabledWithoutDocker = true)
 public class TracingTests extends SampleTestRunner {
 
 	private static final AbstractTestContainerTests atct = new AbstractTestContainerTests() {
@@ -80,20 +83,19 @@ public class TracingTests extends SampleTestRunner {
 					.filter(span -> span.getKind().equals(Kind.CONSUMER))
 					.collect(Collectors.toList());
 			SpanAssert.assertThat(producerSpans.get(0))
-					.hasTag("spring.rabbit.template.name", "streamTemplate1");
+					.hasTag("spring.rabbit.stream.template.name", "streamTemplate1");
 			SpanAssert.assertThat(producerSpans.get(0))
-					.hasRemoteServiceNameEqualTo("RabbitMQ");
+					.hasRemoteServiceNameEqualTo("RabbitMQ Stream");
 			SpanAssert.assertThat(consumerSpans.get(0))
-					.hasTagWithKey("spring.rabbit.listener.id");
+					.hasTagWithKey("spring.rabbit.stream.listener.id");
 			SpanAssert.assertThat(consumerSpans.get(0))
-					.hasRemoteServiceNameEqualTo("RabbitMQ");
-			assertThat(consumerSpans.get(0).getTags().get("spring.rabbit.listener.id")).isIn("one", "two");
+					.hasRemoteServiceNameEqualTo("RabbitMQ Stream");
+			assertThat(consumerSpans.get(0).getTags().get("spring.rabbit.stream.listener.id")).isIn("one", "two");
 			SpanAssert.assertThat(consumerSpans.get(1))
 					.hasTagWithKey("spring.rabbit.listener.id");
 			assertThat(consumerSpans.get(1).getTags().get("spring.rabbit.listener.id")).isIn("one", "two");
-			assertThat(consumerSpans.get(0).getTags().get("spring.rabbit.listener.id"))
-					.isNotEqualTo(consumerSpans.get(1).getTags().get("spring.rabbit.listener.id"));
-
+			assertThat(consumerSpans.get(0).getTags().get("spring.rabbit.stream.listener.id"))
+					.isNotEqualTo(consumerSpans.get(1).getTags().get("spring.rabbit.stream.listener.id"));
 		};
 	}
 

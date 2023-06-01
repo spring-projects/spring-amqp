@@ -26,7 +26,7 @@ import io.micrometer.observation.docs.ObservationDocumentation;
  * Spring Rabbit Observation for stream listeners.
  *
  * @author Gary Russell
- * @since 3.0
+ * @since 3.0.5
  *
  */
 public enum RabbitStreamListenerObservation implements ObservationDocumentation {
@@ -34,7 +34,7 @@ public enum RabbitStreamListenerObservation implements ObservationDocumentation 
 	/**
 	 * Observation for Rabbit stream listeners.
 	 */
-	LISTENER_OBSERVATION {
+	STREAM_LISTENER_OBSERVATION {
 
 
 		@Override
@@ -44,7 +44,7 @@ public enum RabbitStreamListenerObservation implements ObservationDocumentation 
 
 		@Override
 		public String getPrefix() {
-			return "spring.rabbit.listener";
+			return "spring.rabbit.stream.listener";
 		}
 
 		@Override
@@ -66,7 +66,7 @@ public enum RabbitStreamListenerObservation implements ObservationDocumentation 
 
 			@Override
 			public String asString() {
-				return "spring.rabbit.listener.id";
+				return "spring.rabbit.stream.listener.id";
 			}
 
 		}

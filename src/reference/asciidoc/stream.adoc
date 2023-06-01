@@ -310,3 +310,26 @@ StreamListenerContainer container(Environment env, String name) {
 
 IMPORTANT: At this time, when the concurrency is greater than 1, the actual concurrency is further controlled by the `Environment`; to achieve full concurrency, set the environment's `maxConsumersByConnection` to 1.
 See https://rabbitmq.github.io/rabbitmq-stream-java-client/snapshot/htmlsingle/#configuring-the-environment[Configuring the Environment].
+
+[[stream-micrometer-observation]]
+==== Micrometer Observation
+
+Using Micrometer for observation is now supported, since version 3.0.5, for the `RabbitStreamTemplate` and stream listener container.
+The container now also supports Micrometer timers (when observation is not enabled).
+
+Set `observationEnabled` on each component to enable observation; this will disable <<micrometer,Micrometer Timers>> because the timers will now be managed with each observation.
+When using annotated listeners, set `observationEnabled` on the container factory.
+
+Refer to https://micrometer.io/docs/tracing[Micrometer Tracing] for more information.
+
+To add tags to timers/traces, configure a custom `RabbitStreamTemplateObservationConvention` or `RabbitStreamListenerObservationConvention` to the template or listener container (for native listeners), respectively.
+To add tags to timers/traces for non-native listeners, configure a `RabbitListenerObservationConvention` to the listener container.
+
+The default implementations add the `name` tag for template observations and `listener.id` tag for containers.
+
+NOTE: When using a non-native listener (with message conversion, parameter resolution), the full name of the tag key is `spring.rabbit.listener.id`; for native listeners, it is `spring.rabbit.stream.listener.id`.
+The reason for the difference is the context for native listeners uses a `com.rabbitmq.stream.Message` whereas non-native listeners use a `org.springframework.amqp.core.Message`.
+
+You can either subclass `DefaultRabbitStreamTemplateObservationConvention` or `DefaultStreamRabbitListenerObservationConvention` or provide completely new implementations.
+
+See <<observation-gen>> for more details.

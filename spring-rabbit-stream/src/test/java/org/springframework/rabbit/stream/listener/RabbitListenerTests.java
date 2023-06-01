@@ -102,8 +102,8 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 		assertThat(this.config.received).containsExactly("foo", "foo", "bar", "baz", "qux");
 		assertThat(this.config.id).isEqualTo("testNative");
 		MeterRegistryAssert.assertThat(meterRegistry)
-		.hasTimerWithNameAndTags("spring.rabbit.template",
-						KeyValues.of("spring.rabbit.template.name", "streamTemplate1"))
+				.hasTimerWithNameAndTags("spring.rabbit.stream.template",
+						KeyValues.of("spring.rabbit.stream.template.name", "streamTemplate1"))
 				.hasTimerWithNameAndTags("spring.rabbit.listener",
 						KeyValues.of("spring.rabbit.listener.id", "obs"))
 				.hasTimerWithNameAndTags("spring.rabbitmq.listener",
@@ -124,8 +124,8 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 		assertThat(this.config.latch3.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.config.latch4.await(10, TimeUnit.SECONDS)).isTrue();
 		MeterRegistryAssert.assertThat(meterRegistry)
-				.hasTimerWithNameAndTags("spring.rabbit.listener",
-						KeyValues.of("spring.rabbit.listener.id", "testObsNative"))
+				.hasTimerWithNameAndTags("spring.rabbit.stream.listener",
+						KeyValues.of("spring.rabbit.stream.listener.id", "testObsNative"))
 				.hasTimerWithNameAndTags("spring.rabbitmq.listener",
 						KeyValues.of("listener.id", "testNative"))
 				.hasTimerWithNameAndTags("spring.rabbitmq.listener",
