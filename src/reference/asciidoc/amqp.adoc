@@ -213,9 +213,10 @@ There are three connection factories to chose from
 
 The first two were added in version 2.3.
 
-For most use cases, the `PooledChannelConnectionFactory` should be used.
+For most use cases, the `CachingConnectionFactory` should be used.
 The `ThreadChannelConnectionFactory` can be used if you want to ensure strict message ordering without the need to use <<scoped-operations>>.
-The `CachingConnectionFactory` should be used if you want to use correlated publisher confirmations or if you wish to open multiple connections, via its `CacheMode`.
+The `PooledChannelConnectionFactory` is similar to the `CachingConnectionFactory` in that it uses a single connection and a pool of channels.
+It's implementation is simpler but it doesn't support correlated publisher confirmations.
 
 Simple publisher confirmations are supported by all three factories.
 
