@@ -545,7 +545,40 @@ Previously, you had to configure the SSL options programmatically.
 The following example shows how to configure a `RabbitConnectionFactoryBean`:
 
 ====
-[source,xml]
+[source,java,role=primary]
+.Java
+----
+@Bean
+RabbitConnectionFactoryBean rabbitConnectionFactory() {
+    RabbitConnectionFactoryBean factoryBean = new RabbitConnectionFactoryBean();
+    factoryBean.setUseSSL(true);
+    factoryBean.setSslPropertiesLocation(new ClassPathResource("secrets/rabbitSSL.properties"));
+    return factoryBean;
+}
+
+@Bean
+CachingConnectionFactory connectionFactory(ConnectionFactory rabbitConnectionFactory) {
+    CachingConnectionFactory ccf = new CachingConnectionFactory(rabbitConnectionFactory);
+    ccf.setHost("...");
+    // ...
+    return ccf;
+}
+----
+[source,properties,role=secondary]
+.Boot application.properties
+----
+spring.rabbitmq.ssl.enabled:true
+spring.rabbitmq.ssl.keyStore=...
+spring.rabbitmq.ssl.keyStoreType=jks
+spring.rabbitmq.ssl.keyStorePassword=...
+spring.rabbitmq.ssl.trustStore=...
+spring.rabbitmq.ssl.trustStoreType=jks
+spring.rabbitmq.ssl.trustStorePassword=...
+spring.rabbitmq.host=...
+...
+----
+[source,xml,role=secondary]
+.XML
 ----
 <rabbit:connection-factory id="rabbitConnectionFactory"
     connection-factory="clientConnectionFactory"
@@ -557,7 +590,7 @@ The following example shows how to configure a `RabbitConnectionFactoryBean`:
 <bean id="clientConnectionFactory"
         class="org.springframework.amqp.rabbit.connection.RabbitConnectionFactoryBean">
     <property name="useSSL" value="true" />
-    <property name="sslPropertiesLocation" value="file:/secrets/rabbitSSL.properties"/>
+    <property name="sslPropertiesLocation" value="classpath:secrets/rabbitSSL.properties"/>
 </bean>
 ----
 ====
