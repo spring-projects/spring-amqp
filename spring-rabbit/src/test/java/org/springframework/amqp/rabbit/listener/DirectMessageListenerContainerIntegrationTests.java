@@ -51,6 +51,7 @@ import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueInformation;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -90,6 +91,7 @@ import com.rabbitmq.client.Consumer;
  */
 @RabbitAvailable(queues = { DirectMessageListenerContainerIntegrationTests.Q1,
 		DirectMessageListenerContainerIntegrationTests.Q2,
+		DirectMessageListenerContainerIntegrationTests.Q3,
 		DirectMessageListenerContainerIntegrationTests.EQ1,
 		DirectMessageListenerContainerIntegrationTests.EQ2,
 		DirectMessageListenerContainerIntegrationTests.DLQ1 })
@@ -101,6 +103,8 @@ public class DirectMessageListenerContainerIntegrationTests {
 	public static final String Q1 = "testQ1.DirectMessageListenerContainerIntegrationTests";
 
 	public static final String Q2 = "testQ2.DirectMessageListenerContainerIntegrationTests";
+
+	public static final String Q3 = "testQ3.DirectMessageListenerContainerIntegrationTests";
 
 	public static final String EQ1 = "eventTestQ1.DirectMessageListenerContainerIntegrationTests";
 
@@ -790,6 +794,48 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(ackSuccess.get()).isFalse();
 		assertThat(ackCause.get().getMessage()).isEqualTo("Channel closed; cannot ack/nack");
 		assertThat(ackDeliveryTag.get()).isEqualTo(1);
+	}
+
+	@Test
+	void forceStop() {
+		CountDownLatch latch1 = new CountDownLatch(1);
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
+		container.setMessageListener((ChannelAwareMessageListener) (msg, chan) -> {
+			latch1.await(10, TimeUnit.SECONDS);
+		});
+		RabbitTemplate template = new RabbitTemplate(cf);
+		try {
+			container.setQueueNames(Q3);
+			container.setForceStop(true);
+			template.convertAndSend(Q3, "one");
+			template.convertAndSend(Q3, "two");
+			template.convertAndSend(Q3, "three");
+			template.convertAndSend(Q3, "four");
+			template.convertAndSend(Q3, "five");
+			await().untilAsserted(() -> {
+				QueueInformation queueInfo = admin.getQueueInfo(Q3);
+				assertThat(queueInfo).isNotNull();
+				assertThat(queueInfo.getMessageCount()).isEqualTo(5);
+			});
+			container.start();
+			await().untilAsserted(() -> {
+				QueueInformation queueInfo = admin.getQueueInfo(Q3);
+				assertThat(queueInfo).isNotNull();
+				assertThat(queueInfo.getMessageCount()).isEqualTo(0);
+			});
+			container.stop(() -> {
+			});
+			latch1.countDown();
+			await().untilAsserted(() -> {
+				QueueInformation queueInfo = admin.getQueueInfo(Q3);
+				assertThat(queueInfo).isNotNull();
+				assertThat(queueInfo.getMessageCount()).isEqualTo(4);
+			});
+		}
+		finally {
+			container.stop();
+		}
 	}
 
 	@Test
