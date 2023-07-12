@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -784,11 +784,17 @@ public class BlockingQueueConsumer {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Closing Rabbit Channel: " + this.channel);
 		}
-		RabbitUtils.setPhysicalCloseRequired(this.channel, true);
-		ConnectionFactoryUtils.releaseResources(this.resourceHolder);
-		this.deliveryTags.clear();
-		this.consumers.clear();
-		this.queue.clear(); // in case we still have a client thread blocked
+		forceCloseAndClearQueue();
+	}
+
+	public void forceCloseAndClearQueue() {
+		if (this.channel != null && this.channel.isOpen()) {
+			RabbitUtils.setPhysicalCloseRequired(this.channel, true);
+			ConnectionFactoryUtils.releaseResources(this.resourceHolder);
+			this.deliveryTags.clear();
+			this.consumers.clear();
+			this.queue.clear(); // in case we still have a client thread blocked
+		}
 	}
 
 	/**

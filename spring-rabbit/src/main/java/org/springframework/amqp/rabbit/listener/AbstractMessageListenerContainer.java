@@ -141,9 +141,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private final Map<String, String> micrometerTags = new HashMap<>();
 
-	private ContainerDelegate proxy = this.delegate;
+	protected final AtomicBoolean stopNow = new AtomicBoolean(); // NOSONAR
 
-	private final AtomicBoolean logDeclarationException = new AtomicBoolean(true);
+	private ContainerDelegate proxy = this.delegate;
 
 	private long shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
 
@@ -257,6 +257,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private boolean asyncReplies;
 
 	private MessageAckListener messageAckListener = (success, deliveryTag, cause) -> { };
+
+	private boolean forceStop;
 
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
@@ -1213,6 +1215,25 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
+	 * Stop container after current message(s) are processed and requeue any prefetched.
+	 * @return true to stop when current message(s) are processed.
+	 * @since 2.4.14
+	 */
+	protected boolean isForceStop() {
+		return this.forceStop;
+	}
+
+	/**
+	 * Set to true to stop the container after the current message(s) are processed and
+	 * requeue any prefetched. Useful when using exclusive or single-active consumers.
+	 * @param forceStop true to stop when current messsage(s) are processed.
+	 * @since 2.4.14
+	 */
+	public void setForceStop(boolean forceStop) {
+		this.forceStop = forceStop;
+	}
+
+	/**
 	 * Delegates to {@link #validateConfiguration()} and {@link #initialize()}.
 	 */
 	@Override
@@ -1376,7 +1397,21 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * A shared Rabbit Connection, if any, will automatically be closed <i>afterwards</i>.
 	 * @see #shutdown()
 	 */
-	protected abstract void doShutdown();
+	protected void doShutdown() {
+		shutdownAndWaitOrCallback(null);
+	}
+
+	@Override
+	public void stop(Runnable callback) {
+		shutdownAndWaitOrCallback(() -> {
+			setNotRunning();
+			callback.run();
+		});
+	}
+
+	protected void shutdownAndWaitOrCallback(@Nullable Runnable callback) {
+	}
+
 
 	/**
 	 * @return Whether this container is currently active, that is, whether it has been set up but not shut down yet.

@@ -3467,6 +3467,10 @@ Starting with version 1.5, you can now assign a `group` to the container on the 
 This provides a mechanism to get a reference to a subset of containers.
 Adding a `group` attribute causes a bean of type `Collection<MessageListenerContainer>` to be registered with the context with the group name.
 
+By default, stopping a container will cancel the consumer and process all prefetched messages before stopping.
+Starting with versions 2.4.14, 3.0.6, you can set the <<forceStop>> container property to true to stop immediately after the current message is processed, causing any prefetched messages to be requeued.
+This is useful, for example, if exclusive or single-active consumers are being used.
+
 [[receiving-batch]]
 ===== @RabbitListener with Batching
 
@@ -6194,6 +6198,18 @@ a|
 |If the consumers do not respond to a shutdown within `shutdownTimeout`, if this is `true`, the channel will be closed, causing any unacked messages to be requeued.
 Defaults to `true` since 2.0.
 You can set it to `false` to revert to the previous behavior.
+
+a|image::images/tickmark.png[]
+a|image::images/tickmark.png[]
+a|
+
+|[[forceStop]]<<forceStop,`forceStop`>> +
+(N/A)
+
+|Set to true to stop (when the container is stopped) after the current record is processed; causing all prefetched messages to be requeued.
+By default, the container will cancel the consumer and process all prefetched messages before stopping.
+Since versions 2.4.14, 3.0.6
+Defaults to `false`.
 
 a|image::images/tickmark.png[]
 a|image::images/tickmark.png[]
