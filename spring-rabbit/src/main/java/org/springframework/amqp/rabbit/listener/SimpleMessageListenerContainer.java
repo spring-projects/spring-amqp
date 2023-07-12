@@ -607,19 +607,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	@Override
-	protected void doShutdown() {
-		shutdownAndWaitOrCallback(null);
-	}
-
-	@Override
-	public void stop(Runnable callback) {
-		shutdownAndWaitOrCallback(() -> {
-			setNotRunning();
-			callback.run();
-		});
-	}
-
-	private void shutdownAndWaitOrCallback(@Nullable Runnable callback) {
+	protected void shutdownAndWaitOrCallback(@Nullable Runnable callback) {
 		Thread thread = this.containerStoppingForAbort.get();
 		if (thread != null && !thread.equals(Thread.currentThread())) {
 			logger.info("Shutdown ignored - container is stopping due to an aborted consumer");
@@ -631,9 +619,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		synchronized (this.consumersMonitor) {
 			if (this.consumers != null) {
 				Iterator<BlockingQueueConsumer> consumerIterator = this.consumers.iterator();
+				if (isForceStop()) {
+					this.stopNow.set(true);
+				}
 				while (consumerIterator.hasNext()) {
 					BlockingQueueConsumer consumer = consumerIterator.next();
-					consumer.basicCancel(true);
+					if (!isForceStop()) {
+						consumer.basicCancel(true);
+					}
 					canceledConsumers.add(consumer);
 					consumerIterator.remove();
 					if (consumer.declaring) {
@@ -657,7 +650,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 				else {
 					logger.info("Workers not finished.");
-					if (isForceCloseChannel()) {
+					if (isForceCloseChannel() || this.stopNow.get()) {
 						canceledConsumers.forEach(consumer -> {
 							if (logger.isWarnEnabled()) {
 								logger.warn("Closing channel for unresponsive consumer: " + consumer);
@@ -676,7 +669,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				this.consumers = null;
 				this.cancellationLock.deactivate();
 			}
-
+			this.stopNow.set(false);
 			runCallbackIfNotNull(callback);
 		};
 		if (callback == null) {
@@ -1323,6 +1316,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		private void mainLoop() throws Exception { // NOSONAR Exception
 			try {
+				if (SimpleMessageListenerContainer.this.stopNow.get()) {
+					this.consumer.forceCloseAndClearQueue();
+					return;
+				}
 				boolean receivedOk = receiveAndExecute(this.consumer); // At least one message received
 				if (SimpleMessageListenerContainer.this.maxConcurrentConsumers != null) {
 					checkAdjust(receivedOk);

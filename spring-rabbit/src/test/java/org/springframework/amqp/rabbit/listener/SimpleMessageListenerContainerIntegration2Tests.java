@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ import org.springframework.amqp.core.BatchMessageListener;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueInformation;
 import org.springframework.amqp.event.AmqpEvent;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
@@ -66,7 +67,6 @@ import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
-import org.springframework.amqp.rabbit.junit.LongRunning;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
@@ -95,7 +95,7 @@ import com.rabbitmq.client.Channel;
  */
 @RabbitAvailable(queues = { SimpleMessageListenerContainerIntegration2Tests.TEST_QUEUE,
 		SimpleMessageListenerContainerIntegration2Tests.TEST_QUEUE_1 })
-@LongRunning
+//@LongRunning
 public class SimpleMessageListenerContainerIntegration2Tests {
 
 	public static final String TEST_QUEUE = "test.queue.SimpleMessageListenerContainerIntegration2Tests";
@@ -745,6 +745,44 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		assertThat(ackSuccess.get()).isTrue();
 		assertThat(ackCause.get()).isNull();
 		assertThat(ackDeliveryTag.get()).isEqualTo(messageCount);
+	}
+
+	@Test
+	void forceStop() {
+		CountDownLatch latch1 = new CountDownLatch(1);
+		this.container = createContainer((ChannelAwareMessageListener) (msg, chan) -> {
+			latch1.await(10, TimeUnit.SECONDS);
+		}, false, TEST_QUEUE);
+		try {
+			this.container.setForceStop(true);
+			this.template.convertAndSend(TEST_QUEUE, "one");
+			this.template.convertAndSend(TEST_QUEUE, "two");
+			this.template.convertAndSend(TEST_QUEUE, "three");
+			this.template.convertAndSend(TEST_QUEUE, "four");
+			this.template.convertAndSend(TEST_QUEUE, "five");
+			await().untilAsserted(() -> {
+				QueueInformation queueInfo = admin.getQueueInfo(TEST_QUEUE);
+				assertThat(queueInfo).isNotNull();
+				assertThat(queueInfo.getMessageCount()).isEqualTo(5);
+			});
+			this.container.start();
+			await().untilAsserted(() -> {
+				QueueInformation queueInfo = admin.getQueueInfo(TEST_QUEUE);
+				assertThat(queueInfo).isNotNull();
+				assertThat(queueInfo.getMessageCount()).isEqualTo(0);
+			});
+			this.container.stop(() -> {
+			});
+			latch1.countDown();
+			await().untilAsserted(() -> {
+				QueueInformation queueInfo = admin.getQueueInfo(TEST_QUEUE);
+				assertThat(queueInfo).isNotNull();
+				assertThat(queueInfo.getMessageCount()).isEqualTo(4);
+			});
+		}
+		finally {
+			this.container.stop();
+		}
 	}
 
 	private boolean containerStoppedForAbortWithBadListener() throws InterruptedException {
