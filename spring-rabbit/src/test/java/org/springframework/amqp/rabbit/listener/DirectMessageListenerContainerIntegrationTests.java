@@ -28,6 +28,7 @@ import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -184,6 +185,9 @@ public class DirectMessageListenerContainerIntegrationTests {
 	@Test
 	public void testBadHost() throws InterruptedException {
 		CachingConnectionFactory cf = new CachingConnectionFactory("this.host.does.not.exist");
+		cf.setAddressResolver(() -> {
+			throw new UnknownHostException("Test Unknown Host");
+		});
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 		executor.setThreadNamePrefix("client-");
 		executor.afterPropertiesSet();
