@@ -65,7 +65,7 @@ ext {
 	micrometerTracingVersion = '1.0.7'
 	mockitoVersion = '4.8.1'
 	rabbitmqStreamVersion = '0.8.0'
-	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.16.0'
+	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.16.1'
 	reactorVersion = '2022.0.8'
 	snappyVersion = '1.1.8.4'
 	springDataVersion = '2022.0.7'
