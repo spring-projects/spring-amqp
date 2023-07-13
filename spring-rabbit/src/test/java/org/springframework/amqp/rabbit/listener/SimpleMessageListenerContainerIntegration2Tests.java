@@ -67,6 +67,7 @@ import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
+import org.springframework.amqp.rabbit.junit.LongRunning;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
@@ -95,7 +96,7 @@ import com.rabbitmq.client.Channel;
  */
 @RabbitAvailable(queues = { SimpleMessageListenerContainerIntegration2Tests.TEST_QUEUE,
 		SimpleMessageListenerContainerIntegration2Tests.TEST_QUEUE_1 })
-//@LongRunning
+@LongRunning
 public class SimpleMessageListenerContainerIntegration2Tests {
 
 	public static final String TEST_QUEUE = "test.queue.SimpleMessageListenerContainerIntegration2Tests";
