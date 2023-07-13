@@ -1338,7 +1338,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		private void finalizeConsumer() {
 			closeChannel();
-			DirectMessageListenerContainer.this.cancellationLock.release(this);
 			consumerRemoved(this);
 		}
 
@@ -1346,6 +1345,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			RabbitUtils.setPhysicalCloseRequired(getChannel(), true);
 			RabbitUtils.closeChannel(getChannel());
 			RabbitUtils.closeConnection(this.connection);
+			DirectMessageListenerContainer.this.cancellationLock.release(this);
 		}
 
 		@Override

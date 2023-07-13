@@ -1276,9 +1276,19 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	}
 
 	/**
-	 * Stop the shared Connection, call {@link #doShutdown()}, and close this container.
+	 * Stop the shared Connection, call {@link #shutdown(Runnable)}, and close this
+	 * container.
 	 */
 	public void shutdown() {
+		shutdown(null);
+	}
+
+	/**
+	 * Stop the shared Connection, call {@link #shutdownAndWaitOrCallback(Runnable)}, and
+	 * close this container.
+	 * @param callback an optional {@link Runnable} to call when the stop is complete.
+	 */
+	public void shutdown(@Nullable Runnable callback) {
 		synchronized (this.lifecycleMonitor) {
 			if (!isActive()) {
 				logger.debug("Shutdown ignored - container is not active already");
@@ -1293,7 +1303,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 
 		// Shut down the invokers.
 		try {
-			doShutdown();
+			shutdownAndWaitOrCallback(callback);
 		}
 		catch (Exception ex) {
 			throw convertRabbitAccessException(ex);
@@ -1331,10 +1341,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 
 	@Override
 	public void stop(Runnable callback) {
-		shutdownAndWaitOrCallback(() -> {
-			setNotRunning();
-			callback.run();
-		});
+		shutdown(callback);
 	}
 
 	protected void shutdownAndWaitOrCallback(@Nullable Runnable callback) {
