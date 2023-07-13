@@ -437,6 +437,7 @@ public class SimpleMessageListenerContainerTests {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		ReflectionTestUtils.setField(container, "active", Boolean.TRUE);
 
 		final CountDownLatch countDownLatch = new CountDownLatch(1);
 		container.stop(countDownLatch::countDown);
@@ -449,6 +450,7 @@ public class SimpleMessageListenerContainerTests {
 
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		ReflectionTestUtils.setField(container, "containerStoppingForAbort", new AtomicReference<>(new Thread()));
+		ReflectionTestUtils.setField(container, "active", Boolean.TRUE);
 
 		final CountDownLatch countDownLatch = new CountDownLatch(1);
 		container.stop(countDownLatch::countDown);

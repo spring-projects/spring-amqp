@@ -801,7 +801,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 	}
 
 	@Test
-	void forceStop() {
+	void forceStop() throws InterruptedException {
 		CountDownLatch latch1 = new CountDownLatch(1);
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
@@ -812,6 +812,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		try {
 			container.setQueueNames(Q3);
 			container.setForceStop(true);
+			container.setShutdownTimeout(20_000L);
 			template.convertAndSend(Q3, "one");
 			template.convertAndSend(Q3, "two");
 			template.convertAndSend(Q3, "three");
@@ -828,14 +829,21 @@ public class DirectMessageListenerContainerIntegrationTests {
 				assertThat(queueInfo).isNotNull();
 				assertThat(queueInfo.getMessageCount()).isEqualTo(0);
 			});
+			CountDownLatch latch2 = new CountDownLatch(1);
+			long t1 = System.currentTimeMillis();
 			container.stop(() -> {
+				latch2.countDown();
 			});
 			latch1.countDown();
+			assertThat(System.currentTimeMillis() - t1).isLessThan(5_000L);
 			await().untilAsserted(() -> {
 				QueueInformation queueInfo = admin.getQueueInfo(Q3);
 				assertThat(queueInfo).isNotNull();
 				assertThat(queueInfo.getMessageCount()).isEqualTo(4);
 			});
+			assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
+			assertThat(container.isActive()).isFalse();
+			assertThat(container.isRunning()).isFalse();
 		}
 		finally {
 			container.stop();
