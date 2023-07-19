@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -114,6 +114,7 @@ public class RabbitListenerContainerFactoryTests {
 		this.factory.setAfterReceivePostProcessors(afterReceivePostProcessor);
 		this.factory.setGlobalQos(true);
 		this.factory.setContainerCustomizer(c -> c.setShutdownTimeout(10_000));
+		this.factory.setForceStop(true);
 
 		assertThat(this.factory.getAdviceChain()).isEqualTo(new Advice[]{advice});
 
@@ -150,6 +151,7 @@ public class RabbitListenerContainerFactoryTests {
 		assertThat(actualAfterReceivePostProcessors.size()).as("Wrong number of afterReceivePostProcessors").isEqualTo(1);
 		assertThat(actualAfterReceivePostProcessors.get(0)).as("Wrong advice").isSameAs(afterReceivePostProcessor);
 		assertThat(fieldAccessor.getPropertyValue("globalQos")).isEqualTo(true);
+		assertThat(TestUtils.getPropertyValue(container, "forceStop", Boolean.class)).isTrue();
 	}
 
 	@Test
@@ -176,6 +178,7 @@ public class RabbitListenerContainerFactoryTests {
 		this.direct.setMessagesPerAck(5);
 		this.direct.setAckTimeout(3L);
 		this.direct.setAfterReceivePostProcessors(afterReceivePostProcessor);
+		this.direct.setForceStop(true);
 
 		assertThat(this.direct.getAdviceChain()).isEqualTo(new Advice[]{advice});
 
@@ -207,6 +210,7 @@ public class RabbitListenerContainerFactoryTests {
 		List<?> actualAfterReceivePostProcessors = (List<?>) fieldAccessor.getPropertyValue("afterReceivePostProcessors");
 		assertThat(actualAfterReceivePostProcessors.size()).as("Wrong number of afterReceivePostProcessors").isEqualTo(1);
 		assertThat(actualAfterReceivePostProcessors.get(0)).as("Wrong afterReceivePostProcessor").isSameAs(afterReceivePostProcessor);
+		assertThat(TestUtils.getPropertyValue(container, "forceStop", Boolean.class)).isTrue();
 	}
 
 	private void setBasicConfig(AbstractRabbitListenerContainerFactory<?> factory) {
