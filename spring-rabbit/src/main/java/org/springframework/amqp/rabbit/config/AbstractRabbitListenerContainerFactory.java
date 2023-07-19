@@ -118,6 +118,8 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 	private MessageAckListener messageAckListener;
 
+	private Boolean forceStop;
+
 	/**
 	 * @param connectionFactory The connection factory.
 	 * @see AbstractMessageListenerContainer#setConnectionFactory(ConnectionFactory)
@@ -336,6 +338,16 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		this.messageAckListener = messageAckListener;
 	}
 
+	/**
+	 * Set to true to stop the container after the current message(s) are processed and
+	 * requeue any prefetched. Useful when using exclusive or single-active consumers.
+	 * @param forceStop true to stop when current messsage(s) are processed.
+	 * @since 2.4.15
+	 */
+	public void setForceStop(boolean forceStop) {
+		this.forceStop = forceStop;
+	}
+
 	@Override
 	public C createListenerContainer(RabbitListenerEndpoint endpoint) {
 		C instance = createContainerInstance();
@@ -370,7 +382,8 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 			.acceptIfNotNull(this.afterReceivePostProcessors, instance::setAfterReceivePostProcessors)
 			.acceptIfNotNull(this.deBatchingEnabled, instance::setDeBatchingEnabled)
 			.acceptIfNotNull(this.messageAckListener, instance::setMessageAckListener)
-			.acceptIfNotNull(this.batchingStrategy, instance::setBatchingStrategy);
+			.acceptIfNotNull(this.batchingStrategy, instance::setBatchingStrategy)
+			.acceptIfNotNull(this.forceStop, instance::setForceStop);
 		if (this.batchListener && this.deBatchingEnabled == null) {
 			// turn off container debatching by default for batch listeners
 			instance.setDeBatchingEnabled(false);
