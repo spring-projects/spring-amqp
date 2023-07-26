@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ import com.rabbitmq.client.impl.nio.NioParams;
  * using the supplied properties and intializes key and trust manager factories, using
  * algorithm {@code SunX509} by default. These are then used to initialize an
  * {@link SSLContext} using the {@link #setSslAlgorithm(String) sslAlgorithm} (default
- * TLSv1.1).
+ * TLSv1.2, falling back to TLSv1.1, if 1.2 is not available).
  * <p>
  * Override {@link #createSSLContext()} to create and/or perform further modification of
  * the context.
@@ -670,6 +670,16 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 */
 	public void setEnableHostnameVerification(boolean enable) {
 		this.enableHostnameVerification = enable;
+	}
+
+	/**
+	 * Set the maximum body size of inbound (received) messages in bytes.
+	 * @param maxInboundMessageBodySize the maximum size.
+	 * @since 2.4.15
+	 * @see com.rabbitmq.client.ConnectionFactory#setMaxInboundMessageBodySize(int)
+	 */
+	public void setMaxInboundMessageBodySize(int maxInboundMessageBodySize) {
+		this.connectionFactory.setMaxInboundMessageBodySize(maxInboundMessageBodySize);
 	}
 
 	protected String getKeyStoreAlgorithm() {
