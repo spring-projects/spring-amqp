@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,6 +76,7 @@ public class SSLConnectionTests {
 	@Test
 	public void testAlgNoProps() throws Exception {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		fb.setMaxInboundMessageBodySize(1000);
 		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
 		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
 		fb.setUseSSL(true);
@@ -83,6 +84,7 @@ public class SSLConnectionTests {
 		fb.afterPropertiesSet();
 		fb.getObject();
 		verify(rabbitCf).useSslProtocol(Mockito.any(SSLContext.class));
+		assertThat(rabbitCf).hasFieldOrPropertyWithValue("maxInboundMessageBodySize", 1000);
 	}
 
 	@Test
