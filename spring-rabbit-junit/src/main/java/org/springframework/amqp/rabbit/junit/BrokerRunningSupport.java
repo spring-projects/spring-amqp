@@ -186,7 +186,7 @@ public final class BrokerRunningSupport {
 	 * @return a new rule that assumes an existing broker with the management plugin with
 	 * the provided queues declared (and emptied if needed)..
 	 */
-	public static BrokerRunningSupport isBrokerAndManagementRunningWithEmptyQueues(String...queues) {
+	public static BrokerRunningSupport isBrokerAndManagementRunningWithEmptyQueues(String... queues) {
 		return new BrokerRunningSupport(true, true, queues);
 	}
 
