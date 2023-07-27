@@ -1,4 +1,5 @@
-Spring AMQP [<img src="https://build.spring.io/plugins/servlet/wittified/build-status/AMQP-MAIN">](https://build.spring.io/browse/AAMQP-MAIN) 
+Spring AMQP [<img src="https://build.spring.io/plugins/servlet/wittified/build-status/AMQP-MAIN">](https://build.spring.io/browse/AAMQP-MAIN)
+[![Revved up by Gradle Enterprise](https://img.shields.io/badge/Revved%20up%20by-Gradle%20Enterprise-06A0CE?logo=Gradle&labelColor=02303A)](https://ge.spring.io/scans?search.rootProjectNames=spring-amqp)
 ===========
 
 This project provides support for using Spring and Java with [AMQP 0.9.1](https://www.rabbitmq.com/amqp-0-9-1-reference.html), and in particular [RabbitMQ](https://www.rabbitmq.com/).
@@ -108,7 +109,7 @@ Lists of issues addressed per release can be found in [JIRA](https://jira.spring
 Here are some ways for you to get involved in the community:
 
 * Get involved with the Spring community on the Spring Community Forums.  Please help out on the [forum](https://forum.spring.io/) by responding to questions and joining the debate.
-* Create [JIRA](https://jira.spring.io/browse/AMQP) tickets for bugs and new features and comment and vote on the ones that you are interested in.  
+* Create [JIRA](https://jira.spring.io/browse/AMQP) tickets for bugs and new features and comment and vote on the ones that you are interested in.
 * Github is for social coding: if you want to write code, we encourage contributions through pull requests from [forks of this repository](https://help.github.com/forking/).  If you want to contribute code this way, please reference a JIRA ticket as well covering the specific issue you are addressing.
 * Watch for upcoming articles on Spring by [subscribing](https://www.springsource.org/node/feed) to springframework.org
 
