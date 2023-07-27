@@ -19,6 +19,7 @@ package org.springframework.amqp.core;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import org.springframework.lang.Nullable;
 
@@ -133,9 +134,20 @@ public interface AmqpAdmin {
 	 * Return the manually declared AMQP objects.
 	 * @return the manually declared AMQP objects.
 	 * @since 2.4.13
+	 * @deprecated in favor of {@link #getManualDeclarableSet()}.
 	 */
+	@Deprecated
 	default Map<String, Declarable> getManualDeclarables() {
 		return Collections.emptyMap();
+	}
+
+	/**
+	 * Return the manually declared AMQP objects.
+	 * @return the manually declared AMQP objects.
+	 * @since 2.4.15
+	 */
+	default Set<Declarable> getManualDeclarableSet() {
+		return Collections.emptySet();
 	}
 
 	/**
