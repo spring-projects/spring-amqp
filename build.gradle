@@ -552,10 +552,20 @@ task prepareAsciidocBuild(type: Sync) {
 	into "$buildDir/asciidoc"
 }
 
-def observationInputDir = project.rootDir.absolutePath
+def observationInputDir = file("$buildDir/docs/microsources").absolutePath
 def generatedDocsDir = file("$buildDir/docs/generated").absolutePath
 
+task copyObservation(type: Copy) {
+	dependsOn prepareAsciidocBuild
+	from file('spring-rabbit/src/main/java/org/springframework/amqp/rabbit/support/micrometer').absolutePath
+	from file('spring-rabbit-stream/src/main/java/org/springframework/rabbit/stream/micrometer').absolutePath
+	include '*.java'
+	exclude 'package-info.java'
+	into observationInputDir
+}
+
 task generateObservabilityDocs(type: JavaExec) {
+	dependsOn copyObservation
 	mainClass = 'io.micrometer.docs.DocsGeneratorCommand'
 	inputs.dir(observationInputDir)
 	outputs.dir(generatedDocsDir)
