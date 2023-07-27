@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
@@ -401,7 +402,7 @@ public class RabbitAdminTests extends NeedsManagementTests {
 				() -> new Binding("thisOneShouldntBeInTheManualDecs", DestinationType.QUEUE,
 						"thisOneShouldntBeInTheManualDecs", "test", null));
 		applicationContext.refresh();
-		Map<?, ?> declarables = TestUtils.getPropertyValue(admin, "manualDeclarables", Map.class);
+		Set<?> declarables = TestUtils.getPropertyValue(admin, "manualDeclarables", Set.class);
 		assertThat(declarables).hasSize(0);
 		// check the auto-configured Declarables
 		RabbitTemplate template = new RabbitTemplate(cf);
@@ -409,19 +410,23 @@ public class RabbitAdminTests extends NeedsManagementTests {
 		Object received = template.receiveAndConvert("thisOneShouldntBeInTheManualDecs", 5000);
 		assertThat(received).isEqualTo("foo");
 		// manual declarations
+		admin.declareExchange(new DirectExchange("test1", false, true));
 		admin.declareQueue(new Queue("test1", false, true, true));
 		admin.declareQueue(new Queue("test2", false, true, true));
-		admin.declareExchange(new DirectExchange("ex1", false, true));
-		admin.declareBinding(new Binding("test1", DestinationType.QUEUE, "ex1", "test", null));
+		admin.declareBinding(new Binding("test1", DestinationType.QUEUE, "test1", "test", null));
 		admin.deleteQueue("test2");
-		template.execute(chan -> chan.queueDelete("test1"));
+		template.execute(chan -> {
+			chan.queueDelete("test1");
+			chan.exchangeDelete("test1");
+			return null;
+		});
 		cf.resetConnection();
 		admin.initialize();
 		assertThat(admin.getQueueProperties("test1")).isNotNull();
 		assertThat(admin.getQueueProperties("test2")).isNull();
 		assertThat(declarables).hasSize(3);
 		// verify the exchange and binding were recovered too
-		template.convertAndSend("ex1", "test", "foo");
+		template.convertAndSend("test1", "test", "foo");
 		received = template.receiveAndConvert("test1", 5000);
 		assertThat(received).isEqualTo("foo");
 		admin.resetAllManualDeclarations();
@@ -451,7 +456,7 @@ public class RabbitAdminTests extends NeedsManagementTests {
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
 		RabbitAdmin admin = new RabbitAdmin(cf);
 		admin.setRedeclareManualDeclarations(true);
-		Map<?, ?> declarables = TestUtils.getPropertyValue(admin, "manualDeclarables", Map.class);
+		Set<?> declarables = TestUtils.getPropertyValue(admin, "manualDeclarables", Set.class);
 		assertThat(declarables).hasSize(0);
 		RabbitTemplate template = new RabbitTemplate(cf);
 		// manual declarations

@@ -22,12 +22,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -128,7 +128,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	private final ConnectionFactory connectionFactory;
 
-	private final Map<String, Declarable> manualDeclarables = Collections.synchronizedMap(new LinkedHashMap<>());
+	private final Set<Declarable> manualDeclarables = Collections.synchronizedSet(new LinkedHashSet<>());
 
 	private String beanName;
 
@@ -229,7 +229,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			this.rabbitTemplate.execute(channel -> {
 				declareExchanges(channel, exchange);
 				if (this.redeclareManualDeclarations) {
-					this.manualDeclarables.put(exchange.getName(), exchange);
+					this.manualDeclarables.add(exchange);
 				}
 				return null;
 			});
@@ -259,12 +259,15 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	}
 
 	private void removeExchangeBindings(final String exchangeName) {
-		this.manualDeclarables.remove(exchangeName);
 		synchronized (this.manualDeclarables) {
-			Iterator<Entry<String, Declarable>> iterator = this.manualDeclarables.entrySet().iterator();
+			this.manualDeclarables.stream()
+					.filter(dec -> dec instanceof Exchange ex && ex.getName().equals(exchangeName))
+					.collect(Collectors.toSet())
+					.forEach(ex -> this.manualDeclarables.remove(ex));
+			Iterator<Declarable> iterator = this.manualDeclarables.iterator();
 			while (iterator.hasNext()) {
-				Entry<String, Declarable> next = iterator.next();
-				if (next.getValue() instanceof Binding binding &&
+				Declarable next = iterator.next();
+				if (next instanceof Binding binding &&
 						((!binding.isDestinationQueue() && binding.getDestination().equals(exchangeName))
 							|| binding.getExchange().equals(exchangeName))) {
 					iterator.remove();
@@ -296,7 +299,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 				DeclareOk[] declared = declareQueues(channel, queue);
 				String result = declared.length > 0 ? declared[0].getQueue() : null;
 				if (this.redeclareManualDeclarations) {
-					this.manualDeclarables.put(result, queue);
+					this.manualDeclarables.add(queue);
 				}
 				return result;
 			});
@@ -356,12 +359,15 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	}
 
 	private void removeQueueBindings(final String queueName) {
-		this.manualDeclarables.remove(queueName);
 		synchronized (this.manualDeclarables) {
-			Iterator<Entry<String, Declarable>> iterator = this.manualDeclarables.entrySet().iterator();
+			this.manualDeclarables.stream()
+					.filter(dec -> dec instanceof Queue queue && queue.getName().equals(queueName))
+					.collect(Collectors.toSet())
+					.forEach(q -> this.manualDeclarables.remove(q));
+			Iterator<Declarable> iterator = this.manualDeclarables.iterator();
 			while (iterator.hasNext()) {
-				Entry<String, Declarable> next = iterator.next();
-				if (next.getValue() instanceof Binding binding &&
+				Declarable next = iterator.next();
+				if (next instanceof Binding binding &&
 						(binding.isDestinationQueue() && binding.getDestination().equals(queueName))) {
 					iterator.remove();
 				}
@@ -401,7 +407,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			this.rabbitTemplate.execute(channel -> {
 				declareBindings(channel, binding);
 				if (this.redeclareManualDeclarations) {
-					this.manualDeclarables.put(binding.toString(), binding);
+					this.manualDeclarables.add(binding);
 				}
 				return null;
 			});
@@ -703,7 +709,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		if (this.manualDeclarables.size() > 0) {
 			synchronized (this.manualDeclarables) {
 				this.logger.debug("Redeclaring manually declared Declarables");
-				for (Declarable dec : this.manualDeclarables.values()) {
+				for (Declarable dec : this.manualDeclarables) {
 					if (dec instanceof Queue queue) {
 						declareQueue(queue);
 					}
@@ -729,14 +735,27 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		this.manualDeclarables.clear();
 	}
 
-	/**
-	 * Return the manually declared AMQP objects.
-	 * @return the manually declared AMQP objects.
-	 * @since 2.4.13
-	 */
 	@Override
+	@Deprecated
 	public Map<String, Declarable> getManualDeclarables() {
-		return Collections.unmodifiableMap(this.manualDeclarables);
+		Map<String, Declarable> declarables = new HashMap<>();
+		this.manualDeclarables.forEach(declarable -> {
+			if (declarable instanceof Exchange exch) {
+				declarables.put(exch.getName(), declarable);
+			}
+			else if (declarable instanceof Queue queue) {
+				declarables.put(queue.getName(), declarable);
+			}
+			else if (declarable instanceof Binding) {
+				declarables.put(declarable.toString(), declarable);
+			}
+		});
+		return declarables;
+	}
+
+	@Override
+	public Set<Declarable> getManualDeclarableSet() {
+		return Collections.unmodifiableSet(this.manualDeclarables);
 	}
 
 	private void processDeclarables(Collection<Exchange> contextExchanges, Collection<Queue> contextQueues,

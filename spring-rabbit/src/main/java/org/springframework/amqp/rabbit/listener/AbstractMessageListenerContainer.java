@@ -1924,8 +1924,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 					context.getBeansOfType(Queue.class, false, false).values());
 			Map<String, Declarables> declarables = context.getBeansOfType(Declarables.class, false, false);
 			declarables.values().forEach(dec -> queues.addAll(dec.getDeclarablesByType(Queue.class)));
-			admin.getManualDeclarables()
-					.values()
+			admin.getManualDeclarableSet()
 					.stream()
 					.filter(Queue.class::isInstance)
 					.map(Queue.class::cast)
