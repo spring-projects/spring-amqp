@@ -1,4 +1,4 @@
-Spring AMQP [<img src="https://build.spring.io/plugins/servlet/wittified/build-status/AMQP-MAIN">](https://build.spring.io/browse/AAMQP-MAIN) [![Join the chat at https://gitter.im/spring-projects/spring-amqp](https://badges.gitter.im/spring-projects/spring-amqp.svg)](https://gitter.im/spring-projects/spring-amqp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+Spring AMQP [<img src="https://build.spring.io/plugins/servlet/wittified/build-status/AMQP-MAIN">](https://build.spring.io/browse/AAMQP-MAIN) 
 ===========
 
 This project provides support for using Spring and Java with [AMQP 0.9.1](https://www.rabbitmq.com/amqp-0-9-1-reference.html), and in particular [RabbitMQ](https://www.rabbitmq.com/).
