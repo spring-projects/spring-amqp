@@ -59,15 +59,14 @@ Once complete, you may then import the projects into Eclipse as usual:
 
 Browse to the *'spring-amqp'* root directory. All projects should import free of errors.
 
-# Using SpringSource Tool Suite™ (STS)
+# Using Spring Tools
 
-Using the STS Gradle Support, you can directly import Gradle projects, without having to generate Eclipse metadata first (since STS 2.7.M1). Please make sure you have the Gradle STS Extension installed - Please see the [installation  instructions](https://docs.spring.io/sts/docs/latest/reference/html/gradle/installation.html) for details.
+Using the STS Gradle Support, you can directly import Gradle projects, without having to generate Eclipse metadata first.
+Please see the [Spring Tools Home Page](https://spring.io/tools).
 
-1. Select *File -> Import -> Gradle Project*
+1. Select *File -> Import -> Existing Gradle Project*
 2. Browse to the Spring AMQP Root Folder
-3. Click on **Build Model**
-4. Select the projects you want to import
-5. Press **Finish**
+3. Click on **Finish**
 
 # Using IntelliJ IDEA
 
@@ -90,7 +89,7 @@ Lists of issues addressed per release can be found in [Github](https://github.co
 
 Here are some ways for you to get involved in the community:
 
-* Get involved with the Spring community on the Spring Community Forums.  Please help out on the [forum](https://forum.spring.io/) by responding to questions and joining the debate.
+* Get involved with the Spring community on Stack Overflow by responding to questions and joining the debate.
 
 * Create Github issues for bugs and new features and comment and vote on the ones that you are interested in.
 * Github is for social coding: if you want to write code, we encourage contributions through pull requests from [forks of this repository](https://help.github.com/forking/).
