@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 the original author or authors.
+ * Copyright 2018-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -124,7 +124,7 @@ public class BrokerDeclaredQueueNameTests {
 		assertThat(this.message.get().getBody()).isEqualTo("foo".getBytes());
 		final CountDownLatch newConnectionLatch = new CountDownLatch(2);
 		this.cf.addConnectionListener(c -> newConnectionLatch.countDown());
-		this.cf.resetConnection();
+		this.cf.stop();
 		assertThat(newConnectionLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		String secondActualName = queue.getActualName();
 		assertThat(secondActualName).isNotEqualTo(firstActualName);

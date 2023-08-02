@@ -50,6 +50,7 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.jmx.export.annotation.ManagedAttribute;
 import org.springframework.jmx.export.annotation.ManagedResource;
 import org.springframework.lang.Nullable;
@@ -99,7 +100,7 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
  */
 @ManagedResource
 public class CachingConnectionFactory extends AbstractConnectionFactory
-		implements InitializingBean, ShutdownListener {
+		implements InitializingBean, ShutdownListener, SmartLifecycle {
 
 	private static final String UNUSED = "unused";
 
@@ -189,6 +190,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	private final Object connectionMonitor = new Object();
 
 	private final ActiveObjectCounter<Channel> inFlightAsyncCloses = new ActiveObjectCounter<>();
+
+	private final AtomicBoolean running = new AtomicBoolean();
 
 	private long channelCheckoutTimeout = 0;
 
@@ -447,6 +450,11 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	}
 
 	@Override
+	public int getPhase() {
+		return Integer.MIN_VALUE;
+	}
+
+	@Override
 	public void afterPropertiesSet() {
 		this.initialized = true;
 		if (this.cacheMode == CacheMode.CHANNEL) {
@@ -457,6 +465,22 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		if (this.defaultPublisherFactory) {
 			((CachingConnectionFactory) getPublisherConnectionFactory()).afterPropertiesSet(); // NOSONAR
 		}
+	}
+
+	@Override
+	public void start() {
+		this.running.set(true);
+	}
+
+	@Override
+	public void stop() {
+		this.running.set(false);
+		resetConnection();
+	}
+
+	@Override
+	public boolean isRunning() {
+		return this.running.get();
 	}
 
 	private void initCacheWaterMarks() {
