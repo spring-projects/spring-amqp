@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2022 the original author or authors.
+ * Copyright 2015-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -29,6 +30,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -49,7 +51,8 @@ import org.springframework.util.Assert;
  * @author Gary Russell
  * @since 1.2
  */
-public class LocalizedQueueConnectionFactory implements ConnectionFactory, RoutingConnectionFactory, DisposableBean {
+public class LocalizedQueueConnectionFactory implements ConnectionFactory, RoutingConnectionFactory, DisposableBean,
+		SmartLifecycle {
 
 	private final Log logger = LogFactory.getLog(getClass());
 
@@ -78,6 +81,8 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	private final String keyStorePassPhrase;
 
 	private final String trustStorePassPhrase;
+
+	private final AtomicBoolean running = new AtomicBoolean();
 
 	private NodeLocator<?> nodeLocator;
 
@@ -231,6 +236,27 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	@Override
 	public String getUsername() {
 		return this.username;
+	}
+
+	@Override
+	public int getPhase() {
+		return Integer.MIN_VALUE;
+	}
+
+	@Override
+	public void start() {
+		this.running.set(true);
+	}
+
+	@Override
+	public void stop() {
+		this.running.set(false);
+		resetConnection();
+	}
+
+	@Override
+	public boolean isRunning() {
+		return this.running.get();
 	}
 
 	@Override

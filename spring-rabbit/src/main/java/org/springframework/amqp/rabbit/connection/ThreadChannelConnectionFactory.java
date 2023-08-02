@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 the original author or authors.
+ * Copyright 2020-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.NameMatchMethodPointcutAdvisor;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -48,11 +49,14 @@ import com.rabbitmq.client.ShutdownListener;
  * @since 2.3
  *
  */
-public class ThreadChannelConnectionFactory extends AbstractConnectionFactory implements ShutdownListener {
+public class ThreadChannelConnectionFactory extends AbstractConnectionFactory
+		implements ShutdownListener, SmartLifecycle {
 
 	private final Map<UUID, Context> contextSwitches = new ConcurrentHashMap<>();
 
 	private final Map<UUID, Thread> switchesInProgress = new ConcurrentHashMap<>();
+
+	private final AtomicBoolean running = new AtomicBoolean();
 
 	private volatile ConnectionWrapper connection;
 
@@ -104,6 +108,27 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory im
 			((ThreadChannelConnectionFactory) getPublisherConnectionFactory())
 				.setSimplePublisherConfirms(simplePublisherConfirms); // NOSONAR
 		}
+	}
+
+	@Override
+	public int getPhase() {
+		return Integer.MIN_VALUE;
+	}
+
+	@Override
+	public void start() {
+		this.running.set(true);
+	}
+
+	@Override
+	public void stop() {
+		this.running.set(false);
+		resetConnection();
+	}
+
+	@Override
+	public boolean isRunning() {
+		return this.running.get();
 	}
 
 	@Override

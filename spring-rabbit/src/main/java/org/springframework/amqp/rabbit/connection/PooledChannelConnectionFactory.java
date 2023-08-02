@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 the original author or authors.
+ * Copyright 2020-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.NameMatchMethodPointcutAdvisor;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -54,7 +55,10 @@ import com.rabbitmq.client.ShutdownListener;
  * @since 2.3
  *
  */
-public class PooledChannelConnectionFactory extends AbstractConnectionFactory implements ShutdownListener {
+public class PooledChannelConnectionFactory extends AbstractConnectionFactory
+		implements ShutdownListener, SmartLifecycle {
+
+	private final AtomicBoolean running = new AtomicBoolean();
 
 	private volatile ConnectionWrapper connection;
 
@@ -133,6 +137,27 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory im
 	}
 
 	@Override
+	public int getPhase() {
+		return Integer.MIN_VALUE;
+	}
+
+	@Override
+	public void start() {
+		this.running.set(true);
+	}
+
+	@Override
+	public void stop() {
+		this.running.set(false);
+		resetConnection();
+	}
+
+	@Override
+	public boolean isRunning() {
+		return this.running.get();
+	}
+
+	@Override
 	public synchronized Connection createConnection() throws AmqpException {
 		if (this.connection == null || !this.connection.isOpen()) {
 			Connection bareConnection = createBareConnection(); // NOSONAR - see destroy()
@@ -180,14 +205,18 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory im
 				BiConsumer<GenericObjectPool<Channel>, Boolean> configurer, ChannelListener channelListener) {
 
 			super(delegate, closeTimeout);
-			GenericObjectPool<Channel> pool = new GenericObjectPool<>(new ChannelFactory());
-			configurer.accept(pool, false);
-			this.channels = pool;
-			pool = new GenericObjectPool<>(new TxChannelFactory());
-			configurer.accept(pool, true);
-			this.txChannels = pool;
+			this.channels = createPool(new ChannelFactory(), configurer, false);
+			this.txChannels = createPool(new TxChannelFactory(), configurer, true);
 			this.simplePublisherConfirms = simplePublisherConfirms;
 			this.channelListener = channelListener;
+		}
+
+		private GenericObjectPool<Channel> createPool(ChannelFactory channelFactory,
+				BiConsumer<GenericObjectPool<Channel>, Boolean> configurer, boolean tx) {
+
+			GenericObjectPool<Channel> pool = new GenericObjectPool<>(channelFactory);
+			configurer.accept(pool, tx);
+			return pool;
 		}
 
 		@Override
