@@ -846,18 +846,24 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		resetConnection();
 		if (getContextStopped()) {
 			this.stopped = true;
-			if (this.channelsExecutor != null) {
-				try {
-					if (!this.inFlightAsyncCloses.await(CHANNEL_EXEC_SHUTDOWN_TIMEOUT, TimeUnit.SECONDS)) {
-						this.logger.warn("Async closes are still in-flight: " + this.inFlightAsyncCloses.getCount());
+			synchronized (this.connectionMonitor) {
+				if (this.channelsExecutor != null) {
+					try {
+						if (!this.inFlightAsyncCloses.await(CHANNEL_EXEC_SHUTDOWN_TIMEOUT, TimeUnit.SECONDS)) {
+							this.logger
+									.warn("Async closes are still in-flight: " + this.inFlightAsyncCloses.getCount());
+						}
+						this.channelsExecutor.shutdown();
+						if (!this.channelsExecutor.awaitTermination(CHANNEL_EXEC_SHUTDOWN_TIMEOUT, TimeUnit.SECONDS)) {
+							this.logger.warn("Channel executor failed to shut down");
+						}
 					}
-					this.channelsExecutor.shutdown();
-					if (!this.channelsExecutor.awaitTermination(CHANNEL_EXEC_SHUTDOWN_TIMEOUT, TimeUnit.SECONDS)) {
-						this.logger.warn("Channel executor failed to shut down");
+					catch (@SuppressWarnings(UNUSED) InterruptedException e) {
+						Thread.currentThread().interrupt();
 					}
-				}
-				catch (@SuppressWarnings(UNUSED) InterruptedException e) {
-					Thread.currentThread().interrupt();
+					finally {
+						this.channelsExecutor = null;
+					}
 				}
 			}
 		}
