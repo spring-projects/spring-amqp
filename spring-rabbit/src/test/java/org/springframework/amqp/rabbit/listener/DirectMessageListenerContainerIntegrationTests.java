@@ -33,6 +33,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -157,7 +158,9 @@ public class DirectMessageListenerContainerIntegrationTests {
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
 		container.setQueueNames(Q1, Q2);
 		container.setConsumersPerQueue(2);
+		final Set<String> listenerThreadNames = new ConcurrentSkipListSet<>();
 		container.setMessageListener(new MessageListenerAdapter((ReplyingMessageListener<String, String>) in -> {
+			listenerThreadNames.add(Thread.currentThread().getName());
 			if ("foo".equals(in) || "bar".equals(in)) {
 				return in.toUpperCase();
 			}
@@ -173,6 +176,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(template.convertSendAndReceive(Q1, "foo")).isEqualTo("FOO");
 		assertThat(template.convertSendAndReceive(Q2, "bar")).isEqualTo("BAR");
 		container.stop();
+		assertThat(listenerThreadNames).contains("myThread-0", "myThread-1");
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
@@ -343,7 +347,13 @@ public class DirectMessageListenerContainerIntegrationTests {
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
 		container.setQueueNames(Q1, Q2);
 		container.setConsumersPerQueue(4);
+		container.setChangeConsumerThreadName(true);
+		container.setThreadNameSupplier(messageListenerContainer -> "myThread");
+
+		final Set<String> listenerThreadNames = new ConcurrentSkipListSet<>();
+
 		container.setMessageListener(new MessageListenerAdapter((ReplyingMessageListener<String, String>) in -> {
+			listenerThreadNames.add(Thread.currentThread().getName());
 			if ("foo".equals(in) || "bar".equals(in)) {
 				return in.toUpperCase();
 			}
@@ -372,6 +382,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(activeConsumerCount(container, 0)).isTrue();
 		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class)).hasSize(0);
 		template.stop();
+		assertThat(listenerThreadNames).contains("myThread"); // BUT IT'S STILL "client-1"
 		cf.destroy();
 		executor.destroy();
 	}

@@ -552,14 +552,16 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 				return;
 			}
-			Set<AsyncMessageProcessingConsumer> processors = new HashSet<AsyncMessageProcessingConsumer>();
+			Set<AsyncMessageProcessingConsumer> processors = new HashSet<>();
+			int consumerIndex = 0;
 			for (BlockingQueueConsumer consumer : this.consumers) {
-				AsyncMessageProcessingConsumer processor = new AsyncMessageProcessingConsumer(consumer);
+				AsyncMessageProcessingConsumer processor = new AsyncMessageProcessingConsumer(consumer, consumerIndex);
 				processors.add(processor);
 				getTaskExecutor().execute(processor);
 				if (getApplicationEventPublisher() != null) {
 					getApplicationEventPublisher().publishEvent(new AsyncConsumerStartedEvent(this, consumer));
 				}
+				consumerIndex++;
 			}
 			waitForConsumersToStart(processors);
 		}
@@ -699,7 +701,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		synchronized (this.consumersMonitor) {
 			if (this.consumers == null) {
 				this.cancellationLock.reset();
-				this.consumers = new HashSet<BlockingQueueConsumer>(this.concurrentConsumers);
+				this.consumers = new HashSet<>(this.concurrentConsumers);
 				for (int i = 1; i <= this.concurrentConsumers; i++) {
 					BlockingQueueConsumer consumer = createBlockingQueueConsumer();
 					if (getConsumeDelay() > 0) {
@@ -755,7 +757,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					}
 					BlockingQueueConsumer consumer = createBlockingQueueConsumer();
 					this.consumers.add(consumer);
-					AsyncMessageProcessingConsumer processor = new AsyncMessageProcessingConsumer(consumer);
+					AsyncMessageProcessingConsumer processor = new AsyncMessageProcessingConsumer(consumer, this.consumers.size());
 					if (logger.isDebugEnabled()) {
 						logger.debug("Starting a new consumer: " + consumer);
 					}
@@ -870,7 +872,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		return consumer;
 	}
 
-	private void restart(BlockingQueueConsumer oldConsumer) {
+	private void restart(BlockingQueueConsumer oldConsumer, int index) {
 		BlockingQueueConsumer consumer = oldConsumer;
 		synchronized (this.consumersMonitor) {
 			if (this.consumers != null) {
@@ -901,7 +903,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					throw e;
 				}
 				getTaskExecutor()
-						.execute(new AsyncMessageProcessingConsumer(consumer));
+						.execute(new AsyncMessageProcessingConsumer(consumer, index));
 			}
 		}
 	}
@@ -1165,10 +1167,13 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		private int consecutiveMessages;
 
+		private int index;
 
-		AsyncMessageProcessingConsumer(BlockingQueueConsumer consumer) {
+
+		AsyncMessageProcessingConsumer(BlockingQueueConsumer consumer, int index) {
 			this.consumer = consumer;
 			this.start = new CountDownLatch(1);
+			this.index = index;
 		}
 
 		/**
@@ -1192,6 +1197,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		@Override // NOSONAR - complexity - many catch blocks
 		public void run() { // NOSONAR - line count
+			if (SimpleMessageListenerContainer.this.isChangeConsumerThreadName()) {
+				String smlcThreadsName = SimpleMessageListenerContainer.this.getThreadNameSupplier()
+						.apply(SimpleMessageListenerContainer.this);
+				Thread.currentThread().setName(smlcThreadsName + "-" + this.index);
+			}
 			if (!isActive()) {
 				this.start.countDown();
 				return;
@@ -1461,7 +1471,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			else {
 				logger.info("Restarting " + this.consumer);
-				restart(this.consumer);
+				restart(this.consumer, this.index);
 			}
 		}
 

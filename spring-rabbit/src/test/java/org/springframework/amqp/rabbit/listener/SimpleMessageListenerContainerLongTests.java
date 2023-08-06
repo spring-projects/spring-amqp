@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -145,8 +146,13 @@ public class SimpleMessageListenerContainerLongTests {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactory);
 		container.setStartConsumerMinInterval(100);
 		container.setConsecutiveActiveTrigger(1);
+		container.setChangeConsumerThreadName(true);
+		container.setThreadNameSupplier(messageListenerContainer -> "myThread");
+
+		final Set<String> listenerThreadNames = new ConcurrentSkipListSet<>();
 		container.setMessageListener(m -> {
 			try {
+				listenerThreadNames.add(Thread.currentThread().getName());
 				Thread.sleep(50);
 			}
 			catch (InterruptedException e) {
@@ -162,6 +168,7 @@ public class SimpleMessageListenerContainerLongTests {
 		for (int i = 0; i < 20; i++) {
 			template.convertAndSend(QUEUE2, "foo");
 		}
+		assertThat(listenerThreadNames).contains("myThread-0", "myThread-1");
 		waitForNConsumers(container, 5);
 		container.setConcurrentConsumers(4);
 		Set<?> consumers = (Set<?>) TestUtils.getPropertyValue(container, "consumers");

@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.aopalliance.aop.Advice;
@@ -79,6 +80,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.interceptor.DefaultTransactionAttribute;
@@ -248,6 +250,11 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	private RabbitListenerObservationConvention observationConvention;
 
 	private boolean forceStop;
+
+	private boolean changeConsumerThreadName;
+
+	@NonNull
+	private Function<MessageListenerContainer, String> threadNameSupplier = container -> container.getListenerId();
 
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
@@ -1174,6 +1181,48 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 */
 	public void setForceStop(boolean forceStop) {
 		this.forceStop = forceStop;
+	}
+
+	/**
+	 * Return true if the container should change the consumer thread name during
+	 * initialization.
+	 * @return true to change.
+	 * @since 3.0.10
+	 */
+	public boolean isChangeConsumerThreadName() {
+		return this.changeConsumerThreadName;
+	}
+
+	/**
+	 * Set to true to instruct the container to change the consumer thread name during
+	 * initialization.
+	 * @param changeConsumerThreadName true to change.
+	 * @since 3.0.10
+	 * @see #setThreadNameSupplier(Function)
+	 */
+	public void setChangeConsumerThreadName(boolean changeConsumerThreadName) {
+		this.changeConsumerThreadName = changeConsumerThreadName;
+	}
+
+	/**
+	 * Return the function used to change the consumer thread name.
+	 * @return the function.
+	 * @since 3.0.10
+	 */
+	public Function<MessageListenerContainer, String> getThreadNameSupplier() {
+		return this.threadNameSupplier;
+	}
+
+	/**
+	 * Set a function used to change the consumer thread name. The default returns the
+	 * container {@code listenerId}.
+	 * @param threadNameSupplier the function.
+	 * @since 3.0.10
+	 * @see #setChangeConsumerThreadName(boolean)
+	 */
+	public void setThreadNameSupplier(Function<MessageListenerContainer, String> threadNameSupplier) {
+		Assert.notNull(threadNameSupplier, "'threadNameSupplier' cannot be null");
+		this.threadNameSupplier = threadNameSupplier;
 	}
 
 	/**

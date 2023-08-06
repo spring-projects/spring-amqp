@@ -132,10 +132,7 @@ public abstract class ObservableListenerContainer extends RabbitAccessor
 		return this.beanName;
 	}
 
-	/**
-	 * The 'id' attribute of the listener.
-	 * @return the id (or the container bean name if no id set).
-	 */
+	@Override
 	public String getListenerId() {
 		return this.listenerId != null ? this.listenerId : this.beanName;
 	}

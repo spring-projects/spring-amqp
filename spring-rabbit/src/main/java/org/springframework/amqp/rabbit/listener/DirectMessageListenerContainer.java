@@ -591,6 +591,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	private void startConsumers(final String[] queueNames) {
+		if (isChangeConsumerThreadName()) {
+			Thread.currentThread().setName(getThreadNameSupplier().apply(this));
+		}
 		synchronized (this.consumersMonitor) {
 			if (this.hasStopped) { // container stopped before we got the lock
 				if (this.logger.isDebugEnabled()) {
