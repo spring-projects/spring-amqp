@@ -367,6 +367,7 @@ project('spring-amqp') {
 		optionalApi 'com.fasterxml.jackson.core:jackson-databind'
 		optionalApi 'com.fasterxml.jackson.core:jackson-annotations'
 		optionalApi 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
+		optionalApi 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 
 		// Spring Data projection message binding support
 		optionalApi ('org.springframework.data:spring-data-commons') {

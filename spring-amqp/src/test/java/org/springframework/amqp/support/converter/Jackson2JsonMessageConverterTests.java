@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,8 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.Hashtable;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,6 +42,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
+import org.springframework.util.StringUtils;
 
 /**
  * @author Mark Pollack
@@ -462,6 +461,19 @@ public class Jackson2JsonMessageConverterTests {
 				() -> converter.fromMessage(message2));
 	}
 
+	@Test
+	void testJava8Time() throws Exception {
+		JodasRevenge revenge = new JodasRevenge();
+		revenge.setLocalDateTime(LocalDateTime.now());
+
+		/*
+		 	should not lead to:
+		 	 Java 8 date/time type `java.time.LocalDateTime` not supported by default [..]
+		 */
+		String json = converter.objectMapper.writeValueAsString(revenge);
+		assertThat(StringUtils.hasText(json)).isTrue();
+	}
+
 	public List<Foo> fooLister() {
 		return null;
 	}
@@ -476,6 +488,31 @@ public class Jackson2JsonMessageConverterTests {
 
 	public List<Fiz> fizLister() {
 		return null;
+	}
+
+	public static class JodasRevenge {
+		private LocalDateTime localDateTime;
+
+		public LocalDateTime getLocalDateTime() {
+			return localDateTime;
+		}
+
+		public void setLocalDateTime(LocalDateTime localDateTime) {
+			this.localDateTime = localDateTime;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			JodasRevenge that = (JodasRevenge) o;
+			return Objects.equals(localDateTime, that.localDateTime);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(localDateTime);
+		}
 	}
 
 	public static class Foo {
