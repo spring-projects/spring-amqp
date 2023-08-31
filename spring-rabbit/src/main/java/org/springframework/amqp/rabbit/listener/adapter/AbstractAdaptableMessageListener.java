@@ -365,7 +365,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	 * response message back.
 	 * @param resultArg the result object to handle (never <code>null</code>)
 	 * @param request the original request message
-	 * @param channel the Rabbit channel to operate on (may be <code>null</code>)
+	 * @param channel the Rabbit channel to operate on (maybe <code>null</code>)
 	 * @param source the source data for the method invocation - e.g.
 	 * {@code o.s.messaging.Message<?>}; may be null
 	 * @see #buildMessage
@@ -404,8 +404,8 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 			}
 			else if (monoPresent && MonoHandler.isMono(resultArg.getReturnValue())) {
 				if (!this.isManualAck) {
-					this.logger.warn("Container AcknowledgeMode must be MANUAL for a Mono<?> return type; "
-							+ "otherwise the container will ack the message immediately");
+					this.logger.warn("Container AcknowledgeMode must be MANUAL for a Mono<?> return type" +
+							"(or Kotlin suspend function); otherwise the container will ack the message immediately");
 				}
 				MonoHandler.subscribe(resultArg.getReturnValue(),
 						r -> asyncSuccess(resultArg, request, channel, source, r),
@@ -461,7 +461,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	}
 
 	private void asyncFailure(Message request, Channel channel, Throwable t) {
-		this.logger.error("Future or Mono was completed with an exception for " + request, t);
+		this.logger.error("Future, Mono, or suspend function was completed with an exception for " + request, t);
 		try {
 			channel.basicNack(request.getMessageProperties().getDeliveryTag(), false,
 					ContainerUtils.shouldRequeue(this.defaultRequeueRejected, t, this.logger));
