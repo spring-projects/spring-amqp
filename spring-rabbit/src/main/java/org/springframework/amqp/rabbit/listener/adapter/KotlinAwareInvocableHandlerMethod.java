@@ -27,7 +27,7 @@ import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
  *
  * @author Artem Bilan
  *
- * @since 3.0.5
+ * @since 2.4.16
  */
 public class KotlinAwareInvocableHandlerMethod extends InvocableHandlerMethod {
 

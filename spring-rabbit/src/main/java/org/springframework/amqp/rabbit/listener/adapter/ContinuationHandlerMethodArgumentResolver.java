@@ -31,7 +31,7 @@ import reactor.core.publisher.Mono;
  *
  * @author Artem Bilan
  *
- * @since 3.0.5
+ * @since 2.4.16
  *
  * @see org.springframework.messaging.handler.annotation.reactive.ContinuationHandlerMethodArgumentResolver
  */
