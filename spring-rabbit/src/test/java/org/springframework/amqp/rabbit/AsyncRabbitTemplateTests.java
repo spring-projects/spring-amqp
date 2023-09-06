@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022 the original author or authors.
+ * Copyright 2016-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ import org.springframework.amqp.support.postprocessor.GUnzipPostProcessor;
 import org.springframework.amqp.support.postprocessor.GZipPostProcessor;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -528,12 +529,16 @@ public class AsyncRabbitTemplateTests {
 		}
 
 		@Bean
-		public AsyncRabbitTemplate asyncTemplate(RabbitTemplate template, SimpleMessageListenerContainer container) {
+		public AsyncRabbitTemplate asyncTemplate(@Qualifier("template") RabbitTemplate template,
+				SimpleMessageListenerContainer container) {
+
 			return new AsyncRabbitTemplate(template, container);
 		}
 
 		@Bean
-		public AsyncRabbitTemplate asyncDirectTemplate(RabbitTemplate templateForDirect) {
+		public AsyncRabbitTemplate asyncDirectTemplate(
+				@Qualifier("templateForDirect") RabbitTemplate templateForDirect) {
+
 			return new AsyncRabbitTemplate(templateForDirect);
 		}
 

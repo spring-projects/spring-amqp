@@ -18,7 +18,7 @@
 	<rabbit:queue id="foo" ignore-declaration-exceptions="true" declared-by="myAdmin" auto-declare="false"/>
 
 	<bean id="mockFactory" class="org.mockito.Mockito" factory-method="mock">
-		<constructor-arg value="org.springframework.amqp.rabbit.connection.ConnectionFactory"/>
+		<constructor-arg value="org.springframework.amqp.rabbit.connection.ConnectionFactory" type="java.lang.Class"/>
 	</bean>
 
 	<rabbit:admin id="myAdmin" connection-factory="mockFactory"/>

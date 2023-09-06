@@ -1,5 +1,5 @@
 buildscript {
-	ext.kotlinVersion = '1.7.0'
+	ext.kotlinVersion = '1.9.10'
 	ext.isCI = System.getenv('GITHUB_ACTION') || System.getenv('bamboo_buildKey')
 	repositories {
 		mavenCentral()
@@ -42,7 +42,7 @@ ext {
 	modifiedFiles =
 			files(grgit.status().unstaged.modified).filter{ f -> f.name.endsWith('.java') || f.name.endsWith('.kt') }
 
-	assertjVersion = '3.23.1'
+	assertjVersion = '3.24.2'
 	assertkVersion = '0.24'
 	awaitilityVersion = '4.2.0'
 	commonsCompressVersion = '1.20'
@@ -51,26 +51,26 @@ ext {
 	googleJsr305Version = '3.0.2'
 	hamcrestVersion = '2.2'
 	hibernateValidationVersion = '8.0.0.Final'
-	jacksonBomVersion = '2.14.2'
-	jaywayJsonPathVersion = '2.7.0'
+	jacksonBomVersion = '2.15.2'
+	jaywayJsonPathVersion = '2.8.0'
 	junit4Version = '4.13.2'
-	junitJupiterVersion = '5.9.2'
-	kotlinCoroutinesVersion = '1.6.4'
-	log4jVersion = '2.19.0'
-	logbackVersion = '1.4.4'
+	junitJupiterVersion = '5.10.0'
+	kotlinCoroutinesVersion = '1.7.3'
+	log4jVersion = '2.20.0'
+	logbackVersion = '1.4.11'
 	lz4Version = '1.8.0'
 	micrometerDocsVersion = '1.0.2'
-	micrometerVersion = '1.10.10'
-	micrometerTracingVersion = '1.0.9'
-	mockitoVersion = '4.8.1'
-	rabbitmqStreamVersion = '0.8.0'
-	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.16.1'
-	reactorVersion = '2022.0.10'
+	micrometerVersion = '1.12.0-SNAPSHOT'
+	micrometerTracingVersion = '1.2.0-SNAPSHOT'
+	mockitoVersion = '5.5.0'
+	rabbitmqStreamVersion = '0.12.0'
+	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.18.0'
+	reactorVersion = '2023.0.0-SNAPSHOT'
 	snappyVersion = '1.1.8.4'
-	springDataVersion = '2022.0.8'
+	springDataVersion = '2023.1.0-SNAPSHOT'
 	springRetryVersion = '2.0.2'
-	springVersion = project.hasProperty('springVersion') ? project.springVersion : '6.0.11'
-	testcontainersVersion = '1.17.6'
+	springVersion = project.hasProperty('springVersion') ? project.springVersion : '6.1.0-SNAPSHOT'
+	testcontainersVersion = '1.19.0'
 	zstdJniVersion = '1.5.0-2'
 
 	javaProjects = subprojects - project(':spring-amqp-bom')

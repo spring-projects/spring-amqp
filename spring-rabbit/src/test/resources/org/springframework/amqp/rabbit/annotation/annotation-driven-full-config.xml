@@ -14,7 +14,7 @@
 	<bean id="simpleFactory" class="org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory"/>
 
 	<bean id="rabbitAdmin" class="org.mockito.Mockito" factory-method="mock">
-		<constructor-arg value="org.springframework.amqp.rabbit.core.RabbitAdmin"/>
+		<constructor-arg value="org.springframework.amqp.rabbit.core.RabbitAdmin" type="java.lang.Class"/>
 	</bean>
 
 

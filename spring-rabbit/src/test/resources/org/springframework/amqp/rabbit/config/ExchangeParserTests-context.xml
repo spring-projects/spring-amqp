@@ -51,7 +51,8 @@
 	<rabbit:admin id="admin2" auto-startup="false" connection-factory="mockCF" />
 
 	<bean id="mockCF" class="org.mockito.Mockito" factory-method="mock">
-		<constructor-arg value="org.springframework.amqp.rabbit.connection.ConnectionFactory" />
+		<constructor-arg value="org.springframework.amqp.rabbit.connection.ConnectionFactory"
+				type="java.lang.Class"/>
 	</bean>
 
 </beans>

@@ -15,7 +15,8 @@
 		connection-name-strategy="connectionNameStrategy"/>
 
 	<bean id="connectionNameStrategy" class="org.mockito.Mockito" factory-method="mock">
-		<constructor-arg value="org.springframework.amqp.rabbit.connection.ConnectionNameStrategy"/>
+		<constructor-arg value="org.springframework.amqp.rabbit.connection.ConnectionNameStrategy"
+				type="java.lang.Class"/>
 	</bean>
 
 	<rabbit:connection-factory id="native" connection-factory="connectionFactory" channel-cache-size="10" />
