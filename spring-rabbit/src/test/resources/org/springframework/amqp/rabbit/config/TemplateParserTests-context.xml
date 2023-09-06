@@ -42,17 +42,19 @@
 					 receive-connection-factory-selector-expression="'foo'"/>
 
 	<bean id="rcb" class="org.mockito.Mockito" factory-method="mock">
-		<constructor-arg value="org.springframework.amqp.rabbit.core.RabbitTemplate$ReturnsCallback"/>
+		<constructor-arg value="org.springframework.amqp.rabbit.core.RabbitTemplate$ReturnsCallback"
+				type="java.lang.Class"/>
 	</bean>
 
 	<bean id="ccb" class="org.mockito.Mockito" factory-method="mock">
-		<constructor-arg value="org.springframework.amqp.rabbit.core.RabbitTemplate$ConfirmCallback"/>
+		<constructor-arg value="org.springframework.amqp.rabbit.core.RabbitTemplate$ConfirmCallback"
+				type="java.lang.Class"/>
 	</bean>
 
 	<bean id="retrier" class="org.springframework.retry.support.RetryTemplate"/>
 
 	<bean id="recoverer" class="org.mockito.Mockito" factory-method="mock">
-		<constructor-arg value="org.springframework.retry.RecoveryCallback"/>
+		<constructor-arg value="org.springframework.retry.RecoveryCallback" type="java.lang.Class"/>
 	</bean>
 
 </beans>

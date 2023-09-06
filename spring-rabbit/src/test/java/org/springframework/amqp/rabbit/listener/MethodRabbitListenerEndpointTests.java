@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -465,7 +465,7 @@ public class MethodRabbitListenerEndpointTests {
 			assertThat(message.getPayload()).as("Wrong message payload").isEqualTo("test");
 		}
 
-		public void resolveHeaderAndPayload(@Payload String content, @Header int myCounter,
+		public void resolveHeaderAndPayload(@Payload String content, @Header("myCounter") int myCounter,
 				@Header(AmqpHeaders.CONSUMER_TAG) String tag,
 				@Header(AmqpHeaders.CONSUMER_QUEUE) String queue) {
 			invocations.put("resolveHeaderAndPayload", true);
