@@ -107,6 +107,7 @@ import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.ApplicationContext;
@@ -409,7 +410,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		this.rabbitTemplate.setAfterReceivePostProcessors(mpp);
 		assertThat(rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", qux)).isEqualTo("QUX: qux: multi.rk");
 		assertThat(beanMethodHeaders).hasSize(2);
-		assertThat(beanMethodHeaders.get(0)).contains("$MultiListenerBean");
+		assertThat(beanMethodHeaders.get(0)).contains("MultiListenerBean");
 		assertThat(beanMethodHeaders.get(1)).isEqualTo("qux");
 		this.rabbitTemplate.removeAfterReceivePostProcessor(mpp);
 		assertThat(rabbitTemplate.convertSendAndReceive("multi.exch.tx", "multi.rk.tx", bar)).isEqualTo("BAR: barbar");
@@ -1203,7 +1204,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		}
 
 		@RabbitListener(queues = "test.header", group = "testGroup", replyPostProcessor = "#{'echoPrefixHeader'}")
-		public String capitalizeWithHeader(@Payload String content, @Header String prefix) {
+		public String capitalizeWithHeader(@Payload String content, @Header("prefix") String prefix) {
 			return prefix + content.toUpperCase();
 		}
 
@@ -1213,7 +1214,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		}
 
 		@RabbitListener(queues = "test.reply")
-		public org.springframework.messaging.Message<?> reply(String payload, @Header String foo,
+		public org.springframework.messaging.Message<?> reply(String payload, @Header("foo") String foo,
 				@Header(AmqpHeaders.CONSUMER_TAG) String tag) {
 			return MessageBuilder.withPayload(payload)
 					.setHeader("foo", foo).setHeader("bar", tag).build();
@@ -1677,7 +1678,9 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 		@Bean
 		public SimpleMessageListenerContainer factoryCreatedContainerSimpleListener(
+				@Qualifier("rabbitListenerContainerFactory")
 				SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory) {
+
 			SimpleRabbitListenerEndpoint listener = new SimpleRabbitListenerEndpoint();
 			listener.setQueueNames("test.manual.container");
 			listener.setMessageListener((ChannelAwareMessageListener) (message, channel) -> {
@@ -1689,6 +1692,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 		@Bean
 		public SimpleMessageListenerContainer factoryCreatedContainerNoListener(
+				@Qualifier("rabbitListenerContainerFactory")
 				SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory) {
 			SimpleMessageListenerContainer container = rabbitListenerContainerFactory.createListenerContainer();
 			container.setMessageListener(message -> {
@@ -1701,7 +1705,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 		@Bean
 		public SimpleRabbitListenerContainerFactory rabbitAutoStartFalseListenerContainerFactory(
-				ReplyPostProcessor rpp) {
+				@Qualifier("rpp") ReplyPostProcessor rpp) {
 
 			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 			factory.setConnectionFactory(rabbitConnectionFactory());
@@ -2466,14 +2470,14 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 		@RabbitListener(queues = "test.converted.foomessage")
 		public String messagingMessage(org.springframework.messaging.Message<Foo2> message,
-				@Header(value = "", required = false) String h,
+				@Header(value = "notPresent", required = false) String h,
 				@Header(name = AmqpHeaders.RECEIVED_USER_ID) String userId) {
 			return message.getClass().getSimpleName() + message.getPayload().getClass().getSimpleName() + userId;
 		}
 
 		@RabbitListener(queues = "test.notconverted.messagingmessagenotgeneric")
 		public String messagingMessage(@SuppressWarnings("rawtypes") org.springframework.messaging.Message message,
-				@Header(value = "", required = false) Integer h) {
+				@Header(value = "notPresent", required = false) Integer h) {
 			return message.getClass().getSimpleName() + message.getPayload().getClass().getSimpleName();
 		}
 
