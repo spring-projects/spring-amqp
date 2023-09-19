@@ -84,7 +84,7 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
  * <p>
  * <b>{@link CacheMode#CONNECTION} is not compatible with a Rabbit Admin that auto-declares queues etc.</b>
  * <p>
- * <b>NOTE: This ConnectionFactory requires explicit closing of all Channels obtained form its Connection(s).</b>
+ * <b>NOTE: This ConnectionFactory requires explicit closing of all Channels obtained from its Connection(s).</b>
  * This is the usual recommendation for native Rabbit access code anyway. However, with this ConnectionFactory, its use
  * is mandatory in order to actually allow for Channel reuse. {@link Channel#close()} returns the channel to the
  * cache, if there is room, or physically closes the channel otherwise.
