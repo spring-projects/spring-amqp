@@ -320,6 +320,9 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		final List<ListenerMethod> methods = new ArrayList<>();
 		final List<Method> multiMethods = new ArrayList<>();
 		ReflectionUtils.doWithMethods(targetClass, method -> {
+			if (method.getDeclaringClass().getName().contains("$MockitoMock$")) {
+				return;
+			}
 			List<RabbitListener> listenerAnnotations = findListenerAnnotations(method);
 			if (listenerAnnotations.size() > 0) {
 				methods.add(new ListenerMethod(method,
@@ -331,8 +334,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 					multiMethods.add(method);
 				}
 			}
-		}, ReflectionUtils.USER_DECLARED_METHODS
-				.and(meth -> !meth.getDeclaringClass().getName().contains("$MockitoMock$")));
+		}, ReflectionUtils.USER_DECLARED_METHODS);
 		if (methods.isEmpty() && multiMethods.isEmpty()) {
 			return TypeMetadata.EMPTY;
 		}
