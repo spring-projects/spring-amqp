@@ -32,9 +32,9 @@ compile 'org.springframework.amqp:spring-rabbit:{project-version}'
 [[compatibility]]
 ===== Compatibility
 
-The minimum Spring Framework version dependency is 5.2.0.
+The minimum Spring Framework version dependency is 5.3.30.
 
-The minimum `amqp-client` Java client library version is 5.7.0.
+The minimum `amqp-client` Java client library version is 5.14.3.
 
 ===== Very, Very Quick
 
