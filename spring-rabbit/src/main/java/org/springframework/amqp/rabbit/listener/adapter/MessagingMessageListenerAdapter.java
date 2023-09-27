@@ -447,7 +447,8 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			Type parameterType = methodParameter.getGenericParameterType();
 			if (parameterType.equals(Channel.class)
 					|| parameterType.equals(MessageProperties.class)
-					|| parameterType.equals(org.springframework.amqp.core.Message.class)) {
+					|| parameterType.equals(org.springframework.amqp.core.Message.class)
+					|| parameterType.getTypeName().startsWith("kotlin.coroutines.Continuation")) {
 				return false;
 			}
 			if (parameterType instanceof ParameterizedType parameterizedType &&

@@ -21,12 +21,15 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isTrue
 import org.junit.jupiter.api.Test
 import org.springframework.amqp.core.AcknowledgeMode
+import org.springframework.amqp.core.MessageListener
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.amqp.rabbit.junit.RabbitAvailable
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler
+import org.springframework.amqp.utils.test.TestUtils
 import org.springframework.aop.framework.ProxyFactory
 import org.springframework.beans.BeansException
 import org.springframework.beans.factory.annotation.Autowired
@@ -57,17 +60,20 @@ class EnableRabbitKotlinTests {
 	private lateinit var config: Config
 
 	@Test
-	fun `send and wait for consume`() {
+	fun `send and wait for consume`(@Autowired registry: RabbitListenerEndpointRegistry) {
 		val template = RabbitTemplate(this.config.cf())
 		template.convertAndSend("kotlinQueue", "test")
-		assertThat(this.config.latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.config.latch.await(10, TimeUnit.SECONDS)).isTrue()
+		val listener = registry.getListenerContainer("single").messageListener
+		assertThat(TestUtils.getPropertyValue(listener, "messagingMessageConverter.inferredArgumentType").toString())
+				.isEqualTo("class java.lang.String")
 	}
 
 	@Test
 	fun `send and wait for consume with EH`() {
 		val template = RabbitTemplate(this.config.cf())
 		template.convertAndSend("kotlinQueue1", "test")
-		assertThat(this.config.ehLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.config.ehLatch.await(10, TimeUnit.SECONDS)).isTrue()
 		val reply = template.receiveAndConvert("kotlinReplyQueue", 10_000)
 		assertThat(reply).isEqualTo("error processed");
 	}
@@ -78,7 +84,7 @@ class EnableRabbitKotlinTests {
 
 		val latch = CountDownLatch(1)
 
-		@RabbitListener(queues = ["kotlinQueue"])
+		@RabbitListener(id = "single", queues = ["kotlinQueue"])
 		suspend fun handle(@Suppress("UNUSED_PARAMETER") data: String) {
 			this.latch.countDown()
 		}
@@ -121,12 +127,12 @@ class EnableRabbitKotlinTests {
 
 	}
 
-	@RabbitListener(queues = ["kotlinQueue1"], errorHandler = "#{eh}")
+	@RabbitListener(id = "multi", queues = ["kotlinQueue1"], errorHandler = "#{eh}")
 	@SendTo("kotlinReplyQueue")
 	open class Multi {
 
 		@RabbitHandler
-		suspend fun handle(@Suppress("UNUSED_PARAMETER") data: String) {
+		fun handle(@Suppress("UNUSED_PARAMETER") data: String) {
 			throw RuntimeException("fail")
 		}
 
