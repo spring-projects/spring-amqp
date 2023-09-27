@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 the original author or authors.
+ * Copyright 2019-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.springframework.amqp.rabbit.batch.SimpleBatchingStrategy;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareBatchMessageListener;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
+import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.GenericMessage;
@@ -63,7 +64,20 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 		else {
 			List<Message<?>> messagingMessages = new ArrayList<>();
 			for (org.springframework.amqp.core.Message message : messages) {
-				messagingMessages.add(toMessagingMessage(message));
+				try {
+					Message<?> messagingMessage = toMessagingMessage(message);
+					messagingMessages.add(messagingMessage);
+				}
+				catch (MessageConversionException e) {
+					this.logger.error("Could not convert incoming message", e);
+					try {
+						channel.basicReject(message.getMessageProperties().getDeliveryTag(), false);
+					}
+					catch (Exception ex) {
+						this.logger.error("Failed to reject message with conversion error", ex);
+						throw e; // NOSONAR
+					}
+				}
 			}
 			if (this.converterAdapter.isMessageList()) {
 				converted = new GenericMessage<>(messagingMessages);
