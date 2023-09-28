@@ -68,7 +68,7 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 					Message<?> messagingMessage = toMessagingMessage(message);
 					messagingMessages.add(messagingMessage);
                 } catch (MessageConversionException e) {
-                    this.logger.trace("Could not convert incoming message", e);
+                    this.logger.error("Could not convert incoming message", e);
 					try {
 						channel.basicReject(message.getMessageProperties().getDeliveryTag(), false);
 					} catch (Exception ex) {
