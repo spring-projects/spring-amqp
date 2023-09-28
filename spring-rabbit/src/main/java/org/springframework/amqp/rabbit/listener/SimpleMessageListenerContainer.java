@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1165,6 +1164,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		private int consecutiveMessages;
 
+		private boolean failedExclusive;
+
 
 		AsyncMessageProcessingConsumer(BlockingQueueConsumer consumer) {
 			this.consumer = consumer;
@@ -1276,8 +1277,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			catch (AmqpIOException e) {
-				if (e.getCause() instanceof IOException && e.getCause().getCause() instanceof ShutdownSignalException
-						&& e.getCause().getCause().getMessage().contains("in exclusive use")) {
+				if (RabbitUtils.exclusiveAccesssRefused(e)) {
+					this.failedExclusive = true;
 					getExclusiveConsumerExceptionLogger().log(logger,
 							"Exclusive consumer failure", e.getCause().getCause());
 					publishConsumerFailedEvent("Consumer raised exception, attempting restart", false, e);
@@ -1460,7 +1461,12 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			else {
-				logger.info("Restarting " + this.consumer);
+				if (this.failedExclusive) {
+					getExclusiveConsumerExceptionLogger().logRestart(logger, () -> "Restarting " + this.consumer);
+				}
+				else {
+					logger.info("Restarting " + this.consumer);
+				}
 				restart(this.consumer);
 			}
 		}

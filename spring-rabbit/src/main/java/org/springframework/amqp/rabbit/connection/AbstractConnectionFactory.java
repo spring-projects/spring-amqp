@@ -496,7 +496,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	 * Set the strategy for logging close exceptions; by default, if a channel is closed due to a failed
 	 * passive queue declaration, it is logged at debug level. Normal channel closes (200 OK) are not
 	 * logged. All others are logged at ERROR level (unless access is refused due to an exclusive consumer
-	 * condition, in which case, it is logged at INFO level).
+	 * condition, in which case, it is logged at DEBUG level, since 3.1, previously INFO).
 	 * @param closeExceptionLogger the {@link ConditionalExceptionLogger}.
 	 * @since 1.5
 	 */
@@ -720,10 +720,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	 * close exceptions.
 	 * @since 1.5
 	 */
-	private static class DefaultChannelCloseLogger implements ConditionalExceptionLogger {
-
-		DefaultChannelCloseLogger() {
-		}
+	public static class DefaultChannelCloseLogger implements ConditionalExceptionLogger {
 
 		@Override
 		public void log(Log logger, String message, Throwable t) {
@@ -734,8 +731,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 					}
 				}
 				else if (RabbitUtils.isExclusiveUseChannelClose(cause)) {
-					if (logger.isInfoEnabled()) {
-						logger.info(message + ": " + cause.getMessage());
+					if (logger.isDebugEnabled()) {
+						logger.debug(message + ": " + cause.getMessage());
 					}
 				}
 				else if (!RabbitUtils.isNormalChannelClose(cause)) {

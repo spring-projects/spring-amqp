@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbit.listener;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.with;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
@@ -347,7 +346,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	@Test
 	public void testExclusive() throws Exception {
 		Log logger = spy(TestUtils.getPropertyValue(this.template.getConnectionFactory(), "logger", Log.class));
-		willReturn(true).given(logger).isInfoEnabled();
+		willReturn(true).given(logger).isDebugEnabled();
 		new DirectFieldAccessor(this.template.getConnectionFactory()).setPropertyValue("logger", logger);
 		CountDownLatch latch1 = new CountDownLatch(1000);
 		SimpleMessageListenerContainer container1 =
@@ -388,7 +387,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		});
 		container2.afterPropertiesSet();
 		Log containerLogger = spy(TestUtils.getPropertyValue(container2, "logger", Log.class));
-		willReturn(true).given(containerLogger).isWarnEnabled();
+		willReturn(true).given(containerLogger).isDebugEnabled();
 		new DirectFieldAccessor(container2).setPropertyValue("logger", containerLogger);
 		container2.start();
 		for (int i = 0; i < 1000; i++) {
@@ -404,13 +403,15 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		}
 		assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
 		container2.stop();
-		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-		verify(logger, atLeastOnce()).info(captor.capture());
-		assertThat(captor.getAllValues()).anyMatch(arg -> arg.contains("exclusive"));
+		ArgumentCaptor<String> connLogCaptor = ArgumentCaptor.forClass(String.class);
+		verify(logger, atLeastOnce()).debug(connLogCaptor.capture());
+		assertThat(connLogCaptor.getAllValues()).anyMatch(arg -> arg.contains("exclusive"));
 		assertThat(eventRef.get().getReason()).isEqualTo("Consumer raised exception, attempting restart");
 		assertThat(eventRef.get().isFatal()).isFalse();
 		assertThat(eventRef.get().getThrowable()).isInstanceOf(AmqpIOException.class);
-		verify(containerLogger, atLeastOnce()).warn(any());
+		ArgumentCaptor<String> contLogCaptor = ArgumentCaptor.forClass(String.class);
+		verify(logger, atLeastOnce()).debug(contLogCaptor.capture());
+		assertThat(contLogCaptor.getAllValues()).anyMatch(arg -> arg.contains("exclusive"));
 	}
 
 	@Test

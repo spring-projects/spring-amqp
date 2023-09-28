@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 the original author or authors.
+ * Copyright 2015-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.amqp.support;
+
+import java.util.function.Supplier;
 
 import org.apache.commons.logging.Log;
 
@@ -36,5 +38,17 @@ public interface ConditionalExceptionLogger {
 	 * @param t a throwable; may be null.
 	 */
 	void log(Log logger, String message, Throwable t);
+
+	/**
+	 * Log a consumer restart; debug by default.
+	 * @param logger the logger.
+	 * @param message the message.
+	 * @since 3.1
+	 */
+	default void logRestart(Log logger, Supplier<String> message) {
+		if (logger.isDebugEnabled()) {
+			logger.debug(message.get());
+		}
+	}
 
 }
