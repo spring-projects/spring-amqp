@@ -4321,7 +4321,7 @@ consider configuring which packages and classes are allowed to be deserialized.
 This applies to both the `SimpleMessageConverter` and `SerializerMessageConverter` when it is configured to use a
 `DefaultDeserializer` either implicitly or via configuration.
 
-By default, the allowed list is empty, meaning all classes are deserialized.
+By default, the allowed list is empty, meaning no classes will be deserialized.
 
 You can set a list of patterns, such as `thing1.*`, `thing1.thing2.Cat` or `*.MySafeClass`.
 
@@ -4329,6 +4329,7 @@ The patterns are checked in order until a match is found.
 If there is no match, a `SecurityException` is thrown.
 
 You can set the patterns using the `allowedListPatterns` property on these converters.
+Alternatively, if you trust all message originators, you can set the environment variable `SPRING_AMQP_DESERIALIZATION_TRUST_ALL` or system property `spring.amqp.deserialization.trust.all` to `true`.
 ====
 
 [[message-properties-converters]]
