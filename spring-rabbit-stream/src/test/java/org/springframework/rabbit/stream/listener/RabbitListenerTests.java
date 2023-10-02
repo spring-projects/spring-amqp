@@ -61,7 +61,6 @@ import org.springframework.web.reactive.function.client.ExchangeFilterFunctions;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriUtils;
 
-import com.rabbitmq.stream.Address;
 import com.rabbitmq.stream.Environment;
 import com.rabbitmq.stream.Message;
 import com.rabbitmq.stream.MessageHandler.Context;
@@ -75,6 +74,7 @@ import io.micrometer.observation.ObservationRegistry;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 2.4
  *
  */
@@ -203,7 +203,7 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 		@Bean
 		static Environment environment() {
 			return Environment.builder()
-					.addressResolver(add -> new Address("localhost", streamPort()))
+					.port(streamPort())
 					.build();
 		}
 
@@ -395,6 +395,6 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 					.build();
 		}
 
- 	}
+	}
 
 }

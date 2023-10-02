@@ -38,7 +38,6 @@ import org.springframework.rabbit.stream.listener.StreamListenerContainer;
 import org.springframework.rabbit.stream.producer.RabbitStreamTemplate;
 import org.springframework.rabbit.stream.support.StreamAdmin;
 
-import com.rabbitmq.stream.Address;
 import com.rabbitmq.stream.Environment;
 import com.rabbitmq.stream.Message;
 import com.rabbitmq.stream.OffsetSpecification;
@@ -51,6 +50,7 @@ import io.micrometer.tracing.test.simple.SpansAssert;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 3.0.5
  *
  */
@@ -106,7 +106,7 @@ public class TracingTests extends SampleTestRunner {
 		@Bean
 		static Environment environment() {
 			return Environment.builder()
-					.addressResolver(add -> new Address("localhost", AbstractTestContainerTests.streamPort()))
+					.port(AbstractTestContainerTests.streamPort())
 					.build();
 		}
 

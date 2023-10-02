@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,12 +39,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.rabbit.stream.config.SuperStream;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-import com.rabbitmq.stream.Address;
 import com.rabbitmq.stream.Environment;
 import com.rabbitmq.stream.OffsetSpecification;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 3.0
  *
  */
@@ -105,7 +105,7 @@ public class SuperStreamConcurrentSACTests extends AbstractTestContainerTests {
 		@Bean
 		static Environment environment() {
 			return Environment.builder()
-					.addressResolver(add -> new Address("localhost", streamPort()))
+					.port(streamPort())
 					.maxConsumersByConnection(1)
 					.build();
 		}
