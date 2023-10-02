@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2019 the original author or authors.
+ * Copyright 2006-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,17 @@ import org.springframework.util.PatternMatchUtils;
  * @author Artem Bilan
  */
 public final class SerializationUtils {
+
+	private static final String TRUST_ALL_ENV = "SPRING_AMQP_DESERIALIZATION_TRUST_ALL";
+
+	private static final String TRUST_ALL_PROP = "spring.amqp.deserialization.trust.all";
+
+	private static final boolean TRUST_ALL;
+
+	static {
+		TRUST_ALL = Boolean.parseBoolean(System.getenv(TRUST_ALL_ENV))
+				|| Boolean.parseBoolean(System.getProperty(TRUST_ALL_PROP));
+	}
 
 	private SerializationUtils() {
 	}
@@ -137,11 +148,12 @@ public final class SerializationUtils {
 	 * @since 2.1
 	 */
 	public static void checkAllowedList(Class<?> clazz, Set<String> patterns) {
-		if (ObjectUtils.isEmpty(patterns)) {
+		if (TRUST_ALL && ObjectUtils.isEmpty(patterns)) {
 			return;
 		}
 		if (clazz.isArray() || clazz.isPrimitive() || clazz.equals(String.class)
-				|| Number.class.isAssignableFrom(clazz)) {
+				|| Number.class.isAssignableFrom(clazz)
+				|| String.class.equals(clazz)) {
 			return;
 		}
 		String className = clazz.getName();
@@ -150,7 +162,10 @@ public final class SerializationUtils {
 				return;
 			}
 		}
-		throw new SecurityException("Attempt to deserialize unauthorized " + clazz);
+		throw new SecurityException("Attempt to deserialize unauthorized " + clazz
+				+ "; add allowed class name patterns to the message converter or, if you trust the message orginiator, "
+				+ "set environment variable '"
+				+ TRUST_ALL_ENV + "' or system property '" + TRUST_ALL_PROP + "' to true");
 	}
 
 }

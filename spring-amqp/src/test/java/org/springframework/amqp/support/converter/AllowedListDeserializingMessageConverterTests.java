@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package org.springframework.amqp.support.converter;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -40,7 +40,11 @@ public class AllowedListDeserializingMessageConverterTests {
 		SerializerMessageConverter converter = new SerializerMessageConverter();
 		TestBean testBean = new TestBean("foo");
 		Message message = converter.toMessage(testBean, new MessageProperties());
-		Object fromMessage = converter.fromMessage(message);
+		// when env var not set
+//		assertThatExceptionOfType(SecurityException.class).isThrownBy(() -> converter.fromMessage(message));
+		Object fromMessage;
+		// when env var set.
+		fromMessage = converter.fromMessage(message);
 		assertThat(fromMessage).isEqualTo(testBean);
 
 		converter.setAllowedListPatterns(Collections.singletonList("*"));
@@ -54,15 +58,8 @@ public class AllowedListDeserializingMessageConverterTests {
 		fromMessage = converter.fromMessage(message);
 		assertThat(fromMessage).isEqualTo(testBean);
 
-		try {
-			converter.setAllowedListPatterns(Collections.singletonList("foo.*"));
-			fromMessage = converter.fromMessage(message);
-			assertThat(fromMessage).isEqualTo(testBean);
-			fail("Expected SecurityException");
-		}
-		catch (SecurityException e) {
-
-		}
+		converter.setAllowedListPatterns(Collections.singletonList("foo.*"));
+		assertThatExceptionOfType(SecurityException.class).isThrownBy(() -> converter.fromMessage(message));
 	}
 
 	@SuppressWarnings("serial")

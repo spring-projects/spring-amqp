@@ -313,6 +313,8 @@ configure(javaProjects) { subproject ->
 		if (name ==~ /(testAll)/) {
 			systemProperty 'RUN_LONG_INTEGRATION_TESTS', 'true'
 		}
+		environment "SPRING_AMQP_DESERIALIZATION_TRUST_ALL", "true"
+
 		useJUnitPlatform()
 	}
 
