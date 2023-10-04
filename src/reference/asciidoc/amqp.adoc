@@ -940,16 +940,18 @@ See <<publishing-is-async>> for one scenario where you might want to register a 
 
 Version 1.5 introduced a mechanism to enable users to control logging levels.
 
-The `CachingConnectionFactory` uses a default strategy to log channel closures as follows:
+The `AbstractConnectionFactory` uses a default strategy to log channel closures as follows:
 
 * Normal channel closes (200 OK) are not logged.
-* If a channel is closed due to a failed passive queue declaration, it is logged at debug level.
+* If a channel is closed due to a failed passive queue declaration, it is logged at DEBUG level.
 * If a channel is closed because the `basic.consume` is refused due to an exclusive consumer condition, it is logged at
-INFO level.
+DEBUG level (since 3.1, previously INFO).
 * All others are logged at ERROR level.
 
 To modify this behavior, you can inject a custom `ConditionalExceptionLogger` into the
 `CachingConnectionFactory` in its `closeExceptionLogger` property.
+
+Also, the `AbstractConnectionFactory.DefaultChannelCloseLogger` is now public, allowing it to be sub classed.
 
 See also <<consumer-events>>.
 
@@ -2364,8 +2366,13 @@ These events can be consumed by implementing `ApplicationListener<ListenerContai
 
 NOTE: System-wide events (such as connection failures) are published by all consumers when `concurrentConsumers` is greater than 1.
 
-If a consumer fails because one if its queues is being used exclusively, by default, as well as publishing the event, a `WARN` log is issued.
-To change this logging behavior, provide a custom `ConditionalExceptionLogger` in the `SimpleMessageListenerContainer` instance's `exclusiveConsumerExceptionLogger` property.
+If a consumer fails because one if its queues is being used exclusively, by default, as well as publishing the event, a `DEBUG` log is issued (since 3.1, previously WARN).
+To change this logging behavior, provide a custom `ConditionalExceptionLogger` in the `AbstractMessageListenerContainer` instance's `exclusiveConsumerExceptionLogger` property.
+In addition, the `SimpleMessageListenerContainer` consumer restart after such an exception is now logged at DEBUG level by default (previously INFO).
+A new method `logRestart()` has been added to the `ConditionalExceptionLogger` to allow this to be changed.
+
+Also, the `AbstractMessageListenerContainer.DefaultExclusiveConsumerLogger` is now public, allowing it to be sub classed.
+
 See also <<channel-close-logging>>.
 
 Fatal errors are always logged at the `ERROR` level.

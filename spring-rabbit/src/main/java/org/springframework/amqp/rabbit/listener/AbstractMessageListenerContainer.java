@@ -91,7 +91,6 @@ import org.springframework.util.backoff.BackOff;
 import org.springframework.util.backoff.FixedBackOff;
 
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.ShutdownSignalException;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 
@@ -1030,7 +1029,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 
 	/**
 	 * Set a {@link ConditionalExceptionLogger} for logging exclusive consumer failures. The
-	 * default is to log such failures at WARN level.
+	 * default is to log such failures at DEBUG level (since 3.1, previously WARN).
 	 * @param exclusiveConsumerExceptionLogger the conditional exception logger.
 	 * @since 1.5
 	 */
@@ -2095,27 +2094,12 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * consumer failures.
 	 * @since 1.5
 	 */
-	private static class DefaultExclusiveConsumerLogger implements ConditionalExceptionLogger {
-
-		DefaultExclusiveConsumerLogger() {
-		}
+	public static class DefaultExclusiveConsumerLogger implements ConditionalExceptionLogger {
 
 		@Override
-		public void log(Log logger, String message, Throwable t) {
-			if (t instanceof ShutdownSignalException cause) {
-				if (RabbitUtils.isExclusiveUseChannelClose(cause)) {
-					if (logger.isWarnEnabled()) {
-						logger.warn(message + ": " + cause.toString());
-					}
-				}
-				else if (!RabbitUtils.isNormalChannelClose(cause)) {
-					logger.error(message + ": " + cause.getMessage());
-				}
-			}
-			else {
-				if (logger.isErrorEnabled()) {
-					logger.error("Unexpected invocation of " + getClass() + ", with message: " + message, t);
-				}
+		public void log(Log logger, String message, Throwable cause) {
+			if (logger.isDebugEnabled()) {
+				logger.debug(message + ": " + cause.toString());
 			}
 		}
 

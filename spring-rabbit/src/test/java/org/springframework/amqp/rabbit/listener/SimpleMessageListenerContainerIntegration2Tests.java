@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbit.listener;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.with;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
@@ -79,6 +78,7 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.log.LogMessage;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
@@ -347,7 +347,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	@Test
 	public void testExclusive() throws Exception {
 		Log logger = spy(TestUtils.getPropertyValue(this.template.getConnectionFactory(), "logger", Log.class));
-		willReturn(true).given(logger).isInfoEnabled();
+		willReturn(true).given(logger).isDebugEnabled();
 		new DirectFieldAccessor(this.template.getConnectionFactory()).setPropertyValue("logger", logger);
 		CountDownLatch latch1 = new CountDownLatch(1000);
 		SimpleMessageListenerContainer container1 =
@@ -365,6 +365,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 				consumeLatch1.countDown();
 			}
 		});
+		container1.setBeanName("container1");
 		container1.afterPropertiesSet();
 		container1.start();
 		assertThat(consumeLatch1.await(10, TimeUnit.SECONDS)).isTrue();
@@ -386,9 +387,10 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 				consumeLatch2.countDown();
 			}
 		});
+		container2.setBeanName("container2");
 		container2.afterPropertiesSet();
 		Log containerLogger = spy(TestUtils.getPropertyValue(container2, "logger", Log.class));
-		willReturn(true).given(containerLogger).isWarnEnabled();
+		willReturn(true).given(containerLogger).isDebugEnabled();
 		new DirectFieldAccessor(container2).setPropertyValue("logger", containerLogger);
 		container2.start();
 		for (int i = 0; i < 1000; i++) {
@@ -404,13 +406,18 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		}
 		assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
 		container2.stop();
-		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-		verify(logger, atLeastOnce()).info(captor.capture());
-		assertThat(captor.getAllValues()).anyMatch(arg -> arg.contains("exclusive"));
+		ArgumentCaptor<String> connLogCaptor = ArgumentCaptor.forClass(String.class);
+		verify(logger, atLeastOnce()).debug(connLogCaptor.capture());
+		assertThat(connLogCaptor.getAllValues()).anyMatch(arg -> arg.contains("exclusive"));
 		assertThat(eventRef.get().getReason()).isEqualTo("Consumer raised exception, attempting restart");
 		assertThat(eventRef.get().isFatal()).isFalse();
 		assertThat(eventRef.get().getThrowable()).isInstanceOf(AmqpIOException.class);
-		verify(containerLogger, atLeastOnce()).warn(any());
+		ArgumentCaptor<String> contLogCaptor = ArgumentCaptor.forClass(String.class);
+		verify(containerLogger, atLeastOnce()).debug(contLogCaptor.capture());
+		assertThat(contLogCaptor.getAllValues()).anyMatch(arg -> arg.contains("exclusive"));
+		ArgumentCaptor lmCaptor = ArgumentCaptor.forClass(LogMessage.class);
+		verify(containerLogger).debug(lmCaptor.capture());
+		assertThat(lmCaptor.getAllValues()).anyMatch(arg -> arg.toString().startsWith("Restarting "));
 	}
 
 	@Test

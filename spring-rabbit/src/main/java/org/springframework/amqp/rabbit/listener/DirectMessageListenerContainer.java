@@ -782,24 +782,22 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	@Nullable
 	private SimpleConsumer handleConsumeException(String queue, int index, @Nullable SimpleConsumer consumerArg,
-			Exception e) {
+			Exception ex) {
 
 		SimpleConsumer consumer = consumerArg;
-		if (e.getCause() instanceof ShutdownSignalException
-				&& e.getCause().getMessage().contains("in exclusive use")) {
-			getExclusiveConsumerExceptionLogger().log(logger,
-					"Exclusive consumer failure", e.getCause());
-			publishConsumerFailedEvent("Consumer raised exception, attempting restart", false, e);
+		if (RabbitUtils.exclusiveAccesssRefused(ex)) {
+			getExclusiveConsumerExceptionLogger().log(logger, "Exclusive consumer failure", ex.getCause());
+			publishConsumerFailedEvent("Consumer raised exception, attempting restart", false, ex);
 		}
-		else if (e.getCause() instanceof ShutdownSignalException
-				&& RabbitUtils.isPassiveDeclarationChannelClose((ShutdownSignalException) e.getCause())) {
+		else if (ex.getCause() instanceof ShutdownSignalException
+				&& RabbitUtils.isPassiveDeclarationChannelClose((ShutdownSignalException) ex.getCause())) {
 			publishMissingQueueEvent(queue);
 			this.logger.error("Queue not present, scheduling consumer "
-					+ (consumer == null ? "for queue " + queue : consumer) + " for restart", e);
+					+ (consumer == null ? "for queue " + queue : consumer) + " for restart", ex);
 		}
 		else if (this.logger.isWarnEnabled()) {
 			this.logger.warn("basicConsume failed, scheduling consumer "
-					+ (consumer == null ? "for queue " + queue : consumer) + " for restart", e);
+					+ (consumer == null ? "for queue " + queue : consumer) + " for restart", ex);
 		}
 
 		if (consumer == null) {
