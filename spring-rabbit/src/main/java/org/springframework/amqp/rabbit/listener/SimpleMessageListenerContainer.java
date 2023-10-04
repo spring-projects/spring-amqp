@@ -1462,12 +1462,12 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			else {
+				LogMessage restartMessage = LogMessage.of(() -> "Restarting " + this.consumer);
 				if (this.failedExclusive) {
-					getExclusiveConsumerExceptionLogger().logRestart(logger,
-							LogMessage.of(() -> "Restarting " + this.consumer));
+					getExclusiveConsumerExceptionLogger().logRestart(logger, restartMessage);
 				}
 				else {
-					logger.info("Restarting " + this.consumer);
+					logger.info(restartMessage);
 				}
 				restart(this.consumer);
 			}
