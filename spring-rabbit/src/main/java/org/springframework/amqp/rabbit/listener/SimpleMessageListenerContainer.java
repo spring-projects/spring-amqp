@@ -56,6 +56,7 @@ import org.springframework.amqp.rabbit.support.ListenerContainerAware;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.support.ConsumerTagStrategy;
+import org.springframework.core.log.LogMessage;
 import org.springframework.jmx.export.annotation.ManagedMetric;
 import org.springframework.jmx.support.MetricType;
 import org.springframework.lang.Nullable;
@@ -1462,7 +1463,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			else {
 				if (this.failedExclusive) {
-					getExclusiveConsumerExceptionLogger().logRestart(logger, () -> "Restarting " + this.consumer);
+					getExclusiveConsumerExceptionLogger().logRestart(logger,
+							LogMessage.of(() -> "Restarting " + this.consumer));
 				}
 				else {
 					logger.info("Restarting " + this.consumer);

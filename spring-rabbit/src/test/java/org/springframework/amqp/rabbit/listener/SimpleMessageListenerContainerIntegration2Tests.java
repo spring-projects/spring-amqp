@@ -78,6 +78,7 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.log.LogMessage;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
@@ -364,6 +365,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 				consumeLatch1.countDown();
 			}
 		});
+		container1.setBeanName("container1");
 		container1.afterPropertiesSet();
 		container1.start();
 		assertThat(consumeLatch1.await(10, TimeUnit.SECONDS)).isTrue();
@@ -385,6 +387,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 				consumeLatch2.countDown();
 			}
 		});
+		container2.setBeanName("container2");
 		container2.afterPropertiesSet();
 		Log containerLogger = spy(TestUtils.getPropertyValue(container2, "logger", Log.class));
 		willReturn(true).given(containerLogger).isDebugEnabled();
@@ -410,8 +413,11 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		assertThat(eventRef.get().isFatal()).isFalse();
 		assertThat(eventRef.get().getThrowable()).isInstanceOf(AmqpIOException.class);
 		ArgumentCaptor<String> contLogCaptor = ArgumentCaptor.forClass(String.class);
-		verify(logger, atLeastOnce()).debug(contLogCaptor.capture());
+		verify(containerLogger, atLeastOnce()).debug(contLogCaptor.capture());
 		assertThat(contLogCaptor.getAllValues()).anyMatch(arg -> arg.contains("exclusive"));
+		ArgumentCaptor lmCaptor = ArgumentCaptor.forClass(LogMessage.class);
+		verify(containerLogger).debug(lmCaptor.capture());
+		assertThat(lmCaptor.getAllValues()).anyMatch(arg -> arg.toString().startsWith("Restarting "));
 	}
 
 	@Test

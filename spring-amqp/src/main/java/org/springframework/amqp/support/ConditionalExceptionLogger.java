@@ -16,9 +16,9 @@
 
 package org.springframework.amqp.support;
 
-import java.util.function.Supplier;
-
 import org.apache.commons.logging.Log;
+
+import org.springframework.core.log.LogMessage;
 
 /**
  * For components that support customization of the logging of certain events, users can
@@ -45,10 +45,8 @@ public interface ConditionalExceptionLogger {
 	 * @param message the message.
 	 * @since 3.1
 	 */
-	default void logRestart(Log logger, Supplier<String> message) {
-		if (logger.isDebugEnabled()) {
-			logger.debug(message.get());
-		}
+	default void logRestart(Log logger, LogMessage message) {
+		logger.debug(message);
 	}
 
 }
