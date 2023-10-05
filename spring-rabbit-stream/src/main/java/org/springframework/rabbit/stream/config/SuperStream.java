@@ -18,6 +18,7 @@ package org.springframework.rabbit.stream.config;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -37,7 +38,6 @@ import org.springframework.util.Assert;
  *
  * @author Gary Russell
  * @since 3.0
- *
  */
 public class SuperStream extends Declarables {
 
@@ -47,9 +47,21 @@ public class SuperStream extends Declarables {
 	 * @param partitions the number of partitions.
 	 */
 	public SuperStream(String name, int partitions) {
+		this(name, partitions, Map.of());
+	}
+
+	/**
+	 * Create a Super Stream with the provided parameters.
+	 * @param name the stream name.
+	 * @param partitions the number of partitions.
+	 * @param arguments the stream arguments
+	 */
+	public SuperStream(String name, int partitions, Map<String, Object> arguments) {
 		this(name, partitions, (q, i) -> IntStream.range(0, i)
 				.mapToObj(String::valueOf)
-				.collect(Collectors.toList()));
+				.collect(Collectors.toList()),
+				arguments
+		);
 	}
 
 	/**
@@ -61,19 +73,36 @@ public class SuperStream extends Declarables {
 	 * partitions, the returned list must have a size equal to the partitions.
 	 */
 	public SuperStream(String name, int partitions, BiFunction<String, Integer, List<String>> routingKeyStrategy) {
-		super(declarables(name, partitions, routingKeyStrategy));
+		this(name, partitions, routingKeyStrategy, Map.of());
+	}
+
+	/**
+	 * Create a Super Stream with the provided parameters.
+	 * @param name the stream name.
+	 * @param partitions the number of partitions.
+	 * @param routingKeyStrategy a strategy to determine routing keys to use for the
+	 * partitions. The first parameter is the queue name, the second the number of
+	 * partitions, the returned list must have a size equal to the partitions.
+	 * @param arguments the stream arguments
+	 */
+	public SuperStream(String name, int partitions, BiFunction<String, Integer, List<String>> routingKeyStrategy, Map<String, Object> arguments) {
+		super(declarables(name, partitions, routingKeyStrategy, arguments));
 	}
 
 	private static Collection<Declarable> declarables(String name, int partitions,
-			BiFunction<String, Integer, List<String>> routingKeyStrategy) {
+													  BiFunction<String, Integer, List<String>> routingKeyStrategy,
+													  Map<String, Object> arguments) {
 
 		List<Declarable> declarables = new ArrayList<>();
 		List<String> rks = routingKeyStrategy.apply(name, partitions);
 		Assert.state(rks.size() == partitions, () -> "Expected " + partitions + " routing keys, not " + rks.size());
 		declarables.add(new DirectExchange(name, true, false, Map.of("x-super-stream", true)));
+
+		Map<String, Object> argumentsCopy = new HashMap<>(arguments);
+		argumentsCopy.put("x-queue-type", "stream");
 		for (int i = 0; i < partitions; i++) {
 			String rk = rks.get(i);
-			Queue q = new Queue(name + "-" + i, true, false, false, Map.of("x-queue-type", "stream"));
+			Queue q = new Queue(name + "-" + i, true, false, false, argumentsCopy);
 			declarables.add(q);
 			declarables.add(new Binding(q.getName(), DestinationType.QUEUE, name, rk,
 					Map.of("x-stream-partition-order", i)));
