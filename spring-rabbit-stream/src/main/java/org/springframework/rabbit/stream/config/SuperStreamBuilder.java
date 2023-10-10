@@ -16,19 +16,19 @@
 
 package org.springframework.rabbit.stream.config;
 
-import org.springframework.util.StringUtils;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+
+import org.springframework.util.StringUtils;
 
 /**
  * Builds a Spring AMQP Super Stream using a fluent API.
  * Based on <a href="https://www.rabbitmq.com/streams.html">Streams documentation</a>
  *
  * @author Sergei Kurenchuk
- * @since 3.1.0
+ * @since 3.1
  */
 public class SuperStreamBuilder {
 	private final Map<String, Object> arguments = new HashMap<>();
@@ -38,7 +38,7 @@ public class SuperStreamBuilder {
 	private BiFunction<String, Integer, List<String>> routingKeyStrategy;
 
 	/**
-	 * Creates a builder for Super Stream
+	 * Creates a builder for Super Stream.
 	 *
 	 * @param name stream name
 	 * @return the builder
@@ -50,7 +50,7 @@ public class SuperStreamBuilder {
 	}
 
 	/**
-	 * Creates a builder for Super Stream
+	 * Creates a builder for Super Stream.
 	 *
 	 * @param name       stream name
 	 * @param partitions partitions number
@@ -103,12 +103,12 @@ public class SuperStreamBuilder {
 		if ("x-queue-type".equals(key) && !"stream".equals(value)) {
 			throw new IllegalArgumentException("Changing x-queue-type argument is not permitted");
 		}
-		arguments.put(key, value);
+		this.arguments.put(key, value);
 		return this;
 	}
 
 	/**
-	 * Set the stream name
+	 * Set the stream name.
 	 *
 	 * @param name the stream name.
 	 * @return the builder
@@ -119,7 +119,7 @@ public class SuperStreamBuilder {
 	}
 
 	/**
-	 * Set the partitions number
+	 * Set the partitions number.
 	 *
 	 * @param partitions the partitions number
 	 * @return the builder
@@ -148,20 +148,20 @@ public class SuperStreamBuilder {
 	 * @return the Super Stream instance
 	 */
 	public SuperStream build() {
-		if (!StringUtils.hasText(name)) {
+		if (!StringUtils.hasText(this.name)) {
 			throw new IllegalArgumentException("Stream name can't be empty");
 		}
 
-		if (partitions <= 0) {
+		if (this.partitions <= 0) {
 			throw new IllegalArgumentException(
-					String.format("Partitions number should be great then zero. Current value; %d", partitions)
+					String.format("Partitions number should be great then zero. Current value; %d", this.partitions)
 			);
 		}
 
-		if (routingKeyStrategy == null) {
-			return new SuperStream(name, partitions, arguments);
+		if (this.routingKeyStrategy == null) {
+			return new SuperStream(this.name, this.partitions, this.arguments);
 		}
 
-		return new SuperStream(this.name, this.partitions, routingKeyStrategy, arguments);
+		return new SuperStream(this.name, this.partitions, this.routingKeyStrategy, this.arguments);
 	}
 }

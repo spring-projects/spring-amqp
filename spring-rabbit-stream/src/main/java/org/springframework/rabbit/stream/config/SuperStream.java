@@ -55,6 +55,7 @@ public class SuperStream extends Declarables {
 	 * @param name the stream name.
 	 * @param partitions the number of partitions.
 	 * @param arguments the stream arguments
+	 * @since 3.1
 	 */
 	public SuperStream(String name, int partitions, Map<String, Object> arguments) {
 		this(name, partitions, (q, i) -> IntStream.range(0, i)
@@ -84,6 +85,7 @@ public class SuperStream extends Declarables {
 	 * partitions. The first parameter is the queue name, the second the number of
 	 * partitions, the returned list must have a size equal to the partitions.
 	 * @param arguments the stream arguments
+	 * @since 3.1
 	 */
 	public SuperStream(String name, int partitions, BiFunction<String, Integer, List<String>> routingKeyStrategy, Map<String, Object> arguments) {
 		super(declarables(name, partitions, routingKeyStrategy, arguments));
