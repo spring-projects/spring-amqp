@@ -31,7 +31,7 @@ import org.springframework.amqp.core.Queue;
  * @author Sergei Kurenchuk
  * @since 3.1
  */
-public class SuperStreamConfigurationTest {
+public class SuperStreamConfigurationTests {
 
 	@Test
 	void argumentsShouldBeAppliedToAllPartitions() {
@@ -87,6 +87,7 @@ public class SuperStreamConfigurationTest {
 		var maxAge = "1D";
 		var maxLength = 10_000_000;
 		var maxSegmentsSize = 100_000;
+		var initialClusterSize = 5;
 
 		var testArgName = "test-key";
 		var testArgValue = "test-value";
@@ -96,6 +97,7 @@ public class SuperStreamConfigurationTest {
 				.maxAge(maxAge)
 				.maxLength(maxLength)
 				.maxSegmentSize(maxSegmentsSize)
+				.initialClusterSize(initialClusterSize)
 				.name(finalName)
 				.withArgument(testArgName, testArgValue)
 				.build();
@@ -108,6 +110,7 @@ public class SuperStreamConfigurationTest {
 					Assertions.assertTrue(it.getName().startsWith(finalName));
 					Assertions.assertEquals(maxAge, it.getArguments().get("x-max-age"));
 					Assertions.assertEquals(maxLength, it.getArguments().get("max-length-bytes"));
+					Assertions.assertEquals(initialClusterSize, it.getArguments().get("x-initial-cluster-size"));
 					Assertions.assertEquals(maxSegmentsSize, it.getArguments().get("x-stream-max-segment-size-bytes"));
 					Assertions.assertEquals(testArgValue, it.getArguments().get(testArgName));
 				}

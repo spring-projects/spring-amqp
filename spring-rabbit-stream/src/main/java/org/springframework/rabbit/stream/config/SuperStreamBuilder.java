@@ -39,7 +39,6 @@ public class SuperStreamBuilder {
 
 	/**
 	 * Creates a builder for Super Stream.
-	 *
 	 * @param name stream name
 	 * @return the builder
 	 */
@@ -51,8 +50,7 @@ public class SuperStreamBuilder {
 
 	/**
 	 * Creates a builder for Super Stream.
-	 *
-	 * @param name       stream name
+	 * @param name stream name
 	 * @param partitions partitions number
 	 * @return the builder
 	 */
@@ -62,9 +60,7 @@ public class SuperStreamBuilder {
 
 	/**
 	 * Set the maximum age retention per stream, which will remove the oldest data.
-	 *
-	 * @param maxAge valid units: Y, M, D, h, m, s
-	 *               e.g. 7D for a week
+	 * @param maxAge valid units: Y, M, D, h, m, s. For example: "7D" for a week
 	 * @return the builder
 	 */
 	public SuperStreamBuilder maxAge(String maxAge) {
@@ -74,7 +70,6 @@ public class SuperStreamBuilder {
 	/**
 	 * Set the maximum log size as the retention configuration for each stream,
 	 * which will truncate the log based on the data size.
-	 *
 	 * @param bytes the max total size in bytes
 	 * @return the builder
 	 */
@@ -84,7 +79,6 @@ public class SuperStreamBuilder {
 
 	/**
 	 * Set the maximum size limit for segment file.
-	 *
 	 * @param bytes the max segments size in bytes
 	 * @return the builder
 	 */
@@ -93,9 +87,17 @@ public class SuperStreamBuilder {
 	}
 
 	/**
+	 * Set initial replication factor for each partition.
+	 * @param count number of nodes per partition
+	 * @return the builder
+	 */
+	public SuperStreamBuilder initialClusterSize(int count) {
+		return withArgument("x-initial-cluster-size", count);
+	}
+
+	/**
 	 * Set extra argument which is not covered by builder's methods.
-	 *
-	 * @param key   argument name
+	 * @param key argument name
 	 * @param value argument value
 	 * @return the builder
 	 */
@@ -109,7 +111,6 @@ public class SuperStreamBuilder {
 
 	/**
 	 * Set the stream name.
-	 *
 	 * @param name the stream name.
 	 * @return the builder
 	 */
@@ -120,7 +121,6 @@ public class SuperStreamBuilder {
 
 	/**
 	 * Set the partitions number.
-	 *
 	 * @param partitions the partitions number
 	 * @return the builder
 	 */
@@ -133,7 +133,6 @@ public class SuperStreamBuilder {
 	 * Set a strategy to determine routing keys to use for the
 	 * partitions. The first parameter is the queue name, the second the number of
 	 * partitions, the returned list must have a size equal to the partitions.
-	 *
 	 * @param routingKeyStrategy the strategy
 	 * @return the builder
 	 */
@@ -144,7 +143,6 @@ public class SuperStreamBuilder {
 
 	/**
 	 * Builds a final Super Stream.
-	 *
 	 * @return the Super Stream instance
 	 */
 	public SuperStream build() {
