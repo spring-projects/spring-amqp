@@ -61,7 +61,7 @@ ext {
 	rabbitmqStreamVersion = '0.4.0'
 	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.14.3'
 	rabbitmqHttpClientVersion = '3.12.1'
-	reactorVersion = '2020.0.36'
+	reactorVersion = '2020.0.37'
 	snappyVersion = '1.1.8.4'
 	springDataCommonsVersion = '2.6.10'
 	springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.3.30'
