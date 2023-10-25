@@ -295,7 +295,6 @@ Invoke the `superStream` method on the listener container to enable a single act
 [source, java]
 ----
 @Bean
-@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 StreamListenerContainer container(Environment env, String name) {
     StreamListenerContainer container = new StreamListenerContainer(env);
     container.superStream("ss.sac", "myConsumer", 3); // concurrency = 3
