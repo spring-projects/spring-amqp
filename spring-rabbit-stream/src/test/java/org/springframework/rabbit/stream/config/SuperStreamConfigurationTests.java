@@ -85,8 +85,8 @@ public class SuperStreamConfigurationTests {
 		var finalPartitionsNumber = 4;
 		var finalName = "test-name";
 		var maxAge = "1D";
-		var maxLength = 10_000_000;
-		var maxSegmentsSize = 100_000;
+		var maxLength = 10_000_000L;
+		var maxSegmentsSize = 100_000L;
 		var initialClusterSize = 5;
 
 		var testArgName = "test-key";

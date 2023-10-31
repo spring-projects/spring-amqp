@@ -28,6 +28,7 @@ import org.springframework.util.StringUtils;
  * Based on <a href="https://www.rabbitmq.com/streams.html">Streams documentation</a>
  *
  * @author Sergei Kurenchuk
+ * @author Gary Russell
  * @since 3.1
  */
 public class SuperStreamBuilder {
@@ -73,7 +74,7 @@ public class SuperStreamBuilder {
 	 * @param bytes the max total size in bytes
 	 * @return the builder
 	 */
-	public SuperStreamBuilder maxLength(int bytes) {
+	public SuperStreamBuilder maxLength(long bytes) {
 		return withArgument("max-length-bytes", bytes);
 	}
 
@@ -82,7 +83,7 @@ public class SuperStreamBuilder {
 	 * @param bytes the max segments size in bytes
 	 * @return the builder
 	 */
-	public SuperStreamBuilder maxSegmentSize(int bytes) {
+	public SuperStreamBuilder maxSegmentSize(long bytes) {
 		return withArgument("x-stream-max-segment-size-bytes", bytes);
 	}
 

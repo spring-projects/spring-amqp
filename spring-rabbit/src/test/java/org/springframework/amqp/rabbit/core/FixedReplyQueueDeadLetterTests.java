@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2022 the original author or authors.
+ * Copyright 2014-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -265,7 +265,7 @@ public class FixedReplyQueueDeadLetterTests extends NeedsManagementTests {
 			return QueueBuilder.nonDurable("all.args.1")
 					.ttl(1000)
 					.expires(200_000)
-					.maxLength(42)
+					.maxLength(42L)
 					.maxLengthBytes(10_000)
 					.overflow(Overflow.rejectPublish)
 					.deadLetterExchange("reply.dlx")
@@ -282,7 +282,7 @@ public class FixedReplyQueueDeadLetterTests extends NeedsManagementTests {
 			return QueueBuilder.nonDurable("all.args.2")
 					.ttl(1000)
 					.expires(200_000)
-					.maxLength(42)
+					.maxLength(42L)
 					.maxLengthBytes(10_000)
 					.overflow(Overflow.dropHead)
 					.deadLetterExchange("reply.dlx")
@@ -298,7 +298,7 @@ public class FixedReplyQueueDeadLetterTests extends NeedsManagementTests {
 			return QueueBuilder.nonDurable("all.args.3")
 					.ttl(1000)
 					.expires(200_000)
-					.maxLength(42)
+					.maxLength(42L)
 					.maxLengthBytes(10_000)
 					.overflow(Overflow.rejectPublish)
 					.deadLetterExchange("reply.dlx")
