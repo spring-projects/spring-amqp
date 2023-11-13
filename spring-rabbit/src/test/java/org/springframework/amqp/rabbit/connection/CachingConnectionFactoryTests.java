@@ -1966,5 +1966,32 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertThat(connShutDown.get()).isTrue();
 		assertThat(chanShutDown.get()).isFalse();
 	}
+	@Test
+	public void testRetryParam(){
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setChannelCreateTimeOut(5);
+		ccf.setChannelCreateRetryTimes(3);
+		Connection bareConnection = ccf.createBareConnection();
+		assertThat(bareConnection.getClass()).isEqualTo(RetryableConnection.class);
+	}
+
+
+	@Test
+	public void testWaitForCreateChannel() throws Exception {
+		int createTimeOut = 3;
+		int createTryTimes = 2;
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		given(mockConnection.createChannel()).willReturn(null);
+		RetryableConnection retryableConnection = new RetryableConnection(mockConnection, 5, createTimeOut,
+				createTryTimes);
+		long time1 = System.currentTimeMillis();
+		try {
+			retryableConnection.createChannel(false);
+		} catch (Exception e) {
+		}
+		long time2 = System.currentTimeMillis();
+		assertThat((time2 - time1) / 1000).isGreaterThanOrEqualTo(createTimeOut * createTryTimes);
+	}
 
 }

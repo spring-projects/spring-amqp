@@ -102,6 +102,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	public static final int DEFAULT_CLOSE_TIMEOUT = 30000;
 
+
 	private static final String BAD_URI = "setUri() was passed an invalid URI; it is ignored";
 
 	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR
@@ -158,6 +159,10 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	private AddressResolver addressResolver;
 
 	private volatile boolean contextStopped;
+
+	private int channelCreateTimeOut;
+
+	private int channelCreateRetryTimes;
 
 	/**
 	 * Create a new AbstractConnectionFactory for the given target ConnectionFactory,
@@ -254,6 +259,14 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	public void setHost(String host) {
 		this.rabbitConnectionFactory.setHost(host);
+	}
+
+	public void setChannelCreateTimeOut(int channelCreateTimeOut) {
+		this.channelCreateTimeOut = channelCreateTimeOut;
+	}
+
+	public void setChannelCreateRetryTimes(int channelCreateRetryTimes) {
+		this.channelCreateRetryTimes = channelCreateRetryTimes;
 	}
 
 	/**
@@ -555,8 +568,14 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 			String connectionName = this.connectionNameStrategy.obtainNewConnectionName(this);
 
 			com.rabbitmq.client.Connection rabbitConnection = connect(connectionName);
-
-			Connection connection = new SimpleConnection(rabbitConnection, this.closeTimeout);
+			Connection connection;
+			if (this.channelCreateRetryTimes > 0 && this.channelCreateTimeOut > 0) {
+				connection = new RetryableConnection(rabbitConnection, this.closeTimeout, this.channelCreateTimeOut,
+						this.channelCreateRetryTimes);
+			}
+			else {
+				connection = new SimpleConnection(rabbitConnection, this.closeTimeout);
+			}
 			if (rabbitConnection instanceof AutorecoveringConnection auto) {
 				auto.addRecoveryListener(new RecoveryListener() {
 
