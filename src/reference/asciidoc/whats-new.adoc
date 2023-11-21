@@ -15,3 +15,8 @@ It remains possible to configure your own logging behavior by setting the `exclu
 In addition, the `SimpleMessageListenerContainer` consumer restart after such an exception is now logged at DEBUG level by default (previously INFO).
 A new method `logRestart()` has been added to the `ConditionalExceptionLogger` to allow this to be changed.
 See <<consumer-events>> and <<channel-close-logging>> for more information.
+
+==== `@AbstractConnectionFactory` Changes
+A new property `retryTemplate` allows to create `RetryableConnection` to support for retry mechanism at the connection level for creating channels to avoid the exception in connection module
+
+

@@ -70,6 +70,7 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.InOrder;
 
 import org.springframework.amqp.AmqpConnectException;
+import org.springframework.amqp.AmqpResourceNotAvailableException;
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.AddressShuffleMode;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
@@ -78,6 +79,8 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.retry.support.RetryTemplate;
+import org.springframework.retry.support.RetryTemplateBuilder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.rabbitmq.client.Address;
@@ -1970,8 +1973,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	public void testRetryParam(){
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
-		ccf.setChannelCreateTimeOut(5);
-		ccf.setChannelCreateRetryTimes(3);
+		ccf.setRetryTemplate(new RetryTemplateBuilder().build());
 		Connection bareConnection = ccf.createBareConnection();
 		assertThat(bareConnection.getClass()).isEqualTo(RetryableConnection.class);
 	}
@@ -1979,19 +1981,21 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 	@Test
 	public void testWaitForCreateChannel() throws Exception {
-		int createTimeOut = 3;
-		int createTryTimes = 2;
+		int maxAttempts = 3;
+		long backOffTime = 3000L;
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		given(mockConnection.createChannel()).willReturn(null);
-		RetryableConnection retryableConnection = new RetryableConnection(mockConnection, 5, createTimeOut,
-				createTryTimes);
+		RetryTemplate retryTemplate = new RetryTemplateBuilder().fixedBackoff(backOffTime).maxAttempts(maxAttempts)
+				.retryOn(AmqpResourceNotAvailableException.class).build();
+		RetryableConnection retryableConnection = new RetryableConnection(mockConnection, 5, retryTemplate);
 		long time1 = System.currentTimeMillis();
 		try {
 			retryableConnection.createChannel(false);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 		}
 		long time2 = System.currentTimeMillis();
-		assertThat((time2 - time1) / 1000).isGreaterThanOrEqualTo(createTimeOut * createTryTimes);
+		assertThat((time2 - time1)).isGreaterThanOrEqualTo((maxAttempts-1) * backOffTime);
 	}
 
 }

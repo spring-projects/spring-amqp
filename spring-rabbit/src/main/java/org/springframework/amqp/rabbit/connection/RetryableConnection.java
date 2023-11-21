@@ -16,66 +16,48 @@
 
 package org.springframework.amqp.rabbit.connection;
 
-import java.io.IOException;
-
 import org.springframework.amqp.AmqpResourceNotAvailableException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
-import org.springframework.util.Assert;
+import org.springframework.retry.RetryCallback;
+import org.springframework.retry.support.RetryTemplate;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
+import org.springframework.util.Assert;
 
 /**
  *
  * extend from {@link SimpleConnection} provide retry ability
  * @author salkli
- * @date 2023/11/13
+ * @since 3.1
  */
 public class RetryableConnection extends SimpleConnection {
 
-	private final com.rabbitmq.client.Connection delegate;
+	private RetryTemplate retryTemplate;
 
-	private int createTimeOut;
-
-	private int createTryTimes;
-
-	public RetryableConnection(Connection delegate, int closeTimeout, int createTimeOut, int createTryTimes) {
+	public RetryableConnection(Connection delegate, int closeTimeout, RetryTemplate retryTemplate) {
 		super(delegate, closeTimeout);
-		Assert.isTrue(createTimeOut >= 1, "channel create wait timeout must be 1 or higher");
-		Assert.isTrue(createTryTimes >= 1, "channel create retry times must be 1 or higher");
-		this.delegate = delegate;
-		this.createTimeOut = createTimeOut;
-		this.createTryTimes = createTryTimes;
+		Assert.notNull(retryTemplate,"retryTemplate can not be null.");
+		this.retryTemplate = retryTemplate;
 	}
 
 	@Override
 	public Channel createChannel(boolean transactional) {
 		try {
-			Channel channel = null;
-			for (int i = 0; i < this.createTryTimes; i++) {
-				channel = this.delegate.createChannel();
-				if (this.createTimeOut > 0) {
-					try {
-						Thread.sleep(createTimeOut * 1000);
-					}
-					catch (InterruptedException e) {
-						throw new RuntimeException(e);
-					}
+			Channel channel = retryTemplate.execute((RetryCallback<Channel, Exception>) context -> {
+				Channel channel0 = super.getDelegate().createChannel();
+				if (channel0 == null) {
+					throw new AmqpResourceNotAvailableException("The channelMax limit is reached. Try later.");
 				}
-				if (channel != null) {
-					break;
-				}
-			}
-			if (channel == null) {
-				throw new AmqpResourceNotAvailableException("The channelMax limit is reached. Try later.");
-			}
+				return channel0;
+			});
 			if (transactional) {
-				// Just created so we want to start the transaction
 				channel.txSelect();
 			}
 			return channel;
+
 		}
-		catch (IOException e) {
+		catch (Exception e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 		}
 	}

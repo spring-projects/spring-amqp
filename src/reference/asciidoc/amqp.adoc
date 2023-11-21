@@ -491,6 +491,15 @@ The property must exist in the application context's `Environment`.
 NOTE: When using Spring Boot and its autoconfigured connection factory, you need only declare the `ConnectionNameStrategy` `@Bean`.
 Boot auto-detects the bean and wires it into the factory.
 
+===== RetryTemplate
+Starting with version 3.1, you can now use  `RetryTemplate` to create `RetryableConnection` to support for retry mechanism at the connection level for creating channels to avoid the exception in connection module
+====
+[source, java]
+----
+connectionFactory.setRetryTemplate(new RetryTemplateBuilder().build());
+----
+====
+
 ===== Blocked Connections and Resource Constraints
 
 The connection might be blocked for interaction from the broker that corresponds to the https://www.rabbitmq.com/memory.html[Memory Alarm].

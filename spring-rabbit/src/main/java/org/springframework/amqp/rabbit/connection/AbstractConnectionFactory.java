@@ -47,6 +47,7 @@ import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.lang.Nullable;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
@@ -160,9 +161,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	private volatile boolean contextStopped;
 
-	private int channelCreateTimeOut;
-
-	private int channelCreateRetryTimes;
+	private RetryTemplate retryTemplate;
 
 	/**
 	 * Create a new AbstractConnectionFactory for the given target ConnectionFactory,
@@ -260,15 +259,6 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	public void setHost(String host) {
 		this.rabbitConnectionFactory.setHost(host);
 	}
-
-	public void setChannelCreateTimeOut(int channelCreateTimeOut) {
-		this.channelCreateTimeOut = channelCreateTimeOut;
-	}
-
-	public void setChannelCreateRetryTimes(int channelCreateRetryTimes) {
-		this.channelCreateRetryTimes = channelCreateRetryTimes;
-	}
-
 	/**
 	 * Set the {@link ThreadFactory} on the underlying rabbit connection factory.
 	 * @param threadFactory the thread factory.
@@ -324,6 +314,10 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	public void setVirtualHost(String virtualHost) {
 		this.rabbitConnectionFactory.setVirtualHost(virtualHost);
+	}
+
+	public void setRetryTemplate(RetryTemplate retryTemplate) {
+		this.retryTemplate = retryTemplate;
 	}
 
 	@Override
@@ -569,9 +563,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 			com.rabbitmq.client.Connection rabbitConnection = connect(connectionName);
 			Connection connection;
-			if (this.channelCreateRetryTimes > 0 && this.channelCreateTimeOut > 0) {
-				connection = new RetryableConnection(rabbitConnection, this.closeTimeout, this.channelCreateTimeOut,
-						this.channelCreateRetryTimes);
+			if (this.retryTemplate != null) {
+				connection = new RetryableConnection(rabbitConnection, this.closeTimeout, retryTemplate);
 			}
 			else {
 				connection = new SimpleConnection(rabbitConnection, this.closeTimeout);
