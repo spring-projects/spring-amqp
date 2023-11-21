@@ -7,7 +7,7 @@
 
 This version requires Spring Framework 6.1 and Java 17.
 
-[[31-exc]]
+[[x31-exc]]
 ==== Exclusive Consumer Logging
 
 Log messages reporting access refusal due to exclusive consumers are now logged at DEBUG level by default.
