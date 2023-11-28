@@ -103,7 +103,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 
 	public static final String TEST_QUEUE_1 = "test.queue.1.SimpleMessageListenerContainerIntegration2Tests";
 
-	private static Log logger = LogFactory.getLog(SimpleMessageListenerContainerIntegration2Tests.class);
+	private static final Log logger = LogFactory.getLog(SimpleMessageListenerContainerIntegration2Tests.class);
 
 	private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
@@ -415,7 +415,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		ArgumentCaptor<String> contLogCaptor = ArgumentCaptor.forClass(String.class);
 		verify(containerLogger, atLeastOnce()).debug(contLogCaptor.capture());
 		assertThat(contLogCaptor.getAllValues()).anyMatch(arg -> arg.contains("exclusive"));
-		ArgumentCaptor lmCaptor = ArgumentCaptor.forClass(LogMessage.class);
+		ArgumentCaptor<LogMessage> lmCaptor = ArgumentCaptor.forClass(LogMessage.class);
 		verify(containerLogger).debug(lmCaptor.capture());
 		assertThat(lmCaptor.getAllValues()).anyMatch(arg -> arg.toString().startsWith("Restarting "));
 	}
