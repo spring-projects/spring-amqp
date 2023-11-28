@@ -28,30 +28,40 @@ publishing {
 				}
 				developers {
 					developer {
-						id = 'garyrussell'
-						name = 'Gary Russell'
-						email = 'grussell@vmware.com'
+						id = 'artembilan'
+						name = 'Artem Bilan'
+						email = 'artem.bilan@broadcom.com'
 						roles = ['project lead']
 					}
 					developer {
-						id = 'artembilan'
-						name = 'Artem Bilan'
-						email = 'abilan@vmware.com'
+						id = 'garyrussell'
+						name = 'Gary Russell'
+						email = 'github@gprussell.net'
+						roles = ['project lead emeritus']
 					}
 					developer {
-						id = 'davesyer'
+						id = 'sobychacko'
+						name = 'Soby Chacko'
+						email = 'soby.chacko@broadcom.com'
+						roles = ['contributor']
+					}
+					developer {
+						id = 'dsyer'
 						name = 'Dave Syer'
-						email = 'dsyer@vmware.com'
+						email = 'david.syer@broadcom.com'
+						roles = ['project founder']
 					}
 					developer {
 						id = 'markfisher'
 						name = 'Mark Fisher'
-						email = 'markfisher@vmware.com'
+						email = 'mark.fisher@broadcom.com'
+						roles = ['project founder']
 					}
 					developer {
 						id = 'markpollack'
 						name = 'Mark Pollack'
-						email = 'mpollack@vmware.com'
+						email = 'mark.pollack@broadcom.com'
+						roles = ['project founder']
 					}
 				}
 				issueManagement {
