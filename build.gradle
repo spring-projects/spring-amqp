@@ -1,10 +1,9 @@
 buildscript {
 	ext.kotlinVersion = '1.7.0'
-	ext.isCI = System.getenv('GITHUB_ACTION') || System.getenv('bamboo_buildKey')
+	ext.isCI = System.getenv('GITHUB_ACTION')
 	repositories {
 		mavenCentral()
 		gradlePluginPortal()
-		maven { url 'https://repo.spring.io/plugins-release-local' }
 		if (version.endsWith('SNAPSHOT')) {
 			maven { url 'https://repo.spring.io/snapshot' }
 		}
@@ -19,11 +18,9 @@ plugins {
 	id 'base'
 	id 'project-report'
 	id 'idea'
-	id 'org.sonarqube' version '4.3.0.3225'
-	id 'org.ajoberstar.grgit' version '4.0.1'
+	id 'org.ajoberstar.grgit' version '4.1.1'
 	id 'io.spring.nohttp' version '0.0.11'
-	id 'io.spring.dependency-management' version '1.0.9.RELEASE' apply false
-	id 'com.jfrog.artifactory' version '4.33.1' apply false
+	id 'io.spring.dependency-management' version '1.1.4' apply false
 	id 'org.asciidoctor.jvm.pdf' version '3.3.2'
 	id 'org.asciidoctor.jvm.convert' version '3.3.2'
 }
@@ -42,35 +39,35 @@ ext {
 	modifiedFiles =
 			files(grgit.status().unstaged.modified).filter{ f -> f.name.endsWith('.java') || f.name.endsWith('.kt') }
 
-	assertjVersion = '3.23.1'
-	assertkVersion = '0.24'
+	assertjVersion = '3.24.2'
+	assertkVersion = '0.27.0'
 	awaitilityVersion = '4.2.0'
 	commonsCompressVersion = '1.20'
-	commonsHttpClientVersion = '5.1.3'
-	commonsPoolVersion = '2.11.1'
+	commonsHttpClientVersion = '5.2.1'
+	commonsPoolVersion = '2.12.0'
 	googleJsr305Version = '3.0.2'
 	hamcrestVersion = '2.2'
-	hibernateValidationVersion = '8.0.0.Final'
-	jacksonBomVersion = '2.14.3'
-	jaywayJsonPathVersion = '2.7.0'
+	hibernateValidationVersion = '8.0.1.Final'
+	jacksonBomVersion = '2.15.3'
+	jaywayJsonPathVersion = '2.8.0'
 	junit4Version = '4.13.2'
-	junitJupiterVersion = '5.9.2'
-	kotlinCoroutinesVersion = '1.6.4'
-	log4jVersion = '2.19.0'
-	logbackVersion = '1.4.4'
+	junitJupiterVersion = '5.10.0'
+	kotlinCoroutinesVersion = '1.7.3'
+	log4jVersion = '2.21.1'
+	logbackVersion = '1.4.11'
 	lz4Version = '1.8.0'
 	micrometerDocsVersion = '1.0.2'
-	micrometerVersion = '1.10.12'
-	micrometerTracingVersion = '1.0.11'
-	mockitoVersion = '4.8.1'
-	rabbitmqStreamVersion = '0.8.0'
-	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.16.1'
-	reactorVersion = '2022.0.12'
+	micrometerVersion = '1.12.0'
+	micrometerTracingVersion = '1.2.0'
+	mockitoVersion = '5.6.0'
+	rabbitmqStreamVersion = '0.14.0'
+	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.19.0'
+	reactorVersion = '2023.0.0'
 	snappyVersion = '1.1.8.4'
-	springDataVersion = '2022.0.11'
+	springDataVersion = '2023.1.0'
 	springRetryVersion = '2.0.4'
-	springVersion = project.hasProperty('springVersion') ? project.springVersion : '6.0.13'
-	testcontainersVersion = '1.17.6'
+	springVersion = project.hasProperty('springVersion') ? project.springVersion : '6.1.0'
+	testcontainersVersion = '1.19.1'
 	zstdJniVersion = '1.5.0-2'
 
 	javaProjects = subprojects - project(':spring-amqp-bom')
@@ -135,7 +132,6 @@ configure(javaProjects) { subproject ->
 	apply plugin: 'eclipse'
 	apply plugin: 'idea'
 	apply plugin: 'project-report'
-	apply plugin: 'jacoco'
 	apply plugin: 'checkstyle'
 	apply plugin: 'kotlin'
 	apply plugin: 'kotlin-spring'
@@ -166,10 +162,6 @@ configure(javaProjects) { subproject ->
 		project {
 			natures += 'org.springframework.ide.eclipse.core.springnature'
 		}
-	}
-
-	jacoco {
-		toolVersion = '0.8.10'
 	}
 
 	// dependencies that are common across all java projects
@@ -279,24 +271,7 @@ configure(javaProjects) { subproject ->
 			showStackTraces = true
 			exceptionFormat = 'full'
 		}
-
-		jacoco {
-			destinationFile = file("$buildDir/jacoco.exec")
-		}
-
 	}
-
-	jacocoTestReport {
-		onlyIf { System.properties['sonar.host.url'] }
-		dependsOn test
-		reports {
-			xml.required = true
-			csv.required = false
-			html.required = false
-		}
-	}
-
-	rootProject.tasks['sonarqube'].dependsOn jacocoTestReport
 
 	task testAll(type: Test, dependsOn: check)
 
@@ -402,10 +377,6 @@ project('spring-amqp-bom') {
 			}
 		}
 	}
-
-	sonarqube {
-		skipProject = true
-	}
 }
 
 project('spring-rabbit') {
@@ -449,6 +420,7 @@ project('spring-rabbit') {
 		testImplementation 'io.micrometer:micrometer-tracing-integration-test'
 		testImplementation "org.testcontainers:rabbitmq"
 		testImplementation 'org.testcontainers:junit-jupiter'
+		testImplementation "org.apache.httpcomponents.client5:httpclient5:$commonsHttpClientVersion"
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core'
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind'
 		testRuntimeOnly 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
@@ -641,16 +613,6 @@ asciidoctor {
 task reference(dependsOn: asciidoctor) {
 	group = 'Documentation'
 	description = 'Generate the reference documentation'
-}
-
-sonarqube {
-	properties {
-		property 'sonar.links.homepage', linkHomepage
-		property 'sonar.links.ci', linkCi
-		property 'sonar.links.issue', linkIssue
-		property 'sonar.links.scm', linkScmUrl
-		property 'sonar.links.scm_dev', linkScmDevConnection
-	}
 }
 
 task api(type: Javadoc) {
