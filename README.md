@@ -1,4 +1,4 @@
-Spring AMQP ![Build Status](https://github.com/spring-projects/spring-amqp/actions/workflows/ci-snapshot.yml/badge.svg)
+Spring AMQP [![Build Status](https://github.com/spring-projects/spring-amqp/actions/workflows/ci-snapshot.yml/badge.svg)](https://github.com/spring-projects/spring-amqp/actions/workflows/ci-snapshot.yml)
 [![Revved up by Gradle Enterprise](https://img.shields.io/badge/Revved%20up%20by-Gradle%20Enterprise-06A0CE?logo=Gradle&labelColor=02303A)](https://ge.spring.io/scans?search.rootProjectNames=spring-amqp)
 ===========
 
