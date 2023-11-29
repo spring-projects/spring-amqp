@@ -27,13 +27,11 @@ jobs:
           cache: 'maven'
 
       - uses: jfrog/setup-jfrog-cli@v3
+        env:
+          JF_ENV_SPRING: ${{ secrets.JF_ARTIFACTORY_SPRING }}
+
       - name: Configure JFrog Cli
-        run: |
-          jf mvnc \
-            --repo-resolve-releases=libs-staging-local \
-            --repo-resolve-snapshots=snapshot \
-            --repo-deploy-releases=libs-milestone-local \
-            --repo-deploy-snapshots=libs-snapshot-local
+        run: jf mvnc --repo-resolve-releases=libs-staging-local
 
       - name: Verify samples against staged release
         run: jf mvn verify -D"spring.amqp.version"=${{ inputs.releaseVersion }}
