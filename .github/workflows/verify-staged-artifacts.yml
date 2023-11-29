@@ -31,10 +31,10 @@ jobs:
           JF_ENV_SPRING: ${{ secrets.JF_ARTIFACTORY_SPRING }}
 
       - name: Configure JFrog Cli
-        run: jf mvnc --repo-resolve-releases=release --repo-resolve-snapshots=libs-staging-local
+        run: jf mvnc --repo-resolve-releases=libs-release --repo-resolve-snapshots=libs-staging-local
 
       - name: Verify samples against staged release
-        run: jf mvn verify -D"spring.amqp.version"=${{ inputs.releaseVersion }}
+        run: jf mvn verify -D"spring.amqp.version"=${{ inputs.releaseVersion }} -B -ntp
 
       - name: Capture Test Results
         if: failure()
