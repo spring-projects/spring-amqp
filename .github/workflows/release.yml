@@ -7,7 +7,10 @@ run-name: Release current version for branch ${{ github.ref_name }}
 
 jobs:
   release:
-    uses: artembilan/spring-github-workflows/.github/workflows/spring-artifactory-release.yml@main
+    permissions:
+      actions: write
+
+    uses: artembilan/spring-github-workflows/.github/workflows/spring-artifactory-gradle-release.yml@main
     secrets:
       GH_ACTIONS_REPO_TOKEN: ${{ secrets.GH_ACTIONS_REPO_TOKEN }}
       GRADLE_ENTERPRISE_CACHE_USER: ${{ secrets.GRADLE_ENTERPRISE_CACHE_USER }}
