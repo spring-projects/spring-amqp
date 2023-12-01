@@ -1,5 +1,6 @@
 [[receiving-messages]]
 = Receiving Messages
+:page-section-summary-toc: 1
 
 Message reception is always a little more complicated than sending.
 There are two ways to receive a `Message`.

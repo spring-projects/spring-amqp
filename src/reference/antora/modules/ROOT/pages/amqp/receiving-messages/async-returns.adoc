@@ -1,5 +1,6 @@
 [[async-returns]]
 = Asynchronous `@RabbitListener` Return Types
+:page-section-summary-toc: 1
 
 `@RabbitListener` (and `@RabbitHandler`) methods can be specified with asynchronous return types `CompletableFuture<?>` and `Mono<?>`, letting the reply be sent asynchronously.
 `ListenableFuture<?>` is no longer supported; it has been deprecated by Spring Framework.

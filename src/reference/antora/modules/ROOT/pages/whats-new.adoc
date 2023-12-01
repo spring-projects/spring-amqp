@@ -1,5 +1,6 @@
 [[whats-new]]
 = What's New
+:page-section-summary-toc: 1
 
 [[changes-in-3-1-since-3-0]]
 == Changes in 3.1 Since 3.0

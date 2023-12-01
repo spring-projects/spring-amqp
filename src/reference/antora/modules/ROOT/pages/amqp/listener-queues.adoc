@@ -1,5 +1,6 @@
 [[listener-queues]]
 = Listener Container Queues
+:page-section-summary-toc: 1
 
 Version 1.3 introduced a number of improvements for handling multiple queues in a listener container.
 

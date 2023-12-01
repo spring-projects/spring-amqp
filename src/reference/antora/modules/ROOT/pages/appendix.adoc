@@ -1,6 +1,7 @@
 [appendix]
 [[observation-gen]]
 = Micrometer Observation Documentation
+:page-section-summary-toc: 1
 
 
 
@@ -8,6 +9,7 @@
 [appendix]
 [[native-images]]
 = Native Images
+:page-section-summary-toc: 1
 
 https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#aot[Spring AOT] native hints are provided to assist in developing native images for Spring applications that use Spring AMQP.
 
@@ -16,6 +18,7 @@ Some examples can be seen in the https://github.com/spring-projects/spring-aot-s
 [appendix]
 [[change-history]]
 = Change History
+:page-section-summary-toc: 1
 
 This section describes changes that have been made as versions have changed.
 

@@ -1,5 +1,6 @@
 [[repeatable-rabbit-listener]]
 = `@Repeatable` `@RabbitListener`
+:page-section-summary-toc: 1
 
 Starting with version 1.6, the `@RabbitListener` annotation is marked with `@Repeatable`.
 This means that the annotation can appear on the same annotated element (method or class) multiple times.

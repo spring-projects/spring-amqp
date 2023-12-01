@@ -1,5 +1,6 @@
 [[de-batching]]
 = Batched Messages
+:page-section-summary-toc: 1
 
 Batched messages (created by a producer) are automatically de-batched by listener containers (using the `springBatchFormat` message header).
 Rejecting any message from a batch causes the entire batch to be rejected.

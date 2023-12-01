@@ -1,5 +1,6 @@
 [[management-rest-api]]
 = RabbitMQ REST API
+:page-section-summary-toc: 1
 
 When the management plugin is enabled, the RabbitMQ server exposes a REST API to monitor and configure the broker.
 A https://github.com/rabbitmq/hop[Java Binding for the API] is now provided.

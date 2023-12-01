@@ -1,5 +1,6 @@
 [[custom-client-props]]
 = Adding Custom Client Connection Properties
+:page-section-summary-toc: 1
 
 The `CachingConnectionFactory` now lets you access the underlying connection factory to allow, for example,
 setting custom client properties.

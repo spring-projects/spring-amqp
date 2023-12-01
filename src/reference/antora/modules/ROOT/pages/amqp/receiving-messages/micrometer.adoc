@@ -1,5 +1,6 @@
 [[micrometer]]
 = Monitoring Listener Performance
+:page-section-summary-toc: 1
 
 Starting with version 2.2, the listener containers will automatically create and update Micrometer `Timer` s for the listener, if `Micrometer` is detected on the class path, and a single `MeterRegistry` is present in the application context (or exactly one is annotated `@Primary`, such as when using Spring Boot).
 The timers can be disabled by setting the container property `micrometerEnabled` to `false`.

@@ -1,3 +1,4 @@
 [[previous-whats-new]]
 = Previous Releases
+:page-section-summary-toc: 1
 

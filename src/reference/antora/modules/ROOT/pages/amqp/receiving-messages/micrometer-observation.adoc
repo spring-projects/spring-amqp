@@ -1,5 +1,6 @@
 [[micrometer-observation]]
 = Micrometer Observation
+:page-section-summary-toc: 1
 
 Using Micrometer for observation is now supported, since version 3.0, for the `RabbitTemplate` and listener containers.
 

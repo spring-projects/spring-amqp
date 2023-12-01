@@ -1,5 +1,6 @@
 [[changes-to-1-1-since-1-0]]
 = Changes to 1.1 Since 1.0
+:page-section-summary-toc: 1
 
 [[general]]
 == General

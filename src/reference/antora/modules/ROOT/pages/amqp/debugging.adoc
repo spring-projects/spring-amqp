@@ -1,5 +1,6 @@
 [[debugging]]
 = Debugging
+:page-section-summary-toc: 1
 
 Spring AMQP provides extensive logging, especially at the `DEBUG` level.
 

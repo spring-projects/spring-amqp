@@ -1,5 +1,6 @@
 [[container-management]]
 = Container Management
+:page-section-summary-toc: 1
 
 Containers created for annotations are not registered with the application context.
 You can obtain a collection of all containers by invoking `getListenerContainers()` on the
