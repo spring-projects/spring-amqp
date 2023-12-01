@@ -1,5 +1,5 @@
 [[logging]]
-=== Logging Subsystem AMQP Appenders
+= Logging Subsystem AMQP Appenders
 
 The framework provides logging appenders for some popular logging subsystems:
 
@@ -9,7 +9,7 @@ The framework provides logging appenders for some popular logging subsystems:
 The appenders are configured by using the normal mechanisms for the logging subsystem, available properties are specified in the following sections.
 
 [[common-properties]]
-==== Common properties
+== Common properties
 
 The following properties are available with all appenders:
 
@@ -167,7 +167,7 @@ Please note, the `JsonLayout` adds MDC into the message by default.
 |===
 
 [[log4j-2-appender]]
-==== Log4j 2 Appender
+== Log4j 2 Appender
 
 The following example shows how to configure a Log4j 2 appender:
 
@@ -201,7 +201,7 @@ If you use asynchronous publishing with the `ReusableLogEventFactory`, events ha
 ====
 
 [[logback-appender]]
-==== Logback Appender
+== Logback Appender
 
 The following example shows how to configure a logback appender:
 
@@ -236,7 +236,7 @@ Starting with version 2.0.0, the Logback `AmqpAppender` supports https://logback
 The `encoder` and `layout` options are mutually exclusive.
 
 [[customizing-the-messages]]
-==== Customizing the Messages
+== Customizing the Messages
 
 By default, AMQP appenders populate the following message properties:
 
@@ -314,12 +314,12 @@ public class MyEnhancedAppender extends AmqpAppender {
 
 
 [[customizing-the-client-properties]]
-==== Customizing the Client Properties
+== Customizing the Client Properties
 
 You can add custom client properties by adding either string properties or more complex properties.
 
 [[simple-string-properties]]
-===== Simple String Properties
+=== Simple String Properties
 
 Each appender supports adding client properties to the RabbitMQ connection.
 
@@ -357,7 +357,7 @@ Keys and values cannot contain commas or colons.
 These properties appear on the RabbitMQ Admin UI when the connection is viewed.
 
 [[advanced-technique-for-logback]]
-===== Advanced Technique for Logback
+=== Advanced Technique for Logback
 
 You can subclass the Logback appender.
 Doing so lets you modify the client connection properties before the connection is established.
@@ -389,7 +389,7 @@ For String properties such as those shown in the preceding example, the previous
 Subclasses allow for adding richer properties (such as adding a `Map` or numeric property).
 
 [[providing-a-custom-queue-implementation]]
-==== Providing a Custom Queue Implementation
+== Providing a Custom Queue Implementation
 
 The `AmqpAppenders` use a `BlockingQueue` to asynchronously publish logging events to RabbitMQ.
 By default, a `LinkedBlockingQueue` is used.

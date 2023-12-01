@@ -1,5 +1,5 @@
 [[stream-support]]
-=== Using the RabbitMQ Stream Plugin
+= Using the RabbitMQ Stream Plugin
 
 Version 2.4 introduces initial support for the https://github.com/rabbitmq/rabbitmq-stream-java-client[RabbitMQ Stream Plugin Java Client] for the https://rabbitmq.com/stream.html[RabbitMQ Stream Plugin].
 
@@ -62,7 +62,7 @@ StreamAdmin streamAdmin(Environment env) {
 Refer to the RabbitMQ documentation for more information about the `StreamCreator`.
 
 [[sending-messages]]
-==== Sending Messages
+== Sending Messages
 
 The `RabbitStreamTemplate` provides a subset of the `RabbitTemplate` (AMQP) functionality.
 
@@ -126,7 +126,7 @@ Refer to the https://rabbitmq.github.io/rabbitmq-stream-java-client/stable/htmls
 IMPORTANT: Starting with version 3.0, the method return types are `CompletableFuture` instead of `ListenableFuture`.
 
 [[receiving-messages]]
-==== Receiving Messages
+== Receiving Messages
 
 Asynchronous message reception is provided by the `StreamListenerContainer` (and the `StreamRabbitListenerContainerFactory` when using `@RabbitListener`).
 
@@ -155,7 +155,7 @@ When using `@RabbitListener`, configure a `StreamRabbitListenerContainerFactory`
 In addition, `queues` can only contain one stream name.
 
 [[stream-examples]]
-==== Examples
+== Examples
 
 ====
 [source, java]
@@ -233,12 +233,12 @@ public StreamRetryOperationsInterceptorFactoryBean sfb(RetryTemplate retryTempla
 IMPORTANT: Stateful retry is not supported with this container.
 
 [[super-streams]]
-==== Super Streams
+== Super Streams
 
 A Super Stream is an abstract concept for a partitioned stream, implemented by binding a number of stream queues to an exchange having an argument `x-super-stream: true`.
 
 [[provisioning]]
-===== Provisioning
+=== Provisioning
 
 For convenience, a super stream can be provisioned by defining a single bean of type `SuperStream`.
 
@@ -271,7 +271,7 @@ SuperStream superStream() {
 The number of keys must equal the number of partitions.
 
 [[producing-to-a-superstream]]
-===== Producing to a SuperStream
+=== Producing to a SuperStream
 
 You must add a `superStreamRoutingFunction` to the `RabbitStreamTemplate`:
 
@@ -292,7 +292,7 @@ RabbitStreamTemplate streamTemplate(Environment env) {
 You can also publish over AMQP, using the `RabbitTemplate`.
 
 [[super-stream-consumer]]
-===== Consuming Super Streams with Single Active Consumers
+=== Consuming Super Streams with Single Active Consumers
 
 Invoke the `superStream` method on the listener container to enable a single active consumer on a super stream.
 
@@ -316,7 +316,7 @@ IMPORTANT: At this time, when the concurrency is greater than 1, the actual conc
 See https://rabbitmq.github.io/rabbitmq-stream-java-client/snapshot/htmlsingle/#configuring-the-environment[Configuring the Environment].
 
 [[stream-micrometer-observation]]
-==== Micrometer Observation
+== Micrometer Observation
 
 Using Micrometer for observation is now supported, since version 3.0.5, for the `RabbitStreamTemplate` and the stream listener container.
 The container now also supports Micrometer timers (when observation is not enabled).

@@ -1,5 +1,5 @@
 [[sample-apps]]
-=== Sample Applications
+= Sample Applications
 
 The https://github.com/SpringSource/spring-amqp-samples[Spring AMQP Samples] project includes two sample applications.
 The first is a simple "`Hello World`" example that demonstrates both synchronous and asynchronous message reception.
@@ -9,13 +9,13 @@ In this chapter, we provide a quick walk-through of each sample so that you can 
 The samples are both Maven-based, so you should be able to import them directly into any Maven-aware IDE (such as https://www.springsource.org/sts[SpringSource Tool Suite]).
 
 [[hello-world-sample]]
-==== The "`Hello World`" Sample
+== The "`Hello World`" Sample
 
 The "`Hello World`" sample demonstrates both synchronous and asynchronous message reception.
 You can import the `spring-rabbit-helloworld` sample into the IDE and then follow the discussion below.
 
 [[hello-world-sync]]
-===== Synchronous Example
+=== Synchronous Example
 
 Within the `src/main/java` directory, navigate to the `org.springframework.amqp.helloworld` package.
 Open the `HelloWorldConfiguration` class and notice that it contains the `@Configuration` annotation at the class level and notice some `@Bean` annotations at method-level.
@@ -103,7 +103,7 @@ public static void main(String[] args) {
 If you run the `Producer` and then run the `Consumer`, you should see `Received: Hello World` in the console output.
 
 [[hello-world-async]]
-===== Asynchronous Example
+=== Asynchronous Example
 
 <<hello-world-sync>> walked through the synchronous Hello World sample.
 This section describes a slightly more advanced but significantly more powerful option.
@@ -205,7 +205,7 @@ The Producer's `main()` method is also a one-line bootstrap, since the component
 You can start the `Producer` and `Consumer` in any order, and you should see messages being sent and received every three seconds.
 
 [[stock-trading]]
-==== Stock Trading
+== Stock Trading
 
 The Stock Trading sample demonstrates more advanced messaging scenarios than <<hello-world-sample,the Hello World sample>>.
 However, the configuration is very similar, if a bit more involved.
@@ -375,7 +375,7 @@ Try sending a request with the format of '100 TCKR'.
 After a brief artificial delay that simulates "`processing`" of the request, you should see a confirmation message appear on the client.
 
 [[spring-rabbit-json]]
-==== Receiving JSON from Non-Spring Applications
+== Receiving JSON from Non-Spring Applications
 
 Spring applications, when sending JSON, set the `__TypeId__` header to the fully qualified class name to assist the receiving application in converting the JSON back to a Java object.
 

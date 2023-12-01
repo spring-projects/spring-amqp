@@ -1,5 +1,5 @@
 [[testing]]
-=== Testing Support
+= Testing Support
 
 Writing integration for asynchronous applications is necessarily more complex than testing simpler applications.
 This is made more complex when abstractions such as the `@RabbitListener` annotations come into the picture.
@@ -14,7 +14,7 @@ It is anticipated that this project will expand over time, but we need community
 Please use https://jira.spring.io/browse/AMQP[JIRA] or https://github.com/spring-projects/spring-amqp/issues[GitHub Issues] to provide such feedback.
 
 [[spring-rabbit-test]]
-==== @SpringRabbitTest
+== @SpringRabbitTest
 
 Use this annotation to add infrastructure beans to the Spring test `ApplicationContext`.
 This is not necessary when using, for example `@SpringBootTest` since Spring Boot's auto configuration will add the beans.
@@ -64,7 +64,7 @@ public class MyRabbitTests {
 With JUnit4, replace `@SpringJunitConfig` with `@RunWith(SpringRunnner.class)`.
 
 [[mockito-answer]]
-==== Mockito `Answer<?>` Implementations
+== Mockito `Answer<?>` Implementations
 
 There are currently two `Answer<?>` implementations to help with testing.
 
@@ -129,7 +129,7 @@ Use `answer.getExceptions()` to get a reference to them.
 When used in conjunction with the <<test-harness>> use `harness.getLambdaAnswerFor("listenerId", true, ...)` to get a properly constructed answer for the listener.
 
 [[test-harness]]
-==== `@RabbitListenerTest` and `RabbitListenerTestHarness`
+== `@RabbitListenerTest` and `RabbitListenerTestHarness`
 
 Annotating one of your `@Configuration` classes with `@RabbitListenerTest` causes the framework to replace the
 standard `RabbitListenerAnnotationBeanPostProcessor` with a subclass called `RabbitListenerTestHarness` (it also enables
@@ -317,7 +317,7 @@ IMPORTANT: When using custom `Answer<?>` s with the harness, in order to operate
 See the provided <<mockito-answer>> source code for examples.
 
 [[test-template]]
-==== Using `TestRabbitTemplate`
+== Using `TestRabbitTemplate`
 
 The `TestRabbitTemplate` is provided to perform some basic integration testing without the need for a broker.
 When you add it as a `@Bean` in your test case, it discovers all the listener containers in the context, whether declared as `@Bean` or `<bean/>` or using the `@RabbitListener` annotation.
@@ -438,14 +438,14 @@ public class TestRabbitTemplateTests {
 ====
 
 [[junit-rules]]
-==== JUnit4 `@Rules`
+== JUnit4 `@Rules`
 
 Spring AMQP version 1.7 and later provide an additional jar called `spring-rabbit-junit`.
 This jar contains a couple of utility `@Rule` instances for use when running JUnit4 tests.
 See <<junit5-conditions>> for JUnit5 testing.
 
 [[using-brokerrunning]]
-===== Using `BrokerRunning`
+=== Using `BrokerRunning`
 
 `BrokerRunning` provides a mechanism to let tests succeed when a broker is not running (on `localhost`, by default).
 
@@ -470,7 +470,7 @@ public static void tearDown() {
 There are several `isRunning...` static methods, such as `isBrokerAndManagementRunning()`, which verifies the broker has the management plugin enabled.
 
 [[brokerRunning-configure]]
-====== Configuring the Rule
+==== Configuring the Rule
 
 There are times when you want tests to fail if there is no broker, such as a nightly CI build.
 To disable the rule at runtime, set an environment variable called `RABBITMQ_SERVER_REQUIRED` to `true`.
@@ -537,7 +537,7 @@ public CachingConnectionFactory rabbitConnectionFactory() {
 ====
 
 [[using-longrunningintegrationtest]]
-===== Using `LongRunningIntegrationTest`
+=== Using `LongRunningIntegrationTest`
 
 `LongRunningIntegrationTest` is a rule that disables long running tests.
 You might want to use this on a developer system but ensure that the rule is disabled on, for example, nightly CI builds.
@@ -555,12 +555,12 @@ public LongRunningIntegrationTest longTests = new LongRunningIntegrationTest();
 To disable the rule at runtime, set an environment variable called `RUN_LONG_INTEGRATION_TESTS` to `true`.
 
 [[junit5-conditions]]
-==== JUnit5 Conditions
+== JUnit5 Conditions
 
 Version 2.0.2 introduced support for JUnit5.
 
 [[using-the-rabbitavailable-annotation]]
-===== Using the `@RabbitAvailable` Annotation
+=== Using the `@RabbitAvailable` Annotation
 
 This class-level annotation is similar to the `BrokerRunning` `@Rule` discussed in <<junit-rules>>.
 It is processed by the `RabbitAvailableCondition`.
@@ -708,7 +708,7 @@ public class RabbitTemplateMPPIntegrationTests {
 ====
 
 [[using-the-longrunning-annotation]]
-===== Using the `@LongRunning` Annotation
+=== Using the `@LongRunning` Annotation
 
 Similar to the `LongRunningIntegrationTest` JUnit4 `@Rule`, this annotation causes tests to be skipped unless an environment variable (or system property) is set to `true`.
 The following example shows how to use it:

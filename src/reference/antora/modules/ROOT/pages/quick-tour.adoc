@@ -1,8 +1,8 @@
 [[quick-tour]]
-=== Quick Tour for the impatient
+= Quick Tour for the impatient
 
 [[introduction]]
-==== Introduction
+== Introduction
 
 This is the five-minute tour to get started with Spring AMQP.
 
@@ -31,7 +31,7 @@ compile 'org.springframework.amqp:spring-rabbit:{project-version}'
 ====
 
 [[compatibility]]
-===== Compatibility
+=== Compatibility
 
 The minimum Spring Framework version dependency is 6.1.0.
 
@@ -40,7 +40,7 @@ The minimum `amqp-client` Java client library version is 5.18.0.
 The minimum `stream-client` Java client library for stream queues is 0.12.0.
 
 [[very-very-quick]]
-===== Very, Very Quick
+=== Very, Very Quick
 
 This section offers the fastest introduction.
 
@@ -80,7 +80,7 @@ We rely on the default exchange in the broker (since none is specified in the se
 Those behaviors are defined in the AMQP specification.
 
 [[with-xml-configuration]]
-===== With XML Configuration
+=== With XML Configuration
 
 The following example is the same as the preceding example but externalizes the resource configuration to XML:
 
@@ -122,7 +122,7 @@ There are plenty of options to configure the properties of the components in the
 You can use auto-complete features of your XML editor to explore them and look at their documentation.
 
 [[with-java-configuration]]
-===== With Java Configuration
+=== With Java Configuration
 
 The following example repeats the same example as the preceding example but with the external configuration defined in Java:
 
@@ -164,7 +164,7 @@ public class RabbitConfiguration {
 ====
 
 [[with-spring-boot-auto-configuration-and-an-async-pojo-listener]]
-===== With Spring Boot Auto Configuration and an Async POJO Listener
+=== With Spring Boot Auto Configuration and an Async POJO Listener
 
 Spring Boot automatically configures the infrastructure beans, as the following example shows:
 
