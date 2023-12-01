@@ -1,0 +1,76 @@
+[[changes-in-1-7-since-1-6]]
+= Changes in 1.7 Since 1.6
+
+[[amqp-client-library]]
+== AMQP Client library
+
+Spring AMQP now uses the new 4.0.x version of the `amqp-client` library provided by the RabbitMQ team.
+This client has auto-recovery configured by default.
+See <<auto-recovery>>.
+
+NOTE: The 4.0.x client enables automatic recovery by default.
+While compatible with this feature, Spring AMQP has its own recovery mechanisms, and the client recovery feature generally is not needed.
+We recommend disabling `amqp-client` automatic recovery, to avoid getting `AutoRecoverConnectionNotCurrentlyOpenException` instances when the broker is available but the connection has not yet recovered.
+Starting with version 1.7.1, Spring AMQP disables it unless you explicitly create your own RabbitMQ connection factory and provide it to the `CachingConnectionFactory`.
+RabbitMQ `ConnectionFactory` instances created by the `RabbitConnectionFactoryBean` also have the option disabled by default.
+
+
+[[log4j-2-upgrade]]
+== Log4j 2 upgrade
+The minimum Log4j 2 version (for the `AmqpAppender`) is now `2.7`.
+The framework is no longer compatible with previous versions.
+See <<logging>> for more information.
+
+[[logback-appender]]
+== Logback Appender
+
+This appender no longer captures caller data (method, line number) by default.
+You can re-enable it by setting the `includeCallerData` configuration option.
+See <<logging>> for information about the available log appenders.
+
+[[spring-retry-upgrade]]
+== Spring Retry Upgrade
+
+The minimum Spring Retry version is now `1.2`.
+The framework is no longer compatible with previous versions.
+
+[[shutdown-behavior]]
+=== Shutdown Behavior
+
+You can now set `forceCloseChannel` to `true` so that, if the container threads do not respond to a shutdown within `shutdownTimeout`, the channels are forced closed,
+causing any unacked messages to be re-queued.
+See <<containerAttributes>> for more information.
+
+[[fasterxml-jackson-upgrade]]
+== FasterXML Jackson upgrade
+
+The minimum Jackson version is now `2.8`.
+The framework is no longer compatible with previous versions.
+
+[[junit-rules]]
+== JUnit `@Rules`
+
+Rules that have previously been used internally by the framework have now been made available in a separate jar called `spring-rabbit-junit`.
+See <<junit-rules>> for more information.
+
+[[container-conditional-rollback]]
+== Container Conditional Rollback
+
+When you use an external transaction manager (such as JDBC), rule-based rollback is now supported when you provide the container with a transaction attribute.
+It is also now more flexible when you use a transaction advice.
+
+[[connection-naming-strategy]]
+== Connection Naming Strategy
+
+A new `ConnectionNameStrategy` is now provided to populate the application-specific identification of the target RabbitMQ connection from the `AbstractConnectionFactory`.
+See <<connections>> for more information.
+
+[[listener-container-changes]]
+== Listener Container Changes
+
+[[transaction-rollback-behavior]]
+=== Transaction Rollback Behavior
+
+You can now configure message re-queue on transaction rollback to be consistent, regardless of whether or not a transaction manager is configured.
+See <<transaction-rollback>> for more information.
+

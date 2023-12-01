@@ -1,0 +1,547 @@
+[[message-converters]]
+= Message Converters
+
+The `AmqpTemplate` also defines several methods for sending and receiving messages that delegate to a `MessageConverter`.
+The `MessageConverter` provides a single method for each direction: one for converting *to* a `Message` and another for converting *from* a `Message`.
+Notice that, when converting to a `Message`, you can also provide properties in addition to the object.
+The `object` parameter typically corresponds to the Message body.
+The following listing shows the `MessageConverter` interface definition:
+
+====
+[source,java]
+----
+public interface MessageConverter {
+
+    Message toMessage(Object object, MessageProperties messageProperties)
+            throws MessageConversionException;
+
+    Object fromMessage(Message message) throws MessageConversionException;
+
+}
+----
+====
+
+The relevant `Message`-sending methods on the `AmqpTemplate` are simpler than the methods we discussed previously, because they do not require the `Message` instance.
+Instead, the `MessageConverter` is responsible for "`creating`" each `Message` by converting the provided object to the byte array for the `Message` body and then adding any provided `MessageProperties`.
+The following listing shows the definitions of the various methods:
+
+====
+[source,java]
+----
+void convertAndSend(Object message) throws AmqpException;
+
+void convertAndSend(String routingKey, Object message) throws AmqpException;
+
+void convertAndSend(String exchange, String routingKey, Object message)
+    throws AmqpException;
+
+void convertAndSend(Object message, MessagePostProcessor messagePostProcessor)
+    throws AmqpException;
+
+void convertAndSend(String routingKey, Object message,
+    MessagePostProcessor messagePostProcessor) throws AmqpException;
+
+void convertAndSend(String exchange, String routingKey, Object message,
+    MessagePostProcessor messagePostProcessor) throws AmqpException;
+----
+====
+
+On the receiving side, there are only two methods: one that accepts the queue name and one that relies on the template's "`queue`" property having been set.
+The following listing shows the definitions of the two methods:
+
+====
+[source,java]
+----
+Object receiveAndConvert() throws AmqpException;
+
+Object receiveAndConvert(String queueName) throws AmqpException;
+----
+====
+
+NOTE: The `MessageListenerAdapter` mentioned in <<async-consumer>> also uses a `MessageConverter`.
+
+[[simple-message-converter]]
+== `SimpleMessageConverter`
+
+The default implementation of the `MessageConverter` strategy is called `SimpleMessageConverter`.
+This is the converter that is used by an instance of `RabbitTemplate` if you do not explicitly configure an alternative.
+It handles text-based content, serialized Java objects, and byte arrays.
+
+[[converting-from-a-message]]
+=== Converting From a `Message`
+
+If the content type of the input `Message` begins with "text" (for example,
+"text/plain"), it also checks for the content-encoding property to determine the charset to be used when converting the `Message` body byte array to a Java `String`.
+If no content-encoding property had been set on the input `Message`, it uses the UTF-8 charset by default.
+If you need to override that default setting, you can configure an instance of `SimpleMessageConverter`, set its `defaultCharset` property, and inject that into a `RabbitTemplate` instance.
+
+If the content-type property value of the input `Message` is set to "application/x-java-serialized-object", the `SimpleMessageConverter` tries to deserialize (rehydrate) the byte array into a Java object.
+While that might be useful for simple prototyping, we do not recommend relying on Java serialization, since it leads to tight coupling between the producer and the consumer.
+Of course, it also rules out usage of non-Java systems on either side.
+With AMQP being a wire-level protocol, it would be unfortunate to lose much of that advantage with such restrictions.
+In the next two sections, we explore some alternatives for passing rich domain object content without relying on Java serialization.
+
+For all other content-types, the `SimpleMessageConverter` returns the `Message` body content directly as a byte array.
+
+See <<java-deserialization>> for important information.
+
+[[converting-to-a-message]]
+=== Converting To a `Message`
+
+When converting to a `Message` from an arbitrary Java Object, the `SimpleMessageConverter` likewise deals with byte arrays, strings, and serializable instances.
+It converts each of these to bytes (in the case of byte arrays, there is nothing to convert), and it sets the content-type property accordingly.
+If the `Object` to be converted does not match one of those types, the `Message` body is null.
+
+[[serializer-message-converter]]
+== `SerializerMessageConverter`
+
+This converter is similar to the `SimpleMessageConverter` except that it can be configured with other Spring Framework
+`Serializer` and `Deserializer` implementations for `application/x-java-serialized-object` conversions.
+
+See <<java-deserialization>> for important information.
+
+[[json-message-converter]]
+== Jackson2JsonMessageConverter
+
+This section covers using the `Jackson2JsonMessageConverter` to convert to and from a `Message`.
+It has the following sections:
+
+* <<Jackson2JsonMessageConverter-to-message>>
+* <<Jackson2JsonMessageConverter-from-message>>
+
+[[Jackson2JsonMessageConverter-to-message]]
+=== Converting to a `Message`
+
+As mentioned in the previous section, relying on Java serialization is generally not recommended.
+One rather common alternative that is more flexible and portable across different languages and platforms is JSON
+(JavaScript Object Notation).
+The converter can be configured on any `RabbitTemplate` instance to override its usage of the `SimpleMessageConverter`
+default.
+The `Jackson2JsonMessageConverter` uses the `com.fasterxml.jackson` 2.x library.
+The following example configures a `Jackson2JsonMessageConverter`:
+
+====
+[source,xml]
+----
+<bean class="org.springframework.amqp.rabbit.core.RabbitTemplate">
+    <property name="connectionFactory" ref="rabbitConnectionFactory"/>
+    <property name="messageConverter">
+        <bean class="org.springframework.amqp.support.converter.Jackson2JsonMessageConverter">
+            <!-- if necessary, override the DefaultClassMapper -->
+            <property name="classMapper" ref="customClassMapper"/>
+        </bean>
+    </property>
+</bean>
+----
+====
+
+As shown above, `Jackson2JsonMessageConverter` uses a `DefaultClassMapper` by default.
+Type information is added to (and retrieved from) `MessageProperties`.
+If an inbound message does not contain type information in `MessageProperties`, but you know the expected type, you
+can configure a static type by using the `defaultType` property, as the following example shows:
+
+====
+[source,xml]
+----
+<bean id="jsonConverterWithDefaultType"
+      class="o.s.amqp.support.converter.Jackson2JsonMessageConverter">
+    <property name="classMapper">
+        <bean class="org.springframework.amqp.support.converter.DefaultClassMapper">
+            <property name="defaultType" value="thing1.PurchaseOrder"/>
+        </bean>
+    </property>
+</bean>
+----
+====
+
+In addition, you can provide custom mappings from the value in the `__TypeId__` header.
+The following example shows how to do so:
+
+====
+[source, java]
+----
+@Bean
+public Jackson2JsonMessageConverter jsonMessageConverter() {
+    Jackson2JsonMessageConverter jsonConverter = new Jackson2JsonMessageConverter();
+    jsonConverter.setClassMapper(classMapper());
+    return jsonConverter;
+}
+
+@Bean
+public DefaultClassMapper classMapper() {
+    DefaultClassMapper classMapper = new DefaultClassMapper();
+    Map<String, Class<?>> idClassMapping = new HashMap<>();
+    idClassMapping.put("thing1", Thing1.class);
+    idClassMapping.put("thing2", Thing2.class);
+    classMapper.setIdClassMapping(idClassMapping);
+    return classMapper;
+}
+----
+====
+
+Now, if the sending system sets the header to `thing1`, the converter creates a `Thing1` object, and so on.
+See the <<spring-rabbit-json>> sample application for a complete discussion about converting messages from non-Spring applications.
+
+Starting with version 2.4.3, the converter will not add a `contentEncoding` message property if the `supportedMediaType` has a `charset` parameter; this is also used for the encoding.
+A new method `setSupportedMediaType` has been added:
+
+====
+[source, java]
+----
+String utf16 = "application/json; charset=utf-16";
+converter.setSupportedContentType(MimeTypeUtils.parseMimeType(utf16));
+----
+====
+
+[[Jackson2JsonMessageConverter-from-message]]
+=== Converting from a `Message`
+
+Inbound messages are converted to objects according to the type information added to headers by the sending system.
+
+Starting with version 2.4.3, if there is no `contentEncoding` message property, the converter will attempt to detect a `charset` parameter in the `contentType` message property and use that.
+If neither exist, if the `supportedMediaType` has a `charset` parameter, it will be used for decoding, with a final fallback to the `defaultCharset` property.
+A new method `setSupportedMediaType` has been added:
+
+====
+[source, java]
+----
+String utf16 = "application/json; charset=utf-16";
+converter.setSupportedContentType(MimeTypeUtils.parseMimeType(utf16));
+----
+====
+
+In versions prior to 1.6, if type information is not present, conversion would fail.
+Starting with version 1.6, if type information is missing, the converter converts the JSON by using Jackson defaults (usually a map).
+
+Also, starting with version 1.6, when you use `@RabbitListener` annotations (on methods), the inferred type information is added to the `MessageProperties`.
+This lets the converter convert to the argument type of the target method.
+This only applies if there is one parameter with no annotations or a single parameter with the `@Payload` annotation.
+Parameters of type `Message` are ignored during the analysis.
+
+IMPORTANT: By default, the inferred type information will override the inbound `__TypeId__` and related headers created
+by the sending system.
+This lets the receiving system automatically convert to a different domain object.
+This applies only if the parameter type is concrete (not abstract or an interface) or it is from the `java.util`
+package.
+In all other cases, the `__TypeId__` and related headers is used.
+There are cases where you might wish to override the default behavior and always use the `__TypeId__` information.
+For example, suppose you have a `@RabbitListener` that takes a `Thing1` argument but the message contains a `Thing2` that
+is a subclass of `Thing1` (which is concrete).
+The inferred type would be incorrect.
+To handle this situation, set the `TypePrecedence` property on the `Jackson2JsonMessageConverter` to `TYPE_ID` instead
+of the default `INFERRED`.
+(The property is actually on the converter's `DefaultJackson2JavaTypeMapper`, but a setter is provided on the converter
+for convenience.)
+If you inject a custom type mapper, you should set the property on the mapper instead.
+
+NOTE: When converting from the `Message`, an incoming `MessageProperties.getContentType()` must be JSON-compliant (`contentType.contains("json")` is used to check).
+Starting with version 2.2, `application/json` is assumed if there is no `contentType` property, or it has the default value `application/octet-stream`.
+To revert to the previous behavior (return an unconverted `byte[]`), set the converter's `assumeSupportedContentType` property to `false`.
+If the content type is not supported, a `WARN` log message `Could not convert incoming message with content-type [...]`, is emitted and `message.getBody()` is returned as is -- as a `byte[]`.
+So, to meet the `Jackson2JsonMessageConverter` requirements on the consumer side, the producer must add the `contentType` message property -- for example, as `application/json` or `text/x-json` or by using the `Jackson2JsonMessageConverter`, which sets the header automatically.
+The following listing shows a number of converter calls:
+
+====
+[source, java]
+----
+@RabbitListener
+public void thing1(Thing1 thing1) {...}
+
+@RabbitListener
+public void thing1(@Payload Thing1 thing1, @Header("amqp_consumerQueue") String queue) {...}
+
+@RabbitListener
+public void thing1(Thing1 thing1, o.s.amqp.core.Message message) {...}
+
+@RabbitListener
+public void thing1(Thing1 thing1, o.s.messaging.Message<Foo> message) {...}
+
+@RabbitListener
+public void thing1(Thing1 thing1, String bar) {...}
+
+@RabbitListener
+public void thing1(Thing1 thing1, o.s.messaging.Message<?> message) {...}
+----
+====
+
+In the first four cases in the preceding listing, the converter tries to convert to the `Thing1` type.
+The fifth example is invalid because we cannot determine which argument should receive the message payload.
+With the sixth example, the Jackson defaults apply due to the generic type being a `WildcardType`.
+
+You can, however, create a custom converter and use the `targetMethod` message property to decide which type to convert
+the JSON to.
+
+NOTE: This type inference can only be achieved when the `@RabbitListener` annotation is declared at the method level.
+With class-level `@RabbitListener`, the converted type is used to select which `@RabbitHandler` method to invoke.
+For this reason, the infrastructure provides the `targetObject` message property, which you can use in a custom
+converter to determine the type.
+
+IMPORTANT: Starting with version 1.6.11, `Jackson2JsonMessageConverter` and, therefore, `DefaultJackson2JavaTypeMapper` (`DefaultClassMapper`) provide the `trustedPackages` option to overcome https://pivotal.io/security/cve-2017-4995[Serialization Gadgets] vulnerability.
+By default and for backward compatibility, the `Jackson2JsonMessageConverter` trusts all packages -- that is, it uses `*` for the option.
+
+Starting with version 2.4.7, the converter can be configured to return `Optional.empty()` if Jackson returns `null` after deserializing the message body.
+This facilitates `@RabbitListener` s to receive null payloads, in two ways:
+
+====
+[source, java]
+----
+@RabbitListener(queues = "op.1")
+void listen(@Payload(required = false) Thing payload) {
+    handleOptional(payload); // payload might be null
+}
+
+@RabbitListener(queues = "op.2")
+void listen(Optional<Thing> optional) {
+    handleOptional(optional.orElse(this.emptyThing));
+}
+----
+====
+
+To enable this feature, set `setNullAsOptionalEmpty` to `true`; when `false` (default), the converter falls back to the raw message body (`byte[]`).
+
+====
+[source, java]
+----
+@Bean
+Jackson2JsonMessageConverter converter() {
+    Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
+    converter.setNullAsOptionalEmpty(true);
+    return converter;
+}
+----
+====
+
+[[jackson-abstract]]
+=== Deserializing Abstract Classes
+
+Prior to version 2.2.8, if the inferred type of a `@RabbitListener` was an abstract class (including interfaces), the converter would fall back to looking for type information in the headers and, if present, used that information; if that was not present, it would try to create the abstract class.
+This caused a problem when a custom `ObjectMapper` that is configured with a custom deserializer to handle the abstract class is used, but the incoming message has invalid type headers.
+
+Starting with version 2.2.8, the previous behavior is retained by default. If you have such a custom `ObjectMapper` and you want to ignore type headers, and always use the inferred type for conversion, set the `alwaysConvertToInferredType` to `true`.
+This is needed for backwards compatibility and to avoid the overhead of an attempted conversion when it would fail (with a standard `ObjectMapper`).
+
+[[data-projection]]
+=== Using Spring Data Projection Interfaces
+
+Starting with version 2.2, you can convert JSON to a Spring Data Projection interface instead of a concrete type.
+This allows very selective, and low-coupled bindings to data, including the lookup of values from multiple places inside the JSON document.
+For example the following interface can be defined as message payload type:
+
+====
+[source, java]
+----
+interface SomeSample {
+
+  @JsonPath({ "$.username", "$.user.name" })
+  String getUsername();
+
+}
+----
+====
+
+====
+[source, java]
+----
+@RabbitListener(queues = "projection")
+public void projection(SomeSample in) {
+    String username = in.getUsername();
+    ...
+}
+----
+====
+
+Accessor methods will be used to lookup the property name as field in the received JSON document by default.
+The `@JsonPath` expression allows customization of the value lookup, and even to define multiple JSON path expressions, to lookup values from multiple places until an expression returns an actual value.
+
+To enable this feature, set the `useProjectionForInterfaces` to `true` on the message converter.
+You must also add `spring-data:spring-data-commons` and `com.jayway.jsonpath:json-path` to the class path.
+
+When used as the parameter to a `@RabbitListener` method, the interface type is automatically passed to the converter as normal.
+
+[[json-complex]]
+=== Converting From a `Message` With `RabbitTemplate`
+
+As mentioned earlier, type information is conveyed in message headers to assist the converter when converting from a message.
+This works fine in most cases.
+However, when using generic types, it can only convert simple objects and known "`container`" objects (lists, arrays, and maps).
+Starting with version 2.0, the `Jackson2JsonMessageConverter` implements `SmartMessageConverter`, which lets it be used with the new `RabbitTemplate` methods that take a `ParameterizedTypeReference` argument.
+This allows conversion of complex generic types, as shown in the following example:
+
+====
+[source, java]
+----
+Thing1<Thing2<Cat, Hat>> thing1 =
+    rabbitTemplate.receiveAndConvert(new ParameterizedTypeReference<Thing1<Thing2<Cat, Hat>>>() { });
+----
+====
+
+NOTE: Starting with version 2.1, the `AbstractJsonMessageConverter` class has been removed.
+It is no longer the base class for `Jackson2JsonMessageConverter`.
+It has been replaced by `AbstractJackson2MessageConverter`.
+
+[[marshallingmessageconverter]]
+== `MarshallingMessageConverter`
+
+Yet another option is the `MarshallingMessageConverter`.
+It delegates to the Spring OXM library's implementations of the `Marshaller` and `Unmarshaller` strategy interfaces.
+You can read more about that library https://docs.spring.io/spring/docs/current/spring-framework-reference/html/oxm.html[here].
+In terms of configuration, it is most common to provide only the constructor argument, since most implementations of `Marshaller` also implement `Unmarshaller`.
+The following example shows how to configure a `MarshallingMessageConverter`:
+
+====
+[source,xml]
+----
+<bean class="org.springframework.amqp.rabbit.core.RabbitTemplate">
+    <property name="connectionFactory" ref="rabbitConnectionFactory"/>
+    <property name="messageConverter">
+        <bean class="org.springframework.amqp.support.converter.MarshallingMessageConverter">
+            <constructor-arg ref="someImplemenationOfMarshallerAndUnmarshaller"/>
+        </bean>
+    </property>
+</bean>
+----
+====
+
+[[jackson2xml]]
+== `Jackson2XmlMessageConverter`
+
+This class was introduced in version 2.1 and can be used to convert messages from and to XML.
+
+Both `Jackson2XmlMessageConverter` and `Jackson2JsonMessageConverter` have the same base class: `AbstractJackson2MessageConverter`.
+
+NOTE: The `AbstractJackson2MessageConverter` class is introduced to replace a removed class: `AbstractJsonMessageConverter`.
+
+The `Jackson2XmlMessageConverter` uses the `com.fasterxml.jackson` 2.x library.
+
+You can use it the same way as `Jackson2JsonMessageConverter`, except it supports XML instead of JSON.
+The following example configures a `Jackson2JsonMessageConverter`:
+
+[source,xml]
+----
+<bean id="xmlConverterWithDefaultType"
+        class="org.springframework.amqp.support.converter.Jackson2XmlMessageConverter">
+    <property name="classMapper">
+        <bean class="org.springframework.amqp.support.converter.DefaultClassMapper">
+            <property name="defaultType" value="foo.PurchaseOrder"/>
+        </bean>
+    </property>
+</bean>
+----
+See <<json-message-converter>> for more information.
+
+NOTE: Starting with version 2.2, `application/xml` is assumed if there is no `contentType` property, or it has the default value `application/octet-stream`.
+To revert to the previous behavior (return an unconverted `byte[]`), set the converter's `assumeSupportedContentType` property to `false`.
+
+[[contenttypedelegatingmessageconverter]]
+== `ContentTypeDelegatingMessageConverter`
+
+This class was introduced in version 1.4.2 and allows delegation to a specific `MessageConverter` based on the content type property in the `MessageProperties`.
+By default, it delegates to a `SimpleMessageConverter` if there is no `contentType` property or there is a value that matches none of the configured converters.
+The following example configures a `ContentTypeDelegatingMessageConverter`:
+
+====
+[source,xml]
+----
+<bean id="contentTypeConverter" class="ContentTypeDelegatingMessageConverter">
+    <property name="delegates">
+        <map>
+            <entry key="application/json" value-ref="jsonMessageConverter" />
+            <entry key="application/xml" value-ref="xmlMessageConverter" />
+        </map>
+    </property>
+</bean>
+----
+====
+
+[[java-deserialization]]
+== Java Deserialization
+
+This section covers how to deserialize Java objects.
+
+[IMPORTANT]
+====
+There is a possible vulnerability when deserializing java objects from untrusted sources.
+
+If you accept messages from untrusted sources with a `content-type` of `application/x-java-serialized-object`, you should
+consider configuring which packages and classes are allowed to be deserialized.
+This applies to both the `SimpleMessageConverter` and `SerializerMessageConverter` when it is configured to use a
+`DefaultDeserializer` either implicitly or via configuration.
+
+By default, the allowed list is empty, meaning no classes will be deserialized.
+
+You can set a list of patterns, such as `thing1.*`, `thing1.thing2.Cat` or `*.MySafeClass`.
+
+The patterns are checked in order until a match is found.
+If there is no match, a `SecurityException` is thrown.
+
+You can set the patterns using the `allowedListPatterns` property on these converters.
+Alternatively, if you trust all message originators, you can set the environment variable `SPRING_AMQP_DESERIALIZATION_TRUST_ALL` or system property `spring.amqp.deserialization.trust.all` to `true`.
+====
+
+[[message-properties-converters]]
+== Message Properties Converters
+
+The `MessagePropertiesConverter` strategy interface is used to convert between the Rabbit Client `BasicProperties` and Spring AMQP `MessageProperties`.
+The default implementation (`DefaultMessagePropertiesConverter`) is usually sufficient for most purposes, but you can implement your own if needed.
+The default properties converter converts `BasicProperties` elements of type `LongString` to `String` instances when the size is not greater than `1024` bytes.
+Larger `LongString` instances are not converted (see the next paragraph).
+This limit can be overridden with a constructor argument.
+
+Starting with version 1.6, headers longer than the long string limit (default: 1024) are now left as
+`LongString` instances by default by the `DefaultMessagePropertiesConverter`.
+You can access the contents through the `getBytes[]`, `toString()`, or `getStream()` methods.
+
+Previously, the `DefaultMessagePropertiesConverter` "`converted`" such headers to a `DataInputStream` (actually it just referenced the `LongString` instance's `DataInputStream`).
+On output, this header was not converted (except to a String -- for example, `java.io.DataInputStream@1d057a39` by calling `toString()` on the stream).
+
+Large incoming `LongString` headers are now correctly "`converted`" on output, too (by default).
+
+A new constructor is provided to let you configure the converter to work as before.
+The following listing shows the Javadoc comment and declaration of the method:
+
+====
+[source, java]
+----
+/**
+ * Construct an instance where LongStrings will be returned
+ * unconverted or as a java.io.DataInputStream when longer than this limit.
+ * Use this constructor with 'true' to restore pre-1.6 behavior.
+ * @param longStringLimit the limit.
+ * @param convertLongLongStrings LongString when false,
+ * DataInputStream when true.
+ * @since 1.6
+ */
+public DefaultMessagePropertiesConverter(int longStringLimit, boolean convertLongLongStrings) { ... }
+----
+====
+
+Also starting with version 1.6, a new property called `correlationIdString` has been added to `MessageProperties`.
+Previously, when converting to and from `BasicProperties` used by the RabbitMQ client, an unnecessary `byte[] <-> String` conversion was performed because `MessageProperties.correlationId` is a `byte[]`, but `BasicProperties` uses a `String`.
+(Ultimately, the RabbitMQ client uses UTF-8 to convert the `String` to bytes to put in the protocol message).
+
+To provide maximum backwards compatibility, a new property called `correlationIdPolicy` has been added to the
+`DefaultMessagePropertiesConverter`.
+This takes a `DefaultMessagePropertiesConverter.CorrelationIdPolicy` enum argument.
+By default it is set to `BYTES`, which replicates the previous behavior.
+
+For inbound messages:
+
+* `STRING`: Only the `correlationIdString` property is mapped
+* `BYTES`: Only the `correlationId` property is mapped
+* `BOTH`: Both properties are mapped
+
+For outbound messages:
+
+* `STRING`: Only the `correlationIdString` property is mapped
+* `BYTES`: Only the `correlationId` property is mapped
+* `BOTH`: Both properties are considered, with the `String` property taking precedence
+
+Also starting with version 1.6, the inbound `deliveryMode` property is no longer mapped to `MessageProperties.deliveryMode`.
+It is mapped to `MessageProperties.receivedDeliveryMode` instead.
+Also, the inbound `userId` property is no longer mapped to `MessageProperties.userId`.
+It is mapped to `MessageProperties.receivedUserId` instead.
+These changes are to avoid unexpected propagation of these properties if the same `MessageProperties` object is used for an outbound message.
+
+Starting with version 2.2, the `DefaultMessagePropertiesConverter` converts any custom headers with values of type `Class<?>`  using `getName()` instead of `toString()`; this avoids consuming application having to parse the class name out of the `toString()` representation.
+For rolling upgrades, you may need to change your consumers to understand both formats until all producers are upgraded.
+

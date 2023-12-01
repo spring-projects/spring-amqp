@@ -1,0 +1,23 @@
+[[changes-in-2-4-since-2-3]]
+= Changes in 2.4 Since 2.3
+
+This section describes the changes between version 2.3 and version 2.4.
+See <<change-history>> for changes in previous versions.
+
+[[rabbitlistener-changes]]
+== `@RabbitListener` Changes
+
+`MessageProperties` is now available for argument matching.
+See <<async-annotation-driven-enable-signature>> for more information.
+
+[[rabbitadmin-changes]]
+== `RabbitAdmin` Changes
+
+A new property `recoverManualDeclarations` allows recovery of manually declared queues/exchanges/bindings.
+See <<declarable-recovery>> for more information.
+
+[[remoting-support]]
+== Remoting Support
+
+Support remoting using Spring Framework’s RMI support is deprecated and will be removed in 3.0. See Spring Remoting with AMQP for more information.
+

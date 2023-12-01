@@ -1,0 +1,107 @@
+[[changes-in-1-3-since-1-2]]
+= Changes in 1.3 Since 1.2
+
+[[listener-concurrency]]
+== Listener Concurrency
+
+The listener container now supports dynamic scaling of the number of consumers based on workload, or you can programmatically change the concurrency without stopping the container.
+See <<listener-concurrency>>.
+
+[[listener-queues]]
+== Listener Queues
+
+The listener container now permits the queues on which it listens to be modified at runtime.
+Also, the container now starts if at least one of its configured queues is available for use.
+See <<listener-queues>>
+
+This listener container now redeclares any auto-delete queues during startup.
+See <<lc-auto-delete>>.
+
+[[consumer-priority]]
+== Consumer Priority
+
+The listener container now supports consumer arguments, letting the `x-priority` argument be set.
+See <<consumer-priority>>.
+
+[[exclusive-consumer]]
+== Exclusive Consumer
+
+You can now configure `SimpleMessageListenerContainer` with a single `exclusive` consumer, preventing other consumers from listening to the queue.
+See <<exclusive-consumer>>.
+
+[[rabbit-admin]]
+== Rabbit Admin
+
+You can now have the broker generate the queue name, regardless of `durable`, `autoDelete`, and `exclusive` settings.
+See <<broker-configuration>>.
+
+[[direct-exchange-binding]]
+== Direct Exchange Binding
+
+Previously, omitting the `key` attribute from a `binding` element of a `direct-exchange` configuration caused the queue or exchange to be bound with an empty string as the routing key.
+Now it is bound with the the name of the provided `Queue` or `Exchange`.
+If you wish to bind with an empty string routing key, you need to specify `key=""`.
+
+[[amqptemplate-changes]]
+== `AmqpTemplate` Changes
+
+The `AmqpTemplate` now provides several synchronous `receiveAndReply` methods.
+These are implemented by the `RabbitTemplate`.
+For more information see <<receiving-messages>>.
+
+The `RabbitTemplate` now supports configuring a `RetryTemplate` to attempt retries (with optional back-off policy) for when the broker is not available.
+For more information see <<template-retry>>.
+
+[[caching-connection-factory]]
+== Caching Connection Factory
+
+You can now configure the caching connection factory to cache `Connection` instances and their `Channel` instances instead of using a single connection and caching only `Channel` instances.
+See <<connections>>.
+
+[[binding-arguments]]
+== Binding Arguments
+
+The `<binding>` of the `<exchange>` now supports parsing of the `<binding-arguments>` sub-element.
+You can now configure the `<binding>` of the `<headers-exchange>` with a `key/value` attribute pair (to match on a single header) or with a `<binding-arguments>` sub-element (allowing matching on multiple headers).
+These options are mutually exclusive.
+See <<headers-exchange>>.
+
+[[routing-connection-factory]]
+== Routing Connection Factory
+
+A new `SimpleRoutingConnectionFactory` has been introduced.
+It allows configuration of `ConnectionFactories` mapping, to determine the target `ConnectionFactory` to use at runtime.
+See <<routing-connection-factory>>.
+
+[[messagebuilder-and-messagepropertiesbuilder]]
+== `MessageBuilder` and `MessagePropertiesBuilder`
+
+"`Fluent APIs`" for building messages or message properties are now provided.
+See <<message-builder>>.
+
+[[retryinterceptorbuilder-change]]
+== `RetryInterceptorBuilder` Change
+
+A "`Fluent API`" for building listener container retry interceptors is now provided.
+See <<retry>>.
+
+[[republishmessagerecoverer-added]]
+== `RepublishMessageRecoverer` Added
+
+This new `MessageRecoverer` is provided to allow publishing a failed message to another queue (including stack trace information in the header) when retries are exhausted.
+See <<async-listeners>>.
+
+[[default-error-handler-since-1-3-2]]
+== Default Error Handler (Since 1.3.2)
+
+A default `ConditionalRejectingErrorHandler` has been added to the listener container.
+This error handler detects fatal message conversion problems and instructs the container to reject the message to prevent the broker from continually redelivering the unconvertible message.
+See <<exception-handling>>.
+
+[[listener-container-missingqueuesfatal-property-since-1-3-5]]
+== Listener Container 'missingQueuesFatal` Property (Since 1.3.5)
+
+The `SimpleMessageListenerContainer` now has a property called `missingQueuesFatal` (default: `true`).
+Previously, missing queues were always fatal.
+See <<containerAttributes>>.
+

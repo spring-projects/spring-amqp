@@ -1,0 +1,20 @@
+[[changes-to-1-1-since-1-0]]
+= Changes to 1.1 Since 1.0
+
+[[general]]
+== General
+
+Spring-AMQP is now built with Gradle.
+
+Adds support for publisher confirms and returns.
+
+Adds support for HA queues and broker failover.
+
+Adds support for dead letter exchanges and dead letter queues.
+
+[[amqp-log4j-appender]]
+== AMQP Log4j Appender
+
+Adds an option to support adding a message ID to logged messages.
+
+Adds an option to allow the specification of a `Charset` name to be used when converting `String` to `byte[]`.

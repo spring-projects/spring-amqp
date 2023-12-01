@@ -1,0 +1,137 @@
+[[changes-in-2-2-since-2-1]]
+= Changes in 2.2 Since 2.1
+
+This section describes the changes between version 2.1 and version 2.2.
+
+[[package-changes]]
+== Package Changes
+
+The following classes/interfaces have been moved from `org.springframework.amqp.rabbit.core.support` to `org.springframework.amqp.rabbit.batch`:
+
+* `BatchingStrategy`
+* `MessageBatch`
+* `SimpleBatchingStrategy`
+
+In addition, `ListenerExecutionFailedException` has been moved from `org.springframework.amqp.rabbit.listener.exception` to `org.springframework.amqp.rabbit.support`.
+
+[[dependency-changes]]
+== Dependency Changes
+
+JUnit (4) is now an optional dependency and will no longer appear as a transitive dependency.
+
+The `spring-rabbit-junit` module is now a *compile* dependency in the `spring-rabbit-test` module for a better target application development experience when with only a single `spring-rabbit-test` we get the full stack of testing utilities for AMQP components.
+
+[[-breaking-api-changes]]
+== "Breaking" API Changes
+
+the JUnit (5) `RabbitAvailableCondition.getBrokerRunning()` now returns a `BrokerRunningSupport` instance instead of a `BrokerRunning`, which depends on JUnit 4.
+It has the same API so it's just a matter of changing the class name of any references.
+See <<junit5-conditions>> for more information.
+
+[[listenercontainer-changes]]
+== ListenerContainer Changes
+
+Messages with fatal exceptions are now rejected and NOT requeued, by default, even if the acknowledge mode is manual.
+See <<exception-handling>> for more information.
+
+Listener performance can now be monitored using Micrometer `Timer` s.
+See <<micrometer>> for more information.
+
+[[rabbitlistener-changes]]
+== @RabbitListener Changes
+
+You can now configure an `executor` on each listener, overriding the factory configuration, to more easily identify threads associated with the listener.
+You can now override the container factory's `acknowledgeMode` property with the annotation's `ackMode` property.
+See <<listener-property-overrides,overriding container factory properties>> for more information.
+
+When using <<receiving-batch,batching>>, `@RabbitListener` methods can now receive a complete batch of messages in one call instead of getting them one-at-a-time.
+
+When receiving batched messages one-at-a-time, the last message has the `isLastInBatch` message property set to true.
+
+In addition, received batched messages now contain the `amqp_batchSize` header.
+
+Listeners can also consume batches created in the `SimpleMessageListenerContainer`, even if the batch is not created by the producer.
+See <<choose-container>> for more information.
+
+Spring Data Projection interfaces are now supported by the `Jackson2JsonMessageConverter`.
+See <<data-projection>> for more information.
+
+The `Jackson2JsonMessageConverter` now assumes the content is JSON if there is no `contentType` property, or it is the default (`application/octet-string`).
+See <<Jackson2JsonMessageConverter-from-message>> for more information.
+
+Similarly. the `Jackson2XmlMessageConverter` now assumes the content is XML if there is no `contentType` property, or it is the default (`application/octet-string`).
+See <<jackson2xml>> for more information.
+
+When a `@RabbitListener` method returns a result, the bean and `Method` are now available in the reply message properties.
+This allows configuration of a `beforeSendReplyMessagePostProcessor` to, for example, set a header in the reply to indicate which method was invoked on the server.
+See <<async-annotation-driven-reply>> for more information.
+
+You can now configure a `ReplyPostProcessor` to make modifications to a reply message before it is sent.
+See <<async-annotation-driven-reply>> for more information.
+
+[[amqp-logging-appenders-changes]]
+== AMQP Logging Appenders Changes
+
+The Log4J and Logback `AmqpAppender` s now support a `verifyHostname` SSL option.
+
+Also these appenders now can be configured to not add MDC entries as headers.
+The `addMdcAsHeaders` boolean option has been introduces to configure such a behavior.
+
+The appenders now support the `SaslConfig` property.
+
+See <<logging>> for more information.
+
+[[messagelisteneradapter-changes]]
+== MessageListenerAdapter Changes
+
+The `MessageListenerAdapter` provides now a new `buildListenerArguments(Object, Channel, Message)` method  to build an array of arguments to be passed into target listener and an old one is deprecated.
+See <<message-listener-adapter>> for more information.
+
+[[exchange/queue-declaration-changes]]
+== Exchange/Queue Declaration Changes
+
+The `ExchangeBuilder` and `QueueBuilder` fluent APIs used to create `Exchange` and `Queue` objects for declaration by `RabbitAdmin` now support "well known" arguments.
+See <<builder-api>> for more information.
+
+The `RabbitAdmin` has a new property `explicitDeclarationsOnly`.
+See <<conditional-declaration>> for more information.
+
+[[connection-factory-changes]]
+== Connection Factory Changes
+
+The `CachingConnectionFactory` has a new property `shuffleAddresses`.
+When providing a list of broker node addresses, the list will be shuffled before creating a connection so that the order in which the connections are attempted is random.
+See <<cluster>> for more information.
+
+When using Publisher confirms and returns, the callbacks are now invoked on the connection factory's `executor`.
+This avoids a possible deadlock in the `amqp-clients` library if you perform rabbit operations from within the callback.
+See <<template-confirms>> for more information.
+
+Also, the publisher confirm type is now specified with the `ConfirmType` enum instead of the two mutually exclusive setter methods.
+
+The `RabbitConnectionFactoryBean` now uses TLS 1.2 by default when SSL is enabled.
+See <<rabbitconnectionfactorybean-configuring-ssl>> for more information.
+
+[[new-messagepostprocessor-classes]]
+== New MessagePostProcessor Classes
+
+Classes `DeflaterPostProcessor` and `InflaterPostProcessor` were added to support compression and decompression, respectively, when the message content-encoding is set to `deflate`.
+
+[[other-changes]]
+== Other Changes
+
+The `Declarables` object (for declaring multiple queues, exchanges, bindings) now has a filtered getter for each type.
+See <<collection-declaration>> for more information.
+
+You can now customize each `Declarable` bean before the `RabbitAdmin` processes the declaration thereof.
+See <<automatic-declaration>> for more information.
+
+`singleActiveConsumer()` has been added to the `QueueBuilder` to set the `x-single-active-consumer` queue argument.
+See <<builder-api>> for more information.
+
+Outbound headers with values of type `Class<?>` are now mapped using `getName()` instead of `toString()`.
+See <<message-properties-converters>> for more information.
+
+Recovery of failed producer-created batches is now supported.
+See <<batch-retry>> for more information.
+

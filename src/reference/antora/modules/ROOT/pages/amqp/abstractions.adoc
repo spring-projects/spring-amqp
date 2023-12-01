@@ -1,0 +1,195 @@
+[[amqp-abstractions]]
+= AMQP Abstractions
+
+Spring AMQP consists of two modules (each represented by a JAR in the distribution): `spring-amqp` and `spring-rabbit`.
+The 'spring-amqp' module contains the `org.springframework.amqp.core` package.
+Within that package, you can find the classes that represent the core AMQP "`model`".
+Our intention is to provide generic abstractions that do not rely on any particular AMQP broker implementation or client library.
+End user code can be more portable across vendor implementations as it can be developed against the abstraction layer only.
+These abstractions are then implemented by broker-specific modules, such as 'spring-rabbit'.
+There is currently only a RabbitMQ implementation.
+However, the abstractions have been validated in .NET using Apache Qpid in addition to RabbitMQ.
+Since AMQP operates at the protocol level, in principle, you can use the RabbitMQ client with any broker that supports the same protocol version, but we do not test any other brokers at present.
+
+This overview assumes that you are already familiar with the basics of the AMQP specification.
+If not, have a look at the resources listed in <<resources>>
+
+[[message]]
+== `Message`
+
+The 0-9-1 AMQP specification does not define a `Message` class or interface.
+Instead, when performing an operation such as `basicPublish()`, the content is passed as a byte-array argument and additional properties are passed in as separate arguments.
+Spring AMQP defines a `Message` class as part of a more general AMQP domain model representation.
+The purpose of the `Message` class is to encapsulate the body and properties within a single instance so that the API can, in turn, be simpler.
+The following example shows the `Message` class definition:
+
+====
+[source,java]
+----
+public class Message {
+
+    private final MessageProperties messageProperties;
+
+    private final byte[] body;
+
+    public Message(byte[] body, MessageProperties messageProperties) {
+        this.body = body;
+        this.messageProperties = messageProperties;
+    }
+
+    public byte[] getBody() {
+        return this.body;
+    }
+
+    public MessageProperties getMessageProperties() {
+        return this.messageProperties;
+    }
+}
+----
+====
+
+The `MessageProperties` interface defines several common properties, such as 'messageId', 'timestamp', 'contentType', and several more.
+You can also extend those properties with user-defined 'headers' by calling the `setHeader(String key, Object value)` method.
+
+IMPORTANT: Starting with versions `1.5.7`, `1.6.11`, `1.7.4`, and `2.0.0`, if a message body is a serialized `Serializable` java object, it is no longer deserialized (by default) when performing `toString()` operations (such as in log messages).
+This is to prevent unsafe deserialization.
+By default, only `java.util` and `java.lang` classes are deserialized.
+To revert to the previous behavior, you can add allowable class/package patterns by invoking `Message.addAllowedListPatterns(...)`.
+A simple `*` wildcard is supported, for example `com.something.*, *.MyClass`.
+Bodies that cannot be deserialized are represented by `byte[<size>]` in log messages.
+
+[[exchange]]
+== Exchange
+
+The `Exchange` interface represents an AMQP Exchange, which is what a Message Producer sends to.
+Each Exchange within a virtual host of a broker has a unique name as well as a few other properties.
+The following example shows the `Exchange` interface:
+
+[source,java]
+----
+public interface Exchange {
+
+    String getName();
+
+    String getExchangeType();
+
+    boolean isDurable();
+
+    boolean isAutoDelete();
+
+    Map<String, Object> getArguments();
+
+}
+----
+
+As you can see, an `Exchange` also has a 'type' represented by constants defined in `ExchangeTypes`.
+The basic types are: `direct`, `topic`, `fanout`, and `headers`.
+In the core package, you can find implementations of the `Exchange` interface for each of those types.
+The behavior varies across these `Exchange` types in terms of how they handle bindings to queues.
+For example, a `Direct` exchange lets a queue be bound by a fixed routing key (often the queue's name).
+A `Topic` exchange supports bindings with routing patterns that may include the '*' and '#' wildcards for 'exactly-one' and 'zero-or-more', respectively.
+The `Fanout` exchange publishes to all queues that are bound to it without taking any routing key into consideration.
+For much more information about these and the other Exchange types, see <<resources>>.
+
+NOTE: The AMQP specification also requires that any broker provide a "`default`" direct exchange that has no name.
+All queues that are declared are bound to that default `Exchange` with their names as routing keys.
+You can learn more about the default Exchange's usage within Spring AMQP in <<amqp-template>>.
+
+[[queue]]
+== Queue
+
+The `Queue` class represents the component from which a message consumer receives messages.
+Like the various `Exchange` classes, our implementation is intended to be an abstract representation of this core AMQP type.
+The following listing shows the `Queue` class:
+
+====
+[source,java]
+----
+public class Queue  {
+
+    private final String name;
+
+    private volatile boolean durable;
+
+    private volatile boolean exclusive;
+
+    private volatile boolean autoDelete;
+
+    private volatile Map<String, Object> arguments;
+
+    /**
+     * The queue is durable, non-exclusive and non auto-delete.
+     *
+     * @param name the name of the queue.
+     */
+    public Queue(String name) {
+        this(name, true, false, false);
+    }
+
+    // Getters and Setters omitted for brevity
+
+}
+----
+====
+
+Notice that the constructor takes the queue name.
+Depending on the implementation, the admin template may provide methods for generating a uniquely named queue.
+Such queues can be useful as a "`reply-to`" address or in other *temporary* situations.
+For that reason, the 'exclusive' and 'autoDelete' properties of an auto-generated queue would both be set to 'true'.
+
+NOTE: See the section on queues in <<broker-configuration>> for information about declaring queues by using namespace support, including queue arguments.
+
+[[binding]]
+== Binding
+
+Given that a producer sends to an exchange and a consumer receives from a queue, the bindings that connect queues to exchanges are critical for connecting those producers and consumers via messaging.
+In Spring AMQP, we define a `Binding` class to represent those connections.
+This section reviews the basic options for binding queues to exchanges.
+
+You can bind a queue to a `DirectExchange` with a fixed routing key, as the following example shows:
+
+====
+[source,java]
+----
+new Binding(someQueue, someDirectExchange, "foo.bar");
+----
+====
+
+You can bind a queue to a `TopicExchange` with a routing pattern, as the following example shows:
+
+====
+[source,java]
+----
+new Binding(someQueue, someTopicExchange, "foo.*");
+----
+====
+
+You can bind a queue to a `FanoutExchange` with no routing key, as the following example shows:
+
+====
+[source,java]
+----
+new Binding(someQueue, someFanoutExchange);
+----
+====
+
+We also provide a `BindingBuilder` to facilitate a "`fluent API`" style, as the following example shows:
+
+====
+[source,java]
+----
+Binding b = BindingBuilder.bind(someQueue).to(someTopicExchange).with("foo.*");
+----
+====
+
+NOTE: For clarity, the preceding example shows the `BindingBuilder` class, but this style works well when using a static import for the 'bind()' method.
+
+By itself, an instance of the `Binding` class only holds the data about a connection.
+In other words, it is not an "`active`" component.
+However, as you will see later in <<broker-configuration>>, the `AmqpAdmin` class can use `Binding` instances to actually trigger the binding actions on the broker.
+Also, as you can see in that same section, you can define the `Binding` instances by using Spring's `@Bean` annotations within `@Configuration` classes.
+There is also a convenient base class that further simplifies that approach for generating AMQP-related bean definitions and recognizes the queues, exchanges, and bindings so that they are all declared on the AMQP broker upon application startup.
+
+The `AmqpTemplate` is also defined within the core package.
+As one of the main components involved in actual AMQP messaging, it is discussed in detail in its own section (see <<amqp-template>>).
+

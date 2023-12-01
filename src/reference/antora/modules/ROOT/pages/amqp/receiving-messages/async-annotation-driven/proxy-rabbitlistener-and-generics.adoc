@@ -1,0 +1,50 @@
+[[proxy-rabbitlistener-and-generics]]
+= Proxy `@RabbitListener` and Generics
+
+If your service is intended to be proxied (for example, in the case of `@Transactional`), you should keep in mind some considerations when
+the interface has generic parameters.
+Consider the following example:
+
+====
+[source, java]
+----
+interface TxService<P> {
+
+   String handle(P payload, String header);
+
+}
+
+static class TxServiceImpl implements TxService<Foo> {
+
+    @Override
+    @RabbitListener(...)
+    public String handle(Thing thing, String rk) {
+         ...
+    }
+
+}
+----
+====
+
+With a generic interface and a particular implementation, you are forced to switch to the CGLIB target class proxy because the actual implementation of the interface
+`handle` method is a bridge method.
+In the case of transaction management, the use of CGLIB is configured by using
+an annotation option: `@EnableTransactionManagement(proxyTargetClass = true)`.
+And in this case, all annotations have to be declared on the target method in the implementation, as the following example shows:
+
+====
+[source, java]
+----
+static class TxServiceImpl implements TxService<Foo> {
+
+    @Override
+    @Transactional
+    @RabbitListener(...)
+    public String handle(@Payload Foo foo, @Header("amqp_receivedRoutingKey") String rk) {
+        ...
+    }
+
+}
+----
+====
+

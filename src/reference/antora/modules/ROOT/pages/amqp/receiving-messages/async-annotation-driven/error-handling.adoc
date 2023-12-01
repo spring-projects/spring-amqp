@@ -1,0 +1,57 @@
+[[annotation-error-handling]]
+= Handling Exceptions
+
+By default, if an annotated listener method throws an exception, it is thrown to the container and the message are requeued and redelivered, discarded, or routed to a dead letter exchange, depending on the container and broker configuration.
+Nothing is returned to the sender.
+
+Starting with version 2.0, the `@RabbitListener` annotation has two new attributes: `errorHandler` and `returnExceptions`.
+
+These are not configured by default.
+
+You can use the `errorHandler` to provide the bean name of a `RabbitListenerErrorHandler` implementation.
+This functional interface has one method, as follows:
+
+[source, java]
+----
+@FunctionalInterface
+public interface RabbitListenerErrorHandler {
+
+    Object handleError(Message amqpMessage, org.springframework.messaging.Message<?> message,
+              ListenerExecutionFailedException exception) throws Exception;
+
+}
+----
+
+As you can see, you have access to the raw message received from the container, the spring-messaging `Message<?>` object produced by the message converter, and the exception that was thrown by the listener (wrapped in a `ListenerExecutionFailedException`).
+The error handler can either return some result (which is sent as the reply) or throw the original or a new exception (which is thrown to the container or returned to the sender, depending on the `returnExceptions` setting).
+
+The `returnExceptions` attribute, when `true`, causes exceptions to be returned to the sender.
+The exception is wrapped in a `RemoteInvocationResult` object.
+On the sender side, there is an available `RemoteInvocationAwareMessageConverterAdapter`, which, if configured into the `RabbitTemplate`, re-throws the server-side exception, wrapped in an `AmqpRemoteException`.
+The stack trace of the server exception is synthesized by merging the server and client stack traces.
+
+IMPORTANT: This mechanism generally works only with the default `SimpleMessageConverter`, which uses Java serialization.
+Exceptions are generally not "`Jackson-friendly`" and cannot be serialized to JSON.
+If you use JSON, consider using an `errorHandler` to return some other Jackson-friendly `Error` object when an exception is thrown.
+
+IMPORTANT: In version 2.1, this interface moved from package `o.s.amqp.rabbit.listener` to `o.s.amqp.rabbit.listener.api`.
+
+Starting with version 2.1.7, the `Channel` is available in a messaging message header; this allows you to ack or nack the failed messasge when using `AcknowledgeMode.MANUAL`:
+
+====
+[source, java]
+----
+public Object handleError(Message amqpMessage, org.springframework.messaging.Message<?> message,
+          ListenerExecutionFailedException exception) {
+              ...
+              message.getHeaders().get(AmqpHeaders.CHANNEL, Channel.class)
+                  .basicReject(message.getHeaders().get(AmqpHeaders.DELIVERY_TAG, Long.class),
+                               true);
+          }
+----
+====
+
+Starting with version 2.2.18, if a message conversion exception is thrown, the error handler will be called, with `null` in the `message` argument.
+This allows the application to send some result to the caller, indicating that a badly-formed message was received.
+Previously, such errors were thrown and handled by the container.
+

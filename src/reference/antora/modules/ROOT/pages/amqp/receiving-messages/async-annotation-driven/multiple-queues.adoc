@@ -1,0 +1,44 @@
+[[annotation-multiple-queues]]
+= Listening to Multiple Queues
+
+When you use the `queues` attribute, you can specify that the associated container can listen to multiple queues.
+You can use a `@Header` annotation to make the queue name from which a message was received available to the POJO
+method.
+The following example shows how to do so:
+
+====
+[source, java]
+----
+@Component
+public class MyService {
+
+    @RabbitListener(queues = { "queue1", "queue2" } )
+    public void processOrder(String data, @Header(AmqpHeaders.CONSUMER_QUEUE) String queue) {
+        ...
+    }
+
+}
+----
+====
+
+Starting with version 1.5, you can externalize the queue names by using property placeholders and SpEL.
+The following example shows how to do so:
+
+====
+[source, java]
+----
+@Component
+public class MyService {
+
+    @RabbitListener(queues = "#{'${property.with.comma.delimited.queue.names}'.split(',')}" )
+    public void processOrder(String data, @Header(AmqpHeaders.CONSUMER_QUEUE) String queue) {
+        ...
+    }
+
+}
+----
+====
+
+Prior to version 1.5, only a single queue could be specified this way.
+Each queue needed a separate property.
+

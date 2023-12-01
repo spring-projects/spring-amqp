@@ -1,0 +1,11 @@
+[[debugging]]
+= Debugging
+
+Spring AMQP provides extensive logging, especially at the `DEBUG` level.
+
+If you wish to monitor the AMQP protocol between the application and broker, you can use a tool such as WireShark, which has a plugin to decode the protocol.
+Alternatively, the RabbitMQ Java client comes with a very useful class called `Tracer`.
+When run as a `main`, by default, it listens on port 5673 and connects to port 5672 on localhost.
+You can run it and change your connection factory configuration to connect to port 5673 on localhost.
+It displays the decoded protocol on the console.
+Refer to the `Tracer` Javadoc for more information.

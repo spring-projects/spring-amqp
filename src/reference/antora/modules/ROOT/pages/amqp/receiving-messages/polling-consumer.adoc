@@ -1,0 +1,110 @@
+[[polling-consumer]]
+= Polling Consumer
+
+The `AmqpTemplate` itself can be used for polled `Message` reception.
+By default, if no message is available, `null` is returned immediately.
+There is no blocking.
+Starting with version 1.5, you can set a `receiveTimeout`, in milliseconds, and the receive methods block for up to that long, waiting for a message.
+A value less than zero means block indefinitely (or at least until the connection to the broker is lost).
+Version 1.6 introduced variants of the `receive` methods that allows the timeout be passed in on each call.
+
+CAUTION: Since the receive operation creates a new `QueueingConsumer` for each message, this technique is not really appropriate for high-volume environments.
+Consider using an asynchronous consumer or a `receiveTimeout` of zero for those use cases.
+
+Starting with version 2.4.8, when using a non-zero timeout, you can specify arguments passed into the `basicConsume` method used to associate the consumer with the channel.
+For example: `template.addConsumerArg("x-priority", 10)`.
+
+There are four simple `receive` methods available.
+As with the `Exchange` on the sending side, there is a method that requires that a default queue property has been set
+directly on the template itself, and there is a method that accepts a queue parameter at runtime.
+Version 1.6 introduced variants to accept `timeoutMillis` to override `receiveTimeout` on a per-request basis.
+The following listing shows the definitions of the four methods:
+
+====
+[source,java]
+----
+Message receive() throws AmqpException;
+
+Message receive(String queueName) throws AmqpException;
+
+Message receive(long timeoutMillis) throws AmqpException;
+
+Message receive(String queueName, long timeoutMillis) throws AmqpException;
+----
+====
+
+As in the case of sending messages, the `AmqpTemplate` has some convenience methods for receiving POJOs instead of `Message` instances, and implementations provide a way to customize the `MessageConverter` used to create the `Object` returned:
+The following listing shows those methods:
+
+====
+[source,java]
+----
+Object receiveAndConvert() throws AmqpException;
+
+Object receiveAndConvert(String queueName) throws AmqpException;
+
+Object receiveAndConvert(long timeoutMillis) throws AmqpException;
+
+Object receiveAndConvert(String queueName, long timeoutMillis) throws AmqpException;
+----
+====
+
+Starting with version 2.0, there are variants of these methods that take an additional `ParameterizedTypeReference` argument to convert complex types.
+The template must be configured with a `SmartMessageConverter`.
+See <<json-complex>> for more information.
+
+Similar to `sendAndReceive` methods, beginning with version 1.3, the `AmqpTemplate` has several convenience `receiveAndReply` methods for synchronously receiving, processing and replying to messages.
+The following listing shows those method definitions:
+
+====
+[source,java]
+----
+<R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback)
+       throws AmqpException;
+
+<R, S> boolean receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback)
+     throws AmqpException;
+
+<R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback,
+    String replyExchange, String replyRoutingKey) throws AmqpException;
+
+<R, S> boolean receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback,
+    String replyExchange, String replyRoutingKey) throws AmqpException;
+
+<R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback,
+     ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException;
+
+<R, S> boolean receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback,
+            ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException;
+----
+====
+
+The `AmqpTemplate` implementation takes care of the `receive` and `reply` phases.
+In most cases, you should provide only an implementation of `ReceiveAndReplyCallback` to perform some business logic for the received message and build a reply object or message, if needed.
+Note, a `ReceiveAndReplyCallback` may return `null`.
+In this case, no reply is sent and `receiveAndReply` works like the `receive` method.
+This lets the same queue be used for a mixture of messages, some of which may not need a reply.
+
+Automatic message (request and reply) conversion is applied only if the provided callback is not an instance of `ReceiveAndReplyMessageCallback`, which provides a raw message exchange contract.
+
+The `ReplyToAddressCallback` is useful for cases requiring custom logic to determine the `replyTo` address at runtime against the received message and reply from the `ReceiveAndReplyCallback`.
+By default, `replyTo` information in the request message is used to route the reply.
+
+The following listing shows an example of POJO-based receive and reply:
+
+====
+[source,java]
+----
+boolean received =
+        this.template.receiveAndReply(ROUTE, new ReceiveAndReplyCallback<Order, Invoice>() {
+
+                public Invoice handle(Order order) {
+                        return processOrder(order);
+                }
+        });
+if (received) {
+        log.info("We received an order!");
+}
+----
+====
+

@@ -1,0 +1,72 @@
+[[changes-in-2-3-since-2-2]]
+= Changes in 2.3 Since 2.2
+
+This section describes the changes between version 2.2 and version 2.3.
+See <<change-history>> for changes in previous versions.
+
+[[connection-factory-changes]]
+== Connection Factory Changes
+
+Two additional connection factories are now provided.
+See <<choosing-factory>> for more information.
+
+[[rabbitlistener-changes]]
+== `@RabbitListener` Changes
+
+You can now specify a reply content type.
+See <<reply-content-type>> for more information.
+
+[[message-converter-changes]]
+== Message Converter Changes
+
+The `Jackson2JMessageConverter` s can now deserialize abstract classes (including interfaces) if the `ObjectMapper` is configured with a custom deserializer.
+See <<jackson-abstract>> for more information.
+
+[[testing-changes]]
+== Testing Changes
+
+A new annotation `@SpringRabbitTest` is provided to automatically configure some infrastructure beans for when you are not using `SpringBootTest`.
+See <<spring-rabbit-test>> for more information.
+
+[[rabbittemplate-changes]]
+== RabbitTemplate Changes
+
+The template's `ReturnCallback` has been refactored as `ReturnsCallback` for simpler use in lambda expressions.
+See <<template-confirms>> for more information.
+
+When using returns and correlated confirms, the `CorrelationData` now requires a unique `id` property.
+See <<template-confirms>> for more information.
+
+When using direct reply-to, you can now configure the template such that the server does not need to return correlation data with the reply.
+See <<direct-reply-to>> for more information.
+
+[[listener-container-changes]]
+== Listener Container Changes
+
+A new listener container property `consumeDelay` is now available; it is helpful when using the https://github.com/rabbitmq/rabbitmq-sharding[RabbitMQ Sharding Plugin].
+
+The default `JavaLangErrorHandler` now calls `System.exit(99)`.
+To revert to the previous behavior (do nothing), add a no-op handler.
+
+The containers now support the `globalQos` property to apply the `prefetchCount` globally for the channel rather than for each consumer on the channel.
+
+See <<containerAttributes>> for more information.
+
+[[messagepostprocessor-changes]]
+== MessagePostProcessor Changes
+
+The compressing `MessagePostProcessor` s now use a comma to separate multiple content encodings instead of a colon.
+The decompressors can handle both formats but, if you produce messages with this version that are consumed by versions earlier than 2.2.12, you should configure the compressor to use the old delimiter.
+See the IMPORTANT note in <<post-processing>> for more information.
+
+[[multiple-broker-support-improvements]]
+== Multiple Broker Support Improvements
+
+See <<multi-rabbit>> for more information.
+
+[[republishmessagerecoverer-changes]]
+== RepublishMessageRecoverer Changes
+
+A new subclass of this recoverer is not provided that supports publisher confirms.
+See <<async-listeners>> for more information.
+

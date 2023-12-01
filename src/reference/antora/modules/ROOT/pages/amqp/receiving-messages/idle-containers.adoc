@@ -1,0 +1,99 @@
+[[idle-containers]]
+= Detecting Idle Asynchronous Consumers
+
+While efficient, one problem with asynchronous consumers is detecting when they are idle -- users might want to take
+some action if no messages arrive for some period of time.
+
+Starting with version 1.6, it is now possible to configure the listener container to publish a
+`ListenerContainerIdleEvent` when some time passes with no message delivery.
+While the container is idle, an event is published every `idleEventInterval` milliseconds.
+
+To configure this feature, set `idleEventInterval` on the container.
+The following example shows how to do so in XML and in Java (for both a `SimpleMessageListenerContainer` and a `SimpleRabbitListenerContainerFactory`):
+
+====
+[source, xml]
+----
+<rabbit:listener-container connection-factory="connectionFactory"
+        ...
+        idle-event-interval="60000"
+        ...
+        >
+    <rabbit:listener id="container1" queue-names="foo" ref="myListener" method="handle" />
+</rabbit:listener-container>
+----
+
+[source, java]
+----
+@Bean
+public SimpleMessageListenerContainer(ConnectionFactory connectionFactory) {
+    SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+    ...
+    container.setIdleEventInterval(60000L);
+    ...
+    return container;
+}
+----
+
+[source, java]
+----
+@Bean
+public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
+    SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+    factory.setConnectionFactory(rabbitConnectionFactory());
+    factory.setIdleEventInterval(60000L);
+    ...
+    return factory;
+}
+----
+====
+
+In each of these cases, an event is published once per minute while the container is idle.
+
+[[event-consumption]]
+== Event Consumption
+
+You can capture idle events by implementing `ApplicationListener` -- either a general listener, or one narrowed to only
+receive this specific event.
+You can also use `@EventListener`, introduced in Spring Framework 4.2.
+
+The following example combines the `@RabbitListener` and `@EventListener` into a single class.
+You need to understand that the application listener gets events for all containers, so you may need to
+check the listener ID if you want to take specific action based on which container is idle.
+You can also use the `@EventListener` `condition` for this purpose.
+
+The events have four properties:
+
+* `source`: The listener container instance
+* `id`: The listener ID (or container bean name)
+* `idleTime`: The time the container had been idle when the event was published
+* `queueNames`: The names of the queue(s) that the container listens to
+
+The following example shows how to create listeners by using both the `@RabbitListener` and the `@EventListener` annotations:
+
+====
+[source, Java]
+----
+public class Listener {
+
+    @RabbitListener(id="someId", queues="#{queue.name}")
+    public String listen(String foo) {
+        return foo.toUpperCase();
+    }
+
+    @EventListener(condition = "event.listenerId == 'someId'")
+    public void onApplicationEvent(ListenerContainerIdleEvent event) {
+        ...
+    }
+
+}
+----
+====
+
+IMPORTANT: Event listeners see events for all containers.
+Consequently, in the preceding example, we narrow the events received based on the listener ID.
+
+CAUTION: If you wish to use the idle event to stop the lister container, you should not call `container.stop()` on the thread that calls the listener.
+Doing so always causes delays and unnecessary log messages.
+Instead, you should hand off the event to a different thread that can then stop the container.
+

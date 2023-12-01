@@ -1,0 +1,31 @@
+[[async-annotation-driven-registration]]
+= Programmatic Endpoint Registration
+
+`RabbitListenerEndpoint` provides a model of a Rabbit endpoint and is responsible for configuring the container for that model.
+The infrastructure lets you configure endpoints programmatically in addition to the ones that are detected by the `RabbitListener` annotation.
+The following example shows how to do so:
+
+====
+[source,java]
+----
+@Configuration
+@EnableRabbit
+public class AppConfig implements RabbitListenerConfigurer {
+
+    @Override
+    public void configureRabbitListeners(RabbitListenerEndpointRegistrar registrar) {
+        SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
+        endpoint.setQueueNames("anotherQueue");
+        endpoint.setMessageListener(message -> {
+            // processing
+        });
+        registrar.registerEndpoint(endpoint);
+    }
+}
+----
+====
+
+In the preceding example, we used `SimpleRabbitListenerEndpoint`, which provides the actual `MessageListener` to invoke, but you could just as well build your own endpoint variant to describe a custom invocation mechanism.
+
+It should be noted that you could just as well skip the use of `@RabbitListener` altogether and register your endpoints programmatically through `RabbitListenerConfigurer`.
+

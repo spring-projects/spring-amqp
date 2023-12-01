@@ -1,0 +1,5 @@
+[[current-release]]
+= Current Release
+
+See <<whats-new>>.
+

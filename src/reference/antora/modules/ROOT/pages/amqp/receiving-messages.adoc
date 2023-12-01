@@ -1,0 +1,9 @@
+[[receiving-messages]]
+= Receiving Messages
+
+Message reception is always a little more complicated than sending.
+There are two ways to receive a `Message`.
+The simpler option is to poll for one `Message` at a time with a polling method call.
+The more complicated yet more common approach is to register a listener that receives `Messages` on-demand, asynchronously.
+We consider an example of each approach in the next two sub-sections.
+

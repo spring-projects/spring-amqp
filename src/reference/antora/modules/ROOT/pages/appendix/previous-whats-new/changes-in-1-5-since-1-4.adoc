@@ -1,0 +1,197 @@
+[[changes-in-1-5-since-1-4]]
+= Changes in 1.5 Since 1.4
+
+[[spring-erlang-is-no-longer-supported]]
+== `spring-erlang` Is No Longer Supported
+
+The `spring-erlang` jar is no longer included in the distribution.
+Use <<management-rest-api, the RabbitMQ REST API>> instead.
+
+[[cachingconnectionfactory-changes]]
+== `CachingConnectionFactory` Changes
+
+[[empty-addresses-property-in-cachingconnectionfactory]]
+=== Empty Addresses Property in `CachingConnectionFactory`
+
+Previously, if the connection factory was configured with a host and port but an empty String was also supplied for
+`addresses`, the host and port were ignored.
+Now, an empty `addresses` String is treated the same as a `null`, and the host and port are used.
+
+[[uri-constructor]]
+=== URI Constructor
+
+The `CachingConnectionFactory` has an additional constructor, with a `URI` parameter, to configure the broker connection.
+
+[[connection-reset]]
+=== Connection Reset
+
+A new method called `resetConnection()` has been added to let users reset the connection (or connections).
+You might use this, for example, to reconnect to the primary broker after failing over to the secondary broker.
+This *does* impact in-process operations.
+The existing `destroy()` method does exactly the same, but the new method has a less daunting name.
+
+[[properties-to-control-container-queue-declaration-behavior]]
+== Properties to Control Container Queue Declaration Behavior
+
+When the listener container consumers start, they attempt to passively declare the queues to ensure they are available
+on the broker.
+Previously, if these declarations failed (for example, because the queues didn't exist) or when an HA queue was being
+moved, the retry logic was fixed at three retry attempts at five-second intervals.
+If the queues still do not exist, the behavior is controlled by the `missingQueuesFatal` property (default: `true`).
+Also, for containers configured to listen from multiple queues, if only a subset of queues are available, the consumer
+retried the missing queues on a fixed interval of 60 seconds.
+
+The `declarationRetries`, `failedDeclarationRetryInterval`, and `retryDeclarationInterval` properties are now configurable.
+See <<containerAttributes>> for more information.
+
+[[class-package-change]]
+== Class Package Change
+
+The `RabbitGatewaySupport` class has been moved from `o.s.amqp.rabbit.core.support` to `o.s.amqp.rabbit.core`.
+
+[[defaultmessagepropertiesconverter-changes]]
+== `DefaultMessagePropertiesConverter` Changes
+
+You can now configure the `DefaultMessagePropertiesConverter` to
+determine the maximum length of a `LongString` that is converted
+to a `String` rather than to a `DataInputStream`.
+The converter has an alternative constructor that takes the value as a limit.
+Previously, this limit was hard-coded at `1024` bytes.
+(Also available in 1.4.4).
+
+[[rabbitlistener-improvements]]
+== `@RabbitListener` Improvements
+
+[[queuebinding-for-rabbitlistener]]
+=== `@QueueBinding` for `@RabbitListener`
+
+The `bindings` attribute has been added to the `@RabbitListener` annotation as mutually exclusive with the `queues`
+attribute to allow the specification of the `queue`, its `exchange`, and `binding` for declaration by a `RabbitAdmin` on
+the Broker.
+
+[[spel-in-sendto]]
+=== SpEL in `@SendTo`
+
+The default reply address (`@SendTo`) for a `@RabbitListener` can now be a SpEL expression.
+
+[[multiple-queue-names-through-properties]]
+=== Multiple Queue Names through Properties
+
+You can now use a combination of SpEL and property placeholders to specify multiple queues for a listener.
+
+See <<async-annotation-driven>> for more information.
+
+[[automatic-exchange-queue-and-binding-declaration]]
+== Automatic Exchange, Queue, and Binding Declaration
+
+You can now declare beans that define a collection of these entities, and the `RabbitAdmin` adds the
+contents to the list of entities that it declares when a connection is established.
+See <<collection-declaration>> for more information.
+
+[[rabbittemplate-changes]]
+== `RabbitTemplate` Changes
+
+[[reply-address-added]]
+=== `reply-address` Added
+
+The `reply-address` attribute has been added to the `<rabbit-template>` component as an alternative `reply-queue`.
+See <<request-reply>> for more information.
+(Also available in 1.4.4 as a setter on the `RabbitTemplate`).
+
+[[blocking-receive-methods]]
+=== Blocking `receive` Methods
+
+The `RabbitTemplate` now supports blocking in `receive` and `convertAndReceive` methods.
+See <<polling-consumer>> for more information.
+
+[[mandatory-with-sendandreceive-methods]]
+=== Mandatory with `sendAndReceive` Methods
+
+When the `mandatory` flag is set when using the `sendAndReceive` and `convertSendAndReceive` methods, the calling thread
+throws an `AmqpMessageReturnedException` if the request message cannot be delivered.
+See <<reply-timeout>> for more information.
+
+[[improper-reply-listener-configuration]]
+=== Improper Reply Listener Configuration
+
+The framework tries to verify proper configuration of a reply listener container when using a named reply queue.
+
+See <<reply-listener>> for more information.
+
+[[rabbitmanagementtemplate-added]]
+== `RabbitManagementTemplate` Added
+
+The `RabbitManagementTemplate` has been introduced to monitor and configure the RabbitMQ Broker by using the REST API provided by its https://www.rabbitmq.com/management.html[management plugin].
+See <<management-rest-api>> for more information.
+
+[[listener-container-bean-names-xml]]
+== Listener Container Bean Names (XML)
+
+[IMPORTANT]
+====
+The `id` attribute on the `<listener-container/>` element has been removed.
+Starting with this release, the `id` on the `<listener/>` child element is used alone to name the listener container bean created for each listener element.
+
+Normal Spring bean name overrides are applied.
+If a later `<listener/>` is parsed with the same `id` as an existing bean, the new definition overrides the existing one.
+Previously, bean names were composed from the `id` attributes of the `<listener-container/>` and `<listener/>` elements.
+
+When migrating to this release, if you have `id` attributes on your `<listener-container/>` elements, remove them and set the `id` on the child `<listener/>` element instead.
+====
+
+However, to support starting and stopping containers as a group, a new `group` attribute has been added.
+When this attribute is defined, the containers created by this element are added to a bean with this name, of type `Collection<SimpleMessageListenerContainer>`.
+You can iterate over this group to start and stop containers.
+
+[[class-level-rabbitlistener]]
+== Class-Level `@RabbitListener`
+
+The `@RabbitListener` annotation can now be applied at the class level.
+Together with the new `@RabbitHandler` method annotation, this lets you select the handler method based on payload type.
+See <<annotation-method-selection>> for more information.
+
+[[simplemessagelistenercontainer:-backoff-support]]
+== `SimpleMessageListenerContainer`: BackOff Support
+
+The `SimpleMessageListenerContainer` can now be supplied with a `BackOff` instance for `consumer` startup recovery.
+See <<containerAttributes>> for more information.
+
+[[channel-close-logging]]
+== Channel Close Logging
+
+A mechanism to control the log levels of channel closure has been introduced.
+See <<channel-close-logging>>.
+
+[[application-events]]
+== Application Events
+
+The `SimpleMessageListenerContainer` now emits application events when consumers fail.
+See <<consumer-events>> for more information.
+
+[[consumer-tag-configuration]]
+== Consumer Tag Configuration
+
+Previously, the consumer tags for asynchronous consumers were generated by the broker.
+With this release, it is now possible to supply a naming strategy to the listener container.
+See <<consumerTags>>.
+
+[[using-messagelisteneradapter]]
+== Using `MessageListenerAdapter`
+
+The `MessageListenerAdapter` now supports a map of queue names (or consumer tags) to method names, to determine
+which delegate method to call based on the queue from which the message was received.
+
+[[localizedqueueconnectionfactory-added]]
+== `LocalizedQueueConnectionFactory` Added
+
+`LocalizedQueueConnectionFactory` is a new connection factory that connects to the node in a cluster where a mirrored queue actually resides.
+
+See <<queue-affinity>>.
+
+[[anonymous-queue-naming]]
+== Anonymous Queue Naming
+
+Starting with version 1.5.3, you can now control how `AnonymousQueue` names are generated.
+See <<anonymous-queue>> for more information.
+
+

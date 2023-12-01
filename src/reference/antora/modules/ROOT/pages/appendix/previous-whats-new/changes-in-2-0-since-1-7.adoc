@@ -1,0 +1,203 @@
+[[changes-in-2-0-since-1-7]]
+= Changes in 2.0 Since 1.7
+
+[[using-cachingconnectionfactory]]
+== Using `CachingConnectionFactory`
+
+Starting with version 2.0.2, you can configure the `RabbitTemplate` to use a different connection to that used by listener containers.
+This change avoids deadlocked consumers when producers are blocked for any reason.
+See <<separate-connection>> for more information.
+
+[[amqp-client-library]]
+== AMQP Client library
+
+Spring AMQP now uses the new 5.0.x version of the `amqp-client` library provided by the RabbitMQ team.
+This client has auto recovery configured by default.
+See <<auto-recovery>>.
+
+NOTE: As of version 4.0, the client enables automatic recovery by default.
+While compatible with this feature, Spring AMQP has its own recovery mechanisms, and the client recovery feature generally is not needed.
+We recommend that you disable `amqp-client` automatic recovery, to avoid getting `AutoRecoverConnectionNotCurrentlyOpenException` instances when the broker is available but the connection has not yet recovered.
+Starting with version 1.7.1, Spring AMQP disables it unless you explicitly create your own RabbitMQ connection factory and provide it to the `CachingConnectionFactory`.
+RabbitMQ `ConnectionFactory` instances created by the `RabbitConnectionFactoryBean` also have the option disabled by default.
+
+[[general-changes]]
+== General Changes
+
+The `ExchangeBuilder` now builds durable exchanges by default.
+The `@Exchange` annotation used within a `@QeueueBinding` also declares durable exchanges by default.
+The `@Queue` annotation used within a `@RabbitListener` by default declares durable queues if named and non-durable if anonymous.
+See <<builder-api>> and <<async-annotation-driven>> for more information.
+
+[[deleted-classes]]
+== Deleted Classes
+
+`UniquelyNameQueue` is no longer provided.
+It is unusual to create a durable non-auto-delete queue with a unique name.
+This class has been deleted.
+If you require its functionality, use `new Queue(UUID.randomUUID().toString())`.
+
+[[new-listener-container]]
+== New Listener Container
+
+The `DirectMessageListenerContainer` has been added alongside the existing `SimpleMessageListenerContainer`.
+See <<choose-container>> and <<containerAttributes>> for information about choosing which container to use as well as how to configure them.
+
+
+[[log4j-appender]]
+== Log4j Appender
+
+This appender is no longer available due to the end-of-life of log4j.
+See <<logging>> for information about the available log appenders.
+
+
+[[rabbittemplate-changes]]
+== `RabbitTemplate` Changes
+
+IMPORTANT: Previously, a non-transactional `RabbitTemplate` participated in an existing transaction if it ran on a transactional listener container thread.
+This was a serious bug.
+However, users might have relied on this behavior.
+Starting with version 1.6.2, you must set the `channelTransacted` boolean on the template for it to participate in the container transaction.
+
+The `RabbitTemplate` now uses a `DirectReplyToMessageListenerContainer` (by default) instead of creating a new consumer for each request.
+See <<direct-reply-to>> for more information.
+
+The `AsyncRabbitTemplate` now supports direct reply-to.
+See <<async-template>> for more information.
+
+The `RabbitTemplate` and `AsyncRabbitTemplate` now have `receiveAndConvert` and `convertSendAndReceiveAsType` methods that take a `ParameterizedTypeReference<T>` argument, letting the caller specify the type to which to convert the result.
+This is particularly useful for complex types or when type information is not conveyed in message headers.
+It requires a `SmartMessageConverter` such as the `Jackson2JsonMessageConverter`.
+See <<receiving-messages>>, <<request-reply>>, <<async-template>>, and <<json-complex>> for more information.
+
+You can now use a `RabbitTemplate` to perform multiple operations on a dedicated channel.
+See <<scoped-operations>> for more information.
+
+[[listener-adapter]]
+== Listener Adapter
+
+A convenient `FunctionalInterface` is available for using lambdas with the `MessageListenerAdapter`.
+See <<message-listener-adapter>> for more information.
+
+[[listener-container-changes]]
+== Listener Container Changes
+
+[[prefetch-default-value]]
+=== Prefetch Default Value
+
+The prefetch default value used to be 1, which could lead to under-utilization of efficient consumers.
+The default prefetch value is now 250, which should keep consumers busy in most common scenarios and,
+thus, improve throughput.
+
+IMPORTANT: There are scenarios where the prefetch value should
+be low -- for example, with large messages, especially if the processing is slow (messages could add up
+to a large amount of memory in the client process), and if strict message ordering is necessary
+(the prefetch value should be set back to 1 in this case).
+Also, with low-volume messaging and multiple consumers (including concurrency within a single listener container instance), you may wish to reduce the prefetch to get a more even distribution of messages across consumers.
+
+For more background about prefetch, see this post about https://www.rabbitmq.com/blog/2014/04/14/finding-bottlenecks-with-rabbitmq-3-3/[consumer utilization in RabbitMQ]
+and this post about https://www.rabbitmq.com/blog/2012/05/11/some-queuing-theory-throughput-latency-and-bandwidth/[queuing theory].
+
+[[message-count]]
+=== Message Count
+
+Previously, `MessageProperties.getMessageCount()` returned `0` for messages emitted by the container.
+This property applies only when you use `basicGet` (for example, from `RabbitTemplate.receive()` methods) and is now initialized to `null` for container messages.
+
+[[transaction-rollback-behavior]]
+=== Transaction Rollback Behavior
+
+Message re-queue on transaction rollback is now consistent, regardless of whether or not a transaction manager is configured.
+See <<transaction-rollback>> for more information.
+
+[[shutdown-behavior]]
+=== Shutdown Behavior
+
+If the container threads do not respond to a shutdown within `shutdownTimeout`, the channels are forced closed by default.
+See <<containerAttributes>> for more information.
+
+[[after-receive-message-post-processors]]
+=== After Receive Message Post Processors
+
+If a `MessagePostProcessor` in the `afterReceiveMessagePostProcessors` property returns `null`, the message is discarded (and acknowledged if appropriate).
+
+[[connection-factory-changes]]
+== Connection Factory Changes
+
+The connection and channel listener interfaces now provide a mechanism to obtain information about exceptions.
+See <<connection-channel-listeners>> and <<publishing-is-async>> for more information.
+
+A new `ConnectionNameStrategy` is now provided to populate the application-specific identification of the target RabbitMQ connection from the `AbstractConnectionFactory`.
+See <<connections>> for more information.
+
+[[retry-changes]]
+== Retry Changes
+
+The `MissingMessageIdAdvice` is no longer provided.
+Its functionality is now built-in.
+See <<retry>> for more information.
+
+[[anonymous-queue-naming]]
+== Anonymous Queue Naming
+
+By default, `AnonymousQueues` are now named with the default `Base64UrlNamingStrategy` instead of a simple `UUID` string.
+See <<anonymous-queue>> for more information.
+
+[[rabbitlistener-changes]]
+== `@RabbitListener` Changes
+
+You can now provide simple queue declarations (bound only to the default exchange) in `@RabbitListener` annotations.
+See <<async-annotation-driven>> for more information.
+
+You can now configure `@RabbitListener` annotations so that any exceptions are returned to the sender.
+You can also configure a `RabbitListenerErrorHandler` to handle exceptions.
+See <<annotation-error-handling>> for more information.
+
+You can now bind a queue with multiple routing keys when you use the `@QueueBinding` annotation.
+Also `@QueueBinding.exchange()` now supports custom exchange types and declares durable exchanges by default.
+
+You can now set the `concurrency` of the listener container at the annotation level rather than having to configure a different container factory for different concurrency settings.
+
+You can now set the `autoStartup` property of the listener container at the annotation level, overriding the default setting in the container factory.
+
+You can now set after receive and before send (reply) `MessagePostProcessor` instances in the `RabbitListener` container factories.
+
+See <<async-annotation-driven>> for more information.
+
+Starting with version 2.0.3, one of the `@RabbitHandler` annotations on a class-level `@RabbitListener` can be designated as the default.
+See <<annotation-method-selection>> for more information.
+
+[[container-conditional-rollback]]
+== Container Conditional Rollback
+
+When using an external transaction manager (such as JDBC), rule-based rollback is now supported when you provide the container with a transaction attribute.
+It is also now more flexible when you use a transaction advice.
+See <<conditional-rollback>> for more information.
+
+[[remove-jackson-1-x-support]]
+== Remove Jackson 1.x support
+
+Deprecated in previous versions, Jackson `1.x` converters and related components have now been deleted.
+You can use similar components based on Jackson 2.x.
+See <<json-message-converter>> for more information.
+
+[[json-message-converter]]
+== JSON Message Converter
+
+When the `__TypeId__` is set to `Hashtable` for an inbound JSON message, the default conversion type is now `LinkedHashMap`.
+Previously, it was `Hashtable`.
+To revert to a `Hashtable`, you can use `setDefaultMapType` on the `DefaultClassMapper`.
+
+[[xml-parsers]]
+== XML Parsers
+
+When parsing `Queue` and `Exchange` XML components, the parsers no longer register the `name` attribute value as a bean alias if an `id` attribute is present.
+See <<note-id-name>> for more information.
+
+[[blocked-connection]]
+== Blocked Connection
+You can now inject the `com.rabbitmq.client.BlockedListener` into the `org.springframework.amqp.rabbit.connection.Connection` object.
+Also, the `ConnectionBlockedEvent` and `ConnectionUnblockedEvent` events are emitted by the `ConnectionFactory` when the connection is blocked or unblocked by the Broker.
+
+See <<connections>> for more information.
+

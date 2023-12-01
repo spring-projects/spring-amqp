@@ -1,0 +1,57 @@
+[[reply-content-type]]
+= Reply ContentType
+
+If you are using a sophisticated message converter, such as the `ContentTypeDelegatingMessageConverter`, you can control the content type of the reply by setting the `replyContentType` property on the listener.
+This allows the converter to select the appropriate delegate converter for the reply.
+
+====
+[source, java]
+----
+@RabbitListener(queues = "q1", messageConverter = "delegating",
+        replyContentType = "application/json")
+public Thing2 listen(Thing1 in) {
+    ...
+}
+----
+====
+
+By default, for backwards compatibility, any content type property set by the converter will be overwritten by this value after conversion.
+Converters such as the `SimpleMessageConverter` use the reply type rather than the content type to determine the conversion needed and sets the content type in the reply message appropriately.
+This may not be the desired action and can be overridden by setting the `converterWinsContentType` property to `false`.
+For example, if you return a `String` containing JSON, the `SimpleMessageConverter` will set the content type in the reply to `text/plain`.
+The following configuration will ensure the content type is set properly, even if the `SimpleMessageConverter` is used.
+
+====
+[source, java]
+----
+@RabbitListener(queues = "q1", replyContentType = "application/json",
+        converterWinsContentType = "false")
+public String listen(Thing in) {
+    ...
+    return someJsonString;
+}
+----
+====
+
+These properties (`replyContentType` and `converterWinsContentType`) do not apply when the return type is a Spring AMQP `Message` or a Spring Messaging `Message<?>`.
+In the first case, there is no conversion involved; simply set the `contentType` message property.
+In the second case, the behavior is controlled using message headers:
+
+====
+[source, java]
+----
+@RabbitListener(queues = "q1", messageConverter = "delegating")
+@SendTo("q2")
+public Message<String> listen(String in) {
+    ...
+    return MessageBuilder.withPayload(in.toUpperCase())
+            .setHeader(MessageHeaders.CONTENT_TYPE, "application/xml")
+            .build();
+}
+----
+====
+
+This content type will be passed in the `MessageProperties` to the converter.
+By default, for backwards compatibility, any content type property set by the converter will be overwritten by this value after conversion.
+If you wish to override that behavior, also set the `AmqpHeaders.CONTENT_TYPE_CONVERTER_WINS` to `true` and any value set by the converter will be retained.
+

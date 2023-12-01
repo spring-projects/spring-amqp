@@ -1,0 +1,38 @@
+[[custom-argument-resolver]]
+= Adding a Custom `HandlerMethodArgumentResolver` to @RabbitListener
+
+Starting with version 2.3.7 you are able to add your own `HandlerMethodArgumentResolver` and resolve custom method parameters.
+All you need is to implement `RabbitListenerConfigurer` and use method `setCustomMethodArgumentResolvers()` from class `RabbitListenerEndpointRegistrar`.
+
+====
+[source, java]
+----
+@Configuration
+class CustomRabbitConfig implements RabbitListenerConfigurer {
+
+    @Override
+    public void configureRabbitListeners(RabbitListenerEndpointRegistrar registrar) {
+        registrar.setCustomMethodArgumentResolvers(
+				new HandlerMethodArgumentResolver() {
+
+					@Override
+					public boolean supportsParameter(MethodParameter parameter) {
+						return CustomMethodArgument.class.isAssignableFrom(parameter.getParameterType());
+					}
+
+					@Override
+					public Object resolveArgument(MethodParameter parameter, org.springframework.messaging.Message<?> message) {
+						return new CustomMethodArgument(
+								(String) message.getPayload(),
+								message.getHeaders().get("customHeader", String.class)
+						);
+					}
+
+				}
+			);
+    }
+
+}
+----
+====
+
