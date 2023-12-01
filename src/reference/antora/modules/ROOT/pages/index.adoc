@@ -26,9 +26,7 @@ Copies of this document may be made for your own use and for distribution to oth
 [[preface]]
 == Preface
 
-include::preface.adoc[]
 
-include::whats-new.adoc[]
 
 [[introduction]]
 == Introduction
@@ -36,7 +34,6 @@ include::whats-new.adoc[]
 This first part of the reference documentation is a high-level overview of Spring AMQP and the underlying concepts.
 It includes some code snippets to get you up and running as quickly as possible.
 
-include::quick-tour.adoc[]
 
 [[reference]]
 == Reference
@@ -45,28 +42,20 @@ This part of the reference documentation details the various components that com
 The <<amqp,main chapter>> covers the core classes to develop an AMQP application.
 This part also includes a chapter about the <<sample-apps,sample applications>>.
 
-include::amqp.adoc[]
 
-include::stream.adoc[]
 
-include::logging.adoc[]
 
-include::sample-apps.adoc[]
 
-include::testing.adoc[]
 
 [[spring-integration-reference]]
 == Spring Integration - Reference
 
 This part of the reference documentation provides a quick introduction to the AMQP support within the Spring Integration project.
 
-include::si-amqp.adoc[]
 
 [[resources]]
 == Other Resources
 
 In addition to this reference documentation, there exist a number of other resources that may help you learn about AMQP.
 
-include::further-reading.adoc[]
 
-include::appendix.adoc[]

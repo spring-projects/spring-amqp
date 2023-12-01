@@ -2,11 +2,8 @@
 [[observation-gen]]
 = Micrometer Observation Documentation
 
-include::../docs/generated/metrics.adoc[]
 
-include::../docs/generated/spans.adoc[]
 
-include::../docs/generated/conventions.adoc[]
 
 [appendix]
 [[native-images]]
