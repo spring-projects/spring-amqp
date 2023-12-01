@@ -1072,7 +1072,7 @@ You can use the `localPort` part of the property name to correlate with connecti
 The `cacheMode` property (`CHANNEL` or `CONNECTION`) is also included.
 
 .JVisualVM Example
-image::images/cacheStats.png[align="center"]
+image::cacheStats.png[align="center"]
 
 [[auto-recovery]]
 ===== RabbitMQ Automatic Connection/Topology recovery
@@ -5924,7 +5924,7 @@ When no new messages arrive and there are unacked messages, this timeout is appr
 See also `messagesPerAck` and `monitorInterval` in this table.
 
 a|
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[acknowledgeMode]]<<acknowledgeMode,`acknowledgeMode`>> +
@@ -5939,8 +5939,8 @@ Note that `acknowledgeMode` is complementary to `channelTransacted` -- if the ch
 This is the default mode.
 See also `batchSize`.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[adviceChain]]<<adviceChain,`adviceChain`>> +
@@ -5950,8 +5950,8 @@ a|
 This can be used to apply additional cross-cutting concerns, such as automatic retry in the event of broker death.
 Note that simple re-connection after an AMQP error is handled by the `CachingConnectionFactory`, as long as the broker is still alive.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[afterReceivePostProcessors]]<<afterReceivePostProcessors,`afterReceivePostProcessors`>> +
@@ -5962,8 +5962,8 @@ Post processors can implement `PriorityOrdered` or `Ordered`.
 The array is sorted with un-ordered members invoked last.
 If a post processor returns `null`, the message is discarded (and acknowledged, if appropriate).
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[alwaysRequeueWithTxManagerRollback]]<<alwaysRequeueWithTxManagerRollback,`alwaysRequeueWithTxManagerRollback`>> +
@@ -5971,8 +5971,8 @@ a|
 
 |Set to `true` to always requeue messages on rollback when a transaction manager is configured.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[autoDeclare]]<<autoDeclare,`autoDeclare`>> +
@@ -5987,8 +5987,8 @@ If there were no admins, it would create one internally.
 In either case, this could cause unexpected results.
 Starting with version 1.6, for `autoDeclare` to work, there must be exactly one `RabbitAdmin` in the context, or a reference to a specific instance must be configured on the container using the `rabbitAdmin` property.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[autoStartup]]<<autoStartup,`autoStartup`>> +
@@ -5997,9 +5997,9 @@ a|
 |Flag to indicate that the container should start when the `ApplicationContext` does (as part of the `SmartLifecycle` callbacks, which happen after all beans are initialized).
 Defaults to `true`, but you can set it to `false` if your broker might not be available on startup and call `start()` later manually when you know the broker is ready.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 
 |[[batchSize]]<<batchSize,`batchSize`>> +
 (transaction-size)
@@ -6009,7 +6009,7 @@ a|image::images/tickmark.png[]
 This is also when a transactional channel is committed.
 If the `prefetchCount` is less than the `batchSize`, it is increased to match the `batchSize`.
 
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 a|
 a|
 
@@ -6020,8 +6020,8 @@ a|
 Default `SimpleDebatchingStrategy`.
 See <<template-batching>> and <<receiving-batch>>.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[channelTransacted]]<<channelTransacted,`channelTransacted`>> +
@@ -6029,8 +6029,8 @@ a|
 
 |Boolean flag to signal that all messages should be acknowledged in a transaction (either manually or automatically).
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[concurrency]]<<concurrency,`concurrency`>> +
@@ -6040,7 +6040,7 @@ a|
 If only `n` is provided, `n` is a fixed number of consumers.
 See <<listener-concurrency>>.
 
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 a|
 a|
 
@@ -6051,9 +6051,9 @@ a|
 See <<listener-concurrency>>.
 For the `StLC`, concurrency is controlled via an overloaded `superStream` method; see <<super-stream-consumer>>.
 
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 a|
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 
 |[[connectionFactory]]<<connectionFactory,`connectionFactory`>> +
 (connection-factory)
@@ -6061,8 +6061,8 @@ a|image::images/tickmark.png[]
 |A reference to the `ConnectionFactory`.
 When configuring by using the XML namespace, the default referenced bean name is `rabbitConnectionFactory`.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[consecutiveActiveTrigger]]<<consecutiveActiveTrigger,`consecutiveActiveTrigger`>> +
@@ -6073,7 +6073,7 @@ Also impacted by 'batchSize'.
 See <<listener-concurrency>>.
 Default: 10.
 
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 a|
 a|
 
@@ -6085,7 +6085,7 @@ Also impacted by 'batchSize'.
 See <<listener-concurrency>>.
 Default: 10.
 
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 a|
 a|
 
@@ -6095,7 +6095,7 @@ a|
 |If the `MessageListener` supports it, setting this to true enables batching of discrete messages, up to `batchSize`; a partial batch will be delivered if no new messages arrive in `receiveTimeout`.
 When this is false, batching is only supported for batches created by a producer; see <<template-batching>>.
 
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 a|
 a|
 
@@ -6106,7 +6106,7 @@ a|
 
 a|
 a|
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 
 |[[consumerStartTimeout]]<<consumerStartTimeout,`consumerStartTimeout`>> +
 (N/A)
@@ -6118,7 +6118,7 @@ An example of when this might happen is if a configured `taskExecutor` has insuf
 See <<threading>>.
 Default: 60000 (one minute).
 
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 a|
 a|
 
@@ -6127,8 +6127,8 @@ a|
 
 |Set an implementation of <<consumerTags, ConsumerTagStrategy>>, enabling the creation of a (unique) tag for each consumer.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[consumersPerQueue]]<<consumersPerQueue,`consumersPerQueue`>> +
@@ -6138,7 +6138,7 @@ a|
 See <<listener-concurrency>>.
 
 a|
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[consumeDelay]]<<consumeDelay,`consumeDelay`>> +
@@ -6148,8 +6148,8 @@ a|
 Use this property to add a small delay between consumer starts to avoid this race condition.
 You should experiment with values to determine the suitable delay for your environment.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[debatchingEnabled]]<<debatchingEnabled,`debatchingEnabled`>> +
@@ -6161,8 +6161,8 @@ Otherwise messages from the batch are presented one-at-a-time.
 Default true.
 See <<template-batching>> and <<receiving-batch>>.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[declarationRetries]]<<declarationRetries,`declarationRetries`>> +
@@ -6173,7 +6173,7 @@ Passive queue declaration occurs when the consumer starts or, when consuming fro
 When none of the configured queues can be passively declared (for any reason) after the retries are exhausted, the container behavior is controlled by the 'missingQueuesFatal` property, described earlier.
 Default: Three retries (for a total of four attempts).
 
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 a|
 a|
 
@@ -6183,8 +6183,8 @@ a|
 |Determines whether messages that are rejected because the listener threw an exception should be requeued or not.
 Default: `true`.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[errorHandler]]<<errorHandler,`errorHandler`>> +
@@ -6193,8 +6193,8 @@ a|
 |A reference to an `ErrorHandler` strategy for handling any uncaught exceptions that may occur during the execution of the MessageListener.
 Default: `ConditionalRejectingErrorHandler`
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[exclusive]]<<exclusive,`exclusive`>> +
@@ -6207,8 +6207,8 @@ If another consumer has exclusive access, the container tries to recover the con
 When using the namespace, this attribute appears on the `<rabbit:listener/>` element along with the queue names.
 Default: `false`.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[exclusiveConsumerExceptionLogger]]<<exclusiveConsumerExceptionLogger,`exclusiveConsumerExceptionLogger`>> +
@@ -6217,8 +6217,8 @@ a|
 |An exception logger used when an exclusive consumer cannot gain access to a queue.
 By default, this is logged at the `WARN` level.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[failedDeclarationRetryInterval]]<<failedDeclarationRetryInterval,`failedDeclarationRetryInterval`>> +
@@ -6229,8 +6229,8 @@ a|
 Passive queue declaration occurs when the consumer starts or, when consuming from multiple queues, when not all queues were available during initialization.
 Default: 5000 (five seconds).
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[forceCloseChannel]]<<forceCloseChannel,`forceCloseChannel`>> +
@@ -6240,8 +6240,8 @@ a|
 Defaults to `true` since 2.0.
 You can set it to `false` to revert to the previous behavior.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[forceStop]]<<forceStop,`forceStop`>> +
@@ -6252,8 +6252,8 @@ By default, the container will cancel the consumer and process all prefetched me
 Since versions 2.4.14, 3.0.6
 Defaults to `false`.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[globalQos]]<<globalQos,`globalQos`>> +
@@ -6262,8 +6262,8 @@ a|
 |When true, the `prefetchCount` is applied globally to the channel rather than to each consumer on the channel.
 See https://www.rabbitmq.com/amqp-0-9-1-reference.html#basic.qos.global[`basicQos.global`] for more information.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |(group)
@@ -6275,8 +6275,8 @@ This allows, for example, starting and stopping the group of containers by itera
 If multiple `<listener-container/>` elements have the same group value, the containers in the collection form
 an aggregate of all containers so designated.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[idleEventInterval]]<<idleEventInterval,`idleEventInterval`>> +
@@ -6284,8 +6284,8 @@ a|
 
 |See <<idle-containers>>.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[javaLangErrorHandler]]<<javaLangErrorHandler,`javaLangErrorHandler`>> +
@@ -6294,8 +6294,8 @@ a|
 |An `AbstractMessageListenerContainer.JavaLangErrorHandler` implementation that is called when a container thread catches an `Error`.
 The default implementation calls `System.exit(99)`; to revert to the previous behavior (do nothing), add a no-op handler.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[maxConcurrentConsumers]]<<maxConcurrentConsumers,`maxConcurrentConsumers`>> +
@@ -6305,7 +6305,7 @@ a|
 Must be greater than or equal to 'concurrentConsumers'.
 See <<listener-concurrency>>.
 
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 a|
 a|
 
@@ -6322,7 +6322,7 @@ Default: ack every message.
 See also `ackTimeout` in this table.
 
 a|
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[mismatchedQueuesFatal]]<<mismatchedQueuesFatal,`mismatchedQueuesFatal`>> +
@@ -6346,8 +6346,8 @@ IMPORTANT: Mismatched queue argument detection is disabled while starting a cont
 This is to avoid a potential deadlock which can delay the start of such containers for up to 60 seconds.
 Applications using lazy listener beans should check the queue arguments before getting a reference to the lazy bean.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[missingQueuesFatal]]<<missingQueuesFatal,`missingQueuesFatal`>> +
@@ -6386,8 +6386,8 @@ IMPORTANT: Missing queue detection is disabled while starting a container for a 
 This is to avoid a potential deadlock which can delay the start of such containers for up to 60 seconds.
 Applications using lazy listener beans should check the queue(s) before getting a reference to the lazy bean.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[monitorInterval]]<<monitorInterval,`monitorInterval`>> +
@@ -6396,7 +6396,7 @@ a|
 |With the DMLC, a task is scheduled to run at this interval to monitor the state of the consumers and recover any that have failed.
 
 a|
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[noLocal]]<<noLocal,`noLocal`>> +
@@ -6404,8 +6404,8 @@ a|
 
 |Set to `true` to disable delivery from the server to consumers messages published on the same channel's connection.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[phase]]<<phase,`phase`>> +
@@ -6415,8 +6415,8 @@ a|
 The lower the value, the earlier this container starts and the later it stops.
 The default is `Integer.MAX_VALUE`, meaning the container starts as late as possible and stops as soon as possible.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[possibleAuthenticationFailureFatal]]<<possibleAuthenticationFailureFatal,`possibleAuthenticationFailureFatal`>> +
@@ -6455,8 +6455,8 @@ This global property will not be applied to any containers that have an explicit
 
 The default retry properties (3 retries at 5 second intervals) can be overridden using the properties after this one.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[prefetchCount]]<<prefetchCount,`prefetchCount`>> +
@@ -6477,8 +6477,8 @@ Also, with low-volume messaging and multiple consumers (including concurrency wi
 
 Also see `globalQos`.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[rabbitAdmin]]<<rabbitAdmin,`rabbitAdmin`>> +
@@ -6491,8 +6491,8 @@ It is required only when using auto-delete queues with conditional declaration.
 If you do not wish the auto-delete queues to be declared until the container is started, set `auto-startup` to `false` on the admin.
 Defaults to a `RabbitAdmin` that declares all non-conditional elements.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[receiveTimeout]]<<receiveTimeout,`receiveTimeout`>> +
@@ -6503,7 +6503,7 @@ If `acknowledgeMode=NONE`, this has very little effect -- the container spins ro
 It has the biggest effect for a transactional `Channel` with `batchSize > 1`, since it can cause messages already consumed not to be acknowledged until the timeout expires.
 When `consumerBatchEnabled` is true, a partial batch will be delivered if this timeout occurs before a batch is complete.
 
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 a|
 a|
 
@@ -6514,8 +6514,8 @@ a|
 Default is `FixedBackOff` with unlimited retries every five seconds.
 Mutually exclusive with `recoveryInterval`.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[recoveryInterval]]<<recoveryInterval,`recoveryInterval`>> +
@@ -6525,8 +6525,8 @@ a|
 Default: 5000.
 Mutually exclusive with `recoveryBackOff`.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[retryDeclarationInterval]]<<retryDeclarationInterval,`retryDeclarationInterval`>> +
@@ -6540,7 +6540,7 @@ If there are still missing queues, the consumer again waits for this interval be
 This process continues indefinitely until all queues are available.
 Default: 60000 (one minute).
 
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 a|
 a|
 
@@ -6551,8 +6551,8 @@ a|
 if its enclosing `ApplicationContext` is closed), it waits for in-flight messages to be processed up to this limit.
 Defaults to five seconds.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[startConsumerMinInterval]]<<startConsumerMinInterval,`startConsumerMinInterval`>> +
@@ -6562,7 +6562,7 @@ a|
 See <<listener-concurrency>>.
 Default: 10000 (10 seconds).
 
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 a|
 a|
 
@@ -6574,8 +6574,8 @@ WithNullMessageId
 fatal for the consumer (it is stopped) by default.
 Set this to `false` to discard (or route to a dead-letter queue) such messages.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[stopConsumerMinInterval]]<<stopConsumerMinInterval,`stopConsumerMinInterval`>> +
@@ -6585,7 +6585,7 @@ a|
 See <<listener-concurrency>>.
 Default: 60000 (one minute).
 
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 a|
 a|
 
@@ -6596,7 +6596,7 @@ a|
 
 a|
 a|
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 
 |[[taskExecutor]]<<taskExecutor,`taskExecutor`>> +
 (task-executor)
@@ -6604,8 +6604,8 @@ a|image::images/tickmark.png[]
 |A reference to a Spring `TaskExecutor` (or standard JDK 1.5+ `Executor`) for executing listener invokers.
 Default is a `SimpleAsyncTaskExecutor`, using internally managed threads.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[taskScheduler]]<<taskScheduler,`taskScheduler`>> +
@@ -6614,7 +6614,7 @@ a|
 |With the DMLC, the scheduler used to run the monitor task at the 'monitorInterval'.
 
 a|
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
 a|
 
 |[[transactionManager]]<<transactionManager,`transactionManager`>> +
@@ -6623,8 +6623,8 @@ a|
 |External transaction manager for the operation of the listener.
 Also complementary to `channelTransacted` -- if the `Channel` is transacted, its transaction is synchronized with the external transaction.
 
-a|image::images/tickmark.png[]
-a|image::images/tickmark.png[]
+a|image::tickmark.png[]
+a|image::tickmark.png[]
 a|
 |===
 
