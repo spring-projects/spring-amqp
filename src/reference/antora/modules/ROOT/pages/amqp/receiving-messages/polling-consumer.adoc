@@ -51,7 +51,7 @@ Object receiveAndConvert(String queueName, long timeoutMillis) throws AmqpExcept
 
 Starting with version 2.0, there are variants of these methods that take an additional `ParameterizedTypeReference` argument to convert complex types.
 The template must be configured with a `SmartMessageConverter`.
-See <<json-complex>> for more information.
+See xref:amqp/message-converters.adoc#json-complex[Converting From a `Message` With `RabbitTemplate`] for more information.
 
 Similar to `sendAndReceive` methods, beginning with version 1.3, the `AmqpTemplate` has several convenience `receiveAndReply` methods for synchronously receiving, processing and replying to messages.
 The following listing shows those method definitions:

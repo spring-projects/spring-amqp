@@ -19,7 +19,7 @@ The following features are available with the SMLC but not the DMLC:
 
 * `batchSize`: With the SMLC, you can set this to control how many messages are delivered in a transaction or to reduce the number of acks, but it may cause the number of duplicate deliveries to increase after a failure.
 (The DMLC does have `messagesPerAck`, which you can use to reduce the acks, the same as with `batchSize` and the SMLC, but it cannot be used with transactions -- each message is delivered and ack'd in a separate transaction).
-* `consumerBatchEnabled`: enables batching of discrete messages in the consumer; see <<containerAttributes>> for more information.
+* `consumerBatchEnabled`: enables batching of discrete messages in the consumer; see xref:amqp/containerAttributes.adoc[Message Listener Container Configuration] for more information.
 * `maxConcurrentConsumers` and consumer scaling intervals or triggers -- there is no auto-scaling in the DMLC.
 It does, however, let you programmatically change the `consumersPerQueue` property and the consumers are adjusted accordingly.
 
@@ -30,7 +30,7 @@ With the SMLC, the entire consumer thread is restarted (all consumers canceled a
 With the DMLC, unaffected consumers are not canceled.
 * The context switch between the RabbitMQ Client thread and the consumer thread is avoided.
 * Threads are shared across consumers rather than having a dedicated thread for each consumer in the SMLC.
-However, see the IMPORTANT note about the connection factory configuration in <<threading>>.
+However, see the IMPORTANT note about the connection factory configuration in xref:amqp/receiving-messages/threading.adoc[Threading and Asynchronous Consumers].
 
-See <<containerAttributes>> for information about which configuration properties apply to each container.
+See xref:amqp/containerAttributes.adoc[Message Listener Container Configuration] for information about which configuration properties apply to each container.
 

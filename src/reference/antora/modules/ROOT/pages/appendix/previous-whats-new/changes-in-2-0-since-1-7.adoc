@@ -6,14 +6,14 @@
 
 Starting with version 2.0.2, you can configure the `RabbitTemplate` to use a different connection to that used by listener containers.
 This change avoids deadlocked consumers when producers are blocked for any reason.
-See <<separate-connection>> for more information.
+See xref:amqp/template.adoc#separate-connection[Using a Separate Connection] for more information.
 
 [[amqp-client-library]]
 == AMQP Client library
 
 Spring AMQP now uses the new 5.0.x version of the `amqp-client` library provided by the RabbitMQ team.
 This client has auto recovery configured by default.
-See <<auto-recovery>>.
+See xref:amqp/connections.adoc#auto-recovery[RabbitMQ Automatic Connection/Topology recovery].
 
 NOTE: As of version 4.0, the client enables automatic recovery by default.
 While compatible with this feature, Spring AMQP has its own recovery mechanisms, and the client recovery feature generally is not needed.
@@ -27,7 +27,7 @@ RabbitMQ `ConnectionFactory` instances created by the `RabbitConnectionFactoryBe
 The `ExchangeBuilder` now builds durable exchanges by default.
 The `@Exchange` annotation used within a `@QeueueBinding` also declares durable exchanges by default.
 The `@Queue` annotation used within a `@RabbitListener` by default declares durable queues if named and non-durable if anonymous.
-See <<builder-api>> and <<async-annotation-driven>> for more information.
+See xref:amqp/broker-configuration.adoc#builder-api[Builder API for Queues and Exchanges] and xref:amqp/receiving-messages/async-annotation-driven.adoc[Annotation-driven Listener Endpoints] for more information.
 
 [[deleted-classes]]
 == Deleted Classes
@@ -41,14 +41,14 @@ If you require its functionality, use `new Queue(UUID.randomUUID().toString())`.
 == New Listener Container
 
 The `DirectMessageListenerContainer` has been added alongside the existing `SimpleMessageListenerContainer`.
-See <<choose-container>> and <<containerAttributes>> for information about choosing which container to use as well as how to configure them.
+See xref:amqp/receiving-messages/choose-container.adoc[Choosing a Container] and xref:amqp/containerAttributes.adoc[Message Listener Container Configuration] for information about choosing which container to use as well as how to configure them.
 
 
 [[log4j-appender]]
 == Log4j Appender
 
 This appender is no longer available due to the end-of-life of log4j.
-See <<logging>> for information about the available log appenders.
+See xref:logging.adoc[Logging Subsystem AMQP Appenders] for information about the available log appenders.
 
 
 [[rabbittemplate-changes]]
@@ -60,24 +60,24 @@ However, users might have relied on this behavior.
 Starting with version 1.6.2, you must set the `channelTransacted` boolean on the template for it to participate in the container transaction.
 
 The `RabbitTemplate` now uses a `DirectReplyToMessageListenerContainer` (by default) instead of creating a new consumer for each request.
-See <<direct-reply-to>> for more information.
+See xref:amqp/request-reply.adoc#direct-reply-to[RabbitMQ Direct reply-to] for more information.
 
 The `AsyncRabbitTemplate` now supports direct reply-to.
-See <<async-template>> for more information.
+See xref:amqp/request-reply.adoc#async-template[Async Rabbit Template] for more information.
 
 The `RabbitTemplate` and `AsyncRabbitTemplate` now have `receiveAndConvert` and `convertSendAndReceiveAsType` methods that take a `ParameterizedTypeReference<T>` argument, letting the caller specify the type to which to convert the result.
 This is particularly useful for complex types or when type information is not conveyed in message headers.
 It requires a `SmartMessageConverter` such as the `Jackson2JsonMessageConverter`.
-See <<receiving-messages>>, <<request-reply>>, <<async-template>>, and <<json-complex>> for more information.
+See xref:amqp/request-reply.adoc[Request/Reply Messaging], xref:amqp/request-reply.adoc#async-template[Async Rabbit Template], xref:amqp/message-converters.adoc#json-complex[Converting From a `Message` With `RabbitTemplate`], and <<json-complex>> for more information.
 
 You can now use a `RabbitTemplate` to perform multiple operations on a dedicated channel.
-See <<scoped-operations>> for more information.
+See xref:amqp/template.adoc#scoped-operations[Scoped Operations] for more information.
 
 [[listener-adapter]]
 == Listener Adapter
 
 A convenient `FunctionalInterface` is available for using lambdas with the `MessageListenerAdapter`.
-See <<message-listener-adapter>> for more information.
+See xref:amqp/receiving-messages/async-consumer.adoc#message-listener-adapter[`MessageListenerAdapter`] for more information.
 
 [[listener-container-changes]]
 == Listener Container Changes
@@ -108,13 +108,13 @@ This property applies only when you use `basicGet` (for example, from `RabbitTem
 === Transaction Rollback Behavior
 
 Message re-queue on transaction rollback is now consistent, regardless of whether or not a transaction manager is configured.
-See <<transaction-rollback>> for more information.
+See xref:amqp/transactions.adoc#transaction-rollback[A note on Rollback of Received Messages] for more information.
 
 [[shutdown-behavior]]
 === Shutdown Behavior
 
 If the container threads do not respond to a shutdown within `shutdownTimeout`, the channels are forced closed by default.
-See <<containerAttributes>> for more information.
+See xref:amqp/containerAttributes.adoc[Message Listener Container Configuration] for more information.
 
 [[after-receive-message-post-processors]]
 === After Receive Message Post Processors
@@ -125,33 +125,33 @@ If a `MessagePostProcessor` in the `afterReceiveMessagePostProcessors` property 
 == Connection Factory Changes
 
 The connection and channel listener interfaces now provide a mechanism to obtain information about exceptions.
-See <<connection-channel-listeners>> and <<publishing-is-async>> for more information.
+See xref:amqp/connections.adoc#connection-channel-listeners[Connection and Channel Listeners] and xref:amqp/template.adoc#publishing-is-async[Publishing is Asynchronous -- How to Detect Successes and Failures] for more information.
 
 A new `ConnectionNameStrategy` is now provided to populate the application-specific identification of the target RabbitMQ connection from the `AbstractConnectionFactory`.
-See <<connections>> for more information.
+See xref:amqp/connections.adoc[Connection and Resource Management] for more information.
 
 [[retry-changes]]
 == Retry Changes
 
 The `MissingMessageIdAdvice` is no longer provided.
 Its functionality is now built-in.
-See <<retry>> for more information.
+See xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#retry[Failures in Synchronous Operations and Options for Retry] for more information.
 
 [[anonymous-queue-naming]]
 == Anonymous Queue Naming
 
 By default, `AnonymousQueues` are now named with the default `Base64UrlNamingStrategy` instead of a simple `UUID` string.
-See <<anonymous-queue>> for more information.
+See xref:amqp/broker-configuration.adoc#anonymous-queue[`AnonymousQueue`] for more information.
 
 [[rabbitlistener-changes]]
 == `@RabbitListener` Changes
 
 You can now provide simple queue declarations (bound only to the default exchange) in `@RabbitListener` annotations.
-See <<async-annotation-driven>> for more information.
+See xref:amqp/receiving-messages/async-annotation-driven.adoc[Annotation-driven Listener Endpoints] for more information.
 
 You can now configure `@RabbitListener` annotations so that any exceptions are returned to the sender.
 You can also configure a `RabbitListenerErrorHandler` to handle exceptions.
-See <<annotation-error-handling>> for more information.
+See xref:amqp/receiving-messages/async-annotation-driven/error-handling.adoc[Handling Exceptions] for more information.
 
 You can now bind a queue with multiple routing keys when you use the `@QueueBinding` annotation.
 Also `@QueueBinding.exchange()` now supports custom exchange types and declares durable exchanges by default.
@@ -162,17 +162,17 @@ You can now set the `autoStartup` property of the listener container at the anno
 
 You can now set after receive and before send (reply) `MessagePostProcessor` instances in the `RabbitListener` container factories.
 
-See <<async-annotation-driven>> for more information.
+See xref:amqp/receiving-messages/async-annotation-driven.adoc[Annotation-driven Listener Endpoints] for more information.
 
 Starting with version 2.0.3, one of the `@RabbitHandler` annotations on a class-level `@RabbitListener` can be designated as the default.
-See <<annotation-method-selection>> for more information.
+See xref:amqp/receiving-messages/async-annotation-driven/method-selection.adoc[Multi-method Listeners] for more information.
 
 [[container-conditional-rollback]]
 == Container Conditional Rollback
 
 When using an external transaction manager (such as JDBC), rule-based rollback is now supported when you provide the container with a transaction attribute.
 It is also now more flexible when you use a transaction advice.
-See <<conditional-rollback>> for more information.
+See xref:amqp/transactions.adoc#conditional-rollback[Conditional Rollback] for more information.
 
 [[remove-jackson-1-x-support]]
 == Remove Jackson 1.x support
@@ -192,12 +192,12 @@ To revert to a `Hashtable`, you can use `setDefaultMapType` on the `DefaultClass
 == XML Parsers
 
 When parsing `Queue` and `Exchange` XML components, the parsers no longer register the `name` attribute value as a bean alias if an `id` attribute is present.
-See <<note-id-name>> for more information.
+See xref:amqp/broker-configuration.adoc#note-id-name[A Note On the `id` and `name` Attributes] for more information.
 
 [[blocked-connection]]
 == Blocked Connection
 You can now inject the `com.rabbitmq.client.BlockedListener` into the `org.springframework.amqp.rabbit.connection.Connection` object.
 Also, the `ConnectionBlockedEvent` and `ConnectionUnblockedEvent` events are emitted by the `ConnectionFactory` when the connection is blocked or unblocked by the Broker.
 
-See <<connections>> for more information.
+See xref:amqp/connections.adoc[Connection and Resource Management] for more information.
 

@@ -15,7 +15,7 @@ Also, the container now starts if at least one of its configured queues is avail
 See <<listener-queues>>
 
 This listener container now redeclares any auto-delete queues during startup.
-See <<lc-auto-delete>>.
+See xref:amqp/receiving-messages/async-consumer.adoc#lc-auto-delete[`auto-delete` Queues].
 
 [[consumer-priority]]
 == Consumer Priority
@@ -33,7 +33,7 @@ See <<exclusive-consumer>>.
 == Rabbit Admin
 
 You can now have the broker generate the queue name, regardless of `durable`, `autoDelete`, and `exclusive` settings.
-See <<broker-configuration>>.
+See xref:amqp/broker-configuration.adoc[Configuring the Broker].
 
 [[direct-exchange-binding]]
 == Direct Exchange Binding
@@ -50,13 +50,13 @@ These are implemented by the `RabbitTemplate`.
 For more information see <<receiving-messages>>.
 
 The `RabbitTemplate` now supports configuring a `RetryTemplate` to attempt retries (with optional back-off policy) for when the broker is not available.
-For more information see <<template-retry>>.
+For more information see xref:amqp/template.adoc#template-retry[Adding Retry Capabilities].
 
 [[caching-connection-factory]]
 == Caching Connection Factory
 
 You can now configure the caching connection factory to cache `Connection` instances and their `Channel` instances instead of using a single connection and caching only `Channel` instances.
-See <<connections>>.
+See xref:amqp/connections.adoc[Connection and Resource Management].
 
 [[binding-arguments]]
 == Binding Arguments
@@ -64,7 +64,7 @@ See <<connections>>.
 The `<binding>` of the `<exchange>` now supports parsing of the `<binding-arguments>` sub-element.
 You can now configure the `<binding>` of the `<headers-exchange>` with a `key/value` attribute pair (to match on a single header) or with a `<binding-arguments>` sub-element (allowing matching on multiple headers).
 These options are mutually exclusive.
-See <<headers-exchange>>.
+See xref:amqp/broker-configuration.adoc#headers-exchange[Headers Exchange].
 
 [[routing-connection-factory]]
 == Routing Connection Factory
@@ -77,31 +77,31 @@ See <<routing-connection-factory>>.
 == `MessageBuilder` and `MessagePropertiesBuilder`
 
 "`Fluent APIs`" for building messages or message properties are now provided.
-See <<message-builder>>.
+See xref:amqp/sending-messages.adoc#message-builder[Message Builder API].
 
 [[retryinterceptorbuilder-change]]
 == `RetryInterceptorBuilder` Change
 
 A "`Fluent API`" for building listener container retry interceptors is now provided.
-See <<retry>>.
+See xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#retry[Failures in Synchronous Operations and Options for Retry].
 
 [[republishmessagerecoverer-added]]
 == `RepublishMessageRecoverer` Added
 
 This new `MessageRecoverer` is provided to allow publishing a failed message to another queue (including stack trace information in the header) when retries are exhausted.
-See <<async-listeners>>.
+See xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#async-listeners[Message Listeners and the Asynchronous Case].
 
 [[default-error-handler-since-1-3-2]]
 == Default Error Handler (Since 1.3.2)
 
 A default `ConditionalRejectingErrorHandler` has been added to the listener container.
 This error handler detects fatal message conversion problems and instructs the container to reject the message to prevent the broker from continually redelivering the unconvertible message.
-See <<exception-handling>>.
+See xref:amqp/exception-handling.adoc[Exception Handling].
 
 [[listener-container-missingqueuesfatal-property-since-1-3-5]]
 == Listener Container 'missingQueuesFatal` Property (Since 1.3.5)
 
 The `SimpleMessageListenerContainer` now has a property called `missingQueuesFatal` (default: `true`).
 Previously, missing queues were always fatal.
-See <<containerAttributes>>.
+See xref:amqp/containerAttributes.adoc[Message Listener Container Configuration].
 

@@ -40,7 +40,7 @@ public class MultiListenerBean {
 In this case, the individual `@RabbitHandler` methods are invoked if the converted payload is a `Thing2`, a `Cat`, or a `Hat`.
 You should understand that the system must be able to identify a unique method based on the payload type.
 The type is checked for assignability to a single parameter that has no annotations or that is annotated with the `@Payload` annotation.
-Notice that the same method signatures apply, as discussed in the method-level `@RabbitListener` (<<message-listener-adapter,described earlier>>).
+Notice that the same method signatures apply, as discussed in the method-level `@RabbitListener` (xref:amqp/receiving-messages/async-consumer.adoc#message-listener-adapter[described earlier]).
 
 Starting with version 2.0.3, a `@RabbitHandler` method can be designated as the default method, which is invoked if there is no match on other methods.
 At most, one method can be so designated.

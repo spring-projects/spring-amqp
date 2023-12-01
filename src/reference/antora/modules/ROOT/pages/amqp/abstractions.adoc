@@ -12,7 +12,7 @@ However, the abstractions have been validated in .NET using Apache Qpid in addit
 Since AMQP operates at the protocol level, in principle, you can use the RabbitMQ client with any broker that supports the same protocol version, but we do not test any other brokers at present.
 
 This overview assumes that you are already familiar with the basics of the AMQP specification.
-If not, have a look at the resources listed in <<resources>>
+If not, have a look at the resources listed in xref:index.adoc#resources[Other Resources]
 
 [[message]]
 == `Message`
@@ -89,11 +89,11 @@ The behavior varies across these `Exchange` types in terms of how they handle bi
 For example, a `Direct` exchange lets a queue be bound by a fixed routing key (often the queue's name).
 A `Topic` exchange supports bindings with routing patterns that may include the '*' and '#' wildcards for 'exactly-one' and 'zero-or-more', respectively.
 The `Fanout` exchange publishes to all queues that are bound to it without taking any routing key into consideration.
-For much more information about these and the other Exchange types, see <<resources>>.
+For much more information about these and the other Exchange types, see xref:index.adoc#resources[Other Resources].
 
 NOTE: The AMQP specification also requires that any broker provide a "`default`" direct exchange that has no name.
 All queues that are declared are bound to that default `Exchange` with their names as routing keys.
-You can learn more about the default Exchange's usage within Spring AMQP in <<amqp-template>>.
+You can learn more about the default Exchange's usage within Spring AMQP in xref:amqp/template.adoc[`AmqpTemplate`].
 
 [[queue]]
 == Queue
@@ -137,7 +137,7 @@ Depending on the implementation, the admin template may provide methods for gene
 Such queues can be useful as a "`reply-to`" address or in other *temporary* situations.
 For that reason, the 'exclusive' and 'autoDelete' properties of an auto-generated queue would both be set to 'true'.
 
-NOTE: See the section on queues in <<broker-configuration>> for information about declaring queues by using namespace support, including queue arguments.
+NOTE: See the section on queues in xref:amqp/broker-configuration.adoc[Configuring the Broker] for information about declaring queues by using namespace support, including queue arguments.
 
 [[binding]]
 == Binding
@@ -186,10 +186,10 @@ NOTE: For clarity, the preceding example shows the `BindingBuilder` class, but t
 
 By itself, an instance of the `Binding` class only holds the data about a connection.
 In other words, it is not an "`active`" component.
-However, as you will see later in <<broker-configuration>>, the `AmqpAdmin` class can use `Binding` instances to actually trigger the binding actions on the broker.
+However, as you will see later in xref:amqp/broker-configuration.adoc[Configuring the Broker], the `AmqpAdmin` class can use `Binding` instances to actually trigger the binding actions on the broker.
 Also, as you can see in that same section, you can define the `Binding` instances by using Spring's `@Bean` annotations within `@Configuration` classes.
 There is also a convenient base class that further simplifies that approach for generating AMQP-related bean definitions and recognizes the queues, exchanges, and bindings so that they are all declared on the AMQP broker upon application startup.
 
 The `AmqpTemplate` is also defined within the core package.
-As one of the main components involved in actual AMQP messaging, it is discussed in detail in its own section (see <<amqp-template>>).
+As one of the main components involved in actual AMQP messaging, it is discussed in detail in its own section (see xref:amqp/template.adoc[`AmqpTemplate`]).
 

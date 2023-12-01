@@ -1,5 +1,5 @@
 [[current-release]]
 = Current Release
 
-See <<whats-new>>.
+See xref:whats-new.adoc[What's New].
 

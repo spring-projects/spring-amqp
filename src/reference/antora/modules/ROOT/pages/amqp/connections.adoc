@@ -19,13 +19,13 @@ There are three connection factories to chose from
 The first two were added in version 2.3.
 
 For most use cases, the `CachingConnectionFactory` should be used.
-The `ThreadChannelConnectionFactory` can be used if you want to ensure strict message ordering without the need to use <<scoped-operations>>.
+The `ThreadChannelConnectionFactory` can be used if you want to ensure strict message ordering without the need to use xref:amqp/template.adoc#scoped-operations[Scoped Operations].
 The `PooledChannelConnectionFactory` is similar to the `CachingConnectionFactory` in that it uses a single connection and a pool of channels.
 It's implementation is simpler but it doesn't support correlated publisher confirmations.
 
 Simple publisher confirmations are supported by all three factories.
 
-When configuring a `RabbitTemplate` to use a <<separate-connection, separate connection>>, you can now, starting with version 2.3.2, configure the publishing connection factory to be a different type.
+When configuring a `RabbitTemplate` to use a xref:amqp/template.adoc#separate-connection[separate connection], you can now, starting with version 2.3.2, configure the publishing connection factory to be a different type.
 By default, the publishing factory is the same type and any properties set on the main factory are also propagated to the publishing factory.
 
 [[pooledchannelconnectionfactory]]
@@ -63,10 +63,10 @@ PooledChannelConnectionFactory pcf() throws Exception {
 
 This factory manages a single connection and two `ThreadLocal` s, one for transactional channels, the other for non-transactional channels.
 This factory ensures that all operations on the same thread use the same channel (as long as it remains open).
-This facilitates strict message ordering without the need for <<scoped-operations>>.
+This facilitates strict message ordering without the need for xref:amqp/template.adoc#scoped-operations[Scoped Operations].
 To avoid memory leaks, if your application uses many short-lived threads, you must call the factory's `closeThreadChannel()` to release the channel resource.
 Starting with version 2.3.7, a thread can transfer its channel(s) to another thread.
-See <<multi-strict>> for more information.
+See xref:amqp/template.adoc#multi-strict[Strict Message Ordering in a Multi-Threaded Environment] for more information.
 
 [[cachingconnectionfactory]]
 === `CachingConnectionFactory`
@@ -99,7 +99,7 @@ If the time is exceeded, an `AmqpTimeoutException` is thrown.
 [IMPORTANT]
 ======
 When the cache mode is `CONNECTION`, automatic declaration of queues and others
-(See <<automatic-declaration>>) is NOT supported.
+(See xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#automatic-declaration[Automatic Declaration of Exchanges, Queues, and Bindings]) is NOT supported.
 
 Also, at the time of this writing, the `amqp-client` library by default creates a fixed thread pool for each connection (default size: `Runtime.getRuntime().availableProcessors() * 2` threads).
 When using a large number of connections, you should consider setting a custom `executor` on the `CachingConnectionFactory`.
@@ -230,7 +230,7 @@ Alternatively, if running in a clustered environment, you can use the addresses 
 ----
 ====
 
-See <<cluster>> for information about `address-shuffle-mode`.
+See xref:amqp/connections.adoc#cluster[Connecting to a Cluster] for information about `address-shuffle-mode`.
 
 The following example with a custom thread factory that prefixes thread names with `rabbitmq-`:
 
@@ -316,7 +316,7 @@ To mitigate the problem, we suggest having one more separate `CachingConnectionF
 A separate `CachingConnectionFactory` is not possible for transactional producers that execute on a consumer thread, since they should reuse the `Channel` associated with the consumer transactions.
 
 Starting with version 2.0.2, the `RabbitTemplate` has a configuration option to automatically use a second connection factory, unless transactions are being used.
-See <<separate-connection>> for more information.
+See xref:amqp/template.adoc#separate-connection[Using a Separate Connection] for more information.
 The `ConnectionNameStrategy` for the publisher connection is the same as the primary strategy with `.publisher` appended to the result of calling the method.
 
 Starting with version 1.7.7, an `AmqpResourceNotAvailableException` is provided, which is thrown when `SimpleConnection.createChannel()` cannot create a `Channel` (for example, because the `channelMax` limit is reached and there are no available channels in the cache).
@@ -328,8 +328,8 @@ You can use this exception in the `RetryPolicy` to recover the operation after s
 The `CachingConnectionFactory` uses an instance of the Rabbit client `ConnectionFactory`.
 A number of configuration properties are passed through (`host`, `port`, `userName`, `password`, `requestedHeartBeat`, and `connectionTimeout` for example) when setting the equivalent property on the `CachingConnectionFactory`.
 To set other properties (`clientProperties`, for example), you can define an instance of the Rabbit factory and provide a reference to it by using the appropriate constructor of the `CachingConnectionFactory`.
-When using the namespace (<<connections,as described earlier>>), you need to provide a reference to the configured factory in the `connection-factory` attribute.
-For convenience, a factory bean is provided to assist in configuring the connection factory in a Spring application context, as discussed in <<rabbitconnectionfactorybean-configuring-ssl,the next section>>.
+When using the namespace (xref:amqp/connections.adoc[as described earlier]), you need to provide a reference to the configured factory in the `connection-factory` attribute.
+For convenience, a factory bean is provided to assist in configuring the connection factory in a Spring application context, as discussed in xref:amqp/connections.adoc#rabbitconnectionfactorybean-configuring-ssl[the next section].
 
 ====
 [source,xml]
@@ -540,7 +540,7 @@ Doing so enables, for example, listening to queues with the same name but in a d
 For example, with lookup key qualifier `thing1` and a container listening to queue `thing2`, the lookup key you could register the target connection factory with could be `thing1[thing2]`.
 
 IMPORTANT: The target (and default, if provided) connection factories must have the same settings for publisher confirms and returns.
-See <<cf-pub-conf-ret>>.
+See xref:amqp/connections.adoc#cf-pub-conf-ret[Publisher Confirms and Returns].
 
 Starting with version 2.4.4, this validation can be disabled.
 If you have a case that the values between confirms and returns need to be unequal, you can use `AbstractRoutingConnectionFactory#setConsistentConfirmsReturns` to turn of the validation.
@@ -582,7 +582,7 @@ public RabbitTemplate rabbitTemplate() {
 ====
 
 This way messages with the header `x-use-publisher-confirms: true` will be sent through the caching connection and you can ensure the message delivery.
-See <<cf-pub-conf-ret>> for more information about ensuring message delivery.
+See xref:amqp/connections.adoc#cf-pub-conf-ret[Publisher Confirms and Returns] for more information about ensuring message delivery.
 
 [[queue-affinity]]
 == Queue Affinity and the `LocalizedQueueConnectionFactory`
@@ -696,7 +696,7 @@ When such a channel is obtained, the client can register a `PublisherCallbackCha
 The `PublisherCallbackChannel` implementation contains logic to route a confirm or return to the appropriate listener.
 These features are explained further in the following sections.
 
-See also <<template-confirms>> and `simplePublisherConfirms` in <<scoped-operations>>.
+See also xref:amqp/template.adoc#template-confirms[Correlated Publisher Confirms and Returns] and `simplePublisherConfirms` in xref:amqp/template.adoc#scoped-operations[Scoped Operations].
 
 TIP: For some more background information, see the blog post by the RabbitMQ team titled https://www.rabbitmq.com/blog/2011/02/10/introducing-publisher-confirms/[Introducing Publisher Confirms].
 
@@ -705,7 +705,7 @@ TIP: For some more background information, see the blog post by the RabbitMQ tea
 
 The connection factory supports registering `ConnectionListener` and `ChannelListener` implementations.
 This allows you to receive notifications for connection and channel related events.
-(A `ConnectionListener` is used by the `RabbitAdmin` to perform declarations when the connection is established - see <<automatic-declaration>> for more information).
+(A `ConnectionListener` is used by the `RabbitAdmin` to perform declarations when the connection is established - see xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#automatic-declaration[Automatic Declaration of Exchanges, Queues, and Bindings] for more information).
 The following listing shows the `ConnectionListener` interface definition:
 
 ====
@@ -744,7 +744,7 @@ public interface ChannelListener {
 ----
 ====
 
-See <<publishing-is-async>> for one scenario where you might want to register a `ChannelListener`.
+See xref:amqp/template.adoc#publishing-is-async[Publishing is Asynchronous -- How to Detect Successes and Failures] for one scenario where you might want to register a `ChannelListener`.
 
 [[channel-close-logging]]
 == Logging Channel Close Events
@@ -764,7 +764,7 @@ To modify this behavior, you can inject a custom `ConditionalExceptionLogger` in
 
 Also, the `AbstractConnectionFactory.DefaultChannelCloseLogger` is now public, allowing it to be sub classed.
 
-See also <<consumer-events>>.
+See also xref:amqp/receiving-messages/consumer-events.adoc[Consumer Events].
 
 [[runtime-cache-properties]]
 == Runtime Cache Properties
@@ -878,12 +878,12 @@ image::cacheStats.png[align="center"]
 == RabbitMQ Automatic Connection/Topology recovery
 
 Since the first version of Spring AMQP, the framework has provided its own connection and channel recovery in the event of a broker failure.
-Also, as discussed in <<broker-configuration>>, the `RabbitAdmin` re-declares any infrastructure beans (queues and others) when the connection is re-established.
+Also, as discussed in xref:amqp/broker-configuration.adoc[Configuring the Broker], the `RabbitAdmin` re-declares any infrastructure beans (queues and others) when the connection is re-established.
 It therefore does not rely on the https://www.rabbitmq.com/api-guide.html#recovery[auto-recovery] that is now provided by the `amqp-client` library.
 The `amqp-client`, has auto recovery enabled by default.
 There are some incompatibilities between the two recovery mechanisms so, by default, Spring sets the `automaticRecoveryEnabled` property on the underlying `RabbitMQ connectionFactory` to `false`.
 Even if the property is `true`, Spring effectively disables it, by immediately closing any recovered connections.
 
 IMPORTANT: By default, only elements (queues, exchanges, bindings) that are defined as beans will be re-declared after a connection failure.
-See <<declarable-recovery>> for how to change that behavior.
+See xref:amqp/broker-configuration.adoc#declarable-recovery[Recovering Auto-Delete Declarations] for how to change that behavior.
 

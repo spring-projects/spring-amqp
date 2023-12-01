@@ -126,7 +126,7 @@ assertEquals("thingthing", thing.thing("thing"));
 Starting with version 2.2.3, the answers capture any exceptions thrown by the method under test.
 Use `answer.getExceptions()` to get a reference to them.
 
-When used in conjunction with the <<test-harness>> use `harness.getLambdaAnswerFor("listenerId", true, ...)` to get a properly constructed answer for the listener.
+When used in conjunction with the xref:testing.adoc#test-harness[`@RabbitListenerTest` and `RabbitListenerTestHarness`] use `harness.getLambdaAnswerFor("listenerId", true, ...)` to get a properly constructed answer for the listener.
 
 [[test-harness]]
 == `@RabbitListenerTest` and `RabbitListenerTestHarness`
@@ -314,7 +314,7 @@ to suspend the test thread.
 ====
 
 IMPORTANT: When using custom `Answer<?>` s with the harness, in order to operate properly, such answers should subclass `ForwardsInvocation` and get the actual listener (not the spy) from the harness (`getDelegate("myListener")`) and call `super.answer(invocation)`.
-See the provided <<mockito-answer>> source code for examples.
+See the provided xref:testing.adoc#mockito-answer[Mockito `Answer<?>` Implementations] source code for examples.
 
 [[test-template]]
 == Using `TestRabbitTemplate`
@@ -442,7 +442,7 @@ public class TestRabbitTemplateTests {
 
 Spring AMQP version 1.7 and later provide an additional jar called `spring-rabbit-junit`.
 This jar contains a couple of utility `@Rule` instances for use when running JUnit4 tests.
-See <<junit5-conditions>> for JUnit5 testing.
+See xref:testing.adoc#junit5-conditions[JUnit5 Conditions] for JUnit5 testing.
 
 [[using-brokerrunning]]
 === Using `BrokerRunning`
@@ -572,8 +572,8 @@ The annotation has three properties:
 * `purgeAfterEach`: (Since version 2.2) when `true` (default), the `queues` will be purged between tests.
 
 It is used to check whether the broker is available and skip the tests if not.
-As discussed in <<brokerRunning-configure>>, the environment variable called `RABBITMQ_SERVER_REQUIRED`, if `true`, causes the tests to fail fast if there is no broker.
-You can configure the condition by using environment variables as discussed in <<brokerRunning-configure>>.
+As discussed in xref:testing.adoc#brokerRunning-configure[Configuring the Rule], the environment variable called `RABBITMQ_SERVER_REQUIRED`, if `true`, causes the tests to fail fast if there is no broker.
+You can configure the condition by using environment variables as discussed in xref:testing.adoc#brokerRunning-configure[Configuring the Rule].
 
 In addition, the `RabbitAvailableCondition` supports argument resolution for parameterized test constructors and methods.
 Two argument types are supported:

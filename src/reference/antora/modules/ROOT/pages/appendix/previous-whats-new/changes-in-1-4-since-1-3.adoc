@@ -6,7 +6,7 @@
 
 POJO listeners can be annotated with `@RabbitListener`, enabled by `@EnableRabbit` or `<rabbit:annotation-driven />`.
 Spring Framework 4.1 is required for this feature.
-See <<async-annotation-driven>> for more information.
+See xref:amqp/receiving-messages/async-annotation-driven.adoc[Annotation-driven Listener Endpoints] for more information.
 
 [[rabbitmessagingtemplate-added]]
 == `RabbitMessagingTemplate` Added
@@ -14,21 +14,21 @@ See <<async-annotation-driven>> for more information.
 A new `RabbitMessagingTemplate` lets you interact with RabbitMQ by using `spring-messaging` `Message` instances.
 Internally, it uses the `RabbitTemplate`, which you can configure as normal.
 Spring Framework 4.1 is required for this feature.
-See <<template-messaging>> for more information.
+See xref:amqp/template.adoc#template-messaging[Messaging Integration] for more information.
 
 [[listener-container-missingqueuesfatal-attribute]]
 == Listener Container `missingQueuesFatal` Attribute
 
 1.3.5 introduced the `missingQueuesFatal` property on the `SimpleMessageListenerContainer`.
 This is now available on the listener container namespace element.
-See <<containerAttributes>>.
+See xref:amqp/containerAttributes.adoc[Message Listener Container Configuration].
 
 [[rabbittemplate-confirmcallback-interface]]
 == RabbitTemplate `ConfirmCallback` Interface
 
 The `confirm` method on this interface has an additional parameter called `cause`.
 When available, this parameter contains the reason for a negative acknowledgement (nack).
-See <<template-confirms>>.
+See xref:amqp/template.adoc#template-confirms[Correlated Publisher Confirms and Returns].
 
 [[rabbitconnectionfactorybean-added]]
 == `RabbitConnectionFactoryBean` Added
@@ -62,14 +62,14 @@ Subclasses should override the `postProcessMessageBeforeSend()`.
 
 The listener container now, by default, redeclares any missing queues during startup.
 A new `auto-declare` attribute has been added to the `<rabbit:listener-container>` to prevent these re-declarations.
-See <<lc-auto-delete>>.
+See xref:amqp/receiving-messages/async-consumer.adoc#lc-auto-delete[`auto-delete` Queues].
 
 [[rabbittemplate:-mandatory-and-connectionfactoryselector-expressions]]
 == `RabbitTemplate`: `mandatory` and `connectionFactorySelector` Expressions
 
 The `mandatoryExpression`, `sendConnectionFactorySelectorExpression`, and `receiveConnectionFactorySelectorExpression` SpEL Expression`s properties have been added to `RabbitTemplate`.
 The `mandatoryExpression` is used to evaluate a `mandatory` boolean value against each request message when a `ReturnCallback` is in use.
-See <<template-confirms>>.
+See xref:amqp/template.adoc#template-confirms[Correlated Publisher Confirms and Returns].
 The `sendConnectionFactorySelectorExpression` and `receiveConnectionFactorySelectorExpression` are used when an `AbstractRoutingConnectionFactory` is provided, to determine the `lookupKey` for the target `ConnectionFactory` at runtime on each AMQP protocol interaction operation.
 See <<routing-connection-factory>>.
 
@@ -83,7 +83,7 @@ See <<routing-connection-factory>>.
 == `RabbitTemplate`: `RecoveryCallback` Option
 
 The `recoveryCallback` property has been added for use in the `retryTemplate.execute()`.
-See <<template-retry>>.
+See xref:amqp/template.adoc#template-retry[Adding Retry Capabilities].
 
 [[messageconversionexception-change]]
 == `MessageConversionException` Change
@@ -112,11 +112,11 @@ The second catch block is no longer reachable and needs to be moved above the ca
 == RabbitMQ 3.4 Compatibility
 
 Spring AMQP is now compatible with the RabbitMQ 3.4, including direct reply-to.
-See <<compatibility>> and <<direct-reply-to>> for more information.
+See xref:quick-tour.adoc#compatibility[Compatibility] and xref:amqp/request-reply.adoc#direct-reply-to[RabbitMQ Direct reply-to] for more information.
 
 [[contenttypedelegatingmessageconverter-added]]
 == `ContentTypeDelegatingMessageConverter` Added
 
 The `ContentTypeDelegatingMessageConverter` has been introduced to select the `MessageConverter` to use, based on the `contentType` property in the `MessageProperties`.
-See <<message-converters>> for more information.
+See xref:amqp/message-converters.adoc[Message Converters] for more information.
 

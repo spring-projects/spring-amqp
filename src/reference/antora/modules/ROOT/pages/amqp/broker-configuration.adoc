@@ -42,7 +42,7 @@ public interface AmqpAdmin {
 ----
 ====
 
-See also <<scoped-operations>>.
+See also xref:amqp/template.adoc#scoped-operations[Scoped Operations].
 
 The `getQueueProperties()` method returns some limited information about the queue (message count and consumer count).
 The keys for the properties returned are available as constants in the `RabbitTemplate` (`QUEUE_NAME`,
@@ -60,13 +60,13 @@ You can use this functionality programmatically only by invoking the `RabbitAdmi
 When using auto-declaration by the admin when defining a queue declaratively in the application context, you can set the name property to `""` (the empty string).
 The broker then creates the name.
 Starting with version 2.1, listener containers can use queues of this type.
-See <<containers-and-broker-named-queues>> for more information.
+See xref:amqp/containers-and-broker-named-queues.adoc[Containers and Broker-Named queues] for more information.
 
 This is in contrast to an `AnonymousQueue` where the framework generates a unique (`UUID`) name and sets `durable` to
 `false` and `exclusive`, `autoDelete` to `true`.
 A `<rabbit:queue/>` with an empty (or missing) `name` attribute always creates an `AnonymousQueue`.
 
-See <<anonymous-queue>> to understand why `AnonymousQueue` is preferred over broker-generated queue names as well as
+See xref:amqp/broker-configuration.adoc#anonymous-queue[`AnonymousQueue`] to understand why `AnonymousQueue` is preferred over broker-generated queue names as well as
 how to control the format of the name.
 Starting with version 2.1, anonymous queues are declared with argument `Queue.X_QUEUE_LEADER_LOCATOR` set to `client-local` by default.
 This ensures that the queue is declared on the node to which the application is connected.
@@ -82,7 +82,7 @@ listener shown in the following example:
 ----
 ====
 
-See <<automatic-declaration>>.
+See xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#automatic-declaration[Automatic Declaration of Exchanges, Queues, and Bindings].
 
 The RabbitMQ implementation of this interface is `RabbitAdmin`, which, when configured by using Spring XML, resembles the following example:
 
@@ -606,7 +606,7 @@ public Binding binding() {
 == A Note On the `id` and `name` Attributes
 
 The `name` attribute on `<rabbit:queue/>` and `<rabbit:exchange/>` elements reflects the name of the entity in the broker.
-For queues, if the `name` is omitted, an anonymous queue is created (see <<anonymous-queue>>).
+For queues, if the `name` is omitted, an anonymous queue is created (see xref:amqp/broker-configuration.adoc#anonymous-queue[`AnonymousQueue`]).
 
 In versions prior to 2.0, the `name` was also registered as a bean name alias (similar to `name` on `<bean/>` elements).
 

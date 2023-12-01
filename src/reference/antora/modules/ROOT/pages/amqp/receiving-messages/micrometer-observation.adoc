@@ -3,7 +3,7 @@
 
 Using Micrometer for observation is now supported, since version 3.0, for the `RabbitTemplate` and listener containers.
 
-Set `observationEnabled` on each component to enable observation; this will disable <<micrometer,Micrometer Timers>> because the timers will now be managed with each observation.
+Set `observationEnabled` on each component to enable observation; this will disable xref:amqp/receiving-messages/micrometer.adoc[Micrometer Timers] because the timers will now be managed with each observation.
 When using annotated listeners, set `observationEnabled` on the container factory.
 
 Refer to https://micrometer.io/docs/tracing[Micrometer Tracing] for more information.
@@ -14,5 +14,5 @@ The default implementations add the `name` tag for template observations and `li
 
 You can either subclass `DefaultRabbitTemplateObservationConvention` or `DefaultRabbitListenerObservationConvention` or provide completely new implementations.
 
-See <<observation-gen>> for more details.
+See xref:appendix.adoc[Micrometer Observation Documentation] for more details.
 

@@ -6,7 +6,7 @@
 
 Spring AMQP now uses the 5.4.x version of the `amqp-client` library provided by the RabbitMQ team.
 This client has auto-recovery configured by default.
-See <<auto-recovery>>.
+See xref:amqp/connections.adoc#auto-recovery[RabbitMQ Automatic Connection/Topology recovery].
 
 NOTE: As of version 4.0, the client enables automatic recovery by default.
 While compatible with this feature, Spring AMQP has its own recovery mechanisms and the client recovery feature generally is not needed.
@@ -27,13 +27,13 @@ These interfaces are now in `org.springframework.amqp.rabbit.listener.api`.
 == Publisher Confirms Changes
 
 Channels enabled for publisher confirmations are not returned to the cache while there are outstanding confirmations.
-See <<template-confirms>> for more information.
+See xref:amqp/template.adoc#template-confirms[Correlated Publisher Confirms and Returns] for more information.
 
 [[listener-container-factory-improvements]]
 == Listener Container Factory Improvements
 
 You can now use the listener container factories to create any listener container, not only those for use with `@RabbitListener` annotations or the `@RabbitListenerEndpointRegistry`.
-See <<using-container-factories>> for more information.
+See xref:amqp/receiving-messages/using-container-factories.adoc[Using Container Factories] for more information.
 
 `ChannelAwareMessageListener` now inherits from `MessageListener`.
 
@@ -41,7 +41,7 @@ See <<using-container-factories>> for more information.
 == Broker Event Listener
 
 A `BrokerEventListener` is introduced to publish selected broker events as `ApplicationEvent` instances.
-See <<broker-events>> for more information.
+See xref:amqp/broker-events.adoc[Broker Event Listener] for more information.
 
 [[rabbitadmin-changes]]
 == RabbitAdmin Changes
@@ -49,23 +49,23 @@ See <<broker-events>> for more information.
 The `RabbitAdmin` discovers beans of type `Declarables` (which is a container for `Declarable` - `Queue`, `Exchange`, and `Binding` objects) and declare the contained objects on the broker.
 Users are discouraged from using the old mechanism of declaring `<Collection<Queue>>` (and others) and should use `Declarables` beans instead.
 By default, the old mechanism is disabled.
-See <<collection-declaration>> for more information.
+See xref:amqp/broker-configuration.adoc#collection-declaration[Declaring Collections of Exchanges, Queues, and Bindings] for more information.
 
 `AnonymousQueue` instances are now declared with `x-queue-master-locator` set to `client-local` by default, to ensure the queues are created on the node the application is connected to.
-See <<broker-configuration>> for more information.
+See xref:amqp/broker-configuration.adoc[Configuring the Broker] for more information.
 
 [[rabbittemplate-changes]]
 == RabbitTemplate Changes
 
 You can now configure the `RabbitTemplate` with the `noLocalReplyConsumer` option to control a `noLocal` flag for reply consumers in the `sendAndReceive()` operations.
-See <<request-reply>> for more information.
+See xref:amqp/request-reply.adoc[Request/Reply Messaging] for more information.
 
 `CorrelationData` for publisher confirmations now has a `ListenableFuture`, which you can use to get the acknowledgment instead of using a callback.
 When returns and confirmations are enabled, the correlation data, if provided, is populated with the returned message.
-See <<template-confirms>> for more information.
+See xref:amqp/template.adoc#template-confirms[Correlated Publisher Confirms and Returns] for more information.
 
 A method called `replyTimedOut` is now provided to notify subclasses that a reply has timed out, allowing for any state cleanup.
-See <<reply-timeout>> for more information.
+See xref:amqp/request-reply.adoc#reply-timeout[Reply Timeout] for more information.
 
 You can now specify an `ErrorHandler` to be invoked when using request/reply with a `DirectReplyToMessageListenerContainer` (the default) when exceptions occur when replies are delivered (for example, late replies).
 See `setReplyErrorHandler` on the `RabbitTemplate`.
@@ -75,7 +75,7 @@ See `setReplyErrorHandler` on the `RabbitTemplate`.
 == Message Conversion
 
 We introduced a new `Jackson2XmlMessageConverter` to support converting messages from and to XML format.
-See <<jackson2xml>> for more information.
+See xref:amqp/message-converters.adoc#jackson2xml[`Jackson2XmlMessageConverter`] for more information.
 
 [[management-rest-api]]
 == Management REST API
@@ -87,13 +87,13 @@ See <<management-rest-api>> for more information.
 == `@RabbitListener` Changes
 
 The listener container factory can now be configured with a `RetryTemplate` and, optionally, a `RecoveryCallback` used when sending replies.
-See <<async-annotation-driven-enable>> for more information.
+See xref:amqp/receiving-messages/async-annotation-driven/enable.adoc[Enable Listener Endpoint Annotations] for more information.
 
 [[async-rabbitlistener-return]]
 == Async `@RabbitListener` Return
 
 `@RabbitListener` methods can now return `ListenableFuture<?>` or `Mono<?>`.
-See <<async-returns>> for more information.
+See xref:amqp/receiving-messages/async-returns.adoc[Asynchronous `@RabbitListener` Return Types] for more information.
 
 [[connection-factory-bean-changes]]
 == Connection Factory Bean Changes
@@ -114,7 +114,7 @@ We recommend that you use a separate RabbitMQ `ConnectionFactory` if you need au
 == Listener Container Changes
 
 The default `ConditionalRejectingErrorHandler` now completely discards messages that cause fatal errors if an `x-death` header is present.
-See <<exception-handling>> for more information.
+See xref:amqp/exception-handling.adoc[Exception Handling] for more information.
 
 [[immediate-requeue]]
 == Immediate requeue
@@ -122,6 +122,6 @@ See <<exception-handling>> for more information.
 A new `ImmediateRequeueAmqpException` is introduced to notify a listener container that the message has to be re-queued.
 To use this feature, a new `ImmediateRequeueMessageRecoverer` implementation is added.
 
-See <<async-listeners>> for more information.
+See xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#async-listeners[Message Listeners and the Asynchronous Case] for more information.
 
 

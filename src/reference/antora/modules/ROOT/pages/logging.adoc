@@ -73,12 +73,12 @@ Retries are delayed as follows: `N ^ log(N)`, where `N` is the retry number.
 | useSsl
 | false
 | Whether to use SSL for the RabbitMQ connection.
-See <<rabbitconnectionfactorybean-configuring-ssl>>
+See xref:amqp/connections.adoc#rabbitconnectionfactorybean-configuring-ssl[`RabbitConnectionFactoryBean` and Configuring SSL]
 
 | verifyHostname
 | true
 | Enable server hostname verification for TLS connections.
-See <<rabbitconnectionfactorybean-configuring-ssl>>
+See xref:amqp/connections.adoc#rabbitconnectionfactorybean-configuring-ssl[`RabbitConnectionFactoryBean` and Configuring SSL]
 
 | sslAlgorithm
 | null

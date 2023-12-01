@@ -16,5 +16,5 @@ The timers are named `spring.rabbitmq.listener` and have the following tags:
 
 You can add additional tags using the `micrometerTags` container property.
 
-Also see <<micrometer-observation>>.
+Also see xref:stream.adoc#stream-micrometer-observation[Micrometer Observation].
 

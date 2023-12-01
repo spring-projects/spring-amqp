@@ -41,7 +41,7 @@ Previously, when declaring queues, exchanges and bindings, you could not define 
 Each `RabbitAdmin` declared all components by using its connection.
 
 Starting with this release, you can now limit declarations to specific `RabbitAdmin` instances.
-See <<conditional-declaration>>.
+See xref:amqp/broker-configuration.adoc#conditional-declaration[Conditional Declaration].
 
 [[amqp-remoting]]
 == AMQP Remoting

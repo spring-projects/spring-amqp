@@ -45,7 +45,7 @@ public DeclarableCustomizer customizer() {
 
 It is also useful in projects that don't provide direct access to the `Declarable` bean definitions.
 
-See also <<auto-recovery>>.
+See also xref:amqp/connections.adoc#auto-recovery[RabbitMQ Automatic Connection/Topology recovery].
 
 [[retry]]
 == Failures in Synchronous Operations and Options for Retry
@@ -100,7 +100,7 @@ See the https://docs.spring.io/spring-retry/docs/api/current/[Spring Retry Javad
 == Retry with Batch Listeners
 
 It is not recommended to configure retry with a batch listener, unless the batch was created by the producer, in a single record.
-See <<de-batching>> for information about consumer and producer-created batches.
+See xref:amqp/receiving-messages/de-batching.adoc[Batched Messages] for information about consumer and producer-created batches.
 With a consumer-created batch, the framework has no knowledge about which message in the batch caused the failure so recovery after the retries are exhausted is not possible.
 With producer-created batches, since there is only one message that actually failed, the whole message can be recovered.
 Applications may want to inform a custom recoverer where in the batch the failure occurred, perhaps by setting an index property of the thrown exception.
@@ -201,7 +201,7 @@ If the confirm type is `CORRELATED`, the subclass will also detect if a message 
 
 If the confirm type is `SIMPLE`, the subclass will invoke the `waitForConfirmsOrDie` method on the channel.
 
-See <<cf-pub-conf-ret>> for more information about confirms and returns.
+See xref:amqp/connections.adoc#cf-pub-conf-ret[Publisher Confirms and Returns] for more information about confirms and returns.
 
 Starting with version 2.1, an `ImmediateRequeueMessageRecoverer` is  added to throw an `ImmediateRequeueAmqpException`, which notifies a listener container to requeue the current failed message.
 

@@ -27,7 +27,7 @@ public class AppConfig {
 Since version 2.0, a `DirectMessageListenerContainerFactory` is also available.
 It creates `DirectMessageListenerContainer` instances.
 
-NOTE: For information to help you choose between `SimpleRabbitListenerContainerFactory` and `DirectRabbitListenerContainerFactory`, see <<choose-container>>.
+NOTE: For information to help you choose between `SimpleRabbitListenerContainerFactory` and `DirectRabbitListenerContainerFactory`, see xref:amqp/receiving-messages/choose-container.adoc[Choosing a Container].
 
 Starting with version 2.2.2, you can provide a `ContainerCustomizer` implementation (as shown above).
 This can be used to further configure the container after it has been created and configured; you can use this, for example, to set properties that are not exposed by the container factory.
@@ -43,7 +43,7 @@ See the https://docs.spring.io/spring-amqp/docs/latest-ga/api/org/springframewor
 
 The container factories provide methods for adding `MessagePostProcessor` instances that are applied after receiving messages (before invoking the listener) and before sending replies.
 
-See <<async-annotation-driven-reply>> for information about replies.
+See xref:amqp/receiving-messages/async-annotation-driven/reply.adoc[Reply Management] for information about replies.
 
 Starting with version 2.0.6, you can add a `RetryTemplate` and `RecoveryCallback` to the listener container factory.
 It is used when sending replies.

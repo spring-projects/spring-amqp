@@ -83,7 +83,7 @@ In this case, it uses the default `SimpleMessageConverter`, but a different impl
 Now open the `Consumer` class.
 It actually shares the same configuration base class, which means it shares the `rabbitTemplate` bean.
 That is why we configured that template with both a `routingKey` (for sending) and a `queue` (for receiving).
-As we describe in <<amqp-template>>, you could instead pass the 'routingKey' argument to the send method and the 'queue' argument to the receive method.
+As we describe in xref:amqp/template.adoc[`AmqpTemplate`], you could instead pass the 'routingKey' argument to the send method and the 'queue' argument to the receive method.
 The `Consumer` code is basically a mirror image of the Producer, calling `receiveAndConvert()` rather than `convertAndSend()`.
 
 The following listing shows the main method for the `Consumer`:
@@ -105,7 +105,7 @@ If you run the `Producer` and then run the `Consumer`, you should see `Received:
 [[hello-world-async]]
 === Asynchronous Example
 
-<<hello-world-sync>> walked through the synchronous Hello World sample.
+xref:sample-apps.adoc#hello-world-sync[Synchronous Example] walked through the synchronous Hello World sample.
 This section describes a slightly more advanced but significantly more powerful option.
 With a few modifications, the Hello World sample can provide an example of asynchronous reception, also known as message-driven POJOs.
 In fact, there is a sub-package that provides exactly that: `org.springframework.amqp.samples.helloworld.async`.
@@ -207,7 +207,7 @@ You can start the `Producer` and `Consumer` in any order, and you should see mes
 [[stock-trading]]
 == Stock Trading
 
-The Stock Trading sample demonstrates more advanced messaging scenarios than <<hello-world-sample,the Hello World sample>>.
+The Stock Trading sample demonstrates more advanced messaging scenarios than xref:sample-apps.adoc#hello-world-sample[the Hello World sample].
 However, the configuration is very similar, if a bit more involved.
 Since we  walked through the Hello World configuration in detail, here, we focus on what makes this sample different.
 There is a server that pushes market data (stock quotations) to a topic exchange.

@@ -18,5 +18,5 @@ public interface ConsumerTagStrategy {
 
 The queue is made available so that it can (optionally) be used in the tag.
 
-See <<containerAttributes>>.
+See xref:amqp/containerAttributes.adoc[Message Listener Container Configuration].
 

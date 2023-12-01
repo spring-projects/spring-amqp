@@ -15,19 +15,19 @@ The remoting feature (using RMI) is no longer supported.
 == Observation
 
 Enabling observation for timers and tracing using Micrometer is now supported.
-See <<micrometer-observation>> for more information.
+See xref:stream.adoc#stream-micrometer-observation[Micrometer Observation] for more information.
 
 [[x30-Native]]
 == Native Images
 
 Support for creating native images is provided.
-See <<native-images>> for more information.
+See xref:appendix/previous-whats-new/changes-in-3-0-since-2-4.adoc#x30-Native[Native Images] for more information.
 
 [[asyncrabbittemplate]]
 == AsyncRabbitTemplate
 
 IMPORTANT: The `AsyncRabbitTemplate` now returns `CompletableFuture` s instead of `ListenableFuture` s.
-See <<async-template>> for more information.
+See xref:amqp/request-reply.adoc#async-template[Async Rabbit Template] for more information.
 
 [[stream-support-changes]]
 == Stream Support Changes
@@ -36,7 +36,7 @@ IMPORTANT: `RabbitStreamOperations` and `RabbitStreamTemplate` methods now retur
 
 Super streams and single active consumers thereon are now supported.
 
-See <<stream-support>> for more information.
+See xref:stream.adoc[Using the RabbitMQ Stream Plugin] for more information.
 
 [[rabbitlistener-changes]]
 == `@RabbitListener` Changes
@@ -44,16 +44,16 @@ See <<stream-support>> for more information.
 Batch listeners can now consume `Collection<?>` as well as `List<?>`.
 The batch messaging adapter now ensures that the method is suitable for consuming batches.
 When setting the container factory `consumerBatchEnabled` to `true`, the `batchListener` property is also set to `true`.
-See <<receiving-batch>> for more information.
+See xref:amqp/receiving-messages/batch.adoc[@RabbitListener with Batching] for more information.
 
 `MessageConverter` s can now return `Optional.empty()` for a null value; this is currently implemented by the `Jackson2JsonMessageConverter`.
-See <<Jackson2JsonMessageConverter-from-message>> for more information
+See xref:amqp/message-converters.adoc#Jackson2JsonMessageConverter-from-message[Converting from a `Message`] for more information
 
 You can now configure a `ReplyPostProcessor` via the container factory rather than via a property on `@RabbitListener`.
-See <<async-annotation-driven-reply>> for more information.
+See xref:amqp/receiving-messages/async-annotation-driven/reply.adoc[Reply Management] for more information.
 
 The `@RabbitListener` (and `@RabbitHandler`) methods can now be declared as Kotlin `suspend` functions.
-See <<async-returns>> for more information.
+See xref:amqp/receiving-messages/async-returns.adoc[Asynchronous `@RabbitListener` Return Types] for more information.
 
 Starting with version 3.0.5, listeners with async return types (including Kotlin suspend functions) invoke the `RabbitListenerErrorHandler` (if configured) after a failure.
 Previously, the error handler was only invoked with synchronous invocations.
@@ -63,8 +63,8 @@ Previously, the error handler was only invoked with synchronous invocations.
 
 The default `addressShuffleMode` in `AbstractConnectionFactory` is now `RANDOM`.
 This results in connecting to a random host when multiple addresses are provided.
-See <<cluster>> for more information.
+See xref:amqp/connections.adoc#cluster[Connecting to a Cluster] for more information.
 
 The `LocalizedQueueConnectionFactory` no longer uses the RabbitMQ `http-client` library to determine which node is the leader for a queue.
-See <<queue-affinity>> for more information.
+See xref:amqp/connections.adoc#queue-affinity[Queue Affinity and the `LocalizedQueueConnectionFactory`] for more information.
 

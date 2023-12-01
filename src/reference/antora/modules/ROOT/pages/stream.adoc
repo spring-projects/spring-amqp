@@ -145,7 +145,7 @@ public interface StreamMessageListener extends MessageListener {
 ----
 ====
 
-See <<containerAttributes>> for information about supported properties.
+See xref:amqp/containerAttributes.adoc[Message Listener Container Configuration] for information about supported properties.
 
 Similar the template, the container has a `ConsumerCustomizer` property.
 
@@ -321,7 +321,7 @@ See https://rabbitmq.github.io/rabbitmq-stream-java-client/snapshot/htmlsingle/#
 Using Micrometer for observation is now supported, since version 3.0.5, for the `RabbitStreamTemplate` and the stream listener container.
 The container now also supports Micrometer timers (when observation is not enabled).
 
-Set `observationEnabled` on each component to enable observation; this will disable <<micrometer,Micrometer Timers>> because the timers will now be managed with each observation.
+Set `observationEnabled` on each component to enable observation; this will disable xref:amqp/receiving-messages/micrometer.adoc[Micrometer Timers] because the timers will now be managed with each observation.
 When using annotated listeners, set `observationEnabled` on the container factory.
 
 Refer to https://micrometer.io/docs/tracing[Micrometer Tracing] for more information.
@@ -332,4 +332,4 @@ The default implementations add the `name` tag for template observations and `li
 
 You can either subclass `DefaultRabbitStreamTemplateObservationConvention` or `DefaultStreamRabbitListenerObservationConvention` or provide completely new implementations.
 
-See <<observation-gen>> for more details.
+See xref:appendix.adoc[Micrometer Observation Documentation] for more details.

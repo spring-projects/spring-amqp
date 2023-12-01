@@ -15,7 +15,7 @@ However, when you look at the configuration examples or any code excerpts where 
 As mentioned earlier, the `AmqpTemplate` interface defines all of the basic operations for sending and receiving messages.
 We will explore message sending and reception, respectively, in <<sending-messages>> and <<receiving-messages>>.
 
-See also <<async-template>>.
+See also xref:amqp/request-reply.adoc#async-template[Async Rabbit Template].
 
 [[template-retry]]
 == Adding Retry Capabilities
@@ -102,13 +102,13 @@ In this case, you would *not* inject a `RetryTemplate` into the `RabbitTemplate`
 == Publishing is Asynchronous -- How to Detect Successes and Failures
 
 Publishing messages is an asynchronous mechanism and, by default, messages that cannot be routed are dropped by RabbitMQ.
-For successful publishing, you can receive an asynchronous confirm, as described in <<template-confirms>>.
+For successful publishing, you can receive an asynchronous confirm, as described in xref:amqp/template.adoc#template-confirms[Correlated Publisher Confirms and Returns].
 Consider two failure scenarios:
 
 * Publish to an exchange but there is no matching destination queue.
 * Publish to a non-existent exchange.
 
-The first case is covered by publisher returns, as described in <<template-confirms>>.
+The first case is covered by publisher returns, as described in xref:amqp/template.adoc#template-confirms[Correlated Publisher Confirms and Returns].
 
 For the second case, the message is dropped and no return is generated.
 The underlying channel is closed with an exception.
@@ -145,7 +145,7 @@ The `RabbitTemplate` implementation of `AmqpTemplate` supports publisher confirm
 
 For returned messages, the template's `mandatory` property must be set to `true` or the `mandatory-expression`
 must evaluate to `true` for a particular message.
-This feature requires a `CachingConnectionFactory` that has its `publisherReturns` property set to `true` (see <<cf-pub-conf-ret>>).
+This feature requires a `CachingConnectionFactory` that has its `publisherReturns` property set to `true` (see xref:amqp/connections.adoc#cf-pub-conf-ret[Publisher Confirms and Returns]).
 Returns are sent to the client by it registering a `RabbitTemplate.ReturnsCallback` by calling `setReturnsCallback(ReturnsCallback callback)`.
 The callback must implement the following method:
 
@@ -165,7 +165,7 @@ The `ReturnedMessage` has the following properties:
 - `routingKey` - the routing key that was used
 
 Only one `ReturnsCallback` is supported by each `RabbitTemplate`.
-See also <<reply-timeout>>.
+See also xref:amqp/request-reply.adoc#reply-timeout[Reply Timeout].
 
 For publisher confirms (also known as publisher acknowledgements), the template requires a `CachingConnectionFactory` that has its `publisherConfirm` property set to `ConfirmType.CORRELATED`.
 Confirms are sent to the client by it registering a `RabbitTemplate.ConfirmCallback` by calling `setConfirmCallback(ConfirmCallback callback)`.
@@ -242,7 +242,7 @@ It is guaranteed that the returned message property is set before the future is 
 * exchange
 * routingKey
 
-See also <<scoped-operations>> for a simpler mechanism for waiting for publisher confirms.
+See also xref:amqp/template.adoc#scoped-operations[Scoped Operations] for a simpler mechanism for waiting for publisher confirms.
 
 [[scoped-operations]]
 == Scoped Operations
@@ -253,7 +253,7 @@ There may be times, however, where you want to have more control over the use of
 
 Starting with version 2.0, a new method called `invoke` is provided, with an `OperationsCallback`.
 Any operations performed within the scope of the callback and on the provided `RabbitOperations` argument use the same dedicated `Channel`, which will be closed at the end (not returned to a cache).
-If the channel is a `PublisherCallbackChannel`, it is returned to the cache after all confirms have been received (see <<template-confirms>>).
+If the channel is a `PublisherCallbackChannel`, it is returned to the cache after all confirms have been received (see xref:amqp/template.adoc#template-confirms[Correlated Publisher Confirms and Returns]).
 
 ====
 [source, java]
@@ -272,7 +272,7 @@ This method was not previously exposed by the Spring API because the channel is,
 The `RabbitTemplate` now provides `waitForConfirms(long timeout)` and `waitForConfirmsOrDie(long timeout)`, which delegate to the dedicated channel used within the scope of the `OperationsCallback`.
 The methods cannot be used outside of that scope, for obvious reasons.
 
-Note that a higher-level abstraction that lets you correlate confirms to requests is provided elsewhere (see <<template-confirms>>).
+Note that a higher-level abstraction that lets you correlate confirms to requests is provided elsewhere (see xref:amqp/template.adoc#template-confirms[Correlated Publisher Confirms and Returns]).
 If you want only to wait until the broker has confirmed delivery, you can use the technique shown in the following example:
 
 ====
@@ -329,12 +329,12 @@ Boolean result = this.template.invoke(t -> {
 ====
 
 IMPORTANT: Scoped operations are bound to a thread.
-See <<multi-strict>> for a discussion about strict ordering in a multi-threaded environment.
+See xref:amqp/template.adoc#multi-strict[Strict Message Ordering in a Multi-Threaded Environment] for a discussion about strict ordering in a multi-threaded environment.
 
 [[multi-strict]]
 == Strict Message Ordering in a Multi-Threaded Environment
 
-The discussion in <<scoped-operations>> applies only when the operations are performed on the same thread.
+The discussion in xref:amqp/template.adoc#scoped-operations[Scoped Operations] applies only when the operations are performed on the same thread.
 
 Consider the following situation:
 
@@ -344,7 +344,7 @@ Consider the following situation:
 Because of the async nature of RabbitMQ and the use of cached channels; it is not certain that the same channel will be used and therefore the order in which the messages arrive in the queue is not guaranteed.
 (In most cases they will arrive in order, but the probability of out-of-order delivery is not zero).
 To solve this use case, you can use a bounded channel cache with size `1` (together with a `channelCheckoutTimeout`) to ensure the messages are always published on the same channel, and order will be guaranteed.
-To do this, if you have other uses for the connection factory, such as consumers, you should either use a dedicated connection factory for the template, or configure the template to use the publisher connection factory embedded in the main connection factory (see <<separate-connection>>).
+To do this, if you have other uses for the connection factory, such as consumers, you should either use a dedicated connection factory for the template, or configure the template to use the publisher connection factory embedded in the main connection factory (see xref:amqp/template.adoc#separate-connection[Using a Separate Connection]).
 
 This is best illustrated with a simple Spring Boot Application:
 

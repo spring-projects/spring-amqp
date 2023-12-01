@@ -1,5 +1,5 @@
 [[earlier-releases]]
 = Earlier Releases
 
-See <<previous-whats-new>> for changes in previous versions.
+See xref:appendix/previous-whats-new.adoc[Previous Releases] for changes in previous versions.
 

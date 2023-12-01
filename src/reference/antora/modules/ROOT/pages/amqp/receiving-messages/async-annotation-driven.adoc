@@ -29,7 +29,7 @@ In the preceding example, `myQueue` must already exist and be bound to some exch
 The queue can be declared and bound automatically, as long as a `RabbitAdmin` exists in the application context.
 
 NOTE: Property placeholders (`${some.property}`) or SpEL expressions (`#{someExpression}`) can be specified for the annotation properties (`queues` etc).
-See <<annotation-multiple-queues>> for an example of why you might use SpEL instead of a property placeholder.
+See xref:amqp/receiving-messages/async-annotation-driven/multiple-queues.adoc[Listening to Multiple Queues] for an example of why you might use SpEL instead of a property placeholder.
 The following listing shows three examples of how to declare a Rabbit listener:
 
 ====
@@ -69,7 +69,7 @@ public class MyService {
 In the first example, a queue `myQueue` is declared automatically (durable) together with the exchange, if needed,
 and bound to the exchange with the routing key.
 In the second example, an anonymous (exclusive, auto-delete) queue is declared and bound; the queue name is created by the framework using the `Base64UrlNamingStrategy`.
-You cannot declare broker-named queues using this technique; they need to be declared as bean definitions; see <<containers-and-broker-named-queues>>.
+You cannot declare broker-named queues using this technique; they need to be declared as bean definitions; see xref:amqp/containers-and-broker-named-queues.adoc[Containers and Broker-Named queues].
 Multiple `QueueBinding` entries can be provided, letting the listener listen to multiple queues.
 In the third example, a queue with the name retrieved from property `my.queue` is declared, if necessary, with the default binding to the default exchange using the queue name as the routing key.
 

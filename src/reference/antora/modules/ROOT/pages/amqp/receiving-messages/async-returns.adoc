@@ -19,5 +19,5 @@ All the mentioned rules about `AcknowledgeMode.MANUAL` are still apply.
 The `org.jetbrains.kotlinx:kotlinx-coroutines-reactor` dependency must be present in classpath to allow `suspend` function invocations.
 
 Also starting with version 3.0.5, if a `RabbitListenerErrorHandler` is configured on a listener with an async return type (including Kotlin suspend functions), the error handler is invoked after a failure.
-See <<annotation-error-handling>> for more information about this error handler and its purpose.
+See xref:amqp/receiving-messages/async-annotation-driven/error-handling.adoc[Handling Exceptions] for more information about this error handler and its purpose.
 

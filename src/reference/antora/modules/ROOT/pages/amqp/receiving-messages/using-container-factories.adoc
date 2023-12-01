@@ -1,7 +1,7 @@
 [[using-container-factories]]
 = Using Container Factories
 
-Listener container factories were introduced to support the `@RabbitListener` and registering containers with the `RabbitListenerEndpointRegistry`, as discussed in <<async-annotation-driven-registration>>.
+Listener container factories were introduced to support the `@RabbitListener` and registering containers with the `RabbitListenerEndpointRegistry`, as discussed in xref:amqp/receiving-messages/async-annotation-driven/registration.adoc[Programmatic Endpoint Registration].
 
 Starting with version 2.1, they can be used to create any listener container -- even a container without a listener (such as for use in Spring Integration).
 Of course, a listener must be added before the container is started.

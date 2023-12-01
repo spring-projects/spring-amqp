@@ -102,6 +102,6 @@ public class AppConfig implements RabbitListenerConfigurer {
 ----
 ====
 
-IMPORTANT: For multi-method listeners (see <<annotation-method-selection>>), the method selection is based on the payload of the message *after the message conversion*.
+IMPORTANT: For multi-method listeners (see xref:amqp/receiving-messages/async-annotation-driven/method-selection.adoc[Multi-method Listeners]), the method selection is based on the payload of the message *after the message conversion*.
 The method argument converter is called only after the method has been selected.
 

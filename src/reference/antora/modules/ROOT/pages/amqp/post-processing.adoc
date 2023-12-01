@@ -4,12 +4,12 @@
 A number of extension points exist.
 They let you perform some processing on a message, either before it is sent to RabbitMQ or immediately after it is received.
 
-As can be seen in <<message-converters>>, one such extension point is in the `AmqpTemplate` `convertAndReceive` operations, where you can provide a `MessagePostProcessor`.
+As can be seen in xref:amqp/message-converters.adoc[Message Converters], one such extension point is in the `AmqpTemplate` `convertAndReceive` operations, where you can provide a `MessagePostProcessor`.
 For example, after your POJO has been converted, the `MessagePostProcessor` lets you set custom headers or properties on the `Message`.
 
 Starting with version 1.4.2, additional extension points have been added to the `RabbitTemplate` - `setBeforePublishPostProcessors()` and `setAfterReceivePostProcessors()`.
 The first enables a post processor to run immediately before sending to RabbitMQ.
-When using batching (see <<template-batching>>), this is invoked after the batch is assembled and before the batch is sent.
+When using batching (see xref:amqp/sending-messages.adoc#template-batching[Batching]), this is invoked after the batch is assembled and before the batch is sent.
 The second is invoked immediately after a message is received.
 
 These extension points are used for such features as compression and, for this purpose, several `MessagePostProcessor` implementations are provided.

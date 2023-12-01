@@ -3,7 +3,7 @@
 
 IMPORTANT: Spring AMQP also supports annotated listener endpoints through the use of the `@RabbitListener` annotation and provides an open infrastructure to register endpoints programmatically.
 This is by far the most convenient way to setup an asynchronous consumer.
-See <<async-annotation-driven>> for more details.
+See xref:amqp/receiving-messages/async-annotation-driven.adoc[Annotation-driven Listener Endpoints] for more details.
 
 [IMPORTANT]
 ====
@@ -19,7 +19,7 @@ There are, nevertheless, scenarios where the prefetch value should be low:
 
 Also, with low-volume messaging and multiple consumers (including concurrency within a single listener container instance), you may wish to reduce the prefetch to get a more even distribution of messages across consumers.
 
-See <<containerAttributes>>.
+See xref:amqp/containerAttributes.adoc[Message Listener Container Configuration].
 
 For more background about prefetch, see this post about https://www.rabbitmq.com/blog/2014/04/14/finding-bottlenecks-with-rabbitmq-3-3/[consumer utilization in RabbitMQ]
 and this post about https://www.rabbitmq.com/blog/2012/05/11/some-queuing-theory-throughput-latency-and-bandwidth/[queuing theory].
@@ -65,7 +65,7 @@ If you prefer to maintain a stricter separation between your application logic a
 This is often referred to as "`Message-driven POJO`" support.
 
 NOTE: Version 1.5 introduced a more flexible mechanism for POJO messaging, the `@RabbitListener` annotation.
-See <<async-annotation-driven>> for more information.
+See xref:amqp/receiving-messages/async-annotation-driven.adoc[Annotation-driven Listener Endpoints] for more information.
 
 When using the adapter, you need to provide only a reference to the instance that the adapter itself should invoke.
 The following example shows how to do so:
@@ -81,7 +81,7 @@ listener.setDefaultListenerMethod("myMethod");
 You can subclass the adapter and provide an implementation of `getListenerMethodName()` to dynamically select different methods based on the message.
 This method has two parameters, `originalMessage` and `extractedMessage`, the latter being the result of any conversion.
 By default, a `SimpleMessageConverter` is configured.
-See <<simple-message-converter>> for more information and information about other converters available.
+See xref:amqp/message-converters.adoc#simple-message-converter[`SimpleMessageConverter`] for more information and information about other converters available.
 
 Starting with version 1.4.2, the original message has `consumerQueue` and `consumerTag` properties, which can be used to determine the queue from which a message was received.
 
@@ -158,7 +158,7 @@ You must provide a reference to the `ConnectionFactory` and the queue names or Q
 
 Prior to version 2.0, there was one listener container, the `SimpleMessageListenerContainer`.
 There is now a second container, the `DirectMessageListenerContainer`.
-The differences between the containers and criteria you might apply when choosing which to use are described in <<choose-container>>.
+The differences between the containers and criteria you might apply when choosing which to use are described in xref:amqp/receiving-messages/choose-container.adoc[Choosing a Container].
 
 The following listing shows the most basic example, which works by using the, `SimpleMessageListenerContainer`:
 
@@ -274,7 +274,7 @@ The `RabbitAdmin` only automatically redeclares queues and so on when the connec
 
 Starting with version 1.3, the container uses a `RabbitAdmin` to redeclare any missing queues during startup.
 
-You can also use conditional declaration (see <<conditional-declaration>>) together with an `auto-startup="false"` admin to defer queue declaration until the container is started.
+You can also use conditional declaration (see xref:amqp/broker-configuration.adoc#conditional-declaration[Conditional Declaration]) together with an `auto-startup="false"` admin to defer queue declaration until the container is started.
 The following example shows how to do so:
 
 ====

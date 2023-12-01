@@ -10,11 +10,11 @@ See the https://docs.spring.io/spring-amqp/docs/latest-ga/api/org/springframewor
 
 Starting with version 1.5.0, each of the `sendAndReceive` method variants has an overloaded version that takes `CorrelationData`.
 Together with a properly configured connection factory, this enables the receipt of publisher confirms for the send side of the operation.
-See <<template-confirms>> and the https://docs.spring.io/spring-amqp/docs/latest-ga/api/org/springframework/amqp/rabbit/core/RabbitOperations.html[Javadoc for `RabbitOperations`] for more information.
+See xref:amqp/template.adoc#template-confirms[Correlated Publisher Confirms and Returns] and the https://docs.spring.io/spring-amqp/docs/latest-ga/api/org/springframework/amqp/rabbit/core/RabbitOperations.html[Javadoc for `RabbitOperations`] for more information.
 
 Starting with version 2.0, there are variants of these methods (`convertSendAndReceiveAsType`) that take an additional `ParameterizedTypeReference` argument to convert complex returned types.
 The template must be configured with a `SmartMessageConverter`.
-See <<json-complex>> for more information.
+See xref:amqp/message-converters.adoc#json-complex[Converting From a `Message` With `RabbitTemplate`] for more information.
 
 Starting with version 2.1, you can configure the `RabbitTemplate` with the `noLocalReplyConsumer` option to control a `noLocal` flag for reply consumers.
 This is `false` by default.
@@ -28,7 +28,7 @@ Starting with version 1.5, if you set the `mandatory` property to `true` (or the
 This exception has `returnedMessage`, `replyCode`, and `replyText` properties, as well as the `exchange` and `routingKey` used for the send.
 
 NOTE: This feature uses publisher returns.
-You can enable it by setting `publisherReturns` to `true` on the `CachingConnectionFactory` (see <<cf-pub-conf-ret>>).
+You can enable it by setting `publisherReturns` to `true` on the `CachingConnectionFactory` (see xref:amqp/connections.adoc#cf-pub-conf-ret[Publisher Confirms and Returns]).
 Also, you must not have registered your own `ReturnCallback` with the `RabbitTemplate`.
 
 Starting with version 2.1.2, a `replyTimedOut` method has been added, letting subclasses be informed of the timeout so that they can clean up any retained state.
@@ -92,7 +92,7 @@ When using RabbitMQ versions prior to 3.4.0, a new temporary queue is used for e
 However, a single reply queue can be configured on the template, which can be more efficient and also lets you set arguments on that queue.
 In this case, however, you must also provide a <reply-listener/> sub element.
 This element provides a listener container for the reply queue, with the template being the listener.
-All of the <<containerAttributes>> attributes allowed on a <listener-container/> are allowed on the element, except for `connection-factory` and `message-converter`, which are inherited from the template's configuration.
+All of the xref:amqp/containerAttributes.adoc[Message Listener Container Configuration] attributes allowed on a <listener-container/> are allowed on the element, except for `connection-factory` and `message-converter`, which are inherited from the template's configuration.
 
 IMPORTANT: If you run multiple instances of your application or use multiple `RabbitTemplate` instances, you *MUST* use a unique reply queue for each.
 RabbitMQ has no ability to select messages from a queue, so, if they all use the same queue, each instance would compete for replies and not necessarily receive their own.
@@ -125,7 +125,7 @@ The `reply-address` and `reply-queue` (or `queues` attribute on the `<listener-c
 With this configuration, a `SimpleListenerContainer` is used to receive the replies, with the `RabbitTemplate` being the `MessageListener`.
 When defining a template with the `<rabbit:template/>` namespace element, as shown in the preceding example, the parser defines the container and wires in the template as the listener.
 
-NOTE: When the template does not use a fixed `replyQueue` (or is using direct reply-to -- see <<direct-reply-to>>), a listener container is not needed.
+NOTE: When the template does not use a fixed `replyQueue` (or is using direct reply-to -- see xref:amqp/request-reply.adoc#direct-reply-to[RabbitMQ Direct reply-to]), a listener container is not needed.
 Direct `reply-to` is the preferred mechanism when using RabbitMQ 3.4.0 or later.
 
 If you define your `RabbitTemplate` as a `<bean/>` or use an `@Configuration` class to define it as an `@Bean` or when you create the template programmatically, you need to define and wire up the reply listener container yourself.
@@ -210,7 +210,7 @@ You can also take a look at the `FixedReplyQueueDeadLetterTests` test case for a
 == Async Rabbit Template
 
 Version 1.6 introduced the `AsyncRabbitTemplate`.
-This has similar `sendAndReceive` (and `convertSendAndReceive`) methods to those on the <<amqp-template>>.
+This has similar `sendAndReceive` (and `convertSendAndReceive`) methods to those on the xref:amqp/template.adoc[`AmqpTemplate`].
 However, instead of blocking, they return a `CompletableFuture`.
 
 The `sendAndReceive` methods return a `RabbitMessageFuture`.
@@ -292,11 +292,11 @@ public AsyncRabbitTemplate(RabbitTemplate template)
 ----
 ====
 
-See <<direct-reply-to>> to use direct reply-to with the synchronous `RabbitTemplate`.
+See xref:amqp/request-reply.adoc#direct-reply-to[RabbitMQ Direct reply-to] to use direct reply-to with the synchronous `RabbitTemplate`.
 
 Version 2.0 introduced variants of these methods (`convertSendAndReceiveAsType`) that take an additional `ParameterizedTypeReference` argument to convert complex returned types.
 You must configure the underlying `RabbitTemplate` with a `SmartMessageConverter`.
-See <<json-complex>> for more information.
+See xref:amqp/message-converters.adoc#json-complex[Converting From a `Message` With `RabbitTemplate`] for more information.
 
 IMPORTANT: Starting with version 3.0, the `AsyncRabbitTemplate` methods now return `CompletableFuture` s instead of `ListenableFuture` s.
 

@@ -105,7 +105,7 @@ public AbstractMessageListenerContainer container() {
 AMQP transactions apply only to messages and acks sent to the broker.
 Consequently, when there is a rollback of a Spring transaction and a message has been received, Spring AMQP has to not only rollback the transaction but also manually reject the message (sort of a nack, but that is not what the specification calls it).
 The action taken on message rejection is independent of transactions and depends on the `defaultRequeueRejected` property (default: `true`).
-For more information about rejecting failed messages, see <<async-listeners>>.
+For more information about rejecting failed messages, see xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#async-listeners[Message Listeners and the Asynchronous Case].
 
 For more information about RabbitMQ transactions and their limitations, see https://www.rabbitmq.com/semantics.html[RabbitMQ Broker Semantics].
 
@@ -113,11 +113,11 @@ NOTE: Prior to RabbitMQ 2.7.0, such messages (and any that are unacked when a ch
 Since 2.7.0, rejected messages go to the front of the queue, in a similar manner to JMS rolled back messages.
 
 NOTE: Previously, message requeue on transaction rollback was inconsistent between local transactions and when a `TransactionManager` was provided.
-In the former case, the normal requeue logic (`AmqpRejectAndDontRequeueException` or `defaultRequeueRejected=false`) applied (see <<async-listeners>>).
+In the former case, the normal requeue logic (`AmqpRejectAndDontRequeueException` or `defaultRequeueRejected=false`) applied (see xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#async-listeners[Message Listeners and the Asynchronous Case]).
 With a transaction manager, the message was unconditionally requeued on rollback.
 Starting with version 2.0, the behavior is consistent and the normal requeue logic is applied in both cases.
 To revert to the previous behavior, you can set the container's `alwaysRequeueWithTxManagerRollback` property to `true`.
-See <<containerAttributes>>.
+See xref:amqp/containerAttributes.adoc[Message Listener Container Configuration].
 
 [[using-rabbittransactionmanager]]
 == Using `RabbitTransactionManager`

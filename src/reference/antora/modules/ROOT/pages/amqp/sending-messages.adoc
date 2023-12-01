@@ -163,7 +163,7 @@ public static MessagePropertiesBuilder fromClonedProperties(MessageProperties pr
 ====
 
 With the `RabbitTemplate` implementation of `AmqpTemplate`, each of the `send()` methods has an overloaded version that takes an additional `CorrelationData` object.
-When publisher confirms are enabled, this object is returned in the callback described in <<amqp-template>>.
+When publisher confirms are enabled, this object is returned in the callback described in xref:amqp/template.adoc[`AmqpTemplate`].
 This lets the sender correlate a confirm (`ack` or `nack`) with the sent message.
 
 Starting with version 1.6.7, the `CorrelationAwareMessagePostProcessor` interface was introduced, allowing the correlation data to be modified after the message has been converted.
@@ -195,13 +195,13 @@ CorrelationData postProcess(Message message, CorrelationData correlationData);
 [[publisher-returns]]
 == Publisher Returns
 
-When the template's `mandatory` property is `true`, returned messages are provided by the callback described in <<amqp-template>>.
+When the template's `mandatory` property is `true`, returned messages are provided by the callback described in xref:amqp/template.adoc[`AmqpTemplate`].
 
 Starting with version 1.4, the `RabbitTemplate` supports the SpEL `mandatoryExpression` property, which is evaluated against each request message as the root evaluation object, resolving to a `boolean` value.
 Bean references, such as `@myBean.isMandatory(#root)`, can be used in the expression.
 
 Publisher returns can also be used internally by the `RabbitTemplate` in send and receive operations.
-See <<reply-timeout>> for more information.
+See xref:amqp/request-reply.adoc#reply-timeout[Reply Timeout] for more information.
 
 [[template-batching]]
 == Batching
@@ -244,5 +244,5 @@ This is communicated to the receiving system by setting the `springBatchFormat` 
 IMPORTANT: Batched messages are automatically de-batched by listener containers by default (by using the `springBatchFormat` message header).
 Rejecting any message from a batch causes the entire batch to be rejected.
 
-However, see <<receiving-batch>> for more information.
+However, see xref:amqp/receiving-messages/batch.adoc[@RabbitListener with Batching] for more information.
 

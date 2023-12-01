@@ -2,19 +2,19 @@
 = Changes in 2.4 Since 2.3
 
 This section describes the changes between version 2.3 and version 2.4.
-See <<change-history>> for changes in previous versions.
+See xref:appendix.adoc#change-history[Change History] for changes in previous versions.
 
 [[rabbitlistener-changes]]
 == `@RabbitListener` Changes
 
 `MessageProperties` is now available for argument matching.
-See <<async-annotation-driven-enable-signature>> for more information.
+See xref:amqp/receiving-messages/async-annotation-driven/enable-signature.adoc[Annotated Endpoint Method Signature] for more information.
 
 [[rabbitadmin-changes]]
 == `RabbitAdmin` Changes
 
 A new property `recoverManualDeclarations` allows recovery of manually declared queues/exchanges/bindings.
-See <<declarable-recovery>> for more information.
+See xref:amqp/broker-configuration.adoc#declarable-recovery[Recovering Auto-Delete Declarations] for more information.
 
 [[remoting-support]]
 == Remoting Support
