@@ -444,6 +444,7 @@ Spring AMQP version 1.7 and later provide an additional jar called `spring-rabbi
 This jar contains a couple of utility `@Rule` instances for use when running JUnit4 tests.
 See <<junit5-conditions>> for JUnit5 testing.
 
+[[using-brokerrunning]]
 ===== Using `BrokerRunning`
 
 `BrokerRunning` provides a mechanism to let tests succeed when a broker is not running (on `localhost`, by default).
@@ -535,6 +536,7 @@ public CachingConnectionFactory rabbitConnectionFactory() {
 ----
 ====
 
+[[using-longrunningintegrationtest]]
 ===== Using `LongRunningIntegrationTest`
 
 `LongRunningIntegrationTest` is a rule that disables long running tests.
@@ -557,6 +559,7 @@ To disable the rule at runtime, set an environment variable called `RUN_LONG_INT
 
 Version 2.0.2 introduced support for JUnit5.
 
+[[using-the-rabbitavailable-annotation]]
 ===== Using the `@RabbitAvailable` Annotation
 
 This class-level annotation is similar to the `BrokerRunning` `@Rule` discussed in <<junit-rules>>.
@@ -704,6 +707,7 @@ public class RabbitTemplateMPPIntegrationTests {
 ----
 ====
 
+[[using-the-longrunning-annotation]]
 ===== Using the `@LongRunning` Annotation
 
 Similar to the `LongRunningIntegrationTest` JUnit4 `@Rule`, this annotation causes tests to be skipped unless an environment variable (or system property) is set to `true`.

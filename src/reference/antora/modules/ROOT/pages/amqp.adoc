@@ -3,6 +3,7 @@
 
 This chapter explores the interfaces and classes that are the essential components for developing applications with Spring AMQP.
 
+[[amqp-abstractions]]
 ==== AMQP Abstractions
 
 Spring AMQP consists of two modules (each represented by a JAR in the distribution): `spring-amqp` and `spring-rabbit`.
@@ -18,6 +19,7 @@ Since AMQP operates at the protocol level, in principle, you can use the RabbitM
 This overview assumes that you are already familiar with the basics of the AMQP specification.
 If not, have a look at the resources listed in <<resources>>
 
+[[message]]
 ===== `Message`
 
 The 0-9-1 AMQP specification does not define a `Message` class or interface.
@@ -61,6 +63,7 @@ To revert to the previous behavior, you can add allowable class/package patterns
 A simple `*` wildcard is supported, for example `com.something.*, *.MyClass`.
 Bodies that cannot be deserialized are represented by `byte[<size>]` in log messages.
 
+[[exchange]]
 ===== Exchange
 
 The `Exchange` interface represents an AMQP Exchange, which is what a Message Producer sends to.
@@ -97,6 +100,7 @@ NOTE: The AMQP specification also requires that any broker provide a "`default`"
 All queues that are declared are bound to that default `Exchange` with their names as routing keys.
 You can learn more about the default Exchange's usage within Spring AMQP in <<amqp-template>>.
 
+[[queue]]
 ===== Queue
 
 The `Queue` class represents the component from which a message consumer receives messages.
@@ -140,6 +144,7 @@ For that reason, the 'exclusive' and 'autoDelete' properties of an auto-generate
 
 NOTE: See the section on queues in <<broker-configuration>> for information about declaring queues by using namespace support, including queue arguments.
 
+[[binding]]
 ===== Binding
 
 Given that a producer sends to an exchange and a consumer receives from a queue, the bindings that connect queues to exchanges are critical for connecting those producers and consumers via messaging.
@@ -223,6 +228,7 @@ Simple publisher confirmations are supported by all three factories.
 When configuring a `RabbitTemplate` to use a <<separate-connection, separate connection>>, you can now, starting with version 2.3.2, configure the publishing connection factory to be a different type.
 By default, the publishing factory is the same type and any properties set on the main factory are also propagated to the publishing factory.
 
+[[pooledchannelconnectionfactory]]
 ====== `PooledChannelConnectionFactory`
 
 This factory manages a single connection and two pools of channels, based on the Apache Pool2.
@@ -252,6 +258,7 @@ PooledChannelConnectionFactory pcf() throws Exception {
 ----
 ====
 
+[[threadchannelconnectionfactory]]
 ====== `ThreadChannelConnectionFactory`
 
 This factory manages a single connection and two `ThreadLocal` s, one for transactional channels, the other for non-transactional channels.
@@ -261,6 +268,7 @@ To avoid memory leaks, if your application uses many short-lived threads, you mu
 Starting with version 2.3.7, a thread can transfer its channel(s) to another thread.
 See <<multi-strict>> for more information.
 
+[[cachingconnectionfactory]]
 ====== `CachingConnectionFactory`
 
 The third implementation provided is the `CachingConnectionFactory`, which, by default, establishes a single connection proxy that can be shared by the application.
@@ -440,11 +448,13 @@ The following example with a custom thread factory that prefixes thread names wi
 ----
 ====
 
+[[addressresolver]]
 ===== AddressResolver
 
 Starting with version 2.1.15, you can now use an `AddressResolver` to resolve the connection address(es).
 This will override any settings of the `addresses` and `host/port` properties.
 
+[[naming-connections]]
 ===== Naming Connections
 
 Starting with version 1.7, a `ConnectionNameStrategy` is provided for the injection into the `AbstractionConnectionFactory`.
@@ -491,6 +501,7 @@ The property must exist in the application context's `Environment`.
 NOTE: When using Spring Boot and its autoconfigured connection factory, you need only declare the `ConnectionNameStrategy` `@Bean`.
 Boot auto-detects the bean and wires it into the factory.
 
+[[blocked-connections-and-resource-constraints]]
 ===== Blocked Connections and Resource Constraints
 
 The connection might be blocked for interaction from the broker that corresponds to the https://www.rabbitmq.com/memory.html[Memory Alarm].
@@ -1861,6 +1872,7 @@ CorrelationData postProcess(Message message, CorrelationData correlationData);
 ----
 ====
 
+[[publisher-returns]]
 ===== Publisher Returns
 
 When the template's `mandatory` property is `true`, returned messages are provided by the callback described in <<amqp-template>>.
@@ -2060,6 +2072,7 @@ For more background about prefetch, see this post about https://www.rabbitmq.com
 and this post about https://www.rabbitmq.com/blog/2012/05/11/some-queuing-theory-throughput-latency-and-bandwidth/[queuing theory].
 ====
 
+[[message-listener]]
 ====== Message Listener
 
 For asynchronous `Message` reception, a dedicated component (not the `AmqpTemplate`) is involved.
@@ -2180,6 +2193,7 @@ public void handleMessage(Object object, Channel channel, Message message) throw
 ----
 ====
 
+[[container]]
 ====== Container
 
 Now that you have seen the various options for the `Message`-listening callback, we can turn our attention to the container.
@@ -3411,6 +3425,7 @@ In this case, a separate listener container is created for each annotation, each
 `@Bean`.
 Repeatable annotations can be used with Java 8 or above.
 
+[[proxy-rabbitlistener-and-generics]]
 ====== Proxy `@RabbitListener` and Generics
 
 If your service is intended to be proxied (for example, in the case of `@Transactional`), you should keep in mind some considerations when
@@ -3517,6 +3532,7 @@ Starting with version 2.2.18, if a message conversion exception is thrown, the e
 This allows the application to send some result to the caller, indicating that a badly-formed message was received.
 Previously, such errors were thrown and handled by the container.
 
+[[container-management]]
 ====== Container Management
 
 Containers created for annotations are not registered with the application context.
@@ -3828,6 +3844,7 @@ public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
 
 In each of these cases, an event is published once per minute while the container is idle.
 
+[[event-consumption]]
 ====== Event Consumption
 
 You can capture idle events by implementing `ApplicationListener` -- either a general listener, or one narrowed to only
@@ -4018,6 +4035,7 @@ The default implementation of the `MessageConverter` strategy is called `SimpleM
 This is the converter that is used by an instance of `RabbitTemplate` if you do not explicitly configure an alternative.
 It handles text-based content, serialized Java objects, and byte arrays.
 
+[[converting-from-a-message]]
 ====== Converting From a `Message`
 
 If the content type of the input `Message` begins with "text" (for example,
@@ -4035,6 +4053,7 @@ For all other content-types, the `SimpleMessageConverter` returns the `Message` 
 
 See <<java-deserialization>> for important information.
 
+[[converting-to-a-message]]
 ====== Converting To a `Message`
 
 When converting to a `Message` from an arbitrary Java Object, the `SimpleMessageConverter` likewise deals with byte arrays, strings, and serializable instances.
@@ -4328,6 +4347,7 @@ NOTE: Starting with version 2.1, the `AbstractJsonMessageConverter` class has be
 It is no longer the base class for `Jackson2JsonMessageConverter`.
 It has been replaced by `AbstractJackson2MessageConverter`.
 
+[[marshallingmessageconverter]]
 ===== `MarshallingMessageConverter`
 
 Yet another option is the `MarshallingMessageConverter`.
@@ -4380,6 +4400,7 @@ See <<json-message-converter>> for more information.
 NOTE: Starting with version 2.2, `application/xml` is assumed if there is no `contentType` property, or it has the default value `application/octet-stream`.
 To revert to the previous behavior (return an unconverted `byte[]`), set the converter's `assumeSupportedContentType` property to `false`.
 
+[[contenttypedelegatingmessageconverter]]
 ===== `ContentTypeDelegatingMessageConverter`
 
 This class was introduced in version 1.4.2 and allows delegation to a specific `MessageConverter` based on the content type property in the `MessageProperties`.
@@ -4596,6 +4617,7 @@ Starting with version 2.3.7, the template has a new property `useChannelForCorre
 When this is `true`, the server does not have to copy the correlation id from the request message headers to the reply message.
 Instead, the channel used to send the request is used to correlate the reply to the request.
 
+[[message-correlation-with-a-reply-queue]]
 ===== Message Correlation With A Reply Queue
 
 When using a fixed reply queue (other than `amq.rabbitmq.reply-to`), you must provide correlation data so that replies can be correlated to requests.
@@ -5824,6 +5846,7 @@ Starting with version 2.0, the behavior is consistent and the normal requeue log
 To revert to the previous behavior, you can set the container's `alwaysRequeueWithTxManagerRollback` property to `true`.
 See <<containerAttributes>>.
 
+[[using-rabbittransactionmanager]]
 ===== Using `RabbitTransactionManager`
 
 The https://docs.spring.io/spring-amqp/docs/latest_ga/api/org/springframework/amqp/rabbit/transaction/RabbitTransactionManager.html[RabbitTransactionManager] is an alternative to executing Rabbit operations within, and synchronized with, external transactions.
@@ -6608,6 +6631,7 @@ a|
 [[listener-concurrency]]
 ==== Listener Concurrency
 
+[[simplemessagelistenercontainer]]
 ===== SimpleMessageListenerContainer
 
 By default, the listener container starts a single consumer that receives messages from the queues.
@@ -6641,6 +6665,7 @@ Each consumer uses a single channel, regardless of the number of configured queu
 
 Starting with version 2.0, the `concurrentConsumers` and `maxConcurrentConsumers` properties can be set with the `concurrency` property -- for example, `2-4`.
 
+[[using-directmessagelistenercontainer]]
 ===== Using `DirectMessageListenerContainer`
 
 With this container, concurrency is based on the configured queues and `consumersPerQueue`.
@@ -6676,6 +6701,7 @@ Previously, a cancel on one queue cancelled the entire consumer and, eventually,
 
 If you wish to permanently remove a queue, you should update the container before or after deleting to queue, to avoid future attempts trying to consume from it.
 
+[[resilience:-recovering-from-errors-and-broker-failures]]
 ==== Resilience: Recovering from Errors and Broker Failures
 
 Some of the key (and most popular) high-level features that Spring AMQP provides are to do with recovery and automatic re-connection in the event of a protocol error or broker failure.
@@ -6882,6 +6908,7 @@ See <<cf-pub-conf-ret>> for more information about confirms and returns.
 
 Starting with version 2.1, an `ImmediateRequeueMessageRecoverer` is  added to throw an `ImmediateRequeueAmqpException`, which notifies a listener container to requeue the current failed message.
 
+[[exception-classification-for-spring-retry]]
 ===== Exception Classification for Spring Retry
 
 Spring Retry has a great deal of flexibility for determining which exceptions can invoke retry.
@@ -7047,6 +7074,7 @@ public ApplicationRunner runner(RabbitTemplate template, ConnectionFactoryContex
 ----
 ====
 
+[[debugging]]
 ==== Debugging
 
 Spring AMQP provides extensive logging, especially at the `DEBUG` level.

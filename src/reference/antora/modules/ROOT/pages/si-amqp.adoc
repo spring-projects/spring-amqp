@@ -15,6 +15,7 @@ Since the AMQP adapters are part of the Spring Integration release, the document
 We provide a quick overview of the main features here.
 See the https://docs.spring.io/spring-integration/reference/htmlsingle/[Spring Integration Reference Guide] for much more detail.
 
+[[inbound-channel-adapter]]
 ==== Inbound Channel Adapter
 
 To receive AMQP Messages from a queue, you can configure an `<inbound-channel-adapter>`.
@@ -29,6 +30,7 @@ The following example shows how to configure an inbound channel adapter:
 ----
 ====
 
+[[outbound-channel-adapter]]
 ==== Outbound Channel Adapter
 
 To send AMQP Messages to an exchange, you can configure an `<outbound-channel-adapter>`.
@@ -45,6 +47,7 @@ The following example shows how to define an outbound channel adapter:
 ----
 ====
 
+[[inbound-gateway]]
 ==== Inbound Gateway
 
 To receive an AMQP Message from a queue and respond to its reply-to address, you can configure an `<inbound-gateway>`.
@@ -60,6 +63,7 @@ The following example shows how to define an inbound gateway:
 ----
 ====
 
+[[outbound-gateway]]
 ==== Outbound Gateway
 
 To send AMQP Messages to an exchange and receive back a response from a remote client, you can configure an `<outbound-gateway>`.

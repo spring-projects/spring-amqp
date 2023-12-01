@@ -204,6 +204,7 @@ If you look in the `Consumer` class, you can see that its `main()` method consis
 The Producer's `main()` method is also a one-line bootstrap, since the component whose method is annotated with `@Scheduled` also starts automatically.
 You can start the `Producer` and `Consumer` in any order, and you should see messages being sent and received every three seconds.
 
+[[stock-trading]]
 ==== Stock Trading
 
 The Stock Trading sample demonstrates more advanced messaging scenarios than <<hello-world-sample,the Hello World sample>>.

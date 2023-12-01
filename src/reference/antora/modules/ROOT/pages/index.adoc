@@ -25,12 +25,14 @@ endif::[]
 Copies of this document may be made for your own use and for distribution to others, provided that you do not charge any fee for such copies and further provided that each copy contains this Copyright Notice, whether distributed in print or electronically.
 
 
+[[preface]]
 == Preface
 
 include::preface.adoc[]
 
 include::whats-new.adoc[]
 
+[[introduction]]
 == Introduction
 
 This first part of the reference documentation is a high-level overview of Spring AMQP and the underlying concepts.
@@ -38,6 +40,7 @@ It includes some code snippets to get you up and running as quickly as possible.
 
 include::quick-tour.adoc[]
 
+[[reference]]
 == Reference
 
 This part of the reference documentation details the various components that comprise Spring AMQP.
@@ -54,6 +57,7 @@ include::sample-apps.adoc[]
 
 include::testing.adoc[]
 
+[[spring-integration-reference]]
 == Spring Integration - Reference
 
 This part of the reference documentation provides a quick introduction to the AMQP support within the Spring Integration project.

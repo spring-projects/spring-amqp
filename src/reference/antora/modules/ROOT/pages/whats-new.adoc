@@ -1,8 +1,10 @@
 [[whats-new]]
 == What's New
 
+[[changes-in-3-1-since-3-0]]
 === Changes in 3.1 Since 3.0
 
+[[java-17-spring-framework-6-1]]
 ==== Java 17, Spring Framework 6.1
 
 This version requires Spring Framework 6.1 and Java 17.

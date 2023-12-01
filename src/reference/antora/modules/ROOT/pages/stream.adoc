@@ -61,6 +61,7 @@ StreamAdmin streamAdmin(Environment env) {
 
 Refer to the RabbitMQ documentation for more information about the `StreamCreator`.
 
+[[sending-messages]]
 ==== Sending Messages
 
 The `RabbitStreamTemplate` provides a subset of the `RabbitTemplate` (AMQP) functionality.
@@ -124,6 +125,7 @@ Refer to the https://rabbitmq.github.io/rabbitmq-stream-java-client/stable/htmls
 
 IMPORTANT: Starting with version 3.0, the method return types are `CompletableFuture` instead of `ListenableFuture`.
 
+[[receiving-messages]]
 ==== Receiving Messages
 
 Asynchronous message reception is provided by the `StreamListenerContainer` (and the `StreamRabbitListenerContainerFactory` when using `@RabbitListener`).
@@ -230,10 +232,12 @@ public StreamRetryOperationsInterceptorFactoryBean sfb(RetryTemplate retryTempla
 
 IMPORTANT: Stateful retry is not supported with this container.
 
+[[super-streams]]
 ==== Super Streams
 
 A Super Stream is an abstract concept for a partitioned stream, implemented by binding a number of stream queues to an exchange having an argument `x-super-stream: true`.
 
+[[provisioning]]
 ===== Provisioning
 
 For convenience, a super stream can be provisioned by defining a single bean of type `SuperStream`.
@@ -266,6 +270,7 @@ SuperStream superStream() {
 
 The number of keys must equal the number of partitions.
 
+[[producing-to-a-superstream]]
 ===== Producing to a SuperStream
 
 You must add a `superStreamRoutingFunction` to the `RabbitStreamTemplate`:
