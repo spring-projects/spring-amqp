@@ -3,8 +3,6 @@
 ifdef::backend-html5[]
 :revnumber: ''
 endif::[]
-:toc: left
-:toclevels: 4
 :numbered:
 :icons: font
 :hide-uri-scheme:
