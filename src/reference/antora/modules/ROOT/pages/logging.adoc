@@ -1,0 +1,419 @@
+[[logging]]
+=== Logging Subsystem AMQP Appenders
+
+The framework provides logging appenders for some popular logging subsystems:
+
+* logback (since Spring AMQP version 1.4)
+* log4j2 (since Spring AMQP version 1.6)
+
+The appenders are configured by using the normal mechanisms for the logging subsystem, available properties are specified in the following sections.
+
+==== Common properties
+
+The following properties are available with all appenders:
+
+.Common Appender Properties
+[cols="2l,2l,4", options="header"]
+|===
+| Property
+| Default
+| Description
+
+| exchangeName
+| logs
+| Name of the exchange to which to publish log events.
+
+| exchangeType
+| topic
+| Type of the exchange to which to publish log events -- needed only if the appender declares the exchange.
+See `declareExchange`.
+
+| routingKeyPattern
+| %c.%p
+| Logging subsystem pattern format to use to generate a routing key.
+
+| applicationId
+|
+| Application ID -- added to the routing key if the pattern includes `%X{applicationId}`.
+
+| senderPoolSize
+| 2
+| The number of threads to use to publish log events.
+
+| maxSenderRetries
+| 30
+| How many times to retry sending a message if the broker is unavailable or there is some other error.
+Retries are delayed as follows: `N ^ log(N)`, where `N` is the retry number.
+
+| addresses
+|
+| A comma-delimited list of broker addresses in the following form: `host:port[,host:port]*` - overrides `host` and `port`.
+
+| host
+| localhost
+| RabbitMQ host to which to connect .
+
+| port
+| 5672
+| RabbitMQ port to which to connect.
+
+| virtualHost
+| /
+| RabbitMQ virtual host to which to connect.
+
+| username
+| guest
+| RabbitMQ user to use when connecting.
+
+| password
+| guest
+| RabbitMQ password for this user.
+
+| useSsl
+| false
+| Whether to use SSL for the RabbitMQ connection.
+See <<rabbitconnectionfactorybean-configuring-ssl>>
+
+| verifyHostname
+| true
+| Enable server hostname verification for TLS connections.
+See <<rabbitconnectionfactorybean-configuring-ssl>>
+
+| sslAlgorithm
+| null
+| The SSL algorithm to use.
+
+| sslPropertiesLocation
+| null
+| Location of the SSL properties file.
+
+| keyStore
+| null
+| Location of the keystore.
+
+| keyStorePassphrase
+| null
+| Passphrase for the keystore.
+
+| keyStoreType
+| JKS
+| The keystore type.
+
+| trustStore
+| null
+| Location of the truststore.
+
+| trustStorePassphrase
+| null
+| Passphrase for the truststore.
+
+| trustStoreType
+| JKS
+| The truststore type.
+
+| saslConfig
+| null (RabbitMQ client default applies)
+| The `saslConfig` - see the javadoc for `RabbitUtils.stringToSaslConfig` for valid values.
+
+| contentType
+| text/plain
+| `content-type` property of log messages.
+
+| contentEncoding
+|
+| `content-encoding` property of log messages.
+
+| declareExchange
+| false
+| Whether or not to declare the configured exchange when this appender starts.
+See also `durable` and `autoDelete`.
+
+| durable
+| true
+| When `declareExchange` is `true`, the durable flag is set to this value.
+
+| autoDelete
+| false
+| When `declareExchange` is `true`, the auto-delete flag is set to this value.
+
+| charset
+| null
+| Character set to use when converting `String` to `byte[]`.
+Default: null (the system default charset is used).
+If the character set is unsupported on the current platform, we fall back to using the system character set.
+
+| deliveryMode
+| PERSISTENT
+| `PERSISTENT` or `NON_PERSISTENT` to determine whether or not RabbitMQ should persist the messages.
+
+| generateId
+| false
+| Used to determine whether the `messageId` property is set to a unique value.
+
+| clientConnectionProperties
+| null
+| A comma-delimited list of `key:value` pairs for custom client properties to the RabbitMQ connection.
+
+| addMdcAsHeaders
+| true
+| MDC properties were always added into RabbitMQ message headers until this property was introduced.
+It can lead to issues for big MDC as while RabbitMQ has limited buffer size for all headers and this buffer is pretty small.
+This property was introduced to avoid issues in cases of big MDC.
+By default this value set to `true` for backward compatibility.
+The `false` turns off serialization MDC into headers.
+Please note, the `JsonLayout` adds MDC into the message by default.
+
+|===
+
+==== Log4j 2 Appender
+
+The following example shows how to configure a Log4j 2 appender:
+
+====
+[source, xml]
+----
+<Appenders>
+    ...
+    <RabbitMQ name="rabbitmq"
+        addresses="foo:5672,bar:5672" user="guest" password="guest" virtualHost="/"
+        exchange="log4j2" exchangeType="topic" declareExchange="true" durable="true" autoDelete="false"
+        applicationId="myAppId" routingKeyPattern="%X{applicationId}.%c.%p"
+        contentType="text/plain" contentEncoding="UTF-8" generateId="true" deliveryMode="NON_PERSISTENT"
+        charset="UTF-8"
+        senderPoolSize="3" maxSenderRetries="5"
+        addMdcAsHeaders="false">
+    </RabbitMQ>
+</Appenders>
+----
+====
+
+[IMPORTANT]
+====
+Starting with versions 1.6.10 and 1.7.3, by default, the log4j2 appender publishes the messages to RabbitMQ on the calling thread.
+This is because Log4j 2 does not, by default, create thread-safe events.
+If the broker is down, the `maxSenderRetries` is used to retry, with no delay between retries.
+If you wish to restore the previous behavior of publishing the messages on separate threads (`senderPoolSize`), you can set the `async` property to `true`.
+However, you also need to configure Log4j 2 to use the `DefaultLogEventFactory` instead of the `ReusableLogEventFactory`.
+One way to do that is to set the system property `-Dlog4j2.enable.threadlocals=false`.
+If you use asynchronous publishing with the `ReusableLogEventFactory`, events have a high likelihood of being corrupted due to cross-talk.
+====
+
+==== Logback Appender
+
+The following example shows how to configure a logback appender:
+
+====
+[source, xml]
+----
+<appender name="AMQP" class="org.springframework.amqp.rabbit.logback.AmqpAppender">
+    <layout>
+        <pattern><![CDATA[ %d %p %t [%c] - <%m>%n ]]></pattern>
+    </layout>
+    <addresses>foo:5672,bar:5672</addresses>
+    <abbreviation>36</abbreviation>
+    <includeCallerData>false</includeCallerData>
+    <applicationId>myApplication</applicationId>
+    <routingKeyPattern>%property{applicationId}.%c.%p</routingKeyPattern>
+    <generateId>true</generateId>
+    <charset>UTF-8</charset>
+    <durable>false</durable>
+    <deliveryMode>NON_PERSISTENT</deliveryMode>
+    <declareExchange>true</declareExchange>
+    <addMdcAsHeaders>false</addMdcAsHeaders>
+</appender>
+----
+====
+
+Starting with version 1.7.1, the Logback `AmqpAppender` provides  an `includeCallerData` option, which is `false` by default.
+Extracting caller data can be rather expensive, because the log event has to create a throwable and inspect it to determine the calling location.
+Therefore, by default, caller data associated with an event is not extracted when the event is added to the event queue.
+You can configure the appender to include caller data by setting the `includeCallerData` property to `true`.
+
+Starting with version 2.0.0, the Logback `AmqpAppender` supports https://logback.qos.ch/manual/encoders.html[Logback encoders] with the `encoder` option.
+The `encoder` and `layout` options are mutually exclusive.
+
+==== Customizing the Messages
+
+By default, AMQP appenders populate the following message properties:
+
+* `deliveryMode`
+* contentType
+* `contentEncoding`, if configured
+* `messageId`, if `generateId` is configured
+* `timestamp` of the log event
+* `appId`, if applicationId is configured
+
+In addition they populate headers with the following values:
+
+* `categoryName` of the log event
+* The level of the log event
+* `thread`: the name of the thread where log event happened
+* The location of the stack trace of the log event call
+* A copy of all the MDC properties (unless `addMdcAsHeaders` is set to `false`)
+
+Each of the appenders can be subclassed, letting you modify the messages before publishing.
+The following example shows how to customize log messages:
+
+
+====
+[source, java]
+----
+public class MyEnhancedAppender extends AmqpAppender {
+
+    @Override
+    public Message postProcessMessageBeforeSend(Message message, Event event) {
+        message.getMessageProperties().setHeader("foo", "bar");
+        return message;
+    }
+
+}
+----
+====
+
+Starting with 2.2.4, the log4j2 `AmqpAppender` can be extended using `@PluginBuilderFactory` and extending also `AmqpAppender.Builder`
+
+
+====
+[source, java]
+----
+@Plugin(name = "MyEnhancedAppender", category = "Core", elementType = "appender", printObject = true)
+public class MyEnhancedAppender extends AmqpAppender {
+
+	public MyEnhancedAppender(String name, Filter filter, Layout<? extends Serializable> layout,
+			boolean ignoreExceptions, AmqpManager manager, BlockingQueue<Event> eventQueue, String foo, String bar) {
+		super(name, filter, layout, ignoreExceptions, manager, eventQueue);
+
+	@Override
+	public Message postProcessMessageBeforeSend(Message message, Event event) {
+			message.getMessageProperties().setHeader("foo", "bar");
+		return message;
+	}
+
+	@PluginBuilderFactory
+	public static Builder newBuilder() {
+		return new Builder();
+	}
+
+	protected static class Builder extends AmqpAppender.Builder {
+
+		@Override
+		protected AmqpAppender buildInstance(String name, Filter filter, Layout<? extends Serializable> layout,
+				boolean ignoreExceptions, AmqpManager manager, BlockingQueue<Event> eventQueue) {
+			return new MyEnhancedAppender(name, filter, layout, ignoreExceptions, manager, eventQueue);
+		}
+	}
+
+}
+----
+====
+
+
+
+==== Customizing the Client Properties
+
+You can add custom client properties by adding either string properties or more complex properties.
+
+===== Simple String Properties
+
+Each appender supports adding client properties to the RabbitMQ connection.
+
+The following example shows how to add a custom client property for logback:
+
+====
+[source, xml]
+----
+<appender name="AMQP" ...>
+    ...
+    <clientConnectionProperties>thing1:thing2,cat:hat</clientConnectionProperties>
+    ...
+</appender>
+----
+====
+
+.log4j2
+====
+[source, xml]
+----
+<Appenders>
+    ...
+    <RabbitMQ name="rabbitmq"
+        ...
+        clientConnectionProperties="thing1:thing2,cat:hat"
+        ...
+    </RabbitMQ>
+</Appenders>
+----
+====
+
+The properties are a comma-delimited list of `key:value` pairs.
+Keys and values cannot contain commas or colons.
+
+These properties appear on the RabbitMQ Admin UI when the connection is viewed.
+
+===== Advanced Technique for Logback
+
+You can subclass the Logback appender.
+Doing so lets you modify the client connection properties before the connection is established.
+The following example shows how to do so:
+
+====
+[source, java]
+----
+public class MyEnhancedAppender extends AmqpAppender {
+
+    private String thing1;
+
+    @Override
+    protected void updateConnectionClientProperties(Map<String, Object> clientProperties) {
+        clientProperties.put("thing1", this.thing1);
+    }
+
+    public void setThing1(String thing1) {
+        this.thing1 = thing1;
+    }
+
+}
+----
+====
+
+Then you can add `<thing1>thing2</thing1>` to logback.xml.
+
+For String properties such as those shown in the preceding example, the previous technique can be used.
+Subclasses allow for adding richer properties (such as adding a `Map` or numeric property).
+
+==== Providing a Custom Queue Implementation
+
+The `AmqpAppenders` use a `BlockingQueue` to asynchronously publish logging events to RabbitMQ.
+By default, a `LinkedBlockingQueue` is used.
+However, you can supply any kind of custom `BlockingQueue` implementation.
+
+The following example shows how to do so for Logback:
+
+====
+[source, java]
+----
+public class MyEnhancedAppender extends AmqpAppender {
+
+    @Override
+    protected BlockingQueue<Event> createEventQueue() {
+        return new ArrayBlockingQueue();
+    }
+
+}
+----
+====
+
+The Log4j 2 appender supports using a https://logging.apache.org/log4j/2.x/manual/appenders.html#BlockingQueueFactory[`BlockingQueueFactory`], as the following example shows:
+
+====
+[source, xml]
+----
+<Appenders>
+    ...
+    <RabbitMQ name="rabbitmq"
+              bufferSize="10" ... >
+        <ArrayBlockingQueue/>
+    </RabbitMQ>
+</Appenders>
+----
+====

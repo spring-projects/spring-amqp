@@ -1,0 +1,17 @@
+[[whats-new]]
+== What's New
+
+=== Changes in 3.1 Since 3.0
+
+==== Java 17, Spring Framework 6.1
+
+This version requires Spring Framework 6.1 and Java 17.
+
+[[x31-exc]]
+==== Exclusive Consumer Logging
+
+Log messages reporting access refusal due to exclusive consumers are now logged at DEBUG level by default.
+It remains possible to configure your own logging behavior by setting the `exclusiveConsumerExceptionLogger` and `closeExceptionLogger` properties on the listener container and connection factory respectively.
+In addition, the `SimpleMessageListenerContainer` consumer restart after such an exception is now logged at DEBUG level by default (previously INFO).
+A new method `logRestart()` has been added to the `ConditionalExceptionLogger` to allow this to be changed.
+See <<consumer-events>> and <<channel-close-logging>> for more information.

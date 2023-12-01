@@ -1,0 +1,1329 @@
+[appendix]
+[[observation-gen]]
+== Micrometer Observation Documentation
+
+include::../docs/generated/metrics.adoc[]
+
+include::../docs/generated/spans.adoc[]
+
+include::../docs/generated/conventions.adoc[]
+
+[appendix]
+[[native-images]]
+== Native Images
+
+https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#aot[Spring AOT] native hints are provided to assist in developing native images for Spring applications that use Spring AMQP.
+
+Some examples can be seen in the https://github.com/spring-projects/spring-aot-smoke-tests/tree/main/integration[`spring-aot-smoke-tests` GitHub repository].
+
+[appendix]
+[[change-history]]
+== Change History
+
+This section describes changes that have been made as versions have changed.
+
+=== Current Release
+
+See <<whats-new>>.
+
+[[previous-whats-new]]
+=== Previous Releases
+
+==== Changes in 3.0 Since 2.4
+
+===== Java 17, Spring Framework 6.0
+
+This version requires Spring Framework 6.0 and Java 17
+
+===== Remoting
+
+The remoting feature (using RMI) is no longer supported.
+
+===== Observation
+
+Enabling observation for timers and tracing using Micrometer is now supported.
+See <<micrometer-observation>> for more information.
+
+[[x30-Native]]
+===== Native Images
+
+Support for creating native images is provided.
+See <<native-images>> for more information.
+
+===== AsyncRabbitTemplate
+
+IMPORTANT: The `AsyncRabbitTemplate` now returns `CompletableFuture` s instead of `ListenableFuture` s.
+See <<async-template>> for more information.
+
+===== Stream Support Changes
+
+IMPORTANT: `RabbitStreamOperations` and `RabbitStreamTemplate` methods now return `CompletableFuture` instead of `ListenableFuture`.
+
+Super streams and single active consumers thereon are now supported.
+
+See <<stream-support>> for more information.
+
+===== `@RabbitListener` Changes
+
+Batch listeners can now consume `Collection<?>` as well as `List<?>`.
+The batch messaging adapter now ensures that the method is suitable for consuming batches.
+When setting the container factory `consumerBatchEnabled` to `true`, the `batchListener` property is also set to `true`.
+See <<receiving-batch>> for more information.
+
+`MessageConverter` s can now return `Optional.empty()` for a null value; this is currently implemented by the `Jackson2JsonMessageConverter`.
+See <<Jackson2JsonMessageConverter-from-message>> for more information
+
+You can now configure a `ReplyPostProcessor` via the container factory rather than via a property on `@RabbitListener`.
+See <<async-annotation-driven-reply>> for more information.
+
+The `@RabbitListener` (and `@RabbitHandler`) methods can now be declared as Kotlin `suspend` functions.
+See <<async-returns>> for more information.
+
+Starting with version 3.0.5, listeners with async return types (including Kotlin suspend functions) invoke the `RabbitListenerErrorHandler` (if configured) after a failure.
+Previously, the error handler was only invoked with synchronous invocations.
+
+===== Connection Factory Changes
+
+The default `addressShuffleMode` in `AbstractConnectionFactory` is now `RANDOM`.
+This results in connecting to a random host when multiple addresses are provided.
+See <<cluster>> for more information.
+
+The `LocalizedQueueConnectionFactory` no longer uses the RabbitMQ `http-client` library to determine which node is the leader for a queue.
+See <<queue-affinity>> for more information.
+
+==== Changes in 2.4 Since 2.3
+
+This section describes the changes between version 2.3 and version 2.4.
+See <<change-history>> for changes in previous versions.
+
+===== `@RabbitListener` Changes
+
+`MessageProperties` is now available for argument matching.
+See <<async-annotation-driven-enable-signature>> for more information.
+
+===== `RabbitAdmin` Changes
+
+A new property `recoverManualDeclarations` allows recovery of manually declared queues/exchanges/bindings.
+See <<declarable-recovery>> for more information.
+
+===== Remoting Support
+
+Support remoting using Spring Framework’s RMI support is deprecated and will be removed in 3.0. See Spring Remoting with AMQP for more information.
+
+==== Message Converter Changes
+
+The `Jackson2JsonMessageConverter` can now determine the charset from the `contentEncoding` header.
+See <<json-message-converter>> for more information.
+
+==== Message Converter Changes
+
+The `Jackson2JsonMessageConverter` can now determine the charset from the `contentEncoding` header.
+See <<json-message-converter>> for more information.
+
+==== Stream Support Changes
+
+`RabbitStreamOperations` and `RabbitStreamTemplate` have been deprecated in favor of `RabbitStreamOperations2` and `RabbitStreamTemplate2` respectively; they return `CompletableFuture` instead of `ListenableFuture`.
+See <<stream-support>> for more information.
+
+==== Changes in 2.3 Since 2.2
+
+This section describes the changes between version 2.2 and version 2.3.
+See <<change-history>> for changes in previous versions.
+
+===== Connection Factory Changes
+
+Two additional connection factories are now provided.
+See <<choosing-factory>> for more information.
+
+===== `@RabbitListener` Changes
+
+You can now specify a reply content type.
+See <<reply-content-type>> for more information.
+
+===== Message Converter Changes
+
+The `Jackson2JMessageConverter` s can now deserialize abstract classes (including interfaces) if the `ObjectMapper` is configured with a custom deserializer.
+See <<jackson-abstract>> for more information.
+
+===== Testing Changes
+
+A new annotation `@SpringRabbitTest` is provided to automatically configure some infrastructure beans for when you are not using `SpringBootTest`.
+See <<spring-rabbit-test>> for more information.
+
+===== RabbitTemplate Changes
+
+The template's `ReturnCallback` has been refactored as `ReturnsCallback` for simpler use in lambda expressions.
+See <<template-confirms>> for more information.
+
+When using returns and correlated confirms, the `CorrelationData` now requires a unique `id` property.
+See <<template-confirms>> for more information.
+
+When using direct reply-to, you can now configure the template such that the server does not need to return correlation data with the reply.
+See <<direct-reply-to>> for more information.
+
+===== Listener Container Changes
+
+A new listener container property `consumeDelay` is now available; it is helpful when using the https://github.com/rabbitmq/rabbitmq-sharding[RabbitMQ Sharding Plugin].
+
+The default `JavaLangErrorHandler` now calls `System.exit(99)`.
+To revert to the previous behavior (do nothing), add a no-op handler.
+
+The containers now support the `globalQos` property to apply the `prefetchCount` globally for the channel rather than for each consumer on the channel.
+
+See <<containerAttributes>> for more information.
+
+===== MessagePostProcessor Changes
+
+The compressing `MessagePostProcessor` s now use a comma to separate multiple content encodings instead of a colon.
+The decompressors can handle both formats but, if you produce messages with this version that are consumed by versions earlier than 2.2.12, you should configure the compressor to use the old delimiter.
+See the IMPORTANT note in <<post-processing>> for more information.
+
+===== Multiple Broker Support Improvements
+
+See <<multi-rabbit>> for more information.
+
+===== RepublishMessageRecoverer Changes
+
+A new subclass of this recoverer is not provided that supports publisher confirms.
+See <<async-listeners>> for more information.
+
+==== Changes in 2.2 Since 2.1
+
+This section describes the changes between version 2.1 and version 2.2.
+
+===== Package Changes
+
+The following classes/interfaces have been moved from `org.springframework.amqp.rabbit.core.support` to `org.springframework.amqp.rabbit.batch`:
+
+* `BatchingStrategy`
+* `MessageBatch`
+* `SimpleBatchingStrategy`
+
+In addition, `ListenerExecutionFailedException` has been moved from `org.springframework.amqp.rabbit.listener.exception` to `org.springframework.amqp.rabbit.support`.
+
+===== Dependency Changes
+
+JUnit (4) is now an optional dependency and will no longer appear as a transitive dependency.
+
+The `spring-rabbit-junit` module is now a *compile* dependency in the `spring-rabbit-test` module for a better target application development experience when with only a single `spring-rabbit-test` we get the full stack of testing utilities for AMQP components.
+
+===== "Breaking" API Changes
+
+the JUnit (5) `RabbitAvailableCondition.getBrokerRunning()` now returns a `BrokerRunningSupport` instance instead of a `BrokerRunning`, which depends on JUnit 4.
+It has the same API so it's just a matter of changing the class name of any references.
+See <<junit5-conditions>> for more information.
+
+===== ListenerContainer Changes
+
+Messages with fatal exceptions are now rejected and NOT requeued, by default, even if the acknowledge mode is manual.
+See <<exception-handling>> for more information.
+
+Listener performance can now be monitored using Micrometer `Timer` s.
+See <<micrometer>> for more information.
+
+===== @RabbitListener Changes
+
+You can now configure an `executor` on each listener, overriding the factory configuration, to more easily identify threads associated with the listener.
+You can now override the container factory's `acknowledgeMode` property with the annotation's `ackMode` property.
+See <<listener-property-overrides,overriding container factory properties>> for more information.
+
+When using <<receiving-batch,batching>>, `@RabbitListener` methods can now receive a complete batch of messages in one call instead of getting them one-at-a-time.
+
+When receiving batched messages one-at-a-time, the last message has the `isLastInBatch` message property set to true.
+
+In addition, received batched messages now contain the `amqp_batchSize` header.
+
+Listeners can also consume batches created in the `SimpleMessageListenerContainer`, even if the batch is not created by the producer.
+See <<choose-container>> for more information.
+
+Spring Data Projection interfaces are now supported by the `Jackson2JsonMessageConverter`.
+See <<data-projection>> for more information.
+
+The `Jackson2JsonMessageConverter` now assumes the content is JSON if there is no `contentType` property, or it is the default (`application/octet-string`).
+See <<Jackson2JsonMessageConverter-from-message>> for more information.
+
+Similarly. the `Jackson2XmlMessageConverter` now assumes the content is XML if there is no `contentType` property, or it is the default (`application/octet-string`).
+See <<jackson2xml>> for more information.
+
+When a `@RabbitListener` method returns a result, the bean and `Method` are now available in the reply message properties.
+This allows configuration of a `beforeSendReplyMessagePostProcessor` to, for example, set a header in the reply to indicate which method was invoked on the server.
+See <<async-annotation-driven-reply>> for more information.
+
+You can now configure a `ReplyPostProcessor` to make modifications to a reply message before it is sent.
+See <<async-annotation-driven-reply>> for more information.
+
+===== AMQP Logging Appenders Changes
+
+The Log4J and Logback `AmqpAppender` s now support a `verifyHostname` SSL option.
+
+Also these appenders now can be configured to not add MDC entries as headers.
+The `addMdcAsHeaders` boolean option has been introduces to configure such a behavior.
+
+The appenders now support the `SaslConfig` property.
+
+See <<logging>> for more information.
+
+===== MessageListenerAdapter Changes
+
+The `MessageListenerAdapter` provides now a new `buildListenerArguments(Object, Channel, Message)` method  to build an array of arguments to be passed into target listener and an old one is deprecated.
+See <<message-listener-adapter>> for more information.
+
+===== Exchange/Queue Declaration Changes
+
+The `ExchangeBuilder` and `QueueBuilder` fluent APIs used to create `Exchange` and `Queue` objects for declaration by `RabbitAdmin` now support "well known" arguments.
+See <<builder-api>> for more information.
+
+The `RabbitAdmin` has a new property `explicitDeclarationsOnly`.
+See <<conditional-declaration>> for more information.
+
+===== Connection Factory Changes
+
+The `CachingConnectionFactory` has a new property `shuffleAddresses`.
+When providing a list of broker node addresses, the list will be shuffled before creating a connection so that the order in which the connections are attempted is random.
+See <<cluster>> for more information.
+
+When using Publisher confirms and returns, the callbacks are now invoked on the connection factory's `executor`.
+This avoids a possible deadlock in the `amqp-clients` library if you perform rabbit operations from within the callback.
+See <<template-confirms>> for more information.
+
+Also, the publisher confirm type is now specified with the `ConfirmType` enum instead of the two mutually exclusive setter methods.
+
+The `RabbitConnectionFactoryBean` now uses TLS 1.2 by default when SSL is enabled.
+See <<rabbitconnectionfactorybean-configuring-ssl>> for more information.
+
+===== New MessagePostProcessor Classes
+
+Classes `DeflaterPostProcessor` and `InflaterPostProcessor` were added to support compression and decompression, respectively, when the message content-encoding is set to `deflate`.
+
+===== Other Changes
+
+The `Declarables` object (for declaring multiple queues, exchanges, bindings) now has a filtered getter for each type.
+See <<collection-declaration>> for more information.
+
+You can now customize each `Declarable` bean before the `RabbitAdmin` processes the declaration thereof.
+See <<automatic-declaration>> for more information.
+
+`singleActiveConsumer()` has been added to the `QueueBuilder` to set the `x-single-active-consumer` queue argument.
+See <<builder-api>> for more information.
+
+Outbound headers with values of type `Class<?>` are now mapped using `getName()` instead of `toString()`.
+See <<message-properties-converters>> for more information.
+
+Recovery of failed producer-created batches is now supported.
+See <<batch-retry>> for more information.
+
+==== Changes in 2.1 Since 2.0
+
+===== AMQP Client library
+
+Spring AMQP now uses the 5.4.x version of the `amqp-client` library provided by the RabbitMQ team.
+This client has auto-recovery configured by default.
+See <<auto-recovery>>.
+
+NOTE: As of version 4.0, the client enables automatic recovery by default.
+While compatible with this feature, Spring AMQP has its own recovery mechanisms and the client recovery feature generally is not needed.
+We recommend disabling `amqp-client` automatic recovery, to avoid getting `AutoRecoverConnectionNotCurrentlyOpenException` instances when the broker is available but the connection has not yet recovered.
+Starting with version 1.7.1, Spring AMQP disables it unless you explicitly create your own RabbitMQ connection factory and provide it to the `CachingConnectionFactory`.
+RabbitMQ `ConnectionFactory` instances created by the `RabbitConnectionFactoryBean` also have the option disabled by default.
+
+
+===== Package Changes
+
+Certain classes have moved to different packages.
+Most are internal classes and do not affect user applications.
+Two exceptions are `ChannelAwareMessageListener` and `RabbitListenerErrorHandler`.
+These interfaces are now in `org.springframework.amqp.rabbit.listener.api`.
+
+===== Publisher Confirms Changes
+
+Channels enabled for publisher confirmations are not returned to the cache while there are outstanding confirmations.
+See <<template-confirms>> for more information.
+
+===== Listener Container Factory Improvements
+
+You can now use the listener container factories to create any listener container, not only those for use with `@RabbitListener` annotations or the `@RabbitListenerEndpointRegistry`.
+See <<using-container-factories>> for more information.
+
+`ChannelAwareMessageListener` now inherits from `MessageListener`.
+
+===== Broker Event Listener
+
+A `BrokerEventListener` is introduced to publish selected broker events as `ApplicationEvent` instances.
+See <<broker-events>> for more information.
+
+===== RabbitAdmin Changes
+
+The `RabbitAdmin` discovers beans of type `Declarables` (which is a container for `Declarable` - `Queue`, `Exchange`, and `Binding` objects) and declare the contained objects on the broker.
+Users are discouraged from using the old mechanism of declaring `<Collection<Queue>>` (and others) and should use `Declarables` beans instead.
+By default, the old mechanism is disabled.
+See <<collection-declaration>> for more information.
+
+`AnonymousQueue` instances are now declared with `x-queue-master-locator` set to `client-local` by default, to ensure the queues are created on the node the application is connected to.
+See <<broker-configuration>> for more information.
+
+===== RabbitTemplate Changes
+
+You can now configure the `RabbitTemplate` with the `noLocalReplyConsumer` option to control a `noLocal` flag for reply consumers in the `sendAndReceive()` operations.
+See <<request-reply>> for more information.
+
+`CorrelationData` for publisher confirmations now has a `ListenableFuture`, which you can use to get the acknowledgment instead of using a callback.
+When returns and confirmations are enabled, the correlation data, if provided, is populated with the returned message.
+See <<template-confirms>> for more information.
+
+A method called `replyTimedOut` is now provided to notify subclasses that a reply has timed out, allowing for any state cleanup.
+See <<reply-timeout>> for more information.
+
+You can now specify an `ErrorHandler` to be invoked when using request/reply with a `DirectReplyToMessageListenerContainer` (the default) when exceptions occur when replies are delivered (for example, late replies).
+See `setReplyErrorHandler` on the `RabbitTemplate`.
+(Also since 2.0.11).
+
+===== Message Conversion
+
+We introduced a new `Jackson2XmlMessageConverter` to support converting messages from and to XML format.
+See <<jackson2xml>> for more information.
+
+===== Management REST API
+
+The `RabbitManagementTemplate` is now deprecated in favor of the direct `com.rabbitmq.http.client.Client` (or `com.rabbitmq.http.client.ReactorNettyClient`) usage.
+See <<management-rest-api>> for more information.
+
+===== `@RabbitListener` Changes
+
+The listener container factory can now be configured with a `RetryTemplate` and, optionally, a `RecoveryCallback` used when sending replies.
+See <<async-annotation-driven-enable>> for more information.
+
+===== Async `@RabbitListener` Return
+
+`@RabbitListener` methods can now return `ListenableFuture<?>` or `Mono<?>`.
+See <<async-returns>> for more information.
+
+===== Connection Factory Bean Changes
+
+By default, the `RabbitConnectionFactoryBean` now calls `enableHostnameVerification()`.
+To revert to the previous behavior, set the `enableHostnameVerification` property to `false`.
+
+===== Connection Factory Changes
+
+The `CachingConnectionFactory` now unconditionally disables auto-recovery in the underlying RabbitMQ `ConnectionFactory`, even if a pre-configured instance is provided in a constructor.
+While steps have been taken to make Spring AMQP compatible with auto recovery, certain corner cases have arisen where issues remain.
+Spring AMQP has had its own recovery mechanism since 1.0.0 and does not need to use the recovery provided by the client.
+While it is still possible to enable the feature (using `cachingConnectionFactory.getRabbitConnectionFactory()` `.setAutomaticRecoveryEnabled()`) after the `CachingConnectionFactory` is constructed, **we strongly recommend that you not do so**.
+We recommend that you use a separate RabbitMQ `ConnectionFactory` if you need auto recovery connections when using the client factory directly (rather than using Spring AMQP components).
+
+===== Listener Container Changes
+
+The default `ConditionalRejectingErrorHandler` now completely discards messages that cause fatal errors if an `x-death` header is present.
+See <<exception-handling>> for more information.
+
+===== Immediate requeue
+
+A new `ImmediateRequeueAmqpException` is introduced to notify a listener container that the message has to be re-queued.
+To use this feature, a new `ImmediateRequeueMessageRecoverer` implementation is added.
+
+See <<async-listeners>> for more information.
+
+
+==== Changes in 2.0 Since 1.7
+
+===== Using `CachingConnectionFactory`
+
+Starting with version 2.0.2, you can configure the `RabbitTemplate` to use a different connection to that used by listener containers.
+This change avoids deadlocked consumers when producers are blocked for any reason.
+See <<separate-connection>> for more information.
+
+===== AMQP Client library
+
+Spring AMQP now uses the new 5.0.x version of the `amqp-client` library provided by the RabbitMQ team.
+This client has auto recovery configured by default.
+See <<auto-recovery>>.
+
+NOTE: As of version 4.0, the client enables automatic recovery by default.
+While compatible with this feature, Spring AMQP has its own recovery mechanisms, and the client recovery feature generally is not needed.
+We recommend that you disable `amqp-client` automatic recovery, to avoid getting `AutoRecoverConnectionNotCurrentlyOpenException` instances when the broker is available but the connection has not yet recovered.
+Starting with version 1.7.1, Spring AMQP disables it unless you explicitly create your own RabbitMQ connection factory and provide it to the `CachingConnectionFactory`.
+RabbitMQ `ConnectionFactory` instances created by the `RabbitConnectionFactoryBean` also have the option disabled by default.
+
+===== General Changes
+
+The `ExchangeBuilder` now builds durable exchanges by default.
+The `@Exchange` annotation used within a `@QeueueBinding` also declares durable exchanges by default.
+The `@Queue` annotation used within a `@RabbitListener` by default declares durable queues if named and non-durable if anonymous.
+See <<builder-api>> and <<async-annotation-driven>> for more information.
+
+===== Deleted Classes
+
+`UniquelyNameQueue` is no longer provided.
+It is unusual to create a durable non-auto-delete queue with a unique name.
+This class has been deleted.
+If you require its functionality, use `new Queue(UUID.randomUUID().toString())`.
+
+===== New Listener Container
+
+The `DirectMessageListenerContainer` has been added alongside the existing `SimpleMessageListenerContainer`.
+See <<choose-container>> and <<containerAttributes>> for information about choosing which container to use as well as how to configure them.
+
+
+===== Log4j Appender
+
+This appender is no longer available due to the end-of-life of log4j.
+See <<logging>> for information about the available log appenders.
+
+
+===== `RabbitTemplate` Changes
+
+IMPORTANT: Previously, a non-transactional `RabbitTemplate` participated in an existing transaction if it ran on a transactional listener container thread.
+This was a serious bug.
+However, users might have relied on this behavior.
+Starting with version 1.6.2, you must set the `channelTransacted` boolean on the template for it to participate in the container transaction.
+
+The `RabbitTemplate` now uses a `DirectReplyToMessageListenerContainer` (by default) instead of creating a new consumer for each request.
+See <<direct-reply-to>> for more information.
+
+The `AsyncRabbitTemplate` now supports direct reply-to.
+See <<async-template>> for more information.
+
+The `RabbitTemplate` and `AsyncRabbitTemplate` now have `receiveAndConvert` and `convertSendAndReceiveAsType` methods that take a `ParameterizedTypeReference<T>` argument, letting the caller specify the type to which to convert the result.
+This is particularly useful for complex types or when type information is not conveyed in message headers.
+It requires a `SmartMessageConverter` such as the `Jackson2JsonMessageConverter`.
+See <<receiving-messages>>, <<request-reply>>, <<async-template>>, and <<json-complex>> for more information.
+
+You can now use a `RabbitTemplate` to perform multiple operations on a dedicated channel.
+See <<scoped-operations>> for more information.
+
+===== Listener Adapter
+
+A convenient `FunctionalInterface` is available for using lambdas with the `MessageListenerAdapter`.
+See <<message-listener-adapter>> for more information.
+
+===== Listener Container Changes
+
+====== Prefetch Default Value
+
+The prefetch default value used to be 1, which could lead to under-utilization of efficient consumers.
+The default prefetch value is now 250, which should keep consumers busy in most common scenarios and,
+thus, improve throughput.
+
+IMPORTANT: There are scenarios where the prefetch value should
+be low -- for example, with large messages, especially if the processing is slow (messages could add up
+to a large amount of memory in the client process), and if strict message ordering is necessary
+(the prefetch value should be set back to 1 in this case).
+Also, with low-volume messaging and multiple consumers (including concurrency within a single listener container instance), you may wish to reduce the prefetch to get a more even distribution of messages across consumers.
+
+For more background about prefetch, see this post about https://www.rabbitmq.com/blog/2014/04/14/finding-bottlenecks-with-rabbitmq-3-3/[consumer utilization in RabbitMQ]
+and this post about https://www.rabbitmq.com/blog/2012/05/11/some-queuing-theory-throughput-latency-and-bandwidth/[queuing theory].
+
+====== Message Count
+
+Previously, `MessageProperties.getMessageCount()` returned `0` for messages emitted by the container.
+This property applies only when you use `basicGet` (for example, from `RabbitTemplate.receive()` methods) and is now initialized to `null` for container messages.
+
+====== Transaction Rollback Behavior
+
+Message re-queue on transaction rollback is now consistent, regardless of whether or not a transaction manager is configured.
+See <<transaction-rollback>> for more information.
+
+====== Shutdown Behavior
+
+If the container threads do not respond to a shutdown within `shutdownTimeout`, the channels are forced closed by default.
+See <<containerAttributes>> for more information.
+
+====== After Receive Message Post Processors
+
+If a `MessagePostProcessor` in the `afterReceiveMessagePostProcessors` property returns `null`, the message is discarded (and acknowledged if appropriate).
+
+===== Connection Factory Changes
+
+The connection and channel listener interfaces now provide a mechanism to obtain information about exceptions.
+See <<connection-channel-listeners>> and <<publishing-is-async>> for more information.
+
+A new `ConnectionNameStrategy` is now provided to populate the application-specific identification of the target RabbitMQ connection from the `AbstractConnectionFactory`.
+See <<connections>> for more information.
+
+===== Retry Changes
+
+The `MissingMessageIdAdvice` is no longer provided.
+Its functionality is now built-in.
+See <<retry>> for more information.
+
+===== Anonymous Queue Naming
+
+By default, `AnonymousQueues` are now named with the default `Base64UrlNamingStrategy` instead of a simple `UUID` string.
+See <<anonymous-queue>> for more information.
+
+===== `@RabbitListener` Changes
+
+You can now provide simple queue declarations (bound only to the default exchange) in `@RabbitListener` annotations.
+See <<async-annotation-driven>> for more information.
+
+You can now configure `@RabbitListener` annotations so that any exceptions are returned to the sender.
+You can also configure a `RabbitListenerErrorHandler` to handle exceptions.
+See <<annotation-error-handling>> for more information.
+
+You can now bind a queue with multiple routing keys when you use the `@QueueBinding` annotation.
+Also `@QueueBinding.exchange()` now supports custom exchange types and declares durable exchanges by default.
+
+You can now set the `concurrency` of the listener container at the annotation level rather than having to configure a different container factory for different concurrency settings.
+
+You can now set the `autoStartup` property of the listener container at the annotation level, overriding the default setting in the container factory.
+
+You can now set after receive and before send (reply) `MessagePostProcessor` instances in the `RabbitListener` container factories.
+
+See <<async-annotation-driven>> for more information.
+
+Starting with version 2.0.3, one of the `@RabbitHandler` annotations on a class-level `@RabbitListener` can be designated as the default.
+See <<annotation-method-selection>> for more information.
+
+===== Container Conditional Rollback
+
+When using an external transaction manager (such as JDBC), rule-based rollback is now supported when you provide the container with a transaction attribute.
+It is also now more flexible when you use a transaction advice.
+See <<conditional-rollback>> for more information.
+
+===== Remove Jackson 1.x support
+
+Deprecated in previous versions, Jackson `1.x` converters and related components have now been deleted.
+You can use similar components based on Jackson 2.x.
+See <<json-message-converter>> for more information.
+
+===== JSON Message Converter
+
+When the `__TypeId__` is set to `Hashtable` for an inbound JSON message, the default conversion type is now `LinkedHashMap`.
+Previously, it was `Hashtable`.
+To revert to a `Hashtable`, you can use `setDefaultMapType` on the `DefaultClassMapper`.
+
+===== XML Parsers
+
+When parsing `Queue` and `Exchange` XML components, the parsers no longer register the `name` attribute value as a bean alias if an `id` attribute is present.
+See <<note-id-name>> for more information.
+
+===== Blocked Connection
+You can now inject the `com.rabbitmq.client.BlockedListener` into the `org.springframework.amqp.rabbit.connection.Connection` object.
+Also, the `ConnectionBlockedEvent` and `ConnectionUnblockedEvent` events are emitted by the `ConnectionFactory` when the connection is blocked or unblocked by the Broker.
+
+See <<connections>> for more information.
+
+==== Changes in 1.7 Since 1.6
+
+===== AMQP Client library
+
+Spring AMQP now uses the new 4.0.x version of the `amqp-client` library provided by the RabbitMQ team.
+This client has auto-recovery configured by default.
+See <<auto-recovery>>.
+
+NOTE: The 4.0.x client enables automatic recovery by default.
+While compatible with this feature, Spring AMQP has its own recovery mechanisms, and the client recovery feature generally is not needed.
+We recommend disabling `amqp-client` automatic recovery, to avoid getting `AutoRecoverConnectionNotCurrentlyOpenException` instances when the broker is available but the connection has not yet recovered.
+Starting with version 1.7.1, Spring AMQP disables it unless you explicitly create your own RabbitMQ connection factory and provide it to the `CachingConnectionFactory`.
+RabbitMQ `ConnectionFactory` instances created by the `RabbitConnectionFactoryBean` also have the option disabled by default.
+
+
+===== Log4j 2 upgrade
+The minimum Log4j 2 version (for the `AmqpAppender`) is now `2.7`.
+The framework is no longer compatible with previous versions.
+See <<logging>> for more information.
+
+===== Logback Appender
+
+This appender no longer captures caller data (method, line number) by default.
+You can re-enable it by setting the `includeCallerData` configuration option.
+See <<logging>> for information about the available log appenders.
+
+===== Spring Retry Upgrade
+
+The minimum Spring Retry version is now `1.2`.
+The framework is no longer compatible with previous versions.
+
+====== Shutdown Behavior
+
+You can now set `forceCloseChannel` to `true` so that, if the container threads do not respond to a shutdown within `shutdownTimeout`, the channels are forced closed,
+causing any unacked messages to be re-queued.
+See <<containerAttributes>> for more information.
+
+===== FasterXML Jackson upgrade
+
+The minimum Jackson version is now `2.8`.
+The framework is no longer compatible with previous versions.
+
+===== JUnit `@Rules`
+
+Rules that have previously been used internally by the framework have now been made available in a separate jar called `spring-rabbit-junit`.
+See <<junit-rules>> for more information.
+
+===== Container Conditional Rollback
+
+When you use an external transaction manager (such as JDBC), rule-based rollback is now supported when you provide the container with a transaction attribute.
+It is also now more flexible when you use a transaction advice.
+
+===== Connection Naming Strategy
+
+A new `ConnectionNameStrategy` is now provided to populate the application-specific identification of the target RabbitMQ connection from the `AbstractConnectionFactory`.
+See <<connections>> for more information.
+
+===== Listener Container Changes
+
+====== Transaction Rollback Behavior
+
+You can now configure message re-queue on transaction rollback to be consistent, regardless of whether or not a transaction manager is configured.
+See <<transaction-rollback>> for more information.
+
+==== Earlier Releases
+
+See <<previous-whats-new>> for changes in previous versions.
+
+==== Changes in 1.6 Since 1.5
+
+===== Testing Support
+
+A new testing support library is now provided.
+See <<testing>> for more information.
+
+===== Builder
+
+Builders that provide a fluent API for configuring `Queue` and `Exchange` objects are now available.
+See <<builder-api>> for more information.
+
+===== Namespace Changes
+
+====== Connection Factory
+
+You can now add a `thread-factory` to a connection factory bean declaration -- for example, to name the threads
+created by the `amqp-client` library.
+See <<connections>> for more information.
+
+When you use `CacheMode.CONNECTION`, you can now limit the total number of connections allowed.
+See <<connections>> for more information.
+
+====== Queue Definitions
+
+You can now provide a naming strategy for anonymous queues.
+See <<anonymous-queue>> for more information.
+
+===== Listener Container Changes
+
+====== Idle Message Listener Detection
+
+You can now configure listener containers to publish `ApplicationEvent` instances when idle.
+See <<idle-containers>> for more information.
+
+====== Mismatched Queue Detection
+
+By default, when a listener container starts, if queues with mismatched properties or arguments are detected,
+the container logs the exception but continues to listen.
+The container now has a property called `mismatchedQueuesFatal`, which prevents the container (and context) from
+starting if the problem is detected during startup.
+It also stops the container if the problem is detected later, such as after recovering from a connection failure.
+See <<containerAttributes>> for more information.
+
+====== Listener Container Logging
+
+Now, listener container provides its `beanName` to the internal `SimpleAsyncTaskExecutor` as a `threadNamePrefix`.
+It is useful for logs analysis.
+
+====== Default Error Handler
+
+The default error handler (`ConditionalRejectingErrorHandler`) now considers irrecoverable `@RabbitListener`
+exceptions as fatal.
+See <<exception-handling>> for more information.
+
+
+===== `AutoDeclare` and `RabbitAdmin` Instances
+
+See <<containerAttributes>> (`autoDeclare`) for some changes to the semantics of that option with respect to the use
+of `RabbitAdmin` instances in the application context.
+
+===== `AmqpTemplate`: Receive with Timeout
+
+A number of new `receive()` methods with `timeout` have been introduced for the `AmqpTemplate`
+and its `RabbitTemplate` implementation.
+See <<polling-consumer>> for more information.
+
+===== Using `AsyncRabbitTemplate`
+
+A new `AsyncRabbitTemplate` has been introduced.
+This template provides a number of send and receive methods, where the return value is a `ListenableFuture`, which can
+be used later to obtain the result either synchronously or asynchronously.
+See <<async-template>> for more information.
+
+===== `RabbitTemplate` Changes
+
+1.4.1 introduced the ability to use https://www.rabbitmq.com/direct-reply-to.html[direct reply-to] when the broker supports it.
+It is more efficient than using a temporary queue for each reply.
+This version lets you override this default behavior and use a temporary queue by setting the `useTemporaryReplyQueues` property to `true`.
+See <<direct-reply-to>> for more information.
+
+The `RabbitTemplate` now supports a `user-id-expression` (`userIdExpression` when using Java configuration).
+See https://www.rabbitmq.com/validated-user-id.html[Validated User-ID RabbitMQ documentation] and <<template-user-id>> for more information.
+
+===== Message Properties
+
+====== Using `CorrelationId`
+
+The `correlationId` message property can now be a `String`.
+See <<message-properties-converters>> for more information.
+
+====== Long String Headers
+
+Previously, the `DefaultMessagePropertiesConverter` "`converted`" headers longer than the long string limit (default 1024)
+to a `DataInputStream` (actually, it referenced the `LongString` instance's `DataInputStream`).
+On output, this header was not converted (except to a String -- for example, `java.io.DataInputStream@1d057a39` by calling
+`toString()` on the stream).
+
+With this release, long `LongString` instances are now left as `LongString` instances by default.
+You can access the contents by using the `getBytes[]`, `toString()`, or `getStream()` methods.
+A large incoming `LongString` is now correctly "`converted`" on output too.
+
+See <<message-properties-converters>> for more information.
+
+====== Inbound Delivery Mode
+
+The `deliveryMode` property is no longer mapped to the `MessageProperties.deliveryMode`.
+This change avoids unintended propagation if the the same `MessageProperties` object is used to send an outbound message.
+Instead, the inbound `deliveryMode` header is mapped to `MessageProperties.receivedDeliveryMode`.
+
+See <<message-properties-converters>> for more information.
+
+When using annotated endpoints, the header is provided in the header named `AmqpHeaders.RECEIVED_DELIVERY_MODE`.
+
+See <<async-annotation-driven-enable-signature>> for more information.
+
+====== Inbound User ID
+
+The `user_id` property is no longer mapped to the `MessageProperties.userId`.
+This change avoids unintended propagation if the the same `MessageProperties` object is used to send an outbound message.
+Instead, the inbound `userId` header is mapped to `MessageProperties.receivedUserId`.
+
+See <<message-properties-converters>> for more information.
+
+When you use annotated endpoints, the header is provided in the header named `AmqpHeaders.RECEIVED_USER_ID`.
+
+See <<async-annotation-driven-enable-signature>> for more information.
+
+===== `RabbitAdmin` Changes
+
+====== Declaration Failures
+
+Previously, the `ignoreDeclarationFailures` flag took effect only for `IOException` on the channel (such as mis-matched
+arguments).
+It now takes effect for any exception (such as `TimeoutException`).
+In addition, a `DeclarationExceptionEvent` is now published whenever a declaration fails.
+The `RabbitAdmin` last declaration event is also available as a property `lastDeclarationExceptionEvent`.
+See <<broker-configuration>> for more information.
+
+===== `@RabbitListener` Changes
+
+====== Multiple Containers for Each Bean
+
+When you use Java 8 or later, you can now add multiple `@RabbitListener` annotations to `@Bean` classes or
+their methods.
+When using Java 7 or earlier, you can use the `@RabbitListeners` container annotation to provide the same
+functionality.
+See <<repeatable-rabbit-listener>> for more information.
+
+====== `@SendTo` SpEL Expressions
+
+`@SendTo` for routing replies with no `replyTo` property can now be SpEL expressions evaluated against the
+request/reply.
+See <<async-annotation-driven-reply>> for more information.
+
+====== `@QueueBinding` Improvements
+
+You can now specify arguments for queues, exchanges, and bindings in `@QueueBinding` annotations.
+Header exchanges are now supported by `@QueueBinding`.
+See <<async-annotation-driven>> for more information.
+
+===== Delayed Message Exchange
+
+Spring AMQP now has first class support for the RabbitMQ Delayed Message Exchange plugin.
+See <<delayed-message-exchange>> for more information.
+
+===== Exchange Internal Flag
+
+Any `Exchange` definitions can now be marked as `internal`, and `RabbitAdmin` passes the value to the broker when
+declaring the exchange.
+See <<broker-configuration>> for more information.
+
+===== `CachingConnectionFactory` Changes
+
+====== `CachingConnectionFactory` Cache Statistics
+
+The `CachingConnectionFactory` now provides cache properties at runtime and over JMX.
+See <<runtime-cache-properties>> for more information.
+
+====== Accessing the Underlying RabbitMQ Connection Factory
+
+A new getter has been added to provide access to the underlying factory.
+You can use this getter, for example, to add custom connection properties.
+See <<custom-client-props>> for more information.
+
+====== Channel Cache
+
+The default channel cache size has been increased from 1 to 25.
+See <<connections>> for more information.
+
+In addition, the `SimpleMessageListenerContainer` no longer adjusts the cache size to be at least as large as the number
+of `concurrentConsumers` -- this was superfluous, since the container consumer channels are never cached.
+
+===== Using `RabbitConnectionFactoryBean`
+
+The factory bean now exposes a property to add client connection properties to connections made by the resulting
+factory.
+
+===== Java Deserialization
+
+You can now configure a "`allowed list`" of allowable classes when you use Java deserialization.
+You should consider creating an allowed list if you accept messages with serialized java objects from
+untrusted sources.
+See <<java-deserialization>> for more information.
+
+===== JSON `MessageConverter`
+
+Improvements to the JSON message converter now allow the consumption of messages that do not have type information
+in message headers.
+See <<async-annotation-conversion>> and <<json-message-converter>> for more information.
+
+===== Logging Appenders
+
+====== Log4j 2
+
+A log4j 2 appender has been added, and the appenders can now be configured with an `addresses` property to connect
+to a broker cluster.
+
+====== Client Connection Properties
+
+You can now add custom client connection properties to RabbitMQ connections.
+
+See <<logging>> for more information.
+
+==== Changes in 1.5 Since 1.4
+
+===== `spring-erlang` Is No Longer Supported
+
+The `spring-erlang` jar is no longer included in the distribution.
+Use <<management-rest-api, the RabbitMQ REST API>> instead.
+
+===== `CachingConnectionFactory` Changes
+
+====== Empty Addresses Property in `CachingConnectionFactory`
+
+Previously, if the connection factory was configured with a host and port but an empty String was also supplied for
+`addresses`, the host and port were ignored.
+Now, an empty `addresses` String is treated the same as a `null`, and the host and port are used.
+
+====== URI Constructor
+
+The `CachingConnectionFactory` has an additional constructor, with a `URI` parameter, to configure the broker connection.
+
+====== Connection Reset
+
+A new method called `resetConnection()` has been added to let users reset the connection (or connections).
+You might use this, for example, to reconnect to the primary broker after failing over to the secondary broker.
+This *does* impact in-process operations.
+The existing `destroy()` method does exactly the same, but the new method has a less daunting name.
+
+===== Properties to Control Container Queue Declaration Behavior
+
+When the listener container consumers start, they attempt to passively declare the queues to ensure they are available
+on the broker.
+Previously, if these declarations failed (for example, because the queues didn't exist) or when an HA queue was being
+moved, the retry logic was fixed at three retry attempts at five-second intervals.
+If the queues still do not exist, the behavior is controlled by the `missingQueuesFatal` property (default: `true`).
+Also, for containers configured to listen from multiple queues, if only a subset of queues are available, the consumer
+retried the missing queues on a fixed interval of 60 seconds.
+
+The `declarationRetries`, `failedDeclarationRetryInterval`, and `retryDeclarationInterval` properties are now configurable.
+See <<containerAttributes>> for more information.
+
+===== Class Package Change
+
+The `RabbitGatewaySupport` class has been moved from `o.s.amqp.rabbit.core.support` to `o.s.amqp.rabbit.core`.
+
+===== `DefaultMessagePropertiesConverter` Changes
+
+You can now configure the `DefaultMessagePropertiesConverter` to
+determine the maximum length of a `LongString` that is converted
+to a `String` rather than to a `DataInputStream`.
+The converter has an alternative constructor that takes the value as a limit.
+Previously, this limit was hard-coded at `1024` bytes.
+(Also available in 1.4.4).
+
+===== `@RabbitListener` Improvements
+
+====== `@QueueBinding` for `@RabbitListener`
+
+The `bindings` attribute has been added to the `@RabbitListener` annotation as mutually exclusive with the `queues`
+attribute to allow the specification of the `queue`, its `exchange`, and `binding` for declaration by a `RabbitAdmin` on
+the Broker.
+
+====== SpEL in `@SendTo`
+
+The default reply address (`@SendTo`) for a `@RabbitListener` can now be a SpEL expression.
+
+====== Multiple Queue Names through Properties
+
+You can now use a combination of SpEL and property placeholders to specify multiple queues for a listener.
+
+See <<async-annotation-driven>> for more information.
+
+===== Automatic Exchange, Queue, and Binding Declaration
+
+You can now declare beans that define a collection of these entities, and the `RabbitAdmin` adds the
+contents to the list of entities that it declares when a connection is established.
+See <<collection-declaration>> for more information.
+
+===== `RabbitTemplate` Changes
+
+====== `reply-address` Added
+
+The `reply-address` attribute has been added to the `<rabbit-template>` component as an alternative `reply-queue`.
+See <<request-reply>> for more information.
+(Also available in 1.4.4 as a setter on the `RabbitTemplate`).
+
+====== Blocking `receive` Methods
+
+The `RabbitTemplate` now supports blocking in `receive` and `convertAndReceive` methods.
+See <<polling-consumer>> for more information.
+
+====== Mandatory with `sendAndReceive` Methods
+
+When the `mandatory` flag is set when using the `sendAndReceive` and `convertSendAndReceive` methods, the calling thread
+throws an `AmqpMessageReturnedException` if the request message cannot be delivered.
+See <<reply-timeout>> for more information.
+
+====== Improper Reply Listener Configuration
+
+The framework tries to verify proper configuration of a reply listener container when using a named reply queue.
+
+See <<reply-listener>> for more information.
+
+===== `RabbitManagementTemplate` Added
+
+The `RabbitManagementTemplate` has been introduced to monitor and configure the RabbitMQ Broker by using the REST API provided by its https://www.rabbitmq.com/management.html[management plugin].
+See <<management-rest-api>> for more information.
+
+===== Listener Container Bean Names (XML)
+
+[IMPORTANT]
+====
+The `id` attribute on the `<listener-container/>` element has been removed.
+Starting with this release, the `id` on the `<listener/>` child element is used alone to name the listener container bean created for each listener element.
+
+Normal Spring bean name overrides are applied.
+If a later `<listener/>` is parsed with the same `id` as an existing bean, the new definition overrides the existing one.
+Previously, bean names were composed from the `id` attributes of the `<listener-container/>` and `<listener/>` elements.
+
+When migrating to this release, if you have `id` attributes on your `<listener-container/>` elements, remove them and set the `id` on the child `<listener/>` element instead.
+====
+
+However, to support starting and stopping containers as a group, a new `group` attribute has been added.
+When this attribute is defined, the containers created by this element are added to a bean with this name, of type `Collection<SimpleMessageListenerContainer>`.
+You can iterate over this group to start and stop containers.
+
+===== Class-Level `@RabbitListener`
+
+The `@RabbitListener` annotation can now be applied at the class level.
+Together with the new `@RabbitHandler` method annotation, this lets you select the handler method based on payload type.
+See <<annotation-method-selection>> for more information.
+
+===== `SimpleMessageListenerContainer`: BackOff Support
+
+The `SimpleMessageListenerContainer` can now be supplied with a `BackOff` instance for `consumer` startup recovery.
+See <<containerAttributes>> for more information.
+
+===== Channel Close Logging
+
+A mechanism to control the log levels of channel closure has been introduced.
+See <<channel-close-logging>>.
+
+===== Application Events
+
+The `SimpleMessageListenerContainer` now emits application events when consumers fail.
+See <<consumer-events>> for more information.
+
+===== Consumer Tag Configuration
+
+Previously, the consumer tags for asynchronous consumers were generated by the broker.
+With this release, it is now possible to supply a naming strategy to the listener container.
+See <<consumerTags>>.
+
+===== Using `MessageListenerAdapter`
+
+The `MessageListenerAdapter` now supports a map of queue names (or consumer tags) to method names, to determine
+which delegate method to call based on the queue from which the message was received.
+
+===== `LocalizedQueueConnectionFactory` Added
+
+`LocalizedQueueConnectionFactory` is a new connection factory that connects to the node in a cluster where a mirrored queue actually resides.
+
+See <<queue-affinity>>.
+
+===== Anonymous Queue Naming
+
+Starting with version 1.5.3, you can now control how `AnonymousQueue` names are generated.
+See <<anonymous-queue>> for more information.
+
+
+==== Changes in 1.4 Since 1.3
+
+===== `@RabbitListener` Annotation
+
+POJO listeners can be annotated with `@RabbitListener`, enabled by `@EnableRabbit` or `<rabbit:annotation-driven />`.
+Spring Framework 4.1 is required for this feature.
+See <<async-annotation-driven>> for more information.
+
+===== `RabbitMessagingTemplate` Added
+
+A new `RabbitMessagingTemplate` lets you interact with RabbitMQ by using `spring-messaging` `Message` instances.
+Internally, it uses the `RabbitTemplate`, which you can configure as normal.
+Spring Framework 4.1 is required for this feature.
+See <<template-messaging>> for more information.
+
+===== Listener Container `missingQueuesFatal` Attribute
+
+1.3.5 introduced the `missingQueuesFatal` property on the `SimpleMessageListenerContainer`.
+This is now available on the listener container namespace element.
+See <<containerAttributes>>.
+
+===== RabbitTemplate `ConfirmCallback` Interface
+
+The `confirm` method on this interface has an additional parameter called `cause`.
+When available, this parameter contains the reason for a negative acknowledgement (nack).
+See <<template-confirms>>.
+
+===== `RabbitConnectionFactoryBean` Added
+
+`RabbitConnectionFactoryBean` creates the underlying RabbitMQ `ConnectionFactory` used by the `CachingConnectionFactory`.
+This enables configuration of SSL options using Spring's dependency injection.
+See <<connection-factory>>.
+
+===== Using `CachingConnectionFactory`
+
+The `CachingConnectionFactory` now lets the `connectionTimeout` be set as a property or as an attribute in the namespace.
+It sets the property on the underlying RabbitMQ `ConnectionFactory`.
+See <<connection-factory>>.
+
+===== Log Appender
+
+The Logback `org.springframework.amqp.rabbit.logback.AmqpAppender` has been introduced.
+It provides options similar to `org.springframework.amqp.rabbit.log4j.AmqpAppender`.
+For more information, see the JavaDoc of these classes.
+
+The Log4j `AmqpAppender` now supports the `deliveryMode` property (`PERSISTENT` or `NON_PERSISTENT`, default: `PERSISTENT`).
+Previously, all log4j messages were `PERSISTENT`.
+
+The appender also supports modification of the `Message` before sending -- allowing, for example, the addition of custom headers.
+Subclasses should override the `postProcessMessageBeforeSend()`.
+
+===== Listener Queues
+
+The listener container now, by default, redeclares any missing queues during startup.
+A new `auto-declare` attribute has been added to the `<rabbit:listener-container>` to prevent these re-declarations.
+See <<lc-auto-delete>>.
+
+===== `RabbitTemplate`: `mandatory` and `connectionFactorySelector` Expressions
+
+The `mandatoryExpression`, `sendConnectionFactorySelectorExpression`, and `receiveConnectionFactorySelectorExpression` SpEL Expression`s properties have been added to `RabbitTemplate`.
+The `mandatoryExpression` is used to evaluate a `mandatory` boolean value against each request message when a `ReturnCallback` is in use.
+See <<template-confirms>>.
+The `sendConnectionFactorySelectorExpression` and `receiveConnectionFactorySelectorExpression` are used when an `AbstractRoutingConnectionFactory` is provided, to determine the `lookupKey` for the target `ConnectionFactory` at runtime on each AMQP protocol interaction operation.
+See <<routing-connection-factory>>.
+
+===== Listeners and the Routing Connection Factory
+
+You can configure a `SimpleMessageListenerContainer` with a routing connection factory to enable connection selection based on the queue names.
+See <<routing-connection-factory>>.
+
+===== `RabbitTemplate`: `RecoveryCallback` Option
+
+The `recoveryCallback` property has been added for use in the `retryTemplate.execute()`.
+See <<template-retry>>.
+
+===== `MessageConversionException` Change
+
+This exception is now a subclass of `AmqpException`.
+Consider the following code:
+
+====
+[source,java]
+----
+try {
+    template.convertAndSend("thing1", "thing2", "cat");
+}
+catch (AmqpException e) {
+	...
+}
+catch (MessageConversionException e) {
+	...
+}
+----
+====
+
+The second catch block is no longer reachable and needs to be moved above the catch-all `AmqpException` catch block.
+
+===== RabbitMQ 3.4 Compatibility
+
+Spring AMQP is now compatible with the RabbitMQ 3.4, including direct reply-to.
+See <<compatibility>> and <<direct-reply-to>> for more information.
+
+===== `ContentTypeDelegatingMessageConverter` Added
+
+The `ContentTypeDelegatingMessageConverter` has been introduced to select the `MessageConverter` to use, based on the `contentType` property in the `MessageProperties`.
+See <<message-converters>> for more information.
+
+==== Changes in 1.3 Since 1.2
+
+===== Listener Concurrency
+
+The listener container now supports dynamic scaling of the number of consumers based on workload, or you can programmatically change the concurrency without stopping the container.
+See <<listener-concurrency>>.
+
+===== Listener Queues
+
+The listener container now permits the queues on which it listens to be modified at runtime.
+Also, the container now starts if at least one of its configured queues is available for use.
+See <<listener-queues>>
+
+This listener container now redeclares any auto-delete queues during startup.
+See <<lc-auto-delete>>.
+
+===== Consumer Priority
+
+The listener container now supports consumer arguments, letting the `x-priority` argument be set.
+See <<consumer-priority>>.
+
+===== Exclusive Consumer
+
+You can now configure `SimpleMessageListenerContainer` with a single `exclusive` consumer, preventing other consumers from listening to the queue.
+See <<exclusive-consumer>>.
+
+===== Rabbit Admin
+
+You can now have the broker generate the queue name, regardless of `durable`, `autoDelete`, and `exclusive` settings.
+See <<broker-configuration>>.
+
+===== Direct Exchange Binding
+
+Previously, omitting the `key` attribute from a `binding` element of a `direct-exchange` configuration caused the queue or exchange to be bound with an empty string as the routing key.
+Now it is bound with the the name of the provided `Queue` or `Exchange`.
+If you wish to bind with an empty string routing key, you need to specify `key=""`.
+
+===== `AmqpTemplate` Changes
+
+The `AmqpTemplate` now provides several synchronous `receiveAndReply` methods.
+These are implemented by the `RabbitTemplate`.
+For more information see <<receiving-messages>>.
+
+The `RabbitTemplate` now supports configuring a `RetryTemplate` to attempt retries (with optional back-off policy) for when the broker is not available.
+For more information see <<template-retry>>.
+
+===== Caching Connection Factory
+
+You can now configure the caching connection factory to cache `Connection` instances and their `Channel` instances instead of using a single connection and caching only `Channel` instances.
+See <<connections>>.
+
+===== Binding Arguments
+
+The `<binding>` of the `<exchange>` now supports parsing of the `<binding-arguments>` sub-element.
+You can now configure the `<binding>` of the `<headers-exchange>` with a `key/value` attribute pair (to match on a single header) or with a `<binding-arguments>` sub-element (allowing matching on multiple headers).
+These options are mutually exclusive.
+See <<headers-exchange>>.
+
+===== Routing Connection Factory
+
+A new `SimpleRoutingConnectionFactory` has been introduced.
+It allows configuration of `ConnectionFactories` mapping, to determine the target `ConnectionFactory` to use at runtime.
+See <<routing-connection-factory>>.
+
+===== `MessageBuilder` and `MessagePropertiesBuilder`
+
+"`Fluent APIs`" for building messages or message properties are now provided.
+See <<message-builder>>.
+
+===== `RetryInterceptorBuilder` Change
+
+A "`Fluent API`" for building listener container retry interceptors is now provided.
+See <<retry>>.
+
+===== `RepublishMessageRecoverer` Added
+
+This new `MessageRecoverer` is provided to allow publishing a failed message to another queue (including stack trace information in the header) when retries are exhausted.
+See <<async-listeners>>.
+
+===== Default Error Handler (Since 1.3.2)
+
+A default `ConditionalRejectingErrorHandler` has been added to the listener container.
+This error handler detects fatal message conversion problems and instructs the container to reject the message to prevent the broker from continually redelivering the unconvertible message.
+See <<exception-handling>>.
+
+===== Listener Container 'missingQueuesFatal` Property (Since 1.3.5)
+
+The `SimpleMessageListenerContainer` now has a property called `missingQueuesFatal` (default: `true`).
+Previously, missing queues were always fatal.
+See <<containerAttributes>>.
+
+==== Changes to 1.2 Since 1.1
+
+===== RabbitMQ Version
+
+Spring AMQP now uses RabbitMQ 3.1.x by default (but retains compatibility with earlier versions).
+Certain deprecations have been added for features no longer supported by RabbitMQ 3.1.x -- federated exchanges and the `immediate` property on the `RabbitTemplate`.
+
+===== Rabbit Admin
+
+`RabbitAdmin` now provides an option to let exchange, queue, and binding declarations continue when a declaration fails.
+Previously, all declarations stopped on a failure.
+By setting `ignore-declaration-exceptions`, such exceptions are logged (at the `WARN` level), but further declarations continue.
+An example where this might be useful is when a queue declaration fails because of a slightly different `ttl` setting that would normally stop other declarations from proceeding.
+
+`RabbitAdmin` now provides an additional method called `getQueueProperties()`.
+You can use this determine if a queue exists on the broker (returns `null` for a non-existent queue).
+In addition, it returns the current number of messages in the queue as well as the current number of consumers.
+
+===== Rabbit Template
+
+Previously, when the `...sendAndReceive()` methods were used with a fixed reply queue, two custom headers were used for correlation data and to retain and restore reply queue information.
+With this release, the standard message property (`correlationId`) is used by default, although you can specify a custom property to use instead.
+In addition, nested `replyTo` information is now retained internally in the template, instead of using a custom header.
+
+The `immediate` property is deprecated.
+You must not set this property when using RabbitMQ 3.0.x or greater.
+
+===== JSON Message Converters
+
+A Jackson 2.x `MessageConverter` is now provided, along with the existing converter that uses Jackson 1.x.
+
+===== Automatic Declaration of Queues and Other Items
+
+Previously, when declaring queues, exchanges and bindings, you could not define which connection factory was used for the declarations.
+Each `RabbitAdmin` declared all components by using its connection.
+
+Starting with this release, you can now limit declarations to specific `RabbitAdmin` instances.
+See <<conditional-declaration>>.
+
+===== AMQP Remoting
+
+Facilities are now provided for using Spring remoting techniques, using AMQP as the transport for the RPC calls.
+For more information see <<remoting>>
+
+===== Requested Heart Beats
+
+Several users have asked for the underlying client connection factory's `requestedHeartBeats` property to be exposed on the Spring AMQP `CachingConnectionFactory`.
+This is now available.
+Previously, it was necessary to configure the AMQP client factory as a separate bean and provide a reference to it in the `CachingConnectionFactory`.
+
+==== Changes to 1.1 Since 1.0
+
+===== General
+
+Spring-AMQP is now built with Gradle.
+
+Adds support for publisher confirms and returns.
+
+Adds support for HA queues and broker failover.
+
+Adds support for dead letter exchanges and dead letter queues.
+
+===== AMQP Log4j Appender
+
+Adds an option to support adding a message ID to logged messages.
+
+Adds an option to allow the specification of a `Charset` name to be used when converting `String` to `byte[]`.
