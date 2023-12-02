@@ -28,7 +28,6 @@ This limitation exists because exclusive and auto-delete queues are bound to the
 Starting with version 2.2.2, the `RabbitAdmin` will detect beans of type `DeclarableCustomizer` and apply the function before actually processing the declaration.
 This is useful, for example, to set a new argument (property) before it has first class support within the framework.
 
-====
 [source, java]
 ----
 @Bean
@@ -41,7 +40,6 @@ public DeclarableCustomizer customizer() {
     };
 }
 ----
-====
 
 It is also useful in projects that don't provide direct access to the `Declarable` bean definitions.
 
@@ -79,7 +77,6 @@ It is discarded or routed to the dead letter queue (if one is configured).
 Starting with version 1.3, a builder API is provided to aid in assembling these interceptors by using Java (in `@Configuration` classes).
 The following example shows how to do so:
 
-====
 [source,java]
 ----
 @Bean
@@ -90,7 +87,6 @@ public StatefulRetryOperationsInterceptor interceptor() {
             .build();
 }
 ----
-====
 
 Only a subset of retry capabilities can be configured this way.
 More advanced features would need the configuration of a `RetryTemplate` as a Spring bean.
@@ -150,7 +146,6 @@ By default, it uses `MessageProperties` default value - `MessageDeliveryMode.PER
 
 The following example shows how to set a `RepublishMessageRecoverer` as the recoverer:
 
-====
 [source,java]
 ----
 @Bean
@@ -161,13 +156,11 @@ RetryOperationsInterceptor interceptor() {
             .build();
 }
 ----
-====
 
 The `RepublishMessageRecoverer` publishes the message with additional information in message headers, such as the exception message, stack trace, original exchange, and routing key.
 Additional headers can be added by creating a subclass and overriding `additionalHeaders()`.
 The `deliveryMode` (or any other properties) can also be changed in the `additionalHeaders()`, as the following example shows:
 
-====
 [source,java]
 ----
 RepublishMessageRecoverer recoverer = new RepublishMessageRecoverer(amqpTemplate, "error") {
@@ -180,7 +173,6 @@ RepublishMessageRecoverer recoverer = new RepublishMessageRecoverer(amqpTemplate
 
 };
 ----
-====
 
 Starting with version 2.0.5, the stack trace may be truncated if it is too large; this is because all headers have to fit in a single frame.
 By default, if the stack trace would cause less than 20,000 bytes ('headroom') to be available for other headers, it will be truncated.

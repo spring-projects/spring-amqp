@@ -9,7 +9,7 @@ Those are defined in the 'org.springframework.amqp' package, and `AmqpException`
 When a listener throws an exception, it is wrapped in a `ListenerExecutionFailedException`.
 Normally the message is rejected and requeued by the broker.
 Setting `defaultRequeueRejected` to `false` causes messages to be discarded (or routed to a dead letter exchange).
-As discussed in xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#async-listeners[Message Listeners and the Asynchronous Case], the listener can throw an `AmqpRejectAndDontRequeueException` (or `ImmediateRequeueAmqpException`) to conditionally control this behavior.
+As discussed in xref:amqp/resilience-recovering-from-errors-and-broker-failures.adoc#async-listeners[Message Listeners and the Asynchronous Case], the listener can throw an `AmqpRejectAndDontRequeueException` (or `ImmediateRequeueAmqpException`) to conditionally control this behavior.
 
 However, there is a class of errors where the listener cannot control the behavior.
 When a message that cannot be converted is encountered (for example, an invalid `content_encoding` header), some exceptions are thrown before the message reaches user code.
@@ -27,7 +27,7 @@ For example, the parameter is declared as `Message<Foo>` but `Message<Bar>` is r
 * `java.lang.NoSuchMethodException`: Added in version 1.6.3.
 * `java.lang.ClassCastException`: Added in version 1.6.3.
 
-You can configure an instance of this error handler with a `FatalExceptionStrategy` so that users can provide their own rules for conditional message rejection -- for example, a delegate implementation to the `BinaryExceptionClassifier` from Spring Retry (xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#async-listeners[Message Listeners and the Asynchronous Case]).
+You can configure an instance of this error handler with a `FatalExceptionStrategy` so that users can provide their own rules for conditional message rejection -- for example, a delegate implementation to the `BinaryExceptionClassifier` from Spring Retry (xref:amqp/resilience-recovering-from-errors-and-broker-failures.adoc#async-listeners[Message Listeners and the Asynchronous Case]).
 In addition, the `ListenerExecutionFailedException` now has a `failedMessage` property that you can use in the decision.
 If the `FatalExceptionStrategy.isFatal()` method returns `true`, the error handler throws an `AmqpRejectAndDontRequeueException`.
 The default `FatalExceptionStrategy` logs a warning message when an exception is determined to be fatal.

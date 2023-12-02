@@ -29,7 +29,6 @@ Beans that are registered are:
 In addition, the beans associated with `@EnableRabbit` (to support `@RabbitListener`) are added.
 
 .Junit5 example
-====
 [source, java]
 ----
 @SpringJunitConfig
@@ -59,7 +58,6 @@ public class MyRabbitTests {
 
 }
 ----
-====
 
 With JUnit4, replace `@SpringJunitConfig` with `@RunWith(SpringRunnner.class)`.
 
@@ -71,7 +69,6 @@ There are currently two `Answer<?>` implementations to help with testing.
 The first, `LatchCountDownAndCallRealMethodAnswer`, provides an `Answer<Void>` that returns `null` and counts down a latch.
 The following example shows how to use `LatchCountDownAndCallRealMethodAnswer`:
 
-====
 [source, java]
 ----
 LatchCountDownAndCallRealMethodAnswer answer = this.harness.getLatchAnswerFor("myListener", 2);
@@ -82,14 +79,12 @@ doAnswer(answer)
 
 assertThat(answer.await(10)).isTrue();
 ----
-====
 
 The second, `LambdaAnswer<T>` provides a mechanism to optionally call the real method and provides an opportunity
 to return a custom result, based on the `InvocationOnMock` and the result (if any).
 
 Consider the following POJO:
 
-====
 [source, java]
 ----
 public class Thing {
@@ -100,11 +95,9 @@ public class Thing {
 
 }
 ----
-====
 
 The following class tests the `Thing` POJO:
 
-====
 [source, java]
 ----
 Thing thing = spy(new Thing());
@@ -121,7 +114,6 @@ doAnswer(new LambdaAnswer<String>(false, (i, r) ->
     "" + i.getArguments()[0] + i.getArguments()[0])).when(thing).thing(anyString());
 assertEquals("thingthing", thing.thing("thing"));
 ----
-====
 
 Starting with version 2.2.3, the answers capture any exceptions thrown by the method under test.
 Use `answer.getExceptions()` to get a reference to them.
@@ -149,7 +141,6 @@ Consider some examples.
 
 The following example uses spy:
 
-====
 [source, java]
 ----
 @Configuration
@@ -224,11 +215,9 @@ We use one of the link:#mockito-answer[Answer<?>] implementations to help with t
 IMPORTANT: Due to the way the listener is spied, it is important to use `harness.getLatchAnswerFor()` to get a properly configured answer for the spy.
 
 <4> Configure the spy to invoke the `Answer`.
-====
 
 The following example uses the capture advice:
 
-====
 [source, java]
 ----
 @Configuration
@@ -311,7 +300,6 @@ for the result.
 to suspend the test thread.
 
 <5> When the listener throws an exception, it is available in the `throwable` property of the invocation data.
-====
 
 IMPORTANT: When using custom `Answer<?>` s with the harness, in order to operate properly, such answers should subclass `ForwardsInvocation` and get the actual listener (not the spy) from the harness (`getDelegate("myListener")`) and call `super.answer(invocation)`.
 See the provided xref:testing.adoc#mockito-answer[Mockito `Answer<?>` Implementations] source code for examples.
@@ -327,7 +315,6 @@ Request-reply messaging (`sendAndReceive` methods) is supported for listeners th
 
 The following test case uses the template:
 
-====
 [source, java]
 ----
 @RunWith(SpringRunner.class)
@@ -435,7 +422,6 @@ public class TestRabbitTemplateTests {
 
 }
 ----
-====
 
 [[junit-rules]]
 == JUnit4 `@Rules`
@@ -453,7 +439,6 @@ It also has utility methods to initialize and empty queues and delete queues and
 
 The following example shows its usage:
 
-====
 [source, java]
 ----
 
@@ -465,7 +450,6 @@ public static void tearDown() {
     brokerRunning.removeTestQueues("some.other.queue.too") // removes foo, bar as well
 }
 ----
-====
 
 There are several `isRunning...` static methods, such as `isBrokerAndManagementRunning()`, which verifies the broker has the management plugin enabled.
 
@@ -479,7 +463,6 @@ You can override the broker properties, such as hostname with either setters or 
 
 The following example shows how to override properties with setters:
 
-====
 [source, java]
 ----
 
@@ -495,11 +478,9 @@ public static void tearDown() {
     brokerRunning.removeTestQueues("some.other.queue.too") // removes foo, bar as well
 }
 ----
-====
 
 You can also override properties by setting the following environment variables:
 
-====
 [source, java]
 ----
 public static final String BROKER_ADMIN_URI = "RABBITMQ_TEST_ADMIN_URI";
@@ -510,7 +491,6 @@ public static final String BROKER_PW = "RABBITMQ_TEST_PASSWORD";
 public static final String BROKER_ADMIN_USER = "RABBITMQ_TEST_ADMIN_USER";
 public static final String BROKER_ADMIN_PW = "RABBITMQ_TEST_ADMIN_PASSWORD";
 ----
-====
 
 These environment variables override the default settings (`localhost:5672` for amqp and `http://localhost:15672/api/` for the management REST API).
 
@@ -526,7 +506,6 @@ Invoke `clearEnvironmentVariableOverrides()` to reset the rule to use defaults (
 In your test cases, you can use the `brokerRunning` when creating the connection factory; `getConnectionFactory()` returns the rule's RabbitMQ `ConnectionFactory`.
 The following example shows how to do so:
 
-====
 [source, java]
 ----
 @Bean
@@ -534,7 +513,6 @@ public CachingConnectionFactory rabbitConnectionFactory() {
     return new CachingConnectionFactory(brokerRunning.getConnectionFactory());
 }
 ----
-====
 
 [[using-longrunningintegrationtest]]
 === Using `LongRunningIntegrationTest`
@@ -544,13 +522,11 @@ You might want to use this on a developer system but ensure that the rule is dis
 
 The following example shows its usage:
 
-====
 [source, java]
 ----
 @Rule
 public LongRunningIntegrationTest longTests = new LongRunningIntegrationTest();
 ----
-====
 
 To disable the rule at runtime, set an environment variable called `RUN_LONG_INTEGRATION_TESTS` to `true`.
 
@@ -583,7 +559,6 @@ Two argument types are supported:
 
 The following example shows both:
 
-====
 [source, java]
 ----
 @RabbitAvailable(queues = "rabbitAvailableTests.queue")
@@ -608,13 +583,11 @@ public class RabbitAvailableCTORInjectionTests {
 
 }
 ----
-====
 
 The preceding test is in the framework itself and verifies the argument injection and that the condition created the queue properly.
 
 A practical user test might be as follows:
 
-====
 [source, java]
 ----
 @RabbitAvailable(queues = "rabbitAvailableTests.queue")
@@ -634,7 +607,6 @@ public class RabbitAvailableCTORInjectionTests {
     }
 }
 ----
-====
 
 When you use a Spring annotation application context within a test class, you can get a reference to the condition's connection factory through a static method called `RabbitAvailableCondition.getBrokerRunning()`.
 
@@ -643,7 +615,6 @@ The new class has the same API as `BrokerRunning`.
 
 The following test comes from the framework and demonstrates the usage:
 
-====
 [source, java]
 ----
 @RabbitAvailable(queues = {
@@ -705,7 +676,6 @@ public class RabbitTemplateMPPIntegrationTests {
 
 }
 ----
-====
 
 [[using-the-longrunning-annotation]]
 === Using the `@LongRunning` Annotation
@@ -713,7 +683,6 @@ public class RabbitTemplateMPPIntegrationTests {
 Similar to the `LongRunningIntegrationTest` JUnit4 `@Rule`, this annotation causes tests to be skipped unless an environment variable (or system property) is set to `true`.
 The following example shows how to use it:
 
-====
 [source, java]
 ----
 @RabbitAvailable(queues = SimpleMessageListenerContainerLongTests.QUEUE)
@@ -726,6 +695,5 @@ public class SimpleMessageListenerContainerLongTests {
 
 }
 ----
-====
 
 By default, the variable is `RUN_LONG_INTEGRATION_TESTS`, but you can specify the variable name in the annotation's `value` attribute.

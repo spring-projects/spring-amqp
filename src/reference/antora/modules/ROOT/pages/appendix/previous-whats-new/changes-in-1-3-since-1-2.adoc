@@ -83,13 +83,13 @@ See xref:amqp/sending-messages.adoc#message-builder[Message Builder API].
 == `RetryInterceptorBuilder` Change
 
 A "`Fluent API`" for building listener container retry interceptors is now provided.
-See xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#retry[Failures in Synchronous Operations and Options for Retry].
+See xref:amqp/resilience-recovering-from-errors-and-broker-failures.adoc#retry[Failures in Synchronous Operations and Options for Retry].
 
 [[republishmessagerecoverer-added]]
 == `RepublishMessageRecoverer` Added
 
 This new `MessageRecoverer` is provided to allow publishing a failed message to another queue (including stack trace information in the header) when retries are exhausted.
-See xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#async-listeners[Message Listeners and the Asynchronous Case].
+See xref:amqp/resilience-recovering-from-errors-and-broker-failures.adoc#async-listeners[Message Listeners and the Asynchronous Case].
 
 [[default-error-handler-since-1-3-2]]
 == Default Error Handler (Since 1.3.2)

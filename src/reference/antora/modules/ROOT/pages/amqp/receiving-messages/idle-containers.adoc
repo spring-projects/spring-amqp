@@ -11,7 +11,6 @@ While the container is idle, an event is published every `idleEventInterval` mil
 To configure this feature, set `idleEventInterval` on the container.
 The following example shows how to do so in XML and in Java (for both a `SimpleMessageListenerContainer` and a `SimpleRabbitListenerContainerFactory`):
 
-====
 [source, xml]
 ----
 <rabbit:listener-container connection-factory="connectionFactory"
@@ -46,7 +45,6 @@ public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
     return factory;
 }
 ----
-====
 
 In each of these cases, an event is published once per minute while the container is idle.
 
@@ -71,7 +69,6 @@ The events have four properties:
 
 The following example shows how to create listeners by using both the `@RabbitListener` and the `@EventListener` annotations:
 
-====
 [source, Java]
 ----
 public class Listener {
@@ -88,7 +85,6 @@ public class Listener {
 
 }
 ----
-====
 
 IMPORTANT: Event listeners see events for all containers.
 Consequently, in the preceding example, we narrow the events received based on the listener ID.

@@ -17,16 +17,13 @@ declare the exchange with type `x-delayed-message`.
 The `delayed` property (default: `false`) is also available when configuring exchange beans using XML.
 The following example shows how to use it:
 
-====
 [source, xml]
 ----
 <rabbit:topic-exchange name="topic" delayed="true" />
 ----
-====
 
 To send a delayed message, you can set the `x-delay` header through `MessageProperties`, as the following examples show:
 
-====
 [source, java]
 ----
 MessageProperties properties = new MessageProperties();
@@ -47,7 +44,6 @@ rabbitTemplate.convertAndSend(exchange, routingKey, "foo", new MessagePostProces
 
 });
 ----
-====
 
 To check if a message was delayed, use the `getReceivedDelay()` method on the `MessageProperties`.
 It is a separate property to avoid unintended propagation to an output message generated from an input message.

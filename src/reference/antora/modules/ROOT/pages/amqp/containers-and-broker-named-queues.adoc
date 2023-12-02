@@ -4,7 +4,6 @@
 While it is preferable to use `AnonymousQueue` instances as auto-delete queues, starting with version 2.1, you can use broker named queues with listener containers.
 The following example shows how to do so:
 
-====
 [source, java]
 ----
 @Bean
@@ -23,7 +22,6 @@ public SimpleMessageListenerContainer container() {
     return container;
 }
 ----
-====
 
 Notice the empty `String` for the name.
 When the `RabbitAdmin` declares queues, it updates the `Queue.actualName` property with the name returned by the broker.

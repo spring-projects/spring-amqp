@@ -6,7 +6,6 @@ You can use a `@Header` annotation to make the queue name from which a message w
 method.
 The following example shows how to do so:
 
-====
 [source, java]
 ----
 @Component
@@ -19,12 +18,10 @@ public class MyService {
 
 }
 ----
-====
 
 Starting with version 1.5, you can externalize the queue names by using property placeholders and SpEL.
 The following example shows how to do so:
 
-====
 [source, java]
 ----
 @Component
@@ -37,7 +34,6 @@ public class MyService {
 
 }
 ----
-====
 
 Prior to version 1.5, only a single queue could be specified this way.
 Each queue needed a separate property.

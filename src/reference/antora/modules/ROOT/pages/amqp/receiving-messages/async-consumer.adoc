@@ -34,27 +34,23 @@ We consider the container and its properties later in this section.
 First, though, we should look at the callback, since that is where your application code is integrated with the messaging system.
 There are a few options for the callback, starting with an implementation of the `MessageListener` interface, which the following listing shows:
 
-====
 [source,java]
 ----
 public interface MessageListener {
     void onMessage(Message message);
 }
 ----
-====
 
 If your callback logic depends on the AMQP Channel instance for any reason, you may instead use the `ChannelAwareMessageListener`.
 It looks similar but has an extra parameter.
 The following listing shows the `ChannelAwareMessageListener` interface definition:
 
-====
 [source,java]
 ----
 public interface ChannelAwareMessageListener {
     void onMessage(Message message, Channel channel) throws Exception;
 }
 ----
-====
 
 IMPORTANT: In version 2.1, this interface moved from package `o.s.amqp.rabbit.core` to `o.s.amqp.rabbit.listener.api`.
 
@@ -70,13 +66,11 @@ See xref:amqp/receiving-messages/async-annotation-driven.adoc[Annotation-driven 
 When using the adapter, you need to provide only a reference to the instance that the adapter itself should invoke.
 The following example shows how to do so:
 
-====
 [source,java]
 ----
 MessageListenerAdapter listener = new MessageListenerAdapter(somePojo);
 listener.setDefaultListenerMethod("myMethod");
 ----
-====
 
 You can subclass the adapter and provide an implementation of `getListenerMethodName()` to dynamically select different methods based on the message.
 This method has two parameters, `originalMessage` and `extractedMessage`, the latter being the result of any conversion.
@@ -92,7 +86,6 @@ The default listener method (if not set) is `handleMessage`.
 Starting with version 2.0, a convenient `FunctionalInterface` has been provided.
 The following listing shows the definition of `FunctionalInterface`:
 
-====
 [source, java]
 ----
 @FunctionalInterface
@@ -102,11 +95,9 @@ public interface ReplyingMessageListener<T, R> {
 
 }
 ----
-====
 
 This interface facilitates convenient configuration of the adapter by using Java 8 lambdas, as the following example shows:
 
-====
 [source, java]
 ----
 new MessageListenerAdapter((ReplyingMessageListener<String, String>) data -> {
@@ -114,13 +105,11 @@ new MessageListenerAdapter((ReplyingMessageListener<String, String>) data -> {
     return result;
 }));
 ----
-====
 
 Starting with version 2.2, the `buildListenerArguments(Object)` has been deprecated and new `buildListenerArguments(Object, Channel, Message)` one has been introduced instead.
 The new method helps listener to get `Channel` and `Message` arguments to do more, such as calling `channel.basicReject(long, boolean)` in manual acknowledge mode.
 The following listing shows the most basic example:
 
-====
 [source,java]
 ----
 public class ExtendedListenerAdapter extends MessageListenerAdapter {
@@ -132,19 +121,16 @@ public class ExtendedListenerAdapter extends MessageListenerAdapter {
 
 }
 ----
-====
 
 Now you could configure `ExtendedListenerAdapter` as same as `MessageListenerAdapter` if you need to receive "`channel`" and "`message`".
 Parameters of listener should be set as `buildListenerArguments(Object, Channel, Message)` returned, as the following example of listener shows:
 
-====
 [source,java]
 ----
 public void handleMessage(Object object, Channel channel, Message message) throws IOException {
     ...
 }
 ----
-====
 
 [[container]]
 == Container
@@ -162,7 +148,6 @@ The differences between the containers and criteria you might apply when choosin
 
 The following listing shows the most basic example, which works by using the, `SimpleMessageListenerContainer`:
 
-====
 [source,java]
 ----
 SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
@@ -170,36 +155,30 @@ container.setConnectionFactory(rabbitConnectionFactory);
 container.setQueueNames("some.queue");
 container.setMessageListener(new MessageListenerAdapter(somePojo));
 ----
-====
 
 As an "`active`" component, it is most common to create the listener container with a bean definition so that it can run in the background.
 The following example shows one way to do so with XML:
 
-====
 [source,xml]
 ----
 <rabbit:listener-container connection-factory="rabbitConnectionFactory">
     <rabbit:listener queues="some.queue" ref="somePojo" method="handle"/>
 </rabbit:listener-container>
 ----
-====
 
 The following listing shows another way to do so with XML:
 
-====
 [source,xml]
 ----
 <rabbit:listener-container connection-factory="rabbitConnectionFactory" type="direct">
     <rabbit:listener queues="some.queue" ref="somePojo" method="handle"/>
 </rabbit:listener-container>
 ----
-====
 
 Both of the preceding examples create a `DirectMessageListenerContainer` (notice the `type` attribute -- it defaults to `simple`).
 
 Alternately, you may prefer to use Java configuration, which looks similar to the preceding code snippet:
 
-====
 [source,java]
 ----
 @Configuration
@@ -233,7 +212,6 @@ public class ExampleAmqpConfiguration {
     }
 }
 ----
-====
 
 [[consumer-priority]]
 == Consumer Priority
@@ -242,25 +220,21 @@ Starting with RabbitMQ Version 3.2, the broker now supports consumer priority (s
 This is enabled by setting the `x-priority` argument on the consumer.
 The `SimpleMessageListenerContainer` now supports setting consumer arguments, as the following example shows:
 
-====
 [source,java]
 ----
 
 container.setConsumerArguments(Collections.
 <String, Object> singletonMap("x-priority", Integer.valueOf(10)));
 ----
-====
 
 For convenience, the namespace provides the `priority` attribute on the `listener` element, as the following example shows:
 
-====
 [source,xml]
 ----
 <rabbit:listener-container connection-factory="rabbitConnectionFactory">
     <rabbit:listener queues="some.queue" ref="somePojo" method="handle" priority="10" />
 </rabbit:listener-container>
 ----
-====
 
 Starting with version 1.3, you can modify the queues on which the container listens at runtime.
 See <<listener-queues>>.
@@ -277,7 +251,6 @@ Starting with version 1.3, the container uses a `RabbitAdmin` to redeclare any m
 You can also use conditional declaration (see xref:amqp/broker-configuration.adoc#conditional-declaration[Conditional Declaration]) together with an `auto-startup="false"` admin to defer queue declaration until the container is started.
 The following example shows how to do so:
 
-====
 [source,xml]
 ----
 <rabbit:queue id="otherAnon" declared-by="containerAdmin" />
@@ -295,7 +268,6 @@ The following example shows how to do so:
 <rabbit:admin id="containerAdmin" connection-factory="rabbitConnectionFactory"
     auto-startup="false" />
 ----
-====
 
 In this case, the queue and exchange are declared by `containerAdmin`, which has `auto-startup="false"` so that the elements are not declared during context initialization.
 Also, the container is not started for the same reason.

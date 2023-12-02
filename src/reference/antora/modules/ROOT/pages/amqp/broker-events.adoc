@@ -6,7 +6,6 @@ Events are published by the broker to a topic exchange `amq.rabbitmq.event` with
 The listener uses event keys, which are used to bind an `AnonymousQueue` to the exchange so the listener receives only selected events.
 Since it is a topic exchange, wildcards can be used (as well as explicitly requesting specific events), as the following example shows:
 
-====
 [source, java]
 ----
 @Bean
@@ -14,11 +13,9 @@ public BrokerEventListener eventListener() {
     return new BrokerEventListener(connectionFactory(), "user.deleted", "channel.#", "queue.#");
 }
 ----
-====
 
 You can further narrow the received events in individual event listeners, by using normal Spring techniques, as the following example shows:
 
-====
 [source, java]
 ----
 @EventListener(condition = "event.eventType == 'queue.created'")
@@ -26,5 +23,4 @@ public void listener(BrokerEvent event) {
     ...
 }
 ----
-====
 

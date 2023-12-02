@@ -5,7 +5,6 @@ The easiest way to receive a message asynchronously is to use the annotated list
 In a nutshell, it lets you expose a method of a managed bean as a Rabbit listener endpoint.
 The following example shows how to use the `@RabbitListener` annotation:
 
-====
 [source,java]
 ----
 
@@ -19,7 +18,6 @@ public class MyService {
 
 }
 ----
-====
 
 The idea of the preceding example is that, whenever a message is available on the queue named `myQueue`, the `processOrder` method is invoked accordingly (in this case, with the payload of the message).
 
@@ -28,11 +26,10 @@ The annotated endpoint infrastructure creates a message listener container behin
 In the preceding example, `myQueue` must already exist and be bound to some exchange.
 The queue can be declared and bound automatically, as long as a `RabbitAdmin` exists in the application context.
 
-NOTE: Property placeholders (`${some.property}`) or SpEL expressions (`#{someExpression}`) can be specified for the annotation properties (`queues` etc).
+NOTE: Property placeholders (`${some.property}`) or SpEL expressions (`+#{someExpression}+`) can be specified for the annotation properties (`queues` etc).
 See xref:amqp/receiving-messages/async-annotation-driven/multiple-queues.adoc[Listening to Multiple Queues] for an example of why you might use SpEL instead of a property placeholder.
 The following listing shows three examples of how to declare a Rabbit listener:
 
-====
 [source,java]
 ----
 
@@ -64,7 +61,6 @@ public class MyService {
 
 }
 ----
-====
 
 In the first example, a queue `myQueue` is declared automatically (durable) together with the exchange, if needed,
 and bound to the exchange with the routing key.
@@ -84,19 +80,16 @@ By default, the properties of an existing exchange must match.
 
 Starting with version 2.0, you can now bind a queue to an exchange with multiple routing keys, as the following example shows:
 
-====
 [source, java]
 ----
 ...
     key = { "red", "yellow" }
 ...
 ----
-====
 
 You can also specify arguments within `@QueueBinding` annotations for queues, exchanges,
 and bindings, as the following example shows:
 
-====
 [source, java]
 ----
 @RabbitListener(bindings = @QueueBinding(
@@ -114,7 +107,6 @@ public String handleWithHeadersExchange(String foo) {
     ...
 }
 ----
-====
 
 Notice that the `x-message-ttl` argument is set to 10 seconds for the queue.
 Since the argument type is not `String`, we have to specify its type -- in this case, `Integer`.

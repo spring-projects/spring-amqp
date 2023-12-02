@@ -4,7 +4,6 @@
 Starting with version 2.3.7, it is now easier to add a `Validator` to validate `@RabbitListener` and `@RabbitHandler` `@Payload` arguments.
 Now, you can simply add the validator to the registrar itself.
 
-====
 [source, java]
 ----
 @Configuration
@@ -17,11 +16,9 @@ public class Config implements RabbitListenerConfigurer {
     }
 }
 ----
-====
 
 NOTE: When using Spring Boot with the validation starter, a `LocalValidatorFactoryBean` is auto-configured:
 
-====
 [source, java]
 ----
 @Configuration
@@ -36,11 +33,9 @@ public class Config implements RabbitListenerConfigurer {
     }
 }
 ----
-====
 
 To validate:
 
-====
 [source, java]
 ----
 public static class ValidatedClass {
@@ -54,11 +49,9 @@ public static class ValidatedClass {
   }
 }
 ----
-====
 
 and
 
-====
 [source, java]
 ----
 @RabbitListener(id="validated", queues = "queue1", errorHandler = "validationErrorHandler",
@@ -73,5 +66,4 @@ public RabbitListenerErrorHandler validationErrorHandler() {
     };
 }
 ----
-====
 

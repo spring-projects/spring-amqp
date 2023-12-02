@@ -26,7 +26,6 @@ The following is only one example that uses an exponential back off policy and t
 
 The following example uses the XML namespace:
 
-====
 [source,xml]
 ----
 <rabbit:template id="template" connection-factory="connectionFactory" retry-template="retryTemplate"/>
@@ -41,11 +40,9 @@ The following example uses the XML namespace:
     </property>
 </bean>
 ----
-====
 
 The following example uses the `@Configuration` annotation in Java:
 
-====
 [source,java]
 ----
 @Bean
@@ -61,7 +58,6 @@ public RabbitTemplate rabbitTemplate() {
     return template;
 }
 ----
-====
 
 Starting with version 1.4, in addition to the `retryTemplate` property, the `recoveryCallback` option is supported on the `RabbitTemplate`.
 It is used as a second argument for the `RetryTemplate.execute(RetryCallback<T, E> retryCallback, RecoveryCallback<T> recoveryCallback)`.
@@ -70,7 +66,6 @@ NOTE: The `RecoveryCallback` is somewhat limited, in that the retry context cont
 For more sophisticated use cases, you should use an external `RetryTemplate` so that you can convey additional information to the `RecoveryCallback` through the context's attributes.
 The following example shows how to do so:
 
-====
 [source,java]
 ----
 retryTemplate.execute(
@@ -94,7 +89,6 @@ retryTemplate.execute(
     });
 }
 ----
-====
 
 In this case, you would *not* inject a `RetryTemplate` into the `RabbitTemplate`.
 
@@ -115,7 +109,6 @@ The underlying channel is closed with an exception.
 By default, this exception is logged, but you can register a `ChannelListener` with the `CachingConnectionFactory` to obtain notifications of such events.
 The following example shows how to add a `ConnectionListener`:
 
-====
 [source, java]
 ----
 this.connectionFactory.addConnectionListener(new ConnectionListener() {
@@ -131,7 +124,6 @@ this.connectionFactory.addConnectionListener(new ConnectionListener() {
 
 });
 ----
-====
 
 You can examine the signal's `reason` property to determine the problem that occurred.
 
@@ -149,12 +141,10 @@ This feature requires a `CachingConnectionFactory` that has its `publisherReturn
 Returns are sent to the client by it registering a `RabbitTemplate.ReturnsCallback` by calling `setReturnsCallback(ReturnsCallback callback)`.
 The callback must implement the following method:
 
-====
 [source,java]
 ----
 void returnedMessage(ReturnedMessage returned);
 ----
-====
 
 The `ReturnedMessage` has the following properties:
 
@@ -171,12 +161,10 @@ For publisher confirms (also known as publisher acknowledgements), the template 
 Confirms are sent to the client by it registering a `RabbitTemplate.ConfirmCallback` by calling `setConfirmCallback(ConfirmCallback callback)`.
 The callback must implement this method:
 
-====
 [source,java]
 ----
 void confirm(CorrelationData correlationData, boolean ack, String cause);
 ----
-====
 
 The `CorrelationData` is an object supplied by the client when sending the original message.
 The `ack` is true for an `ack` and false for a `nack`.
@@ -216,7 +204,6 @@ The confirm is scheduled to be delivered after the return callback exits or afte
 The `CorrelationData` object has a `CompletableFuture` that you can use to get the result, instead of using a `ConfirmCallback` on the template.
 The following example shows how to configure a `CorrelationData` instance:
 
-====
 [source, java]
 ----
 CorrelationData cd1 = new CorrelationData();
@@ -225,7 +212,6 @@ assertTrue(cd1.getFuture().get(10, TimeUnit.SECONDS).isAck());
 ReturnedMessage = cd1.getReturn();
 ...
 ----
-====
 
 Since it is a `CompletableFuture<Confirm>`, you can either `get()` the result when ready or use `whenComplete()` for an asynchronous callback.
 The `Confirm` object is a simple bean with 2 properties: `ack` and `reason` (for `nack` instances).
@@ -255,7 +241,6 @@ Starting with version 2.0, a new method called `invoke` is provided, with an `Op
 Any operations performed within the scope of the callback and on the provided `RabbitOperations` argument use the same dedicated `Channel`, which will be closed at the end (not returned to a cache).
 If the channel is a `PublisherCallbackChannel`, it is returned to the cache after all confirms have been received (see xref:amqp/template.adoc#template-confirms[Correlated Publisher Confirms and Returns]).
 
-====
 [source, java]
 ----
 @FunctionalInterface
@@ -265,7 +250,6 @@ public interface OperationsCallback<T> {
 
 }
 ----
-====
 
 One example of why you might need this is if you wish to use the `waitForConfirms()` method on the underlying `Channel`.
 This method was not previously exposed by the Spring API because the channel is, generally, cached and shared, as discussed earlier.
@@ -275,7 +259,6 @@ The methods cannot be used outside of that scope, for obvious reasons.
 Note that a higher-level abstraction that lets you correlate confirms to requests is provided elsewhere (see xref:amqp/template.adoc#template-confirms[Correlated Publisher Confirms and Returns]).
 If you want only to wait until the broker has confirmed delivery, you can use the technique shown in the following example:
 
-====
 [source, java]
 ----
 Collection<?> messages = getMessagesToSend();
@@ -285,7 +268,6 @@ Boolean result = this.template.invoke(t -> {
     return true;
 });
 ----
-====
 
 If you wish `RabbitAdmin` operations to be invoked on the same channel within the scope of the `OperationsCallback`, the admin must have been constructed by using the same `RabbitTemplate` that was used for the `invoke` operation.
 
@@ -300,19 +282,16 @@ When this is set to `ConfirmType.SIMPLE`, the infrastructure is avoided and the 
 Furthermore, the `RabbitTemplate` sets the `publisherSequenceNumber` property in the sent message `MessageProperties`.
 If you wish to check (or log or otherwise use) specific confirms, you can do so with an overloaded `invoke` method, as the following example shows:
 
-====
 [source, java]
 ----
 public <T> T invoke(OperationsCallback<T> action, com.rabbitmq.client.ConfirmCallback acks,
         com.rabbitmq.client.ConfirmCallback nacks);
 ----
-====
 
 NOTE: These `ConfirmCallback` objects (for `ack` and `nack` instances) are the Rabbit client callbacks, not the template callback.
 
 The following example logs `ack` and `nack` instances:
 
-====
 [source, java]
 ----
 Collection<?> messages = getMessagesToSend();
@@ -326,7 +305,6 @@ Boolean result = this.template.invoke(t -> {
         log.info("Nack: " + tag + ":" + multiple);
 }));
 ----
-====
 
 IMPORTANT: Scoped operations are bound to a thread.
 See xref:amqp/template.adoc#multi-strict[Strict Message Ordering in a Multi-Threaded Environment] for a discussion about strict ordering in a multi-threaded environment.
@@ -348,7 +326,6 @@ To do this, if you have other uses for the connection factory, such as consumers
 
 This is best illustrated with a simple Spring Boot Application:
 
-====
 [source, java]
 ----
 @SpringBootApplication
@@ -424,7 +401,6 @@ class Service {
 
 }
 ----
-====
 
 Even though the publishing is performed on two different threads, they will both use the same channel because the cache is capped at a single channel.
 
@@ -433,7 +409,6 @@ The first method returns a context which is passed to the second thread which ca
 A thread can have either a non-transactional channel or a transactional channel (or one of each) bound to it; you cannot transfer them individually, unless you use two connection factories.
 An example follows:
 
-====
 [source, java]
 ----
 @SpringBootApplication
@@ -514,7 +489,6 @@ class Service {
 
 }
 ----
-====
 
 IMPORTANT: Once the `prepareSwitchContext` is called, if the current thread performs any more operations, they will be performed on a new channel.
 It is important to close the thread-bound channel when it is no longer needed.
@@ -530,14 +504,12 @@ There are two message converters involved: one to convert between a spring-messa
 By default, the message payload is converted by the provided `RabbitTemplate` instance's message converter.
 Alternatively, you can inject a custom `MessagingMessageConverter` with some other payload converter, as the following example shows:
 
-====
 [source, java]
 ----
 MessagingMessageConverter amqpMessageConverter = new MessagingMessageConverter();
 amqpMessageConverter.setPayloadConverter(myPayloadConverter);
 rabbitMessagingTemplate.setAmqpMessageConverter(amqpMessageConverter);
 ----
-====
 
 [[template-user-id]]
 == Validated User Id
@@ -548,14 +520,12 @@ The root object for the evaluation is the message to be sent.
 
 The following examples show how to use the `user-id-expression` attribute:
 
-====
 [source, xml]
 ----
 <rabbit:template ... user-id-expression="'guest'" />
 
 <rabbit:template ... user-id-expression="@myConnectionFactory.username" />
 ----
-====
 
 The first example is a literal expression.
 The second obtains the `username` property from a connection factory bean in the application context.

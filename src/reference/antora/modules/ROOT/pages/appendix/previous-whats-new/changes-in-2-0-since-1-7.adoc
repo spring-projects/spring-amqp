@@ -135,7 +135,7 @@ See xref:amqp/connections.adoc[Connection and Resource Management] for more info
 
 The `MissingMessageIdAdvice` is no longer provided.
 Its functionality is now built-in.
-See xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#retry[Failures in Synchronous Operations and Options for Retry] for more information.
+See xref:amqp/resilience-recovering-from-errors-and-broker-failures.adoc#retry[Failures in Synchronous Operations and Options for Retry] for more information.
 
 [[anonymous-queue-naming]]
 == Anonymous Queue Naming

@@ -7,7 +7,6 @@ You can set that default address by using the `@SendTo` annotation of the messag
 
 Assuming our `processOrder` method should now return an `OrderStatus`, we can write it as follows to automatically send a reply:
 
-====
 [source,java]
 ----
 @RabbitListener(destination = "myQueue")
@@ -17,11 +16,9 @@ public OrderStatus processOrder(Order order) {
     return status;
 }
 ----
-====
 
 If you need to set additional headers in a transport-independent manner, you could return a `Message` instead, something like the following:
 
-====
 [source,java]
 ----
 
@@ -35,12 +32,10 @@ public Message<OrderStatus> processOrder(Order order) {
         .build();
 }
 ----
-====
 
 Alternatively, you can use a `MessagePostProcessor` in the `beforeSendReplyMessagePostProcessors` container factory property to add more headers.
 Starting with version 2.2.3, the called bean/method is made available in the reply message, which can be used in a message post processor to communicate the information back to the caller:
 
-====
 [source, java]
 ----
 factory.setBeforeSendReplyPostProcessors(msg -> {
@@ -51,11 +46,9 @@ factory.setBeforeSendReplyPostProcessors(msg -> {
     return m;
 });
 ----
-====
 
 Starting with version 2.2.5, you can configure a `ReplyPostProcessor` to modify the reply message before it is sent; it is called after the `correlationId` header has been set up to match the request.
 
-====
 [source, java]
 ----
 @RabbitListener(queues = "test.header", group = "testGroup", replyPostProcessor = "echoCustomHeader")
@@ -71,11 +64,9 @@ public ReplyPostProcessor echoCustomHeader() {
     };
 }
 ----
-====
 
 Starting with version 3.0, you can configure the post processor on the container factory instead of on the annotation.
 
-====
 [source, java]
 ----
 factory.setReplyPostProcessorProvider(id -> (req, resp) -> {
@@ -83,7 +74,6 @@ factory.setReplyPostProcessorProvider(id -> (req, resp) -> {
     return resp;
 });
 ----
-====
 
 The `id` parameter is the listener id.
 
@@ -104,7 +94,6 @@ This case is equal to an empty `sendTo` pattern.
 
 Starting with version 1.5, the `@SendTo` value can be a bean initialization SpEL Expression, as shown in the following example:
 
-====
 [source, java]
 ----
 @RabbitListener(queues = "test.sendTo.spel")
@@ -118,7 +107,6 @@ public String spelReplyTo() {
     return "test.sendTo.reply.spel";
 }
 ----
-====
 
 The expression must evaluate to a `String`, which can be a simple queue name (sent to the default exchange) or with
 the form `exchange/routingKey` as discussed prior to the preceding example.
@@ -131,7 +119,6 @@ runtime SpEL expression (described after the next example).
 Starting with version 1.6, the `@SendTo` can be a SpEL expression that is evaluated at runtime against the request
 and reply, as the following example shows:
 
-====
 [source, java]
 ----
 @RabbitListener(queues = "test.sendTo.spel")
@@ -140,7 +127,6 @@ public Bar capitalizeWithSendToSpel(Foo foo) {
     return processTheFooAndReturnABar(foo);
 }
 ----
-====
 
 The runtime nature of the SpEL expression is indicated with `!{...}` delimiters.
 The evaluation context `#root` object for the expression has three properties:
@@ -160,7 +146,6 @@ Beans are referenced with their names, prefixed by `@`.
 Starting with version 2.1, simple property placeholders are also supported (for example, `${some.reply.to}`).
 With earlier versions, the following can be used as a work around, as the following example shows:
 
-====
 [source, java]
 ----
 @RabbitListener(queues = "foo")
@@ -170,5 +155,4 @@ public String listen(Message in) {
     return ...
 }
 ----
-====
 

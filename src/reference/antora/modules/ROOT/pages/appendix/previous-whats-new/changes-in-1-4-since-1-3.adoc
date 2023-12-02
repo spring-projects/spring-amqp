@@ -91,7 +91,6 @@ See xref:amqp/template.adoc#template-retry[Adding Retry Capabilities].
 This exception is now a subclass of `AmqpException`.
 Consider the following code:
 
-====
 [source,java]
 ----
 try {
@@ -104,7 +103,6 @@ catch (MessageConversionException e) {
 	...
 }
 ----
-====
 
 The second catch block is no longer reachable and needs to be moved above the catch-all `AmqpException` catch block.
 

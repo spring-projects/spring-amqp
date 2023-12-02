@@ -5,7 +5,6 @@ Sometimes you may want to use the same configuration for multiple listeners.
 To reduce the boilerplate configuration, you can use meta-annotations to create your own listener annotation.
 The following example shows how to do so:
 
-====
 [source, java]
 ----
 @Target({ElementType.TYPE, ElementType.METHOD, ElementType.ANNOTATION_TYPE})
@@ -30,14 +29,12 @@ public class MetaListener {
 
 }
 ----
-====
 
 In the preceding example, each listener created by the `@MyAnonFanoutListener` annotation binds an anonymous, auto-delete
 queue to the fanout exchange, `metaFanout`.
 Starting with version 2.2.3, `@AliasFor` is supported to allow overriding properties on the meta-annotated annotation.
 Also, user annotations can now be `@Repeatable`, allowing multiple containers to be created for a method.
 
-====
 [source, java]
 ----
 @Component
@@ -70,6 +67,5 @@ static @interface MyListeners {
 
 }
 ----
-====
 
 

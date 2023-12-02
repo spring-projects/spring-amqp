@@ -4,7 +4,6 @@
 So far, we have been injecting a simple `String` in our endpoint, but it can actually have a very flexible method signature.
 The following example rewrites it to inject the `Order` with a custom header:
 
-====
 [source,java]
 ----
 @Component
@@ -16,7 +15,6 @@ public class MyService {
     }
 }
 ----
-====
 
 The following list shows the arguments that are available to be matched with parameters in listener endpoints:
 
@@ -36,7 +34,6 @@ You can also turn on validation by adding an extra `@Valid`.
 The ability to inject Spring’s message abstraction is particularly useful to benefit from all the information stored in the transport-specific message without relying on the transport-specific API.
 The following example shows how to do so:
 
-====
 [source,java]
 ----
 
@@ -45,14 +42,12 @@ public void processOrder(Message<Order> order) { ...
 }
 
 ----
-====
 
 Handling of method arguments is provided by `DefaultMessageHandlerMethodFactory`, which you can further customize to support additional method arguments.
 The conversion and validation support can be customized there as well.
 
 For instance, if we want to make sure our `Order` is valid before processing it, we can annotate the payload with `@Valid` and configure the necessary validator, as follows:
 
-====
 [source,java]
 ----
 
@@ -73,5 +68,4 @@ public class AppConfig implements RabbitListenerConfigurer {
     }
 }
 ----
-====
 

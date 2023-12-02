@@ -122,6 +122,6 @@ See xref:amqp/exception-handling.adoc[Exception Handling] for more information.
 A new `ImmediateRequeueAmqpException` is introduced to notify a listener container that the message has to be re-queued.
 To use this feature, a new `ImmediateRequeueMessageRecoverer` implementation is added.
 
-See xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#async-listeners[Message Listeners and the Asynchronous Case] for more information.
+See xref:amqp/resilience-recovering-from-errors-and-broker-failures.adoc#async-listeners[Message Listeners and the Asynchronous Case] for more information.
 
 

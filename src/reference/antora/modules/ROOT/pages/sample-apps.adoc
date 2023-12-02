@@ -24,7 +24,6 @@ You can read more about that https://docs.spring.io/spring/docs/current/spring-f
 
 The following listing shows how the connection factory is created:
 
-====
 [source,java]
 ----
 @Bean
@@ -36,14 +35,12 @@ public CachingConnectionFactory connectionFactory() {
     return connectionFactory;
 }
 ----
-====
 
 The configuration also contains an instance of `RabbitAdmin`, which, by default, looks for any beans of type exchange, queue, or binding and then declares them on the broker.
 In fact, the `helloWorldQueue` bean that is generated in `HelloWorldConfiguration` is an example because it is an instance of `Queue`.
 
 The following listing shows the `helloWorldQueue` bean definition:
 
-====
 [source,java]
 ----
 @Bean
@@ -51,7 +48,6 @@ public Queue helloWorldQueue() {
     return new Queue(this.helloWorldQueueName);
 }
 ----
-====
 
 Looking back at the `rabbitTemplate` bean configuration, you can see that it has the name of `helloWorldQueue` set as its `queue` property (for receiving messages) and for its `routingKey` property (for sending messages).
 
@@ -61,7 +57,6 @@ It contains a `main()` method where the Spring `ApplicationContext` is created.
 
 The following listing shows the `main` method:
 
-====
 [source,java]
 ----
 public static void main(String[] args) {
@@ -72,7 +67,6 @@ public static void main(String[] args) {
     System.out.println("Sent: Hello World");
 }
 ----
-====
 
 In the preceding example, the `AmqpTemplate` bean is retrieved and used for sending a `Message`.
 Since the client code should rely on interfaces whenever possible, the type is `AmqpTemplate` rather than `RabbitTemplate`.
@@ -88,7 +82,6 @@ The `Consumer` code is basically a mirror image of the Producer, calling `receiv
 
 The following listing shows the main method for the `Consumer`:
 
-====
 [source,java]
 ----
 public static void main(String[] args) {
@@ -98,7 +91,6 @@ public static void main(String[] args) {
     System.out.println("Received: " + amqpTemplate.receiveAndConvert());
 }
 ----
-====
 
 If you run the `Producer` and then run the `Consumer`, you should see `Received: Hello World` in the console output.
 
@@ -120,7 +112,6 @@ That is why we only need to provide the routing key here.
 
 The following listing shows the `rabbitTemplate` definition:
 
-====
 [source,java]
 ----
 public RabbitTemplate rabbitTemplate() {
@@ -129,7 +120,6 @@ public RabbitTemplate rabbitTemplate() {
     return template;
 }
 ----
-====
 
 Since this sample demonstrates asynchronous message reception, the producing side is designed to continuously send messages (if it were a message-per-execution model like the synchronous version, it would not be quite so obvious that it is, in fact, a message-driven consumer).
 The component responsible for continuously sending messages is defined as an inner class within the `ProducerConfiguration`.
@@ -137,7 +127,6 @@ It is configured to run every three seconds.
 
 The following listing shows the component:
 
-====
 [source,java]
 ----
 static class ScheduledProducer {
@@ -153,7 +142,6 @@ static class ScheduledProducer {
     }
 }
 ----
-====
 
 You do not need to understand all of the details, since the real focus should be on the receiving side (which we cover next).
 However, if you are not yet familiar with Spring task scheduling support, you can learn more https://docs.spring.io/spring/docs/current/spring-framework-reference/html/scheduling.html#scheduling-annotation-support[here].
@@ -163,7 +151,6 @@ Now we can turn to the receiving side.
 To emphasize the message-driven POJO behavior, we start with the component that react to the messages.
 The class is called `HelloWorldHandler` and is shown in the following listing:
 
-====
 [source,java]
 ----
 public class HelloWorldHandler {
@@ -174,7 +161,6 @@ public class HelloWorldHandler {
 
 }
 ----
-====
 
 That class is a POJO.
 It does not extend any base class, it does not implement any interfaces, and it does not even contain any imports.
@@ -185,7 +171,6 @@ You can see the POJO wrapped in the adapter there.
 
 The following listing shows how the `listenerContainer` is defined:
 
-====
 [source,java]
 ----
 @Bean
@@ -197,7 +182,6 @@ public SimpleMessageListenerContainer listenerContainer() {
     return container;
 }
 ----
-====
 
 The `SimpleMessageListenerContainer` is a Spring lifecycle component and, by default, starts automatically.
 If you look in the `Consumer` class, you can see that its `main()` method consists of nothing more than a one-line bootstrap to create the `ApplicationContext`.
@@ -226,21 +210,18 @@ First, it configures the market data exchange on the `RabbitTemplate` so that it
 It does this within an abstract callback method defined in the base configuration class.
 The following listing shows that method:
 
-====
 [source,java]
 ----
 public void configureRabbitTemplate(RabbitTemplate rabbitTemplate) {
     rabbitTemplate.setExchange(MARKET_DATA_EXCHANGE_NAME);
 }
 ----
-====
 
 Second, the stock request queue is declared.
 It does not require any explicit bindings in this case, because it is bound to the default no-name exchange with its own name as the routing key.
 As mentioned earlier, the AMQP specification defines that behavior.
 The following listing shows the definition of the `stockRequestQueue` bean:
 
-====
 [source,java]
 ----
 @Bean
@@ -248,7 +229,6 @@ public Queue stockRequestQueue() {
     return new Queue(STOCK_REQUEST_QUEUE_NAME);
 }
 ----
-====
 
 Now that you have seen the configuration of the server's AMQP resources, navigate to the `org.springframework.amqp.rabbit.stocks` package under the `src/test/java` directory.
 There, you can see the actual `Server` class that provides a `main()` method.
@@ -264,20 +244,17 @@ Notice that it is not itself coupled to the framework or any of the AMQP concept
 It accepts a `TradeRequest` and returns a `TradeResponse`.
 The following listing shows the definition of the `handleMessage` method:
 
-====
 [source,java]
 ----
 public TradeResponse handleMessage(TradeRequest tradeRequest) { ...
 }
 ----
-====
 
 Now that we have seen the most important configuration and code for the server, we can turn to the client.
 The best starting point is probably `RabbitClientConfiguration`, in the `org.springframework.amqp.rabbit.stocks.config.client` package.
 Notice that it declares two queues without providing explicit names.
 The following listing shows the bean definitions for the two queues:
 
-====
 [source,java]
 ----
 @Bean
@@ -290,7 +267,6 @@ public Queue traderJoeQueue() {
     return amqpAdmin().declareQueue();
 }
 ----
-====
 
 Those are private queues, and unique names are generated automatically.
 The first generated queue is used by the client to bind to the market data exchange that has been exposed by the server.
@@ -300,7 +276,6 @@ Since the market data exchange is a topic exchange, the binding can be expressed
 The `RabbitClientConfiguration` does so with a `Binding` object, and that object is generated with the `BindingBuilder` fluent API.
 The following listing shows the `Binding`:
 
-====
 [source,java]
 ----
 @Value("${stocks.quote.pattern}")
@@ -312,7 +287,6 @@ public Binding marketDataBinding() {
         marketDataQueue()).to(marketDataExchange()).with(marketDataRoutingKey);
 }
 ----
-====
 
 Notice that the actual value has been externalized in a properties file (`client.properties` under `src/main/resources`), and that we use Spring's `@Value` annotation to inject that value.
 This is generally a good idea.
@@ -332,7 +306,6 @@ The corresponding code on the `Client` side is `RabbitStockServiceGateway` in th
 It delegates to the `RabbitTemplate` in order to send messages.
 The following listing shows the `send` method:
 
-====
 [source,java]
 ----
 public void send(TradeRequest tradeRequest) {
@@ -351,13 +324,11 @@ public void send(TradeRequest tradeRequest) {
     });
 }
 ----
-====
 
 Notice that, prior to sending the message, it sets the `replyTo` address.
 It provides the queue that was generated by the `traderJoeQueue` bean definition (shown earlier).
 The following listing shows the `@Bean` definition for the `StockServiceGateway` class itself:
 
-====
 [source,java]
 ----
 @Bean
@@ -368,7 +339,6 @@ public StockServiceGateway stockServiceGateway() {
     return gateway;
 }
 ----
-====
 
 If you are no longer running the server and client, start them now.
 Try sending a request with the format of '100 TCKR'.

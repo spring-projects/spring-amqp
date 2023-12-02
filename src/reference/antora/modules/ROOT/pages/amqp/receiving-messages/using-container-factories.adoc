@@ -13,7 +13,6 @@ There are two ways to create such containers:
 
 The following example shows how to use a `SimpleRabbitListenerEndpoint` to create a listener container:
 
-====
 [source, java]
 ----
 @Bean
@@ -27,11 +26,9 @@ public SimpleMessageListenerContainer factoryCreatedContainerSimpleListener(
     return rabbitListenerContainerFactory.createListenerContainer(endpoint);
 }
 ----
-====
 
 The following example shows how to add the listener after creation:
 
-====
 [source, java]
 ----
 @Bean
@@ -45,7 +42,6 @@ public SimpleMessageListenerContainer factoryCreatedContainerNoListener(
     return container;
 }
 ----
-====
 
 In either case, the listener can also be a `ChannelAwareMessageListener`, since it is now a sub-interface of `MessageListener`.
 

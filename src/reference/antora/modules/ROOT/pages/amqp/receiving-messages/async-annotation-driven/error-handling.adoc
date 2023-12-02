@@ -38,7 +38,6 @@ IMPORTANT: In version 2.1, this interface moved from package `o.s.amqp.rabbit.li
 
 Starting with version 2.1.7, the `Channel` is available in a messaging message header; this allows you to ack or nack the failed messasge when using `AcknowledgeMode.MANUAL`:
 
-====
 [source, java]
 ----
 public Object handleError(Message amqpMessage, org.springframework.messaging.Message<?> message,
@@ -49,7 +48,6 @@ public Object handleError(Message amqpMessage, org.springframework.messaging.Mes
                                true);
           }
 ----
-====
 
 Starting with version 2.2.18, if a message conversion exception is thrown, the error handler will be called, with `null` in the `message` argument.
 This allows the application to send some result to the caller, indicating that a badly-formed message was received.

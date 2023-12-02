@@ -472,7 +472,6 @@ This process continues indefinitely.
 
 You can also use a properties bean to set the property globally for all containers, as follows:
 
-====
 [source,xml]
 ----
 <util:properties
@@ -482,7 +481,6 @@ You can also use a properties bean to set the property globally for all containe
     </prop>
 </util:properties>
 ----
-====
 
 This global property is not applied to any containers that have an explicit `missingQueuesFatal` property set.
 

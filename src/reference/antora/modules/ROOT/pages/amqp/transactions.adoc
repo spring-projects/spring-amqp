@@ -18,7 +18,6 @@ However, in practice, it is often also a configuration setting, when the transac
 For synchronous use cases with `RabbitTemplate`, the external transaction is provided by the caller, either declaratively or imperatively according to taste (the usual Spring transaction model).
 The following example shows a declarative approach (usually preferred because it is non-invasive), where the template has been configured with `channelTransacted=true`:
 
-====
 [source,java]
 ----
 @Transactional
@@ -29,7 +28,6 @@ public void doSomething() {
     rabbitTemplate.convertAndSend(outgoing);
 }
 ----
-====
 
 In the preceding example, a `String` payload is received, converted, and sent as a message body inside a method marked as `@Transactional`.
 If the database processing fails with an exception, the incoming message is returned to the broker, and the outgoing message is not sent.
@@ -39,7 +37,6 @@ For asynchronous use cases with `SimpleMessageListenerContainer`, if an external
 To signal that an external transaction is required, the user provides an implementation of `PlatformTransactionManager` to the container when it is configured.
 The following example shows how to do so:
 
-====
 [source,java]
 ----
 @Configuration
@@ -58,7 +55,6 @@ public class ExampleExternalTransactionAmqpConfiguration {
 
 }
 ----
-====
 
 In the preceding example, the transaction manager is added as a dependency injected from another bean definition (not shown), and the `channelTransacted` flag is also set to `true`.
 The effect is that if the listener fails with an exception, the transaction is rolled back, and the message is also returned to the broker.
@@ -82,7 +78,6 @@ This transaction attribute can be used directly in the container or through a tr
 
 The following example uses this rule:
 
-====
 [source, java]
 ----
 @Bean
@@ -97,7 +92,6 @@ public AbstractMessageListenerContainer container() {
     ...
 }
 ----
-====
 
 [[transaction-rollback]]
 == A note on Rollback of Received Messages
@@ -105,7 +99,7 @@ public AbstractMessageListenerContainer container() {
 AMQP transactions apply only to messages and acks sent to the broker.
 Consequently, when there is a rollback of a Spring transaction and a message has been received, Spring AMQP has to not only rollback the transaction but also manually reject the message (sort of a nack, but that is not what the specification calls it).
 The action taken on message rejection is independent of transactions and depends on the `defaultRequeueRejected` property (default: `true`).
-For more information about rejecting failed messages, see xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#async-listeners[Message Listeners and the Asynchronous Case].
+For more information about rejecting failed messages, see xref:amqp/resilience-recovering-from-errors-and-broker-failures.adoc#async-listeners[Message Listeners and the Asynchronous Case].
 
 For more information about RabbitMQ transactions and their limitations, see https://www.rabbitmq.com/semantics.html[RabbitMQ Broker Semantics].
 
@@ -113,7 +107,7 @@ NOTE: Prior to RabbitMQ 2.7.0, such messages (and any that are unacked when a ch
 Since 2.7.0, rejected messages go to the front of the queue, in a similar manner to JMS rolled back messages.
 
 NOTE: Previously, message requeue on transaction rollback was inconsistent between local transactions and when a `TransactionManager` was provided.
-In the former case, the normal requeue logic (`AmqpRejectAndDontRequeueException` or `defaultRequeueRejected=false`) applied (see xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#async-listeners[Message Listeners and the Asynchronous Case]).
+In the former case, the normal requeue logic (`AmqpRejectAndDontRequeueException` or `defaultRequeueRejected=false`) applied (see xref:amqp/resilience-recovering-from-errors-and-broker-failures.adoc#async-listeners[Message Listeners and the Asynchronous Case]).
 With a transaction manager, the message was unconditionally requeued on rollback.
 Starting with version 2.0, the behavior is consistent and the normal requeue logic is applied in both cases.
 To revert to the previous behavior, you can set the container's `alwaysRequeueWithTxManagerRollback` property to `true`.
@@ -132,7 +126,6 @@ When using Spring AMQP's https://docs.spring.io/spring-amqp/docs/latest_ga/api/o
 
 With Java Configuration, you can setup a new RabbitTransactionManager by using the following bean:
 
-====
 [source,java]
 ----
 @Bean
@@ -140,11 +133,9 @@ public RabbitTransactionManager rabbitTransactionManager() {
     return new RabbitTransactionManager(connectionFactory);
 }
 ----
-====
 
 If you prefer XML configuration, you can declare the following bean in your XML Application Context file:
 
-====
 [source,xml]
 ----
 <bean id="rabbitTxManager"
@@ -152,7 +143,6 @@ If you prefer XML configuration, you can declare the following bean in your XML 
     <property name="connectionFactory" ref="connectionFactory"/>
 </bean>
 ----
-====
 
 [[tx-sync]]
 == Transaction Synchronization

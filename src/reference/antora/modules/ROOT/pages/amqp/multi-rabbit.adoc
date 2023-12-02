@@ -6,7 +6,6 @@ The main benefit, on the consumer side, is that the infrastructure can automatic
 
 This is best illustrated with an example:
 
-====
 [source, java]
 ----
 @SpringBootApplication(exclude = RabbitAutoConfiguration.class)
@@ -123,7 +122,6 @@ class Listeners {
 
 }
 ----
-====
 
 As you can see, we have declared 3 sets of infrastructure (connection factories, admins, container factories).
 As discussed earlier, `@RabbitListener` can define which container factory to use; in this case, they also use `queuesToDeclare` which causes the queue(s) to be declared on the broker, if it doesn't exist.
@@ -137,7 +135,6 @@ As you can see above, a `SimpleRoutingConnectionFactory` bean has been added wit
 There is also a `RabbitTemplate` that uses that factory.
 Here is an example of using that template with the wrapper to route to one of the broker clusters.
 
-====
 [source, java]
 ----
 @Bean
@@ -149,5 +146,4 @@ public ApplicationRunner runner(RabbitTemplate template, ConnectionFactoryContex
     };
 }
 ----
-====
 

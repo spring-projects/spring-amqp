@@ -4,7 +4,6 @@
 Starting with version 2.3.7 you are able to add your own `HandlerMethodArgumentResolver` and resolve custom method parameters.
 All you need is to implement `RabbitListenerConfigurer` and use method `setCustomMethodArgumentResolvers()` from class `RabbitListenerEndpointRegistrar`.
 
-====
 [source, java]
 ----
 @Configuration
@@ -34,5 +33,4 @@ class CustomRabbitConfig implements RabbitListenerConfigurer {
 
 }
 ----
-====
 

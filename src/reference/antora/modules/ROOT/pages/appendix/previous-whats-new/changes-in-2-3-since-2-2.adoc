@@ -2,7 +2,7 @@
 = Changes in 2.3 Since 2.2
 
 This section describes the changes between version 2.2 and version 2.3.
-See xref:appendix.adoc#change-history[Change History] for changes in previous versions.
+See xref:appendix/change-history.adoc[Change History] for changes in previous versions.
 
 [[connection-factory-changes]]
 == Connection Factory Changes
@@ -68,5 +68,5 @@ See xref:amqp/multi-rabbit.adoc[Multiple Broker (or Cluster) Support] for more i
 == RepublishMessageRecoverer Changes
 
 A new subclass of this recoverer is not provided that supports publisher confirms.
-See xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#async-listeners[Message Listeners and the Asynchronous Case] for more information.
+See xref:amqp/resilience-recovering-from-errors-and-broker-failures.adoc#async-listeners[Message Listeners and the Asynchronous Case] for more information.
 

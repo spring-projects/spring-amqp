@@ -35,7 +35,7 @@ See `declareExchange`.
 
 | applicationId
 |
-| Application ID -- added to the routing key if the pattern includes `%X{applicationId}`.
+| Application ID -- added to the routing key if the pattern includes `+%X{applicationId}+`.
 
 | senderPoolSize
 | 2
@@ -171,7 +171,6 @@ Please note, the `JsonLayout` adds MDC into the message by default.
 
 The following example shows how to configure a Log4j 2 appender:
 
-====
 [source, xml]
 ----
 <Appenders>
@@ -187,7 +186,6 @@ The following example shows how to configure a Log4j 2 appender:
     </RabbitMQ>
 </Appenders>
 ----
-====
 
 [IMPORTANT]
 ====
@@ -205,7 +203,6 @@ If you use asynchronous publishing with the `ReusableLogEventFactory`, events ha
 
 The following example shows how to configure a logback appender:
 
-====
 [source, xml]
 ----
 <appender name="AMQP" class="org.springframework.amqp.rabbit.logback.AmqpAppender">
@@ -225,7 +222,6 @@ The following example shows how to configure a logback appender:
     <addMdcAsHeaders>false</addMdcAsHeaders>
 </appender>
 ----
-====
 
 Starting with version 1.7.1, the Logback `AmqpAppender` provides  an `includeCallerData` option, which is `false` by default.
 Extracting caller data can be rather expensive, because the log event has to create a throwable and inspect it to determine the calling location.
@@ -259,7 +255,6 @@ Each of the appenders can be subclassed, letting you modify the messages before 
 The following example shows how to customize log messages:
 
 
-====
 [source, java]
 ----
 public class MyEnhancedAppender extends AmqpAppender {
@@ -272,12 +267,10 @@ public class MyEnhancedAppender extends AmqpAppender {
 
 }
 ----
-====
 
 Starting with 2.2.4, the log4j2 `AmqpAppender` can be extended using `@PluginBuilderFactory` and extending also `AmqpAppender.Builder`
 
 
-====
 [source, java]
 ----
 @Plugin(name = "MyEnhancedAppender", category = "Core", elementType = "appender", printObject = true)
@@ -309,7 +302,6 @@ public class MyEnhancedAppender extends AmqpAppender {
 
 }
 ----
-====
 
 
 
@@ -325,7 +317,6 @@ Each appender supports adding client properties to the RabbitMQ connection.
 
 The following example shows how to add a custom client property for logback:
 
-====
 [source, xml]
 ----
 <appender name="AMQP" ...>
@@ -334,10 +325,8 @@ The following example shows how to add a custom client property for logback:
     ...
 </appender>
 ----
-====
 
 .log4j2
-====
 [source, xml]
 ----
 <Appenders>
@@ -349,7 +338,6 @@ The following example shows how to add a custom client property for logback:
     </RabbitMQ>
 </Appenders>
 ----
-====
 
 The properties are a comma-delimited list of `key:value` pairs.
 Keys and values cannot contain commas or colons.
@@ -363,7 +351,6 @@ You can subclass the Logback appender.
 Doing so lets you modify the client connection properties before the connection is established.
 The following example shows how to do so:
 
-====
 [source, java]
 ----
 public class MyEnhancedAppender extends AmqpAppender {
@@ -381,7 +368,6 @@ public class MyEnhancedAppender extends AmqpAppender {
 
 }
 ----
-====
 
 Then you can add `<thing1>thing2</thing1>` to logback.xml.
 
@@ -397,7 +383,6 @@ However, you can supply any kind of custom `BlockingQueue` implementation.
 
 The following example shows how to do so for Logback:
 
-====
 [source, java]
 ----
 public class MyEnhancedAppender extends AmqpAppender {
@@ -409,11 +394,9 @@ public class MyEnhancedAppender extends AmqpAppender {
 
 }
 ----
-====
 
 The Log4j 2 appender supports using a https://logging.apache.org/log4j/2.x/manual/appenders.html#BlockingQueueFactory[`BlockingQueueFactory`], as the following example shows:
 
-====
 [source, xml]
 ----
 <Appenders>
@@ -424,4 +407,3 @@ The Log4j 2 appender supports using a https://logging.apache.org/log4j/2.x/manua
     </RabbitMQ>
 </Appenders>
 ----
-====

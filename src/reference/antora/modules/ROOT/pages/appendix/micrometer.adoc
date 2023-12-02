@@ -1,0 +1,4 @@
+[[observation-gen]]
+= Micrometer Observation Documentation
+
+This section describes the Micrometer integration.

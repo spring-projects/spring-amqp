@@ -3,7 +3,7 @@
 :page-section-summary-toc: 1
 
 This section describes the changes between version 2.3 and version 2.4.
-See xref:appendix.adoc#change-history[Change History] for changes in previous versions.
+See xref:appendix/change-history.adoc[Change History] for changes in previous versions.
 
 [[rabbitlistener-changes]]
 == `@RabbitListener` Changes

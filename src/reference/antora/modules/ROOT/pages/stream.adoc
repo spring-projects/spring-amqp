@@ -9,7 +9,6 @@ Version 2.4 introduces initial support for the https://github.com/rabbitmq/rabbi
 Add the `spring-rabbit-stream` dependency to your project:
 
 .maven
-====
 [source,xml,subs="+attributes"]
 ----
 <dependency>
@@ -18,35 +17,29 @@ Add the `spring-rabbit-stream` dependency to your project:
   <version>{project-version}</version>
 </dependency>
 ----
-====
 
 .gradle
-====
 [source,groovy,subs="+attributes"]
 ----
 compile 'org.springframework.amqp:spring-rabbit-stream:{project-version}'
 ----
-====
 
 You can provision the queues as normal, using a `RabbitAdmin` bean, using the `QueueBuilder.stream()` method to designate the queue type.
 For example:
 
-====
 [source, java]
 ----
 @Bean
 Queue stream() {
     return QueueBuilder.durable("stream.queue1")
             .stream()
-            .build();    
+            .build();
 }
 ----
-====
 
 However, this will only work if you are also using non-stream components (such as the `SimpleMessageListenerContainer` or `DirectMessageListenerContainer`) because the admin is triggered to declare the defined beans when an AMQP connection is opened.
 If your application only uses stream components, or you wish to use advanced stream configuration features, you should configure a `StreamAdmin` instead:
 
-====
 [source, java]
 ----
 @Bean
@@ -57,7 +50,6 @@ StreamAdmin streamAdmin(Environment env) {
     });
 }
 ----
-====
 
 Refer to the RabbitMQ documentation for more information about the `StreamCreator`.
 
@@ -67,7 +59,6 @@ Refer to the RabbitMQ documentation for more information about the `StreamCreato
 The `RabbitStreamTemplate` provides a subset of the `RabbitTemplate` (AMQP) functionality.
 
 .RabbitStreamOperations
-====
 [source, java]
 ----
 public interface RabbitStreamOperations extends AutoCloseable {
@@ -91,12 +82,10 @@ public interface RabbitStreamOperations extends AutoCloseable {
 
 }
 ----
-====
 
 The `RabbitStreamTemplate` implementation has the following constructor and properties:
 
 .RabbitStreamTemplate
-====
 [source, java]
 ----
 public RabbitStreamTemplate(Environment environment, String streamName) {
@@ -111,7 +100,6 @@ public void setStreamConverter(StreamMessageConverter streamConverter) {
 public synchronized void setProducerCustomizer(ProducerCustomizer producerCustomizer) {
 }
 ----
-====
 
 The `MessageConverter` is used in the `convertAndSend` methods to convert the object to a Spring AMQP `Message`.
 
@@ -134,7 +122,6 @@ The listener container requires an `Environment` as well as a single stream name
 
 You can either receive Spring AMQP `Message` s using the classic `MessageListener`, or you can receive native stream `Message` s using a new interface:
 
-====
 [source, java]
 ----
 public interface StreamMessageListener extends MessageListener {
@@ -143,7 +130,6 @@ public interface StreamMessageListener extends MessageListener {
 
 }
 ----
-====
 
 See xref:amqp/containerAttributes.adoc[Message Listener Container Configuration] for information about supported properties.
 
@@ -157,7 +143,6 @@ In addition, `queues` can only contain one stream name.
 [[stream-examples]]
 == Examples
 
-====
 [source, java]
 ----
 @Bean
@@ -199,22 +184,20 @@ void nativeMsg(Message in, Context context) {
 Queue stream() {
     return QueueBuilder.durable("test.stream.queue1")
             .stream()
-            .build();    
+            .build();
 }
 
 @Bean
 Queue stream() {
     return QueueBuilder.durable("test.stream.queue2")
             .stream()
-            .build();    
+            .build();
 }
 ----
-====
 
 Version 2.4.5 added the `adviceChain` property to the `StreamListenerContainer` (and its factory).
 A new factory bean is also provided to create a stateless retry interceptor with an optional `StreamMessageRecoverer` for use when consuming raw stream messages.
 
-====
 [source, java]
 ----
 @Bean
@@ -228,7 +211,6 @@ public StreamRetryOperationsInterceptorFactoryBean sfb(RetryTemplate retryTempla
     return rfb;
 }
 ----
-====
 
 IMPORTANT: Stateful retry is not supported with this container.
 
@@ -242,7 +224,6 @@ A Super Stream is an abstract concept for a partitioned stream, implemented by b
 
 For convenience, a super stream can be provisioned by defining a single bean of type `SuperStream`.
 
-====
 [source, java]
 ----
 @Bean
@@ -250,13 +231,11 @@ SuperStream superStream() {
     return new SuperStream("my.super.stream", 3);
 }
 ----
-====
 
 The `RabbitAdmin` detects this bean and will declare the exchange (`my.super.stream`) and 3 queues (partitions) - `my.super-stream-n` where `n` is `0`, `1`, `2`, bound with routing keys equal to `n`.
 
 If you also wish to publish over AMQP to the exchange, you can provide custom routing keys:
 
-====
 [source, java]
 ----
 @Bean
@@ -266,7 +245,6 @@ SuperStream superStream() {
 					.collect(Collectors.toList()));
 }
 ----
-====
 
 The number of keys must equal the number of partitions.
 
@@ -275,7 +253,6 @@ The number of keys must equal the number of partitions.
 
 You must add a `superStreamRoutingFunction` to the `RabbitStreamTemplate`:
 
-====
 [source, java]
 ----
 @Bean
@@ -287,7 +264,6 @@ RabbitStreamTemplate streamTemplate(Environment env) {
     return template;
 }
 ----
-====
 
 You can also publish over AMQP, using the `RabbitTemplate`.
 
@@ -296,7 +272,6 @@ You can also publish over AMQP, using the `RabbitTemplate`.
 
 Invoke the `superStream` method on the listener container to enable a single active consumer on a super stream.
 
-====
 [source, java]
 ----
 @Bean
@@ -310,7 +285,6 @@ StreamListenerContainer container(Environment env, String name) {
     return container;
 }
 ----
-====
 
 IMPORTANT: At this time, when the concurrency is greater than 1, the actual concurrency is further controlled by the `Environment`; to achieve full concurrency, set the environment's `maxConsumersByConnection` to 1.
 See https://rabbitmq.github.io/rabbitmq-stream-java-client/snapshot/htmlsingle/#configuring-the-environment[Configuring the Environment].
@@ -332,4 +306,4 @@ The default implementations add the `name` tag for template observations and `li
 
 You can either subclass `DefaultRabbitStreamTemplateObservationConvention` or `DefaultStreamRabbitListenerObservationConvention` or provide completely new implementations.
 
-See xref:appendix.adoc[Micrometer Observation Documentation] for more details.
+See xref:appendix/micrometer.adoc[Micrometer Observation Documentation] for more details.

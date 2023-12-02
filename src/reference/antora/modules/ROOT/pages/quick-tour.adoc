@@ -10,7 +10,6 @@ Prerequisites: Install and run the RabbitMQ broker (https://www.rabbitmq.com/dow
 Then grab the spring-rabbit JAR and all its dependencies - the easiest way to do so is to declare a dependency in your build tool.
 For example, for Maven, you can do something resembling the following:
 
-====
 [source,xml,subs="+attributes"]
 ----
 <dependency>
@@ -19,16 +18,13 @@ For example, for Maven, you can do something resembling the following:
   <version>{project-version}</version>
 </dependency>
 ----
-====
 
 For Gradle, you can do something resembling the following:
 
-====
 [source,groovy,subs="+attributes"]
 ----
 compile 'org.springframework.amqp:spring-rabbit:{project-version}'
 ----
-====
 
 [[compatibility]]
 === Compatibility
@@ -46,7 +42,6 @@ This section offers the fastest introduction.
 
 First, add the following `import` statements to make the examples later in this section work:
 
-====
 [source, java]
 ----
 import org.springframework.amqp.core.AmqpAdmin;
@@ -57,11 +52,9 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 ----
-====
 
 The following example uses plain, imperative Java to send and receive a message:
 
-====
 [source,java]
 ----
 ConnectionFactory connectionFactory = new CachingConnectionFactory();
@@ -71,7 +64,6 @@ AmqpTemplate template = new RabbitTemplate(connectionFactory);
 template.convertAndSend("myqueue", "foo");
 String foo = (String) template.receiveAndConvert("myqueue");
 ----
-====
 
 Note that there is also a `ConnectionFactory` in the native Java Rabbit client.
 We use the Spring abstraction in the preceding code.
@@ -84,7 +76,6 @@ Those behaviors are defined in the AMQP specification.
 
 The following example is the same as the preceding example but externalizes the resource configuration to XML:
 
-====
 [source,java]
 ----
 ApplicationContext context =
@@ -114,7 +105,6 @@ String foo = (String) template.receiveAndConvert("myqueue");
 
 </beans>
 ----
-====
 
 By default, the `<rabbit:admin/>` declaration automatically looks for beans of type `Queue`, `Exchange`, and `Binding` and declares them to the broker on behalf of the user.
 As a result, you need not use that bean explicitly in the simple Java driver.
@@ -126,7 +116,6 @@ You can use auto-complete features of your XML editor to explore them and look a
 
 The following example repeats the same example as the preceding example but with the external configuration defined in Java:
 
-====
 [source,java]
 ----
 ApplicationContext context =
@@ -161,14 +150,12 @@ public class RabbitConfiguration {
     }
 }
 ----
-====
 
 [[with-spring-boot-auto-configuration-and-an-async-pojo-listener]]
 === With Spring Boot Auto Configuration and an Async POJO Listener
 
 Spring Boot automatically configures the infrastructure beans, as the following example shows:
 
-====
 [source, java]
 ----
 @SpringBootApplication
@@ -195,4 +182,3 @@ public class Application {
 
 }
 ----
-====

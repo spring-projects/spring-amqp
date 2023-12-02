@@ -15,5 +15,5 @@ The default implementations add the `name` tag for template observations and `li
 
 You can either subclass `DefaultRabbitTemplateObservationConvention` or `DefaultRabbitListenerObservationConvention` or provide completely new implementations.
 
-See xref:appendix.adoc[Micrometer Observation Documentation] for more details.
+See xref:appendix/micrometer.adoc[Micrometer Observation Documentation] for more details.
 

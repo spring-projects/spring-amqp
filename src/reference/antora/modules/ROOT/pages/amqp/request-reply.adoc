@@ -99,7 +99,6 @@ RabbitMQ has no ability to select messages from a queue, so, if they all use the
 
 The following example defines a rabbit template with a connection factory:
 
-====
 [source,xml]
 ----
 <rabbit:template id="amqpTemplate"
@@ -109,7 +108,6 @@ The following example defines a rabbit template with a connection factory:
     <rabbit:reply-listener/>
 </rabbit:template>
 ----
-====
 
 While the container and template share a connection factory, they do not share a channel.
 Therefore, requests and replies are not performed within the same transaction (if transactional).
@@ -145,7 +143,6 @@ The template inserts the reply address into the outbound message `replyTo` prope
 
 The following listing shows examples of how to manually wire up the beans:
 
-====
 [source,xml]
 ----
 <bean id="amqpTemplate" class="org.springframework.amqp.rabbit.core.RabbitTemplate">
@@ -192,7 +189,6 @@ The following listing shows examples of how to manually wire up the beans:
         return new Queue("my.reply.queue");
     }
 ----
-====
 
 A complete example of a `RabbitTemplate` wired with a fixed reply queue, together with a "`remote`" listener container that handles the request and returns the reply is shown in https://github.com/spring-projects/spring-amqp/tree/main/spring-rabbit/src/test/java/org/springframework/amqp/rabbit/listener/JavaConfigFixedReplyQueueTests.java[this test case].
 
@@ -219,7 +215,6 @@ The `convertSendAndReceive` methods return a `RabbitConverterFuture`.
 You can either synchronously retrieve the result later, by invoking `get()` on the future, or you can register a callback that is called asynchronously with the result.
 The following listing shows both approaches:
 
-====
 [source, java]
 ----
 @Autowired
@@ -265,7 +260,6 @@ public void doSomeWorkAndGetResultAsync() {
 
 }
 ----
-====
 
 If `mandatory` is set and the message cannot be delivered, the future throws an `ExecutionException` with a cause of `AmqpMessageReturnedException`, which encapsulates the returned message and information about the return.
 
@@ -283,14 +277,12 @@ Stopping the template while there are pending replies causes the pending `Future
 Starting with version 2.0, the asynchronous template now supports https://www.rabbitmq.com/direct-reply-to.html[direct reply-to] instead of a configured reply queue.
 To enable this feature, use one of the following constructors:
 
-====
 [source, java]
 ----
 public AsyncRabbitTemplate(ConnectionFactory connectionFactory, String exchange, String routingKey)
 
 public AsyncRabbitTemplate(RabbitTemplate template)
 ----
-====
 
 See xref:amqp/request-reply.adoc#direct-reply-to[RabbitMQ Direct reply-to] to use direct reply-to with the synchronous `RabbitTemplate`.
 

@@ -4,7 +4,6 @@
 When receiving a xref:amqp/sending-messages.adoc#template-batching[a batch] of messages, the de-batching is normally performed by the container and the listener is invoked with one message at at time.
 Starting with version 2.2, you can configure the listener container factory and listener to receive the entire batch in one call, simply set the factory's `batchListener` property, and make the method payload parameter a `List` or `Collection`:
 
-====
 [source, java]
 ----
 @Bean
@@ -27,7 +26,6 @@ public void listen2(List<Message<Thing>> in) {
     ...
 }
 ----
-====
 
 Setting the `batchListener` property to true automatically turns off the `deBatchingEnabled` container property in containers that the factory creates (unless `consumerBatchEnabled` is `true` - see below). Effectively, the debatching is moved from the container to the listener adapter and the adapter creates the list that is passed to the listener.
 
@@ -43,7 +41,6 @@ When this is true, the container will create a batch of messages, up to `batchSi
 If a producer-created batch is received, it is debatched and added to the consumer-side batch; therefore the actual number of messages delivered may exceed `batchSize`, which represents the number of messages received from the broker.
 `deBatchingEnabled` must be true when `consumerBatchEnabled` is true; the container factory will enforce this requirement.
 
-====
 [source, java]
 ----
 @Bean
@@ -57,11 +54,9 @@ public SimpleRabbitListenerContainerFactory consumerBatchContainerFactory() {
     return factory;
 }
 ----
-====
 
 When using `consumerBatchEnabled` with `@RabbitListener`:
 
-====
 [source, java]
 ----
 @RabbitListener(queues = "batch.1", containerFactory = "consumerBatchContainerFactory")
@@ -79,7 +74,6 @@ public void consumerBatch3(List<Invoice> strings) {
     ...
 }
 ----
-====
 
 * the first is called with the raw, unconverted `org.springframework.amqp.core.Message` s received.
 * the second is called with the `org.springframework.messaging.Message<?>` s with converted payloads and mapped headers/properties.

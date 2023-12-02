@@ -21,14 +21,12 @@ See the https://docs.spring.io/spring-integration/reference/htmlsingle/[Spring I
 To receive AMQP Messages from a queue, you can configure an `<inbound-channel-adapter>`.
 The following example shows how to configure an inbound channel adapter:
 
-====
 [source,xml]
 ----
 <amqp:inbound-channel-adapter channel="fromAMQP"
                               queue-names="some.queue"
                               connection-factory="rabbitConnectionFactory"/>
 ----
-====
 
 [[outbound-channel-adapter]]
 == Outbound Channel Adapter
@@ -37,7 +35,6 @@ To send AMQP Messages to an exchange, you can configure an `<outbound-channel-ad
 You can optionally provide a 'routing-key' in addition to the exchange name.
 The following example shows how to define an outbound channel adapter:
 
-====
 [source,xml]
 ----
 <amqp:outbound-channel-adapter channel="toAMQP"
@@ -45,7 +42,6 @@ The following example shows how to define an outbound channel adapter:
                                routing-key="foo"
                                amqp-template="rabbitTemplate"/>
 ----
-====
 
 [[inbound-gateway]]
 == Inbound Gateway
@@ -53,7 +49,6 @@ The following example shows how to define an outbound channel adapter:
 To receive an AMQP Message from a queue and respond to its reply-to address, you can configure an `<inbound-gateway>`.
 The following example shows how to define an inbound gateway:
 
-====
 [source,xml]
 ----
 <amqp:inbound-gateway request-channel="fromAMQP"
@@ -61,7 +56,6 @@ The following example shows how to define an inbound gateway:
                       queue-names="some.queue"
                       connection-factory="rabbitConnectionFactory"/>
 ----
-====
 
 [[outbound-gateway]]
 == Outbound Gateway
@@ -70,7 +64,6 @@ To send AMQP Messages to an exchange and receive back a response from a remote c
 You can optionally provide a 'routing-key' in addition to the exchange name.
 The following example shows how to define an outbound gateway:
 
-====
 [source,xml]
 ----
 <amqp:outbound-gateway request-channel="toAMQP"
@@ -79,4 +72,3 @@ The following example shows how to define an outbound gateway:
                        routing-key="foo"
                        amqp-template="rabbitTemplate"/>
 ----
-====

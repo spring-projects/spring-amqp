@@ -23,7 +23,6 @@ Spring AMQP defines a `Message` class as part of a more general AMQP domain mode
 The purpose of the `Message` class is to encapsulate the body and properties within a single instance so that the API can, in turn, be simpler.
 The following example shows the `Message` class definition:
 
-====
 [source,java]
 ----
 public class Message {
@@ -46,7 +45,6 @@ public class Message {
     }
 }
 ----
-====
 
 The `MessageProperties` interface defines several common properties, such as 'messageId', 'timestamp', 'contentType', and several more.
 You can also extend those properties with user-defined 'headers' by calling the `setHeader(String key, Object value)` method.
@@ -102,7 +100,6 @@ The `Queue` class represents the component from which a message consumer receive
 Like the various `Exchange` classes, our implementation is intended to be an abstract representation of this core AMQP type.
 The following listing shows the `Queue` class:
 
-====
 [source,java]
 ----
 public class Queue  {
@@ -130,7 +127,6 @@ public class Queue  {
 
 }
 ----
-====
 
 Notice that the constructor takes the queue name.
 Depending on the implementation, the admin template may provide methods for generating a uniquely named queue.
@@ -148,39 +144,31 @@ This section reviews the basic options for binding queues to exchanges.
 
 You can bind a queue to a `DirectExchange` with a fixed routing key, as the following example shows:
 
-====
 [source,java]
 ----
 new Binding(someQueue, someDirectExchange, "foo.bar");
 ----
-====
 
 You can bind a queue to a `TopicExchange` with a routing pattern, as the following example shows:
 
-====
 [source,java]
 ----
 new Binding(someQueue, someTopicExchange, "foo.*");
 ----
-====
 
 You can bind a queue to a `FanoutExchange` with no routing key, as the following example shows:
 
-====
 [source,java]
 ----
 new Binding(someQueue, someFanoutExchange);
 ----
-====
 
 We also provide a `BindingBuilder` to facilitate a "`fluent API`" style, as the following example shows:
 
-====
 [source,java]
 ----
 Binding b = BindingBuilder.bind(someQueue).to(someTopicExchange).with("foo.*");
 ----
-====
 
 NOTE: For clarity, the preceding example shows the `BindingBuilder` class, but this style works well when using a static import for the 'bind()' method.
 

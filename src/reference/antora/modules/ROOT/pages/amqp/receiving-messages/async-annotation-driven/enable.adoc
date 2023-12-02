@@ -4,7 +4,6 @@
 To enable support for `@RabbitListener` annotations, you can add `@EnableRabbit` to one of your `@Configuration` classes.
 The following example shows how to do so:
 
-====
 [source,java]
 ----
 @Configuration
@@ -22,7 +21,6 @@ public class AppConfig {
     }
 }
 ----
-====
 
 Since version 2.0, a `DirectMessageListenerContainerFactory` is also available.
 It creates `DirectMessageListenerContainer` instances.
@@ -51,7 +49,6 @@ The `RecoveryCallback` is invoked when retries are exhausted.
 You can use a `SendRetryContextAccessor` to get information from the context.
 The following example shows how to do so:
 
-====
 [source, java]
 ----
 factory.setRetryTemplate(retryTemplate);
@@ -63,14 +60,12 @@ factory.setReplyRecoveryCallback(ctx -> {
     return null;
 });
 ----
-====
 
 If you prefer XML configuration, you can use the `<rabbit:annotation-driven>` element.
 Any beans annotated with `@RabbitListener` are detected.
 
 For `SimpleRabbitListenerContainer` instances, you can use XML similar to the following:
 
-====
 [source,xml]
 ----
 <rabbit:annotation-driven/>
@@ -82,11 +77,9 @@ For `SimpleRabbitListenerContainer` instances, you can use XML similar to the fo
     <property name="maxConcurrentConsumers" value="10"/>
 </bean>
 ----
-====
 
 For `DirectMessageListenerContainer` instances, you can use XML similar to the following:
 
-====
 [source,xml]
 ----
 <rabbit:annotation-driven/>
@@ -97,10 +90,9 @@ For `DirectMessageListenerContainer` instances, you can use XML similar to the f
     <property name="consumersPerQueue" value="3"/>
 </bean>
 ----
-====
+
 
 [[listener-property-overrides]]
-
 Starting with version 2.0, the `@RabbitListener` annotation has a `concurrency` property.
 It supports SpEL expressions (`#{...}`) and property placeholders (`${...}`).
 Its meaning and allowed values depend on the container type, as follows:
@@ -116,7 +108,6 @@ Using a different executor for each might help with identifying threads associat
 
 Version 2.2 also added the `ackMode` property, which allows you to override the container factory's `acknowledgeMode` property.
 
-====
 [source, java]
 ----
 @RabbitListener(id = "manual.acks.1", queues = "manual.acks.1", ackMode = "MANUAL")
@@ -127,5 +118,4 @@ public void manual1(String in, Channel channel,
     channel.basicAck(tag, false);
 }
 ----
-====
 

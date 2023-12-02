@@ -37,7 +37,6 @@ The pools are `GenericObjectPool` s with default configuration; a callback is pr
 
 The Apache `commons-pool2` jar must be on the class path to use this factory.
 
-====
 [source, java]
 ----
 @Bean
@@ -56,7 +55,6 @@ PooledChannelConnectionFactory pcf() throws Exception {
     return pcf;
 }
 ----
-====
 
 [[threadchannelconnectionfactory]]
 === `ThreadChannelConnectionFactory`
@@ -99,7 +97,7 @@ If the time is exceeded, an `AmqpTimeoutException` is thrown.
 [IMPORTANT]
 ======
 When the cache mode is `CONNECTION`, automatic declaration of queues and others
-(See xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#automatic-declaration[Automatic Declaration of Exchanges, Queues, and Bindings]) is NOT supported.
+(See xref:amqp/resilience-recovering-from-errors-and-broker-failures.adoc#automatic-declaration[Automatic Declaration of Exchanges, Queues, and Bindings]) is NOT supported.
 
 Also, at the time of this writing, the `amqp-client` library by default creates a fixed thread pool for each connection (default size: `Runtime.getRuntime().availableProcessors() * 2` threads).
 When using a large number of connections, you should consider setting a custom `executor` on the `CachingConnectionFactory`.
@@ -132,7 +130,6 @@ by accessing the connections directly and invoking `createChannel()`), you must 
 
 The following example shows how to create a new `connection`:
 
-====
 [source,java]
 ----
 CachingConnectionFactory connectionFactory = new CachingConnectionFactory("somehost");
@@ -141,9 +138,7 @@ connectionFactory.setPassword("guest");
 
 Connection connection = connectionFactory.createConnection();
 ----
-====
 
-====
 When using XML, the configuration might look like the following example:
 
 [source,xml]
@@ -155,7 +150,6 @@ When using XML, the configuration might look like the following example:
     <property name="password" value="guest"/>
 </bean>
 ----
-====
 
 NOTE: There is also a `SingleConnectionFactory` implementation that is available only in the unit test code of the framework.
 It is simpler than `CachingConnectionFactory`, since it does not cache channels, but it is not intended for practical usage outside of simple tests due to its lack of performance and resilience.
@@ -163,12 +157,10 @@ If you need to implement your own `ConnectionFactory` for some reason, the `Abst
 
 A `ConnectionFactory` can be created quickly and conveniently by using the rabbit namespace, as follows:
 
-====
 [source,xml]
 ----
 <rabbit:connection-factory id="connectionFactory"/>
 ----
-====
 
 In most cases, this approach is preferable, since the framework can choose the best defaults for you.
 The created instance is a `CachingConnectionFactory`.
@@ -176,7 +168,6 @@ Keep in mind that the default cache size for channels is 25.
 If you want more channels to be cached, set a larger value by setting the 'channelCacheSize' property.
 In XML it would look like as follows:
 
-====
 [source,xml]
 ----
 <bean id="connectionFactory"
@@ -187,54 +178,44 @@ In XML it would look like as follows:
     <property name="channelCacheSize" value="50"/>
 </bean>
 ----
-====
 
 Also, with the namespace, you can add the 'channel-cache-size' attribute, as follows:
 
-====
 [source,xml]
 ----
 <rabbit:connection-factory
     id="connectionFactory" channel-cache-size="50"/>
 ----
-====
 
 The default cache mode is `CHANNEL`, but you can configure it to cache connections instead.
 In the following example, we use `connection-cache-size`:
 
-====
 [source,xml]
 ----
 <rabbit:connection-factory
     id="connectionFactory" cache-mode="CONNECTION" connection-cache-size="25"/>
 ----
-====
 
 You can provide host and port attributes by using the namespace, as follows:
 
-====
 [source,xml]
 ----
 <rabbit:connection-factory
     id="connectionFactory" host="somehost" port="5672"/>
 ----
-====
 
 Alternatively, if running in a clustered environment, you can use the addresses attribute, as follows:
 
-====
 [source,xml]
 ----
 <rabbit:connection-factory
     id="connectionFactory" addresses="host1:5672,host2:5672" address-shuffle-mode="RANDOM"/>
 ----
-====
 
 See xref:amqp/connections.adoc#cluster[Connecting to a Cluster] for information about `address-shuffle-mode`.
 
 The following example with a custom thread factory that prefixes thread names with `rabbitmq-`:
 
-====
 [source, xml]
 ----
 <rabbit:connection-factory id="multiHost" virtual-host="/bar" addresses="host1:1234,host2,host3:4567"
@@ -246,7 +227,6 @@ The following example with a custom thread factory that prefixes thread names wi
 </bean>
 
 ----
-====
 
 [[addressresolver]]
 == AddressResolver
@@ -264,12 +244,10 @@ This value does not have to be unique and cannot be used as a connection identif
 This value is supposed to be human-readable and is a part of `ClientProperties` under the `connection_name` key.
 You can use a simple Lambda, as follows:
 
-====
 [source, java]
 ----
 connectionFactory.setConnectionNameStrategy(connectionFactory -> "MY_CONNECTION");
 ----
-====
 
 The `ConnectionFactory` argument can be used to distinguish target connection names by some logic.
 By default, the `beanName` of the `AbstractConnectionFactory`, a hex string representing the object, and an internal counter are used to generate the `connection_name`.
@@ -278,7 +256,6 @@ The `<rabbit:connection-factory>` namespace component is also supplied with the 
 An implementation of `SimplePropertyValueConnectionNameStrategy` sets the connection name to an application property.
 You can declare it as a `@Bean` and inject it into the connection factory, as the following example shows:
 
-====
 [source, java]
 ----
 @Bean
@@ -294,7 +271,6 @@ public ConnectionFactory rabbitConnectionFactory(ConnectionNameStrategy cns) {
     return connectionFactory;
 }
 ----
-====
 
 The property must exist in the application context's `Environment`.
 
@@ -331,13 +307,11 @@ To set other properties (`clientProperties`, for example), you can define an ins
 When using the namespace (xref:amqp/connections.adoc[as described earlier]), you need to provide a reference to the configured factory in the `connection-factory` attribute.
 For convenience, a factory bean is provided to assist in configuring the connection factory in a Spring application context, as discussed in xref:amqp/connections.adoc#rabbitconnectionfactorybean-configuring-ssl[the next section].
 
-====
 [source,xml]
 ----
 <rabbit:connection-factory
       id="connectionFactory" connection-factory="rabbitConnectionFactory"/>
 ----
-====
 
 NOTE: The 4.0.x client enables automatic recovery by default.
 While compatible with this feature, Spring AMQP has its own recovery mechanisms and the client recovery feature generally is not needed.
@@ -355,7 +329,6 @@ Other setters delegate to the underlying factory.
 Previously, you had to configure the SSL options programmatically.
 The following example shows how to configure a `RabbitConnectionFactoryBean`:
 
-====
 [source,java,role=primary]
 .Java
 ----
@@ -404,7 +377,6 @@ spring.rabbitmq.host=...
     <property name="sslPropertiesLocation" value="classpath:secrets/rabbitSSL.properties"/>
 </bean>
 ----
-====
 
 See the https://www.rabbitmq.com/ssl.html[RabbitMQ Documentation] for information about configuring SSL.
 Omit the `keyStore` and `trustStore` configuration to connect over SSL without certificate validation.
@@ -412,7 +384,6 @@ The next example shows how you can provide key and trust store configuration.
 
 The `sslPropertiesLocation` property is a Spring `Resource` pointing to a properties file containing the following keys:
 
-====
 [source]
 ----
 keyStore=file:/secret/keycert.p12
@@ -420,7 +391,6 @@ trustStore=file:/secret/trustStore
 keyStore.passPhrase=secret
 trustStore.passPhrase=secret
 ----
-====
 
 The `keyStore` and `truststore` are Spring `Resources` pointing to the stores.
 Typically this properties file is secured by the operating system with the application having read access.
@@ -442,7 +412,6 @@ If you need to use v1.1 for some reason, set the `sslAlgorithm` property: `setSs
 
 To connect to a cluster, configure the `addresses` property on the `CachingConnectionFactory`:
 
-====
 [source, java]
 ----
 @Bean
@@ -452,7 +421,6 @@ public CachingConnectionFactory ccf() {
     return ccf;
 }
 ----
-====
 
 Starting with version 3.0, the underlying connection factory will attempt to connect to a host, by choosing a random address, whenever a new connection is established.
 To revert to the previous behavior of attempting to connect from first to last, set the `addressShuffleMode` property to `AddressShuffleMode.NONE`.
@@ -460,7 +428,6 @@ To revert to the previous behavior of attempting to connect from first to last, 
 Starting with version 2.3, the `INORDER` shuffle mode was added, which means the first address is moved to the end after a connection is created.
 You may wish to use this mode with the https://github.com/rabbitmq/rabbitmq-sharding[RabbitMQ Sharding Plugin] with `CacheMode.CONNECTION` and suitable concurrency if you wish to consume from all shards on all nodes.
 
-====
 [source, java]
 ----
 @Bean
@@ -471,7 +438,6 @@ public CachingConnectionFactory ccf() {
     return ccf;
 }
 ----
-====
 
 [[routing-connection-factory]]
 == Routing Connection Factory
@@ -482,7 +448,6 @@ Typically, the implementation checks a thread-bound context.
 For convenience, Spring AMQP provides the `SimpleRoutingConnectionFactory`, which gets the current thread-bound `lookupKey` from the `SimpleResourceHolder`.
 The following examples shows how to configure a `SimpleRoutingConnectionFactory` in both XML and Java:
 
-====
 [source,xml]
 ----
 <bean id="connectionFactory"
@@ -513,7 +478,6 @@ public class MyService {
 
 }
 ----
-====
 
 It is important to unbind the resource after use.
 For more information, see the https://docs.spring.io/spring-amqp/docs/latest-ga/api/org/springframework/amqp/rabbit/connection/AbstractRoutingConnectionFactory.html[JavaDoc] for `AbstractRoutingConnectionFactory`.
@@ -549,7 +513,6 @@ Note that the first connection factory added to `AbstractRoutingConnectionFactor
 It may be useful if you have a case that certain messages you would to check confirms/returns and others you don't.
 For example:
 
-====
 [source, java]
 ----
 @Bean
@@ -579,7 +542,6 @@ public RabbitTemplate rabbitTemplate() {
     rabbitTemplate.setSendConnectionFactorySelectorExpression(sendExpression);
 }
 ----
-====
 
 This way messages with the header `x-use-publisher-confirms: true` will be sent through the caching connection and you can ensure the message delivery.
 See xref:amqp/connections.adoc#cf-pub-conf-ret[Publisher Confirms and Returns] for more information about ensuring message delivery.
@@ -608,7 +570,6 @@ Also, for publish operations, the queue is unknown, and the message is published
 
 The following example configuration shows how to configure the factories:
 
-====
 [source, java]
 ----
 @Autowired
@@ -635,7 +596,6 @@ public LocalizedQueueConnectionFactory queueAffinityCF(
             false, null);
 }
 ----
-====
 
 Notice that the first three parameters are arrays of `addresses`, `adminUris`, and `nodes`.
 These are positional in that, when a container attempts to connect to a queue, it uses the admin API to determine which node is the lead for the queue and connects to the address in the same array position as that node.
@@ -646,7 +606,6 @@ Instead, by default, the `WebClient` from Spring Webflux is used if `spring-webf
 To add `WebFlux` to the class path:
 
 .Maven
-====
 [source,xml,subs="+attributes"]
 ----
 <dependency>
@@ -654,18 +613,14 @@ To add `WebFlux` to the class path:
   <artifactId>spring-rabbit</artifactId>
 </dependency>
 ----
-====
 .Gradle
-====
 [source,groovy,subs="+attributes"]
 ----
 compile 'org.springframework.amqp:spring-rabbit'
 ----
-====
 
 You can also use other REST technology by implementing `LocalizedQueueConnectionFactory.NodeLocator` and overriding its `createClient, ``restCall`, and optionally, `close` methods.
 
-====
 [source, java]
 ----
 lqcf.setNodeLocator(new NodeLocator<MyClient>() {
@@ -682,7 +637,6 @@ lqcf.setNodeLocator(new NodeLocator<MyClient>() {
 
 });
 ----
-====
 
 The framework provides the `WebFluxNodeLocator` and `RestTemplateNodeLocator`, with the default as discussed above.
 
@@ -705,10 +659,9 @@ TIP: For some more background information, see the blog post by the RabbitMQ tea
 
 The connection factory supports registering `ConnectionListener` and `ChannelListener` implementations.
 This allows you to receive notifications for connection and channel related events.
-(A `ConnectionListener` is used by the `RabbitAdmin` to perform declarations when the connection is established - see xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#automatic-declaration[Automatic Declaration of Exchanges, Queues, and Bindings] for more information).
+(A `ConnectionListener` is used by the `RabbitAdmin` to perform declarations when the connection is established - see xref:amqp/resilience-recovering-from-errors-and-broker-failures.adoc#automatic-declaration[Automatic Declaration of Exchanges, Queues, and Bindings] for more information).
 The following listing shows the `ConnectionListener` interface definition:
 
-====
 [source, java]
 ----
 @FunctionalInterface
@@ -724,12 +677,10 @@ public interface ConnectionListener {
 
 }
 ----
-====
 
 Starting with version 2.0, the `org.springframework.amqp.rabbit.connection.Connection` object can be supplied with `com.rabbitmq.client.BlockedListener` instances to be notified for connection blocked and unblocked events.
 The following example shows the ChannelListener interface definition:
 
-====
 [source, java]
 ----
 @FunctionalInterface
@@ -742,7 +693,6 @@ public interface ChannelListener {
 
 }
 ----
-====
 
 See xref:amqp/template.adoc#publishing-is-async[Publishing is Asynchronous -- How to Detect Successes and Failures] for one scenario where you might want to register a `ChannelListener`.
 

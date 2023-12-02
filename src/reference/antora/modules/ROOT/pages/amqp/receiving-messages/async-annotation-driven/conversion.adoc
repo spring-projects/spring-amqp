@@ -17,7 +17,6 @@ In the following discussion, we call this the "`method argument converter`".
 To change the message converter, you can add it as a property to the container factory bean.
 The following example shows how to do so:
 
-====
 [source, java]
 ----
 @Bean
@@ -29,7 +28,6 @@ public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
     return factory;
 }
 ----
-====
 
 This configures a Jackson2 converter that expects header information to be present to guide the conversion.
 
@@ -37,7 +35,6 @@ You can also use a `ContentTypeDelegatingMessageConverter`, which can handle con
 
 Starting with version 2.3, you can override the factory converter by specifying a bean name in the `messageConverter` property.
 
-====
 [source, java]
 ----
 @Bean
@@ -50,7 +47,6 @@ public void listen(String in) {
     ...
 }
 ----
-====
 
 This avoids having to declare a different container factory just to change the converter.
 
@@ -68,7 +64,6 @@ See <<json-message-converter>> for more information.
 
 If you wish to customize the method argument converter, you can do so as follows:
 
-====
 [source, java]
 ----
 @Configuration
@@ -100,7 +95,6 @@ public class AppConfig implements RabbitListenerConfigurer {
 
 }
 ----
-====
 
 IMPORTANT: For multi-method listeners (see xref:amqp/receiving-messages/async-annotation-driven/method-selection.adoc[Multi-method Listeners]), the method selection is based on the payload of the message *after the message conversion*.
 The method argument converter is called only after the method has been selected.

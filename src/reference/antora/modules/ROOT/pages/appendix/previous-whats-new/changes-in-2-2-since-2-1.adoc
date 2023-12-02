@@ -124,7 +124,7 @@ The `Declarables` object (for declaring multiple queues, exchanges, bindings) no
 See xref:amqp/broker-configuration.adoc#collection-declaration[Declaring Collections of Exchanges, Queues, and Bindings] for more information.
 
 You can now customize each `Declarable` bean before the `RabbitAdmin` processes the declaration thereof.
-See xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#automatic-declaration[Automatic Declaration of Exchanges, Queues, and Bindings] for more information.
+See xref:amqp/resilience-recovering-from-errors-and-broker-failures.adoc#automatic-declaration[Automatic Declaration of Exchanges, Queues, and Bindings] for more information.
 
 `singleActiveConsumer()` has been added to the `QueueBuilder` to set the `x-single-active-consumer` queue argument.
 See xref:amqp/broker-configuration.adoc#builder-api[Builder API for Queues and Exchanges] for more information.
@@ -133,5 +133,5 @@ Outbound headers with values of type `Class<?>` are now mapped using `getName()`
 See xref:amqp/message-converters.adoc#message-properties-converters[Message Properties Converters] for more information.
 
 Recovery of failed producer-created batches is now supported.
-See xref:amqp/resilience:-recovering-from-errors-and-broker-failures.adoc#batch-retry[Retry with Batch Listeners] for more information.
+See xref:amqp/resilience-recovering-from-errors-and-broker-failures.adoc#batch-retry[Retry with Batch Listeners] for more information.
 
