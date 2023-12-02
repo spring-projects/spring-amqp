@@ -24,6 +24,8 @@ plugins {
 	id 'io.spring.dependency-management' version '1.1.4' apply false
 	id 'org.asciidoctor.jvm.pdf' version '3.3.2'
 	id 'org.asciidoctor.jvm.convert' version '3.3.2'
+	id 'org.antora' version '1.0.0'
+	id 'io.spring.antora.generate-antora-yml' version '0.0.1'
 }
 
 description = 'Spring AMQP'
@@ -37,8 +39,8 @@ ext {
 	linkScmDevConnection = 'git@github.com:spring-projects/spring-amqp.git'
 	springAsciidoctorBackendsVersion = '0.0.7'
 
-	modifiedFiles =
-			files(grgit.status().unstaged.modified).filter{ f -> f.name.endsWith('.java') || f.name.endsWith('.kt') }
+	modifiedFiles = providers.provider {
+			files(grgit.status().unstaged.modified).filter{ f -> f.name.endsWith('.java') || f.name.endsWith('.kt') }}
 
 	assertjVersion = '3.24.2'
 	assertkVersion = '0.27.0'
@@ -72,6 +74,32 @@ ext {
 	zstdJniVersion = '1.5.0-2'
 
 	javaProjects = subprojects - project(':spring-amqp-bom')
+}
+
+
+
+antora {
+	version = '3.2.0-alpha.2'
+	playbook = file('src/reference/antora/antora-playbook.yml')
+	options = ['to-dir' : project.layout.buildDirectory.dir('site').get().toString(), clean: true, fetch: !project.gradle.startParameter.offline, stacktrace: true]
+	dependencies = [
+			'@antora/atlas-extension': '1.0.0-alpha.1',
+			'@antora/collector-extension': '1.0.0-alpha.3',
+			'@asciidoctor/tabs': '1.0.0-beta.3',
+			'@springio/antora-extensions': '1.4.2',
+			'@springio/asciidoctor-extensions': '1.0.0-alpha.8',
+	]
+}
+
+tasks.named("generateAntoraYml") {
+	asciidocAttributes = project.provider( {
+		return ['project-version' : project.version ]
+	} )
+	baseAntoraYmlFile = file('src/reference/antora/antora.yml')
+}
+
+tasks.create('generateAntoraResources') {
+	dependsOn 'generateAntoraYml'
 }
 
 nohttp {
@@ -223,7 +251,7 @@ configure(javaProjects) { subproject ->
 
 	task updateCopyrights {
 		onlyIf { !isCI }
-		inputs.files(modifiedFiles.filter { f -> f.path.contains(subproject.name) })
+		inputs.files(modifiedFiles.map(files -> files.filter { f -> f.path.contains(subproject.name) }))
 		outputs.dir('build/classes')
 
 		doLast {
