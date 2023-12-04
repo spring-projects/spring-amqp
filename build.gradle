@@ -98,7 +98,13 @@ tasks.named("generateAntoraYml") {
 	baseAntoraYmlFile = file('src/reference/antora/antora.yml')
 }
 
+tasks.create(name: 'createAntoraPartials', type: Sync) {
+	from { tasks.filterMetricsDocsContent.outputs }
+	into layout.buildDirectory.dir('generated-antora-resources/modules/ROOT/partials')
+}
+
 tasks.create('generateAntoraResources') {
+	dependsOn 'createAntoraPartials'
 	dependsOn 'generateAntoraYml'
 }
 

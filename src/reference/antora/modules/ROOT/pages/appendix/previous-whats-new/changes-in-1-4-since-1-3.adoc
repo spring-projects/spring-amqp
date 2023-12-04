@@ -110,7 +110,7 @@ The second catch block is no longer reachable and needs to be moved above the ca
 == RabbitMQ 3.4 Compatibility
 
 Spring AMQP is now compatible with the RabbitMQ 3.4, including direct reply-to.
-See xref:quick-tour.adoc#compatibility[Compatibility] and xref:amqp/request-reply.adoc#direct-reply-to[RabbitMQ Direct reply-to] for more information.
+See xref:introduction/quick-tour.adoc#compatibility[Compatibility] and xref:amqp/request-reply.adoc#direct-reply-to[RabbitMQ Direct reply-to] for more information.
 
 [[contenttypedelegatingmessageconverter-added]]
 == `ContentTypeDelegatingMessageConverter` Added

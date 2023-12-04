@@ -1,0 +1,9 @@
+[[reference]]
+= Reference
+
+This part of the reference documentation details the various components that comprise Spring AMQP.
+The xref:amqp.adoc[main chapter] covers the core classes to develop an AMQP application.
+This part also includes a chapter about the xref:sample-apps.adoc[sample applications].
+
+
+

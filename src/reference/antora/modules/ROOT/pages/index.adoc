@@ -8,54 +8,14 @@ endif::[]
 :hide-uri-scheme:
 Mark Pollack; Mark Fisher; Oleg Zhurakousky; Dave Syer; Gary Russell; Gunnar Hillert; Artem Bilan; Stéphane Nicoll; Arnaud Cogoluègnes; Jay Bryant
 
-ifdef::backend-html5[]
-*{project-version}*
-
-NOTE: This documentation is also available as https://docs.spring.io/spring-amqp/docs/current/reference/pdf/spring-amqp-reference.pdf[PDF].
-endif::[]
-
-ifdef::backend-pdf[]
-NOTE: This documentation is also available as https://docs.spring.io/spring-amqp/docs/current/reference/html/index.html[HTML].
-endif::[]
+[[preface]]
+The Spring AMQP project applies core Spring concepts to the development of AMQP-based messaging solutions.
+We provide a "`template`" as a high-level abstraction for sending and receiving messages.
+We also provide support for message-driven POJOs.
+These libraries facilitate management of AMQP resources while promoting the use of dependency injection and declarative configuration.
+In all of these cases, you can see similarities to the JMS support in the Spring Framework.
+For other project-related information, visit the Spring AMQP project https://projects.spring.io/spring-amqp/[homepage].
 
 (C) 2010 - 2021 by VMware, Inc.
 
 Copies of this document may be made for your own use and for distribution to others, provided that you do not charge any fee for such copies and further provided that each copy contains this Copyright Notice, whether distributed in print or electronically.
-
-
-[[preface]]
-== Preface
-
-
-
-[[introduction]]
-== Introduction
-
-This first part of the reference documentation is a high-level overview of Spring AMQP and the underlying concepts.
-It includes some code snippets to get you up and running as quickly as possible.
-
-
-[[reference]]
-== Reference
-
-This part of the reference documentation details the various components that comprise Spring AMQP.
-The xref:amqp.adoc[main chapter] covers the core classes to develop an AMQP application.
-This part also includes a chapter about the xref:sample-apps.adoc[sample applications].
-
-
-
-
-
-
-[[spring-integration-reference]]
-== Spring Integration - Reference
-
-This part of the reference documentation provides a quick introduction to the AMQP support within the Spring Integration project.
-
-
-[[resources]]
-== Other Resources
-
-In addition to this reference documentation, there exist a number of other resources that may help you learn about AMQP.
-
-
