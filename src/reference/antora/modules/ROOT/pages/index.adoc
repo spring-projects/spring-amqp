@@ -1,8 +1,5 @@
 [[spring-amqp-reference]]
 = Spring AMQP
-ifdef::backend-html5[]
-:revnumber: ''
-endif::[]
 :numbered:
 :icons: font
 :hide-uri-scheme:
@@ -16,6 +13,6 @@ These libraries facilitate management of AMQP resources while promoting the use 
 In all of these cases, you can see similarities to the JMS support in the Spring Framework.
 For other project-related information, visit the Spring AMQP project https://projects.spring.io/spring-amqp/[homepage].
 
-(C) 2010 - 2021 by VMware, Inc.
+(C) 2010 - 2023
 
 Copies of this document may be made for your own use and for distribution to others, provided that you do not charge any fee for such copies and further provided that each copy contains this Copyright Notice, whether distributed in print or electronically.

@@ -61,7 +61,6 @@
 ** xref:sample-apps.adoc[]
 ** xref:testing.adoc[]
 * xref:integration-reference.adoc[]
-** xref:si-amqp.adoc[]
 * xref:resources.adoc[]
 ** xref:further-reading.adoc[]
 * xref:appendix/micrometer.adoc[]

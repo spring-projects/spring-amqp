@@ -22,8 +22,6 @@ plugins {
 	id 'org.ajoberstar.grgit' version '4.1.1'
 	id 'io.spring.nohttp' version '0.0.11'
 	id 'io.spring.dependency-management' version '1.1.4' apply false
-	id 'org.asciidoctor.jvm.pdf' version '3.3.2'
-	id 'org.asciidoctor.jvm.convert' version '3.3.2'
 	id 'org.antora' version '1.0.0'
 	id 'io.spring.antora.generate-antora-yml' version '0.0.1'
 }
@@ -37,7 +35,6 @@ ext {
 	linkScmUrl           = 'https://github.com/spring-projects/spring-amqp'
 	linkScmConnection    = 'git://github.com/spring-projects/spring-amqp.git'
 	linkScmDevConnection = 'git@github.com:spring-projects/spring-amqp.git'
-	springAsciidoctorBackendsVersion = '0.0.7'
 
 	modifiedFiles =
             files()
@@ -95,7 +92,7 @@ antora {
 	]
 }
 
-tasks.named("generateAntoraYml") {
+tasks.named('generateAntoraYml') {
 	asciidocAttributes = project.provider( {
 		return ['project-version' : project.version ]
 	} )
@@ -548,27 +545,17 @@ project('spring-rabbit-test') {
 }
 
 configurations {
-	asciidoctorExtensions
 	micrometerDocs
 }
 
 dependencies {
-	asciidoctorExtensions "io.spring.asciidoctor.backends:spring-asciidoctor-backends:${springAsciidoctorBackendsVersion}"
 	micrometerDocs "io.micrometer:micrometer-docs-generator:$micrometerDocsVersion"
-}
-
-task prepareAsciidocBuild(type: Sync) {
-	dependsOn configurations.asciidoctorExtensions
-	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-	from 'src/reference/asciidoc/'
-	into "$buildDir/asciidoc"
 }
 
 def observationInputDir = file("$buildDir/docs/microsources").absolutePath
 def generatedDocsDir = file("$buildDir/docs/generated").absolutePath
 
 task copyObservation(type: Copy) {
-	dependsOn prepareAsciidocBuild
 	from file('spring-rabbit/src/main/java/org/springframework/amqp/rabbit/support/micrometer').absolutePath
 	from file('spring-rabbit-stream/src/main/java/org/springframework/rabbit/stream/micrometer').absolutePath
 	include '*.java'
@@ -592,66 +579,6 @@ task filterMetricsDocsContent(type: Copy) {
 	into generatedDocsDir
 	rename { filename -> filename.replace '_', '' }
 	filter { line -> line.replaceAll('org.springframework.*.micrometer.', '').replaceAll('^Fully qualified n', 'N') }
-}
-
-asciidoctorPdf {
-	dependsOn prepareAsciidocBuild, filterMetricsDocsContent
-	baseDirFollowsSourceFile()
-
-	asciidoctorj {
-		sourceDir "$buildDir/asciidoc"
-		inputs.dir(sourceDir).withPathSensitivity(PathSensitivity.RELATIVE)
-		sources {
-			include 'index.adoc'
-		}
-		options doctype: 'book'
-		attributes 'icons': 'font',
-		'sectanchors': '',
-		'sectnums': '',
-		'toc': '',
-		'source-highlighter' : 'coderay',
-		revnumber: project.version,
-		'project-version': project.version
-	}
-}
-
-asciidoctor {
-	dependsOn asciidoctorPdf
-	baseDirFollowsSourceFile()
-	sourceDir "$buildDir/asciidoc"
-	configurations 'asciidoctorExtensions'
-	outputOptions {
-		backends "spring-html"
-	}
-	resources {
-		from(sourceDir) {
-			include 'images/*', 'css/**', 'js/**'
-		}
-	}
-	options doctype: 'book', eruby: 'erubis'
-
-	attributes 'docinfo': 'shared',
-		stylesdir: "css/",
-		stylesheet: 'spring.css',
-		'linkcss': true,
-		'icons': 'font',
-		'sectanchors': '',
-		'source-highlighter': 'highlight.js',
-		'highlightjsdir': 'js/highlight',
-		'highlightjs-theme': 'github',
-		'idprefix': '',
-		'idseparator': '-',
-		'spring-version': project.version,
-		'allow-uri-read': '',
-		'toc': 'left',
-		'toclevbels': '4',
-		revnumber: project.version,
-		'project-version': project.version
-}
-
-task reference(dependsOn: asciidoctor) {
-	group = 'Documentation'
-	description = 'Generate the reference documentation'
 }
 
 task api(type: Javadoc) {
@@ -717,7 +644,7 @@ task schemaZip(type: Zip) {
 	}
 }
 
-task docsZip(type: Zip, dependsOn: [reference]) {
+task docsZip(type: Zip) {
 		group = 'Distribution'
 		archiveClassifier = 'docs'
 		description = "Builds -${archiveClassifier} archive containing api and reference " +
@@ -729,16 +656,6 @@ task docsZip(type: Zip, dependsOn: [reference]) {
 
 		from (api) {
 			into 'api'
-		}
-
-		from ('build/docs/asciidoc') {
-			into 'reference/html'
-		}
-
-		from ('build/docs/asciidocPdf') {
-			include 'index.pdf'
-			rename  'index.pdf', 'spring-amqp-reference.pdf'
-			into 'reference/pdf'
 		}
 }
 
