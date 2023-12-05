@@ -39,8 +39,12 @@ ext {
 	linkScmDevConnection = 'git@github.com:spring-projects/spring-amqp.git'
 	springAsciidoctorBackendsVersion = '0.0.7'
 
-	modifiedFiles = providers.provider {
-			files(grgit.status().unstaged.modified).filter{ f -> f.name.endsWith('.java') || f.name.endsWith('.kt') }}
+	modifiedFiles =
+            files()
+                    .from {
+                        files(grgit.status().unstaged.modified)
+                                .filter { f -> f.name.endsWith('.java') || f.name.endsWith('.kt') }
+                    }
 
 	assertjVersion = '3.24.2'
 	assertkVersion = '0.27.0'
