@@ -261,7 +261,7 @@ configure(javaProjects) { subproject ->
 
 	task updateCopyrights {
 		onlyIf { !isCI }
-		inputs.files(modifiedFiles.map(files -> files.filter { f -> f.path.contains(subproject.name) }))
+		inputs.files(modifiedFiles.filter { f -> f.path.contains(subproject.name) })
 		outputs.dir('build/classes')
 
 		doLast {
