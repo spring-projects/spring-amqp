@@ -1,0 +1,17 @@
+name: amqp
+version: true
+title: Spring AMQP
+nav:
+  - modules/ROOT/nav.adoc
+ext:
+  collector:
+    run:
+      command: gradlew -q "-Dorg.gradle.jvmargs=-Xmx3g -XX:+HeapDumpOnOutOfMemoryError" :generateAntoraResources
+      local: true
+    scan:
+      dir: build/generated-antora-resources
+
+asciidoc:
+  attributes:
+    attribute-missing: 'warn'
+    chomp: 'all'

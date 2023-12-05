@@ -1,0 +1,5 @@
+[[change-history]]
+= Change History
+:page-section-summary-toc: 1
+
+This section describes changes that have been made as versions have changed.

@@ -1,0 +1,46 @@
+[[exception-handling]]
+= Exception Handling
+
+Many operations with the RabbitMQ Java client can throw checked exceptions.
+For example, there are a lot of cases where `IOException` instances may be thrown.
+The `RabbitTemplate`, `SimpleMessageListenerContainer`, and other Spring AMQP components catch those exceptions and convert them into one of the exceptions within `AmqpException` hierarchy.
+Those are defined in the 'org.springframework.amqp' package, and `AmqpException` is the base of the hierarchy.
+
+When a listener throws an exception, it is wrapped in a `ListenerExecutionFailedException`.
+Normally the message is rejected and requeued by the broker.
+Setting `defaultRequeueRejected` to `false` causes messages to be discarded (or routed to a dead letter exchange).
+As discussed in xref:amqp/resilience-recovering-from-errors-and-broker-failures.adoc#async-listeners[Message Listeners and the Asynchronous Case], the listener can throw an `AmqpRejectAndDontRequeueException` (or `ImmediateRequeueAmqpException`) to conditionally control this behavior.
+
+However, there is a class of errors where the listener cannot control the behavior.
+When a message that cannot be converted is encountered (for example, an invalid `content_encoding` header), some exceptions are thrown before the message reaches user code.
+With `defaultRequeueRejected` set to `true` (default) (or throwing an `ImmediateRequeueAmqpException`), such messages would be redelivered over and over.
+Before version 1.3.2, users needed to write a custom `ErrorHandler`, as discussed in xref:amqp/exception-handling.adoc[Exception Handling], to avoid this situation.
+
+Starting with version 1.3.2, the default `ErrorHandler` is now a `ConditionalRejectingErrorHandler` that rejects (and does not requeue) messages that fail with an irrecoverable error.
+Specifically, it rejects messages that fail with the following errors:
+
+* `o.s.amqp...MessageConversionException`: Can be thrown when converting the incoming message payload using a `MessageConverter`.
+* `o.s.messaging...MessageConversionException`: Can be thrown by the conversion service if additional conversion is required when mapping to a `@RabbitListener` method.
+* `o.s.messaging...MethodArgumentNotValidException`: Can be thrown if validation (for example, `@Valid`) is used in the listener and the validation fails.
+* `o.s.messaging...MethodArgumentTypeMismatchException`: Can be thrown if the inbound message was converted to a type that is not correct for the target method.
+For example, the parameter is declared as `Message<Foo>` but `Message<Bar>` is received.
+* `java.lang.NoSuchMethodException`: Added in version 1.6.3.
+* `java.lang.ClassCastException`: Added in version 1.6.3.
+
+You can configure an instance of this error handler with a `FatalExceptionStrategy` so that users can provide their own rules for conditional message rejection -- for example, a delegate implementation to the `BinaryExceptionClassifier` from Spring Retry (xref:amqp/resilience-recovering-from-errors-and-broker-failures.adoc#async-listeners[Message Listeners and the Asynchronous Case]).
+In addition, the `ListenerExecutionFailedException` now has a `failedMessage` property that you can use in the decision.
+If the `FatalExceptionStrategy.isFatal()` method returns `true`, the error handler throws an `AmqpRejectAndDontRequeueException`.
+The default `FatalExceptionStrategy` logs a warning message when an exception is determined to be fatal.
+
+Since version 1.6.3, a convenient way to add user exceptions to the fatal list is to subclass `ConditionalRejectingErrorHandler.DefaultExceptionStrategy` and override the `isUserCauseFatal(Throwable cause)` method to return `true` for fatal exceptions.
+
+A common pattern for handling DLQ messages is to set a `time-to-live` on those messages as well as additional DLQ configuration such that these messages expire and are routed back to the main queue for retry.
+The problem with this technique is that messages that cause fatal exceptions loop forever.
+Starting with version 2.1, the `ConditionalRejectingErrorHandler` detects an `x-death` header on a message that causes a fatal exception to be thrown.
+The message is logged and discarded.
+You can revert to the previous behavior by setting the `discardFatalsWithXDeath` property on the `ConditionalRejectingErrorHandler` to `false`.
+
+IMPORTANT: Starting with version 2.1.9, messages with these fatal exceptions are rejected and NOT requeued by default, even if the container acknowledge mode is MANUAL.
+These exceptions generally occur before the listener is invoked so the listener does not have a chance to ack or nack the message so it remained in the queue in an un-acked state.
+To revert to the previous behavior, set the `rejectManual` property on the `ConditionalRejectingErrorHandler` to `false`.
+

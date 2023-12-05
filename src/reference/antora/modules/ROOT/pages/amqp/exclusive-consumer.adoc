@@ -1,0 +1,10 @@
+[[exclusive-consumer]]
+= Exclusive Consumer
+:page-section-summary-toc: 1
+
+Starting with version 1.3, you can configure the listener container with a single exclusive consumer.
+This prevents other containers from consuming from the queues until the current consumer is cancelled.
+The concurrency of such a container must be `1`.
+
+When using exclusive consumers, other containers try to consume from the queues according to the `recoveryInterval` property and log a `WARN` message if the attempt fails.
+

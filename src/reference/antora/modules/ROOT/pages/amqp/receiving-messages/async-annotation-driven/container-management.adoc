@@ -1,0 +1,23 @@
+[[container-management]]
+= Container Management
+:page-section-summary-toc: 1
+
+Containers created for annotations are not registered with the application context.
+You can obtain a collection of all containers by invoking `getListenerContainers()` on the
+`RabbitListenerEndpointRegistry` bean.
+You can then iterate over this collection, for example, to stop or start all containers or invoke the `Lifecycle` methods
+on the registry itself, which will invoke the operations on each container.
+
+You can also get a reference to an individual container by using its `id`, using `getListenerContainer(String id)` -- for
+example, `registry.getListenerContainer("multi")` for the container created by the snippet above.
+
+Starting with version 1.5.2, you can obtain the `id` values of the registered containers with `getListenerContainerIds()`.
+
+Starting with version 1.5, you can now assign a `group` to the container on the `RabbitListener` endpoint.
+This provides a mechanism to get a reference to a subset of containers.
+Adding a `group` attribute causes a bean of type `Collection<MessageListenerContainer>` to be registered with the context with the group name.
+
+By default, stopping a container will cancel the consumer and process all prefetched messages before stopping.
+Starting with versions 2.4.14, 3.0.6, you can set the <<forceStop>> container property to true to stop immediately after the current message is processed, causing any prefetched messages to be requeued.
+This is useful, for example, if exclusive or single-active consumers are being used.
+

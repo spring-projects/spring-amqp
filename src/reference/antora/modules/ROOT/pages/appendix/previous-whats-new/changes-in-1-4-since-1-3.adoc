@@ -1,0 +1,120 @@
+[[changes-in-1-4-since-1-3]]
+= Changes in 1.4 Since 1.3
+
+[[rabbitlistener-annotation]]
+== `@RabbitListener` Annotation
+
+POJO listeners can be annotated with `@RabbitListener`, enabled by `@EnableRabbit` or `<rabbit:annotation-driven />`.
+Spring Framework 4.1 is required for this feature.
+See xref:amqp/receiving-messages/async-annotation-driven.adoc[Annotation-driven Listener Endpoints] for more information.
+
+[[rabbitmessagingtemplate-added]]
+== `RabbitMessagingTemplate` Added
+
+A new `RabbitMessagingTemplate` lets you interact with RabbitMQ by using `spring-messaging` `Message` instances.
+Internally, it uses the `RabbitTemplate`, which you can configure as normal.
+Spring Framework 4.1 is required for this feature.
+See xref:amqp/template.adoc#template-messaging[Messaging Integration] for more information.
+
+[[listener-container-missingqueuesfatal-attribute]]
+== Listener Container `missingQueuesFatal` Attribute
+
+1.3.5 introduced the `missingQueuesFatal` property on the `SimpleMessageListenerContainer`.
+This is now available on the listener container namespace element.
+See xref:amqp/containerAttributes.adoc[Message Listener Container Configuration].
+
+[[rabbittemplate-confirmcallback-interface]]
+== RabbitTemplate `ConfirmCallback` Interface
+
+The `confirm` method on this interface has an additional parameter called `cause`.
+When available, this parameter contains the reason for a negative acknowledgement (nack).
+See xref:amqp/template.adoc#template-confirms[Correlated Publisher Confirms and Returns].
+
+[[rabbitconnectionfactorybean-added]]
+== `RabbitConnectionFactoryBean` Added
+
+`RabbitConnectionFactoryBean` creates the underlying RabbitMQ `ConnectionFactory` used by the `CachingConnectionFactory`.
+This enables configuration of SSL options using Spring's dependency injection.
+See <<connection-factory>>.
+
+[[using-cachingconnectionfactory]]
+== Using `CachingConnectionFactory`
+
+The `CachingConnectionFactory` now lets the `connectionTimeout` be set as a property or as an attribute in the namespace.
+It sets the property on the underlying RabbitMQ `ConnectionFactory`.
+See <<connection-factory>>.
+
+[[log-appender]]
+== Log Appender
+
+The Logback `org.springframework.amqp.rabbit.logback.AmqpAppender` has been introduced.
+It provides options similar to `org.springframework.amqp.rabbit.log4j.AmqpAppender`.
+For more information, see the JavaDoc of these classes.
+
+The Log4j `AmqpAppender` now supports the `deliveryMode` property (`PERSISTENT` or `NON_PERSISTENT`, default: `PERSISTENT`).
+Previously, all log4j messages were `PERSISTENT`.
+
+The appender also supports modification of the `Message` before sending -- allowing, for example, the addition of custom headers.
+Subclasses should override the `postProcessMessageBeforeSend()`.
+
+[[listener-queues]]
+== Listener Queues
+
+The listener container now, by default, redeclares any missing queues during startup.
+A new `auto-declare` attribute has been added to the `<rabbit:listener-container>` to prevent these re-declarations.
+See xref:amqp/receiving-messages/async-consumer.adoc#lc-auto-delete[`auto-delete` Queues].
+
+[[rabbittemplate:-mandatory-and-connectionfactoryselector-expressions]]
+== `RabbitTemplate`: `mandatory` and `connectionFactorySelector` Expressions
+
+The `mandatoryExpression`, `sendConnectionFactorySelectorExpression`, and `receiveConnectionFactorySelectorExpression` SpEL Expression`s properties have been added to `RabbitTemplate`.
+The `mandatoryExpression` is used to evaluate a `mandatory` boolean value against each request message when a `ReturnCallback` is in use.
+See xref:amqp/template.adoc#template-confirms[Correlated Publisher Confirms and Returns].
+The `sendConnectionFactorySelectorExpression` and `receiveConnectionFactorySelectorExpression` are used when an `AbstractRoutingConnectionFactory` is provided, to determine the `lookupKey` for the target `ConnectionFactory` at runtime on each AMQP protocol interaction operation.
+See <<routing-connection-factory>>.
+
+[[listeners-and-the-routing-connection-factory]]
+== Listeners and the Routing Connection Factory
+
+You can configure a `SimpleMessageListenerContainer` with a routing connection factory to enable connection selection based on the queue names.
+See <<routing-connection-factory>>.
+
+[[rabbittemplate:-recoverycallback-option]]
+== `RabbitTemplate`: `RecoveryCallback` Option
+
+The `recoveryCallback` property has been added for use in the `retryTemplate.execute()`.
+See xref:amqp/template.adoc#template-retry[Adding Retry Capabilities].
+
+[[messageconversionexception-change]]
+== `MessageConversionException` Change
+
+This exception is now a subclass of `AmqpException`.
+Consider the following code:
+
+[source,java]
+----
+try {
+    template.convertAndSend("thing1", "thing2", "cat");
+}
+catch (AmqpException e) {
+	...
+}
+catch (MessageConversionException e) {
+	...
+}
+----
+
+The second catch block is no longer reachable and needs to be moved above the catch-all `AmqpException` catch block.
+
+[[rabbitmq-3-4-compatibility]]
+== RabbitMQ 3.4 Compatibility
+
+Spring AMQP is now compatible with the RabbitMQ 3.4, including direct reply-to.
+See xref:introduction/quick-tour.adoc#compatibility[Compatibility] and xref:amqp/request-reply.adoc#direct-reply-to[RabbitMQ Direct reply-to] for more information.
+
+[[contenttypedelegatingmessageconverter-added]]
+== `ContentTypeDelegatingMessageConverter` Added
+
+The `ContentTypeDelegatingMessageConverter` has been introduced to select the `MessageConverter` to use, based on the `contentType` property in the `MessageProperties`.
+See xref:amqp/message-converters.adoc[Message Converters] for more information.
+

@@ -1,0 +1,47 @@
+[[annotation-method-selection]]
+= Multi-method Listeners
+
+Starting with version 1.5.0, you can specify the `@RabbitListener` annotation at the class level.
+Together with the new `@RabbitHandler` annotation, this lets a single listener invoke different methods, based on
+the payload type of the incoming message.
+This is best described using an example:
+
+[source, java]
+----
+@RabbitListener(id="multi", queues = "someQueue")
+@SendTo("my.reply.queue")
+public class MultiListenerBean {
+
+    @RabbitHandler
+    public String thing2(Thing2 thing2) {
+        ...
+    }
+
+    @RabbitHandler
+    public String cat(Cat cat) {
+        ...
+    }
+
+    @RabbitHandler
+    public String hat(@Header("amqp_receivedRoutingKey") String rk, @Payload Hat hat) {
+        ...
+    }
+
+    @RabbitHandler(isDefault = true)
+    public String defaultMethod(Object object) {
+        ...
+    }
+
+}
+----
+
+In this case, the individual `@RabbitHandler` methods are invoked if the converted payload is a `Thing2`, a `Cat`, or a `Hat`.
+You should understand that the system must be able to identify a unique method based on the payload type.
+The type is checked for assignability to a single parameter that has no annotations or that is annotated with the `@Payload` annotation.
+Notice that the same method signatures apply, as discussed in the method-level `@RabbitListener` (xref:amqp/receiving-messages/async-consumer.adoc#message-listener-adapter[described earlier]).
+
+Starting with version 2.0.3, a `@RabbitHandler` method can be designated as the default method, which is invoked if there is no match on other methods.
+At most, one method can be so designated.
+
+IMPORTANT: `@RabbitHandler` is intended only for processing message payloads after conversion, if you wish to receive the unconverted raw `Message` object, you must use `@RabbitListener` on the method, not the class.
+

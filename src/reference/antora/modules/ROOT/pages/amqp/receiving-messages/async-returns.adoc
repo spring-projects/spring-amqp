@@ -1,0 +1,24 @@
+[[async-returns]]
+= Asynchronous `@RabbitListener` Return Types
+:page-section-summary-toc: 1
+
+`@RabbitListener` (and `@RabbitHandler`) methods can be specified with asynchronous return types `CompletableFuture<?>` and `Mono<?>`, letting the reply be sent asynchronously.
+`ListenableFuture<?>` is no longer supported; it has been deprecated by Spring Framework.
+
+IMPORTANT: The listener container factory must be configured with `AcknowledgeMode.MANUAL` so that the consumer thread will not ack the message; instead, the asynchronous completion will ack or nack the message when the async operation completes.
+When the async result is completed with an error, whether the message is requeued or not depends on the exception type thrown, the container configuration, and the container error handler.
+By default, the message will be requeued, unless the container's `defaultRequeueRejected` property is set to `false` (it is `true` by default).
+If the async result is completed with an `AmqpRejectAndDontRequeueException`, the message will not be requeued.
+If the container's `defaultRequeueRejected` property is `false`, you can override that by setting the future's exception to a `ImmediateRequeueException` and the message will be requeued.
+If some exception occurs within the listener method that prevents creation of the async result object, you MUST catch that exception and return an appropriate return object that will cause the message to be acknowledged or requeued.
+
+Starting with versions 2.2.21, 2.3.13, 2.4.1, the `AcknowledgeMode` will be automatically set the `MANUAL` when async return types are detected.
+In addition, incoming messages with fatal exceptions will be negatively acknowledged individually, previously any prior unacknowledged message were also negatively acknowledged.
+
+Starting with version 3.0.5, the `@RabbitListener` (and `@RabbitHandler`) methods can be marked with Kotlin `suspend` and the whole handling process and reply producing (optional) happens on respective Kotlin coroutine.
+All the mentioned rules about `AcknowledgeMode.MANUAL` are still apply.
+The `org.jetbrains.kotlinx:kotlinx-coroutines-reactor` dependency must be present in classpath to allow `suspend` function invocations.
+
+Also starting with version 3.0.5, if a `RabbitListenerErrorHandler` is configured on a listener with an async return type (including Kotlin suspend functions), the error handler is invoked after a failure.
+See xref:amqp/receiving-messages/async-annotation-driven/error-handling.adoc[Handling Exceptions] for more information about this error handler and its purpose.
+

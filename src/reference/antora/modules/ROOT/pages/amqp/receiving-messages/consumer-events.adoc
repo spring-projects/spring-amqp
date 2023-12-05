@@ -1,0 +1,39 @@
+[[consumer-events]]
+= Consumer Events
+
+The containers publish application events whenever a listener
+(consumer) experiences a failure of some kind.
+The event `ListenerContainerConsumerFailedEvent` has the following properties:
+
+* `container`: The listener container where the consumer experienced the problem.
+* `reason`: A textual reason for the failure.
+* `fatal`: A boolean indicating whether the failure was fatal.
+With non-fatal exceptions, the container tries to restart the consumer, according to the `recoveryInterval` or `recoveryBackoff` (for the `SimpleMessageListenerContainer`) or the `monitorInterval` (for the `DirectMessageListenerContainer`).
+* `throwable`: The `Throwable` that was caught.
+
+These events can be consumed by implementing `ApplicationListener<ListenerContainerConsumerFailedEvent>`.
+
+NOTE: System-wide events (such as connection failures) are published by all consumers when `concurrentConsumers` is greater than 1.
+
+If a consumer fails because one if its queues is being used exclusively, by default, as well as publishing the event, a `DEBUG` log is issued (since 3.1, previously WARN).
+To change this logging behavior, provide a custom `ConditionalExceptionLogger` in the `AbstractMessageListenerContainer` instance's `exclusiveConsumerExceptionLogger` property.
+In addition, the `SimpleMessageListenerContainer` consumer restart after such an exception is now logged at DEBUG level by default (previously INFO).
+A new method `logRestart()` has been added to the `ConditionalExceptionLogger` to allow this to be changed.
+
+Also, the `AbstractMessageListenerContainer.DefaultExclusiveConsumerLogger` is now public, allowing it to be sub classed.
+
+See also <<channel-close-logging>>.
+
+Fatal errors are always logged at the `ERROR` level.
+This it not modifiable.
+
+Several other events are published at various stages of the container lifecycle:
+
+* `AsyncConsumerStartedEvent`: When the consumer is started.
+* `AsyncConsumerRestartedEvent`: When the consumer is restarted after a failure - `SimpleMessageListenerContainer` only.
+* `AsyncConsumerTerminatedEvent`: When a consumer is stopped normally.
+* `AsyncConsumerStoppedEvent`: When the consumer is stopped - `SimpleMessageListenerContainer` only.
+* `ConsumeOkEvent`: When a `consumeOk` is received from the broker, contains the queue name and `consumerTag`
+* `ListenerContainerIdleEvent`: See xref:amqp/receiving-messages/idle-containers.adoc[Detecting Idle Asynchronous Consumers].
+* `MissingQueueEvent`: When a missing queue is detected.
+

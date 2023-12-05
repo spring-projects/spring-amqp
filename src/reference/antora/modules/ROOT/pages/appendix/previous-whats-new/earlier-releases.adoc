@@ -1,0 +1,6 @@
+[[earlier-releases]]
+= Earlier Releases
+:page-section-summary-toc: 1
+
+See xref:appendix/previous-whats-new.adoc[Previous Releases] for changes in previous versions.
+
