@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -53,6 +55,7 @@ import com.rabbitmq.client.Channel;
  * @author Josh Chappelle
  * @author Gary Russell
  * @author Leonardo Ferreira
+ * @author Christian Tzolov
  * @since 1.3
  */
 public class RoutingConnectionFactoryTests {
@@ -224,11 +227,18 @@ public class RoutingConnectionFactoryTests {
 		final AtomicReference<Object> connectionMakerKey2 = new AtomicReference<>();
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory) {
 
-			@Override
-			protected synchronized void redeclareElementsIfNecessary() {
-				connectionMakerKey2.set(connectionFactory.determineCurrentLookupKey());
-			}
+			Lock lock = new ReentrantLock();
 
+			@Override
+			protected void redeclareElementsIfNecessary() {
+				this.lock.lock();
+				try {
+					connectionMakerKey2.set(connectionFactory.determineCurrentLookupKey());
+				}
+				finally {
+					this.lock.unlock();
+				}
+			}
 		};
 		container.setQueueNames("foo");
 		container.setLookupKeyQualifier("xxx");
@@ -263,9 +273,17 @@ public class RoutingConnectionFactoryTests {
 		final AtomicReference<Object> connectionMakerKey2 = new AtomicReference<>();
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(connectionFactory) {
 
+			Lock lock = new ReentrantLock();
+
 			@Override
-			protected synchronized void redeclareElementsIfNecessary() {
-				connectionMakerKey2.set(connectionFactory.determineCurrentLookupKey());
+			protected void redeclareElementsIfNecessary() {
+				this.lock.lock();
+				try {
+					connectionMakerKey2.set(connectionFactory.determineCurrentLookupKey());
+				}
+				finally {
+					this.lock.unlock();
+				}
 			}
 
 		};
@@ -306,9 +324,17 @@ public class RoutingConnectionFactoryTests {
 		final AtomicReference<Object> connectionMakerKey2 = new AtomicReference<>();
 		DirectReplyToMessageListenerContainer container = new DirectReplyToMessageListenerContainer(connectionFactory) {
 
+			Lock lock = new ReentrantLock();
+
 			@Override
-			protected synchronized void redeclareElementsIfNecessary() {
-				connectionMakerKey2.set(connectionFactory.determineCurrentLookupKey());
+			protected void redeclareElementsIfNecessary() {
+				this.lock.lock();
+				try {
+					connectionMakerKey2.set(connectionFactory.determineCurrentLookupKey());
+				}
+				finally {
+					this.lock.unlock();
+				}
 			}
 
 		};

@@ -31,6 +31,8 @@ import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
@@ -79,6 +81,7 @@ import com.rabbitmq.client.Channel;
  * @author Ed Scriven
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Christian Tzolov
  */
 @ManagedResource(description = "Admin Tasks")
 public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, ApplicationEventPublisherAware,
@@ -121,6 +124,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR
+
+	private final Lock lock = new ReentrantLock();
 
 	private final RabbitTemplate rabbitTemplate;
 

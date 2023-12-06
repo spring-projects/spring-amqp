@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2022 the original author or authors.
+ * Copyright 2014-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.springframework.amqp.rabbit.core;
 
 import java.util.Date;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
@@ -42,6 +44,8 @@ import org.springframework.scheduling.TaskScheduler;
  *
  */
 public class BatchingRabbitTemplate extends RabbitTemplate {
+
+	private final Lock lock = new ReentrantLock();
 
 	private final BatchingStrategy batchingStrategy;
 
@@ -75,27 +79,32 @@ public class BatchingRabbitTemplate extends RabbitTemplate {
 	}
 
 	@Override
-	public synchronized void send(String exchange, String routingKey, Message message,
+	public void send(String exchange, String routingKey, Message message,
 			@Nullable CorrelationData correlationData) throws AmqpException {
-
-		if (correlationData != null) {
-			if (this.logger.isDebugEnabled()) {
-				this.logger.debug("Cannot use batching with correlation data");
+		this.lock.lock();
+		try {
+			if (correlationData != null) {
+				if (this.logger.isDebugEnabled()) {
+					this.logger.debug("Cannot use batching with correlation data");
+				}
+				super.send(exchange, routingKey, message, correlationData);
 			}
-			super.send(exchange, routingKey, message, correlationData);
+			else {
+				if (this.scheduledTask != null) {
+					this.scheduledTask.cancel(false);
+				}
+				MessageBatch batch = this.batchingStrategy.addToBatch(exchange, routingKey, message);
+				if (batch != null) {
+					super.send(batch.getExchange(), batch.getRoutingKey(), batch.getMessage(), null);
+				}
+				Date next = this.batchingStrategy.nextRelease();
+				if (next != null) {
+					this.scheduledTask = this.scheduler.schedule((Runnable) () -> releaseBatches(), next.toInstant());
+				}
+			}
 		}
-		else {
-			if (this.scheduledTask != null) {
-				this.scheduledTask.cancel(false);
-			}
-			MessageBatch batch = this.batchingStrategy.addToBatch(exchange, routingKey, message);
-			if (batch != null) {
-				super.send(batch.getExchange(), batch.getRoutingKey(), batch.getMessage(), null);
-			}
-			Date next = this.batchingStrategy.nextRelease();
-			if (next != null) {
-				this.scheduledTask = this.scheduler.schedule((Runnable) () -> releaseBatches(), next.toInstant());
-			}
+		finally {
+			this.lock.unlock();
 		}
 	}
 
@@ -106,9 +115,15 @@ public class BatchingRabbitTemplate extends RabbitTemplate {
 		releaseBatches();
 	}
 
-	private synchronized void releaseBatches() {
-		for (MessageBatch batch : this.batchingStrategy.releaseBatches()) {
-			super.send(batch.getExchange(), batch.getRoutingKey(), batch.getMessage(), null);
+	private void releaseBatches() {
+		this.lock.lock();
+		try {
+			for (MessageBatch batch : this.batchingStrategy.releaseBatches()) {
+				super.send(batch.getExchange(), batch.getRoutingKey(), batch.getMessage(), null);
+			}
+		}
+		finally {
+			this.lock.unlock();
 		}
 	}
 
