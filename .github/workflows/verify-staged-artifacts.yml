@@ -31,7 +31,7 @@ jobs:
           JF_ENV_SPRING: ${{ secrets.JF_ARTIFACTORY_SPRING }}
 
       - name: Configure JFrog Cli
-        run: jf mvnc --repo-resolve-releases=libs-spring-dataflow-private-staging-release --repo-resolve-snapshots=snapshot
+        run: jf mvnc --repo-resolve-releases=libs-release-staging --repo-resolve-snapshots=snapshot
 
       - name: Verify samples against staged release
         run: jf mvn verify -D"spring.amqp.version"=${{ inputs.releaseVersion }} -B -ntp
