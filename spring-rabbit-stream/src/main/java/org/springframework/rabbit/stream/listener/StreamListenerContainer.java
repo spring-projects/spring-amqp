@@ -19,6 +19,8 @@ package org.springframework.rabbit.stream.listener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.aopalliance.aop.Advice;
 import org.apache.commons.logging.LogFactory;
@@ -53,12 +55,15 @@ import io.micrometer.observation.ObservationRegistry;
  * A listener container for RabbitMQ Streams.
  *
  * @author Gary Russell
+ * @author Christian Tzolov
  * @since 2.4
  *
  */
 public class StreamListenerContainer extends ObservableListenerContainer {
 
 	protected LogAccessor logger = new LogAccessor(LogFactory.getLog(getClass())); // NOSONAR
+
+	private final Lock lock = new ReentrantLock();
 
 	private final ConsumerBuilder builder;
 
@@ -111,12 +116,18 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 	 * Mutually exclusive with {@link #superStream(String, String)}.
 	 */
 	@Override
-	public synchronized void setQueueNames(String... queueNames) {
+	public void setQueueNames(String... queueNames) {
 		Assert.isTrue(!this.superStream, "setQueueNames() and superStream() are mutually exclusive");
 		Assert.isTrue(queueNames != null && queueNames.length == 1, "Only one stream is supported");
-		this.builder.stream(queueNames[0]);
-		this.simpleStream = true;
-		this.streamName = queueNames[0];
+		this.lock.lock();
+		try {
+			this.builder.stream(queueNames[0]);
+			this.simpleStream = true;
+			this.streamName = queueNames[0];
+		}
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 	/**
@@ -139,16 +150,22 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 	 * @param consumers the number of consumers.
 	 * @since 3.0
 	 */
-	public synchronized void superStream(String streamName, String name, int consumers) {
-		Assert.isTrue(consumers > 0, () -> "'concurrency' must be greater than zero, not " + consumers);
-		this.concurrency = consumers;
-		Assert.isTrue(!this.simpleStream, "setQueueNames() and superStream() are mutually exclusive");
-		Assert.notNull(streamName, "'superStream' cannot be null");
-		this.builder.superStream(streamName)
-				.singleActiveConsumer()
-				.name(name);
-		this.superStream = true;
-		this.streamName = streamName;
+	public void superStream(String streamName, String name, int consumers) {
+		this.lock.lock();
+		try {
+			Assert.isTrue(consumers > 0, () -> "'concurrency' must be greater than zero, not " + consumers);
+			this.concurrency = consumers;
+			Assert.isTrue(!this.simpleStream, "setQueueNames() and superStream() are mutually exclusive");
+			Assert.notNull(streamName, "'superStream' cannot be null");
+			this.builder.superStream(streamName)
+					.singleActiveConsumer()
+					.name(name);
+			this.superStream = true;
+			this.streamName = streamName;
+		}
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 	/**
@@ -176,9 +193,15 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 	 * Customize the consumer builder before it is built.
 	 * @param consumerCustomizer the customizer.
 	 */
-	public synchronized void setConsumerCustomizer(ConsumerCustomizer consumerCustomizer) {
-		Assert.notNull(consumerCustomizer, "'consumerCustomizer' cannot be null");
-		this.consumerCustomizer = consumerCustomizer;
+	public void setConsumerCustomizer(ConsumerCustomizer consumerCustomizer) {
+		this.lock.lock();
+		try {
+			Assert.notNull(consumerCustomizer, "'consumerCustomizer' cannot be null");
+			this.consumerCustomizer = consumerCustomizer;
+		}
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 	@Override
@@ -225,36 +248,54 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 	}
 
 	@Override
-	public synchronized boolean isRunning() {
-		return this.consumers.size() > 0;
-	}
-
-	@Override
-	public synchronized void start() {
-		if (this.consumers.size() == 0) {
-			this.consumerCustomizer.accept(getListenerId(), this.builder);
-			if (this.simpleStream) {
-				this.consumers.add(this.builder.build());
-			}
-			else {
-				for (int i = 0; i < this.concurrency; i++) {
-					this.consumers.add(this.builder.build());
-				}
-			}
+	public boolean isRunning() {
+		this.lock.lock();
+		try {
+			return this.consumers.size() > 0;
+		}
+		finally {
+			this.lock.unlock();
 		}
 	}
 
 	@Override
-	public synchronized void stop() {
-		this.consumers.forEach(consumer -> {
-			try {
-				consumer.close();
+	public void start() {
+		this.lock.lock();
+		try {
+			if (this.consumers.size() == 0) {
+				this.consumerCustomizer.accept(getListenerId(), this.builder);
+				if (this.simpleStream) {
+					this.consumers.add(this.builder.build());
+				}
+				else {
+					for (int i = 0; i < this.concurrency; i++) {
+						this.consumers.add(this.builder.build());
+					}
+				}
 			}
-			catch (RuntimeException ex) {
-				this.logger.error(ex, "Failed to close consumer");
-			}
-		});
-		this.consumers.clear();
+		}
+		finally {
+			this.lock.unlock();
+		}
+	}
+
+	@Override
+	public void stop() {
+		this.lock.lock();
+		try {
+			this.consumers.forEach(consumer -> {
+				try {
+					consumer.close();
+				}
+				catch (RuntimeException ex) {
+					this.logger.error(ex, "Failed to close consumer");
+				}
+			});
+			this.consumers.clear();
+		}
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 	@Override

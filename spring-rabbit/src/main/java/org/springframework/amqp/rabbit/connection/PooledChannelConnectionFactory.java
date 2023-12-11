@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 
 import org.aopalliance.aop.Advice;
@@ -52,6 +54,7 @@ import com.rabbitmq.client.ShutdownListener;
  *
  * @author Gary Russell
  * @author Leonardo Ferreira
+ * @author Christian Tzolov
  * @since 2.3
  *
  */
@@ -59,6 +62,8 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory
 		implements ShutdownListener, SmartLifecycle {
 
 	private final AtomicBoolean running = new AtomicBoolean();
+
+	private final Lock lock = new ReentrantLock();
 
 	private volatile ConnectionWrapper connection;
 
@@ -158,14 +163,20 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory
 	}
 
 	@Override
-	public synchronized Connection createConnection() throws AmqpException {
-		if (this.connection == null || !this.connection.isOpen()) {
-			Connection bareConnection = createBareConnection(); // NOSONAR - see destroy()
-			this.connection = new ConnectionWrapper(bareConnection.getDelegate(), getCloseTimeout(), // NOSONAR
-					this.simplePublisherConfirms, this.poolConfigurer, getChannelListener()); // NOSONAR
-			getConnectionListener().onCreate(this.connection);
+	public Connection createConnection() throws AmqpException {
+		this.lock.lock();
+		try {
+			if (this.connection == null || !this.connection.isOpen()) {
+				Connection bareConnection = createBareConnection(); // NOSONAR - see destroy()
+				this.connection = new ConnectionWrapper(bareConnection.getDelegate(), getCloseTimeout(), // NOSONAR
+						this.simplePublisherConfirms, this.poolConfigurer, getChannelListener()); // NOSONAR
+				getConnectionListener().onCreate(this.connection);
+			}
+			return this.connection;
 		}
-		return this.connection;
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 	/**
@@ -180,12 +191,18 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory
 	}
 
 	@Override
-	public synchronized void destroy() {
-		super.destroy();
-		if (this.connection != null) {
-			this.connection.forceClose();
-			getConnectionListener().onClose(this.connection);
-			this.connection = null;
+	public void destroy() {
+		this.lock.lock();
+		try {
+			super.destroy();
+			if (this.connection != null) {
+				this.connection.forceClose();
+				getConnectionListener().onClose(this.connection);
+				this.connection = null;
+			}
+		}
+		finally {
+			this.lock.unlock();
 		}
 	}
 

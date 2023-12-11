@@ -21,6 +21,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -49,12 +51,15 @@ import org.springframework.util.Assert;
  * <p>All {@link ConnectionFactory} methods delegate to the default
  *
  * @author Gary Russell
+ * @author Christian Tzolov
  * @since 1.2
  */
 public class LocalizedQueueConnectionFactory implements ConnectionFactory, RoutingConnectionFactory, DisposableBean,
 		SmartLifecycle {
 
 	private final Log logger = LogFactory.getLog(getClass());
+
+	private final Lock lock = new ReentrantLock();
 
 	private final Map<String, ConnectionFactory> nodeFactories = new HashMap<String, ConnectionFactory>();
 
@@ -299,19 +304,25 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 		return cf;
 	}
 
-	private synchronized ConnectionFactory nodeConnectionFactory(String queue, String node, String address)  {
-		if (this.logger.isInfoEnabled()) {
-			this.logger.info("Queue: " + queue + " is on node: " + node + " at: " + address);
-		}
-		ConnectionFactory cf = this.nodeFactories.get(node);
-		if (cf == null) {
-			cf = createConnectionFactory(address, node);
+	private ConnectionFactory nodeConnectionFactory(String queue, String node, String address)  {
+		this.lock.lock();
+		try {
 			if (this.logger.isInfoEnabled()) {
-				this.logger.info("Created new connection factory: " + cf);
+				this.logger.info("Queue: " + queue + " is on node: " + node + " at: " + address);
 			}
-			this.nodeFactories.put(node, cf);
+			ConnectionFactory cf = this.nodeFactories.get(node);
+			if (cf == null) {
+				cf = createConnectionFactory(address, node);
+				if (this.logger.isInfoEnabled()) {
+					this.logger.info("Created new connection factory: " + cf);
+				}
+				this.nodeFactories.put(node, cf);
+			}
+			return cf;
 		}
-		return cf;
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 	/**
