@@ -379,7 +379,13 @@ project('spring-amqp') {
 		optionalApi 'com.fasterxml.jackson.core:jackson-databind'
 		optionalApi 'com.fasterxml.jackson.core:jackson-annotations'
 		optionalApi 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
-
+		optionalApi 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8'
+		optionalApi 'com.fasterxml.jackson.module:jackson-module-parameter-names'
+		optionalApi 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+		optionalApi 'com.fasterxml.jackson.datatype:jackson-datatype-joda'
+		optionalApi ('com.fasterxml.jackson.module:jackson-module-kotlin') {
+			exclude group: 'org.jetbrains.kotlin'
+		}
 		// Spring Data projection message binding support
 		optionalApi ('org.springframework.data:spring-data-commons') {
 			exclude group: 'org.springframework'
