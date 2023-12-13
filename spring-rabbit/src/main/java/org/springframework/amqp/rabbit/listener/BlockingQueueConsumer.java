@@ -788,7 +788,7 @@ public class BlockingQueueConsumer {
 	}
 
 	public void forceCloseAndClearQueue() {
-		if (this.channel != null && this.channel.isOpen()) {
+		if (this.channel != null) {
 			RabbitUtils.setPhysicalCloseRequired(this.channel, true);
 			ConnectionFactoryUtils.releaseResources(this.resourceHolder);
 			this.deliveryTags.clear();
