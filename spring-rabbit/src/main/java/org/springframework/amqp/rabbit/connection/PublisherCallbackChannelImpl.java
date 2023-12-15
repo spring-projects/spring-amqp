@@ -1221,7 +1221,7 @@ public class PublisherCallbackChannelImpl
 	}
 
 	public static PublisherCallbackChannelFactory factory() {
-		return (channel, exec) -> new PublisherCallbackChannelImpl(channel, exec);
+		return PublisherCallbackChannelImpl::new;
 	}
 
 }
