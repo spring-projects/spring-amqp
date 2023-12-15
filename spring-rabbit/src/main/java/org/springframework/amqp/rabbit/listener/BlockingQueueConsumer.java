@@ -379,7 +379,7 @@ public class BlockingQueueConsumer {
 		this.locallyTransacted = locallyTransacted;
 	}
 
-	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+	public void setApplicationEventPublisher(@Nullable ApplicationEventPublisher applicationEventPublisher) {
 		this.applicationEventPublisher = applicationEventPublisher;
 	}
 

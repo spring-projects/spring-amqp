@@ -29,6 +29,8 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import org.aopalliance.aop.Advice;
@@ -131,7 +133,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 
 	private final ContainerDelegate delegate = this::actualInvokeListener;
 
-	protected final Object consumersMonitor = new Object(); //NOSONAR
+	protected final Lock consumersLock = new ReentrantLock(); //NOSONAR
 
 	private final Map<String, Object> consumerArgs = new HashMap<>();
 
@@ -253,6 +255,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		this.applicationEventPublisher = applicationEventPublisher;
 	}
 
+	@Nullable
 	protected ApplicationEventPublisher getApplicationEventPublisher() {
 		return this.applicationEventPublisher;
 	}
@@ -686,9 +689,13 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * @since 1.3
 	 */
 	public void setConsumerArguments(Map<String, Object> args) {
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			this.consumerArgs.clear();
 			this.consumerArgs.putAll(args);
+		}
+		finally {
+			this.consumersLock.unlock();
 		}
 	}
 
@@ -698,8 +705,12 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * @since 2.0
 	 */
 	public Map<String, Object> getConsumerArguments() {
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			return new HashMap<>(this.consumerArgs);
+		}
+		finally {
+			this.consumersLock.unlock();
 		}
 	}
 

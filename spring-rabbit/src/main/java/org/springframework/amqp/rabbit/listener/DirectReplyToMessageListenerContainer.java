@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,7 +118,8 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 	@Override
 	protected void processMonitorTask() {
 		long now = System.currentTimeMillis();
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			long reduce = this.consumers.stream()
 				.filter(c -> this.whenUsed.containsKey(c) && !this.inUseConsumerChannels.containsValue(c)
 						&& this.whenUsed.get(c) < now - getIdleEventInterval())
@@ -130,6 +131,9 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 				this.consumerCount = (int) Math.max(0, this.consumerCount - reduce);
 				super.setConsumersPerQueue(this.consumerCount);
 			}
+		}
+		finally {
+			this.consumersLock.unlock();
 		}
 	}
 
@@ -155,7 +159,8 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 	 * @return the channel holder.
 	 */
 	public ChannelHolder getChannelHolder() {
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			ChannelHolder channelHolder = null;
 			while (channelHolder == null) {
 				if (!isRunning()) {
@@ -177,6 +182,9 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 			}
 			return channelHolder;
 		}
+		finally {
+			this.consumersLock.unlock();
+		}
 	}
 
 	/**
@@ -188,7 +196,8 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 	 * @param message a message to be included in the cancel event if cancelConsumer is true.
 	 */
 	public void releaseConsumerFor(ChannelHolder channelHolder, boolean cancelConsumer, @Nullable String message) {
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			SimpleConsumer consumer = this.inUseConsumerChannels.get(channelHolder.getChannel());
 			if (consumer != null && consumer.getEpoch() == channelHolder.getConsumerEpoch()) {
 				this.inUseConsumerChannels.remove(channelHolder.getChannel());
@@ -197,6 +206,9 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 					consumer.cancelConsumer("Consumer " + this + " canceled due to " + message);
 				}
 			}
+		}
+		finally {
+			this.consumersLock.unlock();
 		}
 	}
 
