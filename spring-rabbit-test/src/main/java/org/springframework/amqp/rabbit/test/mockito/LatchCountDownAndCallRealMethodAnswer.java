@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022 the original author or authors.
+ * Copyright 2016-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@
 package org.springframework.amqp.rabbit.test.mockito;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -33,6 +33,8 @@ import org.springframework.lang.Nullable;
  * method and counts down a latch. Captures any exceptions thrown.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.6
  *
  */
@@ -42,7 +44,7 @@ public class LatchCountDownAndCallRealMethodAnswer extends ForwardsInvocations {
 
 	private final transient CountDownLatch latch;
 
-	private final Set<Exception> exceptions = Collections.synchronizedSet(new LinkedHashSet<>());
+	private final Set<Exception> exceptions = ConcurrentHashMap.newKeySet();
 
 	private final boolean hasDelegate;
 
@@ -101,9 +103,7 @@ public class LatchCountDownAndCallRealMethodAnswer extends ForwardsInvocations {
 	 */
 	@Nullable
 	public Collection<Exception> getExceptions() {
-		synchronized (this.exceptions) {
-			return new LinkedHashSet<>(this.exceptions);
-		}
+		return new LinkedHashSet<>(this.exceptions);
 	}
 
 }
