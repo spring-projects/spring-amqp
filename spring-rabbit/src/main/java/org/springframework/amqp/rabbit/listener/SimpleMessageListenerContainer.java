@@ -1152,11 +1152,15 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	protected void handleStartupFailure(BackOffExecution backOffExecution) {
 		long recoveryInterval = backOffExecution.nextBackOff();
 		if (BackOffExecution.STOP == recoveryInterval) {
-			synchronized (this) {
+			this.lifecycleLock.lock();
+			try {
 				if (isActive()) {
 					logger.warn("stopping container - restart recovery attempts exhausted");
 					stop();
 				}
+			}
+			finally {
+				this.lifecycleLock.unlock();
 			}
 			return;
 		}

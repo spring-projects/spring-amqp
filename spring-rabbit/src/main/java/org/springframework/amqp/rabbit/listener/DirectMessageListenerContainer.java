@@ -36,6 +36,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -268,7 +270,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		Assert.noNullElements(queues, "'queues' cannot contain null elements");
 		try {
 			Arrays.stream(queues)
-				.map(q -> q.getActualName())
+				.map(Queue::getActualName)
 				.forEach(this.removedQueues::remove);
 			addQueues(Arrays.stream(queues).map(Queue::getName));
 		}
@@ -472,7 +474,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		if (isPossibleAuthenticationFailureFatal()) {
 			Connection connection = null;
 			try {
-				getConnectionFactory().createConnection();
+				connection = getConnectionFactory().createConnection();
 			}
 			catch (AmqpAuthenticationException ex) {
 				this.logger.debug("Failed to authenticate", ex);
@@ -931,7 +933,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug("Canceling " + consumer);
 			}
-			synchronized (consumer) {
+			consumer.lock.lock();
+			try {
 				consumer.setCanceled(true);
 				if (this.messagesPerAck > 1) {
 					try {
@@ -941,6 +944,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						this.logger.error("Exception while sending delayed ack", e);
 					}
 				}
+			}
+			finally {
+				consumer.lock.unlock();
 			}
 			RabbitUtils.cancel(consumer.getChannel(), consumer.getConsumerTag());
 		}
@@ -968,7 +974,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * The consumer object.
 	 */
-	final class SimpleConsumer extends DefaultConsumer {
+	protected final class SimpleConsumer extends DefaultConsumer {
 
 		private final Log logger = DirectMessageListenerContainer.this.logger;
 
@@ -993,6 +999,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		private final long ackTimeout = DirectMessageListenerContainer.this.ackTimeout;
 
 		private final Channel targetChannel;
+
+		private final Lock lock = new ReentrantLock();
 
 		private int pendingAcks;
 
@@ -1230,10 +1238,14 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			try {
 				if (this.ackRequired) {
 					if (this.messagesPerAck > 1) {
-						synchronized (this) {
+						this.lock.lock();
+						try {
 							this.latestDeferredDeliveryTag = deliveryTag;
 							this.pendingAcks++;
 							ackIfNecessary(this.lastAck);
+						}
+						finally {
+							this.lock.unlock();
 						}
 					}
 					else if (!isChannelTransacted() || isLocallyTransacted) {
@@ -1256,7 +1268,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		 * @param now the current time.
 		 * @throws IOException if one occurs.
 		 */
-		synchronized void ackIfNecessary(long now) throws Exception { // NOSONAR
+		void ackIfNecessary(long now) throws Exception { // NOSONAR
 			if (this.pendingAcks >= this.messagesPerAck || (
 					this.pendingAcks > 0 && (now - this.lastAck > this.ackTimeout || this.canceled))) {
 				sendAck(now);
@@ -1270,10 +1282,14 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			if (this.ackRequired || ContainerUtils.isRejectManual(e)) {
 				try {
 					if (this.messagesPerAck > 1) {
-						synchronized (this) {
+						this.lock.lock();
+						try {
 							if (this.pendingAcks > 0) {
 								sendAck(System.currentTimeMillis());
 							}
+						}
+						finally {
+							this.lock.unlock();
 						}
 					}
 					getChannel().basicNack(deliveryTag, !isAsyncReplies(),
@@ -1288,7 +1304,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 
-		protected synchronized void sendAck(long now) throws Exception { // NOSONAR
+		void sendAck(long now) throws Exception { // NOSONAR
 			sendAckWithNotify(this.latestDeferredDeliveryTag, true);
 			this.lastAck = now;
 			this.pendingAcks = 0;
@@ -1298,8 +1314,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		 * Send ack and notify MessageAckListener(if set).
 		 * @param deliveryTag DeliveryTag of this ack.
 		 * @param multiple Whether multiple ack.
-		 * @throws Exception Occured when ack.
-		 * @Since 2.4.6
+		 * @throws Exception Occurred when ack.
+		 * @since 2.4.6
 		 */
 		private void sendAckWithNotify(long deliveryTag, boolean multiple) throws Exception { // NOSONAR
 			try {
@@ -1314,7 +1330,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		/**
 		 * Notify MessageAckListener set on message listener.
-		 * @param messageAckListener MessageAckListener set on the message listener.
 		 * @param success Whether ack succeeded.
 		 * @param deliveryTag The deliveryTag of ack.
 		 * @param cause If an exception occurs.
@@ -1325,7 +1340,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				getMessageAckListener().onComplete(success, deliveryTag, cause);
 			}
 			catch (Exception e) {
-				this.logger.error("An exception occured on MessageAckListener.", e);
+				this.logger.error("An exception occurred on MessageAckListener.", e);
 			}
 		}
 
@@ -1412,14 +1427,11 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				return false;
 			}
 			if (this.queue == null) {
-				if (other.queue != null) {
-					return false;
-				}
+				return other.queue == null;
 			}
-			else if (!this.queue.equals(other.queue)) {
-				return false;
+			else {
+				return this.queue.equals(other.queue);
 			}
-			return true;
 		}
 
 		private DirectMessageListenerContainer getEnclosingInstance() {

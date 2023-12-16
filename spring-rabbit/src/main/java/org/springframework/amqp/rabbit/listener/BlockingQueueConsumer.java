@@ -98,7 +98,7 @@ public class BlockingQueueConsumer {
 
 	private static final int DEFAULT_RETRY_DECLARATION_INTERVAL = 60000;
 
-	private static final Log logger = LogFactory.getLog(BlockingQueueConsumer.class);
+	private static Log logger = LogFactory.getLog(BlockingQueueConsumer.class);
 
 	private final Lock lifecycleLock = new ReentrantLock();
 

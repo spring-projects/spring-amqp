@@ -1,5 +1,5 @@
 buildscript {
-	ext.kotlinVersion = '1.9.10'
+	ext.kotlinVersion = '1.9.20'
 	ext.isCI = System.getenv('GITHUB_ACTION')
 	repositories {
 		mavenCentral()
@@ -474,9 +474,9 @@ project('spring-rabbit') {
 
 	}
 
-	compileTestKotlin {
-		kotlinOptions {
-			jvmTarget = '17'
+	compileKotlin {
+		compilerOptions {
+			allWarningsAsErrors = true
 		}
 	}
 

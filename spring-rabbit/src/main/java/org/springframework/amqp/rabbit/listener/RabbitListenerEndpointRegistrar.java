@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2022 the original author or authors.
+ * Copyright 2014-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
@@ -37,13 +39,16 @@ import org.springframework.validation.Validator;
  * @author Stephane Nicoll
  * @author Juergen Hoeller
  * @author Artem Bilan
+ *
  * @since 1.4
+ *
  * @see org.springframework.amqp.rabbit.annotation.RabbitListenerConfigurer
  */
 public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, InitializingBean {
 
-	private final List<AmqpListenerEndpointDescriptor> endpointDescriptors =
-			new ArrayList<AmqpListenerEndpointDescriptor>();
+	private final List<AmqpListenerEndpointDescriptor> endpointDescriptors = new ArrayList<>();
+
+	private final Lock endpointDescriptorsLock = new ReentrantLock();
 
 	private List<HandlerMethodArgumentResolver> customMethodArgumentResolvers = new ArrayList<>();
 
@@ -113,8 +118,7 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	 * @param rabbitHandlerMethodFactory the {@link MessageHandlerMethodFactory} instance.
 	 */
 	public void setMessageHandlerMethodFactory(MessageHandlerMethodFactory rabbitHandlerMethodFactory) {
-		Assert.isNull(this.validator,
-				"A validator cannot be provided with a custom message handler factory");
+		Assert.isNull(this.validator, "A validator cannot be provided with a custom message handler factory");
 		this.messageHandlerMethodFactory = rabbitHandlerMethodFactory;
 	}
 
@@ -186,7 +190,8 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 
 	protected void registerAllEndpoints() {
 		Assert.state(this.endpointRegistry != null, "No registry available");
-		synchronized (this.endpointDescriptors) {
+		this.endpointDescriptorsLock.lock();
+		try {
 			for (AmqpListenerEndpointDescriptor descriptor : this.endpointDescriptors) {
 				if (descriptor.endpoint instanceof MultiMethodRabbitListenerEndpoint multi && this.validator != null) {
 					multi.setValidator(this.validator);
@@ -195,6 +200,9 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 						descriptor.endpoint, resolveContainerFactory(descriptor));
 			}
 			this.startImmediately = true;  // trigger immediate startup
+		}
+		finally {
+			this.endpointDescriptorsLock.unlock();
 		}
 	}
 
@@ -233,7 +241,8 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 		Assert.state(!this.startImmediately || this.endpointRegistry != null, "No registry available");
 		// Factory may be null, we defer the resolution right before actually creating the container
 		AmqpListenerEndpointDescriptor descriptor = new AmqpListenerEndpointDescriptor(endpoint, factory);
-		synchronized (this.endpointDescriptors) {
+		this.endpointDescriptorsLock.lock();
+		try {
 			if (this.startImmediately) { // Register and start immediately
 				this.endpointRegistry.registerListenerContainer(descriptor.endpoint, // NOSONAR never null
 						resolveContainerFactory(descriptor), true);
@@ -241,6 +250,9 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 			else {
 				this.endpointDescriptors.add(descriptor);
 			}
+		}
+		finally {
+			this.endpointDescriptorsLock.unlock();
 		}
 	}
 
@@ -256,18 +268,15 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	}
 
 
-	private static final class AmqpListenerEndpointDescriptor {
+	private record AmqpListenerEndpointDescriptor(RabbitListenerEndpoint endpoint,
+												  RabbitListenerContainerFactory<?> containerFactory) {
 
-		private final RabbitListenerEndpoint endpoint;
+			private AmqpListenerEndpointDescriptor(RabbitListenerEndpoint endpoint,
+					@Nullable RabbitListenerContainerFactory<?> containerFactory) {
+				this.endpoint = endpoint;
+				this.containerFactory = containerFactory;
+			}
 
-		private final RabbitListenerContainerFactory<?> containerFactory;
-
-		AmqpListenerEndpointDescriptor(RabbitListenerEndpoint endpoint,
-				@Nullable RabbitListenerContainerFactory<?> containerFactory) {
-			this.endpoint = endpoint;
-			this.containerFactory = containerFactory;
 		}
-
-	}
 
 }
