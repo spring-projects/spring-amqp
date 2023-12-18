@@ -10,6 +10,7 @@ jobs:
   finalize-release:
     permissions:
       actions: write
+      contents: write
 
     uses: artembilan/spring-github-workflows/.github/workflows/spring-finalize-release.yml@main
     with:
