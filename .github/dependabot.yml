@@ -11,7 +11,7 @@ updates:
     open-pull-requests-limit: 10
     groups:
        development-dependencies:
-         update-types: "patch"
+         update-types: ["patch"]
          patterns: 
          - "com.gradle.enterprise"
          - "io.spring.*"
