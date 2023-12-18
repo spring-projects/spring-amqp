@@ -47,7 +47,7 @@ ext {
 	assertkVersion = '0.27.0'
 	awaitilityVersion = '4.2.0'
 	commonsCompressVersion = '1.20'
-	commonsHttpClientVersion = '5.2.1'
+	commonsHttpClientVersion = '5.2.3'
 	commonsPoolVersion = '2.12.0'
 	googleJsr305Version = '3.0.2'
 	hamcrestVersion = '2.2'
@@ -67,12 +67,12 @@ ext {
 	rabbitmqStreamVersion = '0.14.0'
 	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.19.0'
 	reactorVersion = '2023.0.0'
-	snappyVersion = '1.1.8.4'
+	snappyVersion = '1.1.10.5'
 	springDataVersion = '2023.1.0'
 	springRetryVersion = '2.0.4'
 	springVersion = project.hasProperty('springVersion') ? project.springVersion : '6.1.0'
 	testcontainersVersion = '1.19.1'
-	zstdJniVersion = '1.5.0-2'
+	zstdJniVersion = '1.5.5-11'
 
 	javaProjects = subprojects - project(':spring-amqp-bom')
 }
