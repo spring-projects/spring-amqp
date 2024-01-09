@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -465,11 +465,10 @@ public class BlockingQueueConsumer {
 
 	protected void basicCancel(boolean expected) {
 		this.normalCancel = expected;
-		getConsumerTags().forEach(consumerTag -> {
-			if (this.channel.isOpen()) {
-				RabbitUtils.cancel(this.channel, consumerTag);
-			}
-		});
+		Collection<String> consumerTags = getConsumerTags();
+		if (!CollectionUtils.isEmpty(consumerTags)) {
+			RabbitUtils.closeMessageConsumer(this.channel, consumerTags, this.transactional);
+		}
 		this.cancelled.set(true);
 		this.abortStarted = System.currentTimeMillis();
 	}
@@ -1007,6 +1006,7 @@ public class BlockingQueueConsumer {
 						+ "); " + BlockingQueueConsumer.this);
 			}
 			this.canceled = true;
+			BlockingQueueConsumer.this.activeObjectCounter.release(BlockingQueueConsumer.this);
 		}
 
 		@Override

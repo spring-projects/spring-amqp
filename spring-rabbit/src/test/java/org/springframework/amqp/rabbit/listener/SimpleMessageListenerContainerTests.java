@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -517,7 +518,7 @@ public class SimpleMessageListenerContainerTests {
 		waitForConsumersToStop(consumers);
 		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections", Set.class);
 		assertThat(allocatedConnections).hasSize(2);
-		assertThat(ccf.getCacheProperties().get("openConnections")).isEqualTo("1");
+		assertThat(ccf.getCacheProperties().get("openConnections")).isEqualTo("2");
 	}
 
 	@Test
@@ -807,15 +808,15 @@ public class SimpleMessageListenerContainerTests {
 
 	}
 
-	private void waitForConsumersToStop(Set<?> consumers) throws Exception {
+	private void waitForConsumersToStop(Set<?> consumers) {
 		with().pollInterval(Duration.ofMillis(10)).atMost(Duration.ofSeconds(10))
 				.until(() -> consumers.stream()
 						.map(consumer -> TestUtils.getPropertyValue(consumer, "consumer"))
-						.allMatch(c -> c == null));
+						.allMatch(Objects::isNull));
 	}
 
 	@SuppressWarnings("serial")
-	private class TestTransactionManager extends AbstractPlatformTransactionManager {
+	private static class TestTransactionManager extends AbstractPlatformTransactionManager {
 
 		@Override
 		protected void doBegin(Object transaction, TransactionDefinition definition) throws TransactionException {
