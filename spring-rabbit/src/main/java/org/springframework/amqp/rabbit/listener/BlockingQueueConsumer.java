@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -66,6 +67,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.lang.Nullable;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.backoff.BackOffExecution;
 
@@ -294,7 +296,7 @@ public class BlockingQueueConsumer {
 		this.transactional = transactional;
 		this.prefetchCount = prefetchCount;
 		this.defaultRequeueRejected = defaultRequeueRejected;
-		if (consumerArgs != null && consumerArgs.size() > 0) {
+		if (!CollectionUtils.isEmpty(consumerArgs)) {
 			this.consumerArgs.putAll(consumerArgs);
 		}
 		this.noLocal = noLocal;
@@ -309,8 +311,8 @@ public class BlockingQueueConsumer {
 
 	public Collection<String> getConsumerTags() {
 		return this.consumers.values().stream()
-				.map(c -> c.getConsumerTag())
-				.filter(tag -> tag != null)
+				.map(DefaultConsumer::getConsumerTag)
+				.filter(Objects::nonNull)
 				.collect(Collectors.toList());
 	}
 
