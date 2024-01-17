@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -434,6 +434,7 @@ public class MessageProperties implements Serializable {
 	 * The x-delay header (outbound).
 	 * @return the delay.
 	 * @since 1.6
+	 * @deprecated in favor of {@link #getDelayLong()}
 	 * @see #getReceivedDelay()
 	 */
 	public Integer getDelay() {
@@ -450,8 +451,40 @@ public class MessageProperties implements Serializable {
 	 * Set the x-delay header.
 	 * @param delay the delay.
 	 * @since 1.6
+	 * @deprecated in favor of {@link #setDelayLong(Long)}
 	 */
 	public void setDelay(Integer delay) {
+		if (delay == null || delay < 0) {
+			this.headers.remove(X_DELAY);
+		}
+		else {
+			this.headers.put(X_DELAY, delay);
+		}
+	}
+
+	/**
+	 * Get the x-delay header long value.
+	 *
+	 * @return the delay.
+	 * @since 3.1.2
+	 */
+	public Long getDelayLong() {
+		Object delay = this.headers.get(X_DELAY);
+		if (delay instanceof Long) {
+			return (Long) delay;
+		}
+		else {
+			return null;
+		}
+	}
+
+	/**
+	 * Set the x-delay header to a long value.
+	 *
+	 * @param delay the delay.
+	 * @since 3.1.2
+	 */
+	public void setDelayLong(Long delay) {
 		if (delay == null || delay < 0) {
 			this.headers.remove(X_DELAY);
 		}

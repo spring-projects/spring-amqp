@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,6 +94,26 @@ public class SimpleAmqpHeaderMapperTests {
 		assertThat(amqpProperties.getUserId()).isEqualTo("test.userId");
 		assertThat(amqpProperties.getDelay()).isEqualTo(Integer.valueOf(1234));
 	}
+
+	@Test
+	public void fromHeadersWithLongDelay() {
+		SimpleAmqpHeaderMapper headerMapper = new SimpleAmqpHeaderMapper();
+		Map<String, Object> headerMap = new HashMap<>();
+		headerMap.put(AmqpHeaders.DELAY, 1234L);
+		MessageHeaders messageHeaders = new MessageHeaders(headerMap);
+		MessageProperties amqpProperties = new MessageProperties();
+		headerMapper.fromHeaders(messageHeaders, amqpProperties);
+		assertThat(amqpProperties.getDelayLong()).isEqualTo(Long.valueOf(1234));
+
+		amqpProperties.setDelayLong(5678L);
+		assertThat(amqpProperties.getDelayLong()).isEqualTo(Long.valueOf(5678));
+
+		amqpProperties.setDelay(123);
+		assertThat(amqpProperties.getDelayLong()).isNull();
+
+
+	}
+
 
 	@Test
 	public void fromHeadersWithContentTypeAsMediaType() {
