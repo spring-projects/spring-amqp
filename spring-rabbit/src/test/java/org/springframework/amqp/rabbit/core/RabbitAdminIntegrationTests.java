@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,14 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
@@ -59,6 +61,7 @@ import com.rabbitmq.client.ConnectionFactory;
  * @author Gary Russell
  * @author Gunnar Hillert
  * @author Artem Bilan
+ * @author Raylax Grey
  */
 @RabbitAvailable(management = true)
 public class RabbitAdminIntegrationTests extends NeedsManagementTests {
@@ -130,7 +133,7 @@ public class RabbitAdminIntegrationTests extends NeedsManagementTests {
 
 	@Test
 	public void testDoubleDeclarationOfAutodeleteQueue() {
-		// No error expected here: the queue is autodeleted when the last consumer is cancelled, but this one never has
+		// No error expected here: the queue is auto-deleted when the last consumer is cancelled, but this one never has
 		// any consumers.
 		CachingConnectionFactory connectionFactory1 = new CachingConnectionFactory();
 		connectionFactory1.setHost("localhost");
@@ -236,9 +239,7 @@ public class RabbitAdminIntegrationTests extends NeedsManagementTests {
 		context.getBeanFactory().registerSingleton("foo", exchange);
 		rabbitAdmin.afterPropertiesSet();
 
-		rabbitAdmin.initialize();
-
-		// Pass by virtue of RabbitMQ not firing a 403 reply code
+		assertThatNoException().isThrownBy(rabbitAdmin::initialize);
 	}
 
 	@Test
@@ -367,7 +368,6 @@ public class RabbitAdminIntegrationTests extends NeedsManagementTests {
 		this.rabbitAdmin.deleteQueue(queue.getName());
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testDeclareDelayedExchange() throws Exception {
 		DirectExchange exchange = new DirectExchange("test.delayed.exchange");
@@ -397,20 +397,20 @@ public class RabbitAdminIntegrationTests extends NeedsManagementTests {
 		RabbitTemplate template = new RabbitTemplate(this.connectionFactory);
 		template.setReceiveTimeout(10000);
 		template.convertAndSend(exchangeName, queue.getName(), "foo", message -> {
-			message.getMessageProperties().setDelay(1000);
+			message.getMessageProperties().setDelayLong(1000L);
 			return message;
 		});
 		MessageProperties properties = new MessageProperties();
-		properties.setDelay(500);
+		properties.setDelayLong(500L);
 		template.send(exchangeName, queue.getName(),
 				MessageBuilder.withBody("foo".getBytes()).andProperties(properties).build());
 		long t1 = System.currentTimeMillis();
 		Message received = template.receive(queue.getName());
 		assertThat(received).isNotNull();
-		assertThat(received.getMessageProperties().getReceivedDelay()).isEqualTo(Integer.valueOf(500));
+		assertThat(received.getMessageProperties().getDelayLong()).isEqualTo(500L);
 		received = template.receive(queue.getName());
 		assertThat(received).isNotNull();
-		assertThat(received.getMessageProperties().getReceivedDelay()).isEqualTo(Integer.valueOf(1000));
+		assertThat(received.getMessageProperties().getDelayLong()).isEqualTo(1000L);
 		assertThat(System.currentTimeMillis() - t1).isGreaterThan(950L);
 
 		Map<String, Object> exchange2 = getExchange(exchangeName);
@@ -421,9 +421,9 @@ public class RabbitAdminIntegrationTests extends NeedsManagementTests {
 		this.rabbitAdmin.deleteExchange(exchangeName);
 	}
 
-	private Map<String, Object> getExchange(String exchangeName) throws Exception {
+	private Map<String, Object> getExchange(String exchangeName) {
 		return await().pollDelay(Duration.ZERO)
-				.until(() -> exchangeInfo(exchangeName), exch -> exch != null);
+				.until(() -> exchangeInfo(exchangeName), Objects::nonNull);
 	}
 
 	/**
@@ -437,17 +437,13 @@ public class RabbitAdminIntegrationTests extends NeedsManagementTests {
 		ConnectionFactory cf = new ConnectionFactory();
 		cf.setHost("localhost");
 		cf.setPort(BrokerTestUtils.getPort());
-		Connection connection = cf.newConnection();
-		Channel channel = connection.createChannel();
-		try {
+		try (Connection connection = cf.newConnection()) {
+			Channel channel = connection.createChannel();
 			DeclareOk result = channel.queueDeclarePassive(queue.getName());
 			return result != null;
 		}
 		catch (IOException e) {
 			return e.getCause().getMessage().contains("RESOURCE_LOCKED");
-		}
-		finally {
-			connection.close();
 		}
 	}
 

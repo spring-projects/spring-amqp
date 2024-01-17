@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.support;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 import java.util.Date;
@@ -37,13 +38,14 @@ import org.springframework.util.MimeTypeUtils;
  * @author Mark Fisher
  * @author Gary Russell
  * @author Oleg Zhurakousky
+ * @author Raylax Grey
  */
 public class SimpleAmqpHeaderMapperTests {
 
 	@Test
 	public void fromHeaders() {
 		SimpleAmqpHeaderMapper headerMapper = new SimpleAmqpHeaderMapper();
-		Map<String, Object> headerMap = new HashMap<String, Object>();
+		Map<String, Object> headerMap = new HashMap<>();
 		headerMap.put(AmqpHeaders.APP_ID, "test.appId");
 		headerMap.put(AmqpHeaders.CLUSTER_ID, "test.clusterId");
 		headerMap.put(AmqpHeaders.CONTENT_ENCODING, "test.contentEncoding");
@@ -51,7 +53,7 @@ public class SimpleAmqpHeaderMapperTests {
 		headerMap.put(AmqpHeaders.CONTENT_TYPE, "test.contentType");
 		String testCorrelationId = "foo";
 		headerMap.put(AmqpHeaders.CORRELATION_ID, testCorrelationId);
-		headerMap.put(AmqpHeaders.DELAY, 1234);
+		headerMap.put(AmqpHeaders.DELAY, 1234L);
 		headerMap.put(AmqpHeaders.DELIVERY_MODE, MessageDeliveryMode.NON_PERSISTENT);
 		headerMap.put(AmqpHeaders.DELIVERY_TAG, 1234L);
 		headerMap.put(AmqpHeaders.EXPIRATION, "test.expiration");
@@ -92,13 +94,39 @@ public class SimpleAmqpHeaderMapperTests {
 		assertThat(amqpProperties.getTimestamp()).isEqualTo(testTimestamp);
 		assertThat(amqpProperties.getType()).isEqualTo("test.type");
 		assertThat(amqpProperties.getUserId()).isEqualTo("test.userId");
-		assertThat(amqpProperties.getDelay()).isEqualTo(Integer.valueOf(1234));
+		assertThat(amqpProperties.getDelayLong()).isEqualTo(Long.valueOf(1234));
 	}
+
+	@Test
+	public void fromHeadersWithLongDelay() {
+		SimpleAmqpHeaderMapper headerMapper = new SimpleAmqpHeaderMapper();
+		Map<String, Object> headerMap = new HashMap<>();
+		headerMap.put(AmqpHeaders.DELAY, 1234L);
+		MessageHeaders messageHeaders = new MessageHeaders(headerMap);
+		MessageProperties amqpProperties = new MessageProperties();
+		headerMapper.fromHeaders(messageHeaders, amqpProperties);
+		assertThat(amqpProperties.getDelayLong()).isEqualTo(Long.valueOf(1234));
+
+		amqpProperties.setDelayLong(5678L);
+		assertThat(amqpProperties.getDelayLong()).isEqualTo(Long.valueOf(5678));
+
+		amqpProperties.setDelayLong(null);
+		assertThat(amqpProperties.getHeaders().containsKey(AmqpHeaders.DELAY)).isFalse();
+
+		amqpProperties.setDelayLong(MessageProperties.X_DELAY_MAX);
+		assertThat(amqpProperties.getDelayLong()).isEqualTo(Long.valueOf(MessageProperties.X_DELAY_MAX));
+
+		assertThatThrownBy(() -> amqpProperties.setDelayLong(MessageProperties.X_DELAY_MAX + 1))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Delay cannot exceed");
+
+	}
+
 
 	@Test
 	public void fromHeadersWithContentTypeAsMediaType() {
 		SimpleAmqpHeaderMapper headerMapper = new SimpleAmqpHeaderMapper();
-		Map<String, Object> headerMap = new HashMap<String, Object>();
+		Map<String, Object> headerMap = new HashMap<>();
 
 		headerMap.put(AmqpHeaders.CONTENT_TYPE, MimeTypeUtils.TEXT_HTML);
 
@@ -126,7 +154,7 @@ public class SimpleAmqpHeaderMapperTests {
 		amqpProperties.setMessageCount(42);
 		amqpProperties.setMessageId("test.messageId");
 		amqpProperties.setPriority(22);
-		amqpProperties.setReceivedDelay(1234);
+		amqpProperties.setReceivedDelayLong(1234L);
 		amqpProperties.setReceivedExchange("test.receivedExchange");
 		amqpProperties.setReceivedRoutingKey("test.receivedRoutingKey");
 		amqpProperties.setRedelivered(true);
@@ -151,7 +179,7 @@ public class SimpleAmqpHeaderMapperTests {
 		assertThat(headerMap.get(AmqpHeaders.EXPIRATION)).isEqualTo("test.expiration");
 		assertThat(headerMap.get(AmqpHeaders.MESSAGE_COUNT)).isEqualTo(42);
 		assertThat(headerMap.get(AmqpHeaders.MESSAGE_ID)).isEqualTo("test.messageId");
-		assertThat(headerMap.get(AmqpHeaders.RECEIVED_DELAY)).isEqualTo(1234);
+		assertThat(headerMap.get(AmqpHeaders.RECEIVED_DELAY)).isEqualTo(1234L);
 		assertThat(headerMap.get(AmqpHeaders.RECEIVED_EXCHANGE)).isEqualTo("test.receivedExchange");
 		assertThat(headerMap.get(AmqpHeaders.RECEIVED_ROUTING_KEY)).isEqualTo("test.receivedRoutingKey");
 		assertThat(headerMap.get(AmqpHeaders.REPLY_TO)).isEqualTo("test.replyTo");
@@ -170,7 +198,7 @@ public class SimpleAmqpHeaderMapperTests {
 		Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
 		MessageProperties amqpProperties = new MessageProperties();
 		converter.toMessage("123", amqpProperties);
-		Map<String, Object> headerMap = new HashMap<String, Object>();
+		Map<String, Object> headerMap = new HashMap<>();
 		headerMap.put("__TypeId__", "java.lang.Integer");
 		MessageHeaders messageHeaders = new MessageHeaders(headerMap);
 		headerMapper.fromHeaders(messageHeaders, amqpProperties);
