@@ -95,7 +95,8 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 					Object value = entry.getValue();
 					if (value instanceof Integer intValue) {
 						target.setReceivedDelayLong(intValue.longValue());
-					} else if (value instanceof Long longVal) {
+					}
+					else if (value instanceof Long longVal) {
 						target.setReceivedDelayLong(longVal);
 					}
 				}
