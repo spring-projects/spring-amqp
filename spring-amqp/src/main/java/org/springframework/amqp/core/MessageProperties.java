@@ -488,7 +488,6 @@ public class MessageProperties implements Serializable {
 
 	/**
 	 * Get the x-delay header long value.
-	 *
 	 * @return the delay.
 	 * @since 3.1.2
 	 */
@@ -504,7 +503,6 @@ public class MessageProperties implements Serializable {
 
 	/**
 	 * Set the x-delay header to a long value.
-	 *
 	 * @param delay the delay.
 	 * @since 3.1.2
 	 */
