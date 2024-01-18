@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,7 @@ import com.rabbitmq.client.ConnectionFactory;
  * @author Gary Russell
  * @author Gunnar Hillert
  * @author Artem Bilan
+ * @author Raylax Grey
  */
 @RabbitAvailable(management = true)
 public class RabbitAdminIntegrationTests extends NeedsManagementTests {
@@ -397,20 +398,20 @@ public class RabbitAdminIntegrationTests extends NeedsManagementTests {
 		RabbitTemplate template = new RabbitTemplate(this.connectionFactory);
 		template.setReceiveTimeout(10000);
 		template.convertAndSend(exchangeName, queue.getName(), "foo", message -> {
-			message.getMessageProperties().setDelay(1000);
+			message.getMessageProperties().setDelayLong(1000L);
 			return message;
 		});
 		MessageProperties properties = new MessageProperties();
-		properties.setDelay(500);
+		properties.setDelayLong(500L);
 		template.send(exchangeName, queue.getName(),
 				MessageBuilder.withBody("foo".getBytes()).andProperties(properties).build());
 		long t1 = System.currentTimeMillis();
 		Message received = template.receive(queue.getName());
 		assertThat(received).isNotNull();
-		assertThat(received.getMessageProperties().getReceivedDelay()).isEqualTo(Integer.valueOf(500));
+		assertThat(received.getMessageProperties().getDelayLong()).isEqualTo(Long.valueOf(500L));
 		received = template.receive(queue.getName());
 		assertThat(received).isNotNull();
-		assertThat(received.getMessageProperties().getReceivedDelay()).isEqualTo(Integer.valueOf(1000));
+		assertThat(received.getMessageProperties().getDelayLong()).isEqualTo(Long.valueOf(1000L));
 		assertThat(System.currentTimeMillis() - t1).isGreaterThan(950L);
 
 		Map<String, Object> exchange2 = getExchange(exchangeName);
