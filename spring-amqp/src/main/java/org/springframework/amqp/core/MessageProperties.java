@@ -381,7 +381,6 @@ public class MessageProperties implements Serializable {
 	/**
 	 * When a delayed message exchange is used the x-delay header on a
 	 * received message contains the delay.
-	 *
 	 * @return the received delay.
 	 * @since 3.1.2
 	 * @see #getDelayLong()
@@ -393,7 +392,6 @@ public class MessageProperties implements Serializable {
 	/**
 	 * When a delayed message exchange is used the x-delay header on a
 	 * received message contains the delay.
-	 *
 	 * @param receivedDelay the received delay.
 	 * @since 3.1.2
 	 * @see #setDelayLong(Long)
