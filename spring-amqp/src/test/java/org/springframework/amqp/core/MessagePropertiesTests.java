@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
  * @author Artem Bilan
  * @author Gary Russell
  * @author Csaba Soti
+ * @author Raylax Grey
  *
  */
 public class MessagePropertiesTests {
@@ -55,7 +56,7 @@ public class MessagePropertiesTests {
 		MessageProperties properties = new MessageProperties();
 		Integer delay = 100;
 		properties.setDelay(delay);
-		assertThat(properties.getHeaders().get(MessageProperties.X_DELAY)).isEqualTo(delay);
+		assertThat(properties.getHeaders().get(MessageProperties.X_DELAY)).isEqualTo(100L);
 		properties.setDelay(null);
 		assertThat(properties.getHeaders().containsKey(MessageProperties.X_DELAY)).isFalse();
 	}

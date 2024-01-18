@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import com.rabbitmq.client.LongString;
  * @author Mark Fisher
  * @author Gary Russell
  * @author Soeren Unruh
+ * @author Raylax Grey
  * @since 1.0
  */
 public class DefaultMessagePropertiesConverter implements MessagePropertiesConverter {
@@ -92,8 +93,10 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 				String key = entry.getKey();
 				if (MessageProperties.X_DELAY.equals(key)) {
 					Object value = entry.getValue();
-					if (value instanceof Integer integ) {
-						target.setReceivedDelay(integ);
+					if (value instanceof Integer intValue) {
+						target.setReceivedDelayLong(intValue.longValue());
+					} else if (value instanceof Long longVal) {
+						target.setReceivedDelayLong(longVal);
 					}
 				}
 				else {

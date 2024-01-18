@@ -17,6 +17,7 @@
 package org.springframework.amqp.support;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 import java.util.Date;
@@ -37,6 +38,7 @@ import org.springframework.util.MimeTypeUtils;
  * @author Mark Fisher
  * @author Gary Russell
  * @author Oleg Zhurakousky
+ * @author Raylax Grey
  */
 public class SimpleAmqpHeaderMapperTests {
 
@@ -51,7 +53,7 @@ public class SimpleAmqpHeaderMapperTests {
 		headerMap.put(AmqpHeaders.CONTENT_TYPE, "test.contentType");
 		String testCorrelationId = "foo";
 		headerMap.put(AmqpHeaders.CORRELATION_ID, testCorrelationId);
-		headerMap.put(AmqpHeaders.DELAY, 1234);
+		headerMap.put(AmqpHeaders.DELAY, 1234L);
 		headerMap.put(AmqpHeaders.DELIVERY_MODE, MessageDeliveryMode.NON_PERSISTENT);
 		headerMap.put(AmqpHeaders.DELIVERY_TAG, 1234L);
 		headerMap.put(AmqpHeaders.EXPIRATION, "test.expiration");
@@ -108,9 +110,15 @@ public class SimpleAmqpHeaderMapperTests {
 		amqpProperties.setDelayLong(5678L);
 		assertThat(amqpProperties.getDelayLong()).isEqualTo(Long.valueOf(5678));
 
-		amqpProperties.setDelay(123);
-		assertThat(amqpProperties.getDelayLong()).isNull();
+		amqpProperties.setDelayLong(null);
+		assertThat(amqpProperties.getHeaders().containsKey(AmqpHeaders.DELAY)).isFalse();
 
+		amqpProperties.setDelayLong(MessageProperties.X_DELAY_MAX);
+		assertThat(amqpProperties.getDelayLong()).isEqualTo(Long.valueOf(MessageProperties.X_DELAY_MAX));
+
+		assertThatThrownBy(() -> amqpProperties.setDelayLong(MessageProperties.X_DELAY_MAX + 1))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Delay cannot exceed");
 
 	}
 
@@ -171,7 +179,7 @@ public class SimpleAmqpHeaderMapperTests {
 		assertThat(headerMap.get(AmqpHeaders.EXPIRATION)).isEqualTo("test.expiration");
 		assertThat(headerMap.get(AmqpHeaders.MESSAGE_COUNT)).isEqualTo(42);
 		assertThat(headerMap.get(AmqpHeaders.MESSAGE_ID)).isEqualTo("test.messageId");
-		assertThat(headerMap.get(AmqpHeaders.RECEIVED_DELAY)).isEqualTo(1234);
+		assertThat(headerMap.get(AmqpHeaders.RECEIVED_DELAY)).isEqualTo(1234L);
 		assertThat(headerMap.get(AmqpHeaders.RECEIVED_EXCHANGE)).isEqualTo("test.receivedExchange");
 		assertThat(headerMap.get(AmqpHeaders.RECEIVED_ROUTING_KEY)).isEqualTo("test.receivedRoutingKey");
 		assertThat(headerMap.get(AmqpHeaders.REPLY_TO)).isEqualTo("test.replyTo");
