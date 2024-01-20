@@ -94,7 +94,7 @@ public class SimpleAmqpHeaderMapperTests {
 		assertThat(amqpProperties.getTimestamp()).isEqualTo(testTimestamp);
 		assertThat(amqpProperties.getType()).isEqualTo("test.type");
 		assertThat(amqpProperties.getUserId()).isEqualTo("test.userId");
-		assertThat(amqpProperties.getDelay()).isEqualTo(Integer.valueOf(1234));
+		assertThat(amqpProperties.getDelayLong()).isEqualTo(Long.valueOf(1234));
 	}
 
 	@Test
@@ -154,7 +154,7 @@ public class SimpleAmqpHeaderMapperTests {
 		amqpProperties.setMessageCount(42);
 		amqpProperties.setMessageId("test.messageId");
 		amqpProperties.setPriority(22);
-		amqpProperties.setReceivedDelay(1234);
+		amqpProperties.setReceivedDelayLong(1234L);
 		amqpProperties.setReceivedExchange("test.receivedExchange");
 		amqpProperties.setReceivedRoutingKey("test.receivedRoutingKey");
 		amqpProperties.setRedelivered(true);

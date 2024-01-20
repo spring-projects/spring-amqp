@@ -69,7 +69,11 @@ public class MessageProperties implements Serializable {
 
 	public static final Integer DEFAULT_PRIORITY = 0;
 
-	public static final long X_DELAY_MAX = 0xffffffffL; // (2 ^ 32) - 1
+	/**
+     * The maximum value of x-delay header.
+     * @since 3.1.2
+     */
+	public static final long X_DELAY_MAX = 0xffffffffL;
 
 	private final Map<String, Object> headers = new HashMap<>();
 

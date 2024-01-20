@@ -54,10 +54,10 @@ public class MessagePropertiesTests {
 	@Test
 	public void testDelayHeader() {
 		MessageProperties properties = new MessageProperties();
-		Integer delay = 100;
-		properties.setDelay(delay);
-		assertThat(properties.getHeaders().get(MessageProperties.X_DELAY)).isEqualTo(100L);
-		properties.setDelay(null);
+		Long delay = 100L;
+		properties.setDelayLong(delay);
+		assertThat(properties.getHeaders().get(MessageProperties.X_DELAY)).isEqualTo(delay);
+		properties.setDelayLong(null);
 		assertThat(properties.getHeaders().containsKey(MessageProperties.X_DELAY)).isFalse();
 	}
 
