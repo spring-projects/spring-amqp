@@ -110,6 +110,7 @@ import com.rabbitmq.client.PossibleAuthenticationFailureException;
  * @author Mohammad Hewedy
  * @author Yansong Ren
  * @author Tim Bourquin
+ * @author Jeonggi Kim
  */
 public class SimpleMessageListenerContainerTests {
 
@@ -782,6 +783,59 @@ public class SimpleMessageListenerContainerTests {
 		CountDownLatch start = TestUtils.getPropertyValue(lastTask, "start", CountDownLatch.class);
 
 		assertThat(start.getCount()).isEqualTo(0L);
+	}
+
+	@Test
+	public void testBatchReceiveTimedOut() throws Exception {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel = mock(Channel.class);
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(false)).willReturn(channel);
+		final AtomicReference<Consumer> consumer = new AtomicReference<>();
+		willAnswer(invocation -> {
+			consumer.set(invocation.getArgument(6));
+			consumer.get().handleConsumeOk("1");
+			return "1";
+		}).given(channel)
+				.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
+						any(Consumer.class));
+		final CountDownLatch latch = new CountDownLatch(2);
+		willAnswer(invocation -> {
+			latch.countDown();
+			return null;
+		}).given(channel).basicAck(anyLong(), anyBoolean());
+
+		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setAfterReceivePostProcessors(msg -> null);
+		container.setQueueNames("foo");
+		MessageListener listener = mock(BatchMessageListener.class);
+		container.setMessageListener(listener);
+		container.setBatchSize(3);
+		container.setConsumerBatchEnabled(true);
+		container.setReceiveTimeout(10);
+		container.setBatchReceiveTimeout(20);
+		container.start();
+
+		BasicProperties props = new BasicProperties();
+		byte[] payload = "baz".getBytes();
+		Envelope envelope = new Envelope(1L, false, "foo", "bar");
+		consumer.get().handleDelivery("1", envelope, props, payload);
+		envelope = new Envelope(2L, false, "foo", "bar");
+		consumer.get().handleDelivery("1", envelope, props, payload);
+		// waiting for batch receive timed out
+		Thread.sleep(20);
+		envelope = new Envelope(3L, false, "foo", "bar");
+		consumer.get().handleDelivery("1", envelope, props, payload);
+		assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+		verify(channel, never()).basicAck(eq(1), anyBoolean());
+		verify(channel).basicAck(2, true);
+		verify(channel, never()).basicAck(eq(2), anyBoolean());
+		verify(channel).basicAck(3, true);
+		container.stop();
+		verify(listener).containerAckMode(AcknowledgeMode.AUTO);
+		verify(listener).isAsyncReplies();
+		verifyNoMoreInteractions(listener);
 	}
 
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,

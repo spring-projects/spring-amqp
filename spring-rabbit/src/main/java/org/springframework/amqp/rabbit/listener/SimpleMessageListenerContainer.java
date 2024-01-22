@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,6 +80,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Mat Jaggard
  * @author Yansong Ren
  * @author Tim Bourquin
+ * @author Jeonggi Kim
  *
  * @since 1.0
  */
@@ -96,6 +97,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private static final int DEFAULT_CONSECUTIVE_ACTIVE_TRIGGER = 10;
 
 	private static final int DEFAULT_CONSECUTIVE_IDLE_TRIGGER = 10;
+
+	private static final long DEFAULT_BATCH_RECEIVE_TIMEOUT = 3000;
 
 	public static final long DEFAULT_RECEIVE_TIMEOUT = 1000;
 
@@ -120,6 +123,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private boolean consumerBatchEnabled;
 
 	private long receiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
+
+	private long batchReceiveTimeout = DEFAULT_BATCH_RECEIVE_TIMEOUT;
 
 	private Set<BlockingQueueConsumer> consumers;
 
@@ -328,6 +333,16 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setReceiveTimeout(long receiveTimeout) {
 		this.receiveTimeout = receiveTimeout;
+	}
+
+	/**
+	 * The time (in milliseconds) that a waiting time to fill batch size. Default
+	 * 3000 (3 second).
+	 * @param batchReceiveTimeout the timeout
+	 */
+	public void setBatchReceiveTimeout(long batchReceiveTimeout) {
+		Assert.isTrue(batchReceiveTimeout > 0, "'batchReceiveTimeout' must be > 0");
+		this.batchReceiveTimeout = batchReceiveTimeout;
 	}
 
 	/**
@@ -996,8 +1011,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		List<Message> messages = null;
 		long deliveryTag = 0;
+		long startTime = System.currentTimeMillis();
 
 		for (int i = 0; i < this.batchSize; i++) {
+			boolean batchTimedOut = (System.currentTimeMillis() - startTime) > this.batchReceiveTimeout;
+			if (batchTimedOut) {
+				logger.trace("Timed out for gather batch messages.");
+				break;
+			}
 
 			logger.trace("Waiting for message from consumer.");
 			Message message = consumer.nextMessage(this.receiveTimeout);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2022 the original author or authors.
+ * Copyright 2014-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.springframework.amqp.utils.JavaUtils;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Dustin Schultz
+ * @author Jeonggi Kim
  *
  * @since 1.4
  */
@@ -53,6 +54,8 @@ public class SimpleRabbitListenerContainerFactory
 	private Integer consecutiveIdleTrigger;
 
 	private Long receiveTimeout;
+
+	private Long batchReceiveTimeout;
 
 	private Boolean consumerBatchEnabled;
 
@@ -122,6 +125,14 @@ public class SimpleRabbitListenerContainerFactory
 	}
 
 	/**
+	 * @param batchReceiveTimeout the timeout for gather batch messages.
+	 * @see SimpleMessageListenerContainer#setBatchReceiveTimeout
+	 */
+	public void setBatchReceiveTimeout(Long batchReceiveTimeout) {
+		this.batchReceiveTimeout = batchReceiveTimeout;
+	}
+
+	/**
 	 * Set to true to present a list of messages based on the {@link #setBatchSize(Integer)},
 	 * if the listener supports it. Starting with version 3.0, setting this to true will
 	 * also {@link #setBatchListener(boolean)} to true.
@@ -163,7 +174,8 @@ public class SimpleRabbitListenerContainerFactory
 			.acceptIfNotNull(this.stopConsumerMinInterval, instance::setStopConsumerMinInterval)
 			.acceptIfNotNull(this.consecutiveActiveTrigger, instance::setConsecutiveActiveTrigger)
 			.acceptIfNotNull(this.consecutiveIdleTrigger, instance::setConsecutiveIdleTrigger)
-			.acceptIfNotNull(this.receiveTimeout, instance::setReceiveTimeout);
+			.acceptIfNotNull(this.receiveTimeout, instance::setReceiveTimeout)
+			.acceptIfNotNull(this.batchReceiveTimeout, instance::setBatchReceiveTimeout);
 		if (Boolean.TRUE.equals(this.consumerBatchEnabled)) {
 			instance.setConsumerBatchEnabled(true);
 			/*
