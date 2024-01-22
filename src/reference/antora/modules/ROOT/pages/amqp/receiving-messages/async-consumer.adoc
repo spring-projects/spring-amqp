@@ -237,7 +237,7 @@ For convenience, the namespace provides the `priority` attribute on the `listene
 ----
 
 Starting with version 1.3, you can modify the queues on which the container listens at runtime.
-See <<listener-queues>>.
+See xref:amqp/listener-queues.adoc#listener-queues[Listener Container Queues].
 
 [[lc-auto-delete]]
 == `auto-delete` Queues

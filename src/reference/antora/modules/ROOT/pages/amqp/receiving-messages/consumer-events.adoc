@@ -22,7 +22,7 @@ A new method `logRestart()` has been added to the `ConditionalExceptionLogger` t
 
 Also, the `AbstractMessageListenerContainer.DefaultExclusiveConsumerLogger` is now public, allowing it to be sub classed.
 
-See also <<channel-close-logging>>.
+See also xref:amqp/connections.adoc#channel-close-logging[Logging Channel Close Events].
 
 Fatal errors are always logged at the `ERROR` level.
 This it not modifiable.

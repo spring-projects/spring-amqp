@@ -144,7 +144,7 @@ a|
 
 |`m-n` The range of concurrent consumers for each listener (min, max).
 If only `n` is provided, `n` is a fixed number of consumers.
-See <<listener-concurrency>>.
+See xref:amqp/listener-concurrency.adoc#listener-concurrency[Listener Concurrency].
 
 a|image::tickmark.png[]
 a|
@@ -154,7 +154,7 @@ a|
 (concurrency)
 
 |The number of concurrent consumers to initially start for each listener.
-See <<listener-concurrency>>.
+See xref:amqp/listener-concurrency.adoc#listener-concurrency[Listener Concurrency].
 For the `StLC`, concurrency is controlled via an overloaded `superStream` method; see xref:stream.adoc#super-stream-consumer[Consuming Super Streams with Single Active Consumers].
 
 a|image::tickmark.png[]
@@ -176,7 +176,7 @@ a|
 
 |The minimum number of consecutive messages received by a consumer, without a receive timeout occurring, when considering starting a new consumer.
 Also impacted by 'batchSize'.
-See <<listener-concurrency>>.
+See xref:amqp/listener-concurrency.adoc#listener-concurrency[Listener Concurrency].
 Default: 10.
 
 a|image::tickmark.png[]
@@ -188,7 +188,7 @@ a|
 
 |The minimum number of receive timeouts a consumer must experience before considering stopping a consumer.
 Also impacted by 'batchSize'.
-See <<listener-concurrency>>.
+See xref:amqp/listener-concurrency.adoc#listener-concurrency[Listener Concurrency].
 Default: 10.
 
 a|image::tickmark.png[]
@@ -241,7 +241,7 @@ a|
 (consumers-per-queue)
 
 |The number of consumers to create for each configured queue.
-See <<listener-concurrency>>.
+See xref:amqp/listener-concurrency.adoc#listener-concurrency[Listener Concurrency].
 
 a|
 a|image::tickmark.png[]
@@ -409,7 +409,7 @@ a|
 
 |The maximum number of concurrent consumers to start, if needed, on demand.
 Must be greater than or equal to 'concurrentConsumers'.
-See <<listener-concurrency>>.
+See xref:amqp/listener-concurrency.adoc#listener-concurrency[Listener Concurrency].
 
 a|image::tickmark.png[]
 a|
@@ -663,7 +663,7 @@ a|
 (min-start-interval)
 
 |The time in milliseconds that must elapse before each new consumer is started on demand.
-See <<listener-concurrency>>.
+See xref:amqp/listener-concurrency.adoc#listener-concurrency[Listener Concurrency].
 Default: 10000 (10 seconds).
 
 a|image::tickmark.png[]
@@ -686,7 +686,7 @@ a|
 (min-stop-interval)
 
 |The time in milliseconds that must elapse before a consumer is stopped since the last consumer was stopped when an idle consumer is detected.
-See <<listener-concurrency>>.
+See xref:amqp/listener-concurrency.adoc#listener-concurrency[Listener Concurrency].
 Default: 60000 (one minute).
 
 a|image::tickmark.png[]

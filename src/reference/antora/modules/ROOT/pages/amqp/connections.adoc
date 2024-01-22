@@ -543,7 +543,7 @@ public RabbitTemplate rabbitTemplate() {
 }
 ----
 
-This way messages with the header `x-use-publisher-confirms: true` will be sent through the caching connection and you can ensure the message delivery.
+This way messages with the header `x-use-publisher-confirms: true` will be sent through the caching connection, and you can ensure the message delivery.
 See xref:amqp/connections.adoc#cf-pub-conf-ret[Publisher Confirms and Returns] for more information about ensuring message delivery.
 
 [[queue-affinity]]

@@ -60,7 +60,7 @@ method arguments.
 
 NOTE: This type inference works only for `@RabbitListener` at the method level.
 
-See <<json-message-converter>> for more information.
+See xref:amqp/message-converters.adoc#json-message-converter[`Jackson2JsonMessageConverter`] for more information.
 
 If you wish to customize the method argument converter, you can do so as follows:
 

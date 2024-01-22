@@ -18,6 +18,6 @@ This provides a mechanism to get a reference to a subset of containers.
 Adding a `group` attribute causes a bean of type `Collection<MessageListenerContainer>` to be registered with the context with the group name.
 
 By default, stopping a container will cancel the consumer and process all prefetched messages before stopping.
-Starting with versions 2.4.14, 3.0.6, you can set the <<forceStop>> container property to true to stop immediately after the current message is processed, causing any prefetched messages to be requeued.
+Starting with versions 2.4.14, 3.0.6, you can set the xref:amqp/containerAttributes.adoc#forceStop[`forceStop`] container property to true to stop immediately after the current message is processed, causing any prefetched messages to be requeued.
 This is useful, for example, if exclusive or single-active consumers are being used.
 

@@ -129,7 +129,7 @@ By naming the `RabbitAdmin` beans with the convention `<container-factory-name>-
 This will also work with `bindings = @QueueBinding(...)` whereby the exchange and binding will also be declared.
 It will NOT work with `queues`, since that expects the queue(s) to already exist.
 
-On the producer side, a convenient `ConnectionFactoryContextWrapper` class is provided, to make using the `RoutingConnectionFactory` (see <<routing-connection-factory>>) simpler.
+On the producer side, a convenient `ConnectionFactoryContextWrapper` class is provided, to make using the `RoutingConnectionFactory` (see xref:amqp/connections.adoc#routing-connection-factory[Routing Connection Factory]) simpler.
 
 As you can see above, a `SimpleRoutingConnectionFactory` bean has been added with routing keys `one`, `two` and `three`.
 There is also a `RabbitTemplate` that uses that factory.

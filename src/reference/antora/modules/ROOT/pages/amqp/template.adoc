@@ -12,8 +12,8 @@ Currently, there is only a single implementation: `RabbitTemplate`.
 In the examples that follow, we often use an `AmqpTemplate`.
 However, when you look at the configuration examples or any code excerpts where the template is instantiated or setters are invoked, you can see the implementation type (for example, `RabbitTemplate`).
 
-As mentioned earlier, the `AmqpTemplate` interface defines all of the basic operations for sending and receiving messages.
-We will explore message sending and reception, respectively, in <<sending-messages>> and <<receiving-messages>>.
+As mentioned earlier, the `AmqpTemplate` interface defines all the basic operations for sending and receiving messages.
+We will explore message sending and reception, respectively, in xref:amqp/sending-messages.adoc#sending-messages[Sending Messages] and xref:amqp/receiving-messages.adoc#receiving-messages[Receiving Messages].
 
 See also xref:amqp/request-reply.adoc#async-template[Async Rabbit Template].
 
