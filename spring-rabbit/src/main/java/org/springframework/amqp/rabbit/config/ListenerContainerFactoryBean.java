@@ -392,6 +392,14 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 		this.receiveTimeout = receiveTimeout;
 	}
 
+	/**
+	 * The number of milliseconds of timeout for gathering batch messages.
+	 * It limits the time to wait to fill batchSize.
+	 * Default is 0 (no timeout).
+	 * @param batchReceiveTimeout the timeout for gathering batch messages.
+	 * @since 3.1.2
+	 * @see #setBatchSize(int)
+	 */
 	public void setBatchReceiveTimeout(long batchReceiveTimeout) {
 		this.batchReceiveTimeout = batchReceiveTimeout;
 	}

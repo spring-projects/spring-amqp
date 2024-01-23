@@ -198,7 +198,7 @@ a|
 |[[consumerBatchEnabled]]<<consumerBatchEnabled,`consumerBatchEnabled`>> +
 (batch-enabled)
 
-|If the `MessageListener` supports it, setting this to true enables batching of discrete messages, up to `batchSize`; a partial batch will be delivered if no new messages arrive in `receiveTimeout`.
+|If the `MessageListener` supports it, setting this to true enables batching of discrete messages, up to `batchSize`; a partial batch will be delivered if no new messages arrive in `receiveTimeout` or gathering batch messages time exceeded `batchReceiveTimeout`.
 When this is false, batching is only supported for batches created by a producer; see xref:amqp/sending-messages.adoc#template-batching[Batching].
 
 a|image::tickmark.png[]
@@ -606,6 +606,18 @@ a|
 If `acknowledgeMode=NONE`, this has very little effect -- the container spins round and asks for another message.
 It has the biggest effect for a transactional `Channel` with `batchSize > 1`, since it can cause messages already consumed not to be acknowledged until the timeout expires.
 When `consumerBatchEnabled` is true, a partial batch will be delivered if this timeout occurs before a batch is complete.
+
+a|image::tickmark.png[]
+a|
+a|
+
+|[[batchReceiveTimeout]]<<batchReceiveTimeout,`batchReceiveTimeout`>> +
+(batch-receive-timeout)
+
+|The number of milliseconds of timeout for gathering batch messages.
+It limits the time to wait to fill batchSize.
+When `batchSize > 1` and the time to gathering batch messages is greater than `batchReceiveTime`, batch will be delivered.
+Default is 0 (no timeout).
 
 a|image::tickmark.png[]
 a|

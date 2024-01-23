@@ -98,8 +98,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private static final int DEFAULT_CONSECUTIVE_IDLE_TRIGGER = 10;
 
-	private static final long DEFAULT_BATCH_RECEIVE_TIMEOUT = 3000;
-
 	public static final long DEFAULT_RECEIVE_TIMEOUT = 1000;
 
 	private final AtomicLong lastNoMessageAlert = new AtomicLong();
@@ -124,7 +122,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private long receiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
 
-	private long batchReceiveTimeout = DEFAULT_BATCH_RECEIVE_TIMEOUT;
+	private long batchReceiveTimeout;
 
 	private Set<BlockingQueueConsumer> consumers;
 
@@ -336,12 +334,15 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * The time (in milliseconds) that a waiting time to fill batch size. Default
-	 * 3000 (3 second).
-	 * @param batchReceiveTimeout the timeout
+	 * The number of milliseconds of timeout for gathering batch messages.
+	 * It limits the time to wait to fill batchSize.
+	 * Default is 0 (no timeout).
+	 * @param batchReceiveTimeout the timeout for gathering batch messages.
+	 * @since 3.1.2
+	 * @see #setBatchSize(int)
 	 */
 	public void setBatchReceiveTimeout(long batchReceiveTimeout) {
-		Assert.isTrue(batchReceiveTimeout > 0, "'batchReceiveTimeout' must be > 0");
+		Assert.isTrue(batchReceiveTimeout >= 0, "'batchReceiveTimeout' must be >= 0");
 		this.batchReceiveTimeout = batchReceiveTimeout;
 	}
 
@@ -1014,9 +1015,16 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		long startTime = System.currentTimeMillis();
 
 		for (int i = 0; i < this.batchSize; i++) {
-			boolean batchTimedOut = (System.currentTimeMillis() - startTime) > this.batchReceiveTimeout;
+			boolean batchTimedOut = this.batchReceiveTimeout > 0 &&
+					(System.currentTimeMillis() - startTime) > this.batchReceiveTimeout;
 			if (batchTimedOut) {
-				logger.trace("Timed out for gather batch messages.");
+				if (logger.isTraceEnabled()) {
+					long gathered = 0;
+					if (messages != null) {
+						gathered = messages.size();
+					}
+					logger.trace("Timed out for gathering batch messages. gathered size is " + gathered);
+				}
 				break;
 			}
 

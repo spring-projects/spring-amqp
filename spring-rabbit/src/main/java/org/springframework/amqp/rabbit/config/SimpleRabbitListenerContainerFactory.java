@@ -125,8 +125,13 @@ public class SimpleRabbitListenerContainerFactory
 	}
 
 	/**
-	 * @param batchReceiveTimeout the timeout for gather batch messages.
+	 * The number of milliseconds of timeout for gathering batch messages.
+	 * It limits the time to wait to fill batchSize.
+	 * Default is 0 (no timeout).
+	 * @param batchReceiveTimeout the timeout for gathering batch messages.
+	 * @since 3.1.2
 	 * @see SimpleMessageListenerContainer#setBatchReceiveTimeout
+	 * @see #setBatchSize(Integer)
 	 */
 	public void setBatchReceiveTimeout(Long batchReceiveTimeout) {
 		this.batchReceiveTimeout = batchReceiveTimeout;
