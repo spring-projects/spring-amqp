@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,6 +80,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Mat Jaggard
  * @author Yansong Ren
  * @author Tim Bourquin
+ * @author Jeonggi Kim
  *
  * @since 1.0
  */
@@ -120,6 +121,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private boolean consumerBatchEnabled;
 
 	private long receiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
+
+	private long batchReceiveTimeout;
 
 	private Set<BlockingQueueConsumer> consumers;
 
@@ -328,6 +331,19 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setReceiveTimeout(long receiveTimeout) {
 		this.receiveTimeout = receiveTimeout;
+	}
+
+	/**
+	 * The number of milliseconds of timeout for gathering batch messages.
+	 * It limits the time to wait to fill batchSize.
+	 * Default is 0 (no timeout).
+	 * @param batchReceiveTimeout the timeout for gathering batch messages.
+	 * @since 3.1.2
+	 * @see #setBatchSize(int)
+	 */
+	public void setBatchReceiveTimeout(long batchReceiveTimeout) {
+		Assert.isTrue(batchReceiveTimeout >= 0, "'batchReceiveTimeout' must be >= 0");
+		this.batchReceiveTimeout = batchReceiveTimeout;
 	}
 
 	/**
@@ -996,8 +1012,18 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		List<Message> messages = null;
 		long deliveryTag = 0;
-
+		boolean isBatchReceiveTimeoutEnabled = this.batchReceiveTimeout > 0;
+		long startTime = isBatchReceiveTimeoutEnabled ? System.currentTimeMillis() : 0;
 		for (int i = 0; i < this.batchSize; i++) {
+			boolean batchTimedOut = isBatchReceiveTimeoutEnabled &&
+					(System.currentTimeMillis() - startTime) > this.batchReceiveTimeout;
+			if (batchTimedOut) {
+				if (logger.isTraceEnabled()) {
+					long gathered = messages != null ? messages.size() : 0;
+					logger.trace("Timed out for gathering batch messages. gathered size is " + gathered);
+				}
+				break;
+			}
 
 			logger.trace("Waiting for message from consumer.");
 			Message message = consumer.nextMessage(this.receiveTimeout);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022 the original author or authors.
+ * Copyright 2016-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,7 @@ import org.springframework.util.backoff.BackOff;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Johno Crawford
+ * @author Jeonggi Kim
  *
  * @since 2.0
  *
@@ -165,6 +166,8 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 	private Integer consecutiveIdleTrigger;
 
 	private Long receiveTimeout;
+
+	private Long batchReceiveTimeout;
 
 	private Integer batchSize;
 
@@ -390,6 +393,18 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 	}
 
 	/**
+	 * The number of milliseconds of timeout for gathering batch messages.
+	 * It limits the time to wait to fill batchSize.
+	 * Default is 0 (no timeout).
+	 * @param batchReceiveTimeout the timeout for gathering batch messages.
+	 * @since 3.1.2
+	 * @see #setBatchSize(int)
+	 */
+	public void setBatchReceiveTimeout(long batchReceiveTimeout) {
+		this.batchReceiveTimeout = batchReceiveTimeout;
+	}
+
+	/**
 	 * This property has several functions.
 	 * <p>
 	 * When the channel is transacted, it determines how many messages to process in a
@@ -552,6 +567,7 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 					.acceptIfNotNull(this.consecutiveActiveTrigger, container::setConsecutiveActiveTrigger)
 					.acceptIfNotNull(this.consecutiveIdleTrigger, container::setConsecutiveIdleTrigger)
 					.acceptIfNotNull(this.receiveTimeout, container::setReceiveTimeout)
+					.acceptIfNotNull(this.batchReceiveTimeout, container::setBatchReceiveTimeout)
 					.acceptIfNotNull(this.batchSize, container::setBatchSize)
 					.acceptIfNotNull(this.consumerBatchEnabled, container::setConsumerBatchEnabled)
 					.acceptIfNotNull(this.declarationRetries, container::setDeclarationRetries)
