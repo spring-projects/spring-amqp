@@ -1012,17 +1012,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		List<Message> messages = null;
 		long deliveryTag = 0;
-		long startTime = System.currentTimeMillis();
-
+		boolean isBatchReceiveTimeoutEnabled = this.batchReceiveTimeout > 0;
+		long startTime = isBatchReceiveTimeoutEnabled ? System.currentTimeMillis() : 0;
 		for (int i = 0; i < this.batchSize; i++) {
-			boolean batchTimedOut = this.batchReceiveTimeout > 0 &&
+			boolean batchTimedOut = isBatchReceiveTimeoutEnabled &&
 					(System.currentTimeMillis() - startTime) > this.batchReceiveTimeout;
 			if (batchTimedOut) {
 				if (logger.isTraceEnabled()) {
-					long gathered = 0;
-					if (messages != null) {
-						gathered = messages.size();
-					}
+					long gathered = messages != null ? messages.size() : 0;
 					logger.trace("Timed out for gathering batch messages. gathered size is " + gathered);
 				}
 				break;
