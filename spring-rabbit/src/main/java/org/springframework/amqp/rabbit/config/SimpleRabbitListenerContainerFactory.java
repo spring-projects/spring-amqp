@@ -16,9 +16,6 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import com.rabbitmq.client.Channel;
-
-import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.utils.JavaUtils;
@@ -159,9 +156,9 @@ public class SimpleRabbitListenerContainerFactory
 	}
 
 	/**
-	 * Set to {@code true} to enforce {@link Channel#basicAck(long, boolean)}
+	 * Set to {@code true} to enforce {@link com.rabbitmq.client.Channel#basicAck(long, boolean)}
 	 * for {@link org.springframework.amqp.core.AcknowledgeMode#MANUAL}
-	 * when {@link ImmediateAcknowledgeAmqpException} is thrown.
+	 * when {@link org.springframework.amqp.ImmediateAcknowledgeAmqpException} is thrown.
 	 * This might be a tentative solution to not break behavior for current minor version.
 	 * @param enforceImmediateAckForManual the flag to ack message for MANUAL mode on ImmediateAcknowledgeAmqpException
 	 * @since 3.1.2
