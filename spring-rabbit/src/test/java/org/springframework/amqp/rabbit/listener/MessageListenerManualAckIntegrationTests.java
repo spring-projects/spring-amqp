@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.listener;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -27,8 +28,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -45,6 +48,7 @@ import com.rabbitmq.client.Channel;
  * @author Dave Syer
  * @author Gunnar Hillert
  * @author Gary Russell
+ * @author Artem Bilan
  *
  * @since 1.0
  *
@@ -56,7 +60,7 @@ public class MessageListenerManualAckIntegrationTests {
 
 	public static final String TEST_QUEUE = "test.queue.MessageListenerManualAckIntegrationTests";
 
-	private static Log logger = LogFactory.getLog(MessageListenerManualAckIntegrationTests.class);
+	private static final Log logger = LogFactory.getLog(MessageListenerManualAckIntegrationTests.class);
 
 	private final Queue queue = new Queue(TEST_QUEUE);
 
@@ -121,6 +125,26 @@ public class MessageListenerManualAckIntegrationTests {
 		assertThat(template.receiveAndConvert(queue.getName())).isNull();
 	}
 
+	@Test
+	public void immediateIsAckedForManual() throws Exception {
+		CountDownLatch latch = new CountDownLatch(1);
+		container = createContainer(new ImmediateTestListener(latch));
+		container.setEnforceImmediateAckForManual(true);
+
+		template.convertAndSend(queue.getName(), "test data");
+
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+
+		container.stop();
+
+		Channel channel = template.getConnectionFactory().createConnection().createChannel(false);
+
+		await().untilAsserted(() -> assertThat(channel.consumerCount(queue.getName())).isEqualTo(0));
+		assertThat(channel.messageCount(queue.getName())).isEqualTo(0);
+
+		channel.close();
+	}
+
 	private SimpleMessageListenerContainer createContainer(Object listener) {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
 		container.setMessageListener(new MessageListenerAdapter(listener));
@@ -155,6 +179,25 @@ public class MessageListenerManualAckIntegrationTests {
 			}
 			finally {
 				latch.countDown();
+			}
+		}
+	}
+
+	static class ImmediateTestListener implements MessageListener {
+
+		private final CountDownLatch latch;
+
+		ImmediateTestListener(CountDownLatch latch) {
+			this.latch = latch;
+		}
+
+		@Override
+		public void onMessage(Message message) {
+			try {
+				throw new ImmediateAcknowledgeAmqpException("intentional");
+			}
+			finally {
+				this.latch.countDown();
 			}
 		}
 	}

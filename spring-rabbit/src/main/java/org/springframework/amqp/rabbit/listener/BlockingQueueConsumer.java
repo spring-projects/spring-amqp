@@ -875,10 +875,25 @@ public class BlockingQueueConsumer {
 
 	/**
 	 * Perform a commit or message acknowledgement, as appropriate.
+	 * NOTE: This method was never been intended tobe public.
 	 * @param localTx Whether the channel is locally transacted.
 	 * @return true if at least one delivery tag exists.
+	 * @deprecated in favor of {@link #commitIfNecessary(boolean, boolean)}
 	 */
+	@Deprecated(forRemoval = true, since = "3.1.2")
 	public boolean commitIfNecessary(boolean localTx) {
+		return commitIfNecessary(localTx, false);
+	}
+
+	/**
+	 * Perform a commit or message acknowledgement, as appropriate.
+	 * NOTE: This method was never been intended tobe public.
+	 * @param localTx Whether the channel is locally transacted.
+	 * @param forceAck perform {@link Channel#basicAck(long, boolean)} independently of {@link #acknowledgeMode}.
+	 * @return true if at least one delivery tag exists.
+	 * @since 3.1.2
+	 */
+	boolean commitIfNecessary(boolean localTx, boolean forceAck) {
 		if (this.deliveryTags.isEmpty()) {
 			return false;
 		}
@@ -890,11 +905,10 @@ public class BlockingQueueConsumer {
 				|| (this.transactional
 				&& TransactionSynchronizationManager.getResource(this.connectionFactory) == null);
 		try {
-
-			boolean ackRequired = !this.acknowledgeMode.isAutoAck() && !this.acknowledgeMode.isManual();
+			boolean ackRequired = forceAck || (!this.acknowledgeMode.isAutoAck() && !this.acknowledgeMode.isManual());
 
 			if (ackRequired && (!this.transactional || isLocallyTransacted)) {
-				long deliveryTag = new ArrayList<Long>(this.deliveryTags).get(this.deliveryTags.size() - 1);
+				long deliveryTag = new ArrayList<>(this.deliveryTags).get(this.deliveryTags.size() - 1);
 				try {
 					this.channel.basicAck(deliveryTag, true);
 					notifyMessageAckListener(true, deliveryTag, null);
@@ -909,14 +923,12 @@ public class BlockingQueueConsumer {
 				// For manual acks we still need to commit
 				RabbitUtils.commitIfNecessary(this.channel);
 			}
-
 		}
 		finally {
 			this.deliveryTags.clear();
 		}
 
 		return true;
-
 	}
 
 	/**
@@ -931,7 +943,7 @@ public class BlockingQueueConsumer {
 			this.messageAckListener.onComplete(success, deliveryTag, cause);
 		}
 		catch (Exception e) {
-			logger.error("An exception occured in MessageAckListener.", e);
+			logger.error("An exception occurred in MessageAckListener.", e);
 		}
 	}
 

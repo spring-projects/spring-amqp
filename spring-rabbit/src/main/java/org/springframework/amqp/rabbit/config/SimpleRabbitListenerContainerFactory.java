@@ -16,6 +16,9 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import com.rabbitmq.client.Channel;
+
+import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.utils.JavaUtils;
@@ -58,6 +61,8 @@ public class SimpleRabbitListenerContainerFactory
 	private Long batchReceiveTimeout;
 
 	private Boolean consumerBatchEnabled;
+
+	private Boolean enforceImmediateAckForManual;
 
 	/**
 	 * @param batchSize the batch size.
@@ -153,6 +158,17 @@ public class SimpleRabbitListenerContainerFactory
 		}
 	}
 
+	/**
+	 * Set to {@code true} to enforce {@link Channel#basicAck(long, boolean)}
+	 * for {@link org.springframework.amqp.core.AcknowledgeMode#MANUAL}
+	 * when {@link ImmediateAcknowledgeAmqpException} is thrown.
+	 * This might be a tentative solution to not break behavior for current minor version.
+	 * @param enforceImmediateAckForManual the flag to ack message for MANUAL mode on ImmediateAcknowledgeAmqpException
+	 * @since 3.1.2
+	 */
+	public void setEnforceImmediateAckForManual(Boolean enforceImmediateAckForManual) {
+		this.enforceImmediateAckForManual = enforceImmediateAckForManual;
+	}
 	@Override
 	protected SimpleMessageListenerContainer createContainerInstance() {
 		return new SimpleMessageListenerContainer();
@@ -180,7 +196,8 @@ public class SimpleRabbitListenerContainerFactory
 			.acceptIfNotNull(this.consecutiveActiveTrigger, instance::setConsecutiveActiveTrigger)
 			.acceptIfNotNull(this.consecutiveIdleTrigger, instance::setConsecutiveIdleTrigger)
 			.acceptIfNotNull(this.receiveTimeout, instance::setReceiveTimeout)
-			.acceptIfNotNull(this.batchReceiveTimeout, instance::setBatchReceiveTimeout);
+			.acceptIfNotNull(this.batchReceiveTimeout, instance::setBatchReceiveTimeout)
+			.acceptIfNotNull(this.enforceImmediateAckForManual, instance::setEnforceImmediateAckForManual);
 		if (Boolean.TRUE.equals(this.consumerBatchEnabled)) {
 			instance.setConsumerBatchEnabled(true);
 			/*

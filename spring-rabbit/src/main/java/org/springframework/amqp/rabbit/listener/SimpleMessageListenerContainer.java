@@ -41,6 +41,7 @@ import org.springframework.amqp.core.BatchMessageListener;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.ConsumerChannelRegistry;
@@ -133,6 +134,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private TransactionTemplate transactionTemplate;
 
 	private long consumerStartTimeout = DEFAULT_CONSUMER_START_TIMEOUT;
+
+	private boolean enforceImmediateAckForManual;
 
 	private volatile int concurrentConsumers = 1;
 
@@ -502,6 +505,18 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setConsumerStartTimeout(long consumerStartTimeout) {
 		this.consumerStartTimeout = consumerStartTimeout;
+	}
+
+	/**
+	 * Set to {@code true} to enforce {@link Channel#basicAck(long, boolean)}
+	 * for {@link org.springframework.amqp.core.AcknowledgeMode#MANUAL}
+	 * when {@link ImmediateAcknowledgeAmqpException} is thrown.
+	 * This might be a tentative solution to not break behavior for current minor version.
+	 * @param enforceImmediateAckForManual the flag to ack message for MANUAL mode on ImmediateAcknowledgeAmqpException
+	 * @since 3.1.2
+	 */
+	public void setEnforceImmediateAckForManual(boolean enforceImmediateAckForManual) {
+		this.enforceImmediateAckForManual = enforceImmediateAckForManual;
 	}
 
 	/**
@@ -1012,6 +1027,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		List<Message> messages = null;
 		long deliveryTag = 0;
+		boolean immediateAck = false;
 		boolean isBatchReceiveTimeoutEnabled = this.batchReceiveTimeout > 0;
 		long startTime = isBatchReceiveTimeoutEnabled ? System.currentTimeMillis() : 0;
 		for (int i = 0; i < this.batchSize; i++) {
@@ -1050,9 +1066,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					if (messages == null) {
 						messages = new ArrayList<>(this.batchSize);
 					}
-					if (isDeBatchingEnabled() && getBatchingStrategy().canDebatch(message.getMessageProperties())) {
-						final List<Message> messageList = messages;
-						getBatchingStrategy().deBatch(message, fragment -> messageList.add(fragment));
+					BatchingStrategy batchingStrategy = getBatchingStrategy();
+					if (isDeBatchingEnabled() && batchingStrategy.canDebatch(message.getMessageProperties())) {
+						batchingStrategy.deBatch(message, messages::add);
 					}
 					else {
 						messages.add(message);
@@ -1073,6 +1089,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 								+ e.getMessage() + "': "
 								+ message.getMessageProperties().getDeliveryTag());
 					}
+					immediateAck = this.enforceImmediateAckForManual;
 					break;
 				}
 				catch (Exception ex) {
@@ -1081,6 +1098,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 							this.logger.debug("User requested ack for failed delivery: "
 									+ message.getMessageProperties().getDeliveryTag());
 						}
+						immediateAck = this.enforceImmediateAckForManual;
 						break;
 					}
 					long tagToRollback = isAsyncReplies()
@@ -1117,14 +1135,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 		if (messages != null) {
-			executeWithList(channel, messages, deliveryTag, consumer);
+			immediateAck = executeWithList(channel, messages, deliveryTag, consumer);
 		}
 
-		return consumer.commitIfNecessary(isChannelLocallyTransacted());
+		return consumer.commitIfNecessary(isChannelLocallyTransacted(), immediateAck);
 
 	}
 
-	private void executeWithList(Channel channel, List<Message> messages, long deliveryTag,
+	private boolean executeWithList(Channel channel, List<Message> messages, long deliveryTag,
 			BlockingQueueConsumer consumer) {
 
 		try {
@@ -1136,7 +1154,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						+ e.getMessage() + "' (last in batch): "
 						+ deliveryTag);
 			}
-			return;
+			return this.enforceImmediateAckForManual;
 		}
 		catch (Exception ex) {
 			if (causeChainHasImmediateAcknowledgeAmqpException(ex)) {
@@ -1144,7 +1162,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					this.logger.debug("User requested ack for failed delivery (last in batch): "
 							+ deliveryTag);
 				}
-				return;
+				return this.enforceImmediateAckForManual;
 			}
 			if (getTransactionManager() != null) {
 				if (getTransactionAttribute().rollbackOn(ex)) {
@@ -1173,6 +1191,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				throw ex;
 			}
 		}
+		return false;
 	}
 
 	protected void handleStartupFailure(BackOffExecution backOffExecution) {
