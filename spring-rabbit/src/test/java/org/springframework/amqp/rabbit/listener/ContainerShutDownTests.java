@@ -46,6 +46,7 @@ public class ContainerShutDownTests {
 	@Test
 	public void testUninterruptibleListenerSMLC() throws Exception {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+		container.setReceiveTimeout(10);
 		testUninterruptibleListener(container);
 	}
 
@@ -101,6 +102,7 @@ public class ContainerShutDownTests {
 	@Test
 	public void consumersCorrectlyCancelledOnShutdownSMLC() throws Exception {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+		container.setReceiveTimeout(10);
 		consumersCorrectlyCancelledOnShutdown(container);
 	}
 

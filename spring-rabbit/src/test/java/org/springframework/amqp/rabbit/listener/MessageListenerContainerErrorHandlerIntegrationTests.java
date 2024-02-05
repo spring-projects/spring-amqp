@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,6 +101,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		RabbitTemplate template = this.createTemplate(1);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
 		container.setQueues(QUEUE);
+		container.setReceiveTimeout(10);
 		final CountDownLatch messageReceived = new CountDownLatch(1);
 		final CountDownLatch spiedQLogger = new CountDownLatch(1);
 		final CountDownLatch errorHandled = new CountDownLatch(1);
@@ -108,7 +109,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 			errorHandled.countDown();
 			throw new AmqpRejectAndDontRequeueException("foo", t);
 		});
-		container.setMessageListener((MessageListener) message -> {
+		container.setMessageListener(message -> {
 			try {
 				messageReceived.countDown();
 				spiedQLogger.await(10, TimeUnit.SECONDS);

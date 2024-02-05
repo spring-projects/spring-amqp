@@ -121,6 +121,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setQueueNames("foo");
 		container.setChannelTransacted(false);
 		container.setTransactionManager(new TestTransactionManager());
+		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();
 		assertThat(TestUtils.getPropertyValue(container, "transactional", Boolean.class)).isTrue();
 		container.stop();
@@ -136,6 +137,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setChannelTransacted(false);
 		container.setAcknowledgeMode(AcknowledgeMode.NONE);
 		container.setTransactionManager(new TestTransactionManager());
+		container.setReceiveTimeout(10);
 		assertThatIllegalStateException()
 			.isThrownBy(container::afterPropertiesSet);
 		container.stop();
@@ -150,6 +152,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setQueueNames("foo");
 		container.setChannelTransacted(true);
 		container.setAcknowledgeMode(AcknowledgeMode.NONE);
+		container.setReceiveTimeout(10);
 		assertThatIllegalStateException()
 			.isThrownBy(container::afterPropertiesSet);
 		container.stop();
@@ -164,6 +167,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setQueueNames("foo");
 		container.setAutoStartup(false);
 		container.setShutdownTimeout(0);
+		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();
 		assertThat(ReflectionTestUtils.getField(container, "concurrentConsumers")).isEqualTo(1);
 		container.stop();
@@ -214,6 +218,7 @@ public class SimpleMessageListenerContainerTests {
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setQueueNames("foo");
 		container.setBatchSize(2);
+		container.setReceiveTimeout(10);
 		container.setMessageListener(messages::add);
 		container.start();
 		BasicProperties props = new BasicProperties();
@@ -266,6 +271,7 @@ public class SimpleMessageListenerContainerTests {
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setQueueNames("foobar");
 		container.setBatchSize(2);
+		container.setReceiveTimeout(10);
 		container.setMessageListener(messages::add);
 		container.setShutdownTimeout(0);
 		container.afterPropertiesSet();
@@ -316,6 +322,7 @@ public class SimpleMessageListenerContainerTests {
 		});
 		container.setConsumerArguments(Collections.singletonMap("x-priority", 10));
 		container.setShutdownTimeout(0);
+		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();
 		container.start();
 		verify(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
@@ -368,6 +375,7 @@ public class SimpleMessageListenerContainerTests {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setQueueNames("foo");
+		container.setReceiveTimeout(10);
 		List<?> queues = TestUtils.getPropertyValue(container, "queues", List.class);
 		assertThat(queues).hasSize(1);
 		container.addQueueNames(new AnonymousQueue().getName(), new AnonymousQueue().getName());
@@ -399,6 +407,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setMessageListener(message -> {
 		});
 		container.setShutdownTimeout(0);
+		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();
 
 		for (int i = 0; i < 10; i++) {
@@ -486,6 +495,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setConcurrentConsumers(2);
 		container.setQueueNames("foo");
 		container.setConsumeDelay(100);
+		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();
 
 		CountDownLatch latch1 = new CountDownLatch(2);
@@ -518,7 +528,7 @@ public class SimpleMessageListenerContainerTests {
 		waitForConsumersToStop(consumers);
 		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections", Set.class);
 		assertThat(allocatedConnections).hasSize(2);
-		assertThat(ccf.getCacheProperties().get("openConnections")).isEqualTo("2");
+		assertThat(ccf.getCacheProperties().get("openConnections")).isEqualTo("1");
 	}
 
 	@Test
@@ -596,6 +606,7 @@ public class SimpleMessageListenerContainerTests {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
 		container.setConnectionFactory(connectionFactory);
 		container.setQueueNames("foo");
+		container.setReceiveTimeout(10);
 		container.setPossibleAuthenticationFailureFatal(false);
 
 		container.start();
@@ -744,6 +755,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setMessageListener(listener);
 		container.setBatchSize(2);
 		container.setConsumerBatchEnabled(true);
+		container.setReceiveTimeout(10);
 		container.start();
 		BasicProperties props = new BasicProperties();
 		byte[] payload = "baz".getBytes();

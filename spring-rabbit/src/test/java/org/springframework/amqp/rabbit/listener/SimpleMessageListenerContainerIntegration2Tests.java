@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -320,6 +320,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container.setMessageListener(new MessageListenerAdapter(new PojoListener(latch)));
 		container.setQueueNames(queue.getName());
 		container.setConcurrentConsumers(2);
+		container.setReceiveTimeout(10);
 		GenericApplicationContext context = new GenericApplicationContext();
 		context.getBeanFactory().registerSingleton("foo", queue);
 		context.refresh();
@@ -354,6 +355,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 				new SimpleMessageListenerContainer(template.getConnectionFactory());
 		container1.setMessageListener(new MessageListenerAdapter(new PojoListener(latch1)));
 		container1.setQueueNames(queue.getName());
+		container1.setReceiveTimeout(10);
 		GenericApplicationContext context = new GenericApplicationContext();
 		context.getBeanFactory().registerSingleton("foo", queue);
 		context.refresh();
@@ -375,6 +377,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container2.setQueueNames(queue.getName());
 		container2.setApplicationContext(context);
 		container2.setRecoveryInterval(1000);
+		container2.setReceiveTimeout(10);
 		container2.setExclusive(true); // not really necessary, but likely people will make all consumers exclusive.
 		final AtomicReference<ListenerContainerConsumerFailedEvent> eventRef = new AtomicReference<>();
 		final CountDownLatch consumeLatch2 = new CountDownLatch(1);
@@ -459,6 +462,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container.setQueueNames(queue.getName());
 		container.setRecoveryInterval(500);
 		container.setGlobalQos(true);
+		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();
 		container.start();
 
@@ -510,6 +514,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container.setMessageListener(new MessageListenerAdapter(new PojoListener(latch)));
 		container.setQueueNames(queue.getName());
 		container.setRecoveryInterval(500);
+		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();
 		container.start();
 
@@ -537,6 +542,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container.setDeclarationRetries(1);
 		container.setFailedDeclarationRetryInterval(100);
 		container.setRetryDeclarationInterval(30000);
+		container.setReceiveTimeout(10);
 		container.setApplicationEventPublisher(event -> {
 			if (event instanceof MissingQueueEvent) {
 				missingLatch.countDown();
