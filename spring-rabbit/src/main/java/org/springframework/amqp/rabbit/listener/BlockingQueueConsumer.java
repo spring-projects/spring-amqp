@@ -558,6 +558,7 @@ public class BlockingQueueConsumer {
 		}
 		Message message = handle(this.queue.poll(timeout, TimeUnit.MILLISECONDS));
 		if (message == null && this.cancelled.get()) {
+			this.activeObjectCounter.release(this);
 			throw new ConsumerCancelledException();
 		}
 		return message;
@@ -1018,7 +1019,6 @@ public class BlockingQueueConsumer {
 						+ "); " + BlockingQueueConsumer.this);
 			}
 			this.canceled = true;
-			BlockingQueueConsumer.this.activeObjectCounter.release(BlockingQueueConsumer.this);
 		}
 
 		@Override

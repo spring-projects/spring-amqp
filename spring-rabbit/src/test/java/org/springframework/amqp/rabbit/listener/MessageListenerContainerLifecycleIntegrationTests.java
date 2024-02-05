@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,6 @@ import org.mockito.Mockito;
 
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.AcknowledgeMode;
-import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -71,9 +70,9 @@ import com.rabbitmq.client.DnsRecordIpAddressResolver;
  */
 @RabbitAvailable(queues = MessageListenerContainerLifecycleIntegrationTests.TEST_QUEUE)
 @LongRunning
-@LogLevels(classes = { RabbitTemplate.class,
-			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class,
-			MessageListenerContainerLifecycleIntegrationTests.class }, level = "INFO")
+@LogLevels(classes = {RabbitTemplate.class,
+		SimpleMessageListenerContainer.class, BlockingQueueConsumer.class,
+		MessageListenerContainerLifecycleIntegrationTests.class}, level = "INFO")
 public class MessageListenerContainerLifecycleIntegrationTests {
 
 	public static final String TEST_QUEUE = "test.queue.MessageListenerContainerLifecycleIntegrationTests";
@@ -84,6 +83,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 	private enum TransactionMode {
 		ON, OFF, PREFETCH, PREFETCH_NO_TX;
+
 		public boolean isTransactional() {
 			return this != OFF && this != PREFETCH_NO_TX;
 		}
@@ -103,6 +103,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 	private enum Concurrency {
 		LOW(1), HIGH(5);
+
 		private final int value;
 
 		Concurrency(int value) {
@@ -116,6 +117,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 	private enum MessageCount {
 		LOW(1), MEDIUM(20), HIGH(500);
+
 		private final int value;
 
 		MessageCount(int value) {
@@ -199,7 +201,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		cf.setUsername("foo");
 		final CachingConnectionFactory connectionFactory = new CachingConnectionFactory(cf);
 		assertThatExceptionOfType(AmqpIllegalStateException.class).isThrownBy(() ->
-			doTest(MessageCount.LOW, Concurrency.LOW, TransactionMode.OFF, template, connectionFactory))
+						doTest(MessageCount.LOW, Concurrency.LOW, TransactionMode.OFF, template, connectionFactory))
 				.withCauseExactlyInstanceOf(FatalListenerStartupException.class);
 		((DisposableBean) template.getConnectionFactory()).destroy();
 	}
@@ -334,7 +336,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		final AtomicInteger received = new AtomicInteger();
 		final CountDownLatch awaitConsumeFirst = new CountDownLatch(5);
 		final CountDownLatch awaitConsumeSecond = new CountDownLatch(10);
-		container.setMessageListener((MessageListener) message -> {
+		container.setMessageListener(message -> {
 			try {
 				awaitStart1.countDown();
 				prefetched.await(10, TimeUnit.SECONDS);
@@ -353,6 +355,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 		container.setPrefetchCount(5);
 		container.setQueueNames(queue.getName());
+		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();
 		container.start();
 
@@ -364,7 +367,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 				.getPropertyValue(container, "consumers");
 		await().until(() -> {
 			if (consumers.size() > 0
-				&& TestUtils.getPropertyValue(consumers.iterator().next(), "queue", BlockingQueue.class).size() > 3) {
+					&& TestUtils.getPropertyValue(consumers.iterator().next(), "queue", BlockingQueue.class).size() > 3) {
 				prefetched.countDown();
 				return true;
 			}
@@ -411,6 +414,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		DirectFieldAccessor dfa = new DirectFieldAccessor(container);
 		dfa.setPropertyValue("logger", log);
 		container.setQueues(queue);
+		container.setReceiveTimeout(10);
 		container.setMessageListener(new MessageListenerAdapter());
 		container.afterPropertiesSet();
 		container.start();
@@ -484,7 +488,8 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		public SimpleMessageListenerContainer container() {
 			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
 			container.setQueues(queue);
-			container.setMessageListener((MessageListener) message -> {
+			container.setReceiveTimeout(10);
+			container.setMessageListener(message -> {
 				try {
 					consumerLatch().countDown();
 					Thread.sleep(500);

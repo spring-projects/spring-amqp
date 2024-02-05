@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 
-import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
@@ -90,6 +89,7 @@ public class SimpleMessageListenerContainerLongTests {
 			container.setAutoStartup(false);
 			container.setConcurrentConsumers(2);
 			container.setChannelTransacted(transacted);
+			container.setReceiveTimeout(10);
 			container.afterPropertiesSet();
 			assertThat(ReflectionTestUtils.getField(container, "concurrentConsumers")).isEqualTo(2);
 			container.start();
@@ -115,11 +115,12 @@ public class SimpleMessageListenerContainerLongTests {
 	}
 
 	@Test
-	public void testAddQueuesAndStartInCycle() throws Exception {
+	public void testAddQueuesAndStartInCycle() {
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(
 				this.connectionFactory);
-		container.setMessageListener((MessageListener) message -> { });
+		container.setMessageListener(message -> { });
 		container.setConcurrentConsumers(2);
+		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();
 
 		RabbitAdmin admin = new RabbitAdmin(this.connectionFactory);
@@ -145,6 +146,7 @@ public class SimpleMessageListenerContainerLongTests {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactory);
 		container.setStartConsumerMinInterval(100);
 		container.setConsecutiveActiveTrigger(1);
+		container.setReceiveTimeout(10);
 		container.setMessageListener(m -> {
 			try {
 				Thread.sleep(50);
@@ -184,6 +186,7 @@ public class SimpleMessageListenerContainerLongTests {
 		container.setQueueNames(QUEUE3);
 		container.setConcurrentConsumers(2);
 		container.setMaxConcurrentConsumers(3);
+		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();
 		container.start();
 		RabbitTemplate template = new RabbitTemplate(this.connectionFactory);
@@ -212,6 +215,7 @@ public class SimpleMessageListenerContainerLongTests {
 		container.setQueueNames(QUEUE4);
 		container.setConcurrentConsumers(2);
 		container.setMaxConcurrentConsumers(3);
+		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();
 		container.start();
 		RabbitTemplate template = new RabbitTemplate(this.connectionFactory);

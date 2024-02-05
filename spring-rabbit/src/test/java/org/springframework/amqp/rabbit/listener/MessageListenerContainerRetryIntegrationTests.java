@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,7 +116,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 		container.setBatchSize(2);
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		container.setAdviceChain(new Advice[] { createRetryInterceptor(latch, stateful, true) });
+		container.setAdviceChain(createRetryInterceptor(latch, stateful, true));
 
 		container.setQueueNames(queue.getName());
 		container.setReceiveTimeout(50);
@@ -252,7 +252,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 		container.setConcurrentConsumers(concurrentConsumers);
 
 		final CountDownLatch latch = new CountDownLatch(failedMessageCount);
-		container.setAdviceChain(new Advice[] { createRetryInterceptor(latch, stateful) });
+		container.setAdviceChain(createRetryInterceptor(latch, stateful));
 
 		container.setQueueNames(queue.getName());
 		container.setReceiveTimeout(50);

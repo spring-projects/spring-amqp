@@ -154,6 +154,7 @@ public class MessageListenerManualAckIntegrationTests {
 		container.setConcurrentConsumers(concurrentConsumers);
 		container.setChannelTransacted(transactional);
 		container.setAcknowledgeMode(AcknowledgeMode.MANUAL);
+		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();
 		container.start();
 		return container;

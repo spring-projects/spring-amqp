@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,6 +96,7 @@ public class MissingIdRetryTests {
 		container.setStatefulRetryFatalWithNullMessageId(false);
 		container.setMessageListener(new MessageListenerAdapter(new POJO()));
 		container.setQueueNames("retry.test.queue");
+		container.setReceiveTimeout(10);
 
 		StatefulRetryOperationsInterceptorFactoryBean fb = new StatefulRetryOperationsInterceptorFactoryBean();
 
@@ -134,6 +135,7 @@ public class MissingIdRetryTests {
 		ConnectionFactory connectionFactory = ctx.getBean(ConnectionFactory.class);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setPrefetchCount(1);
+		container.setReceiveTimeout(10);
 		container.setMessageListener(new MessageListenerAdapter(new POJO()));
 		container.setQueueNames("retry.test.queue");
 
@@ -197,6 +199,7 @@ public class MissingIdRetryTests {
 			}
 		});
 		container.setQueueNames("retry.test.queue");
+		container.setReceiveTimeout(10);
 
 		StatefulRetryOperationsInterceptorFactoryBean fb = new StatefulRetryOperationsInterceptorFactoryBean();
 
@@ -221,7 +224,7 @@ public class MissingIdRetryTests {
 		try {
 			assertThat(cdl.await(30, TimeUnit.SECONDS)).isTrue();
 			Map map = (Map) new DirectFieldAccessor(cache).getPropertyValue("map");
-			await().until(() -> map.size() == 0);
+			await().until(map::isEmpty);
 			ArgumentCaptor putCaptor = ArgumentCaptor.forClass(Object.class);
 			ArgumentCaptor getCaptor = ArgumentCaptor.forClass(Object.class);
 			ArgumentCaptor removeCaptor = ArgumentCaptor.forClass(Object.class);

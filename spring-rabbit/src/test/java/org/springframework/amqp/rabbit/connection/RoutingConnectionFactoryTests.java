@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -170,7 +170,7 @@ public class RoutingConnectionFactoryTests {
 	public void testAbstractRoutingConnectionFactoryWithListenerContainer() {
 		ConnectionFactory connectionFactory1 = mock(ConnectionFactory.class);
 		ConnectionFactory connectionFactory2 = mock(ConnectionFactory.class);
-		Map<Object, ConnectionFactory> factories = new HashMap<Object, ConnectionFactory>(2);
+		Map<Object, ConnectionFactory> factories = new HashMap<>(2);
 		factories.put("[baz]", connectionFactory1);
 		factories.put("[foo,bar]", connectionFactory2);
 		ConnectionFactory defaultConnectionFactory = mock(ConnectionFactory.class);
@@ -181,6 +181,7 @@ public class RoutingConnectionFactoryTests {
 		connectionFactory.setTargetConnectionFactories(factories);
 
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setReceiveTimeout(10);
 		container.setQueueNames("foo", "bar");
 		container.afterPropertiesSet();
 		container.start();

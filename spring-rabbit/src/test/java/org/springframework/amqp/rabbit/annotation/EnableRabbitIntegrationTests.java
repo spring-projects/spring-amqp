@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2023 the original author or authors.
+ * Copyright 2014-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -249,6 +250,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 	public static void setUp() {
 		System.setProperty(RabbitListenerAnnotationBeanPostProcessor.RABBIT_EMPTY_STRING_ARGUMENTS_PROPERTY,
 				"test-empty");
+		System.setProperty("spring.amqp.deserialization.trust.all", "true");
 		RabbitAvailableCondition.getBrokerRunning().removeExchanges("auto.exch.tx",
 				"auto.exch",
 				"auto.exch.fanout",
@@ -827,7 +829,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 	}
 
 	@Test
-	public void testHeadersExchange() throws Exception {
+	public void testHeadersExchange() {
 		assertThat(rabbitTemplate.convertSendAndReceive("auto.headers", "", "foo",
 				message -> {
 					message.getMessageProperties().getHeaders().put("foo", "bar");
@@ -846,7 +848,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		this.rabbitTemplate.convertAndSend("amqp656", "foo");
 		assertThat(this.rabbitTemplate.receiveAndConvert("amqp656dlq", 10000)).isEqualTo("foo");
 		try {
-			Map<String, Object> amqp656 = await().until(() -> queueInfo("amqp656"), q -> q != null);
+			Map<String, Object> amqp656 = await().until(() -> queueInfo("amqp656"), Objects::nonNull);
 			if (amqp656 != null) {
 				assertThat(arguments(amqp656).get("test-empty")).isEqualTo("");
 				assertThat(arguments(amqp656).get("test-null")).isEqualTo("undefined");
@@ -961,7 +963,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 			catch (@SuppressWarnings("unused") Exception e) {
 				return null;
 			}
-		}, tim -> tim != null);
+		}, Objects::nonNull);
 		assertThat(timer.count()).isEqualTo(1L);
 	}
 
@@ -1790,6 +1792,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 			factory.setBatchListener(true);
 			factory.setBatchSize(2);
 			factory.setConsumerBatchEnabled(true);
+			factory.setReceiveTimeout(10L);
 			return factory;
 		}
 
@@ -1865,7 +1868,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 		@Bean
 		public AtomicReference<Throwable> errorHandlerError() {
-			return new AtomicReference<Throwable>();
+			return new AtomicReference<>();
 		}
 
 		@Bean
@@ -1947,7 +1950,9 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 		@Bean
 		public TaskExecutor exec1() {
-			return new ThreadPoolTaskExecutor();
+			ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
+			threadPoolTaskExecutor.setAcceptTasksAfterContextClose(true);
+			return threadPoolTaskExecutor;
 		}
 
 		// Rabbit infrastructure setup

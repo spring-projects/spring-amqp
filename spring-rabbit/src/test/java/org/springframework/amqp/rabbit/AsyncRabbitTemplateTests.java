@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2023 the original author or authors.
+ * Copyright 2016-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -383,17 +383,17 @@ public class AsyncRabbitTemplateTests {
 	@Test
 	void ctorCoverage() {
 		AsyncRabbitTemplate template = new AsyncRabbitTemplate(mock(ConnectionFactory.class), "ex", "rk");
-		assertThat(template).extracting(t -> t.getRabbitTemplate())
+		assertThat(template).extracting(AsyncRabbitTemplate::getRabbitTemplate)
 				.extracting("exchange")
 				.isEqualTo("ex");
-		assertThat(template).extracting(t -> t.getRabbitTemplate())
+		assertThat(template).extracting(AsyncRabbitTemplate::getRabbitTemplate)
 				.extracting("routingKey")
 				.isEqualTo("rk");
 		template = new AsyncRabbitTemplate(mock(ConnectionFactory.class), "ex", "rk", "rq");
-		assertThat(template).extracting(t -> t.getRabbitTemplate())
+		assertThat(template).extracting(AsyncRabbitTemplate::getRabbitTemplate)
 				.extracting("exchange")
 				.isEqualTo("ex");
-		assertThat(template).extracting(t -> t.getRabbitTemplate())
+		assertThat(template).extracting(AsyncRabbitTemplate::getRabbitTemplate)
 				.extracting("routingKey")
 				.isEqualTo("rk");
 		assertThat(template)
@@ -403,10 +403,10 @@ public class AsyncRabbitTemplateTests {
 				.extracting("queueNames")
 				.isEqualTo(new String[] { "rq" });
 		template = new AsyncRabbitTemplate(mock(ConnectionFactory.class), "ex", "rk", "rq", "ra");
-		assertThat(template).extracting(t -> t.getRabbitTemplate())
+		assertThat(template).extracting(AsyncRabbitTemplate::getRabbitTemplate)
 				.extracting("exchange")
 				.isEqualTo("ex");
-		assertThat(template).extracting(t -> t.getRabbitTemplate())
+		assertThat(template).extracting(AsyncRabbitTemplate::getRabbitTemplate)
 				.extracting("routingKey")
 				.isEqualTo("rk");
 		assertThat(template)
@@ -523,6 +523,7 @@ public class AsyncRabbitTemplateTests {
 		@Primary
 		public SimpleMessageListenerContainer replyContainer(ConnectionFactory connectionFactory) {
 			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+			container.setReceiveTimeout(10);
 			container.setAfterReceivePostProcessors(new GUnzipPostProcessor());
 			container.setQueueNames(replies().getName());
 			return container;
@@ -545,6 +546,7 @@ public class AsyncRabbitTemplateTests {
 		@Bean
 		public SimpleMessageListenerContainer remoteContainer(ConnectionFactory connectionFactory) {
 			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+			container.setReceiveTimeout(10);
 			container.setQueueNames(requests().getName());
 			container.setAfterReceivePostProcessors(new GUnzipPostProcessor());
 			MessageListenerAdapter messageListener =

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 the original author or authors.
+ * Copyright 2014-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -142,6 +142,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 		// Resolve the container and invoke a message on it
 
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+		container.setReceiveTimeout(10);
 		endpoint.setupListenerContainer(container);
 		MessagingMessageListenerAdapter listener = (MessagingMessageListenerAdapter) container.getMessageListener();
 
@@ -158,9 +159,9 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	}
 
 	/**
-	 * Test for {@link CustomBean} and an manually endpoint registered
+	 * Test for {@link CustomBean} and a manually registered endpoint
 	 * with "myCustomEndpointId". The custom endpoint does not provide
-	 * any factory so it's registered with the default one
+	 * any factory, so it's registered with the default one
 	 */
 	public void testCustomConfiguration(ApplicationContext context) {
 		RabbitListenerContainerTestFactory defaultFactory =
@@ -171,14 +172,15 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 		assertThat(customFactory.getListenerContainers()).hasSize(1);
 		RabbitListenerEndpoint endpoint = defaultFactory.getListenerContainers().get(0).getEndpoint();
 		assertThat(endpoint.getClass()).as("Wrong endpoint type").isEqualTo(SimpleRabbitListenerEndpoint.class);
-		assertThat(((SimpleRabbitListenerEndpoint) endpoint).getMessageListener()).as("Wrong listener set in custom endpoint").isEqualTo(context.getBean("simpleMessageListener"));
+		assertThat(((SimpleRabbitListenerEndpoint) endpoint).getMessageListener())
+				.as("Wrong listener set in custom endpoint").isEqualTo(context.getBean("simpleMessageListener"));
 
 		RabbitListenerEndpointRegistry customRegistry =
 				context.getBean("customRegistry", RabbitListenerEndpointRegistry.class);
-		assertThat(customRegistry.getListenerContainerIds().size()).as("Wrong number of containers in the registry").isEqualTo(2);
-		assertThat(customRegistry.getListenerContainers().size()).as("Wrong number of containers in the registry").isEqualTo(2);
-		assertThat(customRegistry.getListenerContainer("listenerId")).as("Container with custom id on the annotation should be found").isNotNull();
-		assertThat(customRegistry.getListenerContainer("myCustomEndpointId")).as("Container created with custom id should be found").isNotNull();
+		assertThat(customRegistry.getListenerContainerIds()).hasSize(2);
+		assertThat(customRegistry.getListenerContainers()).hasSize(2);
+		assertThat(customRegistry.getListenerContainer("listenerId")).isNotNull();
+		assertThat(customRegistry.getListenerContainer("myCustomEndpointId")).isNotNull();
 	}
 
 	/**
@@ -205,7 +207,6 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	/**
 	 * Test for {@link ValidationBean} with a validator ({@link TestValidator}) specified
 	 * in a custom {@link org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory}.
-	 *
 	 * The test should throw a {@link org.springframework.amqp.rabbit.support.ListenerExecutionFailedException}
 	 */
 	public void testRabbitHandlerMethodFactoryConfiguration(ApplicationContext context) throws Exception {
@@ -216,6 +217,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 				simpleFactory.getListenerContainers().get(0).getEndpoint();
 
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+		container.setReceiveTimeout(10);
 		endpoint.setupListenerContainer(container);
 		MessagingMessageListenerAdapter listener = (MessagingMessageListenerAdapter) container.getMessageListener();
 
