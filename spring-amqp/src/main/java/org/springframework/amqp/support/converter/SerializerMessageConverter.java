@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,13 +26,14 @@ import java.nio.charset.StandardCharsets;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.beans.DirectFieldAccessor;
+import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.core.ConfigurableObjectInputStream;
 import org.springframework.core.serializer.DefaultDeserializer;
 import org.springframework.core.serializer.DefaultSerializer;
 import org.springframework.core.serializer.Deserializer;
 import org.springframework.core.serializer.Serializer;
 import org.springframework.lang.Nullable;
+import org.springframework.util.ClassUtils;
 
 /**
  * Implementation of {@link MessageConverter} that can work with Strings or native objects
@@ -50,26 +51,26 @@ import org.springframework.lang.Nullable;
  * @author Gary Russell
  * @author Artem Bilan
  */
-public class SerializerMessageConverter extends AllowedListDeserializingMessageConverter {
+public class SerializerMessageConverter extends AllowedListDeserializingMessageConverter
+		implements BeanClassLoaderAware {
 
 	public static final String DEFAULT_CHARSET = StandardCharsets.UTF_8.name();
 
-	private volatile String defaultCharset = DEFAULT_CHARSET;
+	private String defaultCharset = DEFAULT_CHARSET;
 
-	private volatile Serializer<Object> serializer = new DefaultSerializer();
+	private Serializer<Object> serializer = new DefaultSerializer();
 
-	private volatile Deserializer<Object> deserializer = new DefaultDeserializer();
+	private Deserializer<Object> deserializer = new DefaultDeserializer();
 
-	private volatile boolean ignoreContentType = false;
+	private boolean ignoreContentType = false;
 
-	private volatile ClassLoader defaultDeserializerClassLoader;
+	private ClassLoader defaultDeserializerClassLoader = ClassUtils.getDefaultClassLoader();
 
-	private volatile boolean usingDefaultDeserializer = true;
+	private boolean usingDefaultDeserializer = true;
 
 	/**
 	 * Flag to signal that the content type should be ignored and the deserializer used irrespective if it is a text
 	 * message. Defaults to false, in which case the default encoding is used to convert a text message to a String.
-	 *
 	 * @param ignoreContentType the flag value to set
 	 */
 	public void setIgnoreContentType(boolean ignoreContentType) {
@@ -79,7 +80,6 @@ public class SerializerMessageConverter extends AllowedListDeserializingMessageC
 	/**
 	 * Specify the default charset to use when converting to or from text-based Message body content. If not specified,
 	 * the charset will be "UTF-8".
-	 *
 	 * @param defaultCharset The default charset.
 	 */
 	public void setDefaultCharset(@Nullable String defaultCharset) {
@@ -88,7 +88,6 @@ public class SerializerMessageConverter extends AllowedListDeserializingMessageC
 
 	/**
 	 * The serializer to use for converting Java objects to message bodies.
-	 *
 	 * @param serializer the serializer to set
 	 */
 	public void setSerializer(Serializer<Object> serializer) {
@@ -97,24 +96,16 @@ public class SerializerMessageConverter extends AllowedListDeserializingMessageC
 
 	/**
 	 * The deserializer to use for converting from message body to Java object.
-	 *
 	 * @param deserializer the deserializer to set
 	 */
 	public void setDeserializer(Deserializer<Object> deserializer) {
 		this.deserializer = deserializer;
-		if (this.deserializer.getClass().equals(DefaultDeserializer.class)) {
-			try {
-				this.defaultDeserializerClassLoader = (ClassLoader) new DirectFieldAccessor(deserializer)
-						.getPropertyValue("classLoader");
-			}
-			catch (Exception e) {
-				// no-op
-			}
-			this.usingDefaultDeserializer = true;
-		}
-		else {
-			this.usingDefaultDeserializer = false;
-		}
+		this.usingDefaultDeserializer = false;
+	}
+
+	@Override
+	public void setBeanClassLoader(ClassLoader classLoader) {
+		this.defaultDeserializerClassLoader = classLoader;
 	}
 
 	/**
@@ -170,17 +161,17 @@ public class SerializerMessageConverter extends AllowedListDeserializingMessageC
 
 	private Object deserialize(ByteArrayInputStream inputStream) throws IOException {
 		try (ObjectInputStream objectInputStream = new ConfigurableObjectInputStream(inputStream,
-					this.defaultDeserializerClassLoader) {
+				this.defaultDeserializerClassLoader) {
 
-				@Override
-				protected Class<?> resolveClass(ObjectStreamClass classDesc)
-						throws IOException, ClassNotFoundException {
-					Class<?> clazz = super.resolveClass(classDesc);
-					checkAllowedList(clazz);
-					return clazz;
-				}
+			@Override
+			protected Class<?> resolveClass(ObjectStreamClass classDesc)
+					throws IOException, ClassNotFoundException {
+				Class<?> clazz = super.resolveClass(classDesc);
+				checkAllowedList(clazz);
+				return clazz;
+			}
 
-			}) {
+		}) {
 			return objectInputStream.readObject();
 		}
 		catch (ClassNotFoundException ex) {
@@ -194,6 +185,7 @@ public class SerializerMessageConverter extends AllowedListDeserializingMessageC
 	@Override
 	protected Message createMessage(Object object, MessageProperties messageProperties)
 			throws MessageConversionException {
+
 		byte[] bytes;
 		if (object instanceof String) {
 			try {
@@ -220,9 +212,8 @@ public class SerializerMessageConverter extends AllowedListDeserializingMessageC
 			bytes = output.toByteArray();
 			messageProperties.setContentType(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT);
 		}
-		if (bytes != null) {
-			messageProperties.setContentLength(bytes.length);
-		}
+
+		messageProperties.setContentLength(bytes.length);
 		return new Message(bytes, messageProperties);
 	}
 

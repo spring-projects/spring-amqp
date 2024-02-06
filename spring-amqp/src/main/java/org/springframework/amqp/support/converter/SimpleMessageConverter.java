@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,10 @@ import java.io.UnsupportedEncodingException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.utils.SerializationUtils;
+import org.springframework.beans.factory.BeanClassLoaderAware;
+import org.springframework.core.ConfigurableObjectInputStream;
+import org.springframework.lang.Nullable;
+import org.springframework.util.ClassUtils;
 
 /**
  * Implementation of {@link MessageConverter} that can work with Strings, Serializable
@@ -38,21 +42,28 @@ import org.springframework.amqp.utils.SerializationUtils;
  * @author Mark Fisher
  * @author Oleg Zhurakousky
  * @author Gary Russell
+ * @author Artem Bilan
  */
-public class SimpleMessageConverter extends AllowedListDeserializingMessageConverter {
+public class SimpleMessageConverter extends AllowedListDeserializingMessageConverter implements BeanClassLoaderAware {
 
 	public static final String DEFAULT_CHARSET = "UTF-8";
 
-	private volatile String defaultCharset = DEFAULT_CHARSET;
+	private String defaultCharset = DEFAULT_CHARSET;
+
+	private ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
 
 	/**
 	 * Specify the default charset to use when converting to or from text-based
 	 * Message body content. If not specified, the charset will be "UTF-8".
-	 *
 	 * @param defaultCharset The default charset.
 	 */
-	public void setDefaultCharset(String defaultCharset) {
+	public void setDefaultCharset(@Nullable String defaultCharset) {
 		this.defaultCharset = (defaultCharset != null) ? defaultCharset : DEFAULT_CHARSET;
+	}
+
+	@Override
+	public void setBeanClassLoader(ClassLoader classLoader) {
+		this.classLoader = classLoader;
 	}
 
 	/**
@@ -73,8 +84,7 @@ public class SimpleMessageConverter extends AllowedListDeserializingMessageConve
 					content = new String(message.getBody(), encoding);
 				}
 				catch (UnsupportedEncodingException e) {
-					throw new MessageConversionException(
-							"failed to convert text-based Message content", e);
+					throw new MessageConversionException("failed to convert text-based Message content", e);
 				}
 			}
 			else if (contentType != null &&
@@ -84,8 +94,7 @@ public class SimpleMessageConverter extends AllowedListDeserializingMessageConve
 							createObjectInputStream(new ByteArrayInputStream(message.getBody())));
 				}
 				catch (IOException | IllegalArgumentException | IllegalStateException e) {
-					throw new MessageConversionException(
-							"failed to convert serialized Message content", e);
+					throw new MessageConversionException("failed to convert serialized Message content", e);
 				}
 			}
 		}
@@ -99,7 +108,9 @@ public class SimpleMessageConverter extends AllowedListDeserializingMessageConve
 	 * Creates an AMQP Message from the provided Object.
 	 */
 	@Override
-	protected Message createMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
+	protected Message createMessage(Object object, MessageProperties messageProperties)
+			throws MessageConversionException {
+
 		byte[] bytes = null;
 		if (object instanceof byte[]) {
 			bytes = (byte[]) object;
@@ -110,8 +121,7 @@ public class SimpleMessageConverter extends AllowedListDeserializingMessageConve
 				bytes = ((String) object).getBytes(this.defaultCharset);
 			}
 			catch (UnsupportedEncodingException e) {
-				throw new MessageConversionException(
-						"failed to convert to Message content", e);
+				throw new MessageConversionException("failed to convert to Message content", e);
 			}
 			messageProperties.setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN);
 			messageProperties.setContentEncoding(this.defaultCharset);
@@ -121,8 +131,7 @@ public class SimpleMessageConverter extends AllowedListDeserializingMessageConve
 				bytes = SerializationUtils.serialize(object);
 			}
 			catch (IllegalArgumentException e) {
-				throw new MessageConversionException(
-						"failed to convert to serialized Message content", e);
+				throw new MessageConversionException("failed to convert to serialized Message content", e);
 			}
 			messageProperties.setContentType(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT);
 		}
@@ -135,15 +144,15 @@ public class SimpleMessageConverter extends AllowedListDeserializingMessageConve
 	}
 
 	/**
-	 * Create an ObjectInputStream for the given InputStream and codebase. The default
-	 * implementation creates an ObjectInputStream.
+	 * Create an ObjectInputStream for the given InputStream. The default
+	 * implementation creates an {@link ConfigurableObjectInputStream} against configured {@link ClassLoader}.
+	 * The class for object to deserialize is checked against {@code allowedListPatterns}.
 	 * @param is the InputStream to read from
 	 * @return the new ObjectInputStream instance to use
 	 * @throws IOException if creation of the ObjectInputStream failed
 	 */
-	@SuppressWarnings("deprecation")
 	protected ObjectInputStream createObjectInputStream(InputStream is) throws IOException {
-		return new ObjectInputStream(is) {
+		return new ConfigurableObjectInputStream(is, this.classLoader) {
 
 			@Override
 			protected Class<?> resolveClass(ObjectStreamClass classDesc) throws IOException, ClassNotFoundException {
