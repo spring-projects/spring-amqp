@@ -30,13 +30,13 @@ jobs:
           show-progress: false
 
       - name: Set up JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
           cache: 'maven'
 
-      - uses: jfrog/setup-jfrog-cli@v3
+      - uses: jfrog/setup-jfrog-cli@v4
         env:
           JF_ENV_SPRING: ${{ secrets.JF_ARTIFACTORY_SPRING }}
 
