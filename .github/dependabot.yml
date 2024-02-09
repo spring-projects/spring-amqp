@@ -34,3 +34,7 @@ updates:
       interval: "weekly"
       day: "saturday"
     labels: ["type: task"]
+    groups:
+      development-dependencies:
+        patterns:
+          - "*"
