@@ -27,3 +27,15 @@ updates:
          - "org.xerial.snappy:snappy-java"
          - "org.lz4:lz4-java"
          - "com.github.luben:zstd-jni"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+    ignore:
+      - dependency-name: "*"
+    groups:
+      development-dependencies:
+        patterns:
+          - "*"
