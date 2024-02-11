@@ -1,7 +1,17 @@
 version: 2
+registries:
+  maven-central:
+    type: maven-repository
+    url: https://repo.maven.apache.org/maven2
+  spring-milestones:
+    type: maven-repository
+    url: https://repo.spring.io/milestone
 updates:
   - package-ecosystem: "gradle"
     directory: "/"
+    registries:
+      - maven-central
+      - spring-milestones
     schedule:
       interval: "weekly"
       day: "saturday"
