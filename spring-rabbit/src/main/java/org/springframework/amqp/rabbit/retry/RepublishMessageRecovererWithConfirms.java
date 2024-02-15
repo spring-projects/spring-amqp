@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 the original author or authors.
+ * Copyright 2021-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,12 +28,15 @@ import org.springframework.amqp.rabbit.connection.CorrelationData.Confirm;
 import org.springframework.amqp.rabbit.core.AmqpNackReceivedException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
+import org.springframework.expression.Expression;
 import org.springframework.lang.Nullable;
 
 /**
  * A {@link RepublishMessageRecoverer} supporting publisher confirms and returns.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.3.3
  *
  */
@@ -48,20 +51,20 @@ public class RepublishMessageRecovererWithConfirms extends RepublishMessageRecov
 	private long confirmTimeout = DEFAULT_TIMEOUT;
 
 	/**
-	 * Use the supplied template to publish the messsage with the provided confirm type.
+	 * Use the supplied template to publish the message with the provided confirm type.
 	 * The template and its connection factory must be suitably configured to support the
-	 * confirm type.
+	 * {@code confirm} type.
 	 * @param errorTemplate the template.
 	 * @param confirmType the confirmType.
 	 */
 	public RepublishMessageRecovererWithConfirms(RabbitTemplate errorTemplate, ConfirmType confirmType) {
-		this(errorTemplate, null, null, confirmType);
+		this(errorTemplate, (Expression) null, null, confirmType);
 	}
 
 	/**
-	 * Use the supplied template to publish the messsage with the provided confirm type to
+	 * Use the supplied template to publish the message with the provided confirm type to
 	 * the provided exchange with the default routing key. The template and its connection
-	 * factory must be suitably configured to support the confirm type.
+	 * factory must be suitably configured to support the {@code confirm} type.
 	 * @param errorTemplate the template.
 	 * @param confirmType the confirmType.
 	 * @param errorExchange the exchange.
@@ -73,9 +76,9 @@ public class RepublishMessageRecovererWithConfirms extends RepublishMessageRecov
 	}
 
 	/**
-	 * Use the supplied template to publish the messsage with the provided confirm type to
+	 * Use the supplied template to publish the message with the provided confirm type to
 	 * the provided exchange with the provided routing key. The template and its
-	 * connection factory must be suitably configured to support the confirm type.
+	 * connection factory must be suitably configured to support the {@code confirm} type.
 	 * @param errorTemplate the template.
 	 * @param confirmType the confirmType.
 	 * @param errorExchange the exchange.
@@ -90,7 +93,25 @@ public class RepublishMessageRecovererWithConfirms extends RepublishMessageRecov
 	}
 
 	/**
-	 * Set the confirm timeout; default 10 seconds.
+	 * Use the supplied template to publish the message with the provided confirm type to
+	 * the provided exchange with the provided routing key. The template and its
+	 * connection factory must be suitably configured to support the {@code confirm} type.
+	 * @param errorTemplate the template.
+	 * @param confirmType the confirmType.
+	 * @param errorExchange the exchange.
+	 * @param errorRoutingKey the routing key.
+	 * @since 3.1.2
+	 */
+	public RepublishMessageRecovererWithConfirms(RabbitTemplate errorTemplate, @Nullable Expression errorExchange,
+			@Nullable Expression errorRoutingKey, ConfirmType confirmType) {
+
+		super(errorTemplate, errorExchange, errorRoutingKey);
+		this.template = errorTemplate;
+		this.confirmType = confirmType;
+	}
+
+	/**
+	 * Set the {@code confirm} timeout; default 10 seconds.
 	 * @param confirmTimeout the timeout.
 	 */
 	public void setConfirmTimeout(long confirmTimeout) {
@@ -98,8 +119,7 @@ public class RepublishMessageRecovererWithConfirms extends RepublishMessageRecov
 	}
 
 	@Override
-	protected void doSend(@Nullable
-	String exchange, String routingKey, Message message) {
+	protected void doSend(@Nullable String exchange, String routingKey, Message message) {
 		if (ConfirmType.CORRELATED.equals(this.confirmType)) {
 			doSendCorrelated(exchange, routingKey, message);
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 the original author or authors.
+ * Copyright 2018-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
+import org.springframework.expression.common.LiteralExpression;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
 
 /**
  * @author Gary Russell
@@ -106,12 +108,21 @@ class RepublishMessageRecovererWithConfirmsIntegrationTests {
 				.maxLength(1L)
 				.overflow(Overflow.rejectPublish)
 				.build();
+		admin.deleteQueue(queue.getName());
 		admin.declareQueue(queue);
-		RepublishMessageRecovererWithConfirms recoverer = new RepublishMessageRecovererWithConfirms(template, "",
-				queue.getName(), ConfirmType.CORRELATED);
-		recoverer.recover(MessageBuilder.withBody("foo".getBytes()).build(), new RuntimeException());
-		assertThatExceptionOfType(AmqpNackReceivedException.class).isThrownBy(() ->
-			recoverer.recover(MessageBuilder.withBody("foo".getBytes()).build(), new RuntimeException()));
+
+		RepublishMessageRecovererWithConfirms recoverer = new RepublishMessageRecovererWithConfirms(template,
+				new LiteralExpression(""),
+				new SpelExpressionParser().parseExpression("messageProperties.headers[queueName]"),
+				ConfirmType.CORRELATED);
+
+		Message message = MessageBuilder.withBody("foo".getBytes()).setHeader("queueName", queue.getName()).build();
+
+		recoverer.recover(message, new RuntimeException());
+
+		assertThatExceptionOfType(AmqpNackReceivedException.class)
+				.isThrownBy(() -> recoverer.recover(message, new RuntimeException()));
+
 		admin.deleteQueue(queue.getName());
 		ccf.destroy();
 	}
