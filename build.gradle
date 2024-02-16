@@ -44,10 +44,10 @@ ext {
 	assertkVersion = '0.24'
 	awaitilityVersion = '4.2.0'
 	commonsCompressVersion = '1.20'
-	commonsHttpClientVersion = '5.1.3'
+	commonsHttpClientVersion = '5.1.4'
 	commonsPoolVersion = '2.11.1'
 	hamcrestVersion = '2.2'
-	hibernateValidationVersion = '8.0.0.Final'
+	hibernateValidationVersion = '8.0.1.Final'
 	jacksonBomVersion = '2.14.3'
 	jaywayJsonPathVersion = '2.7.0'
 	junit4Version = '4.13.2'
@@ -63,12 +63,12 @@ ext {
 	rabbitmqStreamVersion = '0.8.0'
 	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.16.1'
 	reactorVersion = '2022.0.16'
-	snappyVersion = '1.1.8.4'
+	snappyVersion = '1.1.10.5'
 	springDataVersion = '2022.0.11'
 	springRetryVersion = '2.0.5'
 	springVersion = project.hasProperty('springVersion') ? project.springVersion : '6.0.13'
 	testcontainersVersion = '1.19.5'
-	zstdJniVersion = '1.5.0-2'
+	zstdJniVersion = '1.5.5-11'
 
 	javaProjects = subprojects - project(':spring-amqp-bom')
 }
