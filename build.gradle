@@ -65,7 +65,7 @@ ext {
 	reactorVersion = '2022.0.12'
 	snappyVersion = '1.1.8.4'
 	springDataVersion = '2022.0.11'
-	springRetryVersion = '2.0.4'
+	springRetryVersion = '2.0.5'
 	springVersion = project.hasProperty('springVersion') ? project.springVersion : '6.0.13'
 	testcontainersVersion = '1.19.2'
 	zstdJniVersion = '1.5.0-2'
