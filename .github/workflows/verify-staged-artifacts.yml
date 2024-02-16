@@ -11,6 +11,15 @@ on:
 jobs:
   verify-staged-with-samples:
     runs-on: ubuntu-latest
+
+    services:
+
+      rabbitmq:
+        image: rabbitmq:management
+        ports:
+          - 5672:5672
+          - 15672:15672
+
     steps:
 
       - name: Checkout Samples Repo
