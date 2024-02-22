@@ -12,24 +12,13 @@ jobs:
   verify-staged-with-samples:
     runs-on: ubuntu-latest
 
-    services:
-
-      rabbitmq:
-        image: rabbitmq:management
-        env:
-          RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: -rabbitmq_stream advertised_host localhost
-        ports:
-          - 5672:5672
-          - 15672:15672
-          - 5552:5552
-
     steps:
 
-      - name: Wait RabbitMQ is Up
-        run: docker exec ${{ job.services.rabbitmq.id }} rabbitmqctl wait --pid 1 --timeout 60
-
-      - name: Enable RabbitMQ Stream Plugin
-        run: docker exec ${{ job.services.rabbitmq.id }} rabbitmq-plugins enable rabbitmq_stream
+      - name: Start RabbitMQ
+        uses: namoshek/rabbitmq-github-action@v1
+        with:
+          ports: '5672:5672 15672:15672 5552:5552'
+          plugins: rabbitmq_stream,rabbitmq_management
 
       - name: Checkout Samples Repo
         uses: actions/checkout@v4
