@@ -12,19 +12,13 @@ jobs:
   verify-staged-with-samples:
     runs-on: ubuntu-latest
 
-    services:
-
-      rabbitmq:
-        image: rabbitmq:management
-        ports:
-          - 5672:5672
-          - 15672:15672
-          - 5552:5552
-
     steps:
 
-      - name: Enable RabbitMQ Stream Plugin
-        run: docker exec ${{ job.services.rabbitmq.id }} rabbitmq-plugins enable rabbitmq_stream
+      - name: Start RabbitMQ
+        uses: namoshek/rabbitmq-github-action@v1
+        with:
+          ports: '5672:5672 15672:15672 5552:5552'
+          plugins: rabbitmq_stream,rabbitmq_management
 
       - name: Checkout Samples Repo
         uses: actions/checkout@v4
@@ -48,7 +42,9 @@ jobs:
         run: jf mvnc --repo-resolve-releases=libs-release-staging --repo-resolve-snapshots=snapshot
 
       - name: Verify samples against staged release
-        run: jf mvn verify -D"spring-amqp.version"=${{ inputs.releaseVersion }} -B -ntp
+        run: |
+          mvn versions:set -DnewVersion=${{ inputs.releaseVersion }} -DgenerateBackupPoms=false -DprocessAllModules=true -B -ntp
+          jf mvn verify -B -ntp
 
       - name: Capture Test Results
         if: failure()
