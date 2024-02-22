@@ -16,14 +16,15 @@ jobs:
 
       rabbitmq:
         image: rabbitmq:management
-        env:
-          RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: -rabbitmq_stream advertised_host localhost
         ports:
           - 5672:5672
           - 15672:15672
           - 5552:5552
 
     steps:
+
+      - name: Wait RabbitMQ is Up
+        run: docker exec ${{ job.services.rabbitmq.id }} rabbitmqctl wait --pid 1 --timeout 60
 
       - name: Enable RabbitMQ Stream Plugin
         run: docker exec ${{ job.services.rabbitmq.id }} rabbitmq-plugins enable rabbitmq_stream
