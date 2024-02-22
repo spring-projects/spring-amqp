@@ -19,8 +19,12 @@ jobs:
         ports:
           - 5672:5672
           - 15672:15672
+          - 5552:5552
 
     steps:
+
+      - name: Enable RabbitMQ Stream Plugin
+        run: docker exec ${{ job.services.rabbitmq.id }} rabbitmq-plugins enable rabbitmq_stream
 
       - name: Checkout Samples Repo
         uses: actions/checkout@v4
