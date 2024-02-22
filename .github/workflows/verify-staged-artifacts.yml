@@ -44,7 +44,7 @@ jobs:
         run: jf mvnc --repo-resolve-releases=libs-release-staging --repo-resolve-snapshots=snapshot
 
       - name: Verify samples against staged release
-        run: jf mvn verify -D"spring.amqp.version"=${{ inputs.releaseVersion }} -B -ntp
+        run: jf mvn verify -D"spring-amqp.version"=${{ inputs.releaseVersion }} -B -ntp
 
       - name: Capture Test Results
         if: failure()
