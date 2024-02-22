@@ -31,7 +31,7 @@ In addition, the beans associated with `@EnableRabbit` (to support `@RabbitListe
 .Junit5 example
 [source, java]
 ----
-@SpringJunitConfig
+@SpringJUnitConfig
 @SpringRabbitTest
 public class MyRabbitTests {
 
@@ -59,7 +59,7 @@ public class MyRabbitTests {
 }
 ----
 
-With JUnit4, replace `@SpringJunitConfig` with `@RunWith(SpringRunnner.class)`.
+With JUnit4, replace `@SpringJUnitConfig` with `@RunWith(SpringRunnner.class)`.
 
 [[mockito-answer]]
 == Mockito `Answer<?>` Implementations
