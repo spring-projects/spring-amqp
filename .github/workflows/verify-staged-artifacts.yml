@@ -16,15 +16,17 @@ jobs:
 
       rabbitmq:
         image: rabbitmq:management
+        env:
+          RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: -rabbitmq_stream advertised_host localhost
         ports:
           - 5672:5672
           - 15672:15672
-#          - 5552:5552
+          - 5552:5552
 
     steps:
 
-#      - name: Enable RabbitMQ Stream Plugin
-#        run: docker exec ${{ job.services.rabbitmq.id }} rabbitmq-plugins enable rabbitmq_stream
+      - name: Enable RabbitMQ Stream Plugin
+        run: docker exec ${{ job.services.rabbitmq.id }} rabbitmq-plugins enable rabbitmq_stream
 
       - name: Checkout Samples Repo
         uses: actions/checkout@v4
@@ -48,7 +50,9 @@ jobs:
         run: jf mvnc --repo-resolve-releases=libs-release-staging --repo-resolve-snapshots=snapshot
 
       - name: Verify samples against staged release
-        run: jf mvn verify -D"spring-amqp.version"=${{ inputs.releaseVersion }} -B -ntp
+        run: |
+          mvn versions:set -DnewVersion=${{ inputs.releaseVersion }} -DgenerateBackupPoms=false -DprocessAllModules=true -B -ntp
+          jf mvn verify -B -ntp
 
       - name: Capture Test Results
         if: failure()
