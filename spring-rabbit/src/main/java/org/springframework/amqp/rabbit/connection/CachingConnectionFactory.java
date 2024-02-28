@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1250,13 +1250,38 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 
 		private void returnToCache(ChannelProxy proxy) {
-			if (CachingConnectionFactory.this.active && this.publisherConfirms
-					&& proxy instanceof PublisherCallbackChannel) {
+			if (CachingConnectionFactory.this.active
+					&& this.publisherConfirms
+					&& proxy instanceof PublisherCallbackChannel publisherCallbackChannel) {
 
 				this.theConnection.channelsAwaitingAcks.put(this.target, proxy);
-				((PublisherCallbackChannel) proxy)
-						.setAfterAckCallback(c ->
-								doReturnToCache(this.theConnection.channelsAwaitingAcks.remove(c)));
+				AtomicBoolean ackCallbackCalledImmediately = new AtomicBoolean();
+				publisherCallbackChannel
+						.setAfterAckCallback(c -> {
+							ackCallbackCalledImmediately.set(true);
+							doReturnToCache(this.theConnection.channelsAwaitingAcks.remove(c));
+						});
+
+				if (!ackCallbackCalledImmediately.get()) {
+					getChannelsExecutor()
+							.execute(() -> {
+								try {
+									publisherCallbackChannel.waitForConfirms(ASYNC_CLOSE_TIMEOUT);
+								}
+								catch (InterruptedException ex) {
+									Thread.currentThread().interrupt();
+								}
+								catch (TimeoutException ex) {
+									// The channel didn't handle confirms, so close it altogether to avoid
+									// memory leaks for pending confirms
+									try {
+										physicalClose(this.theConnection.channelsAwaitingAcks.remove(this.target));
+									}
+									catch (@SuppressWarnings(UNUSED) Exception e) {
+									}
+								}
+							});
+				}
 			}
 			else {
 				doReturnToCache(proxy);
