@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2023 the original author or authors.
+ * Copyright 2014-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -418,9 +418,10 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 			}
 		}
 		else {
-			// We only get here with Mono<?> and ListenableFuture<?> which have exactly one type argument
 			Type returnType = resultArg.getReturnType();
-			if (returnType != null) {
+			// We only get here with Mono<?> and CompletableFuture<?> which have exactly one type argument
+			// Otherwise it might be Kotlin suspend function
+			if (returnType != null && !Object.class.getName().equals(returnType.getTypeName())) {
 				Type[] actualTypeArguments = ((ParameterizedType) returnType).getActualTypeArguments();
 				if (actualTypeArguments.length > 0) {
 					returnType = actualTypeArguments[0]; // NOSONAR
