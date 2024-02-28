@@ -21,7 +21,6 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isTrue
 import org.junit.jupiter.api.Test
 import org.springframework.amqp.core.AcknowledgeMode
-import org.springframework.amqp.core.MessageListener
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory
 import org.springframework.amqp.rabbit.core.RabbitTemplate
@@ -62,8 +61,9 @@ class EnableRabbitKotlinTests {
 	@Test
 	fun `send and wait for consume`(@Autowired registry: RabbitListenerEndpointRegistry) {
 		val template = RabbitTemplate(this.config.cf())
-		template.convertAndSend("kotlinQueue", "test")
-		assertThat(this.config.latch.await(10, TimeUnit.SECONDS)).isTrue()
+		template.setReplyTimeout(10_000)
+		val result = template.convertSendAndReceive("kotlinQueue", "test")
+		assertThat(result).isEqualTo("TEST")
 		val listener = registry.getListenerContainer("single").messageListener
 		assertThat(TestUtils.getPropertyValue(listener, "messagingMessageConverter.inferredArgumentType").toString())
 				.isEqualTo("class java.lang.String")
@@ -82,11 +82,9 @@ class EnableRabbitKotlinTests {
 	@EnableRabbit
 	class Config {
 
-		val latch = CountDownLatch(1)
-
 		@RabbitListener(id = "single", queues = ["kotlinQueue"])
-		suspend fun handle(@Suppress("UNUSED_PARAMETER") data: String) {
-			this.latch.countDown()
+		suspend fun handle(@Suppress("UNUSED_PARAMETER") data: String) : String? {
+			return data.uppercase()
 		}
 
 		@Bean
