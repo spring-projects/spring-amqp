@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,7 @@ public final class SimpleMessageListenerWithRabbitMQ {
 		container.setBatchSize(500);
 		container.setAcknowledgeMode(AcknowledgeMode.AUTO);
 		container.setConcurrentConsumers(20);
+		container.setReceiveTimeout(10);
 		container.setMessageListener(new MessageListenerAdapter(new SimpleAdapter(), messageConverter));
 		container.start();
 

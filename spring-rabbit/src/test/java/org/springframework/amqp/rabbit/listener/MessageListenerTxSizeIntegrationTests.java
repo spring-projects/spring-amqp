@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,6 +132,7 @@ public class MessageListenerTxSizeIntegrationTests {
 		container.setConcurrentConsumers(concurrentConsumers);
 		container.setChannelTransacted(transactional);
 		container.setAcknowledgeMode(AcknowledgeMode.AUTO);
+		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();
 		container.start();
 		return container;
@@ -139,7 +140,7 @@ public class MessageListenerTxSizeIntegrationTests {
 
 	public class TestListener implements ChannelAwareMessageListener {
 
-		private final ThreadLocal<Integer> count = new ThreadLocal<Integer>();
+		private final ThreadLocal<Integer> count = new ThreadLocal<>();
 
 		private final CountDownLatch latch;
 
@@ -174,6 +175,7 @@ public class MessageListenerTxSizeIntegrationTests {
 				latch.countDown();
 			}
 		}
+
 	}
 
 }

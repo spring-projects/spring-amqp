@@ -1,0 +1,101 @@
+[[async-annotation-conversion]]
+= Message Conversion for Annotated Methods
+
+There are two conversion steps in the pipeline before invoking the listener.
+The first step uses a `MessageConverter` to convert the incoming Spring AMQP `Message` to a Spring-messaging `Message`.
+When the target method is invoked, the message payload is converted, if necessary, to the method parameter type.
+
+The default `MessageConverter` for the first step is a Spring AMQP `SimpleMessageConverter` that handles conversion to
+`String` and `java.io.Serializable` objects.
+All others remain as a `byte[]`.
+In the following discussion, we call this the "`message converter`".
+
+The default converter for the second step is a `GenericMessageConverter`, which delegates to a conversion service
+(an instance of `DefaultFormattingConversionService`).
+In the following discussion, we call this the "`method argument converter`".
+
+To change the message converter, you can add it as a property to the container factory bean.
+The following example shows how to do so:
+
+[source, java]
+----
+@Bean
+public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
+    SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+    ...
+    factory.setMessageConverter(new Jackson2JsonMessageConverter());
+    ...
+    return factory;
+}
+----
+
+This configures a Jackson2 converter that expects header information to be present to guide the conversion.
+
+You can also use a `ContentTypeDelegatingMessageConverter`, which can handle conversion of different content types.
+
+Starting with version 2.3, you can override the factory converter by specifying a bean name in the `messageConverter` property.
+
+[source, java]
+----
+@Bean
+public Jackson2JsonMessageConverter jsonConverter() {
+    return new Jackson2JsonMessageConverter();
+}
+
+@RabbitListener(..., messageConverter = "jsonConverter")
+public void listen(String in) {
+    ...
+}
+----
+
+This avoids having to declare a different container factory just to change the converter.
+
+In most cases, it is not necessary to customize the method argument converter unless, for example, you want to use
+a custom `ConversionService`.
+
+In versions prior to 1.6, the type information to convert the JSON had to be provided in message headers, or a
+custom `ClassMapper` was required.
+Starting with version 1.6, if there are no type information headers, the type can be inferred from the target
+method arguments.
+
+NOTE: This type inference works only for `@RabbitListener` at the method level.
+
+See xref:amqp/message-converters.adoc#json-message-converter[`Jackson2JsonMessageConverter`] for more information.
+
+If you wish to customize the method argument converter, you can do so as follows:
+
+[source, java]
+----
+@Configuration
+@EnableRabbit
+public class AppConfig implements RabbitListenerConfigurer {
+
+    ...
+
+    @Bean
+    public DefaultMessageHandlerMethodFactory myHandlerMethodFactory() {
+        DefaultMessageHandlerMethodFactory factory = new DefaultMessageHandlerMethodFactory();
+        factory.setMessageConverter(new GenericMessageConverter(myConversionService()));
+        return factory;
+    }
+
+    @Bean
+    public DefaultConversionService myConversionService() {
+        DefaultConversionService conv = new DefaultConversionService();
+        conv.addConverter(mySpecialConverter());
+        return conv;
+    }
+
+    @Override
+    public void configureRabbitListeners(RabbitListenerEndpointRegistrar registrar) {
+        registrar.setMessageHandlerMethodFactory(myHandlerMethodFactory());
+    }
+
+    ...
+
+}
+----
+
+IMPORTANT: For multi-method listeners (see xref:amqp/receiving-messages/async-annotation-driven/method-selection.adoc[Multi-method Listeners]), the method selection is based on the payload of the message *after the message conversion*.
+The method argument converter is called only after the method has been selected.
+

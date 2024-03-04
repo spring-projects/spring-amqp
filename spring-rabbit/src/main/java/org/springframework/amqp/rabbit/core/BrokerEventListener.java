@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 the original author or authors.
+ * Copyright 2018-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.amqp.rabbit.core;
 
 import java.util.Arrays;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -50,6 +52,7 @@ import org.springframework.util.ObjectUtils;
  * with the supplied keys.
  *
  * @author Gary Russell
+ * @author Christian Tzolov
  * @since 2.1
  *
  */
@@ -57,6 +60,8 @@ public class BrokerEventListener implements MessageListener, ApplicationEventPub
 		SmartLifecycle {
 
 	private static final Log logger = LogFactory.getLog(BrokerEventListener.class); // NOSONAR - lower case
+
+	private final Lock lock = new ReentrantLock();
 
 	private final AbstractMessageListenerContainer container;
 
@@ -137,34 +142,52 @@ public class BrokerEventListener implements MessageListener, ApplicationEventPub
 	}
 
 	@Override
-	public synchronized void start() {
-		if (!this.running) {
-			if (this.stopInvoked) {
-				// redeclare auto-delete queue
-				this.stopInvoked = false;
-				onCreate(null);
+	public void start() {
+		this.lock.lock();
+		try {
+			if (!this.running) {
+				if (this.stopInvoked) {
+					// redeclare auto-delete queue
+					this.stopInvoked = false;
+					onCreate(null);
+				}
+				if (this.ownContainer) {
+					this.container.start();
+				}
+				this.running = true;
 			}
-			if (this.ownContainer) {
-				this.container.start();
-			}
-			this.running = true;
+		}
+		finally {
+			this.lock.unlock();
 		}
 	}
 
 	@Override
-	public synchronized void stop() {
-		if (this.running) {
-			if (this.ownContainer) {
-				this.container.stop();
+	public void stop() {
+		this.lock.lock();
+		try {
+			if (this.running) {
+				if (this.ownContainer) {
+					this.container.stop();
+				}
+				this.running = false;
+				this.stopInvoked = true;
 			}
-			this.running = false;
-			this.stopInvoked = true;
+		}
+		finally {
+			this.lock.unlock();
 		}
 	}
 
 	@Override
-	public synchronized boolean isRunning() {
-		return this.running;
+	public boolean isRunning() {
+		this.lock.lock();
+		try {
+			return this.running;
+		}
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 	@Override

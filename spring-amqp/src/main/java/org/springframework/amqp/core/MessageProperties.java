@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.util.Assert;
+
 /**
  * Message Properties for an AMQP message.
  *
@@ -33,6 +35,7 @@ import java.util.Map;
  * @author Dmitry Chernyshov
  * @author Artem Bilan
  * @author Csaba Soti
+ * @author Raylax Grey
  */
 public class MessageProperties implements Serializable {
 
@@ -65,6 +68,12 @@ public class MessageProperties implements Serializable {
 	public static final MessageDeliveryMode DEFAULT_DELIVERY_MODE = MessageDeliveryMode.PERSISTENT;
 
 	public static final Integer DEFAULT_PRIORITY = 0;
+
+	/**
+     * The maximum value of x-delay header.
+     * @since 3.1.2
+     */
+	public static final long X_DELAY_MAX = 0xffffffffL;
 
 	private final Map<String, Object> headers = new HashMap<>();
 
@@ -118,7 +127,7 @@ public class MessageProperties implements Serializable {
 
 	private String consumerQueue;
 
-	private Integer receivedDelay;
+	private Long receivedDelay;
 
 	private MessageDeliveryMode receivedDeliveryMode;
 
@@ -352,10 +361,13 @@ public class MessageProperties implements Serializable {
 	 * received message contains the delay.
 	 * @return the received delay.
 	 * @since 1.6
+	 * @deprecated in favor of {@link #getReceivedDelayLong()}
 	 * @see #getDelay()
 	 */
+	@Deprecated(since = "3.1.2", forRemoval = true)
 	public Integer getReceivedDelay() {
-		return this.receivedDelay;
+		Long receivedDelay = getReceivedDelayLong();
+		return receivedDelay != null ? Math.toIntExact(receivedDelay) : null;
 	}
 
 	/**
@@ -363,8 +375,32 @@ public class MessageProperties implements Serializable {
 	 * received message contains the delay.
 	 * @param receivedDelay the received delay.
 	 * @since 1.6
+	 * @deprecated in favor of {@link #setReceivedDelayLong(Long)}
 	 */
+	@Deprecated(since = "3.1.2", forRemoval = true)
 	public void setReceivedDelay(Integer receivedDelay) {
+		setReceivedDelayLong(receivedDelay != null ? receivedDelay.longValue() : null);
+	}
+
+	/**
+	 * When a delayed message exchange is used the x-delay header on a
+	 * received message contains the delay.
+	 * @return the received delay.
+	 * @since 3.1.2
+	 * @see #getDelayLong()
+	 */
+	public Long getReceivedDelayLong() {
+		return this.receivedDelay;
+	}
+
+	/**
+	 * When a delayed message exchange is used the x-delay header on a
+	 * received message contains the delay.
+	 * @param receivedDelay the received delay.
+	 * @since 3.1.2
+	 * @see #setDelayLong(Long)
+	 */
+	public void setReceivedDelayLong(Long receivedDelay) {
 		this.receivedDelay = receivedDelay;
 	}
 
@@ -434,12 +470,35 @@ public class MessageProperties implements Serializable {
 	 * The x-delay header (outbound).
 	 * @return the delay.
 	 * @since 1.6
+	 * @deprecated in favor of {@link #getDelayLong()}
 	 * @see #getReceivedDelay()
 	 */
+	@Deprecated(since = "3.1.2", forRemoval = true)
 	public Integer getDelay() {
+		Long delay = getDelayLong();
+		return delay != null ? Math.toIntExact(delay) : null;
+	}
+
+	/**
+	 * Set the x-delay header.
+	 * @param delay the delay.
+	 * @since 1.6
+	 * @deprecated in favor of {@link #setDelayLong(Long)}
+	 */
+	@Deprecated(since = "3.1.2", forRemoval = true)
+	public void setDelay(Integer delay) {
+		setDelayLong(delay != null ? delay.longValue() : null);
+	}
+
+	/**
+	 * Get the x-delay header long value.
+	 * @return the delay.
+	 * @since 3.1.2
+	 */
+	public Long getDelayLong() {
 		Object delay = this.headers.get(X_DELAY);
-		if (delay instanceof Integer) {
-			return (Integer) delay;
+		if (delay instanceof Long) {
+			return (Long) delay;
 		}
 		else {
 			return null;
@@ -447,17 +506,18 @@ public class MessageProperties implements Serializable {
 	}
 
 	/**
-	 * Set the x-delay header.
+	 * Set the x-delay header to a long value.
 	 * @param delay the delay.
-	 * @since 1.6
+	 * @since 3.1.2
 	 */
-	public void setDelay(Integer delay) {
+	public void setDelayLong(Long delay) {
 		if (delay == null || delay < 0) {
 			this.headers.remove(X_DELAY);
+			return;
 		}
-		else {
-			this.headers.put(X_DELAY, delay);
-		}
+
+		Assert.isTrue(delay <= X_DELAY_MAX, "Delay cannot exceed " + X_DELAY_MAX);
+		this.headers.put(X_DELAY, delay);
 	}
 
 	public boolean isFinalRetryForMessageWithNoId() {

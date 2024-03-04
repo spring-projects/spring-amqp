@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,25 +18,18 @@ package org.springframework.amqp.support.converter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.utils.test.TestUtils;
-import org.springframework.core.serializer.DefaultDeserializer;
-import org.springframework.core.serializer.Deserializer;
 
 /**
  * @author Mark Fisher
@@ -149,24 +142,6 @@ public class SerializerMessageConverterTests extends AllowedListDeserializingMes
 		ByteArrayInputStream bais = new ByteArrayInputStream(body);
 		Object deserializedObject = new ObjectInputStream(bais).readObject();
 		assertThat(deserializedObject).isEqualTo(testBean);
-	}
-
-	@SuppressWarnings("unchecked")
-	@Test
-	public void testDefaultDeserializerClassLoader() throws Exception {
-		SerializerMessageConverter converter = new SerializerMessageConverter();
-		ClassLoader loader = mock(ClassLoader.class);
-		Deserializer<Object> deserializer = new DefaultDeserializer(loader);
-		converter.setDeserializer(deserializer);
-		assertThat(TestUtils.getPropertyValue(converter, "defaultDeserializerClassLoader")).isSameAs(loader);
-		assertThat(TestUtils.getPropertyValue(converter, "usingDefaultDeserializer", Boolean.class)).isTrue();
-		Deserializer<Object> mock = mock(Deserializer.class);
-		converter.setDeserializer(mock);
-		assertThat(TestUtils.getPropertyValue(converter, "usingDefaultDeserializer", Boolean.class)).isFalse();
-		TestBean testBean = new TestBean("foo");
-		Message message = converter.toMessage(testBean, new MessageProperties());
-		converter.fromMessage(message);
-		verify(mock).deserialize(Mockito.any(InputStream.class));
 	}
 
 	@Test

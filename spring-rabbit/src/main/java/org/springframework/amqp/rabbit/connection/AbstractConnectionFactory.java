@@ -32,6 +32,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -69,6 +71,7 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
  * @author Steve Powell
  * @author Artem Bilan
  * @author Will Droste
+ * @author Christian Tzolov
  *
  */
 public abstract class AbstractConnectionFactory implements ConnectionFactory, DisposableBean, BeanNameAware,
@@ -81,14 +84,12 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	public enum AddressShuffleMode {
 
 		/**
-		 * Do not shuffle the addresses before or after opening a connection; attempt
-		 * connections in a fixed order.
+		 * Do not shuffle the addresses before or after opening a connection; attempt connections in a fixed order.
 		 */
 		NONE,
 
 		/**
-		 * Randomly shuffle the addresses before opening a connection; attempt connections
-		 * in the new order.
+		 * Randomly shuffle the addresses before opening a connection; attempt connections in the new order.
 		 */
 		RANDOM,
 
@@ -107,6 +108,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	private static final String BAD_URI = "setUri() was passed an invalid URI; it is ignored";
 
 	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR
+
+	private final Lock lock = new ReentrantLock();
 
 	private final com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory;
 
@@ -146,10 +149,10 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	private int closeTimeout = DEFAULT_CLOSE_TIMEOUT;
 
-	private ConnectionNameStrategy connectionNameStrategy =
-			connectionFactory -> (this.beanName != null ? this.beanName : "SpringAMQP") +
-					"#" + ObjectUtils.getIdentityHexString(this) + ":" +
-					this.defaultConnectionNameStrategyCounter.getAndIncrement();
+	private ConnectionNameStrategy connectionNameStrategy = connectionFactory -> (this.beanName != null ? this.beanName
+			: "SpringAMQP") +
+			"#" + ObjectUtils.getIdentityHexString(this) + ":" +
+			this.defaultConnectionNameStrategyCounter.getAndIncrement();
 
 	private String beanName;
 
@@ -164,8 +167,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	private RetryTemplate retryTemplate;
 
 	/**
-	 * Create a new AbstractConnectionFactory for the given target ConnectionFactory,
-	 * with no publisher connection factory.
+	 * Create a new AbstractConnectionFactory for the given target ConnectionFactory, with no publisher connection
+	 * factory.
 	 * @param rabbitConnectionFactory the target ConnectionFactory
 	 */
 	public AbstractConnectionFactory(com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory) {
@@ -174,8 +177,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	/**
-	 * Set a custom publisher connection factory; the type does not need to be the same
-	 * as this factory.
+	 * Set a custom publisher connection factory; the type does not need to be the same as this factory.
 	 * @param publisherConnectionFactory the factory.
 	 * @since 2.3.2
 	 */
@@ -269,8 +271,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	/**
-	 * Set an {@link AddressResolver} to use when creating connections; overrides
-	 * {@link #setAddresses(String)}, {@link #setHost(String)}, and {@link #setPort(int)}.
+	 * Set an {@link AddressResolver} to use when creating connections; overrides {@link #setAddresses(String)},
+	 * {@link #setHost(String)}, and {@link #setPort(int)}.
 	 * @param addressResolver the resolver.
 	 * @since 2.1.15
 	 */
@@ -343,29 +345,40 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	/**
-	 * Set addresses for clustering.
-	 * This property overrides the host+port properties if not empty.
+	 * Set addresses for clustering. This property overrides the host+port properties if not empty.
 	 * @param addresses list of addresses with form "host[:port],..."
 	 */
-	public synchronized void setAddresses(String addresses) {
-		if (StringUtils.hasText(addresses)) {
-			Address[] addressArray = Address.parseAddresses(addresses);
-			if (addressArray.length > 0) {
-				this.addresses = new LinkedList<>(Arrays.asList(addressArray));
-				if (this.publisherConnectionFactory != null) {
-					this.publisherConnectionFactory.setAddresses(addresses);
+	public void setAddresses(String addresses) {
+		this.lock.lock();
+		try {
+			if (StringUtils.hasText(addresses)) {
+				Address[] addressArray = Address.parseAddresses(addresses);
+				if (addressArray.length > 0) {
+					this.addresses = new LinkedList<>(Arrays.asList(addressArray));
+					if (this.publisherConnectionFactory != null) {
+						this.publisherConnectionFactory.setAddresses(addresses);
+					}
+					return;
 				}
-				return;
 			}
+			this.logger.info("setAddresses() called with an empty value, will be using the host+port "
+					+ " or addressResolver properties for connections");
+			this.addresses = null;
 		}
-		this.logger.info("setAddresses() called with an empty value, will be using the host+port "
-				+ " or addressResolver properties for connections");
-		this.addresses = null;
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 	@Nullable
-	protected synchronized List<Address> getAddresses() throws IOException {
-		return this.addressResolver != null ? this.addressResolver.getAddresses() : this.addresses;
+	protected List<Address> getAddresses() throws IOException {
+		this.lock.lock();
+		try {
+			return this.addressResolver != null ? this.addressResolver.getAddresses() : this.addresses;
+		}
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 	/**
@@ -442,10 +455,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	/**
-	 * Provide an Executor for
-	 * use by the Rabbit ConnectionFactory when creating connections.
-	 * Can either be an ExecutorService or a Spring
-	 * ThreadPoolTaskExecutor, as defined by a &lt;task:executor/&gt; element.
+	 * Provide an Executor for use by the Rabbit ConnectionFactory when creating connections. Can either be an
+	 * ExecutorService or a Spring ThreadPoolTaskExecutor, as defined by a &lt;task:executor/&gt; element.
 	 * @param executor The executor.
 	 */
 	public void setExecutor(Executor executor) {
@@ -470,8 +481,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	/**
-	 * How long to wait (milliseconds) for a response to a connection close
-	 * operation from the broker; default 30000 (30 seconds).
+	 * How long to wait (milliseconds) for a response to a connection close operation from the broker; default 30000 (30
+	 * seconds).
 	 * @param closeTimeout the closeTimeout to set.
 	 */
 	public void setCloseTimeout(int closeTimeout) {
@@ -486,8 +497,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	/**
-	 * Provide a {@link ConnectionNameStrategy} to build the name for the target RabbitMQ connection.
-	 * The {@link #beanName} together with a counter is used by default.
+	 * Provide a {@link ConnectionNameStrategy} to build the name for the target RabbitMQ connection. The
+	 * {@link #beanName} together with a counter is used by default.
 	 * @param connectionNameStrategy the {@link ConnectionNameStrategy} to use.
 	 * @since 2.0
 	 */
@@ -500,10 +511,10 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	/**
-	 * Set the strategy for logging close exceptions; by default, if a channel is closed due to a failed
-	 * passive queue declaration, it is logged at debug level. Normal channel closes (200 OK) are not
-	 * logged. All others are logged at ERROR level (unless access is refused due to an exclusive consumer
-	 * condition, in which case, it is logged at DEBUG level, since 3.1, previously INFO).
+	 * Set the strategy for logging close exceptions; by default, if a channel is closed due to a failed passive queue
+	 * declaration, it is logged at debug level. Normal channel closes (200 OK) are not logged. All others are logged at
+	 * ERROR level (unless access is refused due to an exclusive consumer condition, in which case, it is logged at
+	 * DEBUG level, since 3.1, previously INFO).
 	 * @param closeExceptionLogger the {@link ConditionalExceptionLogger}.
 	 * @since 1.5
 	 */
@@ -597,7 +608,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 			}
 
 			if (this.applicationEventPublisher != null) {
-				connection.addBlockedListener(new ConnectionBlockedListener(connection, this.applicationEventPublisher));
+				connection
+						.addBlockedListener(new ConnectionBlockedListener(connection, this.applicationEventPublisher));
 			}
 
 			return connection;
@@ -609,17 +621,23 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		}
 	}
 
-	private synchronized com.rabbitmq.client.Connection connect(String connectionName)
+	private com.rabbitmq.client.Connection connect(String connectionName)
 			throws IOException, TimeoutException {
 
-		if (this.addressResolver != null) {
-			return connectResolver(connectionName);
+		this.lock.lock();
+		try {
+			if (this.addressResolver != null) {
+				return connectResolver(connectionName);
+			}
+			if (this.addresses != null) {
+				return connectAddresses(connectionName);
+			}
+			else {
+				return connectHostPort(connectionName);
+			}
 		}
-		if (this.addresses != null) {
-			return connectAddresses(connectionName);
-		}
-		else {
-			return connectHostPort(connectionName);
+		finally {
+			this.lock.unlock();
 		}
 	}
 
@@ -631,22 +649,28 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 				connectionName);
 	}
 
-	private synchronized com.rabbitmq.client.Connection connectAddresses(String connectionName)
+	private com.rabbitmq.client.Connection connectAddresses(String connectionName)
 			throws IOException, TimeoutException {
 
-		List<Address> addressesToConnect = new ArrayList<>(this.addresses);
-		if (addressesToConnect.size() > 1 && AddressShuffleMode.RANDOM.equals(this.addressShuffleMode)) {
-			Collections.shuffle(addressesToConnect);
+		this.lock.lock();
+		try {
+			List<Address> addressesToConnect = new ArrayList<>(this.addresses);
+			if (addressesToConnect.size() > 1 && AddressShuffleMode.RANDOM.equals(this.addressShuffleMode)) {
+				Collections.shuffle(addressesToConnect);
+			}
+			if (this.logger.isInfoEnabled()) {
+				this.logger.info("Attempting to connect to: " + addressesToConnect);
+			}
+			com.rabbitmq.client.Connection connection = this.rabbitConnectionFactory.newConnection(this.executorService,
+					addressesToConnect, connectionName);
+			if (addressesToConnect.size() > 1 && AddressShuffleMode.INORDER.equals(this.addressShuffleMode)) {
+				this.addresses.add(this.addresses.remove(0));
+			}
+			return connection;
 		}
-		if (this.logger.isInfoEnabled()) {
-			this.logger.info("Attempting to connect to: " + addressesToConnect);
+		finally {
+			this.lock.unlock();
 		}
-		com.rabbitmq.client.Connection connection = this.rabbitConnectionFactory.newConnection(this.executorService,
-				addressesToConnect, connectionName);
-		if (addressesToConnect.size() > 1 && AddressShuffleMode.INORDER.equals(this.addressShuffleMode)) {
-			this.addresses.add(this.addresses.remove(0));
-		}
-		return connection;
 	}
 
 	private com.rabbitmq.client.Connection connectHostPort(String connectionName) throws IOException, TimeoutException {
@@ -728,8 +752,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	/**
-	 * Default implementation of {@link ConditionalExceptionLogger} for logging channel
-	 * close exceptions.
+	 * Default implementation of {@link ConditionalExceptionLogger} for logging channel close exceptions.
 	 * @since 1.5
 	 */
 	public static class DefaultChannelCloseLogger implements ConditionalExceptionLogger {

@@ -17,6 +17,8 @@
 package org.springframework.rabbit.stream.producer;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 import org.springframework.amqp.core.Message;
@@ -52,12 +54,15 @@ import io.micrometer.observation.ObservationRegistry;
  * Default implementation of {@link RabbitStreamOperations}.
  *
  * @author Gary Russell
+ * @author Christian Tzolov
  * @since 2.4
  *
  */
 public class RabbitStreamTemplate implements RabbitStreamOperations, ApplicationContextAware, BeanNameAware {
 
 	protected final LogAccessor logger = new LogAccessor(getClass()); // NOSONAR
+
+	private final Lock lock = new ReentrantLock();
 
 	private ApplicationContext applicationContext;
 
@@ -101,24 +106,30 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 	}
 
 
-	private synchronized Producer createOrGetProducer() {
-		if (this.producer == null) {
-			ProducerBuilder builder = this.environment.producerBuilder();
-			if (this.superStreamRouting == null) {
-				builder.stream(this.streamName);
+	private Producer createOrGetProducer() {
+		this.lock.lock();
+		try {
+			if (this.producer == null) {
+				ProducerBuilder builder = this.environment.producerBuilder();
+				if (this.superStreamRouting == null) {
+					builder.stream(this.streamName);
+				}
+				else {
+					builder.superStream(this.streamName)
+							.routing(this.superStreamRouting);
+				}
+				this.producerCustomizer.accept(this.beanName, builder);
+				this.producer = builder.build();
+				if (!this.streamConverterSet) {
+					((DefaultStreamMessageConverter) this.streamConverter).setBuilderSupplier(
+							() -> this.producer.messageBuilder());
+				}
 			}
-			else {
-				builder.superStream(this.streamName)
-						.routing(this.superStreamRouting);
-			}
-			this.producerCustomizer.accept(this.beanName, builder);
-			this.producer = builder.build();
-			if (!this.streamConverterSet) {
-				((DefaultStreamMessageConverter) this.streamConverter).setBuilderSupplier(
-						() ->  this.producer.messageBuilder());
-			}
+			return this.producer;
 		}
-		return this.producer;
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 	@Override
@@ -127,8 +138,14 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 	}
 
 	@Override
-	public synchronized void setBeanName(String name) {
-		this.beanName = name;
+	public void setBeanName(String name) {
+		this.lock.lock();
+		try {
+			this.beanName = name;
+		}
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 	/**
@@ -136,8 +153,14 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 	 * @param superStreamRouting the routing function.
 	 * @since 3.0
 	 */
-	public synchronized void setSuperStreamRouting(Function<com.rabbitmq.stream.Message, String> superStreamRouting) {
-		this.superStreamRouting = superStreamRouting;
+	public void setSuperStreamRouting(Function<com.rabbitmq.stream.Message, String> superStreamRouting) {
+		this.lock.lock();
+		try {
+			this.superStreamRouting = superStreamRouting;
+		}
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 
@@ -155,19 +178,31 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 	 * for {@link #send(Message)} and {@link #convertAndSend(Object)} methods.
 	 * @param streamConverter the converter.
 	 */
-	public synchronized void setStreamConverter(StreamMessageConverter streamConverter) {
+	public void setStreamConverter(StreamMessageConverter streamConverter) {
 		Assert.notNull(streamConverter, "'streamConverter' cannot be null");
-		this.streamConverter = streamConverter;
-		this.streamConverterSet = true;
+		this.lock.lock();
+		try {
+			this.streamConverter = streamConverter;
+			this.streamConverterSet = true;
+		}
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 	/**
 	 * Used to customize the {@link ProducerBuilder} before the {@link Producer} is built.
 	 * @param producerCustomizer the customizer;
 	 */
-	public synchronized void setProducerCustomizer(ProducerCustomizer producerCustomizer) {
+	public void setProducerCustomizer(ProducerCustomizer producerCustomizer) {
 		Assert.notNull(producerCustomizer, "'producerCustomizer' cannot be null");
-		this.producerCustomizer = producerCustomizer;
+		this.lock.lock();
+		try {
+			this.producerCustomizer = producerCustomizer;
+		}
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 	/**
@@ -303,10 +338,16 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 	 * operation that requires one.</b>
 	 */
 	@Override
-	public synchronized void close() {
-		if (this.producer != null) {
-			this.producer.close();
-			this.producer = null;
+	public void close() {
+		this.lock.lock();
+		try {
+			if (this.producer != null) {
+				this.producer.close();
+				this.producer = null;
+			}
+		}
+		finally {
+			this.lock.unlock();
 		}
 	}
 

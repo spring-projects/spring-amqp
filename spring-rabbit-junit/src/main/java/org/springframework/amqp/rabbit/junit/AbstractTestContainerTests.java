@@ -16,14 +16,18 @@
 
 package org.springframework.amqp.rabbit.junit;
 
+import java.io.IOException;
 import java.time.Duration;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.4
  *
  */
@@ -35,7 +39,7 @@ public abstract class AbstractTestContainerTests {
 	static {
 		if (System.getProperty("spring.rabbit.use.local.server") == null
 				&& System.getenv("SPRING_RABBIT_USE_LOCAL_SERVER") == null) {
-			String image = "rabbitmq:3.11-management";
+			String image = "rabbitmq:management";
 			String cache = System.getenv().get("IMAGE_CACHE");
 			if (cache != null) {
 				image = cache + image;
@@ -44,13 +48,17 @@ public abstract class AbstractTestContainerTests {
 					.asCompatibleSubstituteFor("rabbitmq");
 			RABBITMQ = new RabbitMQContainer(imageName)
 						.withExposedPorts(5672, 15672, 5552)
-						.withPluginsEnabled("rabbitmq_stream")
 						.withStartupTimeout(Duration.ofMinutes(2));
-			RABBITMQ.start();
 		}
 		else {
 			RABBITMQ = null;
 		}
+	}
+
+	@BeforeAll
+	static void startContainer() throws IOException, InterruptedException {
+		RABBITMQ.start();
+		RABBITMQ.execInContainer("rabbitmq-plugins", "enable", "rabbitmq_stream");
 	}
 
 	public static int amqpPort() {

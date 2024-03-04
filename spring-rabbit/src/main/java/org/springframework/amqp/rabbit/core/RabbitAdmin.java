@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,6 +30,8 @@ import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
@@ -79,6 +80,7 @@ import com.rabbitmq.client.Channel;
  * @author Ed Scriven
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Christian Tzolov
  */
 @ManagedResource(description = "Admin Tasks")
 public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, ApplicationEventPublisherAware,
@@ -122,13 +124,17 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR
 
+	private final Lock lock = new ReentrantLock();
+
 	private final RabbitTemplate rabbitTemplate;
 
-	private final Object lifecycleMonitor = new Object();
+	private final Lock lifecycleLock = new ReentrantLock();
 
 	private final ConnectionFactory connectionFactory;
 
 	private final Set<Declarable> manualDeclarables = Collections.synchronizedSet(new LinkedHashSet<>());
+
+	private final Lock manualDeclarablesLock = new ReentrantLock();
 
 	private String beanName;
 
@@ -259,20 +265,19 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	}
 
 	private void removeExchangeBindings(final String exchangeName) {
-		synchronized (this.manualDeclarables) {
+		this.manualDeclarablesLock.lock();
+		try {
 			this.manualDeclarables.stream()
 					.filter(dec -> dec instanceof Exchange ex && ex.getName().equals(exchangeName))
 					.collect(Collectors.toSet())
-					.forEach(ex -> this.manualDeclarables.remove(ex));
-			Iterator<Declarable> iterator = this.manualDeclarables.iterator();
-			while (iterator.hasNext()) {
-				Declarable next = iterator.next();
-				if (next instanceof Binding binding &&
-						((!binding.isDestinationQueue() && binding.getDestination().equals(exchangeName))
-							|| binding.getExchange().equals(exchangeName))) {
-					iterator.remove();
-				}
-			}
+					.forEach(this.manualDeclarables::remove);
+			this.manualDeclarables.removeIf(next ->
+					next instanceof Binding binding
+							&& ((!binding.isDestinationQueue() && binding.getDestination().equals(exchangeName))
+							|| binding.getExchange().equals(exchangeName)));
+		}
+		finally {
+			this.manualDeclarablesLock.unlock();
 		}
 	}
 
@@ -290,8 +295,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 * true.
 	 */
 	@Override
-	@ManagedOperation(description =
-			"Declare a queue on the broker (this operation is not available remotely)")
+	@ManagedOperation(description = "Declare a queue on the broker (this operation is not available remotely)")
 	@Nullable
 	public String declareQueue(final Queue queue) {
 		try {
@@ -359,19 +363,19 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	}
 
 	private void removeQueueBindings(final String queueName) {
-		synchronized (this.manualDeclarables) {
+		this.manualDeclarablesLock.lock();
+		try {
 			this.manualDeclarables.stream()
 					.filter(dec -> dec instanceof Queue queue && queue.getName().equals(queueName))
 					.collect(Collectors.toSet())
-					.forEach(q -> this.manualDeclarables.remove(q));
-			Iterator<Declarable> iterator = this.manualDeclarables.iterator();
-			while (iterator.hasNext()) {
-				Declarable next = iterator.next();
-				if (next instanceof Binding binding &&
-						(binding.isDestinationQueue() && binding.getDestination().equals(queueName))) {
-					iterator.remove();
-				}
-			}
+					.forEach(this.manualDeclarables::remove);
+			this.manualDeclarables.removeIf(next ->
+					next instanceof Binding binding
+							&& (binding.isDestinationQueue()
+							&& binding.getDestination().equals(queueName)));
+		}
+		finally {
+			this.manualDeclarablesLock.unlock();
 		}
 	}
 
@@ -400,8 +404,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	// Binding
 	@Override
-	@ManagedOperation(description =
-			"Declare a binding on the broker (this operation is not available remotely)")
+	@ManagedOperation(description = "Declare a binding on the broker (this operation is not available remotely)")
 	public void declareBinding(final Binding binding) {
 		try {
 			this.rabbitTemplate.execute(channel -> {
@@ -418,8 +421,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	}
 
 	@Override
-	@ManagedOperation(description =
-			"Remove a binding from the broker (this operation is not available remotely)")
+	@ManagedOperation(description = "Remove a binding from the broker (this operation is not available remotely)")
 	public void removeBinding(final Binding binding) {
 		this.rabbitTemplate.execute(channel -> {
 			if (binding.isDestinationQueue()) {
@@ -515,9 +517,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	/**
 	 * Normally, when a connection is recovered, the admin only recovers auto-delete
-	 * queues, etc, that are declared as beans in the application context. When this is
+	 * queues, etc., that are declared as beans in the application context. When this is
 	 * true, it will also redeclare any manually declared {@link Declarable}s via admin
-	 * methods. When a queue or exhange is deleted, it will not longer be recovered, nor
+	 * methods. When a queue or exchange is deleted, it will no longer be recovered, nor
 	 * will any corresponding bindings.
 	 * @param redeclareManualDeclarations true to redeclare.
 	 * @since 2.4
@@ -578,8 +580,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 */
 	@Override
 	public void afterPropertiesSet() {
-
-		synchronized (this.lifecycleMonitor) {
+		this.lifecycleLock.lock();
+		try {
 
 			if (this.running || !this.autoStartup) {
 				return;
@@ -613,7 +615,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 					/*
 					 * ...but it is possible for this to happen twice in the same ConnectionFactory (if more than
 					 * one concurrent Connection is allowed). It's idempotent, so no big deal (a bit of network
-					 * chatter). In fact it might even be a good thing: exclusive queues only make sense if they are
+					 * chatter). In fact, it might even be a good thing: exclusive queues only make sense if they are
 					 * declared for every connection. If anyone has a problem with it: use auto-startup="false".
 					 */
 					if (this.retryTemplate != null) {
@@ -633,7 +635,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			});
 
 			this.running = true;
-
+		}
+		finally {
+			this.lifecycleLock.unlock();
 		}
 	}
 
@@ -652,11 +656,11 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		}
 
 		this.logger.debug("Initializing declarations");
-		Collection<Exchange> contextExchanges = new LinkedList<Exchange>(
+		Collection<Exchange> contextExchanges = new LinkedList<>(
 				this.applicationContext.getBeansOfType(Exchange.class).values());
-		Collection<Queue> contextQueues = new LinkedList<Queue>(
+		Collection<Queue> contextQueues = new LinkedList<>(
 				this.applicationContext.getBeansOfType(Queue.class).values());
-		Collection<Binding> contextBindings = new LinkedList<Binding>(
+		Collection<Binding> contextBindings = new LinkedList<>(
 				this.applicationContext.getBeansOfType(Binding.class).values());
 		Collection<DeclarableCustomizer> customizers =
 				this.applicationContext.getBeansOfType(DeclarableCustomizer.class).values();
@@ -668,7 +672,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		final Collection<Binding> bindings = filterDeclarables(contextBindings, customizers);
 
 		for (Exchange exchange : exchanges) {
-			if ((!exchange.isDurable() || exchange.isAutoDelete())  && this.logger.isInfoEnabled()) {
+			if ((!exchange.isDurable() || exchange.isAutoDelete()) && this.logger.isInfoEnabled()) {
 				this.logger.info("Auto-declaring a non-durable or auto-delete Exchange ("
 						+ exchange.getName()
 						+ ") durable:" + exchange.isDurable() + ", auto-delete:" + exchange.isAutoDelete() + ". "
@@ -688,14 +692,14 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			}
 		}
 
-		if (exchanges.size() == 0 && queues.size() == 0 && bindings.size() == 0 && this.manualDeclarables.size() == 0) {
+		if (exchanges.isEmpty() && queues.isEmpty() && bindings.isEmpty() && this.manualDeclarables.isEmpty()) {
 			this.logger.debug("Nothing to declare");
 			return;
 		}
 		this.rabbitTemplate.execute(channel -> {
-			declareExchanges(channel, exchanges.toArray(new Exchange[exchanges.size()]));
-			declareQueues(channel, queues.toArray(new Queue[queues.size()]));
-			declareBindings(channel, bindings.toArray(new Binding[bindings.size()]));
+			declareExchanges(channel, exchanges.toArray(new Exchange[0]));
+			declareQueues(channel, queues.toArray(new Queue[0]));
+			declareBindings(channel, bindings.toArray(new Binding[0]));
 			return null;
 		});
 		this.logger.debug("Declarations finished");
@@ -706,8 +710,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 * Process manual declarables.
 	 */
 	private void redeclareManualDeclarables() {
-		if (this.manualDeclarables.size() > 0) {
-			synchronized (this.manualDeclarables) {
+		if (!this.manualDeclarables.isEmpty()) {
+			this.manualDeclarablesLock.lock();
+			try {
 				this.logger.debug("Redeclaring manually declared Declarables");
 				for (Declarable dec : this.manualDeclarables) {
 					if (dec instanceof Queue queue) {
@@ -720,6 +725,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 						declareBinding((Binding) dec);
 					}
 				}
+			}
+			finally {
+				this.manualDeclarablesLock.unlock();
 			}
 		}
 
@@ -800,7 +808,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 					customizers.forEach(cust -> ref.set((T) cust.apply(ref.get())));
 					return ref.get();
 				})
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 	private <T extends Declarable> boolean declarableByMe(T dec) {
@@ -822,10 +830,10 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 					if (exchange.isDelayed()) {
 						Map<String, Object> arguments = exchange.getArguments();
 						if (arguments == null) {
-							arguments = new HashMap<String, Object>();
+							arguments = new HashMap<>();
 						}
 						else {
-							arguments = new HashMap<String, Object>(arguments);
+							arguments = new HashMap<>(arguments);
 						}
 						arguments.put("x-delayed-type", exchange.getType());
 						channel.exchangeDeclare(exchange.getName(), DELAYED_MESSAGE_EXCHANGE, exchange.isDurable(),
@@ -844,9 +852,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	}
 
 	private DeclareOk[] declareQueues(final Channel channel, final Queue... queues) throws IOException {
-		List<DeclareOk> declareOks = new ArrayList<DeclareOk>(queues.length);
-		for (int i = 0; i < queues.length; i++) {
-			Queue queue = queues[i];
+		List<DeclareOk> declareOks = new ArrayList<>(queues.length);
+		for (Queue queue : queues) {
 			if (!queue.getName().startsWith("amq.")) {
 				if (this.logger.isDebugEnabled()) {
 					this.logger.debug("declaring Queue '" + queue.getName() + "'");
@@ -873,7 +880,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 				this.logger.debug(queue.getName() + ": Queue with name that starts with 'amq.' cannot be declared.");
 			}
 		}
-		return declareOks.toArray(new DeclareOk[declareOks.size()]);
+		return declareOks.toArray(new DeclareOk[0]);
 	}
 
 	private void closeChannelAfterIllegalArg(final Channel channel, Queue queue) {

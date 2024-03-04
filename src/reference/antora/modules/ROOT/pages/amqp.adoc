@@ -1,0 +1,6 @@
+[[amqp]]
+= Using Spring AMQP
+:page-section-summary-toc: 1
+
+This chapter explores the interfaces and classes that are the essential components for developing applications with Spring AMQP.
+

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 
 import org.springframework.amqp.core.Message;
@@ -60,6 +62,7 @@ import com.rabbitmq.client.Envelope;
  *
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Christian Tzolov
  *
  * @since 2.0
  *
@@ -186,6 +189,8 @@ public class TestRabbitTemplate extends RabbitTemplate
 
 	private static class Listeners {
 
+		private final Lock lock = new ReentrantLock();
+
 		private final List<Object> listeners = new ArrayList<>();
 
 		private volatile Iterator<Object> iterator;
@@ -193,11 +198,17 @@ public class TestRabbitTemplate extends RabbitTemplate
 		Listeners() {
 		}
 
-		private synchronized Object next() {
-			if (this.iterator == null || !this.iterator.hasNext()) {
-				this.iterator = this.listeners.iterator();
+		private Object next() {
+			this.lock.lock();
+			try {
+				if (this.iterator == null || !this.iterator.hasNext()) {
+					this.iterator = this.listeners.iterator();
+				}
+				return this.iterator.next();
 			}
-			return this.iterator.next();
+			finally {
+				this.lock.unlock();
+			}
 		}
 
 	}

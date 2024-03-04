@@ -1,0 +1,35 @@
+[[post-processing]]
+= Modifying Messages - Compression and More
+
+A number of extension points exist.
+They let you perform some processing on a message, either before it is sent to RabbitMQ or immediately after it is received.
+
+As can be seen in xref:amqp/message-converters.adoc[Message Converters], one such extension point is in the `AmqpTemplate` `convertAndReceive` operations, where you can provide a `MessagePostProcessor`.
+For example, after your POJO has been converted, the `MessagePostProcessor` lets you set custom headers or properties on the `Message`.
+
+Starting with version 1.4.2, additional extension points have been added to the `RabbitTemplate` - `setBeforePublishPostProcessors()` and `setAfterReceivePostProcessors()`.
+The first enables a post processor to run immediately before sending to RabbitMQ.
+When using batching (see xref:amqp/sending-messages.adoc#template-batching[Batching]), this is invoked after the batch is assembled and before the batch is sent.
+The second is invoked immediately after a message is received.
+
+These extension points are used for such features as compression and, for this purpose, several `MessagePostProcessor` implementations are provided.
+`GZipPostProcessor`, `ZipPostProcessor` and `DeflaterPostProcessor` compress messages before sending, and `GUnzipPostProcessor`, `UnzipPostProcessor` and `InflaterPostProcessor` decompress received messages.
+
+NOTE: Starting with version 2.1.5, the `GZipPostProcessor` can be configured with the `copyProperties = true` option to make a  copy of the original message properties.
+By default, these properties are reused for performance reasons, and modified with compression content encoding and the optional `MessageProperties.SPRING_AUTO_DECOMPRESS` header.
+If you retain a reference to the original outbound message, its properties will change as well.
+So, if your application retains a copy of an outbound message with these message post processors, consider turning the `copyProperties` option on.
+
+IMPORTANT: Starting with version 2.2.12, you can configure the delimiter that the compressing post processors use between content encoding elements.
+With versions 2.2.11 and before, this was hard-coded as `:`, it is now set to `, ` by default.
+The decompressors will work with both delimiters.
+However, if you publish messages with 2.3 or later and consume with 2.2.11 or earlier, you MUST set the `encodingDelimiter` property on the compressor(s) to `:`.
+When your consumers are upgraded to 2.2.11 or later, you can revert to the default of `, `.
+
+Similarly, the `SimpleMessageListenerContainer` also has a `setAfterReceivePostProcessors()` method, letting the decompression be performed after messages are received by the container.
+
+Starting with version 2.1.4, `addBeforePublishPostProcessors()` and `addAfterReceivePostProcessors()` have been added to the `RabbitTemplate` to allow appending new post processors to the list of before publish and after receive post processors respectively.
+Also there are methods provided to remove the post processors.
+Similarly, `AbstractMessageListenerContainer` also has `addAfterReceivePostProcessors()` and `removeAfterReceivePostProcessor()` methods added.
+See the Javadoc of `RabbitTemplate` and `AbstractMessageListenerContainer` for more detail.
+

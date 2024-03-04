@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import org.aopalliance.aop.Advice;
@@ -127,11 +129,11 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 
 	public static final long DEFAULT_SHUTDOWN_TIMEOUT = 5000;
 
-	private final Object lifecycleMonitor = new Object();
+	protected final Lock lifecycleLock = new ReentrantLock();
 
 	private final ContainerDelegate delegate = this::actualInvokeListener;
 
-	protected final Object consumersMonitor = new Object(); //NOSONAR
+	protected final Lock consumersLock = new ReentrantLock(); //NOSONAR
 
 	private final Map<String, Object> consumerArgs = new HashMap<>();
 
@@ -178,9 +180,9 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 
 	private int phase = Integer.MAX_VALUE;
 
-	private boolean active = false;
+	private volatile boolean active = false;
 
-	private boolean running = false;
+	private volatile boolean running = false;
 
 	private ErrorHandler errorHandler = new ConditionalRejectingErrorHandler();
 
@@ -253,6 +255,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		this.applicationEventPublisher = applicationEventPublisher;
 	}
 
+	@Nullable
 	protected ApplicationEventPublisher getApplicationEventPublisher() {
 		return this.applicationEventPublisher;
 	}
@@ -338,7 +341,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	private List<String> queuesToNames() {
 		return this.queues.stream()
 				.map(Queue::getActualName)
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 	/**
@@ -376,7 +379,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	public boolean removeQueueNames(String... queueNames) {
 		Assert.notNull(queueNames, "'queueNames' cannot be null");
 		Assert.noNullElements(queueNames, "'queueNames' cannot contain null elements");
-		if (this.queues.size() > 0) {
+		if (!this.queues.isEmpty()) {
 			Set<String> toRemove = new HashSet<>(Arrays.asList(queueNames));
 			return this.queues.removeIf(
 					q -> toRemove.contains(q.getActualName()));
@@ -450,19 +453,19 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		}
 	}
 
-	@Override
-	@Nullable
 	/**
 	 * Get a reference to the message listener.
 	 * @return the message listener.
 	 */
+	@Override
+	@Nullable
 	public MessageListener getMessageListener() {
 		return this.messageListener;
 	}
 
 	/**
 	 * Set an ErrorHandler to be invoked in case of any uncaught exceptions thrown while processing a Message. By
-	 * default a {@link ConditionalRejectingErrorHandler} with its default list of fatal exceptions will be used.
+	 * default, a {@link ConditionalRejectingErrorHandler} with its default list of fatal exceptions will be used.
 	 *
 	 * @param errorHandler The error handler.
 	 */
@@ -471,7 +474,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	}
 
 	/**
-	 * Determine whether or not the container should de-batch batched
+	 * Determine whether the container should de-batch batched
 	 * messages (true) or call the listener with the batch (false). Default: true.
 	 * @param deBatchingEnabled the deBatchingEnabled to set.
 	 * @see #setBatchingStrategy(BatchingStrategy)
@@ -553,7 +556,6 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * Set whether to automatically start the container after initialization.
 	 * <p>
 	 * Default is "true"; set this to "false" to allow for manual startup through the {@link #start()} method.
-	 *
 	 * @param autoStartup true for auto startup.
 	 */
 	@Override
@@ -570,7 +572,6 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * Specify the phase in which this container should be started and stopped. The startup order proceeds from lowest
 	 * to highest, and the shutdown order is the reverse of that. By default this value is Integer.MAX_VALUE meaning
 	 * that this container starts as late as possible and stops as soon as possible.
-	 *
 	 * @param phase The phase.
 	 */
 	public void setPhase(int phase) {
@@ -686,9 +687,13 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * @since 1.3
 	 */
 	public void setConsumerArguments(Map<String, Object> args) {
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			this.consumerArgs.clear();
 			this.consumerArgs.putAll(args);
+		}
+		finally {
+			this.consumersLock.unlock();
 		}
 	}
 
@@ -698,8 +703,12 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * @since 2.0
 	 */
 	public Map<String, Object> getConsumerArguments() {
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			return new HashMap<>(this.consumerArgs);
+		}
+		finally {
+			this.consumersLock.unlock();
 		}
 	}
 
@@ -914,7 +923,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 
 	/**
 	 * Set the {@link AmqpAdmin}, used to declare any auto-delete queues, bindings
-	 * etc when the container is started. Only needed if those queues use conditional
+	 * etc. when the container is started. Only needed if those queues use conditional
 	 * declaration (have a 'declared-by' attribute). If not specified, an internal
 	 * admin will be used which will attempt to declare all elements not having a
 	 * 'declared-by' attribute.
@@ -926,7 +935,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	}
 
 	/**
-	 * If all of the configured queue(s) are not available on the broker, this setting
+	 * If all the configured queue(s) are not available on the broker, this setting
 	 * determines whether the condition is fatal. When true, and
 	 * the queues are missing during startup, the context refresh() will fail.
 	 * <p> When false, the condition is not considered fatal and the container will
@@ -950,7 +959,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 
 	/**
 	 * Prevent the container from starting if any of the queues defined in the context have
-	 * mismatched arguments (TTL etc). Default false.
+	 * mismatched arguments (TTL etc.). Default false.
 	 * @param mismatchedQueuesFatal true to fail initialization when this condition occurs.
 	 * @since 1.6
 	 */
@@ -1168,7 +1177,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	/**
 	 * Set to true to stop the container after the current message(s) are processed and
 	 * requeue any prefetched. Useful when using exclusive or single-active consumers.
-	 * @param forceStop true to stop when current messsage(s) are processed.
+	 * @param forceStop true to stop when current message(s) are processed.
 	 * @since 2.4.14
 	 */
 	public void setForceStop(boolean forceStop) {
@@ -1245,32 +1254,37 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * Creates a Rabbit Connection and calls {@link #doInitialize()}.
 	 */
 	public void initialize() {
-		try {
-			synchronized (this.lifecycleMonitor) {
-				this.lifecycleMonitor.notifyAll();
+		if (!this.initialized) {
+			this.lifecycleLock.lock();
+			try {
+				if (!this.initialized) {
+					initializeProxy(this.delegate);
+					checkMissingQueuesFatalFromProperty();
+					checkPossibleAuthenticationFailureFatalFromProperty();
+					doInitialize();
+					if (!this.isExposeListenerChannel() && this.transactionManager != null) {
+						logger.warn("exposeListenerChannel=false is ignored when using a TransactionManager");
+					}
+					if (!this.taskExecutorSet && StringUtils.hasText(getListenerId())) {
+						this.taskExecutor = new SimpleAsyncTaskExecutor(getListenerId() + "-");
+						this.taskExecutorSet = true;
+					}
+					if (this.transactionManager != null && !isChannelTransacted()) {
+						logger.debug("The 'channelTransacted' is coerced to 'true', when 'transactionManager' is provided");
+						setChannelTransacted(true);
+					}
+					if (this.messageListener != null) {
+						this.messageListener.containerAckMode(this.acknowledgeMode);
+					}
+					this.initialized = true;
+				}
 			}
-			initializeProxy(this.delegate);
-			checkMissingQueuesFatalFromProperty();
-			checkPossibleAuthenticationFailureFatalFromProperty();
-			doInitialize();
-			if (!this.isExposeListenerChannel() && this.transactionManager != null) {
-				logger.warn("exposeListenerChannel=false is ignored when using a TransactionManager");
+			catch (Exception ex) {
+				throw convertRabbitAccessException(ex);
 			}
-			if (!this.taskExecutorSet && StringUtils.hasText(getListenerId())) {
-				this.taskExecutor = new SimpleAsyncTaskExecutor(getListenerId() + "-");
-				this.taskExecutorSet = true;
+			finally {
+				this.lifecycleLock.unlock();
 			}
-			if (this.transactionManager != null && !isChannelTransacted()) {
-				logger.debug("The 'channelTransacted' is coerced to 'true', when 'transactionManager' is provided");
-				setChannelTransacted(true);
-			}
-			if (this.messageListener != null) {
-				this.messageListener.containerAckMode(this.acknowledgeMode);
-			}
-			this.initialized = true;
-		}
-		catch (Exception ex) {
-			throw convertRabbitAccessException(ex);
 		}
 	}
 
@@ -1280,6 +1294,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 */
 	public void shutdown() {
 		shutdown(null);
+		this.initialized = false;
 	}
 
 	/**
@@ -1288,17 +1303,19 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * @param callback an optional {@link Runnable} to call when the stop is complete.
 	 */
 	public void shutdown(@Nullable Runnable callback) {
-		synchronized (this.lifecycleMonitor) {
+		this.lifecycleLock.lock();
+		try {
 			if (!isActive()) {
 				logger.debug("Shutdown ignored - container is not active already");
-				this.lifecycleMonitor.notifyAll();
 				if (callback != null) {
 					callback.run();
 				}
 				return;
 			}
 			this.active = false;
-			this.lifecycleMonitor.notifyAll();
+		}
+		finally {
+			this.lifecycleLock.unlock();
 		}
 
 		logger.debug("Shutting down Rabbit listener container");
@@ -1316,9 +1333,12 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	}
 
 	protected void setNotRunning() {
-		synchronized (this.lifecycleMonitor) {
+		this.lifecycleLock.lock();
+		try {
 			this.running = false;
-			this.lifecycleMonitor.notifyAll();
+		}
+		finally {
+			this.lifecycleLock.unlock();
 		}
 	}
 
@@ -1354,9 +1374,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * @return Whether this container is currently active, that is, whether it has been set up but not shut down yet.
 	 */
 	public final boolean isActive() {
-		synchronized (this.lifecycleMonitor) {
-			return this.active;
-		}
+		return this.active;
 	}
 
 	/**
@@ -1369,10 +1387,14 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 			return;
 		}
 		if (!this.initialized) {
-			synchronized (this.lifecycleMonitor) {
+			this.lifecycleLock.lock();
+			try {
 				if (!this.initialized) {
 					afterPropertiesSet();
 				}
+			}
+			finally {
+				this.lifecycleLock.unlock();
 			}
 		}
 		checkObservation();
@@ -1395,10 +1417,13 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 */
 	protected void doStart() {
 		// Reschedule paused tasks, if any.
-		synchronized (this.lifecycleMonitor) {
+		this.lifecycleLock.lock();
+		try {
 			this.active = true;
 			this.running = true;
-			this.lifecycleMonitor.notifyAll();
+		}
+		finally {
+			this.lifecycleLock.unlock();
 		}
 	}
 
@@ -1434,9 +1459,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 */
 	@Override
 	public final boolean isRunning() {
-		synchronized (this.lifecycleMonitor) {
-			return (this.running);
-		}
+		return this.running;
 	}
 
 	/**
@@ -1585,8 +1608,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 			if (bindChannel) {
 				RabbitResourceHolder resourceHolder = new RabbitResourceHolder(channel, false);
 				resourceHolder.setSynchronizedWithTransaction(true);
-				TransactionSynchronizationManager.bindResource(this.getConnectionFactory(),
-						resourceHolder);
+				TransactionSynchronizationManager.bindResource(getConnectionFactory(), resourceHolder);
 			}
 			try {
 				doInvokeListener(msgListener, data);
@@ -1594,7 +1616,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 			finally {
 				if (bindChannel) {
 					// unbind if we bound
-					TransactionSynchronizationManager.unbindResource(this.getConnectionFactory());
+					TransactionSynchronizationManager.unbindResource(getConnectionFactory());
 				}
 			}
 		}
@@ -1632,13 +1654,12 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 				/*
 				 * If there is a real transaction, the resource will have been bound; otherwise
 				 * we need to bind it temporarily here. Any work done on this channel
-				 * will be committed in the finally block.
+				 * will be committed in the {@code finally} block.
 				 */
 				if (isChannelLocallyTransacted() &&
 						!TransactionSynchronizationManager.isActualTransactionActive()) {
 					resourceHolder.setSynchronizedWithTransaction(true);
-					TransactionSynchronizationManager.bindResource(this.getConnectionFactory(),
-							resourceHolder);
+					TransactionSynchronizationManager.bindResource(getConnectionFactory(), resourceHolder);
 					boundHere = true;
 				}
 			}
@@ -1647,8 +1668,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 				if (isChannelLocallyTransacted()) {
 					RabbitResourceHolder localResourceHolder = new RabbitResourceHolder(channelToUse, false);
 					localResourceHolder.setSynchronizedWithTransaction(true);
-					TransactionSynchronizationManager.bindResource(this.getConnectionFactory(),
-							localResourceHolder);
+					TransactionSynchronizationManager.bindResource(getConnectionFactory(), localResourceHolder);
 					boundHere = true;
 				}
 			}
@@ -1700,10 +1720,8 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * Default implementation performs a plain invocation of the <code>onMessage</code> method.
 	 * <p>
 	 * Exception thrown from listener will be wrapped to {@link ListenerExecutionFailedException}.
-	 *
 	 * @param listener the Rabbit MessageListener to invoke
 	 * @param data the received Rabbit Message or List of Message.
-	 *
 	 * @see org.springframework.amqp.core.MessageListener#onMessage
 	 */
 	@SuppressWarnings(UNCHECKED)
@@ -1888,7 +1906,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * Declaration is idempotent so, aside from some network chatter, there is no issue,
 	 * and we only will do it if we detect our queue is gone.
 	 * <p>
-	 * In general it makes sense only for the 'auto-delete' or 'expired' queues,
+	 * In general, it makes sense only for the 'auto-delete' or 'expired' queues,
 	 * but with the server TTL policy we don't have ability to determine 'expiration'
 	 * option for the queue.
 	 * <p>
@@ -1897,24 +1915,30 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * the declarations are always attempted during restart so the listener will
 	 * fail with a fatal error if mismatches occur.
 	 */
-	protected synchronized void redeclareElementsIfNecessary() {
-		AmqpAdmin admin = getAmqpAdmin();
-		if (!this.lazyLoad && admin != null && isAutoDeclare()) {
-			try {
-				attemptDeclarations(admin);
-				this.logDeclarationException.set(true);
+	protected void redeclareElementsIfNecessary() {
+		this.lifecycleLock.lock();
+		try {
+			AmqpAdmin admin = getAmqpAdmin();
+			if (!this.lazyLoad && admin != null && isAutoDeclare()) {
+				try {
+					attemptDeclarations(admin);
+					this.logDeclarationException.set(true);
+				}
+				catch (Exception e) {
+					if (RabbitUtils.isMismatchedQueueArgs(e)) {
+						throw new FatalListenerStartupException("Mismatched queues", e);
+					}
+					if (this.logDeclarationException.getAndSet(false)) {
+						this.logger.error("Failed to check/redeclare auto-delete queue(s).", e);
+					}
+					else {
+						this.logger.error("Failed to check/redeclare auto-delete queue(s).");
+					}
+				}
 			}
-			catch (Exception e) {
-				if (RabbitUtils.isMismatchedQueueArgs(e)) {
-					throw new FatalListenerStartupException("Mismatched queues", e);
-				}
-				if (this.logDeclarationException.getAndSet(false)) {
-					this.logger.error("Failed to check/redeclare auto-delete queue(s).", e);
-				}
-				else {
-					this.logger.error("Failed to check/redeclare auto-delete queue(s).");
-				}
-			}
+		}
+		finally {
+			this.lifecycleLock.unlock();
 		}
 	}
 
@@ -1976,7 +2000,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * @param resourceHolder the bound resource holder (if a transaction is active).
 	 * @param exception the exception.
 	 */
-	protected void prepareHolderForRollback(RabbitResourceHolder resourceHolder, RuntimeException exception) {
+	protected void prepareHolderForRollback(@Nullable RabbitResourceHolder resourceHolder, RuntimeException exception) {
 		if (resourceHolder != null) {
 			resourceHolder.setRequeueOnRollback(isAlwaysRequeueWithTxManagerRollback() ||
 					ContainerUtils.shouldRequeue(isDefaultRequeueRejected(), exception, logger));
@@ -2031,7 +2055,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		if (this.isBatchListener && isDeBatchingEnabled()
 				&& getBatchingStrategy().canDebatch(message.getMessageProperties())) {
 			final List<Message> messageList = new ArrayList<>();
-			getBatchingStrategy().deBatch(message, fragment -> messageList.add(fragment));
+			getBatchingStrategy().deBatch(message, messageList::add);
 			return messageList;
 		}
 		return null;
@@ -2099,7 +2123,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		@Override
 		public void log(Log logger, String message, Throwable cause) {
 			if (logger.isDebugEnabled()) {
-				logger.debug(message + ": " + cause.toString());
+				logger.debug(message + ": " + cause);
 			}
 		}
 

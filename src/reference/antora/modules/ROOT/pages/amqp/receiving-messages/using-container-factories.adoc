@@ -1,0 +1,51 @@
+[[using-container-factories]]
+= Using Container Factories
+
+Listener container factories were introduced to support the `@RabbitListener` and registering containers with the `RabbitListenerEndpointRegistry`, as discussed in xref:amqp/receiving-messages/async-annotation-driven/registration.adoc[Programmatic Endpoint Registration].
+
+Starting with version 2.1, they can be used to create any listener container -- even a container without a listener (such as for use in Spring Integration).
+Of course, a listener must be added before the container is started.
+
+There are two ways to create such containers:
+
+* Use a SimpleRabbitListenerEndpoint
+* Add the listener after creation
+
+The following example shows how to use a `SimpleRabbitListenerEndpoint` to create a listener container:
+
+[source, java]
+----
+@Bean
+public SimpleMessageListenerContainer factoryCreatedContainerSimpleListener(
+        SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory) {
+    SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
+    endpoint.setQueueNames("queue.1");
+    endpoint.setMessageListener(message -> {
+        ...
+    });
+    return rabbitListenerContainerFactory.createListenerContainer(endpoint);
+}
+----
+
+The following example shows how to add the listener after creation:
+
+[source, java]
+----
+@Bean
+public SimpleMessageListenerContainer factoryCreatedContainerNoListener(
+        SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory) {
+    SimpleMessageListenerContainer container = rabbitListenerContainerFactory.createListenerContainer();
+    container.setMessageListener(message -> {
+        ...
+    });
+    container.setQueueNames("test.no.listener.yet");
+    return container;
+}
+----
+
+In either case, the listener can also be a `ChannelAwareMessageListener`, since it is now a sub-interface of `MessageListener`.
+
+These techniques are useful if you wish to create several containers with similar properties or use a pre-configured container factory such as the one provided by Spring Boot auto configuration or both.
+
+IMPORTANT: Containers created this way are normal `@Bean` instances and are not registered in the `RabbitListenerEndpointRegistry`.
+

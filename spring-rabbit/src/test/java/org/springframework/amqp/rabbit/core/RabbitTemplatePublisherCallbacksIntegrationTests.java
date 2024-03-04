@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
@@ -29,6 +30,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
@@ -42,6 +44,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -219,13 +222,14 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	@Test
 	public void testPublisherConfirmWithSendAndReceive() throws Exception {
 		final CountDownLatch latch = new CountDownLatch(1);
-		final AtomicReference<CorrelationData> confirmCD = new AtomicReference<CorrelationData>();
+		final AtomicReference<CorrelationData> confirmCD = new AtomicReference<>();
 		templateWithConfirmsEnabled.setConfirmCallback((correlationData, ack, cause) -> {
 			confirmCD.set(correlationData);
 			latch.countDown();
 		});
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactoryWithConfirmsEnabled);
 		container.setQueueNames(ROUTE);
+		container.setReceiveTimeout(10);
 		container.setMessageListener(
 				new MessageListenerAdapter((ReplyingMessageListener<String, String>) String::toUpperCase));
 		container.start();
@@ -285,7 +289,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	@Test
 	public void testPublisherReturns() throws Exception {
 		final CountDownLatch latch = new CountDownLatch(1);
-		final List<Message> returns = new ArrayList<Message>();
+		final List<Message> returns = new ArrayList<>();
 		templateWithReturnsEnabled.setReturnsCallback((returned) -> {
 			returns.add(returned.getMessage());
 			latch.countDown();
@@ -295,13 +299,13 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertThat(latch.await(1000, TimeUnit.MILLISECONDS)).isTrue();
 		assertThat(returns).hasSize(1);
 		Message message = returns.get(0);
-		assertThat(new String(message.getBody(), "utf-8")).isEqualTo("message");
+		assertThat(new String(message.getBody(), StandardCharsets.UTF_8)).isEqualTo("message");
 	}
 
 	@Test
 	public void testPublisherReturnsWithMandatoryExpression() throws Exception {
 		final CountDownLatch latch = new CountDownLatch(1);
-		final List<Message> returns = new ArrayList<Message>();
+		final List<Message> returns = new ArrayList<>();
 		templateWithReturnsEnabled.setReturnsCallback((returned) -> {
 			returns.add(returned.getMessage());
 			latch.countDown();
@@ -313,7 +317,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertThat(latch.await(1000, TimeUnit.MILLISECONDS)).isTrue();
 		assertThat(returns).hasSize(1);
 		Message message = returns.get(0);
-		assertThat(new String(message.getBody(), "utf-8")).isEqualTo("message");
+		assertThat(new String(message.getBody(), StandardCharsets.UTF_8)).isEqualTo("message");
 	}
 
 	@Test
@@ -324,6 +328,14 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		given(mockChannel.isOpen()).willReturn(true);
 		given(mockChannel.getNextPublishSeqNo()).willReturn(1L);
 
+		CountDownLatch timeoutExceptionLatch = new CountDownLatch(1);
+
+		given(mockChannel.waitForConfirms(anyLong()))
+				.willAnswer(invocation -> {
+					timeoutExceptionLatch.await(10, TimeUnit.SECONDS);
+					throw new TimeoutException();
+				});
+
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
 
@@ -332,20 +344,26 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 				.createChannel();
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
-		ccf.setExecutor(mock(ExecutorService.class));
+		ccf.setExecutor(Executors.newCachedThreadPool());
 		ccf.setPublisherConfirmType(ConfirmType.CORRELATED);
+		ccf.setChannelCacheSize(1);
+		ccf.setChannelCheckoutTimeout(10000);
 		final RabbitTemplate template = new RabbitTemplate(ccf);
 
 		final AtomicBoolean confirmed = new AtomicBoolean();
 		template.setConfirmCallback((correlationData, ack, cause) -> confirmed.set(true));
 		template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
-		Thread.sleep(5);
+
 		assertThat(template.getUnconfirmedCount()).isEqualTo(1);
 		Collection<CorrelationData> unconfirmed = template.getUnconfirmed(-1);
 		assertThat(template.getUnconfirmedCount()).isEqualTo(0);
 		assertThat(unconfirmed).hasSize(1);
 		assertThat(unconfirmed.iterator().next().getId()).isEqualTo("abc");
 		assertThat(confirmed.get()).isFalse();
+
+		timeoutExceptionLatch.countDown();
+
+		assertThat(ccf.createConnection().createChannel(false)).isNotNull();
 	}
 
 	@Test
@@ -416,7 +434,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		exec.shutdown();
 		assertThat(exec.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
 		ccf.destroy();
-		await().until(() -> pendingConfirms.size() == 0);
+		await().until(pendingConfirms::isEmpty);
 	}
 
 	@Test
@@ -500,7 +518,6 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	/**
 	 * Tests that piggy-backed confirms (multiple=true) are distributed to the proper
 	 * template.
-	 * @throws Exception
 	 */
 	@Test
 	public void testPublisherConfirmMultipleWithTwoListeners() throws Exception {
@@ -523,7 +540,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		ccf.setPublisherConfirmType(ConfirmType.CORRELATED);
 		final RabbitTemplate template1 = new RabbitTemplate(ccf);
 
-		final Set<String> confirms = new HashSet<String>();
+		final Set<String> confirms = new HashSet<>();
 		final CountDownLatch latch1 = new CountDownLatch(1);
 		template1.setConfirmCallback((correlationData, ack, cause) -> {
 			if (ack) {
@@ -562,7 +579,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	 * time as adding a new pending ack to the map. Test verifies we don't
 	 * get a {@link ConcurrentModificationException}.
 	 */
-	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@SuppressWarnings({"rawtypes", "unchecked"})
 	@Test
 	public void testConcurrentConfirms() throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
@@ -638,8 +655,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	@Test
 	public void testNackForBadExchange() throws Exception {
 		final AtomicBoolean nack = new AtomicBoolean(true);
-		final AtomicReference<CorrelationData> correlation = new AtomicReference<CorrelationData>();
-		final AtomicReference<String> reason = new AtomicReference<String>();
+		final AtomicReference<CorrelationData> correlation = new AtomicReference<>();
+		final AtomicReference<String> reason = new AtomicReference<>();
 		final CountDownLatch latch = new CountDownLatch(2);
 		this.templateWithConfirmsEnabled.setConfirmCallback((correlationData, ack, cause) -> {
 			nack.set(ack);
@@ -648,7 +665,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			latch.countDown();
 		});
 		Log logger = spy(TestUtils.getPropertyValue(connectionFactoryWithConfirmsEnabled, "logger", Log.class));
-		final AtomicReference<String> log = new AtomicReference<String>();
+		final AtomicReference<String> log = new AtomicReference<>();
 		willAnswer(invocation -> {
 			log.set((String) invocation.getArguments()[0]);
 			invocation.callRealMethod();
@@ -735,7 +752,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		 * where the close can be detected. Run the test to verify these (and any future calls
 		 * that are added) properly emit the nacks.
 		 *
-		 * The following will detect proper operation if any more calls are added in future.
+		 * The following will detect proper operation if any more calls are added in the future.
 		 */
 		for (int i = 100; i < 110; i++) {
 			testPublisherConfirmCloseConcurrency(i);
@@ -792,7 +809,6 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		exec.shutdownNow();
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testPublisherCallbackChannelImplCloseWithPending() throws Exception {
 
@@ -825,7 +841,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 
 		Map<?, ?> pending = TestUtils.getPropertyValue(channel, "pendingConfirms", Map.class);
-		await().until(() -> pending.size() == 0);
+		await().until(pending::isEmpty);
 	}
 
 	@Test

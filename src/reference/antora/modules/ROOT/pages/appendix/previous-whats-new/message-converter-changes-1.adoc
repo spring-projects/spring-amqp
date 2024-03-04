@@ -1,0 +1,7 @@
+[[message-converter-changes]]
+= Message Converter Changes
+:page-section-summary-toc: 1
+
+The `Jackson2JsonMessageConverter` can now determine the charset from the `contentEncoding` header.
+See <<json-message-converter>> for more information.
+

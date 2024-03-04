@@ -1,5 +1,5 @@
-Spring AMQP [<img src="https://build.spring.io/plugins/servlet/wittified/build-status/AMQP-MAIN">](https://build.spring.io/browse/AAMQP-MAIN)
-[![Revved up by Gradle Enterprise](https://img.shields.io/badge/Revved%20up%20by-Gradle%20Enterprise-06A0CE?logo=Gradle&labelColor=02303A)](https://ge.spring.io/scans?search.rootProjectNames=spring-amqp)
+Spring AMQP [![Build Status](https://github.com/spring-projects/spring-amqp/actions/workflows/ci-snapshot.yml/badge.svg)](https://github.com/spring-projects/spring-amqp/actions/workflows/ci-snapshot.yml)
+[![Revved up by Develocity](https://img.shields.io/badge/Revved%20up%20by-Develocity-06A0CE?logo=Gradle&labelColor=02303A)](https://ge.spring.io/scans?search.rootProjectNames=spring-amqp)
 ===========
 
 This project provides support for using Spring and Java with [AMQP 0.9.1](https://www.rabbitmq.com/amqp-0-9-1-reference.html), and in particular [RabbitMQ](https://www.rabbitmq.com/).

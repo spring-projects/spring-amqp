@@ -1,0 +1,45 @@
+antora:
+  extensions:
+    - '@springio/antora-extensions/partial-build-extension'
+    - # atlas-extension must be before latest-version-extension so the latest versions are applied to imported versions
+    - '@antora/atlas-extension'
+    - require: '@springio/antora-extensions/latest-version-extension'
+    - require: '@springio/antora-extensions/inject-collector-cache-config-extension'
+    - '@antora/collector-extension'
+    - require: '@springio/antora-extensions/root-component-extension'
+      root_component_name: 'amqp'
+      # FIXME: Run antora once using this extension to migrate to the Asciidoc Tabs syntax
+      # and then remove this extension
+    - require: '@springio/antora-extensions/tabs-migration-extension'
+      unwrap_example_block: always
+      save_result: true
+site:
+  title: Spring AMQP
+  url: https://docs.spring.io/spring-amqp/reference/
+content:
+  sources:
+    - url: ./../../..
+      branches: HEAD
+      # See https://docs.antora.org/antora/latest/playbook/content-source-start-path/#start-path-key
+      start_path: src/reference/antora
+      worktrees: true
+asciidoc:
+  attributes:
+    page-stackoverflow-url: https://stackoverflow.com/tags/spring-amqp
+    page-pagination: ''
+    hide-uri-scheme: '@'
+    tabs-sync-option: '@'
+    chomp: 'all'
+  extensions:
+    - '@asciidoctor/tabs'
+    - '@springio/asciidoctor-extensions'
+  sourcemap: true
+urls:
+  latest_version_segment: ''
+runtime:
+  log:
+    failure_level: warn
+    format: pretty
+ui:
+  bundle:
+    url: https://github.com/spring-io/antora-ui-spring/releases/download/v0.4.10/ui-bundle.zip

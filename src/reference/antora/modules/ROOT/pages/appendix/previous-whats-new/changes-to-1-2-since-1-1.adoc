@@ -1,0 +1,58 @@
+[[changes-to-1-2-since-1-1]]
+= Changes to 1.2 Since 1.1
+
+[[rabbitmq-version]]
+== RabbitMQ Version
+
+Spring AMQP now uses RabbitMQ 3.1.x by default (but retains compatibility with earlier versions).
+Certain deprecations have been added for features no longer supported by RabbitMQ 3.1.x -- federated exchanges and the `immediate` property on the `RabbitTemplate`.
+
+[[rabbit-admin]]
+== Rabbit Admin
+
+`RabbitAdmin` now provides an option to let exchange, queue, and binding declarations continue when a declaration fails.
+Previously, all declarations stopped on a failure.
+By setting `ignore-declaration-exceptions`, such exceptions are logged (at the `WARN` level), but further declarations continue.
+An example where this might be useful is when a queue declaration fails because of a slightly different `ttl` setting that would normally stop other declarations from proceeding.
+
+`RabbitAdmin` now provides an additional method called `getQueueProperties()`.
+You can use this determine if a queue exists on the broker (returns `null` for a non-existent queue).
+In addition, it returns the current number of messages in the queue as well as the current number of consumers.
+
+[[rabbit-template]]
+== Rabbit Template
+
+Previously, when the `...sendAndReceive()` methods were used with a fixed reply queue, two custom headers were used for correlation data and to retain and restore reply queue information.
+With this release, the standard message property (`correlationId`) is used by default, although you can specify a custom property to use instead.
+In addition, nested `replyTo` information is now retained internally in the template, instead of using a custom header.
+
+The `immediate` property is deprecated.
+You must not set this property when using RabbitMQ 3.0.x or greater.
+
+[[json-message-converters]]
+== JSON Message Converters
+
+A Jackson 2.x `MessageConverter` is now provided, along with the existing converter that uses Jackson 1.x.
+
+[[automatic-declaration-of-queues-and-other-items]]
+== Automatic Declaration of Queues and Other Items
+
+Previously, when declaring queues, exchanges and bindings, you could not define which connection factory was used for the declarations.
+Each `RabbitAdmin` declared all components by using its connection.
+
+Starting with this release, you can now limit declarations to specific `RabbitAdmin` instances.
+See xref:amqp/broker-configuration.adoc#conditional-declaration[Conditional Declaration].
+
+[[amqp-remoting]]
+== AMQP Remoting
+
+Facilities are now provided for using Spring remoting techniques, using AMQP as the transport for the RPC calls.
+For more information see <<remoting>>
+
+[[requested-heart-beats]]
+== Requested Heart Beats
+
+Several users have asked for the underlying client connection factory's `requestedHeartBeats` property to be exposed on the Spring AMQP `CachingConnectionFactory`.
+This is now available.
+Previously, it was necessary to configure the AMQP client factory as a separate bean and provide a reference to it in the `CachingConnectionFactory`.
+

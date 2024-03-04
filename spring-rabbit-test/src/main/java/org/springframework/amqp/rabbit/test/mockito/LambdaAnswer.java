@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022 the original author or authors.
+ * Copyright 2016-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@
 package org.springframework.amqp.rabbit.test.mockito;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.mockito.internal.stubbing.defaultanswers.ForwardsInvocations;
 import org.mockito.invocation.InvocationOnMock;
@@ -33,6 +33,8 @@ import org.springframework.lang.Nullable;
  * @param <T> the return type.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.6
  *
  */
@@ -43,7 +45,7 @@ public class LambdaAnswer<T> extends ForwardsInvocations {
 
 	private final ValueToReturn<T> callback;
 
-	private final Set<Exception> exceptions = Collections.synchronizedSet(new LinkedHashSet<>());
+	private final Set<Exception> exceptions = ConcurrentHashMap.newKeySet();
 
 	private final boolean hasDelegate;
 
@@ -88,9 +90,7 @@ public class LambdaAnswer<T> extends ForwardsInvocations {
 	 * @since 2.2.3
 	 */
 	public Collection<Exception> getExceptions() {
-		synchronized (this.exceptions) {
-			return new LinkedHashSet<>(this.exceptions);
-		}
+		return new LinkedHashSet<>(this.exceptions);
 	}
 
 	@FunctionalInterface

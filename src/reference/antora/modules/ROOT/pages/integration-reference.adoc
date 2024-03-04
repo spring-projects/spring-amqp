@@ -1,0 +1,74 @@
+[[spring-integration-reference]]
+= Spring Integration - Reference
+
+This part of the reference documentation provides a quick introduction to the AMQP support within the Spring Integration project.
+
+[[spring-integration-amqp-introduction]]
+== Introduction
+
+The https://spring.io/spring-integration[Spring Integration] project includes AMQP Channel Adapters and Gateways that build upon the Spring AMQP project.
+Those adapters are developed and released in the Spring Integration project.
+In Spring Integration, "`Channel Adapters`" are unidirectional (one-way), whereas "`Gateways`" are bidirectional (request-reply).
+We provide an inbound-channel-adapter, an outbound-channel-adapter, an inbound-gateway, and an outbound-gateway.
+
+Since the AMQP adapters are part of the Spring Integration release, the documentation is available as part of the Spring Integration distribution.
+We provide a quick overview of the main features here.
+See the https://docs.spring.io/spring-integration/reference[Spring Integration Reference Guide] for much more detail.
+
+[[inbound-channel-adapter]]
+== Inbound Channel Adapter
+
+To receive AMQP Messages from a queue, you can configure an `<inbound-channel-adapter>`.
+The following example shows how to configure an inbound channel adapter:
+
+[source,xml]
+----
+<amqp:inbound-channel-adapter channel="fromAMQP"
+                              queue-names="some.queue"
+                              connection-factory="rabbitConnectionFactory"/>
+----
+
+[[outbound-channel-adapter]]
+== Outbound Channel Adapter
+
+To send AMQP Messages to an exchange, you can configure an `<outbound-channel-adapter>`.
+You can optionally provide a 'routing-key' in addition to the exchange name.
+The following example shows how to define an outbound channel adapter:
+
+[source,xml]
+----
+<amqp:outbound-channel-adapter channel="toAMQP"
+                               exchange-name="some.exchange"
+                               routing-key="foo"
+                               amqp-template="rabbitTemplate"/>
+----
+
+[[inbound-gateway]]
+== Inbound Gateway
+
+To receive an AMQP Message from a queue and respond to its reply-to address, you can configure an `<inbound-gateway>`.
+The following example shows how to define an inbound gateway:
+
+[source,xml]
+----
+<amqp:inbound-gateway request-channel="fromAMQP"
+                      reply-channel="toAMQP"
+                      queue-names="some.queue"
+                      connection-factory="rabbitConnectionFactory"/>
+----
+
+[[outbound-gateway]]
+== Outbound Gateway
+
+To send AMQP Messages to an exchange and receive back a response from a remote client, you can configure an `<outbound-gateway>`.
+You can optionally provide a 'routing-key' in addition to the exchange name.
+The following example shows how to define an outbound gateway:
+
+[source,xml]
+----
+<amqp:outbound-gateway request-channel="toAMQP"
+                       reply-channel="fromAMQP"
+                       exchange-name="some.exchange"
+                       routing-key="foo"
+                       amqp-template="rabbitTemplate"/>
+----

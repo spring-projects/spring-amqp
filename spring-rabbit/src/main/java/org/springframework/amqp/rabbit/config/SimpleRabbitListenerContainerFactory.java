@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2022 the original author or authors.
+ * Copyright 2014-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.springframework.amqp.utils.JavaUtils;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Dustin Schultz
+ * @author Jeonggi Kim
  *
  * @since 1.4
  */
@@ -54,7 +55,11 @@ public class SimpleRabbitListenerContainerFactory
 
 	private Long receiveTimeout;
 
+	private Long batchReceiveTimeout;
+
 	private Boolean consumerBatchEnabled;
+
+	private Boolean enforceImmediateAckForManual;
 
 	/**
 	 * @param batchSize the batch size.
@@ -122,6 +127,19 @@ public class SimpleRabbitListenerContainerFactory
 	}
 
 	/**
+	 * The number of milliseconds of timeout for gathering batch messages.
+	 * It limits the time to wait to fill batchSize.
+	 * Default is 0 (no timeout).
+	 * @param batchReceiveTimeout the timeout for gathering batch messages.
+	 * @since 3.1.2
+	 * @see SimpleMessageListenerContainer#setBatchReceiveTimeout
+	 * @see #setBatchSize(Integer)
+	 */
+	public void setBatchReceiveTimeout(Long batchReceiveTimeout) {
+		this.batchReceiveTimeout = batchReceiveTimeout;
+	}
+
+	/**
 	 * Set to true to present a list of messages based on the {@link #setBatchSize(Integer)},
 	 * if the listener supports it. Starting with version 3.0, setting this to true will
 	 * also {@link #setBatchListener(boolean)} to true.
@@ -137,6 +155,17 @@ public class SimpleRabbitListenerContainerFactory
 		}
 	}
 
+	/**
+	 * Set to {@code true} to enforce {@link com.rabbitmq.client.Channel#basicAck(long, boolean)}
+	 * for {@link org.springframework.amqp.core.AcknowledgeMode#MANUAL}
+	 * when {@link org.springframework.amqp.ImmediateAcknowledgeAmqpException} is thrown.
+	 * This might be a tentative solution to not break behavior for current minor version.
+	 * @param enforceImmediateAckForManual the flag to ack message for MANUAL mode on ImmediateAcknowledgeAmqpException
+	 * @since 3.1.2
+	 */
+	public void setEnforceImmediateAckForManual(Boolean enforceImmediateAckForManual) {
+		this.enforceImmediateAckForManual = enforceImmediateAckForManual;
+	}
 	@Override
 	protected SimpleMessageListenerContainer createContainerInstance() {
 		return new SimpleMessageListenerContainer();
@@ -163,7 +192,9 @@ public class SimpleRabbitListenerContainerFactory
 			.acceptIfNotNull(this.stopConsumerMinInterval, instance::setStopConsumerMinInterval)
 			.acceptIfNotNull(this.consecutiveActiveTrigger, instance::setConsecutiveActiveTrigger)
 			.acceptIfNotNull(this.consecutiveIdleTrigger, instance::setConsecutiveIdleTrigger)
-			.acceptIfNotNull(this.receiveTimeout, instance::setReceiveTimeout);
+			.acceptIfNotNull(this.receiveTimeout, instance::setReceiveTimeout)
+			.acceptIfNotNull(this.batchReceiveTimeout, instance::setBatchReceiveTimeout)
+			.acceptIfNotNull(this.enforceImmediateAckForManual, instance::setEnforceImmediateAckForManual);
 		if (Boolean.TRUE.equals(this.consumerBatchEnabled)) {
 			instance.setConsumerBatchEnabled(true);
 			/*

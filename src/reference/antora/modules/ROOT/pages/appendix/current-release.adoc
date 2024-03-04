@@ -1,0 +1,6 @@
+[[current-release]]
+= Current Release
+:page-section-summary-toc: 1
+
+See xref:whats-new.adoc[What's New].
+

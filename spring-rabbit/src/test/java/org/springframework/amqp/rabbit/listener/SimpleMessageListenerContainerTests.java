@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -109,6 +110,7 @@ import com.rabbitmq.client.PossibleAuthenticationFailureException;
  * @author Mohammad Hewedy
  * @author Yansong Ren
  * @author Tim Bourquin
+ * @author Jeonggi Kim
  */
 public class SimpleMessageListenerContainerTests {
 
@@ -120,6 +122,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setQueueNames("foo");
 		container.setChannelTransacted(false);
 		container.setTransactionManager(new TestTransactionManager());
+		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();
 		assertThat(TestUtils.getPropertyValue(container, "transactional", Boolean.class)).isTrue();
 		container.stop();
@@ -135,6 +138,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setChannelTransacted(false);
 		container.setAcknowledgeMode(AcknowledgeMode.NONE);
 		container.setTransactionManager(new TestTransactionManager());
+		container.setReceiveTimeout(10);
 		assertThatIllegalStateException()
 			.isThrownBy(container::afterPropertiesSet);
 		container.stop();
@@ -149,6 +153,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setQueueNames("foo");
 		container.setChannelTransacted(true);
 		container.setAcknowledgeMode(AcknowledgeMode.NONE);
+		container.setReceiveTimeout(10);
 		assertThatIllegalStateException()
 			.isThrownBy(container::afterPropertiesSet);
 		container.stop();
@@ -163,6 +168,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setQueueNames("foo");
 		container.setAutoStartup(false);
 		container.setShutdownTimeout(0);
+		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();
 		assertThat(ReflectionTestUtils.getField(container, "concurrentConsumers")).isEqualTo(1);
 		container.stop();
@@ -213,6 +219,7 @@ public class SimpleMessageListenerContainerTests {
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setQueueNames("foo");
 		container.setBatchSize(2);
+		container.setReceiveTimeout(10);
 		container.setMessageListener(messages::add);
 		container.start();
 		BasicProperties props = new BasicProperties();
@@ -265,6 +272,7 @@ public class SimpleMessageListenerContainerTests {
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setQueueNames("foobar");
 		container.setBatchSize(2);
+		container.setReceiveTimeout(10);
 		container.setMessageListener(messages::add);
 		container.setShutdownTimeout(0);
 		container.afterPropertiesSet();
@@ -315,6 +323,7 @@ public class SimpleMessageListenerContainerTests {
 		});
 		container.setConsumerArguments(Collections.singletonMap("x-priority", 10));
 		container.setShutdownTimeout(0);
+		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();
 		container.start();
 		verify(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
@@ -367,6 +376,7 @@ public class SimpleMessageListenerContainerTests {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setQueueNames("foo");
+		container.setReceiveTimeout(10);
 		List<?> queues = TestUtils.getPropertyValue(container, "queues", List.class);
 		assertThat(queues).hasSize(1);
 		container.addQueueNames(new AnonymousQueue().getName(), new AnonymousQueue().getName());
@@ -398,6 +408,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setMessageListener(message -> {
 		});
 		container.setShutdownTimeout(0);
+		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();
 
 		for (int i = 0; i < 10; i++) {
@@ -485,6 +496,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setConcurrentConsumers(2);
 		container.setQueueNames("foo");
 		container.setConsumeDelay(100);
+		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();
 
 		CountDownLatch latch1 = new CountDownLatch(2);
@@ -595,6 +607,7 @@ public class SimpleMessageListenerContainerTests {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
 		container.setConnectionFactory(connectionFactory);
 		container.setQueueNames("foo");
+		container.setReceiveTimeout(10);
 		container.setPossibleAuthenticationFailureFatal(false);
 
 		container.start();
@@ -743,6 +756,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setMessageListener(listener);
 		container.setBatchSize(2);
 		container.setConsumerBatchEnabled(true);
+		container.setReceiveTimeout(10);
 		container.start();
 		BasicProperties props = new BasicProperties();
 		byte[] payload = "baz".getBytes();
@@ -783,6 +797,59 @@ public class SimpleMessageListenerContainerTests {
 		assertThat(start.getCount()).isEqualTo(0L);
 	}
 
+	@Test
+	public void testBatchReceiveTimedOut() throws Exception {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel = mock(Channel.class);
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(false)).willReturn(channel);
+		final AtomicReference<Consumer> consumer = new AtomicReference<>();
+		willAnswer(invocation -> {
+			consumer.set(invocation.getArgument(6));
+			consumer.get().handleConsumeOk("1");
+			return "1";
+		}).given(channel)
+				.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
+						any(Consumer.class));
+		final CountDownLatch latch = new CountDownLatch(2);
+		willAnswer(invocation -> {
+			latch.countDown();
+			return null;
+		}).given(channel).basicAck(anyLong(), anyBoolean());
+
+		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setAfterReceivePostProcessors(msg -> null);
+		container.setQueueNames("foo");
+		MessageListener listener = mock(BatchMessageListener.class);
+		container.setMessageListener(listener);
+		container.setBatchSize(3);
+		container.setConsumerBatchEnabled(true);
+		container.setReceiveTimeout(10);
+		container.setBatchReceiveTimeout(20);
+		container.start();
+
+		BasicProperties props = new BasicProperties();
+		byte[] payload = "baz".getBytes();
+		Envelope envelope = new Envelope(1L, false, "foo", "bar");
+		consumer.get().handleDelivery("1", envelope, props, payload);
+		envelope = new Envelope(2L, false, "foo", "bar");
+		consumer.get().handleDelivery("1", envelope, props, payload);
+		// waiting for batch receive timed out
+		Thread.sleep(20);
+		envelope = new Envelope(3L, false, "foo", "bar");
+		consumer.get().handleDelivery("1", envelope, props, payload);
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		verify(channel, never()).basicAck(eq(1), anyBoolean());
+		verify(channel).basicAck(2, true);
+		verify(channel, never()).basicAck(eq(2), anyBoolean());
+		verify(channel).basicAck(3, true);
+		container.stop();
+		verify(listener).containerAckMode(AcknowledgeMode.AUTO);
+		verify(listener).isAsyncReplies();
+		verifyNoMoreInteractions(listener);
+	}
+
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,
 			final boolean cancel, final CountDownLatch latch) {
 		return invocation -> {
@@ -807,15 +874,15 @@ public class SimpleMessageListenerContainerTests {
 
 	}
 
-	private void waitForConsumersToStop(Set<?> consumers) throws Exception {
+	private void waitForConsumersToStop(Set<?> consumers) {
 		with().pollInterval(Duration.ofMillis(10)).atMost(Duration.ofSeconds(10))
 				.until(() -> consumers.stream()
 						.map(consumer -> TestUtils.getPropertyValue(consumer, "consumer"))
-						.allMatch(c -> c == null));
+						.allMatch(Objects::isNull));
 	}
 
 	@SuppressWarnings("serial")
-	private class TestTransactionManager extends AbstractPlatformTransactionManager {
+	private static class TestTransactionManager extends AbstractPlatformTransactionManager {
 
 		@Override
 		protected void doBegin(Object transaction, TransactionDefinition definition) throws TransactionException {

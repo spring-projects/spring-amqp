@@ -1,0 +1,55 @@
+name: Verify Staged Artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      releaseVersion:
+        description: 'Release version like 5.0.0-M1, 5.1.0-RC1, 5.2.0 etc.'
+        required: true
+        type: string
+
+jobs:
+  verify-staged-with-samples:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Start RabbitMQ
+        uses: namoshek/rabbitmq-github-action@v1
+        with:
+          ports: '5672:5672 15672:15672 5552:5552'
+          plugins: rabbitmq_stream,rabbitmq_management
+
+      - name: Checkout Samples Repo
+        uses: actions/checkout@v4
+        with:
+          repository: spring-projects/spring-amqp-samples
+          ref: ${{ github.ref_name }}
+          show-progress: false
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: 'maven'
+
+      - uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_ENV_SPRING: ${{ secrets.JF_ARTIFACTORY_SPRING }}
+
+      - name: Configure JFrog Cli
+        run: jf mvnc --repo-resolve-releases=libs-release-staging --repo-resolve-snapshots=snapshot
+
+      - name: Verify samples against staged release
+        run: |
+          mvn versions:set -DnewVersion=${{ inputs.releaseVersion }} -DgenerateBackupPoms=false -DprocessAllModules=true -B -ntp
+          jf mvn verify -B -ntp
+
+      - name: Capture Test Results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/target/surefire-reports/**/*.*'
+          retention-days: 1

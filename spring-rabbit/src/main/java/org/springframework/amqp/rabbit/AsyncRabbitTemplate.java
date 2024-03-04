@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -94,6 +96,8 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	public static final int DEFAULT_RECEIVE_TIMEOUT = 30000;
 
 	private final Log logger = LogFactory.getLog(this.getClass());
+
+	private final Lock lock = new ReentrantLock();
 
 	private final RabbitTemplate template;
 
@@ -337,10 +341,16 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	 * @param taskScheduler the task scheduler
 	 * @see #setReceiveTimeout(long)
 	 */
-	public synchronized void setTaskScheduler(TaskScheduler taskScheduler) {
+	public void setTaskScheduler(TaskScheduler taskScheduler) {
 		Assert.notNull(taskScheduler, "'taskScheduler' cannot be null");
-		this.internalTaskScheduler = false;
-		this.taskScheduler = taskScheduler;
+		this.lock.lock();
+		try {
+			this.internalTaskScheduler = false;
+			this.taskScheduler = taskScheduler;
+		}
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 	/**
@@ -510,44 +520,56 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	}
 
 	@Override
-	public synchronized void start() {
-		if (!this.running) {
-			if (this.internalTaskScheduler) {
-				ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-				scheduler.setThreadNamePrefix(getBeanName() == null ? "asyncTemplate-" : (getBeanName() + "-"));
-				scheduler.afterPropertiesSet();
-				this.taskScheduler = scheduler;
+	public void start() {
+		this.lock.lock();
+		try {
+			if (!this.running) {
+				if (this.internalTaskScheduler) {
+					ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+					scheduler.setThreadNamePrefix(getBeanName() == null ? "asyncTemplate-" : (getBeanName() + "-"));
+					scheduler.afterPropertiesSet();
+					this.taskScheduler = scheduler;
+				}
+				if (this.container != null) {
+					this.container.start();
+				}
+				if (this.directReplyToContainer != null) {
+					this.directReplyToContainer.setTaskScheduler(this.taskScheduler);
+					this.directReplyToContainer.start();
+				}
 			}
-			if (this.container != null) {
-				this.container.start();
-			}
-			if (this.directReplyToContainer != null) {
-				this.directReplyToContainer.setTaskScheduler(this.taskScheduler);
-				this.directReplyToContainer.start();
-			}
+			this.running = true;
 		}
-		this.running = true;
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 	@Override
-	public synchronized void stop() {
-		if (this.running) {
-			if (this.container != null) {
-				this.container.stop();
+	public void stop() {
+		this.lock.lock();
+		try {
+			if (this.running) {
+				if (this.container != null) {
+					this.container.stop();
+				}
+				if (this.directReplyToContainer != null) {
+					this.directReplyToContainer.stop();
+				}
+				for (RabbitFuture<?> future : this.pending.values()) {
+					future.setNackCause("AsyncRabbitTemplate was stopped while waiting for reply");
+					future.cancel(true);
+				}
+				if (this.internalTaskScheduler) {
+					((ThreadPoolTaskScheduler) this.taskScheduler).destroy();
+					this.taskScheduler = null;
+				}
 			}
-			if (this.directReplyToContainer != null) {
-				this.directReplyToContainer.stop();
-			}
-			for (RabbitFuture<?> future : this.pending.values()) {
-				future.setNackCause("AsyncRabbitTemplate was stopped while waiting for reply");
-				future.cancel(true);
-			}
-			if (this.internalTaskScheduler) {
-				((ThreadPoolTaskScheduler) this.taskScheduler).destroy();
-				this.taskScheduler = null;
-			}
+			this.running = false;
 		}
-		this.running = false;
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 	@Override
@@ -671,7 +693,8 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	@Nullable
 	private ScheduledFuture<?> timeoutTask(RabbitFuture<?> future) {
 		if (this.receiveTimeout > 0) {
-			synchronized (this) {
+			this.lock.lock();
+			try {
 				if (!this.running) {
 					this.pending.remove(future.getCorrelationId());
 					throw new IllegalStateException("'AsyncRabbitTemplate' must be started.");
@@ -679,6 +702,9 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 				return this.taskScheduler.schedule(
 						new TimeoutTask(future, this.pending, this.directReplyToContainer),
 						Instant.now().plusMillis(this.receiveTimeout));
+			}
+			finally {
+				this.lock.unlock();
 			}
 		}
 		return null;

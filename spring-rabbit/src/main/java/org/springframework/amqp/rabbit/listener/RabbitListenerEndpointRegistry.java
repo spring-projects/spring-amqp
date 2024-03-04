@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2022 the original author or authors.
+ * Copyright 2014-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -57,7 +59,9 @@ import org.springframework.util.StringUtils;
  * @author Juergen Hoeller
  * @author Artem Bilan
  * @author Gary Russell
+ *
  * @since 1.4
+ *
  * @see RabbitListenerEndpoint
  * @see MessageListenerContainer
  * @see RabbitListenerContainerFactory
@@ -67,8 +71,9 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 
 	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR protected
 
-	private final Map<String, MessageListenerContainer> listenerContainers =
-			new ConcurrentHashMap<String, MessageListenerContainer>();
+	private final Map<String, MessageListenerContainer> listenerContainers = new ConcurrentHashMap<>();
+
+	private final Lock listenerContainersLock = new ReentrantLock();
 
 	private int phase = Integer.MAX_VALUE;
 
@@ -116,8 +121,7 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 
 	/**
 	 * Create a message listener container for the given {@link RabbitListenerEndpoint}.
-	 * <p>This create the necessary infrastructure to honor that endpoint
-	 * with regards to its configuration.
+	 * <p>This create the necessary infrastructure to honor that endpoint in regard to its configuration.
 	 * @param endpoint the endpoint to add
 	 * @param factory the listener factory to use
 	 * @see #registerListenerContainer(RabbitListenerEndpoint, RabbitListenerContainerFactory, boolean)
@@ -128,8 +132,7 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 
 	/**
 	 * Create a message listener container for the given {@link RabbitListenerEndpoint}.
-	 * <p>This create the necessary infrastructure to honor that endpoint
-	 * with regards to its configuration.
+	 * <p>This create the necessary infrastructure to honor that endpoint in regard to its configuration.
 	 * <p>The {@code startImmediately} flag determines if the container should be
 	 * started immediately.
 	 * @param endpoint the endpoint to add.
@@ -141,12 +144,14 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 	@SuppressWarnings("unchecked")
 	public void registerListenerContainer(RabbitListenerEndpoint endpoint, RabbitListenerContainerFactory<?> factory,
 				boolean startImmediately) {
+
 		Assert.notNull(endpoint, "Endpoint must not be null");
 		Assert.notNull(factory, "Factory must not be null");
 
 		String id = endpoint.getId();
 		Assert.hasText(id, "Endpoint id must not be empty");
-		synchronized (this.listenerContainers) {
+		this.listenerContainersLock.lock();
+		try {
 			Assert.state(!this.listenerContainers.containsKey(id),
 					"Another endpoint is already registered with id '" + id + "'");
 			MessageListenerContainer container = createListenerContainer(endpoint, factory);
@@ -157,7 +162,7 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 					containerGroup = this.applicationContext.getBean(endpoint.getGroup(), List.class);
 				}
 				else {
-					containerGroup = new ArrayList<MessageListenerContainer>();
+					containerGroup = new ArrayList<>();
 					this.applicationContext.getBeanFactory().registerSingleton(endpoint.getGroup(), containerGroup);
 				}
 				containerGroup.add(container);
@@ -168,6 +173,9 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 			if (startImmediately) {
 				startIfNecessary(container);
 			}
+		}
+		finally {
+			this.listenerContainersLock.unlock();
 		}
 	}
 
@@ -250,7 +258,7 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 	@Override
 	public void stop(Runnable callback) {
 		Collection<MessageListenerContainer> containers = getListenerContainers();
-		if (containers.size() > 0) {
+		if (!containers.isEmpty()) {
 			AggregatingCallback aggregatingCallback = new AggregatingCallback(containers.size(), callback);
 			for (MessageListenerContainer listenerContainer : containers) {
 				try {

@@ -151,8 +151,7 @@ public final class SerializationUtils {
 		if (TRUST_ALL && ObjectUtils.isEmpty(patterns)) {
 			return;
 		}
-		if (clazz.isArray() || clazz.isPrimitive() || clazz.equals(String.class)
-				|| Number.class.isAssignableFrom(clazz)
+		if (clazz.isArray() || clazz.isPrimitive() || Number.class.isAssignableFrom(clazz)
 				|| String.class.equals(clazz)) {
 			return;
 		}
@@ -163,7 +162,7 @@ public final class SerializationUtils {
 			}
 		}
 		throw new SecurityException("Attempt to deserialize unauthorized " + clazz
-				+ "; add allowed class name patterns to the message converter or, if you trust the message orginiator, "
+				+ "; add allowed class name patterns to the message converter or, if you trust the message originator, "
 				+ "set environment variable '"
 				+ TRUST_ALL_ENV + "' or system property '" + TRUST_ALL_PROP + "' to true");
 	}

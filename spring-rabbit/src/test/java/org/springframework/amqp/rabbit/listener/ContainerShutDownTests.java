@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,11 +30,13 @@ import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.util.StopWatch;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 2.0
  *
  */
@@ -44,6 +46,7 @@ public class ContainerShutDownTests {
 	@Test
 	public void testUninterruptibleListenerSMLC() throws Exception {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+		container.setReceiveTimeout(10);
 		testUninterruptibleListener(container);
 	}
 
@@ -56,7 +59,6 @@ public class ContainerShutDownTests {
 	public void testUninterruptibleListener(AbstractMessageListenerContainer container) throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
 		container.setConnectionFactory(cf);
-		container.setShutdownTimeout(500);
 		container.setQueueNames("test.shutdown");
 		final CountDownLatch latch = new CountDownLatch(1);
 		final CountDownLatch testEnded = new CountDownLatch(1);
@@ -91,11 +93,50 @@ public class ContainerShutDownTests {
 			assertThat(channels).hasSize(2);
 		}
 		finally {
-			container.stop();
-			assertThat(channels).hasSize(1);
-
-			cf.destroy();
 			testEnded.countDown();
+			container.stop();
+			cf.destroy();
+		}
+	}
+
+	@Test
+	public void consumersCorrectlyCancelledOnShutdownSMLC() throws Exception {
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+		container.setReceiveTimeout(10);
+		consumersCorrectlyCancelledOnShutdown(container);
+	}
+
+	@Test
+	public void consumersCorrectlyCancelledOnShutdownDMLC() throws Exception {
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer();
+		consumersCorrectlyCancelledOnShutdown(container);
+	}
+
+	private void consumersCorrectlyCancelledOnShutdown(AbstractMessageListenerContainer container)
+			throws InterruptedException {
+
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		container.setConnectionFactory(cf);
+		container.setQueueNames("test.shutdown");
+		container.setMessageListener(m -> {
+		});
+		final CountDownLatch startLatch = new CountDownLatch(1);
+		container.setApplicationEventPublisher(e -> {
+			if (e instanceof AsyncConsumerStartedEvent) {
+				startLatch.countDown();
+			}
+		});
+		container.start();
+		try {
+			assertThat(startLatch.await(30, TimeUnit.SECONDS)).isTrue();
+			StopWatch stopWatch = new StopWatch();
+			stopWatch.start();
+			container.shutdown();
+			stopWatch.stop();
+			assertThat(stopWatch.getTotalTimeMillis()).isLessThan(3000);
+		}
+		finally {
+			cf.destroy();
 		}
 	}
 

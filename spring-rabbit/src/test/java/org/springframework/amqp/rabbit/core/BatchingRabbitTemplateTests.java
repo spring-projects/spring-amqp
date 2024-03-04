@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2022 the original author or authors.
+ * Copyright 2014-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -236,14 +236,14 @@ public class BatchingRabbitTemplateTests {
 	@Test
 	void testDebatchSMLCSplit() throws Exception {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactory);
-		container.setReceiveTimeout(100);
+		container.setReceiveTimeout(10);
 		testDebatchByContainer(container, false);
 	}
 
 	@Test
 	void testDebatchSMLC() throws Exception {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactory);
-		container.setReceiveTimeout(100);
+		container.setReceiveTimeout(10);
 		testDebatchByContainer(container, true);
 	}
 
@@ -303,16 +303,16 @@ public class BatchingRabbitTemplateTests {
 
 	@Test
 	public void testDebatchByContainerPerformance() throws Exception {
-		final List<Message> received = new ArrayList<Message>();
+		final List<Message> received = new ArrayList<>();
 		int count = 100000;
 		final CountDownLatch latch = new CountDownLatch(count);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactory);
 		container.setQueueNames(ROUTE);
-		container.setMessageListener((MessageListener) message -> {
+		container.setMessageListener(message -> {
 			received.add(message);
 			latch.countDown();
 		});
-		container.setReceiveTimeout(100);
+		container.setReceiveTimeout(10);
 		container.setPrefetchCount(1000);
 		container.setBatchSize(1000);
 		container.afterPropertiesSet();
@@ -344,8 +344,8 @@ public class BatchingRabbitTemplateTests {
 	public void testDebatchByContainerBadMessageRejected() throws Exception {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactory);
 		container.setQueueNames(ROUTE);
-		container.setMessageListener((MessageListener) message -> { });
-		container.setReceiveTimeout(100);
+		container.setMessageListener(message -> { });
+		container.setReceiveTimeout(10);
 		ConditionalRejectingErrorHandler errorHandler = new ConditionalRejectingErrorHandler();
 		container.setErrorHandler(errorHandler);
 		container.afterPropertiesSet();
@@ -632,15 +632,15 @@ public class BatchingRabbitTemplateTests {
 
 	@Test
 	public void testCompressionWithContainer() throws Exception {
-		final List<Message> received = new ArrayList<Message>();
+		final List<Message> received = new ArrayList<>();
 		final CountDownLatch latch = new CountDownLatch(2);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactory);
 		container.setQueueNames(ROUTE);
-		container.setMessageListener((MessageListener) message -> {
+		container.setMessageListener(message -> {
 			received.add(message);
 			latch.countDown();
 		});
-		container.setReceiveTimeout(100);
+		container.setReceiveTimeout(10);
 		container.setAfterReceivePostProcessors(new DelegatingDecompressingPostProcessor());
 		container.afterPropertiesSet();
 		container.start();

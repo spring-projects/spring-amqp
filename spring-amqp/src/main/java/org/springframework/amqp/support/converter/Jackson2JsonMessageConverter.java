@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ public class Jackson2JsonMessageConverter extends AbstractJackson2MessageConvert
 	 * Construct with an internal {@link ObjectMapper} instance
 	 * and trusted packed to all ({@code *}).
 	 * @since 1.6.11
+	 * @see JacksonUtils#enhancedObjectMapper()
 	 */
 	public Jackson2JsonMessageConverter() {
 		this("*");
@@ -53,10 +54,10 @@ public class Jackson2JsonMessageConverter extends AbstractJackson2MessageConvert
 	 * @param trustedPackages the trusted Java packages for deserialization
 	 * @since 1.6.11
 	 * @see DefaultJackson2JavaTypeMapper#setTrustedPackages(String...)
+	 * @see JacksonUtils#enhancedObjectMapper()
 	 */
 	public Jackson2JsonMessageConverter(String... trustedPackages) {
-		this(new ObjectMapper(), trustedPackages);
-		this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		this(JacksonUtils.enhancedObjectMapper(), trustedPackages);
 	}
 
 	/**

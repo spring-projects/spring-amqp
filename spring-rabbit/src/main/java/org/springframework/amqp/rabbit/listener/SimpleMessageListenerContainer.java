@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import org.springframework.amqp.core.BatchMessageListener;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.ConsumerChannelRegistry;
@@ -80,6 +81,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Mat Jaggard
  * @author Yansong Ren
  * @author Tim Bourquin
+ * @author Jeonggi Kim
  *
  * @since 1.0
  */
@@ -121,6 +123,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private long receiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
 
+	private long batchReceiveTimeout;
+
 	private Set<BlockingQueueConsumer> consumers;
 
 	private Integer declarationRetries;
@@ -130,6 +134,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private TransactionTemplate transactionTemplate;
 
 	private long consumerStartTimeout = DEFAULT_CONSUMER_START_TIMEOUT;
+
+	private boolean enforceImmediateAckForManual;
 
 	private volatile int concurrentConsumers = 1;
 
@@ -171,7 +177,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			Assert.isTrue(concurrentConsumers <= this.maxConcurrentConsumers,
 					"'concurrentConsumers' cannot be more than 'maxConcurrentConsumers'");
 		}
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Changing consumers from " + this.concurrentConsumers + " to " + concurrentConsumers);
 			}
@@ -180,6 +187,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			if (isActive()) {
 				adjustConsumers(delta);
 			}
+		}
+		finally {
+			this.consumersLock.unlock();
 		}
 	}
 
@@ -324,6 +334,19 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setReceiveTimeout(long receiveTimeout) {
 		this.receiveTimeout = receiveTimeout;
+	}
+
+	/**
+	 * The number of milliseconds of timeout for gathering batch messages.
+	 * It limits the time to wait to fill batchSize.
+	 * Default is 0 (no timeout).
+	 * @param batchReceiveTimeout the timeout for gathering batch messages.
+	 * @since 3.1.2
+	 * @see #setBatchSize(int)
+	 */
+	public void setBatchReceiveTimeout(long batchReceiveTimeout) {
+		Assert.isTrue(batchReceiveTimeout >= 0, "'batchReceiveTimeout' must be >= 0");
+		this.batchReceiveTimeout = batchReceiveTimeout;
 	}
 
 	/**
@@ -485,6 +508,18 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
+	 * Set to {@code true} to enforce {@link Channel#basicAck(long, boolean)}
+	 * for {@link org.springframework.amqp.core.AcknowledgeMode#MANUAL}
+	 * when {@link ImmediateAcknowledgeAmqpException} is thrown.
+	 * This might be a tentative solution to not break behavior for current minor version.
+	 * @param enforceImmediateAckForManual the flag to ack message for MANUAL mode on ImmediateAcknowledgeAmqpException
+	 * @since 3.1.2
+	 */
+	public void setEnforceImmediateAckForManual(boolean enforceImmediateAckForManual) {
+		this.enforceImmediateAckForManual = enforceImmediateAckForManual;
+	}
+
+	/**
 	 * Avoid the possibility of not configuring the CachingConnectionFactory in sync with the number of concurrent
 	 * consumers.
 	 */
@@ -532,11 +567,12 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	@Override
 	protected void doStart() {
 		Assert.state(!this.consumerBatchEnabled || getMessageListener() instanceof BatchMessageListener
-				|| getMessageListener() instanceof ChannelAwareBatchMessageListener,
+						|| getMessageListener() instanceof ChannelAwareBatchMessageListener,
 				"When setting 'consumerBatchEnabled' to true, the listener must support batching");
 		checkListenerContainerAware();
 		super.doStart();
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			if (this.consumers != null) {
 				throw new IllegalStateException("A stopped container should not have consumers");
 			}
@@ -552,7 +588,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 				return;
 			}
-			Set<AsyncMessageProcessingConsumer> processors = new HashSet<AsyncMessageProcessingConsumer>();
+			Set<AsyncMessageProcessingConsumer> processors = new HashSet<>();
 			for (BlockingQueueConsumer consumer : this.consumers) {
 				AsyncMessageProcessingConsumer processor = new AsyncMessageProcessingConsumer(consumer);
 				processors.add(processor);
@@ -562,6 +598,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			waitForConsumersToStart(processors);
+		}
+		finally {
+			this.consumersLock.unlock();
 		}
 	}
 
@@ -616,7 +655,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 
 		List<BlockingQueueConsumer> canceledConsumers = new ArrayList<>();
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			if (this.consumers != null) {
 				Iterator<BlockingQueueConsumer> consumerIterator = this.consumers.iterator();
 				if (isForceStop()) {
@@ -639,6 +679,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				runCallbackIfNotNull(callback);
 				return;
 			}
+		}
+		finally {
+			this.consumersLock.unlock();
 		}
 
 		Runnable awaitShutdown = () -> {
@@ -665,9 +708,13 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				logger.warn("Interrupted waiting for workers.  Continuing with shutdown.");
 			}
 
-			synchronized (this.consumersMonitor) {
+			this.consumersLock.lock();
+			try {
 				this.consumers = null;
 				this.cancellationLock.deactivate();
+			}
+			finally {
+				this.consumersLock.unlock();
 			}
 			this.stopNow.set(false);
 			runCallbackIfNotNull(callback);
@@ -688,18 +735,23 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private boolean isActive(BlockingQueueConsumer consumer) {
 		boolean consumerActive;
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			consumerActive = this.consumers != null && this.consumers.contains(consumer);
+		}
+		finally {
+			this.consumersLock.unlock();
 		}
 		return consumerActive && this.isActive();
 	}
 
 	protected int initializeConsumers() {
 		int count = 0;
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			if (this.consumers == null) {
 				this.cancellationLock.reset();
-				this.consumers = new HashSet<BlockingQueueConsumer>(this.concurrentConsumers);
+				this.consumers = new HashSet<>(this.concurrentConsumers);
 				for (int i = 1; i <= this.concurrentConsumers; i++) {
 					BlockingQueueConsumer consumer = createBlockingQueueConsumer();
 					if (getConsumeDelay() > 0) {
@@ -709,6 +761,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					count++;
 				}
 			}
+		}
+		finally {
+			this.consumersLock.unlock();
 		}
 		return count;
 	}
@@ -720,13 +775,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	protected void adjustConsumers(int deltaArg) {
 		int delta = deltaArg;
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			if (isActive() && this.consumers != null) {
 				if (delta > 0) {
 					Iterator<BlockingQueueConsumer> consumerIterator = this.consumers.iterator();
 					while (consumerIterator.hasNext() && delta > 0
-						&& (this.maxConcurrentConsumers == null
-								|| this.consumers.size() > this.maxConcurrentConsumers)) {
+							&& (this.maxConcurrentConsumers == null
+							|| this.consumers.size() > this.maxConcurrentConsumers)) {
 						BlockingQueueConsumer consumer = consumerIterator.next();
 						consumer.basicCancel(true);
 						consumerIterator.remove();
@@ -738,6 +794,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 		}
+		finally {
+			this.consumersLock.unlock();
+		}
 	}
 
 
@@ -746,7 +805,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * @param delta the consumers to add.
 	 */
 	protected void addAndStartConsumers(int delta) {
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			if (this.consumers != null) {
 				for (int i = 0; i < delta; i++) {
 					if (this.maxConcurrentConsumers != null
@@ -782,10 +842,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 		}
+		finally {
+			this.consumersLock.unlock();
+		}
 	}
 
 	private void considerAddingAConsumer() {
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			if (this.consumers != null
 					&& this.maxConcurrentConsumers != null && this.consumers.size() < this.maxConcurrentConsumers) {
 				long now = System.currentTimeMillis();
@@ -795,11 +859,15 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 		}
+		finally {
+			this.consumersLock.unlock();
+		}
 	}
 
 
 	private void considerStoppingAConsumer(BlockingQueueConsumer consumer) {
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			if (this.consumers != null && this.consumers.size() > this.concurrentConsumers) {
 				long now = System.currentTimeMillis();
 				if (this.lastConsumerStopped + this.stopConsumerMinInterval < now) {
@@ -812,10 +880,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 		}
+		finally {
+			this.consumersLock.unlock();
+		}
 	}
 
 	private void queuesChanged() {
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			if (this.consumers != null) {
 				int count = 0;
 				Iterator<BlockingQueueConsumer> consumerIterator = this.consumers.iterator();
@@ -836,6 +908,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 				addAndStartConsumers(count);
 			}
+		}
+		finally {
+			this.consumersLock.unlock();
 		}
 	}
 
@@ -872,7 +947,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private void restart(BlockingQueueConsumer oldConsumer) {
 		BlockingQueueConsumer consumer = oldConsumer;
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			if (this.consumers != null) {
 				try {
 					// Need to recycle the channel in this consumer
@@ -903,6 +979,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				getTaskExecutor()
 						.execute(new AsyncMessageProcessingConsumer(consumer));
 			}
+		}
+		finally {
+			this.consumersLock.unlock();
 		}
 	}
 
@@ -948,8 +1027,19 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		List<Message> messages = null;
 		long deliveryTag = 0;
-
+		boolean immediateAck = false;
+		boolean isBatchReceiveTimeoutEnabled = this.batchReceiveTimeout > 0;
+		long startTime = isBatchReceiveTimeoutEnabled ? System.currentTimeMillis() : 0;
 		for (int i = 0; i < this.batchSize; i++) {
+			boolean batchTimedOut = isBatchReceiveTimeoutEnabled &&
+					(System.currentTimeMillis() - startTime) > this.batchReceiveTimeout;
+			if (batchTimedOut) {
+				if (logger.isTraceEnabled()) {
+					long gathered = messages != null ? messages.size() : 0;
+					logger.trace("Timed out for gathering batch messages. gathered size is " + gathered);
+				}
+				break;
+			}
 
 			logger.trace("Waiting for message from consumer.");
 			Message message = consumer.nextMessage(this.receiveTimeout);
@@ -976,9 +1066,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					if (messages == null) {
 						messages = new ArrayList<>(this.batchSize);
 					}
-					if (isDeBatchingEnabled() && getBatchingStrategy().canDebatch(message.getMessageProperties())) {
-						final List<Message> messageList = messages;
-						getBatchingStrategy().deBatch(message, fragment -> messageList.add(fragment));
+					BatchingStrategy batchingStrategy = getBatchingStrategy();
+					if (isDeBatchingEnabled() && batchingStrategy.canDebatch(message.getMessageProperties())) {
+						batchingStrategy.deBatch(message, messages::add);
 					}
 					else {
 						messages.add(message);
@@ -999,6 +1089,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 								+ e.getMessage() + "': "
 								+ message.getMessageProperties().getDeliveryTag());
 					}
+					immediateAck = this.enforceImmediateAckForManual;
 					break;
 				}
 				catch (Exception ex) {
@@ -1007,6 +1098,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 							this.logger.debug("User requested ack for failed delivery: "
 									+ message.getMessageProperties().getDeliveryTag());
 						}
+						immediateAck = this.enforceImmediateAckForManual;
 						break;
 					}
 					long tagToRollback = isAsyncReplies()
@@ -1043,14 +1135,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 		if (messages != null) {
-			executeWithList(channel, messages, deliveryTag, consumer);
+			immediateAck = executeWithList(channel, messages, deliveryTag, consumer);
 		}
 
-		return consumer.commitIfNecessary(isChannelLocallyTransacted());
+		return consumer.commitIfNecessary(isChannelLocallyTransacted(), immediateAck);
 
 	}
 
-	private void executeWithList(Channel channel, List<Message> messages, long deliveryTag,
+	private boolean executeWithList(Channel channel, List<Message> messages, long deliveryTag,
 			BlockingQueueConsumer consumer) {
 
 		try {
@@ -1062,7 +1154,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						+ e.getMessage() + "' (last in batch): "
 						+ deliveryTag);
 			}
-			return;
+			return this.enforceImmediateAckForManual;
 		}
 		catch (Exception ex) {
 			if (causeChainHasImmediateAcknowledgeAmqpException(ex)) {
@@ -1070,7 +1162,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					this.logger.debug("User requested ack for failed delivery (last in batch): "
 							+ deliveryTag);
 				}
-				return;
+				return this.enforceImmediateAckForManual;
 			}
 			if (getTransactionManager() != null) {
 				if (getTransactionAttribute().rollbackOn(ex)) {
@@ -1099,16 +1191,21 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				throw ex;
 			}
 		}
+		return false;
 	}
 
 	protected void handleStartupFailure(BackOffExecution backOffExecution) {
 		long recoveryInterval = backOffExecution.nextBackOff();
 		if (BackOffExecution.STOP == recoveryInterval) {
-			synchronized (this) {
+			this.lifecycleLock.lock();
+			try {
 				if (isActive()) {
 					logger.warn("stopping container - restart recovery attempts exhausted");
 					stop();
 				}
+			}
+			finally {
+				this.lifecycleLock.unlock();
 			}
 			return;
 		}

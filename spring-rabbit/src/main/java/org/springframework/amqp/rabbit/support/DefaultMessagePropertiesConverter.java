@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import com.rabbitmq.client.LongString;
  * @author Mark Fisher
  * @author Gary Russell
  * @author Soeren Unruh
+ * @author Raylax Grey
  * @since 1.0
  */
 public class DefaultMessagePropertiesConverter implements MessagePropertiesConverter {
@@ -83,8 +84,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	}
 
 	@Override
-	public MessageProperties toMessageProperties(final BasicProperties source, final Envelope envelope,
-			final String charset) {
+	public MessageProperties toMessageProperties(BasicProperties source, @Nullable Envelope envelope, String charset) {
 		MessageProperties target = new MessageProperties();
 		Map<String, Object> headers = source.getHeaders();
 		if (!CollectionUtils.isEmpty(headers)) {
@@ -92,8 +92,14 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 				String key = entry.getKey();
 				if (MessageProperties.X_DELAY.equals(key)) {
 					Object value = entry.getValue();
-					if (value instanceof Integer integ) {
-						target.setReceivedDelay(integ);
+					if (value instanceof Integer intValue) {
+						long receivedDelayLongValue = intValue.longValue();
+						target.setReceivedDelayLong(receivedDelayLongValue);
+						target.setHeader(key, receivedDelayLongValue);
+					}
+					else if (value instanceof Long longVal) {
+						target.setReceivedDelayLong(longVal);
+						target.setHeader(key, longVal);
 					}
 				}
 				else {
@@ -164,9 +170,9 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 
 	private Map<String, Object> convertHeadersIfNecessary(Map<String, Object> headers) {
 		if (CollectionUtils.isEmpty(headers)) {
-			return Collections.<String, Object>emptyMap();
+			return Collections.emptyMap();
 		}
-		Map<String, Object> writableHeaders = new HashMap<String, Object>();
+		Map<String, Object> writableHeaders = new HashMap<>();
 		for (Map.Entry<String, Object> entry : headers.entrySet()) {
 			writableHeaders.put(entry.getKey(), this.convertHeaderValueIfNecessary(entry.getValue()));
 		}
@@ -200,7 +206,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 			value = writableArray;
 		}
 		else if (value instanceof List<?>) {
-			List<Object> writableList = new ArrayList<Object>(((List<?>) value).size());
+			List<Object> writableList = new ArrayList<>(((List<?>) value).size());
 			for (Object listValue : (List<?>) value) {
 				writableList.add(convertHeaderValueIfNecessary(listValue));
 			}
@@ -209,7 +215,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		else if (value instanceof Map<?, ?>) {
 			@SuppressWarnings("unchecked")
 			Map<String, Object> originalMap = (Map<String, Object>) value;
-			Map<String, Object> writableMap = new HashMap<String, Object>(originalMap.size());
+			Map<String, Object> writableMap = new HashMap<>(originalMap.size());
 			for (Map.Entry<String, Object> entry : originalMap.entrySet()) {
 				writableMap.put(entry.getKey(), this.convertHeaderValueIfNecessary(entry.getValue()));
 			}
@@ -222,7 +228,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	}
 
 	/**
-	 * Converts a LongString value to either a String or DataInputStream based on a
+	 * Convert a LongString value to either a String or DataInputStream based on a
 	 * length-driven threshold. If the length is {@link #longStringLimit} bytes or less, a
 	 * String will be returned, otherwise a DataInputStream is returned or the {@link LongString}
 	 * is returned unconverted if {@link #convertLongLongStrings} is true.
@@ -257,7 +263,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 			value = convertLongString(longStr, charset);
 		}
 		else if (value instanceof List<?>) {
-			List<Object> convertedList = new ArrayList<Object>(((List<?>) value).size());
+			List<Object> convertedList = new ArrayList<>(((List<?>) value).size());
 			for (Object listValue : (List<?>) value) {
 				convertedList.add(this.convertLongStringIfNecessary(listValue, charset));
 			}
@@ -266,7 +272,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		else if (value instanceof Map<?, ?>) {
 			@SuppressWarnings("unchecked")
 			Map<String, Object> originalMap = (Map<String, Object>) value;
-			Map<String, Object> convertedMap = new HashMap<String, Object>();
+			Map<String, Object> convertedMap = new HashMap<>();
 			for (Map.Entry<String, Object> entry : originalMap.entrySet()) {
 				convertedMap.put(entry.getKey(), this.convertLongStringIfNecessary(entry.getValue(), charset));
 			}

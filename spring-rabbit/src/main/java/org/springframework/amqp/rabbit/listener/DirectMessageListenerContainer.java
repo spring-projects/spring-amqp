@@ -36,6 +36,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -62,6 +64,7 @@ import org.springframework.amqp.rabbit.connection.SimpleResourceHolder;
 import org.springframework.amqp.rabbit.listener.support.ContainerUtils;
 import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
 import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.lang.Nullable;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -267,7 +270,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		Assert.noNullElements(queues, "'queues' cannot contain null elements");
 		try {
 			Arrays.stream(queues)
-				.map(q -> q.getActualName())
+				.map(Queue::getActualName)
 				.forEach(this.removedQueues::remove);
 			addQueues(Arrays.stream(queues).map(Queue::getName));
 		}
@@ -279,7 +282,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private void addQueues(Stream<String> queueNameStream) {
 		if (isRunning()) {
-			synchronized (this.consumersMonitor) {
+			this.consumersLock.lock();
+			try {
 				checkStartState();
 				Set<String> current = getQueueNamesAsSet();
 				queueNameStream.forEach(queue -> {
@@ -291,6 +295,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						consumeFromQueue(queue);
 					}
 				});
+			}
+			finally {
+				this.consumersLock.unlock();
 			}
 		}
 	}
@@ -309,7 +316,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private void removeQueues(Stream<String> queueNames) {
 		if (isRunning()) {
-			synchronized (this.consumersMonitor) {
+			this.consumersLock.lock();
+			try {
 				checkStartState();
 				queueNames.map(queue -> {
 							this.removedQueues.add(queue);
@@ -319,11 +327,15 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						.flatMap(Collection::stream)
 						.forEach(this::cancelConsumer);
 			}
+			finally {
+				this.consumersLock.unlock();
+			}
 		}
 	}
 
 	private void adjustConsumers(int newCount) {
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			checkStartState();
 			this.consumersToRestart.clear();
 			for (String queue : getQueueNames()) {
@@ -334,9 +346,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					if (cBQ != null) {
 						// find a gap or set the index to the end
 						List<Integer> indices = cBQ.stream()
-								.map(cons -> cons.getIndex())
+								.map(SimpleConsumer::getIndex)
 								.sorted()
-								.collect(Collectors.toList());
+								.toList();
 						for (index = 0; index < indices.size(); index++) {
 							if (index < indices.get(index)) {
 								break;
@@ -347,6 +359,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				}
 				reduceConsumersIfIdle(newCount, queue);
 			}
+		}
+		finally {
+			this.consumersLock.unlock();
 		}
 	}
 
@@ -367,9 +382,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * When adjusting down, return a consumer that can be canceled. Called while
-	 * synchronized on consumersMonitor.
-	 * @return the consumer index or -1 if non idle.
+	 * When adjusting down, return a consumer that can be canceled. Called while locked on {@link #consumersLock}.
+	 * @return the consumer index or -1 if non-idle.
 	 * @since 2.0.6
 	 */
 	protected int findIdleConsumer() {
@@ -460,7 +474,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		if (isPossibleAuthenticationFailureFatal()) {
 			Connection connection = null;
 			try {
-				getConnectionFactory().createConnection();
+				connection = getConnectionFactory().createConnection();
 			}
 			catch (AmqpAuthenticationException ex) {
 				this.logger.debug("Failed to authenticate", ex);
@@ -482,11 +496,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			checkIdle(idleEventInterval, now);
 			checkConsumers(now);
 			if (this.lastRestartAttempt + getFailedDeclarationRetryInterval() < now) {
-				synchronized (this.consumersMonitor) {
+				this.consumersLock.lock();
+				try {
 					if (this.started) {
 						List<SimpleConsumer> restartableConsumers = new ArrayList<>(this.consumersToRestart);
 						this.consumersToRestart.clear();
-						if (restartableConsumers.size() > 0) {
+						if (!restartableConsumers.isEmpty()) {
 							doRedeclareElementsIfNecessary();
 						}
 						Iterator<SimpleConsumer> iterator = restartableConsumers.iterator();
@@ -509,6 +524,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						this.lastRestartAttempt = now;
 					}
 				}
+				finally {
+					this.consumersLock.unlock();
+				}
 			}
 			processMonitorTask();
 		}, Duration.ofMillis(this.monitorInterval));
@@ -524,7 +542,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private void checkConsumers(long now) {
 		final List<SimpleConsumer> consumersToCancel;
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			consumersToCancel = this.consumers.stream()
 					.filter(consumer -> {
 						boolean open = consumer.getChannel().isOpen() && !consumer.isAckFailed()
@@ -540,6 +559,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						return !open;
 					})
 					.collect(Collectors.toList());
+		}
+		finally {
+			this.consumersLock.unlock();
 		}
 		consumersToCancel
 				.forEach(consumer -> {
@@ -591,7 +613,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	private void startConsumers(final String[] queueNames) {
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			if (this.hasStopped) { // container stopped before we got the lock
 				if (this.logger.isDebugEnabled()) {
 					this.logger.debug("Consumer start aborted - container stopping");
@@ -630,6 +653,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					DirectMessageListenerContainer.this.startedLatch.countDown();
 				}
 			}
+		}
+		finally {
+			this.consumersLock.unlock();
 		}
 	}
 
@@ -731,7 +757,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 		SimpleConsumer consumer = consume(queue, index, connection);
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			if (consumer != null) {
 				this.cancellationLock.add(consumer);
 				this.consumers.add(consumer);
@@ -739,10 +766,14 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				if (this.logger.isInfoEnabled()) {
 					this.logger.info(consumer + " started");
 				}
-				if (getApplicationEventPublisher() != null) {
-					getApplicationEventPublisher().publishEvent(new AsyncConsumerStartedEvent(this, consumer));
+				ApplicationEventPublisher applicationEventPublisher = getApplicationEventPublisher();
+				if (applicationEventPublisher != null) {
+					applicationEventPublisher.publishEvent(new AsyncConsumerStartedEvent(this, consumer));
 				}
 			}
+		}
+		finally {
+			this.consumersLock.unlock();
 		}
 	}
 
@@ -814,7 +845,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	protected void shutdownAndWaitOrCallback(@Nullable Runnable callback) {
 		LinkedList<SimpleConsumer> canceledConsumers = null;
 		boolean waitForConsumers = false;
-		synchronized (this.consumersMonitor) {
+		this.consumersLock.lock();
+		try {
 			if (this.started || this.aborted) {
 				// Copy in the same order to avoid ConcurrentModificationException during remove in the
 				// cancelConsumer().
@@ -822,6 +854,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				actualShutDown(canceledConsumers);
 				waitForConsumers = true;
 			}
+		}
+		finally {
+			this.consumersLock.unlock();
 		}
 		if (waitForConsumers) {
 			LinkedList<SimpleConsumer> consumersToWait = canceledConsumers;
@@ -872,7 +907,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * Must hold this.consumersMonitor.
+	 * Must hold this.consumersLock.
 	 * @param consumers a copy of this.consumers.
 	 */
 	private void actualShutDown(List<SimpleConsumer> consumers) {
@@ -898,7 +933,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug("Canceling " + consumer);
 			}
-			synchronized (consumer) {
+			consumer.lock.lock();
+			try {
 				consumer.setCanceled(true);
 				if (this.messagesPerAck > 1) {
 					try {
@@ -908,6 +944,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						this.logger.error("Exception while sending delayed ack", e);
 					}
 				}
+			}
+			finally {
+				consumer.lock.unlock();
 			}
 			RabbitUtils.cancel(consumer.getChannel(), consumer.getConsumerTag());
 		}
@@ -935,7 +974,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * The consumer object.
 	 */
-	final class SimpleConsumer extends DefaultConsumer {
+	protected final class SimpleConsumer extends DefaultConsumer {
 
 		private final Log logger = DirectMessageListenerContainer.this.logger;
 
@@ -960,6 +999,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		private final long ackTimeout = DirectMessageListenerContainer.this.ackTimeout;
 
 		private final Channel targetChannel;
+
+		private final Lock lock = new ReentrantLock();
 
 		private int pendingAcks;
 
@@ -1005,7 +1046,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 
 		/**
-		 * Return the current epoch for this consumer; consumersMonitor must be held.
+		 * Return the current epoch for this consumer; consumersLock must be held.
 		 * @return the epoch.
 		 */
 		int getEpoch() {
@@ -1039,7 +1080,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 
 		/**
-		 * Increment and return the current epoch for this consumer; consumersMonitor must
+		 * Increment and return the current epoch for this consumer; consumersLock must
 		 * be held.
 		 * @return the epoch.
 		 */
@@ -1197,10 +1238,14 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			try {
 				if (this.ackRequired) {
 					if (this.messagesPerAck > 1) {
-						synchronized (this) {
+						this.lock.lock();
+						try {
 							this.latestDeferredDeliveryTag = deliveryTag;
 							this.pendingAcks++;
 							ackIfNecessary(this.lastAck);
+						}
+						finally {
+							this.lock.unlock();
 						}
 					}
 					else if (!isChannelTransacted() || isLocallyTransacted) {
@@ -1223,7 +1268,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		 * @param now the current time.
 		 * @throws IOException if one occurs.
 		 */
-		synchronized void ackIfNecessary(long now) throws Exception { // NOSONAR
+		void ackIfNecessary(long now) throws Exception { // NOSONAR
 			if (this.pendingAcks >= this.messagesPerAck || (
 					this.pendingAcks > 0 && (now - this.lastAck > this.ackTimeout || this.canceled))) {
 				sendAck(now);
@@ -1237,10 +1282,14 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			if (this.ackRequired || ContainerUtils.isRejectManual(e)) {
 				try {
 					if (this.messagesPerAck > 1) {
-						synchronized (this) {
+						this.lock.lock();
+						try {
 							if (this.pendingAcks > 0) {
 								sendAck(System.currentTimeMillis());
 							}
+						}
+						finally {
+							this.lock.unlock();
 						}
 					}
 					getChannel().basicNack(deliveryTag, !isAsyncReplies(),
@@ -1255,7 +1304,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 
-		protected synchronized void sendAck(long now) throws Exception { // NOSONAR
+		void sendAck(long now) throws Exception { // NOSONAR
 			sendAckWithNotify(this.latestDeferredDeliveryTag, true);
 			this.lastAck = now;
 			this.pendingAcks = 0;
@@ -1265,8 +1314,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		 * Send ack and notify MessageAckListener(if set).
 		 * @param deliveryTag DeliveryTag of this ack.
 		 * @param multiple Whether multiple ack.
-		 * @throws Exception Occured when ack.
-		 * @Since 2.4.6
+		 * @throws Exception Occurred when ack.
+		 * @since 2.4.6
 		 */
 		private void sendAckWithNotify(long deliveryTag, boolean multiple) throws Exception { // NOSONAR
 			try {
@@ -1281,7 +1330,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		/**
 		 * Notify MessageAckListener set on message listener.
-		 * @param messageAckListener MessageAckListener set on the message listener.
 		 * @param success Whether ack succeeded.
 		 * @param deliveryTag The deliveryTag of ack.
 		 * @param cause If an exception occurs.
@@ -1292,7 +1340,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				getMessageAckListener().onComplete(success, deliveryTag, cause);
 			}
 			catch (Exception e) {
-				this.logger.error("An exception occured on MessageAckListener.", e);
+				this.logger.error("An exception occurred on MessageAckListener.", e);
 			}
 		}
 
@@ -1323,13 +1371,17 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		void cancelConsumer(final String eventMessage) {
 			publishConsumerFailedEvent(eventMessage, true, null);
-			synchronized (DirectMessageListenerContainer.this.consumersMonitor) {
+			DirectMessageListenerContainer.this.consumersLock.lock();
+			try {
 				List<SimpleConsumer> list = DirectMessageListenerContainer.this.consumersByQueue.get(this.queue);
 				if (list != null) {
 					list.remove(this);
 				}
 				DirectMessageListenerContainer.this.consumers.remove(this);
 				addConsumerToRestart(this);
+			}
+			finally {
+				DirectMessageListenerContainer.this.consumersLock.unlock();
 			}
 			finalizeConsumer();
 		}
@@ -1375,14 +1427,11 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				return false;
 			}
 			if (this.queue == null) {
-				if (other.queue != null) {
-					return false;
-				}
+				return other.queue == null;
 			}
-			else if (!this.queue.equals(other.queue)) {
-				return false;
+			else {
+				return this.queue.equals(other.queue);
 			}
-			return true;
 		}
 
 		private DirectMessageListenerContainer getEnclosingInstance() {

@@ -1,0 +1,6 @@
+[[resources]]
+= Other Resources
+
+In addition to this reference documentation, there exist a number of other resources that may help you learn about AMQP.
+
+

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -722,6 +722,7 @@ public class RabbitTemplateIntegrationTests {
 		template.setReplyTimeout(10000);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(cachingConnectionFactory);
 		container.setQueues(replyQueue);
+		container.setReceiveTimeout(10);
 		container.setMessageListener(template);
 		container.afterPropertiesSet();
 		container.start();
@@ -729,10 +730,10 @@ public class RabbitTemplateIntegrationTests {
 		messageProperties.setCorrelationId("myCorrelationId");
 		Message message = new Message("test-message".getBytes(), messageProperties);
 		Message reply = template.sendAndReceive(message);
-		assertThat(new String(received.get(1000, TimeUnit.MILLISECONDS).getBody())).isEqualTo(new String(message.getBody()));
+		assertThat(received.get(1000, TimeUnit.MILLISECONDS).getBody()).isEqualTo(message.getBody());
 		assertThat(reply).as("Reply is expected").isNotNull();
 		assertThat(remoteCorrelationId.get()).isEqualTo("myCorrelationId");
-		assertThat(new String(reply.getBody())).isEqualTo(new String(message.getBody()));
+		assertThat(reply.getBody()).isEqualTo(message.getBody());
 		// Message was consumed so nothing left on queue
 		reply = template.receive();
 		assertThat(reply).isEqualTo(null);
@@ -1236,12 +1237,13 @@ public class RabbitTemplateIntegrationTests {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
 		container.setConnectionFactory(template.getConnectionFactory());
 		container.setQueues(REPLY_QUEUE);
+		container.setReceiveTimeout(10);
 		container.setMessageListener(template);
 		container.start();
 
 		int count = 10;
 
-		final Map<Double, Object> results = new ConcurrentHashMap<Double, Object>();
+		final Map<Double, Object> results = new ConcurrentHashMap<>();
 
 		ExecutorService executor = Executors.newFixedThreadPool(10);
 
@@ -1344,7 +1346,8 @@ public class RabbitTemplateIntegrationTests {
 			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
 			container.setConnectionFactory(template.getConnectionFactory());
 			container.setQueueNames(ROUTE);
-			final AtomicReference<String> replyToWas = new AtomicReference<String>();
+			container.setReceiveTimeout(10);
+			final AtomicReference<String> replyToWas = new AtomicReference<>();
 			MessageListenerAdapter messageListenerAdapter = new MessageListenerAdapter(new Object() {
 
 				@SuppressWarnings("unused")
@@ -1394,7 +1397,7 @@ public class RabbitTemplateIntegrationTests {
 		});
 		messageListener.setBeforeSendReplyPostProcessors(new GZipPostProcessor());
 		container.setMessageListener(messageListener);
-		container.setReceiveTimeout(100);
+		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();
 		container.start();
 		RabbitTemplate template = createSendAndReceiveRabbitTemplate(this.template.getConnectionFactory());

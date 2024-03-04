@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -35,6 +36,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
@@ -187,10 +190,9 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	private final AtomicInteger activeTemplateCallbacks = new AtomicInteger();
 
-	private final ConcurrentMap<Channel, RabbitTemplate> publisherConfirmChannels =
-			new ConcurrentHashMap<Channel, RabbitTemplate>();
+	private final ConcurrentMap<Channel, RabbitTemplate> publisherConfirmChannels = new ConcurrentHashMap<>();
 
-	private final Map<Object, PendingReply> replyHolder = new ConcurrentHashMap<Object, PendingReply>();
+	private final Map<Object, PendingReply> replyHolder = new ConcurrentHashMap<>();
 
 	private final String uuid = UUID.randomUUID().toString();
 
@@ -201,8 +203,12 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	private final ReplyToAddressCallback<?> defaultReplyToAddressCallback =
 			(request, reply) -> getReplyToAddress(request);
 
+	private final Lock fastReplyToLock = new ReentrantLock();
+
 	private final Map<ConnectionFactory, DirectReplyToMessageListenerContainer> directReplyToContainers =
 			new HashMap<>();
+
+	private final Lock directReplyToContainersLock = new ReentrantLock();
 
 	private final AtomicInteger containerInstance = new AtomicInteger();
 
@@ -234,7 +240,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	private ReturnsCallback returnsCallback;
 
-	private Expression mandatoryExpression = new ValueExpression<Boolean>(false);
+	private Expression mandatoryExpression = new ValueExpression<>(false);
 
 	private String correlationKey = null;
 
@@ -294,7 +300,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	/**
 	 * Create a rabbit template with default strategies and settings.
-	 *
 	 * @param connectionFactory the connection factory to use
 	 */
 	public RabbitTemplate(ConnectionFactory connectionFactory) {
@@ -340,9 +345,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	/**
-	 * The name of the default exchange to use for send operations when none is specified. Defaults to <code>""</code>
+	 * The name of the default exchange to use for send operations when none is specified. Defaults to {@code ""}
 	 * which is the default exchange in the broker (per the AMQP specification).
-	 *
 	 * @param exchange the exchange name to use for send operations
 	 */
 	public void setExchange(@Nullable String exchange) {
@@ -351,7 +355,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	/**
 	 * @return the name of the default exchange used by this template.
-	 *
 	 * @since 1.6
 	 */
 	public String getExchange() {
@@ -362,7 +365,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * The value of a default routing key to use for send operations when none is specified. Default is empty which is
 	 * not helpful when using the default (or any direct) exchange, but fine if the exchange is a headers exchange for
 	 * instance.
-	 *
 	 * @param routingKey the default routing key to use for send operations
 	 */
 	public void setRoutingKey(String routingKey) {
@@ -399,7 +401,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	/**
 	 * The encoding to use when converting between byte arrays and Strings in message properties.
-	 *
 	 * @param encoding the encoding to set
 	 */
 	public void setEncoding(String encoding) {
@@ -416,14 +417,14 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	/**
 	 * An address for replies; if not provided, a temporary exclusive, auto-delete queue will
-	 * be used for each reply, unless RabbitMQ supports 'amq.rabbitmq.reply-to' - see
-	 * https://www.rabbitmq.com/direct-reply-to.html
+	 * be used for each reply, unless RabbitMQ supports
+	 * <a href="https://www.rabbitmq.com/direct-reply-to.html">'amq.rabbitmq.reply-to'</a>
 	 * <p>The address can be a simple queue name (in which case the reply will be routed via the default
 	 * exchange), or with the form {@code exchange/routingKey} to route the reply using an explicit
 	 * exchange and routing key.
 	 * @param replyAddress the replyAddress to set
 	 */
-	public synchronized void setReplyAddress(String replyAddress) {
+	public void setReplyAddress(String replyAddress) {
 		this.replyAddress = replyAddress;
 		this.evaluatedFastReplyTo = false;
 	}
@@ -445,9 +446,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * sendAndReceive methods. The default value is defined as {@link #DEFAULT_REPLY_TIMEOUT}. A negative value
 	 * indicates an indefinite timeout. Not used in the plain receive methods because there is no blocking receive
 	 * operation defined in the protocol.
-	 *
 	 * @param replyTimeout the reply timeout in milliseconds
-	 *
 	 * @see #sendAndReceive(String, String, Message)
 	 * @see #convertSendAndReceive(String, String, Object)
 	 */
@@ -461,9 +460,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * <p>
 	 * The default converter is a SimpleMessageConverter, which is able to handle byte arrays, Strings, and Serializable
 	 * Objects depending on the message content type header.
-	 *
 	 * @param messageConverter The message converter.
-	 *
 	 * @see #convertAndSend
 	 * @see #receiveAndConvert
 	 * @see org.springframework.amqp.support.converter.SimpleMessageConverter
@@ -477,7 +474,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * content in the message headers and plain Java objects. In particular there are limitations when dealing with very
 	 * long string headers, which hopefully are rare in practice, but if you need to use long headers you might need to
 	 * inject a special converter here.
-	 *
 	 * @param messagePropertiesConverter The message properties converter.
 	 */
 	public void setMessagePropertiesConverter(MessagePropertiesConverter messagePropertiesConverter) {
@@ -486,7 +482,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	/**
-	 * Return the properties converter.
+	 * Return the converter for properties.
 	 * @return the converter.
 	 * @since 2.0
 	 */
@@ -497,7 +493,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	/**
 	 * Return the message converter for this template. Useful for clients that want to take advantage of the converter
 	 * in {@link ChannelCallback} implementations.
-	 *
 	 * @return The message converter.
 	 */
 	public MessageConverter getMessageConverter() {
@@ -765,7 +760,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	/**
 	 * By default, when the broker supports it and no
 	 * {@link #setReplyAddress(String) replyAddress} is provided, send/receive
-	 * methods will use Direct reply-to (https://www.rabbitmq.com/direct-reply-to.html).
+	 * methods will use <a href="https://www.rabbitmq.com/direct-reply-to.html">Direct reply-to</a>.
 	 * Setting this property to true will override that behavior and use
 	 * a temporary, auto-delete, queue for each request instead.
 	 * Changing this property has no effect once the first request has been
@@ -778,7 +773,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	/**
-	 * Set whether or not to use a {@link DirectReplyToMessageListenerContainer} when
+	 * Set whether to use a {@link DirectReplyToMessageListenerContainer} when
 	 * direct reply-to is available and being used. When false, a new consumer is created
 	 * for each request (the mechanism used in versions prior to 2.0). Default true.
 	 * @param useDirectReplyToContainer set to false to use a consumer per request.
@@ -793,7 +788,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * Set an expression to be evaluated to set the userId message property if it
 	 * evaluates to a non-null value and the property is not already set in the
 	 * message to be sent.
-	 * See https://www.rabbitmq.com/validated-user-id.html
+	 * See <a href="https://www.rabbitmq.com/validated-user-id.html">validated-user-id</a>
 	 * @param userIdExpression the expression.
 	 * @since 1.6
 	 */
@@ -805,7 +800,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * Set an expression to be evaluated to set the userId message property if it
 	 * evaluates to a non-null value and the property is not already set in the
 	 * message to be sent.
-	 * See https://www.rabbitmq.com/validated-user-id.html
+	 * See <a href="https://www.rabbitmq.com/validated-user-id.html">validated-user-id</a>
 	 * @param userIdExpression the expression.
 	 * @since 1.6
 	 */
@@ -941,7 +936,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				unconfirmed.add(confirm.getCorrelationData());
 			}
 		}
-		return unconfirmed.size() > 0 ? unconfirmed : null;
+		return !unconfirmed.isEmpty() ? unconfirmed : null;
 	}
 
 	/**
@@ -998,12 +993,16 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	@Override
 	public void stop() {
-		synchronized (this.directReplyToContainers) {
+		this.directReplyToContainersLock.lock();
+		try {
 			this.directReplyToContainers.values()
 					.stream()
 					.filter(AbstractMessageListenerContainer::isRunning)
 					.forEach(AbstractMessageListenerContainer::stop);
 			this.directReplyToContainers.clear();
+		}
+		finally {
+			this.directReplyToContainersLock.unlock();
 		}
 		doStop();
 	}
@@ -1018,10 +1017,14 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	@Override
 	public boolean isRunning() {
-		synchronized (this.directReplyToContainers) {
+		this.directReplyToContainersLock.lock();
+		try {
 			return this.directReplyToContainers.values()
 					.stream()
 					.anyMatch(AbstractMessageListenerContainer::isRunning);
+		}
+		finally {
+			this.directReplyToContainersLock.unlock();
 		}
 	}
 
@@ -1036,16 +1039,15 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	/**
-	 * Override this method use some other criteria to decide whether or not to use
-	 * direct reply-to (https://www.rabbitmq.com/direct-reply-to.html).
+	 * Override this method use some other criteria to decide whether to use
+	 * (<a href="https://www.rabbitmq.com/direct-reply-to.html">direct reply-to</a>).
 	 * The default implementation returns true if the broker supports it and there
 	 * is no {@link #setReplyAddress(String) replyAddress} set and
 	 * {@link #setUseTemporaryReplyQueues(boolean) useTemporaryReplyQueues} is false.
 	 * When direct reply-to is not used, the template
 	 * will create a temporary, exclusive, auto-delete queue for the reply.
 	 * <p>
-	 * This method is invoked once only - when the first message is sent, from a
-	 * synchronized block.
+	 * This method is invoked once only - when the first message is sent, from a locked block.
 	 * @return true to use direct reply-to.
 	 */
 	protected boolean useDirectReplyTo() {
@@ -1116,6 +1118,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	public void send(final String exchange, final String routingKey,
 			final Message message, @Nullable final CorrelationData correlationData)
 			throws AmqpException {
+
 		execute(channel -> {
 			doSend(channel, exchange, routingKey, message,
 					(RabbitTemplate.this.returnsCallback != null
@@ -1126,7 +1129,9 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));
 	}
 
-	private ConnectionFactory obtainTargetConnectionFactory(Expression expression, @Nullable Object rootObject) {
+	private ConnectionFactory obtainTargetConnectionFactory(@Nullable Expression expression,
+			@Nullable Object rootObject) {
+
 		if (expression != null && getConnectionFactory() instanceof AbstractRoutingConnectionFactory routingCF) {
 			Object lookupKey;
 			if (rootObject != null) {
@@ -1167,6 +1172,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	@Override
 	public void convertAndSend(String routingKey, final Object object, CorrelationData correlationData)
 			throws AmqpException {
+
 		convertAndSend(this.exchange, routingKey, object, correlationData);
 	}
 
@@ -1190,6 +1196,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	@Override
 	public void convertAndSend(String routingKey, Object message, MessagePostProcessor messagePostProcessor)
 			throws AmqpException {
+
 		convertAndSend(this.exchange, routingKey, message, messagePostProcessor, null);
 	}
 
@@ -1197,6 +1204,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	public void convertAndSend(Object message, MessagePostProcessor messagePostProcessor,
 			CorrelationData correlationData)
 			throws AmqpException {
+
 		convertAndSend(this.exchange, this.routingKey, message, messagePostProcessor, correlationData);
 	}
 
@@ -1204,12 +1212,14 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	public void convertAndSend(String routingKey, Object message, MessagePostProcessor messagePostProcessor,
 			CorrelationData correlationData)
 			throws AmqpException {
+
 		convertAndSend(this.exchange, routingKey, message, messagePostProcessor, correlationData);
 	}
 
 	@Override
 	public void convertAndSend(String exchange, String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor) throws AmqpException {
+
 		convertAndSend(exchange, routingKey, message, messagePostProcessor, null);
 	}
 
@@ -1217,6 +1227,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	public void convertAndSend(String exchange, String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor,
 			@Nullable CorrelationData correlationData) throws AmqpException {
+
 		Message messageToSend = convertMessageIfNecessary(message);
 		messageToSend = messagePostProcessor.postProcessMessage(messageToSend, correlationData,
 				nullSafeExchange(exchange), nullSafeRoutingKey(routingKey));
@@ -1226,7 +1237,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	@Override
 	@Nullable
 	public Message receive() throws AmqpException {
-		return this.receive(getRequiredQueue());
+		return receive(getRequiredQueue());
 	}
 
 	@Override
@@ -1258,7 +1269,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 					channel.txCommit();
 				}
 				else if (isChannelTransacted()) {
-					// Not locally transacted but it is transacted so it
+					// Not locally transacted, but it is transacted, so it
 					// could be synchronized with an external transaction
 					ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag);
 				}
@@ -1313,7 +1324,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	@Override
 	@Nullable
 	public Object receiveAndConvert() throws AmqpException {
-		return receiveAndConvert(this.getRequiredQueue());
+		return receiveAndConvert(getRequiredQueue());
 	}
 
 	@Override
@@ -1325,7 +1336,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	@Override
 	@Nullable
 	public Object receiveAndConvert(long timeoutMillis) throws AmqpException {
-		return receiveAndConvert(this.getRequiredQueue(), timeoutMillis);
+		return receiveAndConvert(getRequiredQueue(), timeoutMillis);
 	}
 
 	@Override
@@ -1341,7 +1352,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	@Override
 	@Nullable
 	public <T> T receiveAndConvert(ParameterizedTypeReference<T> type) throws AmqpException {
-		return receiveAndConvert(this.getRequiredQueue(), type);
+		return receiveAndConvert(getRequiredQueue(), type);
 	}
 
 	@Override
@@ -1353,13 +1364,15 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	@Override
 	@Nullable
 	public <T> T receiveAndConvert(long timeoutMillis, ParameterizedTypeReference<T> type) throws AmqpException {
-		return receiveAndConvert(this.getRequiredQueue(), timeoutMillis, type);
+		return receiveAndConvert(getRequiredQueue(), timeoutMillis, type);
 	}
 
 	@Override
 	@SuppressWarnings(UNCHECKED)
 	@Nullable
-	public <T> T receiveAndConvert(String queueName, long timeoutMillis, ParameterizedTypeReference<T> type) throws AmqpException {
+	public <T> T receiveAndConvert(String queueName, long timeoutMillis, ParameterizedTypeReference<T> type)
+			throws AmqpException {
+
 		Message response = timeoutMillis == 0 ? doReceiveNoWait(queueName) : receive(queueName, timeoutMillis);
 		if (response != null) {
 			return (T) getRequiredSmartMessageConverter().fromMessage(response, type);
@@ -1374,7 +1387,9 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	@Override
 	@SuppressWarnings(UNCHECKED)
-	public <R, S> boolean receiveAndReply(final String queueName, ReceiveAndReplyCallback<R, S> callback) throws AmqpException {
+	public <R, S> boolean receiveAndReply(final String queueName, ReceiveAndReplyCallback<R, S> callback)
+			throws AmqpException {
+
 		return receiveAndReply(queueName, callback, (ReplyToAddressCallback<S>) this.defaultReplyToAddressCallback);
 
 	}
@@ -1404,6 +1419,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	@Override
 	public <R, S> boolean receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback,
 			ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
+
 		return doReceiveAndReply(queueName, callback, replyToAddressCallback);
 	}
 
@@ -1417,7 +1433,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			}
 			return false;
 		}, obtainTargetConnectionFactory(this.receiveConnectionFactorySelectorExpression, queueName));
-		return result == null ? false : result;
+		return result != null && result;
 	}
 
 	@Nullable
@@ -1435,7 +1451,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 					channel.basicAck(deliveryTag1, false);
 				}
 				else if (channelTransacted) {
-					// Not locally transacted but it is transacted so it could be
+					// Not locally transacted, but it is transacted, so it could be
 					// synchronized with an external transaction
 					ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag1);
 				}
@@ -1447,7 +1463,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			if (delivery != null) {
 				long deliveryTag2 = delivery.getEnvelope().getDeliveryTag();
 				if (channelTransacted && !channelLocallyTransacted) {
-					// Not locally transacted but it is transacted so it could be
+					// Not locally transacted, but it is transacted, so it could be
 					// synchronized with an external transaction
 					ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag2);
 				}
@@ -1521,12 +1537,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 */
 	protected void logReceived(String prefix, @Nullable Message message) {
 		if (logger.isDebugEnabled()) {
-			if (message == null) {
-				logger.debug(prefix + "no message");
-			}
-			else {
-				logger.debug(prefix + message);
-			}
+			logger.debug(prefix + Objects.requireNonNullElse(message, "no message"));
 		}
 	}
 
@@ -1546,7 +1557,9 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 		catch (ClassCastException e) {
 			StackTraceElement[] trace = e.getStackTrace();
-			if (trace[0].getMethodName().equals("handle") && trace[1].getFileName().equals("RabbitTemplate.java")) {
+			if (trace[0].getMethodName().equals("handle")
+					&& Objects.equals(trace[1].getFileName(), "RabbitTemplate.java")) {
+
 				throw new IllegalArgumentException("ReceiveAndReplyCallback '" + callback
 						+ "' can't handle received object '" + receive + "'", e);
 			}
@@ -1566,7 +1579,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	private <S> void doSendReply(final ReplyToAddressCallback<S> replyToAddressCallback, Channel channel,
-			Message receiveMessage, S reply) throws IOException {
+			Message receiveMessage, S reply) {
 
 		Address replyTo = replyToAddressCallback.getReplyToAddress(receiveMessage, reply);
 
@@ -1691,6 +1704,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	@Nullable
 	public Object convertSendAndReceive(final Object message, final MessagePostProcessor messagePostProcessor)
 			throws AmqpException {
+
 		return convertSendAndReceive(message, messagePostProcessor, null);
 	}
 
@@ -1723,6 +1737,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	@Nullable
 	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor) throws AmqpException {
+
 		return convertSendAndReceive(exchange, routingKey, message, messagePostProcessor, null);
 	}
 
@@ -1744,6 +1759,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	@Nullable
 	public <T> T convertSendAndReceiveAsType(final Object message, ParameterizedTypeReference<T> responseType)
 			throws AmqpException {
+
 		return convertSendAndReceiveAsType(message, (CorrelationData) null, responseType);
 	}
 
@@ -1890,10 +1906,14 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			@Nullable CorrelationData correlationData) {
 
 		if (!this.evaluatedFastReplyTo) {
-			synchronized (this) {
+			this.fastReplyToLock.lock();
+			try {
 				if (!this.evaluatedFastReplyTo) {
 					evaluateFastReplyTo();
 				}
+			}
+			finally {
+				this.fastReplyToLock.unlock();
 			}
 		}
 
@@ -1959,7 +1979,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			};
 			channel.addShutdownListener(shutdownListener);
 			channel.basicConsume(replyTo, true, consumerTag, this.noLocalReplyConsumer, true, null, consumer);
-			Message reply = null;
+			Message reply;
 			try {
 				reply = exchangeMessages(exchange, routingKey, message, correlationData, channel, pendingReply,
 						messageTag);
@@ -2035,7 +2055,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	private DirectReplyToMessageListenerContainer createReplyToContainer(ConnectionFactory connectionFactory) {
 		DirectReplyToMessageListenerContainer container;
-		synchronized (this.directReplyToContainers) {
+		this.directReplyToContainersLock.lock();
+		try {
 			container = this.directReplyToContainers.get(connectionFactory);
 			if (container == null) {
 				container = new DirectReplyToMessageListenerContainer(connectionFactory);
@@ -2052,6 +2073,9 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				this.directReplyToContainers.put(connectionFactory, container);
 				this.replyAddress = Address.AMQ_RABBITMQ_REPLY_TO;
 			}
+		}
+		finally {
+			this.directReplyToContainersLock.unlock();
 		}
 		return container;
 	}
@@ -2136,7 +2160,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	@Nullable
 	private Message exchangeMessages(final String exchange, final String routingKey, final Message message,
 			@Nullable final CorrelationData correlationData, Channel channel, final PendingReply pendingReply,
-			String messageTag) throws IOException, InterruptedException {
+			String messageTag) throws InterruptedException {
 
 		Message reply;
 		boolean mandatory = isMandatoryFor(message);
@@ -2342,6 +2366,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	@Nullable
 	private ConfirmListener addConfirmListener(@Nullable com.rabbitmq.client.ConfirmCallback acks,
 			@Nullable com.rabbitmq.client.ConfirmCallback nacks, Channel channel) {
+
 		ConfirmListener listener = null;
 		if (acks != null && nacks != null && channel instanceof ChannelProxy proxy
 				&& proxy.isConfirmSelected()) {
@@ -2412,7 +2437,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @param message The Message to send.
 	 * @param mandatory The mandatory flag.
 	 * @param correlationData The correlation data.
-	 * @throws IOException If thrown by RabbitMQ API methods.
 	 */
 	public void doSend(Channel channel, String exchangeArg, String routingKeyArg, Message message,
 			boolean mandatory, @Nullable CorrelationData correlationData) {
@@ -2473,7 +2497,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @return the result.
 	 * @since 2.3.4
 	 */
-	public String nullSafeExchange(String exchange) {
+	public String nullSafeExchange(@Nullable String exchange) {
 		return exchange == null ? this.exchange : exchange;
 	}
 
@@ -2483,7 +2507,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @return the result.
 	 * @since 2.3.4
 	 */
-	public String nullSafeRoutingKey(String rk) {
+	public String nullSafeRoutingKey(@Nullable String rk) {
 		return rk == null ? this.routingKey : rk;
 	}
 

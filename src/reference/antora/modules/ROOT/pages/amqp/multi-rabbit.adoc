@@ -1,0 +1,149 @@
+[[multi-rabbit]]
+= Multiple Broker (or Cluster) Support
+
+Version 2.3 added more convenience when communicating between a single application and multiple brokers or broker clusters.
+The main benefit, on the consumer side, is that the infrastructure can automatically associate auto-declared queues with the appropriate broker.
+
+This is best illustrated with an example:
+
+[source, java]
+----
+@SpringBootApplication(exclude = RabbitAutoConfiguration.class)
+public class Application {
+
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+
+    @Bean
+    CachingConnectionFactory cf1() {
+        return new CachingConnectionFactory("localhost");
+    }
+
+    @Bean
+    CachingConnectionFactory cf2() {
+        return new CachingConnectionFactory("otherHost");
+    }
+
+    @Bean
+    CachingConnectionFactory cf3() {
+        return new CachingConnectionFactory("thirdHost");
+    }
+
+    @Bean
+    SimpleRoutingConnectionFactory rcf(CachingConnectionFactory cf1,
+            CachingConnectionFactory cf2, CachingConnectionFactory cf3) {
+
+        SimpleRoutingConnectionFactory rcf = new SimpleRoutingConnectionFactory();
+        rcf.setDefaultTargetConnectionFactory(cf1);
+        rcf.setTargetConnectionFactories(Map.of("one", cf1, "two", cf2, "three", cf3));
+        return rcf;
+    }
+
+    @Bean("factory1-admin")
+    RabbitAdmin admin1(CachingConnectionFactory cf1) {
+        return new RabbitAdmin(cf1);
+    }
+
+    @Bean("factory2-admin")
+    RabbitAdmin admin2(CachingConnectionFactory cf2) {
+        return new RabbitAdmin(cf2);
+    }
+
+    @Bean("factory3-admin")
+    RabbitAdmin admin3(CachingConnectionFactory cf3) {
+        return new RabbitAdmin(cf3);
+    }
+
+    @Bean
+    public RabbitListenerEndpointRegistry rabbitListenerEndpointRegistry() {
+        return new RabbitListenerEndpointRegistry();
+    }
+
+    @Bean
+    public RabbitListenerAnnotationBeanPostProcessor postProcessor(RabbitListenerEndpointRegistry registry) {
+        MultiRabbitListenerAnnotationBeanPostProcessor postProcessor
+                = new MultiRabbitListenerAnnotationBeanPostProcessor();
+        postProcessor.setEndpointRegistry(registry);
+        postProcessor.setContainerFactoryBeanName("defaultContainerFactory");
+        return postProcessor;
+    }
+
+    @Bean
+    public SimpleRabbitListenerContainerFactory factory1(CachingConnectionFactory cf1) {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(cf1);
+        return factory;
+    }
+
+    @Bean
+    public SimpleRabbitListenerContainerFactory factory2(CachingConnectionFactory cf2) {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(cf2);
+        return factory;
+    }
+
+    @Bean
+    public SimpleRabbitListenerContainerFactory factory3(CachingConnectionFactory cf3) {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(cf3);
+        return factory;
+    }
+
+    @Bean
+    RabbitTemplate template(SimpleRoutingConnectionFactory rcf) {
+        return new RabbitTemplate(rcf);
+    }
+
+    @Bean
+    ConnectionFactoryContextWrapper wrapper(SimpleRoutingConnectionFactory rcf) {
+        return new ConnectionFactoryContextWrapper(rcf);
+    }
+
+}
+
+@Component
+class Listeners {
+
+    @RabbitListener(queuesToDeclare = @Queue("q1"), containerFactory = "factory1")
+    public void listen1(String in) {
+
+    }
+
+    @RabbitListener(queuesToDeclare = @Queue("q2"), containerFactory = "factory2")
+    public void listen2(String in) {
+
+    }
+
+    @RabbitListener(queuesToDeclare = @Queue("q3"), containerFactory = "factory3")
+    public void listen3(String in) {
+
+    }
+
+}
+----
+
+As you can see, we have declared 3 sets of infrastructure (connection factories, admins, container factories).
+As discussed earlier, `@RabbitListener` can define which container factory to use; in this case, they also use `queuesToDeclare` which causes the queue(s) to be declared on the broker, if it doesn't exist.
+By naming the `RabbitAdmin` beans with the convention `<container-factory-name>-admin`, the infrastructure is able to determine which admin should declare the queue.
+This will also work with `bindings = @QueueBinding(...)` whereby the exchange and binding will also be declared.
+It will NOT work with `queues`, since that expects the queue(s) to already exist.
+
+On the producer side, a convenient `ConnectionFactoryContextWrapper` class is provided, to make using the `RoutingConnectionFactory` (see xref:amqp/connections.adoc#routing-connection-factory[Routing Connection Factory]) simpler.
+
+As you can see above, a `SimpleRoutingConnectionFactory` bean has been added with routing keys `one`, `two` and `three`.
+There is also a `RabbitTemplate` that uses that factory.
+Here is an example of using that template with the wrapper to route to one of the broker clusters.
+
+[source, java]
+----
+@Bean
+public ApplicationRunner runner(RabbitTemplate template, ConnectionFactoryContextWrapper wrapper) {
+    return args -> {
+        wrapper.run("one", () -> template.convertAndSend("q1", "toCluster1"));
+        wrapper.run("two", () -> template.convertAndSend("q2", "toCluster2"));
+        wrapper.run("three", () -> template.convertAndSend("q3", "toCluster3"));
+    };
+}
+----
+

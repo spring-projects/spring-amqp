@@ -1,0 +1,71 @@
+[[meta-annotation-driven]]
+= Meta-annotations
+
+Sometimes you may want to use the same configuration for multiple listeners.
+To reduce the boilerplate configuration, you can use meta-annotations to create your own listener annotation.
+The following example shows how to do so:
+
+[source, java]
+----
+@Target({ElementType.TYPE, ElementType.METHOD, ElementType.ANNOTATION_TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@RabbitListener(bindings = @QueueBinding(
+        value = @Queue,
+        exchange = @Exchange(value = "metaFanout", type = ExchangeTypes.FANOUT)))
+public @interface MyAnonFanoutListener {
+}
+
+public class MetaListener {
+
+    @MyAnonFanoutListener
+    public void handle1(String foo) {
+        ...
+    }
+
+    @MyAnonFanoutListener
+    public void handle2(String foo) {
+        ...
+    }
+
+}
+----
+
+In the preceding example, each listener created by the `@MyAnonFanoutListener` annotation binds an anonymous, auto-delete
+queue to the fanout exchange, `metaFanout`.
+Starting with version 2.2.3, `@AliasFor` is supported to allow overriding properties on the meta-annotated annotation.
+Also, user annotations can now be `@Repeatable`, allowing multiple containers to be created for a method.
+
+[source, java]
+----
+@Component
+static class MetaAnnotationTestBean {
+
+    @MyListener("queue1")
+    @MyListener("queue2")
+    public void handleIt(String body) {
+    }
+
+}
+
+
+@RabbitListener
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+@Repeatable(MyListeners.class)
+static @interface MyListener {
+
+    @AliasFor(annotation = RabbitListener.class, attribute = "queues")
+    String[] value() default {};
+
+}
+
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+static @interface MyListeners {
+
+    MyListener[] value();
+
+}
+----
+
+

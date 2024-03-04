@@ -1,0 +1,16 @@
+[[de-batching]]
+= Batched Messages
+:page-section-summary-toc: 1
+
+Batched messages (created by a producer) are automatically de-batched by listener containers (using the `springBatchFormat` message header).
+Rejecting any message from a batch causes the entire batch to be rejected.
+See xref:amqp/sending-messages.adoc#template-batching[Batching] for more information about batching.
+
+Starting with version 2.2, the `SimpleMessageListenerContainer` can be use to create batches on the consumer side (where the producer sent discrete messages).
+
+Set the container property `consumerBatchEnabled` to enable this feature.
+`deBatchingEnabled` must also be true so that the container is responsible for processing batches of both types.
+Implement `BatchMessageListener` or `ChannelAwareBatchMessageListener` when `consumerBatchEnabled` is true.
+Starting with version 2.2.7 both the `SimpleMessageListenerContainer` and `DirectMessageListenerContainer` can debatch xref:amqp/sending-messages.adoc#template-batching[producer created batches] as `List<Message>`.
+See xref:amqp/receiving-messages/batch.adoc[@RabbitListener with Batching] for information about using this feature with `@RabbitListener`.
+

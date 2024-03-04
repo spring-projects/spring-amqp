@@ -1,0 +1,124 @@
+[[async-annotation-driven]]
+= Annotation-driven Listener Endpoints
+
+The easiest way to receive a message asynchronously is to use the annotated listener endpoint infrastructure.
+In a nutshell, it lets you expose a method of a managed bean as a Rabbit listener endpoint.
+The following example shows how to use the `@RabbitListener` annotation:
+
+[source,java]
+----
+
+@Component
+public class MyService {
+
+    @RabbitListener(queues = "myQueue")
+    public void processOrder(String data) {
+        ...
+    }
+
+}
+----
+
+The idea of the preceding example is that, whenever a message is available on the queue named `myQueue`, the `processOrder` method is invoked accordingly (in this case, with the payload of the message).
+
+The annotated endpoint infrastructure creates a message listener container behind the scenes for each annotated method, by using a `RabbitListenerContainerFactory`.
+
+In the preceding example, `myQueue` must already exist and be bound to some exchange.
+The queue can be declared and bound automatically, as long as a `RabbitAdmin` exists in the application context.
+
+NOTE: Property placeholders (`${some.property}`) or SpEL expressions (`+#{someExpression}+`) can be specified for the annotation properties (`queues` etc).
+See xref:amqp/receiving-messages/async-annotation-driven/multiple-queues.adoc[Listening to Multiple Queues] for an example of why you might use SpEL instead of a property placeholder.
+The following listing shows three examples of how to declare a Rabbit listener:
+
+[source,java]
+----
+
+@Component
+public class MyService {
+
+  @RabbitListener(bindings = @QueueBinding(
+        value = @Queue(value = "myQueue", durable = "true"),
+        exchange = @Exchange(value = "auto.exch", ignoreDeclarationExceptions = "true"),
+        key = "orderRoutingKey")
+  )
+  public void processOrder(Order order) {
+    ...
+  }
+
+  @RabbitListener(bindings = @QueueBinding(
+        value = @Queue,
+        exchange = @Exchange(value = "auto.exch"),
+        key = "invoiceRoutingKey")
+  )
+  public void processInvoice(Invoice invoice) {
+    ...
+  }
+
+  @RabbitListener(queuesToDeclare = @Queue(name = "${my.queue}", durable = "true"))
+  public String handleWithSimpleDeclare(String data) {
+      ...
+  }
+
+}
+----
+
+In the first example, a queue `myQueue` is declared automatically (durable) together with the exchange, if needed,
+and bound to the exchange with the routing key.
+In the second example, an anonymous (exclusive, auto-delete) queue is declared and bound; the queue name is created by the framework using the `Base64UrlNamingStrategy`.
+You cannot declare broker-named queues using this technique; they need to be declared as bean definitions; see xref:amqp/containers-and-broker-named-queues.adoc[Containers and Broker-Named queues].
+Multiple `QueueBinding` entries can be provided, letting the listener listen to multiple queues.
+In the third example, a queue with the name retrieved from property `my.queue` is declared, if necessary, with the default binding to the default exchange using the queue name as the routing key.
+
+Since version 2.0, the `@Exchange` annotation supports any exchange types, including custom.
+For more information, see https://www.rabbitmq.com/tutorials/amqp-concepts.html[AMQP Concepts].
+
+You can use normal `@Bean` definitions when you need more advanced configuration.
+
+Notice `ignoreDeclarationExceptions` on the exchange in the first example.
+This allows, for example, binding to an existing exchange that might have different settings (such as `internal`).
+By default, the properties of an existing exchange must match.
+
+Starting with version 2.0, you can now bind a queue to an exchange with multiple routing keys, as the following example shows:
+
+[source, java]
+----
+...
+    key = { "red", "yellow" }
+...
+----
+
+You can also specify arguments within `@QueueBinding` annotations for queues, exchanges,
+and bindings, as the following example shows:
+
+[source, java]
+----
+@RabbitListener(bindings = @QueueBinding(
+        value = @Queue(value = "auto.headers", autoDelete = "true",
+                        arguments = @Argument(name = "x-message-ttl", value = "10000",
+                                                type = "java.lang.Integer")),
+        exchange = @Exchange(value = "auto.headers", type = ExchangeTypes.HEADERS, autoDelete = "true"),
+        arguments = {
+                @Argument(name = "x-match", value = "all"),
+                @Argument(name = "thing1", value = "somevalue"),
+                @Argument(name = "thing2")
+        })
+)
+public String handleWithHeadersExchange(String foo) {
+    ...
+}
+----
+
+Notice that the `x-message-ttl` argument is set to 10 seconds for the queue.
+Since the argument type is not `String`, we have to specify its type -- in this case, `Integer`.
+As with all such declarations, if the queue already exists, the arguments must match those on the queue.
+For the header exchange, we set the binding arguments to match messages that have the `thing1` header set to `somevalue`, and
+the `thing2` header must be present with any value.
+The `x-match` argument means both conditions must be satisfied.
+
+The argument name, value, and type can be property placeholders (`${...}`) or SpEL expressions (`#{...}`).
+The `name` must resolve to a `String`.
+The expression for `type` must resolve to a `Class` or the fully-qualified name of a class.
+The `value` must resolve to something that can be converted by the `DefaultConversionService` to the type (such as the `x-message-ttl` in the preceding example).
+
+If a name resolves to `null` or an empty `String`, that `@Argument` is ignored.
+

@@ -1,0 +1,10 @@
+[[repeatable-rabbit-listener]]
+= `@Repeatable` `@RabbitListener`
+:page-section-summary-toc: 1
+
+Starting with version 1.6, the `@RabbitListener` annotation is marked with `@Repeatable`.
+This means that the annotation can appear on the same annotated element (method or class) multiple times.
+In this case, a separate listener container is created for each annotation, each of which invokes the same listener
+`@Bean`.
+Repeatable annotations can be used with Java 8 or above.
+

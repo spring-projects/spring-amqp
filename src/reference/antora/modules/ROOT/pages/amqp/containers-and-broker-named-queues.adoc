@@ -1,0 +1,35 @@
+[[containers-and-broker-named-queues]]
+= Containers and Broker-Named queues
+
+While it is preferable to use `AnonymousQueue` instances as auto-delete queues, starting with version 2.1, you can use broker named queues with listener containers.
+The following example shows how to do so:
+
+[source, java]
+----
+@Bean
+public Queue queue() {
+    return new Queue("", false, true, true);
+}
+
+@Bean
+public SimpleMessageListenerContainer container() {
+    SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(cf());
+    container.setQueues(queue());
+    container.setMessageListener(m -> {
+        ...
+    });
+    container.setMissingQueuesFatal(false);
+    return container;
+}
+----
+
+Notice the empty `String` for the name.
+When the `RabbitAdmin` declares queues, it updates the `Queue.actualName` property with the name returned by the broker.
+You must use `setQueues()` when you configure the container for this to work, so that the container can access the declared name at runtime.
+Just setting the names is insufficient.
+
+NOTE: You cannot add broker-named queues to the containers while they are running.
+
+IMPORTANT: When a connection is reset and a new one is established, the new queue gets a new name.
+Since there is a race condition between the container restarting and the queue being re-declared, it is important to set the container's `missingQueuesFatal` property to `false`, since the container is likely to initially try to reconnect to the old queue.
+

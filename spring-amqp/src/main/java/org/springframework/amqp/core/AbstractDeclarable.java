@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -30,10 +33,13 @@ import org.springframework.util.Assert;
  * Base class for {@link Declarable} classes.
  *
  * @author Gary Russell
+ * @author Christian Tzolov
  * @since 1.2
  *
  */
 public abstract class AbstractDeclarable implements Declarable {
+
+	 private final Lock lock = new ReentrantLock();
 
 	private boolean shouldDeclare = true;
 
@@ -109,13 +115,25 @@ public abstract class AbstractDeclarable implements Declarable {
 	}
 
 	@Override
-	public synchronized void addArgument(String argName, Object argValue) {
-		this.arguments.put(argName, argValue);
+	public void addArgument(String argName, Object argValue) {
+		this.lock.lock();
+		try {
+			this.arguments.put(argName, argValue);
+		}
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 	@Override
-	public synchronized Object removeArgument(String name) {
-		return this.arguments.remove(name);
+	public Object removeArgument(String name) {
+		this.lock.lock();
+		try {
+			return this.arguments.remove(name);
+		}
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 	public Map<String, Object> getArguments() {

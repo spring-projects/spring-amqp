@@ -1,6 +1,6 @@
 buildscript {
-	ext.kotlinVersion = '1.9.10'
-	ext.isCI = System.getenv('GITHUB_ACTION') || System.getenv('bamboo_buildKey')
+	ext.kotlinVersion = '1.9.22'
+	ext.isCI = System.getenv('GITHUB_ACTION')
 	repositories {
 		mavenCentral()
 		gradlePluginPortal()
@@ -19,13 +19,12 @@ plugins {
 	id 'base'
 	id 'project-report'
 	id 'idea'
-	id 'org.sonarqube' version '4.3.0.3225'
-	id 'org.ajoberstar.grgit' version '4.0.1'
+	id 'org.ajoberstar.grgit' version '4.1.1'
 	id 'io.spring.nohttp' version '0.0.11'
-	id 'io.spring.dependency-management' version '1.0.9.RELEASE' apply false
-	id 'com.jfrog.artifactory' version '4.33.1' apply false
-	id 'org.asciidoctor.jvm.pdf' version '3.3.2'
-	id 'org.asciidoctor.jvm.convert' version '3.3.2'
+	id 'io.spring.dependency-management' version '1.1.4' apply false
+	id 'org.antora' version '1.0.0'
+	id 'io.spring.antora.generate-antora-yml' version '0.0.1'
+	id 'com.github.spotbugs' version '6.0.8'
 }
 
 description = 'Spring AMQP'
@@ -37,43 +36,77 @@ ext {
 	linkScmUrl           = 'https://github.com/spring-projects/spring-amqp'
 	linkScmConnection    = 'git://github.com/spring-projects/spring-amqp.git'
 	linkScmDevConnection = 'git@github.com:spring-projects/spring-amqp.git'
-	springAsciidoctorBackendsVersion = '0.0.7'
 
 	modifiedFiles =
-			files(grgit.status().unstaged.modified).filter{ f -> f.name.endsWith('.java') || f.name.endsWith('.kt') }
+            files()
+                    .from {
+                        files(grgit.status().unstaged.modified)
+                                .filter { f -> f.name.endsWith('.java') || f.name.endsWith('.kt') }
+                    }
 
 	assertjVersion = '3.24.2'
-	assertkVersion = '0.24'
+	assertkVersion = '0.27.0'
 	awaitilityVersion = '4.2.0'
 	commonsCompressVersion = '1.20'
-	commonsHttpClientVersion = '5.2.1'
-	commonsPoolVersion = '2.11.1'
-	googleJsr305Version = '3.0.2'
+	commonsHttpClientVersion = '5.2.3'
+	commonsPoolVersion = '2.12.0'
 	hamcrestVersion = '2.2'
-	hibernateValidationVersion = '8.0.0.Final'
-	jacksonBomVersion = '2.15.2'
+	hibernateValidationVersion = '8.0.1.Final'
+	jacksonBomVersion = '2.15.4'
 	jaywayJsonPathVersion = '2.8.0'
 	junit4Version = '4.13.2'
-	junitJupiterVersion = '5.10.0'
+	junitJupiterVersion = '5.10.2'
 	kotlinCoroutinesVersion = '1.7.3'
-	log4jVersion = '2.20.0'
-	logbackVersion = '1.4.11'
+	log4jVersion = '2.21.1'
+	logbackVersion = '1.4.14'
 	lz4Version = '1.8.0'
 	micrometerDocsVersion = '1.0.2'
-	micrometerVersion = '1.12.0-RC1'
-	micrometerTracingVersion = '1.2.0-RC1'
-	mockitoVersion = '5.5.0'
+	micrometerVersion = '1.12.3'
+	micrometerTracingVersion = '1.2.3'
+	mockitoVersion = '5.6.0'
 	rabbitmqStreamVersion = '0.14.0'
-	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.18.0'
-	reactorVersion = '2023.0.0-RC1'
-	snappyVersion = '1.1.8.4'
-	springDataVersion = '2023.1.0-RC1'
-	springRetryVersion = '2.0.4'
-	springVersion = project.hasProperty('springVersion') ? project.springVersion : '6.1.0-RC1'
-	testcontainersVersion = '1.19.0'
-	zstdJniVersion = '1.5.0-2'
+	rabbitmqVersion = '5.19.0'
+	reactorVersion = '2023.0.3'
+	snappyVersion = '1.1.10.5'
+	springDataVersion = '2023.1.3'
+	springRetryVersion = '2.0.5'
+	springVersion = '6.1.4'
+	testcontainersVersion = '1.19.6'
+	zstdJniVersion = '1.5.5-11'
 
 	javaProjects = subprojects - project(':spring-amqp-bom')
+}
+
+
+
+antora {
+	version = '3.2.0-alpha.2'
+	playbook = file('src/reference/antora/antora-playbook.yml')
+	options = ['to-dir' : project.layout.buildDirectory.dir('site').get().toString(), clean: true, fetch: !project.gradle.startParameter.offline, stacktrace: true]
+	dependencies = [
+			'@antora/atlas-extension': '1.0.0-alpha.1',
+			'@antora/collector-extension': '1.0.0-alpha.3',
+			'@asciidoctor/tabs': '1.0.0-beta.3',
+			'@springio/antora-extensions': '1.4.2',
+			'@springio/asciidoctor-extensions': '1.0.0-alpha.8',
+	]
+}
+
+tasks.named('generateAntoraYml') {
+	asciidocAttributes = project.provider( {
+		return ['project-version' : project.version ]
+	} )
+	baseAntoraYmlFile = file('src/reference/antora/antora.yml')
+}
+
+tasks.create(name: 'createAntoraPartials', type: Sync) {
+	from { tasks.filterMetricsDocsContent.outputs }
+	into layout.buildDirectory.dir('generated-antora-resources/modules/ROOT/partials')
+}
+
+tasks.create('generateAntoraResources') {
+	dependsOn 'createAntoraPartials'
+	dependsOn 'generateAntoraYml'
 }
 
 nohttp {
@@ -135,7 +168,6 @@ configure(javaProjects) { subproject ->
 	apply plugin: 'eclipse'
 	apply plugin: 'idea'
 	apply plugin: 'project-report'
-	apply plugin: 'jacoco'
 	apply plugin: 'checkstyle'
 	apply plugin: 'kotlin'
 	apply plugin: 'kotlin-spring'
@@ -168,13 +200,12 @@ configure(javaProjects) { subproject ->
 		}
 	}
 
-	jacoco {
-		toolVersion = '0.8.10'
-	}
-
 	// dependencies that are common across all java projects
 	dependencies {
-		compileOnly "com.google.code.findbugs:jsr305:$googleJsr305Version"
+		def spotbugsAnnotations = "com.github.spotbugs:spotbugs-annotations:${spotbugs.toolVersion.get()}"
+		compileOnly spotbugsAnnotations
+		testCompileOnly spotbugsAnnotations
+
 		testImplementation 'org.apache.logging.log4j:log4j-core'
 		testImplementation "org.hamcrest:hamcrest-core:$hamcrestVersion"
 		testImplementation ("org.mockito:mockito-core:$mockitoVersion") {
@@ -196,7 +227,6 @@ configure(javaProjects) { subproject ->
 		// To avoid compiler warnings about @API annotations in JUnit code
 		testCompileOnly 'org.apiguardian:apiguardian-api:1.0.0'
 
-		testCompileOnly "com.google.code.findbugs:jsr305:$googleJsr305Version"
 		testImplementation 'org.jetbrains.kotlin:kotlin-reflect'
 		testImplementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 
@@ -244,7 +274,7 @@ configure(javaProjects) { subproject ->
 							def beginningYear = matcher[0][1]
 							if (now != beginningYear && now != matcher[0][2]) {
 								def years = "$beginningYear-$now"
-								def sourceCode = file.text
+								def sourceCode = file.getText('UTF-8')
 								sourceCode = sourceCode.replaceFirst(/20\d\d(-20\d\d)?/, years)
 								file.text = sourceCode
 								println "Copyright updated for file: $file"
@@ -279,24 +309,7 @@ configure(javaProjects) { subproject ->
 			showStackTraces = true
 			exceptionFormat = 'full'
 		}
-
-		jacoco {
-			destinationFile = file("$buildDir/jacoco.exec")
-		}
-
 	}
-
-	jacocoTestReport {
-		onlyIf { System.properties['sonar.host.url'] }
-		dependsOn test
-		reports {
-			xml.required = true
-			csv.required = false
-			html.required = false
-		}
-	}
-
-	rootProject.tasks['sonarqube'].dependsOn jacocoTestReport
 
 	task testAll(type: Test, dependsOn: check)
 
@@ -368,7 +381,13 @@ project('spring-amqp') {
 		optionalApi 'com.fasterxml.jackson.core:jackson-databind'
 		optionalApi 'com.fasterxml.jackson.core:jackson-annotations'
 		optionalApi 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
-
+		optionalApi 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8'
+		optionalApi 'com.fasterxml.jackson.module:jackson-module-parameter-names'
+		optionalApi 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+		optionalApi 'com.fasterxml.jackson.datatype:jackson-datatype-joda'
+		optionalApi ('com.fasterxml.jackson.module:jackson-module-kotlin') {
+			exclude group: 'org.jetbrains.kotlin'
+		}
 		// Spring Data projection message binding support
 		optionalApi ('org.springframework.data:spring-data-commons') {
 			exclude group: 'org.springframework'
@@ -401,10 +420,6 @@ project('spring-amqp-bom') {
 				from components.javaPlatform
 			}
 		}
-	}
-
-	sonarqube {
-		skipProject = true
 	}
 }
 
@@ -461,9 +476,9 @@ project('spring-rabbit') {
 
 	}
 
-	compileTestKotlin {
-		kotlinOptions {
-			jvmTarget = '17'
+	compileKotlin {
+		compilerOptions {
+			allWarningsAsErrors = true
 		}
 	}
 
@@ -538,27 +553,17 @@ project('spring-rabbit-test') {
 }
 
 configurations {
-	asciidoctorExtensions
 	micrometerDocs
 }
 
 dependencies {
-	asciidoctorExtensions "io.spring.asciidoctor.backends:spring-asciidoctor-backends:${springAsciidoctorBackendsVersion}"
 	micrometerDocs "io.micrometer:micrometer-docs-generator:$micrometerDocsVersion"
-}
-
-task prepareAsciidocBuild(type: Sync) {
-	dependsOn configurations.asciidoctorExtensions
-	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-	from 'src/reference/asciidoc/'
-	into "$buildDir/asciidoc"
 }
 
 def observationInputDir = file("$buildDir/docs/microsources").absolutePath
 def generatedDocsDir = file("$buildDir/docs/generated").absolutePath
 
 task copyObservation(type: Copy) {
-	dependsOn prepareAsciidocBuild
 	from file('spring-rabbit/src/main/java/org/springframework/amqp/rabbit/support/micrometer').absolutePath
 	from file('spring-rabbit-stream/src/main/java/org/springframework/rabbit/stream/micrometer').absolutePath
 	include '*.java'
@@ -582,76 +587,6 @@ task filterMetricsDocsContent(type: Copy) {
 	into generatedDocsDir
 	rename { filename -> filename.replace '_', '' }
 	filter { line -> line.replaceAll('org.springframework.*.micrometer.', '').replaceAll('^Fully qualified n', 'N') }
-}
-
-asciidoctorPdf {
-	dependsOn prepareAsciidocBuild, filterMetricsDocsContent
-	baseDirFollowsSourceFile()
-
-	asciidoctorj {
-		sourceDir "$buildDir/asciidoc"
-		inputs.dir(sourceDir).withPathSensitivity(PathSensitivity.RELATIVE)
-		sources {
-			include 'index.adoc'
-		}
-		options doctype: 'book'
-		attributes 'icons': 'font',
-		'sectanchors': '',
-		'sectnums': '',
-		'toc': '',
-		'source-highlighter' : 'coderay',
-		revnumber: project.version,
-		'project-version': project.version
-	}
-}
-
-asciidoctor {
-	dependsOn asciidoctorPdf
-	baseDirFollowsSourceFile()
-	sourceDir "$buildDir/asciidoc"
-	configurations 'asciidoctorExtensions'
-	outputOptions {
-		backends "spring-html"
-	}
-	resources {
-		from(sourceDir) {
-			include 'images/*', 'css/**', 'js/**'
-		}
-	}
-	options doctype: 'book', eruby: 'erubis'
-
-	attributes 'docinfo': 'shared',
-		stylesdir: "css/",
-		stylesheet: 'spring.css',
-		'linkcss': true,
-		'icons': 'font',
-		'sectanchors': '',
-		'source-highlighter': 'highlight.js',
-		'highlightjsdir': 'js/highlight',
-		'highlightjs-theme': 'github',
-		'idprefix': '',
-		'idseparator': '-',
-		'spring-version': project.version,
-		'allow-uri-read': '',
-		'toc': 'left',
-		'toclevbels': '4',
-		revnumber: project.version,
-		'project-version': project.version
-}
-
-task reference(dependsOn: asciidoctor) {
-	group = 'Documentation'
-	description = 'Generate the reference documentation'
-}
-
-sonarqube {
-	properties {
-		property 'sonar.links.homepage', linkHomepage
-		property 'sonar.links.ci', linkCi
-		property 'sonar.links.issue', linkIssue
-		property 'sonar.links.scm', linkScmUrl
-		property 'sonar.links.scm_dev', linkScmDevConnection
-	}
 }
 
 task api(type: Javadoc) {
@@ -717,7 +652,7 @@ task schemaZip(type: Zip) {
 	}
 }
 
-task docsZip(type: Zip, dependsOn: [reference]) {
+task docsZip(type: Zip) {
 		group = 'Distribution'
 		archiveClassifier = 'docs'
 		description = "Builds -${archiveClassifier} archive containing api and reference " +
@@ -729,16 +664,6 @@ task docsZip(type: Zip, dependsOn: [reference]) {
 
 		from (api) {
 			into 'api'
-		}
-
-		from ('build/docs/asciidoc') {
-			into 'reference/html'
-		}
-
-		from ('build/docs/asciidocPdf') {
-			include 'index.pdf'
-			rename  'index.pdf', 'spring-amqp-reference.pdf'
-			into 'reference/pdf'
 		}
 }
 

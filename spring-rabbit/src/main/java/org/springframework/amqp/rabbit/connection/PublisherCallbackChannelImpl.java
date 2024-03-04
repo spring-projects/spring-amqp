@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -88,6 +90,7 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
  * @author Gary Russell
  * @author Arnaud Cogoluègnes
  * @author Artem Bilan
+ * @author Christian Tzolov
  *
  * @since 1.0.1
  *
@@ -98,6 +101,8 @@ public class PublisherCallbackChannelImpl
 	private static final MessagePropertiesConverter CONVERTER  = new DefaultMessagePropertiesConverter();
 
 	private final Log logger = LogFactory.getLog(this.getClass());
+
+	private final Lock lock = new ReentrantLock();
 
 	private final Channel delegate;
 
@@ -127,15 +132,20 @@ public class PublisherCallbackChannelImpl
 	}
 
 	@Override
-	public synchronized void setAfterAckCallback(java.util.function.Consumer<Channel> callback) {
-		if (getPendingConfirmsCount() == 0 && callback != null) {
-			callback.accept(this);
+	public void setAfterAckCallback(java.util.function.Consumer<Channel> callback) {
+		this.lock.lock();
+		try {
+			if (getPendingConfirmsCount() == 0 && callback != null) {
+				callback.accept(this);
+			}
+			else {
+				this.afterAckCallback = callback;
+			}
 		}
-		else {
-			this.afterAckCallback = callback;
+		finally {
+			this.lock.unlock();
 		}
 	}
-
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // BEGIN PURE DELEGATE METHODS
@@ -721,8 +731,14 @@ public class PublisherCallbackChannelImpl
 	}
 
 	@Override
-	public synchronized void clearReturnListeners() {
-		this.delegate.clearReturnListeners();
+	public void clearReturnListeners() {
+		this.lock.lock();
+		try {
+			this.delegate.clearReturnListeners();
+		}
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 	@Override
@@ -824,42 +840,60 @@ public class PublisherCallbackChannelImpl
 		this.executor.execute(() -> generateNacksForPendingAcks(cause));
 	}
 
-	private synchronized void generateNacksForPendingAcks(String cause) {
-		for (Entry<Listener, SortedMap<Long, PendingConfirm>> entry : this.pendingConfirms.entrySet()) {
-			Listener listener = entry.getKey();
-			for (Entry<Long, PendingConfirm> confirmEntry : entry.getValue().entrySet()) {
-				confirmEntry.getValue().setCause(cause);
-				if (this.logger.isDebugEnabled()) {
-					this.logger.debug(this.toString() + " PC:Nack:(close):" + confirmEntry.getKey());
+	private void generateNacksForPendingAcks(String cause) {
+		this.lock.lock();
+		try {
+			for (Entry<Listener, SortedMap<Long, PendingConfirm>> entry : this.pendingConfirms.entrySet()) {
+				Listener listener = entry.getKey();
+				for (Entry<Long, PendingConfirm> confirmEntry : entry.getValue().entrySet()) {
+					confirmEntry.getValue().setCause(cause);
+					if (this.logger.isDebugEnabled()) {
+						this.logger.debug(this.toString() + " PC:Nack:(close):" + confirmEntry.getKey());
+					}
+					processAck(confirmEntry.getKey(), false, false, false);
 				}
-				processAck(confirmEntry.getKey(), false, false, false);
+				listener.revoke(this);
 			}
-			listener.revoke(this);
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("PendingConfirms cleared");
+			}
+			this.pendingConfirms.clear();
+			this.listenerForSeq.clear();
+			this.listeners.clear();
 		}
-		if (this.logger.isDebugEnabled()) {
-			this.logger.debug("PendingConfirms cleared");
-		}
-		this.pendingConfirms.clear();
-		this.listenerForSeq.clear();
-		this.listeners.clear();
-	}
-
-	@Override
-	public synchronized int getPendingConfirmsCount(Listener listener) {
-		SortedMap<Long, PendingConfirm> pendingConfirmsForListener = this.pendingConfirms.get(listener);
-		if (pendingConfirmsForListener == null) {
-			return 0;
-		}
-		else {
-			return pendingConfirmsForListener.entrySet().size();
+		finally {
+			this.lock.unlock();
 		}
 	}
 
 	@Override
-	public synchronized int getPendingConfirmsCount() {
-		return this.pendingConfirms.values().stream()
-				.mapToInt(Map::size)
-				.sum();
+	public int getPendingConfirmsCount(Listener listener) {
+		this.lock.lock();
+		try {
+			SortedMap<Long, PendingConfirm> pendingConfirmsForListener = this.pendingConfirms.get(listener);
+			if (pendingConfirmsForListener == null) {
+				return 0;
+			}
+			else {
+				return pendingConfirmsForListener.entrySet().size();
+			}
+		}
+		finally {
+			this.lock.unlock();
+		}
+	}
+
+	@Override
+	public int getPendingConfirmsCount() {
+		this.lock.lock();
+		try {
+			return this.pendingConfirms.values().stream()
+					.mapToInt(Map::size)
+					.sum();
+		}
+		finally {
+			this.lock.unlock();
+		}
 	}
 
 	/**
@@ -882,29 +916,35 @@ public class PublisherCallbackChannelImpl
 	}
 
 	@Override
-	public synchronized Collection<PendingConfirm> expire(Listener listener, long cutoffTime) {
-		SortedMap<Long, PendingConfirm> pendingConfirmsForListener = this.pendingConfirms.get(listener);
-		if (pendingConfirmsForListener == null) {
-			return Collections.<PendingConfirm>emptyList();
-		}
-		else {
-			List<PendingConfirm> expired = new ArrayList<PendingConfirm>();
-			Iterator<Entry<Long, PendingConfirm>> iterator = pendingConfirmsForListener.entrySet().iterator();
-			while (iterator.hasNext()) {
-				PendingConfirm pendingConfirm = iterator.next().getValue();
-				if (pendingConfirm.getTimestamp() < cutoffTime) {
-					expired.add(pendingConfirm);
-					iterator.remove();
-					CorrelationData correlationData = pendingConfirm.getCorrelationData();
-					if (correlationData != null && StringUtils.hasText(correlationData.getId())) {
-						this.pendingReturns.remove(correlationData.getId()); // NOSONAR never null
+	public Collection<PendingConfirm> expire(Listener listener, long cutoffTime) {
+		this.lock.lock();
+		try {
+			SortedMap<Long, PendingConfirm> pendingConfirmsForListener = this.pendingConfirms.get(listener);
+			if (pendingConfirmsForListener == null) {
+				return Collections.<PendingConfirm>emptyList();
+			}
+			else {
+				List<PendingConfirm> expired = new ArrayList<PendingConfirm>();
+				Iterator<Entry<Long, PendingConfirm>> iterator = pendingConfirmsForListener.entrySet().iterator();
+				while (iterator.hasNext()) {
+					PendingConfirm pendingConfirm = iterator.next().getValue();
+					if (pendingConfirm.getTimestamp() < cutoffTime) {
+						expired.add(pendingConfirm);
+						iterator.remove();
+						CorrelationData correlationData = pendingConfirm.getCorrelationData();
+						if (correlationData != null && StringUtils.hasText(correlationData.getId())) {
+							this.pendingReturns.remove(correlationData.getId()); // NOSONAR never null
+						}
+					}
+					else {
+						break;
 					}
 				}
-				else {
-					break;
-				}
+				return expired;
 			}
-			return expired;
+		}
+		finally {
+			this.lock.unlock();
 		}
 	}
 
@@ -926,12 +966,18 @@ public class PublisherCallbackChannelImpl
 		processAck(seq, false, multiple, true);
 	}
 
-	private synchronized void processAck(long seq, boolean ack, boolean multiple, boolean remove) {
+	private void processAck(long seq, boolean ack, boolean multiple, boolean remove) {
+		this.lock.lock();
 		try {
-			doProcessAck(seq, ack, multiple, remove);
+			try {
+				doProcessAck(seq, ack, multiple, remove);
+			}
+			catch (Exception e) {
+				this.logger.error("Failed to process publisher confirm", e);
+			}
 		}
-		catch (Exception e) {
-			this.logger.error("Failed to process publisher confirm", e);
+		finally {
+			this.lock.unlock();
 		}
 	}
 
@@ -1028,12 +1074,18 @@ public class PublisherCallbackChannelImpl
 				try {
 					if (this.afterAckCallback != null) {
 						java.util.function.Consumer<Channel> callback = null;
-						synchronized (this) {
+						this.lock.lock();
+						try {
 							if (getPendingConfirmsCount() == 0) {
 								callback = this.afterAckCallback;
 								this.afterAckCallback = null;
 							}
+
 						}
+						finally {
+							this.lock.unlock();
+						}
+
 						if (callback != null) {
 							callback.accept(this);
 						}
@@ -1048,17 +1100,23 @@ public class PublisherCallbackChannelImpl
 	}
 
 	@Override
-	public synchronized void addPendingConfirm(Listener listener, long seq, PendingConfirm pendingConfirm) {
-		SortedMap<Long, PendingConfirm> pendingConfirmsForListener = this.pendingConfirms.get(listener);
-		Assert.notNull(pendingConfirmsForListener,
-				"Listener not registered: " + listener + " " + this.pendingConfirms.keySet());
-		pendingConfirmsForListener.put(seq, pendingConfirm);
-		this.listenerForSeq.put(seq, listener);
-		if (pendingConfirm.getCorrelationData() != null) {
-			String returnCorrelation = pendingConfirm.getCorrelationData().getId(); // NOSONAR never null
-			if (StringUtils.hasText(returnCorrelation)) {
-				this.pendingReturns.put(returnCorrelation, pendingConfirm);
+	public void addPendingConfirm(Listener listener, long seq, PendingConfirm pendingConfirm) {
+		this.lock.lock();
+		try {
+			SortedMap<Long, PendingConfirm> pendingConfirmsForListener = this.pendingConfirms.get(listener);
+			Assert.notNull(pendingConfirmsForListener,
+					"Listener not registered: " + listener + " " + this.pendingConfirms.keySet());
+			pendingConfirmsForListener.put(seq, pendingConfirm);
+			this.listenerForSeq.put(seq, listener);
+			if (pendingConfirm.getCorrelationData() != null) {
+				String returnCorrelation = pendingConfirm.getCorrelationData().getId(); // NOSONAR never null
+				if (StringUtils.hasText(returnCorrelation)) {
+					this.pendingReturns.put(returnCorrelation, pendingConfirm);
+				}
 			}
+		}
+		finally {
+			this.lock.unlock();
 		}
 	}
 
@@ -1163,7 +1221,7 @@ public class PublisherCallbackChannelImpl
 	}
 
 	public static PublisherCallbackChannelFactory factory() {
-		return (channel, exec) -> new PublisherCallbackChannelImpl(channel, exec);
+		return PublisherCallbackChannelImpl::new;
 	}
 
 }
