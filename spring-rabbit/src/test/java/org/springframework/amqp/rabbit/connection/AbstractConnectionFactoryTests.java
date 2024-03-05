@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2023 the original author or authors.
+ * Copyright 2010-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -39,13 +40,15 @@ import org.apache.commons.logging.Log;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import org.springframework.amqp.AmqpResourceNotAvailableException;
 import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.AddressShuffleMode;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
-
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
+import org.springframework.util.StopWatch;
+import org.springframework.util.backoff.FixedBackOff;
 
 /**
  * @author Dave Syer
@@ -168,8 +171,8 @@ public abstract class AbstractConnectionFactoryTests {
 		com.rabbitmq.client.Connection mockConnection1 = mock(com.rabbitmq.client.Connection.class);
 		com.rabbitmq.client.Connection mockConnection2 = mock(com.rabbitmq.client.Connection.class);
 
-		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString()))
-				.willReturn(mockConnection1, mockConnection2);
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection1,
+				mockConnection2);
 		// simulate a dead connection
 		given(mockConnection1.isOpen()).willReturn(false);
 		given(mockConnection2.createChannel()).willReturn(mock(Channel.class));
@@ -210,6 +213,22 @@ public abstract class AbstractConnectionFactoryTests {
 		connectionFactory.setConnectionThreadFactory(connectionThreadFactory);
 
 		assertThat(mockConnectionFactory.getThreadFactory()).isEqualTo(connectionThreadFactory);
+	}
+
+	@Test
+	public void testConnectionCreatingBackOff() throws Exception {
+		int maxAttempts = 3;
+		long interval = 3000L;
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		given(mockConnection.createChannel()).willReturn(null);
+		SimpleConnection simpleConnection = new SimpleConnection(mockConnection, 5,
+				new FixedBackOff(interval, maxAttempts).start());
+		StopWatch stopWatch = new StopWatch();
+		stopWatch.start();
+		assertThatExceptionOfType(AmqpResourceNotAvailableException.class)
+				.isThrownBy(() -> simpleConnection.createChannel(false));
+		stopWatch.stop();
+		assertThat(stopWatch.getTotalTimeMillis()).isGreaterThanOrEqualTo(maxAttempts * interval);
 	}
 
 }

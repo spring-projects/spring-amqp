@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,8 @@ import com.rabbitmq.client.RecoveryListener;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
 import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
+import org.springframework.util.backoff.BackOff;
+import org.springframework.util.backoff.FixedBackOff;
 
 /**
  * @author Dave Syer
@@ -103,7 +105,6 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	private static final String PUBLISHER_SUFFIX = ".publisher";
 
 	public static final int DEFAULT_CLOSE_TIMEOUT = 30000;
-
 
 	private static final String BAD_URI = "setUri() was passed an invalid URI; it is ignored";
 
@@ -164,8 +165,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	private volatile boolean contextStopped;
 
-	private RetryTemplate retryTemplate;
-
+	private BackOff connectionCreatingBackOff;
+	
 	/**
 	 * Create a new AbstractConnectionFactory for the given target ConnectionFactory, with no publisher connection
 	 * factory.
@@ -316,10 +317,6 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	public void setVirtualHost(String virtualHost) {
 		this.rabbitConnectionFactory.setVirtualHost(virtualHost);
-	}
-
-	public void setRetryTemplate(RetryTemplate retryTemplate) {
-		this.retryTemplate = retryTemplate;
 	}
 
 	@Override
@@ -563,6 +560,24 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		return this.publisherConnectionFactory != null;
 	}
 
+	public void setConnectionCreatingBackOff(BackOff backOff) {
+		this.connectionCreatingBackOff = backOff;
+	}
+
+	public void setConnectionCreatingAttempts(long maxAttempts) {
+		this.connectionCreatingBackOff = new FixedBackOff(FixedBackOff.DEFAULT_INTERVAL, maxAttempts);
+	}
+
+	public void setConnectionCreatingInterval(long interval) {
+		this.connectionCreatingBackOff = new FixedBackOff(interval, FixedBackOff.UNLIMITED_ATTEMPTS);
+	}
+
+	public void setConnectionCreatingBackOff(long interval, long maxAttempts) {
+		this.connectionCreatingBackOff = new FixedBackOff(interval, maxAttempts);
+	}
+
+
+
 	@Override
 	public ConnectionFactory getPublisherConnectionFactory() {
 		return this.publisherConnectionFactory;
@@ -573,13 +588,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 			String connectionName = this.connectionNameStrategy.obtainNewConnectionName(this);
 
 			com.rabbitmq.client.Connection rabbitConnection = connect(connectionName);
-			Connection connection;
-			if (this.retryTemplate != null) {
-				connection = new RetryableConnection(rabbitConnection, this.closeTimeout, retryTemplate);
-			}
-			else {
-				connection = new SimpleConnection(rabbitConnection, this.closeTimeout);
-			}
+			Connection connection = new SimpleConnection(rabbitConnection, this.closeTimeout,
+					connectionCreatingBackOff == null ? null : connectionCreatingBackOff.start());
 			if (rabbitConnection instanceof AutorecoveringConnection auto) {
 				auto.addRecoveryListener(new RecoveryListener() {
 
