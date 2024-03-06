@@ -259,6 +259,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	public void setHost(String host) {
 		this.rabbitConnectionFactory.setHost(host);
 	}
+	
 	/**
 	 * Set the {@link ThreadFactory} on the underlying rabbit connection factory.
 	 * @param threadFactory the thread factory.

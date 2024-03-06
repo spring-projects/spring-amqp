@@ -51,7 +51,6 @@ import org.springframework.util.backoff.FixedBackOff;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
 
-
 /**
  * @author Dave Syer
  * @author Gary Russell

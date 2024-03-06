@@ -33,7 +33,6 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.impl.NetworkConnection;
 import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
 
-
 /**
  * Simply a Connection.
  *

@@ -1,4 +1,3 @@
-// suppress inspection "AsciiDocLinkResolve" for whole file
 [[whats-new]]
 = What's New
 :page-section-summary-toc: 1
