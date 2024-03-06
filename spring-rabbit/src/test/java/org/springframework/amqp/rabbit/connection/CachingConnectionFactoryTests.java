@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,6 +87,7 @@ import com.rabbitmq.client.ConfirmListener;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.GetResponse;
 import com.rabbitmq.client.ShutdownSignalException;
+
 /**
  * @author Mark Pollack
  * @author Dave Syer
@@ -1858,7 +1859,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Channel mockChannel = mock(Channel.class);
 
 		given(mockConnectionFactory.newConnection((ExecutorService) isNull(), any(List.class), anyString()))
-			.willReturn(mockConnection);
+				.willReturn(mockConnection);
 		given(mockConnection.createChannel()).willReturn(mockChannel);
 		given(mockChannel.isOpen()).willReturn(true);
 		given(mockConnection.isOpen()).willReturn(true);
@@ -1872,11 +1873,11 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ArgumentCaptor<List<Address>> captor = ArgumentCaptor.forClass(List.class);
 		verify(mockConnectionFactory, times(100)).newConnection(isNull(), captor.capture(), anyString());
 		List<String> firstAddress = captor.getAllValues()
-			.stream()
-			.map(addresses -> addresses.get(0).getHost())
-			.distinct()
-			.sorted()
-			.collect(Collectors.toList());
+				.stream()
+				.map(addresses -> addresses.get(0).getHost())
+				.distinct()
+				.sorted()
+				.collect(Collectors.toList());
 		assertThat(firstAddress).containsExactly("host1", "host2", "host3");
 	}
 
@@ -1888,7 +1889,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Channel mockChannel = mock(Channel.class);
 
 		given(mockConnectionFactory.newConnection((ExecutorService) isNull(), any(List.class), anyString()))
-			.willReturn(mockConnection);
+				.willReturn(mockConnection);
 		given(mockConnection.createChannel()).willReturn(mockChannel);
 		given(mockChannel.isOpen()).willReturn(true);
 		given(mockConnection.isOpen()).willReturn(true);
@@ -1902,9 +1903,9 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ArgumentCaptor<List<Address>> captor = ArgumentCaptor.forClass(List.class);
 		verify(mockConnectionFactory, times(3)).newConnection(isNull(), captor.capture(), anyString());
 		List<String> connectAddresses = captor.getAllValues()
-			.stream()
-			.map(addresses -> addresses.get(0).getHost())
-			.collect(Collectors.toList());
+				.stream()
+				.map(addresses -> addresses.get(0).getHost())
+				.collect(Collectors.toList());
 		assertThat(connectAddresses).containsExactly("host1", "host2", "host3");
 	}
 
@@ -1965,6 +1966,5 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertThat(connShutDown.get()).isTrue();
 		assertThat(chanShutDown.get()).isFalse();
 	}
-
 
 }

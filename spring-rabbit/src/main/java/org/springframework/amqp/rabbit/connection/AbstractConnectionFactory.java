@@ -53,6 +53,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.util.backoff.BackOff;
 
 import com.rabbitmq.client.Address;
 import com.rabbitmq.client.AddressResolver;
@@ -63,8 +64,6 @@ import com.rabbitmq.client.RecoveryListener;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
 import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
-import org.springframework.util.backoff.BackOff;
-import org.springframework.util.backoff.FixedBackOff;
 
 /**
  * @author Dave Syer
@@ -165,7 +164,6 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	private volatile boolean contextStopped;
 
 	private BackOff connectionCreatingBackOff;
-	
 	/**
 	 * Create a new AbstractConnectionFactory for the given target ConnectionFactory, with no publisher connection
 	 * factory.
@@ -559,23 +557,14 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		return this.publisherConnectionFactory != null;
 	}
 
+	/**
+	 * support backoff policy when get an empty channel from connection.
+	 * @param backOff {@link BackOff}
+	 * @since 3.1.3
+	 */
 	public void setConnectionCreatingBackOff(BackOff backOff) {
 		this.connectionCreatingBackOff = backOff;
 	}
-
-	public void setConnectionCreatingAttempts(long maxAttempts) {
-		this.connectionCreatingBackOff = new FixedBackOff(FixedBackOff.DEFAULT_INTERVAL, maxAttempts);
-	}
-
-	public void setConnectionCreatingInterval(long interval) {
-		this.connectionCreatingBackOff = new FixedBackOff(interval, FixedBackOff.UNLIMITED_ATTEMPTS);
-	}
-
-	public void setConnectionCreatingBackOff(long interval, long maxAttempts) {
-		this.connectionCreatingBackOff = new FixedBackOff(interval, maxAttempts);
-	}
-
-
 
 	@Override
 	public ConnectionFactory getPublisherConnectionFactory() {
@@ -588,7 +577,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 			com.rabbitmq.client.Connection rabbitConnection = connect(connectionName);
 			Connection connection = new SimpleConnection(rabbitConnection, this.closeTimeout,
-					connectionCreatingBackOff == null ? null : connectionCreatingBackOff.start());
+					this.connectionCreatingBackOff == null ? null : this.connectionCreatingBackOff.start());
 			if (rabbitConnection instanceof AutorecoveringConnection auto) {
 				auto.addRecoveryListener(new RecoveryListener() {
 

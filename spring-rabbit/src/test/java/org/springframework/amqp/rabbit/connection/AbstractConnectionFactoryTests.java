@@ -45,10 +45,12 @@ import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.Addr
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.ConnectionFactory;
 import org.springframework.util.StopWatch;
 import org.springframework.util.backoff.FixedBackOff;
+
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.ConnectionFactory;
+
 
 /**
  * @author Dave Syer
@@ -171,8 +173,8 @@ public abstract class AbstractConnectionFactoryTests {
 		com.rabbitmq.client.Connection mockConnection1 = mock(com.rabbitmq.client.Connection.class);
 		com.rabbitmq.client.Connection mockConnection2 = mock(com.rabbitmq.client.Connection.class);
 
-		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection1,
-				mockConnection2);
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString()))
+				.willReturn(mockConnection1, mockConnection2);
 		// simulate a dead connection
 		given(mockConnection1.isOpen()).willReturn(false);
 		given(mockConnection2.createChannel()).willReturn(mock(Channel.class));
@@ -225,10 +227,11 @@ public abstract class AbstractConnectionFactoryTests {
 				new FixedBackOff(interval, maxAttempts).start());
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
-		assertThatExceptionOfType(AmqpResourceNotAvailableException.class)
-				.isThrownBy(() -> simpleConnection.createChannel(false));
-		stopWatch.stop();
-		assertThat(stopWatch.getTotalTimeMillis()).isGreaterThanOrEqualTo(maxAttempts * interval);
+		assertThatExceptionOfType(AmqpResourceNotAvailableException.class).isThrownBy(() -> {
+			simpleConnection.createChannel(false);
+			stopWatch.stop();
+			assertThat(stopWatch.getTotalTimeMillis()).isGreaterThanOrEqualTo(maxAttempts * interval);
+		});
 	}
 
 }
