@@ -121,7 +121,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private static final String TRUST_STORE_DEFAULT_TYPE = "JKS";
 
-	protected final ConnectionFactory connectionFactory = new ConnectionFactory(); // NOSONAR
+	protected final ConnectionFactory connectionFactory;
 
 	private final Properties sslProperties = new Properties();
 
@@ -162,6 +162,11 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	private String trustStoreAlgorithm = SUN_X509;
 
 	public RabbitConnectionFactoryBean() {
+		this(new ConnectionFactory());
+	}
+
+	public RabbitConnectionFactoryBean(ConnectionFactory connectionFactory) {
+		this.connectionFactory = connectionFactory;
 		this.connectionFactory.setAutomaticRecoveryEnabled(false);
 	}
 
