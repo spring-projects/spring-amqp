@@ -1859,7 +1859,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Channel mockChannel = mock(Channel.class);
 
 		given(mockConnectionFactory.newConnection((ExecutorService) isNull(), any(List.class), anyString()))
-				.willReturn(mockConnection);
+			.willReturn(mockConnection);
 		given(mockConnection.createChannel()).willReturn(mockChannel);
 		given(mockChannel.isOpen()).willReturn(true);
 		given(mockConnection.isOpen()).willReturn(true);
@@ -1873,11 +1873,11 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ArgumentCaptor<List<Address>> captor = ArgumentCaptor.forClass(List.class);
 		verify(mockConnectionFactory, times(100)).newConnection(isNull(), captor.capture(), anyString());
 		List<String> firstAddress = captor.getAllValues()
-				.stream()
-				.map(addresses -> addresses.get(0).getHost())
-				.distinct()
-				.sorted()
-				.collect(Collectors.toList());
+			.stream()
+			.map(addresses -> addresses.get(0).getHost())
+			.distinct()
+			.sorted()
+			.collect(Collectors.toList());
 		assertThat(firstAddress).containsExactly("host1", "host2", "host3");
 	}
 
@@ -1889,7 +1889,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Channel mockChannel = mock(Channel.class);
 
 		given(mockConnectionFactory.newConnection((ExecutorService) isNull(), any(List.class), anyString()))
-				.willReturn(mockConnection);
+			.willReturn(mockConnection);
 		given(mockConnection.createChannel()).willReturn(mockChannel);
 		given(mockChannel.isOpen()).willReturn(true);
 		given(mockConnection.isOpen()).willReturn(true);
@@ -1903,9 +1903,9 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ArgumentCaptor<List<Address>> captor = ArgumentCaptor.forClass(List.class);
 		verify(mockConnectionFactory, times(3)).newConnection(isNull(), captor.capture(), anyString());
 		List<String> connectAddresses = captor.getAllValues()
-				.stream()
-				.map(addresses -> addresses.get(0).getHost())
-				.collect(Collectors.toList());
+			.stream()
+			.map(addresses -> addresses.get(0).getHost())
+			.collect(Collectors.toList());
 		assertThat(connectAddresses).containsExactly("host1", "host2", "host3");
 	}
 

@@ -28,6 +28,8 @@ Simple publisher confirmations are supported by all three factories.
 When configuring a `RabbitTemplate` to use a xref:amqp/template.adoc#separate-connection[separate connection], you can now, starting with version 2.3.2, configure the publishing connection factory to be a different type.
 By default, the publishing factory is the same type and any properties set on the main factory are also propagated to the publishing factory.
 
+Starting with version 3.1, the connectionCreatingBackOff property is supported to define backoff policy when creating connection channel.
+
 [[pooledchannelconnectionfactory]]
 === `PooledChannelConnectionFactory`
 
@@ -297,10 +299,6 @@ The `ConnectionNameStrategy` for the publisher connection is the same as the pri
 
 Starting with version 1.7.7, an `AmqpResourceNotAvailableException` is provided, which is thrown when `SimpleConnection.createChannel()` cannot create a `Channel` (for example, because the `channelMax` limit is reached and there are no available channels in the cache).
 You can use this exception in the `RetryPolicy` to recover the operation after some back-off.
-
-Starting with version 3.1, The construct of `SimpleConnection` supports `BackOffExceution` to add retry policies when  `SimpleConnection.createChannel()` get an empty channel at the connection layer
-
-
 
 [[connection-factory]]
 == Configuring the Underlying Client Connection Factory

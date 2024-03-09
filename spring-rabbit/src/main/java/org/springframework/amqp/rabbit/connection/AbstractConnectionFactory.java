@@ -259,7 +259,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	public void setHost(String host) {
 		this.rabbitConnectionFactory.setHost(host);
 	}
-	
+
 	/**
 	 * Set the {@link ThreadFactory} on the underlying rabbit connection factory.
 	 * @param threadFactory the thread factory.
@@ -559,9 +559,10 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	/**
-	 * support backoff policy when get an empty channel from connection.
+	 * Support backoff policy when get an empty channel from connection.
 	 * @param backOff {@link BackOff}
 	 * @since 3.1.3
+	 * @see BackOff#start()
 	 */
 	public void setConnectionCreatingBackOff(BackOff backOff) {
 		this.connectionCreatingBackOff = backOff;

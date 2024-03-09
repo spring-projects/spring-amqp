@@ -218,8 +218,8 @@ public abstract class AbstractConnectionFactoryTests {
 
 	@Test
 	public void testConnectionCreatingBackOff() throws Exception {
-		int maxAttempts = 3;
-		long interval = 3000L;
+		int maxAttempts = 2;
+		long interval = 500L;
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		given(mockConnection.createChannel()).willReturn(null);
 		SimpleConnection simpleConnection = new SimpleConnection(mockConnection, 5,
@@ -228,9 +228,9 @@ public abstract class AbstractConnectionFactoryTests {
 		stopWatch.start();
 		assertThatExceptionOfType(AmqpResourceNotAvailableException.class).isThrownBy(() -> {
 			simpleConnection.createChannel(false);
-			stopWatch.stop();
-			assertThat(stopWatch.getTotalTimeMillis()).isGreaterThanOrEqualTo(maxAttempts * interval);
 		});
+		stopWatch.stop();
+		assertThat(stopWatch.getTotalTimeMillis()).isGreaterThanOrEqualTo(maxAttempts * interval);
 	}
 
 }

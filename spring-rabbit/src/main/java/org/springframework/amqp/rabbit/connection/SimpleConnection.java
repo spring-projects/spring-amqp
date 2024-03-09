@@ -50,13 +50,11 @@ public class SimpleConnection implements Connection, NetworkConnection {
 
 	private volatile boolean explicitlyClosed;
 
-	private BackOffExecution backOffExecution;
+	private final BackOffExecution backOffExecution;
 
-	public SimpleConnection(com.rabbitmq.client.Connection delegate,
-							int closeTimeout) {
-		this.delegate = delegate;
-		this.closeTimeout = closeTimeout;
-	}
+    public SimpleConnection(com.rabbitmq.client.Connection delegate, int closeTimeout) {
+        this(delegate, closeTimeout, null);
+    }
 
 	/**
 	 * Construct an instance with the {@link org.springframework.util.backoff.BackOffExecution} arguments.

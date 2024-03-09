@@ -19,8 +19,8 @@ In addition, the `SimpleMessageListenerContainer` consumer restart after such an
 A new method `logRestart()` has been added to the `ConditionalExceptionLogger` to allow this to be changed.
 See xref:amqp/receiving-messages/consumer-events.adoc[Consumer Events] and <<channel-close-logging>> for more information.
 
-=== blocked-connections-and-resource-constraints
+=== Connections Enhancement
 
-See xref:amqp/connections.adoc[Blocked Connections and Resource Constraints] and <<blocked-connections-and-resource-constraints>> for more information.
+Connection Factory supported backoff policy when creating connection channel.See xref:amqp/connections.adoc[Choosing a Connection Factory] and https://github.com/spring-projects/spring-amqp/pull/2556[2556] for more information.
 
 
