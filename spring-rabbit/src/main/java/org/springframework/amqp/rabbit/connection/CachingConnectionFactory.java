@@ -386,7 +386,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	@Override
 	public boolean isPublisherConfirms() {
-		return ConfirmType.CORRELATED.equals(this.confirmType);
+		return !ConfirmType.NONE.equals(this.confirmType);
 	}
 
 	@Override
