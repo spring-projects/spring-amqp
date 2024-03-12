@@ -56,6 +56,7 @@ import com.rabbitmq.client.ConnectionFactory;
  * @author Gary Russell
  * @author Dmitry Dbrazhnikov
  * @author Artem Bilan
+ * @author Salk Lee
  */
 public abstract class AbstractConnectionFactoryTests {
 
@@ -219,7 +220,7 @@ public abstract class AbstractConnectionFactoryTests {
 	@Test
 	public void testConnectionCreatingBackOff() throws Exception {
 		int maxAttempts = 2;
-		long interval = 500L;
+		long interval = 100L;
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		given(mockConnection.createChannel()).willReturn(null);
 		SimpleConnection simpleConnection = new SimpleConnection(mockConnection, 5,
@@ -231,6 +232,7 @@ public abstract class AbstractConnectionFactoryTests {
 		});
 		stopWatch.stop();
 		assertThat(stopWatch.getTotalTimeMillis()).isGreaterThanOrEqualTo(maxAttempts * interval);
+		verify(mockConnection,times(maxAttempts+1)).createChannel();
 	}
 
 }

@@ -72,6 +72,7 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
  * @author Artem Bilan
  * @author Will Droste
  * @author Christian Tzolov
+ * @author Salk Lee
  *
  */
 public abstract class AbstractConnectionFactory implements ConnectionFactory, DisposableBean, BeanNameAware,
@@ -559,10 +560,11 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	/**
-	 * Support backoff policy when get an empty channel from connection.
-	 * @param backOff {@link BackOff}
+	 * Supports the injection of a backoff strategy during connection creation to accommodate custom retry policies in
+	 * the connection module. Currently,this support in the behavior of the
+	 * {@link SimpleConnection#createChannel(boolean)} to address exceptions when the channelMax limit is reached.
+	 * @param backOff backoff strategy
 	 * @since 3.1.3
-	 * @see BackOff#start()
 	 */
 	public void setConnectionCreatingBackOff(BackOff backOff) {
 		this.connectionCreatingBackOff = backOff;

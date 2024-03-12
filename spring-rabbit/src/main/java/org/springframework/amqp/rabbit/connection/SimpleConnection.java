@@ -39,6 +39,7 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
  * @author Dave Syer
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Salk Lee
  *
  * @since 1.0
  */
@@ -50,6 +51,7 @@ public class SimpleConnection implements Connection, NetworkConnection {
 
 	private volatile boolean explicitlyClosed;
 
+	@Nullable
 	private final BackOffExecution backOffExecution;
 
     public SimpleConnection(com.rabbitmq.client.Connection delegate, int closeTimeout) {
