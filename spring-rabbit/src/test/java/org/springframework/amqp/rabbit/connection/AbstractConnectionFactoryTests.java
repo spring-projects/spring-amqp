@@ -232,7 +232,7 @@ public abstract class AbstractConnectionFactoryTests {
 		});
 		stopWatch.stop();
 		assertThat(stopWatch.getTotalTimeMillis()).isGreaterThanOrEqualTo(maxAttempts * interval);
-		verify(mockConnection,times(maxAttempts+1)).createChannel();
+		verify(mockConnection, times(maxAttempts + 1)).createChannel();
 	}
 
 }
