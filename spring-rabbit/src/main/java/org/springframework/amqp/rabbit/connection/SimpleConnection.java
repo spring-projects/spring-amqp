@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,13 @@ package org.springframework.amqp.rabbit.connection;
 import java.io.IOException;
 import java.net.InetAddress;
 
+import javax.annotation.Nullable;
+
 import org.springframework.amqp.AmqpResourceNotAvailableException;
+import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.backoff.BackOffExecution;
 
 import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.BlockedListener;
@@ -35,6 +39,7 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
  * @author Dave Syer
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Salk Lee
  *
  * @since 1.0
  */
@@ -46,16 +51,39 @@ public class SimpleConnection implements Connection, NetworkConnection {
 
 	private volatile boolean explicitlyClosed;
 
-	public SimpleConnection(com.rabbitmq.client.Connection delegate,
-			int closeTimeout) {
+	@Nullable
+	private final BackOffExecution backOffExecution;
+
+    public SimpleConnection(com.rabbitmq.client.Connection delegate, int closeTimeout) {
+        this(delegate, closeTimeout, null);
+    }
+
+	/**
+	 * Construct an instance with the {@link org.springframework.util.backoff.BackOffExecution} arguments.
+	 * @param delegate delegate connection
+	 * @param closeTimeout the time of physical close time out
+	 * @param backOffExecution backOffExecution is nullable
+	 * @since 3.1.3
+	 */
+	public SimpleConnection(com.rabbitmq.client.Connection delegate, int closeTimeout,
+	@Nullable BackOffExecution backOffExecution) {
 		this.delegate = delegate;
 		this.closeTimeout = closeTimeout;
+		this.backOffExecution = backOffExecution;
 	}
 
 	@Override
 	public Channel createChannel(boolean transactional) {
 		try {
 			Channel channel = this.delegate.createChannel();
+			while (channel == null && this.backOffExecution != null) {
+				long interval = this.backOffExecution.nextBackOff();
+				if (interval == BackOffExecution.STOP) {
+					break;
+				}
+				Thread.sleep(interval);
+				channel = this.delegate.createChannel();
+			}
 			if (channel == null) {
 				throw new AmqpResourceNotAvailableException("The channelMax limit is reached. Try later.");
 			}
@@ -64,6 +92,10 @@ public class SimpleConnection implements Connection, NetworkConnection {
 				channel.txSelect();
 			}
 			return channel;
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new AmqpTimeoutException("Interrupted while creating a new channel", e);
 		}
 		catch (IOException e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);

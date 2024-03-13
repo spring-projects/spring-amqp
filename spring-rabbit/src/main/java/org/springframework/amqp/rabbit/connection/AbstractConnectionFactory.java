@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.util.backoff.BackOff;
 
 import com.rabbitmq.client.Address;
 import com.rabbitmq.client.AddressResolver;
@@ -71,6 +72,7 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
  * @author Artem Bilan
  * @author Will Droste
  * @author Christian Tzolov
+ * @author Salk Lee
  *
  */
 public abstract class AbstractConnectionFactory implements ConnectionFactory, DisposableBean, BeanNameAware,
@@ -162,6 +164,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	private volatile boolean contextStopped;
 
+	@Nullable
+	private BackOff connectionCreatingBackOff;
 	/**
 	 * Create a new AbstractConnectionFactory for the given target ConnectionFactory, with no publisher connection
 	 * factory.
@@ -556,6 +560,18 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		return this.publisherConnectionFactory != null;
 	}
 
+	/**
+	 * Set the backoff strategy for creating connections. This enhancement supports custom
+	 * retry policies within the connection module, particularly useful when the maximum
+	 * channel limit is reached. The {@link SimpleConnection#createChannel(boolean)} method
+	 * utilizes this backoff strategy to gracefully handle such limit exceptions.
+	 * @param backOff the backoff strategy to be applied during connection creation
+	 * @since 3.1.3
+	 */
+	public void setConnectionCreatingBackOff(@Nullable BackOff backOff) {
+		this.connectionCreatingBackOff = backOff;
+	}
+
 	@Override
 	public ConnectionFactory getPublisherConnectionFactory() {
 		return this.publisherConnectionFactory;
@@ -566,8 +582,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 			String connectionName = this.connectionNameStrategy.obtainNewConnectionName(this);
 
 			com.rabbitmq.client.Connection rabbitConnection = connect(connectionName);
-
-			Connection connection = new SimpleConnection(rabbitConnection, this.closeTimeout);
+			Connection connection = new SimpleConnection(rabbitConnection, this.closeTimeout,
+					this.connectionCreatingBackOff == null ? null : this.connectionCreatingBackOff.start());
 			if (rabbitConnection instanceof AutorecoveringConnection auto) {
 				auto.addRecoveryListener(new RecoveryListener() {
 
