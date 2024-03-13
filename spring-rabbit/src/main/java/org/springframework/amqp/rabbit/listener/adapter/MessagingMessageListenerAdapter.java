@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -182,10 +182,11 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 				Message<?> messageWithChannel = null;
 				if (message != null) {
 					messageWithChannel = MessageBuilder.fromMessage(message)
+							// TODO won't be necessary starting with version 3.2
 							.setHeader(AmqpHeaders.CHANNEL, channel)
 							.build();
 				}
-				Object errorResult = this.errorHandler.handleError(amqpMessage, messageWithChannel, e);
+				Object errorResult = this.errorHandler.handleError(amqpMessage, channel, messageWithChannel, e);
 				if (errorResult != null) {
 					Object payload = message == null ? null : message.getPayload();
 					InvocationResult invResult = payload == null
