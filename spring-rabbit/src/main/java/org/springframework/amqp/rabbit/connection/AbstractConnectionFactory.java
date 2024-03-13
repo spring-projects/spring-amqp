@@ -164,6 +164,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	private volatile boolean contextStopped;
 
+	@Nullable
 	private BackOff connectionCreatingBackOff;
 	/**
 	 * Create a new AbstractConnectionFactory for the given target ConnectionFactory, with no publisher connection
@@ -567,7 +568,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	 * @param backOff the backoff strategy to be applied during connection creation
 	 * @since 3.1.3
 	 */
-	public void setConnectionCreatingBackOff(BackOff backOff) {
+	public void setConnectionCreatingBackOff(@Nullable BackOff backOff) {
 		this.connectionCreatingBackOff = backOff;
 	}
 
