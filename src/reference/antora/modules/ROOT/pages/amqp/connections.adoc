@@ -29,7 +29,7 @@ When configuring a `RabbitTemplate` to use a xref:amqp/template.adoc#separate-co
 By default, the publishing factory is the same type and any properties set on the main factory are also propagated to the publishing factory.
 
 Starting with version 3.1, the `AbstractConnectionFactory` includes the `connectionCreatingBackOff` property, which supports a backoff policy in the connection module.
-Currently, there is support in the behavior of createChannel() to handle exceptions that occur when the channelMax limit is reached, implementing a backoff strategy based on attempts and intervals.
+Currently, there is support in the behavior of `createChannel()` to handle exceptions that occur when the `channelMax` limit is reached, implementing a backoff strategy based on attempts and intervals.
 
 [[pooledchannelconnectionfactory]]
 === `PooledChannelConnectionFactory`

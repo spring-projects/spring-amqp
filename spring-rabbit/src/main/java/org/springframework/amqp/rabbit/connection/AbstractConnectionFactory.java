@@ -561,7 +561,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	/**
-	 * Sets the backoff strategy for creating connections. This enhancement supports custom
+	 * Set the backoff strategy for creating connections. This enhancement supports custom
 	 * retry policies within the connection module, particularly useful when the maximum
 	 * channel limit is reached. The {@link SimpleConnection#createChannel(boolean)} method
 	 * utilizes this backoff strategy to gracefully handle such limit exceptions.
