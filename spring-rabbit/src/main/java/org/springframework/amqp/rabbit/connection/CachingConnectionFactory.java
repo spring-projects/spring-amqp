@@ -1324,7 +1324,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 								catch (InterruptedException ex) {
 									Thread.currentThread().interrupt();
 								}
-								catch (TimeoutException ex) {
+								catch (ShutdownSignalException | TimeoutException ex) {
 									// The channel didn't handle confirms, so close it altogether to avoid
 									// memory leaks for pending confirms
 									try {
