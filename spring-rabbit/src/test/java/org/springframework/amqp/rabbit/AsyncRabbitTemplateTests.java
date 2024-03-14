@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.mock;
@@ -420,6 +421,31 @@ public class AsyncRabbitTemplateTests {
 		assertThat(template)
 				.extracting("replyAddress")
 				.isEqualTo("rq");
+	}
+
+	@Test
+	public void limitedChannelsAreReleasedOnTimeout() {
+		CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
+		connectionFactory.setChannelCacheSize(1);
+		connectionFactory.setChannelCheckoutTimeout(500L);
+		RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+		AsyncRabbitTemplate asyncRabbitTemplate = new AsyncRabbitTemplate(rabbitTemplate);
+		asyncRabbitTemplate.setReceiveTimeout(500L);
+		asyncRabbitTemplate.start();
+
+		RabbitConverterFuture<String> replyFuture1 = asyncRabbitTemplate.convertSendAndReceive("noReply1");
+		RabbitConverterFuture<String> replyFuture2 = asyncRabbitTemplate.convertSendAndReceive("noReply2");
+
+		assertThatExceptionOfType(ExecutionException.class)
+				.isThrownBy(() -> replyFuture1.get(10, TimeUnit.SECONDS))
+				.withCauseInstanceOf(AmqpReplyTimeoutException.class);
+
+		assertThatExceptionOfType(ExecutionException.class)
+				.isThrownBy(() -> replyFuture2.get(10, TimeUnit.SECONDS))
+				.withCauseInstanceOf(AmqpReplyTimeoutException.class);
+
+		asyncRabbitTemplate.stop();
+		connectionFactory.destroy();
 	}
 
 	private void checkConverterResult(CompletableFuture<String> future, String expected) throws InterruptedException {

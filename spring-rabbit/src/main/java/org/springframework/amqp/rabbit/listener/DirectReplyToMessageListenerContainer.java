@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2023 the original author or authors.
+ * Copyright 2016-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.listener;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.MessageListener;
@@ -118,22 +119,23 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 	@Override
 	protected void processMonitorTask() {
 		long now = System.currentTimeMillis();
+		long reduce;
 		this.consumersLock.lock();
 		try {
-			long reduce = this.consumers.stream()
-				.filter(c -> this.whenUsed.containsKey(c) && !this.inUseConsumerChannels.containsValue(c)
-						&& this.whenUsed.get(c) < now - getIdleEventInterval())
-				.count();
-			if (reduce > 0) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Reducing idle consumes by " + reduce);
-				}
-				this.consumerCount = (int) Math.max(0, this.consumerCount - reduce);
-				super.setConsumersPerQueue(this.consumerCount);
-			}
+			reduce = this.consumers.stream()
+					.filter(c -> this.whenUsed.containsKey(c) && !this.inUseConsumerChannels.containsValue(c)
+							&& this.whenUsed.get(c) < now - getIdleEventInterval())
+					.count();
 		}
 		finally {
 			this.consumersLock.unlock();
+		}
+		if (reduce > 0) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Reducing idle consumes by " + reduce);
+			}
+			this.consumerCount = (int) Math.max(0, this.consumerCount - reduce);
+			super.setConsumersPerQueue(this.consumerCount);
 		}
 	}
 
@@ -159,13 +161,13 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 	 * @return the channel holder.
 	 */
 	public ChannelHolder getChannelHolder() {
-		this.consumersLock.lock();
-		try {
-			ChannelHolder channelHolder = null;
-			while (channelHolder == null) {
-				if (!isRunning()) {
-					throw new IllegalStateException("Direct reply-to container is not running");
-				}
+		ChannelHolder channelHolder = null;
+		while (channelHolder == null) {
+			if (!isRunning()) {
+				throw new IllegalStateException("Direct reply-to container is not running");
+			}
+			this.consumersLock.lock();
+			try {
 				for (SimpleConsumer consumer : this.consumers) {
 					Channel candidate = consumer.getChannel();
 					if (candidate.isOpen() && this.inUseConsumerChannels.putIfAbsent(candidate, consumer) == null) {
@@ -175,16 +177,23 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 						break;
 					}
 				}
-				if (channelHolder == null) {
-					this.consumerCount++;
-					super.setConsumersPerQueue(this.consumerCount);
+			}
+			finally {
+				this.consumersLock.unlock();
+			}
+			if (channelHolder == null) {
+				try {
+					super.setConsumersPerQueue(++this.consumerCount);
+				}
+				catch (AmqpTimeoutException timeoutException) {
+					// Possibly No available channels in the cache, so come back to consumers
+					// iteration until existing is available
+					this.consumerCount--;
 				}
 			}
-			return channelHolder;
 		}
-		finally {
-			this.consumersLock.unlock();
-		}
+		return channelHolder;
+
 	}
 
 	/**
