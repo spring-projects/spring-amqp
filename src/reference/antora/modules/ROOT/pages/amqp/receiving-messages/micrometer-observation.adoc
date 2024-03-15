@@ -17,3 +17,4 @@ You can either subclass `DefaultRabbitTemplateObservationConvention` or `Default
 
 See xref:appendix/micrometer.adoc[Micrometer Observation Documentation] for more details.
 
+WARNING: Due to ambiguity in how traces should be handled in a batch, observations are *NOT* created for xref:amqp/receiving-messages/batch.adoc[Batch Listener Containers].

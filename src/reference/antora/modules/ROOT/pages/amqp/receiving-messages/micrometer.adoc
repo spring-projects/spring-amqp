@@ -1,6 +1,9 @@
 [[micrometer]]
-= Monitoring Listener Performance
+= Micrometer Integration
 :page-section-summary-toc: 1
+
+NOTE: This section documents the integration with https://docs.micrometer.io/micrometer/reference/[Micrometer].
+For integration with Micrometer Observation, see xref:amqp/receiving-messages/micrometer-observation.adoc[Micrometer Observation].
 
 Starting with version 2.2, the listener containers will automatically create and update Micrometer `Timer` s for the listener, if `Micrometer` is detected on the class path, and a single `MeterRegistry` is present in the application context (or exactly one is annotated `@Primary`, such as when using Spring Boot).
 The timers can be disabled by setting the container property `micrometerEnabled` to `false`.
@@ -16,6 +19,3 @@ The timers are named `spring.rabbitmq.listener` and have the following tags:
 * `exception` : `none` or `ListenerExecutionFailedException`
 
 You can add additional tags using the `micrometerTags` container property.
-
-Also see xref:stream.adoc#stream-micrometer-observation[Micrometer Observation].
-
