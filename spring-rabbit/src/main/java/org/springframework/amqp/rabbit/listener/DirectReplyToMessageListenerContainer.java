@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.listener;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.core.AcknowledgeMode;
@@ -48,7 +49,7 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 
 	private final ConcurrentMap<SimpleConsumer, Long> whenUsed = new ConcurrentHashMap<>();
 
-	private int consumerCount;
+	private final AtomicInteger consumerCount = new AtomicInteger();
 
 	public DirectReplyToMessageListenerContainer(ConnectionFactory connectionFactory) {
 		super(connectionFactory);
@@ -110,7 +111,7 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 	@Override
 	protected void doStart() {
 		if (!isRunning()) {
-			this.consumerCount = 0;
+			this.consumerCount.set(0);
 			super.setConsumersPerQueue(0);
 			super.doStart();
 		}
@@ -134,8 +135,8 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 			if (logger.isDebugEnabled()) {
 				logger.debug("Reducing idle consumes by " + reduce);
 			}
-			this.consumerCount = (int) Math.max(0, this.consumerCount - reduce);
-			super.setConsumersPerQueue(this.consumerCount);
+			super.setConsumersPerQueue(
+					this.consumerCount.updateAndGet((current) -> (int) Math.max(0, current - reduce)));
 		}
 	}
 
@@ -183,12 +184,12 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 			}
 			if (channelHolder == null) {
 				try {
-					super.setConsumersPerQueue(++this.consumerCount);
+					super.setConsumersPerQueue(this.consumerCount.incrementAndGet());
 				}
 				catch (AmqpTimeoutException timeoutException) {
 					// Possibly No available channels in the cache, so come back to consumers
 					// iteration until existing is available
-					this.consumerCount--;
+					this.consumerCount.decrementAndGet();
 				}
 			}
 		}

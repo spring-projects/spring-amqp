@@ -30,6 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
@@ -112,7 +113,8 @@ public class AsyncRabbitTemplateTests {
 		waitForZeroInUseConsumers();
 		assertThat(TestUtils
 				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount",
-						Integer.class)).isEqualTo(2);
+						AtomicInteger.class).get())
+				.isEqualTo(2);
 		final String missingQueue = UUID.randomUUID().toString();
 		this.asyncDirectTemplate.convertSendAndReceive("", missingQueue, "foo"); // send to nowhere
 		this.asyncDirectTemplate.stop(); // should clear the inUse channel map
@@ -169,18 +171,20 @@ public class AsyncRabbitTemplateTests {
 		waitForZeroInUseConsumers();
 		assertThat(TestUtils
 				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount",
-						Integer.class)).isEqualTo(2);
+						AtomicInteger.class).get())
+				.isEqualTo(2);
 		this.asyncDirectTemplate.stop();
 		this.asyncDirectTemplate.start();
 		assertThat(TestUtils
 				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount",
-						Integer.class)).isEqualTo(0);
+						AtomicInteger.class).get())
+				.isEqualTo(0);
 	}
 
-	private void waitForZeroInUseConsumers() throws InterruptedException {
+	private void waitForZeroInUseConsumers() {
 		Map<?, ?> inUseConsumers = TestUtils
 				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels", Map.class);
-		await().until(() -> inUseConsumers.size() == 0);
+		await().until(inUseConsumers::isEmpty);
 	}
 
 	@Test
