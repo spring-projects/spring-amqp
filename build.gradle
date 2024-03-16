@@ -62,7 +62,7 @@ ext {
 	lz4Version = '1.8.0'
 	micrometerDocsVersion = '1.0.2'
 	micrometerVersion = '1.12.4'
-	micrometerTracingVersion = '1.2.3'
+	micrometerTracingVersion = '1.2.4'
 	mockitoVersion = '5.6.0'
 	rabbitmqStreamVersion = '0.14.0'
 	rabbitmqVersion = '5.19.0'
