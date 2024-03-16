@@ -62,7 +62,7 @@ ext {
 	mockitoVersion = '4.8.1'
 	rabbitmqStreamVersion = '0.8.0'
 	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.16.1'
-	reactorVersion = '2022.0.16'
+	reactorVersion = '2022.0.17'
 	snappyVersion = '1.1.10.5'
 	springDataVersion = '2022.0.12'
 	springRetryVersion = '2.0.5'
