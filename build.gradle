@@ -42,7 +42,7 @@ ext {
 
 	assertjVersion = '3.23.1'
 	assertkVersion = '0.24'
-	awaitilityVersion = '4.2.0'
+	awaitilityVersion = '4.2.1'
 	commonsCompressVersion = '1.20'
 	commonsHttpClientVersion = '5.1.4'
 	commonsPoolVersion = '2.11.1'
