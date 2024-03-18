@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.mock;
@@ -29,6 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
@@ -111,7 +113,8 @@ public class AsyncRabbitTemplateTests {
 		waitForZeroInUseConsumers();
 		assertThat(TestUtils
 				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount",
-						Integer.class)).isEqualTo(2);
+						AtomicInteger.class).get())
+				.isEqualTo(2);
 		final String missingQueue = UUID.randomUUID().toString();
 		this.asyncDirectTemplate.convertSendAndReceive("", missingQueue, "foo"); // send to nowhere
 		this.asyncDirectTemplate.stop(); // should clear the inUse channel map
@@ -168,18 +171,20 @@ public class AsyncRabbitTemplateTests {
 		waitForZeroInUseConsumers();
 		assertThat(TestUtils
 				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount",
-						Integer.class)).isEqualTo(2);
+						AtomicInteger.class).get())
+				.isEqualTo(2);
 		this.asyncDirectTemplate.stop();
 		this.asyncDirectTemplate.start();
 		assertThat(TestUtils
 				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount",
-						Integer.class)).isEqualTo(0);
+						AtomicInteger.class).get())
+				.isEqualTo(0);
 	}
 
-	private void waitForZeroInUseConsumers() throws InterruptedException {
+	private void waitForZeroInUseConsumers() {
 		Map<?, ?> inUseConsumers = TestUtils
 				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels", Map.class);
-		await().until(() -> inUseConsumers.size() == 0);
+		await().until(inUseConsumers::isEmpty);
 	}
 
 	@Test
@@ -420,6 +425,31 @@ public class AsyncRabbitTemplateTests {
 		assertThat(template)
 				.extracting("replyAddress")
 				.isEqualTo("rq");
+	}
+
+	@Test
+	public void limitedChannelsAreReleasedOnTimeout() {
+		CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
+		connectionFactory.setChannelCacheSize(1);
+		connectionFactory.setChannelCheckoutTimeout(500L);
+		RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+		AsyncRabbitTemplate asyncRabbitTemplate = new AsyncRabbitTemplate(rabbitTemplate);
+		asyncRabbitTemplate.setReceiveTimeout(500L);
+		asyncRabbitTemplate.start();
+
+		RabbitConverterFuture<String> replyFuture1 = asyncRabbitTemplate.convertSendAndReceive("noReply1");
+		RabbitConverterFuture<String> replyFuture2 = asyncRabbitTemplate.convertSendAndReceive("noReply2");
+
+		assertThatExceptionOfType(ExecutionException.class)
+				.isThrownBy(() -> replyFuture1.get(10, TimeUnit.SECONDS))
+				.withCauseInstanceOf(AmqpReplyTimeoutException.class);
+
+		assertThatExceptionOfType(ExecutionException.class)
+				.isThrownBy(() -> replyFuture2.get(10, TimeUnit.SECONDS))
+				.withCauseInstanceOf(AmqpReplyTimeoutException.class);
+
+		asyncRabbitTemplate.stop();
+		connectionFactory.destroy();
 	}
 
 	private void checkConverterResult(CompletableFuture<String> future, String expected) throws InterruptedException {

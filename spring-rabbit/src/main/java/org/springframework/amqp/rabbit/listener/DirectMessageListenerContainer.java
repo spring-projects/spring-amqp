@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2023 the original author or authors.
+ * Copyright 2016-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
+import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Message;
@@ -801,6 +802,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		catch (AmqpApplicationContextClosedException e) {
 			throw new AmqpConnectException(e);
+		}
+		catch (AmqpTimeoutException timeoutException) {
+			throw timeoutException;
 		}
 		catch (Exception e) {
 			RabbitUtils.closeChannel(channel);
