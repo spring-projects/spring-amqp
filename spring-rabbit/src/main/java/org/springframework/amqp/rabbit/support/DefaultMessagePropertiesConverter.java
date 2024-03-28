@@ -40,6 +40,8 @@ import com.rabbitmq.client.LongString;
  * @author Mark Fisher
  * @author Gary Russell
  * @author Soeren Unruh
+ * @author Artem Bilan
+ *
  * @since 1.0
  */
 public class DefaultMessagePropertiesConverter implements MessagePropertiesConverter {
@@ -92,8 +94,10 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 				String key = entry.getKey();
 				if (MessageProperties.X_DELAY.equals(key)) {
 					Object value = entry.getValue();
-					if (value instanceof Integer integ) {
-						target.setReceivedDelay(integ);
+					if (value instanceof Number numberValue) {
+						int receivedDelayLongValue = numberValue.intValue();
+						target.setReceivedDelay(receivedDelayLongValue);
+						target.setHeader(key, receivedDelayLongValue);
 					}
 				}
 				else {
@@ -174,7 +178,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	}
 
 	/**
-	 * Converts a header value to a String if the value type is unsupported by AMQP, also handling values
+	 * Convert a header value to a String if the value type is unsupported by AMQP, also handling values
 	 * nested inside Lists or Maps.
 	 * <p> {@code null} values are passed through, although Rabbit client will throw an IllegalArgumentException.
 	 * @param valueArg the value.
