@@ -82,6 +82,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Yansong Ren
  * @author Tim Bourquin
  * @author Jeonggi Kim
+ * @author Java4ye
  *
  * @since 1.0
  */
@@ -613,12 +614,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				Assert.state(expectedQueueNames.size() == queueNames.length,
 						"Listener expects us to be listening on '" + expectedQueueNames + "'; our queues: "
 								+ Arrays.asList(queueNames));
-				boolean found = false;
+				boolean found = true;
 				for (String queueName : queueNames) {
-					if (expectedQueueNames.contains(queueName)) {
-						found = true;
-					}
-					else {
+					if (!expectedQueueNames.contains(queueName)) {
 						found = false;
 						break;
 					}
