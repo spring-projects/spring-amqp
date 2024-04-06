@@ -87,6 +87,7 @@ import com.rabbitmq.client.Channel;
  *
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Java4ye
  *
  * @since 1.6
  */
@@ -666,17 +667,13 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	private String getOrSetCorrelationIdAndSetReplyTo(Message message,
 			@Nullable AsyncCorrelationData<?> correlationData) {
 
-		String correlationId;
 		MessageProperties messageProperties = message.getMessageProperties();
 		Assert.notNull(messageProperties, "the message properties cannot be null");
-		String currentCorrelationId = messageProperties.getCorrelationId();
-		if (!StringUtils.hasText(currentCorrelationId)) {
+		String correlationId = messageProperties.getCorrelationId();
+		if (!StringUtils.hasText(correlationId)) {
 			correlationId = correlationData != null ? correlationData.getId() : UUID.randomUUID().toString();
 			messageProperties.setCorrelationId(correlationId);
 			Assert.isNull(messageProperties.getReplyTo(), "'replyTo' property must be null");
-		}
-		else {
-			correlationId = currentCorrelationId;
 		}
 		messageProperties.setReplyTo(this.replyAddress);
 		return correlationId;
