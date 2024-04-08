@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@ import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerCont
  * @param <T> the type.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.4.7
  */
 public abstract class RabbitFuture<T> extends CompletableFuture<T> {
@@ -75,12 +77,28 @@ public abstract class RabbitFuture<T> extends CompletableFuture<T> {
 	}
 
 	@Override
+	public boolean complete(T value) {
+		cancelTimeoutTaskIfAny();
+		return super.complete(value);
+	}
+
+	@Override
+	public boolean completeExceptionally(Throwable ex) {
+		cancelTimeoutTaskIfAny();
+		return super.completeExceptionally(ex);
+	}
+
+	@Override
 	public boolean cancel(boolean mayInterruptIfRunning) {
+		cancelTimeoutTaskIfAny();
+		this.canceler.accept(this.correlationId, this.channelHolder);
+		return super.cancel(mayInterruptIfRunning);
+	}
+
+	private void cancelTimeoutTaskIfAny() {
 		if (this.timeoutTask != null) {
 			this.timeoutTask.cancel(true);
 		}
-		this.canceler.accept(this.correlationId, this.channelHolder);
-		return super.cancel(mayInterruptIfRunning);
 	}
 
 	/**

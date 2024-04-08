@@ -28,6 +28,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -472,6 +473,7 @@ public class AsyncRabbitTemplateTests {
 		});
 		assertThat(cdl.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(new String(resultRef.get().getBody())).isEqualTo(expected);
+		assertThat(TestUtils.getPropertyValue(future, "timeoutTask", Future.class).isCancelled()).isTrue();
 		return resultRef.get();
 	}
 
