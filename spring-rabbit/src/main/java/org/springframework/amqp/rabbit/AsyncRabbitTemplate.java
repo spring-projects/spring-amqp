@@ -87,7 +87,7 @@ import com.rabbitmq.client.Channel;
  *
  * @author Gary Russell
  * @author Artem Bilan
- * @author Java4ye
+ * @author FengYang Su
  *
  * @since 1.6
  */
