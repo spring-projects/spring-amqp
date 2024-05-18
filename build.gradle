@@ -70,7 +70,7 @@ ext {
 	snappyVersion = '1.1.10.5'
 	springDataVersion = '2023.1.6'
 	springRetryVersion = '2.0.5'
-	springVersion = '6.1.6'
+	springVersion = '6.1.7'
 	testcontainersVersion = '1.19.8'
 	zstdJniVersion = '1.5.6-3'
 
