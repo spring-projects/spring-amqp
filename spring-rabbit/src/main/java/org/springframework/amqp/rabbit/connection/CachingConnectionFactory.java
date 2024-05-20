@@ -1121,7 +1121,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					return null;
 				}
 				else {
-					physicalClose(proxy);
+					physicalClose();
 					return null;
 				}
 			}
@@ -1193,24 +1193,16 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 		}
 
-		private void releasePermitIfNecessary(Object proxy) {
+		private void releasePermitIfNecessary() {
 			if (CachingConnectionFactory.this.channelCheckoutTimeout > 0) {
-				/*
-				 *  Only release a permit if this is a normal close; if the channel is
-				 *  in the list, it means we're closing a cached channel (for which a permit
-				 *  has already been released).
-				 */
-				synchronized (this.channelList) {
-					if (this.channelList.contains(proxy)) {
-						return;
-					}
-				}
 				Semaphore permits = CachingConnectionFactory.this.checkoutPermits.get(this.theConnection);
 				if (permits != null) {
-					permits.release();
-					if (logger.isDebugEnabled()) {
-						logger.debug("Released permit for '" + this.theConnection + "', remaining: "
-								+ permits.availablePermits());
+					if (permits.availablePermits() < CachingConnectionFactory.this.channelCacheSize) {
+						permits.release();
+						if (logger.isDebugEnabled()) {
+							logger.debug("Released permit for '" + this.theConnection + "', remaining: "
+									+ permits.availablePermits());
+						}
 					}
 				}
 				else {
@@ -1235,11 +1227,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 						if (this.target instanceof PublisherCallbackChannel) {
 							this.target.close(); // emit nacks if necessary
 						}
-						if (this.channelList.contains(proxy)) {
-							this.channelList.remove(proxy);
-						}
-						else {
-							releasePermitIfNecessary(proxy);
+						if (!this.channelList.remove(proxy)) {
+							releasePermitIfNecessary();
 						}
 						this.target = null;
 						return;
@@ -1275,7 +1264,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 									// The channel didn't handle confirms, so close it altogether to avoid
 									// memory leaks for pending confirms
 									try {
-										physicalClose(this.theConnection.channelsAwaitingAcks.remove(this.target));
+										physicalClose();
 									}
 									catch (@SuppressWarnings(UNUSED) Exception e) {
 									}
@@ -1298,7 +1287,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					else {
 						if (proxy.isOpen()) {
 							try {
-								physicalClose(proxy);
+								physicalClose();
 							}
 							catch (@SuppressWarnings(UNUSED) Exception e) {
 							}
@@ -1315,7 +1304,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					logger.trace("Cache limit reached: " + this.target);
 				}
 				try {
-					physicalClose(proxy);
+					physicalClose();
 				}
 				catch (@SuppressWarnings(UNUSED) Exception e) {
 				}
@@ -1324,8 +1313,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				if (logger.isTraceEnabled()) {
 					logger.trace("Returning cached Channel: " + this.target);
 				}
-				releasePermitIfNecessary(proxy);
 				this.channelList.addLast((ChannelProxy) proxy);
+				releasePermitIfNecessary();
 				setHighWaterMark();
 			}
 		}
@@ -1342,7 +1331,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 		}
 
-		private void physicalClose(Object proxy) throws IOException, TimeoutException {
+		private void physicalClose() throws IOException, TimeoutException {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Closing cached Channel: " + this.target);
 			}
@@ -1356,7 +1345,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 						(ConfirmType.CORRELATED.equals(CachingConnectionFactory.this.confirmType) ||
 								CachingConnectionFactory.this.publisherReturns)) {
 					async = true;
-					asyncClose(proxy);
+					asyncClose();
 				}
 				else {
 					this.target.close();
@@ -1373,12 +1362,12 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			finally {
 				this.target = null;
 				if (!async) {
-					releasePermitIfNecessary(proxy);
+					releasePermitIfNecessary();
 				}
 			}
 		}
 
-		private void asyncClose(Object proxy) {
+		private void asyncClose() {
 			ExecutorService executorService = getChannelsExecutor();
 			final Channel channel = CachedChannelInvocationHandler.this.target;
 			CachingConnectionFactory.this.inFlightAsyncCloses.add(channel);
@@ -1414,7 +1403,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 						}
 						finally {
 							CachingConnectionFactory.this.inFlightAsyncCloses.release(channel);
-							releasePermitIfNecessary(proxy);
+							releasePermitIfNecessary();
 						}
 					}
 				});
