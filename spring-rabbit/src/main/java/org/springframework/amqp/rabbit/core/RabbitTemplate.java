@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2343,9 +2343,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				channel = connection.createChannel(false);
 				if (channel == null) {
 					throw new IllegalStateException("Connection returned a null channel");
-				}
-				if (!connectionFactory.isPublisherConfirms()) {
-					RabbitUtils.setPhysicalCloseRequired(channel, true);
 				}
 				this.dedicatedChannels.set(channel);
 			}
