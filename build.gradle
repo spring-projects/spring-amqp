@@ -56,7 +56,7 @@ ext {
 	lz4Version = '1.8.0'
 	micrometerDocsVersion = '1.0.2'
 	micrometerVersion = '1.10.15'
-	micrometerTracingVersion = '1.0.12'
+	micrometerTracingVersion = '1.0.14'
 	mockitoVersion = '4.8.1'
 	rabbitmqStreamVersion = '0.8.0'
 	rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.16.1'
