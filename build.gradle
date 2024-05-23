@@ -125,10 +125,12 @@ ext {
 	] as String[]
 }
 
+apply from: 'publish-maven.gradle'
+apply from: 'commercial-settings.gradle'
+
 configure(javaProjects) { subproject ->
 	apply plugin: 'java-library'
 	apply plugin: 'java'
-	apply from:   "${rootProject.projectDir}/gradle/publish-maven.gradle"
 	apply plugin: 'eclipse'
 	apply plugin: 'idea'
 	apply plugin: 'project-report'
@@ -362,7 +364,6 @@ project('spring-amqp-bom') {
 	description = 'Spring for RabbitMQ (Bill of Materials)'
 
 	apply plugin: 'java-platform'
-	apply from: "${rootDir}/gradle/publish-maven.gradle"
 
 	dependencies {
 		constraints {
@@ -784,8 +785,6 @@ task dist(dependsOn: assemble) {
 	group = 'Distribution'
 	description = 'Builds -dist, -docs and -schema distribution archives.'
 }
-
-apply from: "${rootProject.projectDir}/gradle/publish-maven.gradle"
 
 publishing {
 	publications {
