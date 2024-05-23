@@ -1,79 +1,63 @@
-apply plugin: 'maven-publish'
+allprojects {
+	apply plugin: 'maven-publish'
 
-publishing {
-	publications {
-		mavenJava(MavenPublication) {
-			pom {
-				afterEvaluate {
-					name = project.description
-					description = project.description
-				}
-				url = linkScmUrl
-				organization {
-					name = 'Spring IO'
-					url = 'https://spring.io/projects/spring-amqp'
-				}
-				licenses {
-					license {
-						name = 'Apache License, Version 2.0'
-						url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
-						distribution = 'repo'
+	publishing {
+		publications {
+			mavenJava(MavenPublication) {
+				pom {
+					afterEvaluate {
+						name = project.description
+						description = project.description
 					}
-				}
-				scm {
 					url = linkScmUrl
-					connection = linkScmConnection
-					developerConnection = linkScmDevConnection
+					organization {
+						name = 'Spring IO'
+						url = 'https://spring.io/projects/spring-amqp'
+					}
+					licenses {
+						license {
+							name = 'Apache License, Version 2.0'
+							url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+							distribution = 'repo'
+						}
+					}
+					scm {
+						url = linkScmUrl
+						connection = linkScmConnection
+						developerConnection = linkScmDevConnection
+					}
+					developers {
+						developer {
+							id = 'artembilan'
+							name = 'Artem Bilan'
+							email = 'artem.bilan@broadcom.com'
+							roles = ['project lead']
+						}
+						developer {
+							id = 'garyrussell'
+							name = 'Gary Russell'
+							email = 'github@gprussell.net'
+							roles = ['project lead emeritus']
+						}
+						developer {
+							id = 'markfisher'
+							name = 'Mark Fisher'
+							email = 'mark.ryan.fisher@gmail.com'
+							roles = ['project founder and lead emeritus']
+						}
+					}
+					issueManagement {
+						system = 'GitHub'
+						url = linkIssue
+					}
 				}
-				developers {
-					developer {
-						id = 'artembilan'
-						name = 'Artem Bilan'
-						email = 'artem.bilan@broadcom.com'
-						roles = ['project lead']
+				versionMapping {
+					usage('java-api') {
+						fromResolutionResult()
 					}
-					developer {
-						id = 'garyrussell'
-						name = 'Gary Russell'
-						email = 'github@gprussell.net'
-						roles = ['project lead emeritus']
+					usage('java-runtime') {
+						fromResolutionResult()
 					}
-					developer {
-						id = 'sobychacko'
-						name = 'Soby Chacko'
-						email = 'soby.chacko@broadcom.com'
-						roles = ['contributor']
-					}
-					developer {
-						id = 'dsyer'
-						name = 'Dave Syer'
-						email = 'david.syer@broadcom.com'
-						roles = ['project founder']
-					}
-					developer {
-						id = 'markfisher'
-						name = 'Mark Fisher'
-						email = 'mark.fisher@broadcom.com'
-						roles = ['project founder']
-					}
-					developer {
-						id = 'markpollack'
-						name = 'Mark Pollack'
-						email = 'mark.pollack@broadcom.com'
-						roles = ['project founder']
-					}
-				}
-				issueManagement {
-					system = 'GitHub'
-					url = linkIssue
-				}
-			}
-			versionMapping {
-				usage('java-api') {
-					fromResolutionResult()
-				}
-				usage('java-runtime') {
-					fromResolutionResult()
 				}
 			}
 		}

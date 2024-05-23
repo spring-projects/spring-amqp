@@ -11,8 +11,9 @@ updates:
   - package-ecosystem: gradle
     directory: /
     schedule:
-      interval: weekly
-      day: saturday
+      interval: monthly
+    registries:
+      - spring-commercial
     ignore:
       - dependency-name: '*'
         update-types:
@@ -43,8 +44,7 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
-      day: saturday
+      interval: monthly
     labels:
       - 'type: task'
     groups:

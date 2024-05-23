@@ -16,14 +16,12 @@ buildscript {
 
 plugins {
 	id 'base'
-	id 'project-report'
-	id 'idea'
+	id 'io.spring.nohttp' version '0.0.11' apply false
 	id 'org.ajoberstar.grgit' version '4.1.1'
-	id 'io.spring.nohttp' version '0.0.11'
-	id 'io.spring.dependency-management' version '1.1.5' apply false
+	id 'io.spring.dependency-management' version '1.1.5'
 	id 'org.asciidoctor.jvm.pdf' version '3.3.2'
 	id 'org.asciidoctor.jvm.convert' version '3.3.2'
-	id 'com.github.spotbugs' version '6.0.14'
+	id 'com.github.spotbugs' version '6.0.15'
 }
 
 description = 'Spring AMQP'
@@ -73,9 +71,14 @@ ext {
 	javaProjects = subprojects - project(':spring-amqp-bom')
 }
 
-nohttp {
-	source.include '**/src/**'
-	source.exclude '**/*.gif', '**/*.ks'
+
+if (isCI) {
+	apply plugin: 'io.spring.nohttp'
+
+	nohttp {
+		source.include '**/src/**'
+		source.exclude '**/*.gif', '**/*.ks'
+	}
 }
 
 allprojects {
@@ -130,10 +133,8 @@ apply from: 'commercial-settings.gradle'
 
 configure(javaProjects) { subproject ->
 	apply plugin: 'java-library'
-	apply plugin: 'java'
 	apply plugin: 'eclipse'
 	apply plugin: 'idea'
-	apply plugin: 'project-report'
 	apply plugin: 'checkstyle'
 	apply plugin: 'kotlin'
 	apply plugin: 'kotlin-spring'
@@ -202,27 +203,6 @@ configure(javaProjects) { subproject ->
 	// enable all compiler warnings; individual projects may customize further
 	ext.xLintArg = '-Xlint:all,-options,-processing,-deprecation'
 	[compileJava, compileTestJava]*.options*.compilerArgs = [xLintArg]
-
-	publishing {
-		publications {
-			mavenJava(MavenPublication) {
-				suppressAllPomMetadataWarnings()
-				from components.java
-				pom.withXml {
-					def pomDeps = asNode().dependencies.first()
-					subproject.configurations.providedImplementation.allDependencies.each { dep ->
-						pomDeps.remove(pomDeps.'*'.find { it.artifactId.text() == dep.name })
-						pomDeps.appendNode('dependency').with {
-							it.appendNode('groupId', dep.group)
-							it.appendNode('artifactId', dep.name)
-							it.appendNode('version', dep.version)
-							it.appendNode('scope', 'provided')
-						}
-					}
-				}
-			}
-		}
-	}
 
 	task updateCopyrights {
 		onlyIf { !isCI }
@@ -328,6 +308,26 @@ configure(javaProjects) { subproject ->
 
 	check.dependsOn javadoc
 
+	publishing {
+		publications {
+			mavenJava(MavenPublication) {
+				suppressAllPomMetadataWarnings()
+				from components.java
+				pom.withXml {
+					def pomDeps = asNode().dependencies.first()
+					subproject.configurations.providedImplementation.allDependencies.each { dep ->
+						pomDeps.remove(pomDeps.'*'.find { it.artifactId.text() == dep.name })
+						pomDeps.appendNode('dependency').with {
+							it.appendNode('groupId', dep.group)
+							it.appendNode('artifactId', dep.name)
+							it.appendNode('version', dep.version)
+							it.appendNode('scope', 'provided')
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 project('spring-amqp') {
