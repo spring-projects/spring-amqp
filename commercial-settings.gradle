@@ -22,7 +22,7 @@ allprojects {
 				}
 			}
 		} else {
-			maven { url 'https://repo.spring.io/spring-commercial-remote' }
+			maven { url 'https://repo.spring.io/spring-commercial-release-remote' }
 			if (version.endsWith('SNAPSHOT')) {
 				maven { url 'https://repo.spring.io/spring-commercial-snapshot-remote' }
 			}
