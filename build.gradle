@@ -17,9 +17,8 @@ buildscript {
 
 plugins {
 	id 'base'
-	id 'project-report'
 	id 'idea'
-	id 'org.ajoberstar.grgit' version '4.1.1'
+	id 'org.ajoberstar.grgit' version '5.2.2'
 	id 'io.spring.nohttp' version '0.0.11'
 	id 'io.spring.dependency-management' version '1.1.5' apply false
 	id 'org.antora' version '1.0.0'
@@ -44,33 +43,33 @@ ext {
                                 .filter { f -> f.name.endsWith('.java') || f.name.endsWith('.kt') }
                     }
 
-	assertjVersion = '3.24.2'
-	assertkVersion = '0.27.0'
+	assertjVersion = '3.26.0'
+	assertkVersion = '0.28.1'
 	awaitilityVersion = '4.2.1'
-	commonsCompressVersion = '1.20'
-	commonsHttpClientVersion = '5.2.3'
+	commonsCompressVersion = '1.26.2'
+	commonsHttpClientVersion = '5.3.1'
 	commonsPoolVersion = '2.12.0'
 	hamcrestVersion = '2.2'
 	hibernateValidationVersion = '8.0.1.Final'
-	jacksonBomVersion = '2.15.4'
-	jaywayJsonPathVersion = '2.8.0'
+	jacksonBomVersion = '2.17.1'
+	jaywayJsonPathVersion = '2.9.0'
 	junit4Version = '4.13.2'
-	junitJupiterVersion = '5.10.2'
-	kotlinCoroutinesVersion = '1.7.3'
-	log4jVersion = '2.21.1'
-	logbackVersion = '1.4.14'
+	junitJupiterVersion = '5.11.0-M2'
+	kotlinCoroutinesVersion = '1.8.1'
+	log4jVersion = '2.23.1'
+	logbackVersion = '1.5.6'
 	lz4Version = '1.8.0'
 	micrometerDocsVersion = '1.0.2'
-	micrometerVersion = '1.12.6'
-	micrometerTracingVersion = '1.2.6'
-	mockitoVersion = '5.6.0'
-	rabbitmqStreamVersion = '0.14.0'
-	rabbitmqVersion = '5.19.0'
-	reactorVersion = '2023.0.6'
+	micrometerVersion = '1.14.0-SNAPSHOT'
+	micrometerTracingVersion = '1.4.0-SNAPSHOT'
+	mockitoVersion = '5.12.0'
+	rabbitmqStreamVersion = '0.15.0'
+	rabbitmqVersion = '5.21.0'
+	reactorVersion = '2024.0.0-SNAPSHOT'
 	snappyVersion = '1.1.10.5'
-	springDataVersion = '2023.1.6'
+	springDataVersion = '2024.1.0-SNAPSHOT'
 	springRetryVersion = '2.0.6'
-	springVersion = '6.1.7'
+	springVersion = '6.2.0-SNAPSHOT'
 	testcontainersVersion = '1.19.8'
 	zstdJniVersion = '1.5.6-3'
 
@@ -560,8 +559,8 @@ dependencies {
 	micrometerDocs "io.micrometer:micrometer-docs-generator:$micrometerDocsVersion"
 }
 
-def observationInputDir = file("$buildDir/docs/microsources").absolutePath
-def generatedDocsDir = file("$buildDir/docs/generated").absolutePath
+def observationInputDir = file('build/docs/microsources').absolutePath
+def generatedDocsDir = file('build/docs/generated').absolutePath
 
 task copyObservation(type: Copy) {
 	from file('spring-rabbit/src/main/java/org/springframework/amqp/rabbit/support/micrometer').absolutePath
