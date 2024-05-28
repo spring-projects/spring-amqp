@@ -33,7 +33,7 @@ updates:
          - com.github.luben:zstd-jni
 
   - package-ecosystem: gradle
-    target-branch: 3.0.x
+    target-branch: 3.1.x
     directory: /
     schedule:
       interval: weekly
@@ -78,7 +78,7 @@ updates:
           - '*'
 
   - package-ecosystem: github-actions
-    target-branch: 3.0.x
+    target-branch: 3.1.x
     directory: /
     schedule:
       interval: weekly
