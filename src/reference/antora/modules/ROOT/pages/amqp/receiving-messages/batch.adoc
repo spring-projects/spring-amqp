@@ -1,7 +1,7 @@
 [[receiving-batch]]
 = @RabbitListener with Batching
 
-When receiving a xref:amqp/sending-messages.adoc#template-batching[a batch] of messages, the de-batching is normally performed by the container and the listener is invoked with one message at at time.
+When receiving xref:amqp/sending-messages.adoc#template-batching[a batch] of messages, the de-batching is normally performed by the container, and the listener is invoked with one message at time.
 Starting with version 2.2, you can configure the listener container factory and listener to receive the entire batch in one call, simply set the factory's `batchListener` property, and make the method payload parameter a `List` or `Collection`:
 
 [source, java]
@@ -88,3 +88,5 @@ When `consumerBatchEnabled` is `true`, the listener **must** be a batch listener
 
 Starting with version 3.0, listener methods can consume `Collection<?>` or `List<?>`.
 
+NOTE: The listener in batch mode does not support replies since there might not be a correlation between messages in the batch and single reply produced.
+The xref:amqp/receiving-messages/async-returns.adoc[asynchronous return types] are still supported with batch listeners.

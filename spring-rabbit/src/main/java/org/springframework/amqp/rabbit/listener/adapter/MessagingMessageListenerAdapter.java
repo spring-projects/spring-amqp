@@ -267,8 +267,8 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	 * @param message the messaging message.
 	 * @return the result of invoking the handler.
 	 */
-	private InvocationResult invokeHandler(@Nullable org.springframework.amqp.core.Message amqpMessage, Channel channel,
-			Message<?> message) {
+	protected InvocationResult invokeHandler(@Nullable org.springframework.amqp.core.Message amqpMessage,
+			Channel channel, Message<?> message) {
 
 		try {
 			if (amqpMessage == null) {

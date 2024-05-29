@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 the original author or authors.
+ * Copyright 2019-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,17 @@
 
 package org.springframework.amqp.rabbit.listener.adapter;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.batch.SimpleBatchingStrategy;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareBatchMessageListener;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
+import org.springframework.amqp.rabbit.listener.support.ContainerUtils;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.lang.Nullable;
@@ -37,11 +40,13 @@ import com.rabbitmq.client.Channel;
  * A listener adapter for batch listeners.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.2
  *
  */
 public class BatchMessagingMessageListenerAdapter extends MessagingMessageListenerAdapter
-			implements ChannelAwareBatchMessageListener {
+		implements ChannelAwareBatchMessageListener {
 
 	private final MessagingMessageConverterAdapter converterAdapter;
 
@@ -91,10 +96,76 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 			}
 		}
 		try {
-			invokeHandlerAndProcessResult(null, channel, converted);
+			invokeHandlerAndProcessResult(messages, channel, converted);
 		}
 		catch (Exception e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+		}
+	}
+
+	private void invokeHandlerAndProcessResult(List<org.springframework.amqp.core.Message> amqpMessages,
+			Channel channel, Message<?> message) {
+
+		if (logger.isDebugEnabled()) {
+			logger.debug("Processing [" + message + "]");
+		}
+		InvocationResult result = invokeHandler(null, channel, message);
+		if (result.getReturnValue() != null) {
+			handleResult(result, amqpMessages, channel);
+		}
+		else {
+			logger.trace("No result object given - no result to handle");
+		}
+	}
+
+	private void handleResult(InvocationResult resultArg, List<org.springframework.amqp.core.Message> amqpMessages,
+			Channel channel) {
+
+		if (channel != null) {
+			if (resultArg.getReturnValue() instanceof CompletableFuture<?> completable) {
+				if (!isManualAck()) {
+					this.logger.warn("Container AcknowledgeMode must be MANUAL for a Future<?> return type; "
+							+ "otherwise the container will ack the message immediately");
+				}
+				completable.whenComplete((r, t) -> {
+					if (t == null) {
+						amqpMessages.forEach((request) -> basicAck(request, channel));
+					}
+					else {
+						asyncFailure(amqpMessages, channel, t);
+					}
+				});
+			}
+			else if (monoPresent && MonoHandler.isMono(resultArg.getReturnValue())) {
+				if (!isManualAck()) {
+					this.logger.warn("Container AcknowledgeMode must be MANUAL for a Mono<?> return type" +
+							"(or Kotlin suspend function); otherwise the container will ack the message immediately");
+				}
+				MonoHandler.subscribe(resultArg.getReturnValue(),
+						null,
+						t -> asyncFailure(amqpMessages, channel, t),
+						() -> amqpMessages.forEach((request) -> basicAck(request, channel)));
+			}
+			else {
+				throw new IllegalStateException("The listener in batch mode does not support replies.");
+			}
+		}
+		else if (this.logger.isWarnEnabled()) {
+			this.logger.warn("Listener method returned result [" + resultArg
+					+ "]: not generating response message for it because no Rabbit Channel given");
+		}
+	}
+
+	private void asyncFailure(List<org.springframework.amqp.core.Message> requests, Channel channel, Throwable t) {
+		this.logger.error("Future, Mono, or suspend function was completed with an exception for " + requests, t);
+		for (org.springframework.amqp.core.Message request : requests) {
+			try {
+				channel.basicNack(request.getMessageProperties().getDeliveryTag(), false,
+						ContainerUtils.shouldRequeue(isDefaultRequeueRejected(), t, this.logger));
+			}
+			catch (IOException e) {
+				this.logger.error("Failed to nack message", e);
+			}
 		}
 	}
 

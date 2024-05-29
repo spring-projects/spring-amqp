@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.annotation
 
 import assertk.assertThat
+import assertk.assertions.containsOnly
 import assertk.assertions.isEqualTo
 import assertk.assertions.isTrue
 import org.junit.jupiter.api.Test
@@ -40,6 +41,7 @@ import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Kotlin Annotated listener tests.
@@ -51,7 +53,7 @@ import java.util.concurrent.TimeUnit
  *
  */
 @SpringJUnitConfig
-@RabbitAvailable(queues = ["kotlinQueue", "kotlinQueue1", "kotlinReplyQueue"])
+@RabbitAvailable(queues = ["kotlinQueue", "kotlinBatchQueue", "kotlinQueue1", "kotlinReplyQueue"])
 @DirtiesContext
 class EnableRabbitKotlinTests {
 
@@ -70,12 +72,21 @@ class EnableRabbitKotlinTests {
 	}
 
 	@Test
+	fun `listen for batch`() {
+		val template = RabbitTemplate(this.config.cf())
+		template.convertAndSend("kotlinBatchQueue", "test1")
+		template.convertAndSend("kotlinBatchQueue", "test2")
+		assertThat(this.config.batchReceived.await(10, TimeUnit.SECONDS)).isTrue()
+		assertThat(this.config.batch).containsOnly("test1", "test2")
+	}
+
+	@Test
 	fun `send and wait for consume with EH`() {
 		val template = RabbitTemplate(this.config.cf())
 		template.convertAndSend("kotlinQueue1", "test")
 		assertThat(this.config.ehLatch.await(10, TimeUnit.SECONDS)).isTrue()
 		val reply = template.receiveAndConvert("kotlinReplyQueue", 10_000)
-		assertThat(reply).isEqualTo("error processed");
+		assertThat(reply).isEqualTo("error processed")
 	}
 
 	@Configuration
@@ -87,11 +98,32 @@ class EnableRabbitKotlinTests {
 			return data.uppercase()
 		}
 
+		val batchReceived = CountDownLatch(1)
+
+		lateinit var batch: List<String>
+
+		@RabbitListener(id = "batch", queues = ["kotlinBatchQueue"],
+				containerFactory = "batchRabbitListenerContainerFactory")
+		suspend fun receiveBatch(messages: List<String>) {
+			batchReceived.countDown()
+			batch = messages
+		}
+
 		@Bean
 		fun rabbitListenerContainerFactory(cf: CachingConnectionFactory) =
 				SimpleRabbitListenerContainerFactory().also {
 					it.setAcknowledgeMode(AcknowledgeMode.MANUAL)
 					it.setReceiveTimeout(10)
+					it.setConnectionFactory(cf)
+				}
+
+		@Bean
+		fun batchRabbitListenerContainerFactory(cf: CachingConnectionFactory) =
+				SimpleRabbitListenerContainerFactory().also {
+					it.setAcknowledgeMode(AcknowledgeMode.MANUAL)
+					it.setConsumerBatchEnabled(true)
+					it.setDeBatchingEnabled(true)
+					it.setBatchSize(3)
 					it.setConnectionFactory(cf)
 				}
 

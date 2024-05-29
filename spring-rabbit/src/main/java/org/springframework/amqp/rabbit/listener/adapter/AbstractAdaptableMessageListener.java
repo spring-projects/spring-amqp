@@ -314,9 +314,17 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 		this.defaultRequeueRejected = defaultRequeueRejected;
 	}
 
+	protected boolean isDefaultRequeueRejected() {
+		return this.defaultRequeueRejected;
+	}
+
 	@Override
 	public void containerAckMode(AcknowledgeMode mode) {
 		this.isManualAck = AcknowledgeMode.MANUAL.equals(mode);
+	}
+
+	protected boolean isManualAck() {
+		return this.isManualAck;
 	}
 
 	/**
@@ -413,9 +421,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 			Object deferredResult) {
 
 		if (deferredResult == null) {
-			if (this.logger.isDebugEnabled()) {
-				this.logger.debug("Async result is null, ignoring");
-			}
+			this.logger.debug("Async result is null, ignoring");
 		}
 		else {
 			Type returnType = resultArg.getReturnType();
@@ -439,7 +445,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 		}
 	}
 
-	private void basicAck(Message request, Channel channel) {
+	protected void basicAck(Message request, Channel channel) {
 		try {
 			channel.basicAck(request.getMessageProperties().getDeliveryTag(), false);
 		}
