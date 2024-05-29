@@ -78,21 +78,33 @@ public abstract class RabbitFuture<T> extends CompletableFuture<T> {
 
 	@Override
 	public boolean complete(T value) {
-		cancelTimeoutTaskIfAny();
-		return super.complete(value);
+		try {
+			return super.complete(value);
+		}
+		finally {
+			cancelTimeoutTaskIfAny();
+		}
 	}
 
 	@Override
 	public boolean completeExceptionally(Throwable ex) {
-		cancelTimeoutTaskIfAny();
-		return super.completeExceptionally(ex);
+		try {
+			return super.completeExceptionally(ex);
+		}
+		finally {
+			cancelTimeoutTaskIfAny();
+		}
 	}
 
 	@Override
 	public boolean cancel(boolean mayInterruptIfRunning) {
-		cancelTimeoutTaskIfAny();
 		this.canceler.accept(this.correlationId, this.channelHolder);
-		return super.cancel(mayInterruptIfRunning);
+		try {
+			return super.cancel(mayInterruptIfRunning);
+		}
+		finally {
+			cancelTimeoutTaskIfAny();
+		}
 	}
 
 	private void cancelTimeoutTaskIfAny() {
