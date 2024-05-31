@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1965,6 +1965,30 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		cf.shutdownCompleted(new ShutdownSignalException(false, false, null, chanShutDown));
 		assertThat(connShutDown.get()).isTrue();
 		assertThat(chanShutDown.get()).isFalse();
+	}
+
+	@Test
+	void isPublisherConfirmsHandlesSimple() {
+		CachingConnectionFactory ccf = new CachingConnectionFactory("someHost", 1234);
+		ccf.setPublisherConfirmType(ConfirmType.SIMPLE);
+
+		assertThat(ccf.isPublisherConfirms()).isTrue();
+	}
+
+	@Test
+	void isPublisherConfirmsHandlesCorrelated() {
+		CachingConnectionFactory ccf = new CachingConnectionFactory("someHost", 1234);
+		ccf.setPublisherConfirmType(ConfirmType.CORRELATED);
+
+		assertThat(ccf.isPublisherConfirms()).isTrue();
+	}
+
+	@Test
+	void isPublisherConfirmsHandlesNone() {
+		CachingConnectionFactory ccf = new CachingConnectionFactory("someHost", 1234);
+		ccf.setPublisherConfirmType(ConfirmType.NONE);
+
+		assertThat(ccf.isPublisherConfirms()).isFalse();
 	}
 
 }
