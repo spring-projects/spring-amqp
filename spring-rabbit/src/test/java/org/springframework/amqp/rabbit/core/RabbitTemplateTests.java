@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -557,6 +557,78 @@ public class RabbitTemplateTests {
 		template.invoke(t -> null);
 		verify(pcf).createConnection();
 		verify(conn).createChannel(false);
+	}
+
+	@Test
+	public void testPublisherConnWithInvokePhysicallyCloses() {
+		RabbitUtils.clearPhysicalCloseRequired();
+
+		org.springframework.amqp.rabbit.connection.ConnectionFactory cf = mock(
+				org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
+		org.springframework.amqp.rabbit.connection.ConnectionFactory pcf = mock(
+				org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
+		given(cf.getPublisherConnectionFactory()).willReturn(pcf);
+		given(pcf.isPublisherConfirms()).willReturn(false);
+
+		RabbitTemplate template = new RabbitTemplate(cf);
+		template.setUsePublisherConnection(true);
+		org.springframework.amqp.rabbit.connection.Connection conn = mock(
+				org.springframework.amqp.rabbit.connection.Connection.class);
+		ChannelProxy channel = mock(ChannelProxy.class);
+		given(pcf.createConnection()).willReturn(conn);
+		given(conn.isOpen()).willReturn(true);
+		given(conn.createChannel(false)).willReturn(channel);
+		template.invoke(t -> null);
+
+		assertThat(RabbitUtils.isPhysicalCloseRequired()).isTrue();
+	}
+
+	@Test
+	public void testPublisherConnWithInvokeAndPublisherConfirmations() {
+		RabbitUtils.clearPhysicalCloseRequired();
+
+		org.springframework.amqp.rabbit.connection.ConnectionFactory cf = mock(
+				org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
+		org.springframework.amqp.rabbit.connection.ConnectionFactory pcf = mock(
+				org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
+		given(cf.getPublisherConnectionFactory()).willReturn(pcf);
+		given(pcf.isPublisherConfirms()).willReturn(true);
+
+		RabbitTemplate template = new RabbitTemplate(cf);
+		template.setUsePublisherConnection(true);
+		org.springframework.amqp.rabbit.connection.Connection conn = mock(
+				org.springframework.amqp.rabbit.connection.Connection.class);
+		ChannelProxy channel = mock(ChannelProxy.class);
+		given(pcf.createConnection()).willReturn(conn);
+		given(conn.isOpen()).willReturn(true);
+		given(conn.createChannel(false)).willReturn(channel);
+		template.invoke(t -> null);
+
+		assertThat(RabbitUtils.isPhysicalCloseRequired()).isFalse();
+	}
+
+	@Test
+	public void testPublisherConnWithInvokeAndSimpleConfirmations() {
+		RabbitUtils.clearPhysicalCloseRequired();
+
+		org.springframework.amqp.rabbit.connection.ConnectionFactory cf = mock(
+				org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
+		org.springframework.amqp.rabbit.connection.ConnectionFactory pcf = mock(
+				org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
+		given(cf.getPublisherConnectionFactory()).willReturn(pcf);
+		given(pcf.isSimplePublisherConfirms()).willReturn(true);
+
+		RabbitTemplate template = new RabbitTemplate(cf);
+		template.setUsePublisherConnection(true);
+		org.springframework.amqp.rabbit.connection.Connection conn = mock(
+				org.springframework.amqp.rabbit.connection.Connection.class);
+		ChannelProxy channel = mock(ChannelProxy.class);
+		given(pcf.createConnection()).willReturn(conn);
+		given(conn.isOpen()).willReturn(true);
+		given(conn.createChannel(false)).willReturn(channel);
+		template.invoke(t -> null);
+
+		assertThat(RabbitUtils.isPhysicalCloseRequired()).isFalse();
 	}
 
 	@Test
