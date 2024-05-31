@@ -2344,7 +2344,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				if (channel == null) {
 					throw new IllegalStateException("Connection returned a null channel");
 				}
-				if (!connectionFactory.isPublisherConfirms() && !connectionFactory.isSimplePublisherConfirms()) {
+				if (!connectionFactory.isPublisherConfirms()) {
 					RabbitUtils.setPhysicalCloseRequired(channel, true);
 				}
 				this.dedicatedChannels.set(channel);
