@@ -1972,7 +1972,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		CachingConnectionFactory ccf = new CachingConnectionFactory("someHost", 1234);
 		ccf.setPublisherConfirmType(ConfirmType.SIMPLE);
 
-		assertThat(ccf.isPublisherConfirms()).isTrue();
+		assertThat(ccf.isPublisherConfirms()).isFalse();
 	}
 
 	@Test
