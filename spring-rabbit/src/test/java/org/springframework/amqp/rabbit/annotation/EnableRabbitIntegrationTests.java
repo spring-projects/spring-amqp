@@ -1907,12 +1907,12 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 		@Bean
 		public RabbitListenerErrorHandler alwaysBARHandler() {
-			return (msg, springMsg, ex) -> "BAR";
+			return (msg, channel, springMsg, ex) -> "BAR";
 		}
 
 		@Bean
 		public RabbitListenerErrorHandler upcaseAndRepeatErrorHandler() {
-			return (msg, springMsg, ex) -> {
+			return (msg, channel, springMsg, ex) -> {
 				String payload = ((Bar) springMsg.getPayload()).field.toUpperCase();
 				return payload + payload + " " + ex.getCause().getMessage();
  			};
@@ -1920,15 +1920,15 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 		@Bean
 		public RabbitListenerErrorHandler throwANewException() {
-			return (msg, springMsg, ex) -> {
-				this.errorHandlerChannel = springMsg.getHeaders().get(AmqpHeaders.CHANNEL, Channel.class);
+			return (msg, channel, springMsg, ex) -> {
+				this.errorHandlerChannel = channel;
 				throw new RuntimeException("from error handler", ex.getCause());
 			};
 		}
 
 		@Bean
 		public RabbitListenerErrorHandler throwWrappedValidationException() {
-			return (msg, springMsg, ex) -> {
+			return (msg, channel, springMsg, ex) -> {
 				throw new RuntimeException("argument validation failed", ex);
 			};
 		}

@@ -27,27 +27,13 @@ import com.rabbitmq.client.Channel;
  * listener container's error handler.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.0
  *
  */
 @FunctionalInterface
 public interface RabbitListenerErrorHandler {
-
-	/**
-	 * Handle the error. If an exception is not thrown, the return value is returned to
-	 * the sender using normal {@code replyTo/@SendTo} semantics.
-	 * @param amqpMessage the raw message received.
-	 * @param message the converted spring-messaging message (if available).
-	 * @param exception the exception the listener threw, wrapped in a
-	 * {@link ListenerExecutionFailedException}.
-	 * @return the return value to be sent to the sender.
-	 * @throws Exception an exception which may be the original or different.
-	 * @deprecated in favor of
-	 * {@link #handleError(Message, Channel, org.springframework.messaging.Message, ListenerExecutionFailedException)}
-	 */
-	@Deprecated(forRemoval = true, since = "3.1.3")
-	Object handleError(Message amqpMessage, @Nullable org.springframework.messaging.Message<?> message,
-			ListenerExecutionFailedException exception) throws Exception; // NOSONAR
 
 	/**
 	 * Handle the error. If an exception is not thrown, the return value is returned to
@@ -61,12 +47,8 @@ public interface RabbitListenerErrorHandler {
 	 * @throws Exception an exception which may be the original or different.
 	 * @since 3.1.3
 	 */
-	@SuppressWarnings("deprecation")
-	default Object handleError(Message amqpMessage, Channel channel,
+	Object handleError(Message amqpMessage, Channel channel,
 			@Nullable org.springframework.messaging.Message<?> message,
-			ListenerExecutionFailedException exception) throws Exception { // NOSONAR
-
-		return handleError(amqpMessage, message, exception);
-	}
+			ListenerExecutionFailedException exception) throws Exception;
 
 }

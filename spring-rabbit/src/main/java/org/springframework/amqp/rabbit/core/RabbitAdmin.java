@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -741,24 +741,6 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 */
 	public void resetAllManualDeclarations() {
 		this.manualDeclarables.clear();
-	}
-
-	@Override
-	@Deprecated
-	public Map<String, Declarable> getManualDeclarables() {
-		Map<String, Declarable> declarables = new HashMap<>();
-		this.manualDeclarables.forEach(declarable -> {
-			if (declarable instanceof Exchange exch) {
-				declarables.put(exch.getName(), declarable);
-			}
-			else if (declarable instanceof Queue queue) {
-				declarables.put(queue.getName(), declarable);
-			}
-			else if (declarable instanceof Binding) {
-				declarables.put(declarable.toString(), declarable);
-			}
-		});
-		return declarables;
 	}
 
 	@Override

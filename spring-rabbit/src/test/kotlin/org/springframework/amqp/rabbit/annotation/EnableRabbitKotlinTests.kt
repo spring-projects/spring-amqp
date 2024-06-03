@@ -151,7 +151,7 @@ class EnableRabbitKotlinTests {
 		val ehLatch = CountDownLatch(1)
 
 		@Bean
-		fun eh() = RabbitListenerErrorHandler { _, _, _ ->
+		fun eh() = RabbitListenerErrorHandler { _, _, _, _ ->
 			this.ehLatch.countDown()
 			"error processed"
 		}

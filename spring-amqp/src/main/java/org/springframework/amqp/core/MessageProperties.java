@@ -360,32 +360,6 @@ public class MessageProperties implements Serializable {
 	 * When a delayed message exchange is used the x-delay header on a
 	 * received message contains the delay.
 	 * @return the received delay.
-	 * @since 1.6
-	 * @deprecated in favor of {@link #getReceivedDelayLong()}
-	 * @see #getDelay()
-	 */
-	@Deprecated(since = "3.1.2", forRemoval = true)
-	public Integer getReceivedDelay() {
-		Long receivedDelay = getReceivedDelayLong();
-		return receivedDelay != null ? Math.toIntExact(receivedDelay) : null;
-	}
-
-	/**
-	 * When a delayed message exchange is used the x-delay header on a
-	 * received message contains the delay.
-	 * @param receivedDelay the received delay.
-	 * @since 1.6
-	 * @deprecated in favor of {@link #setReceivedDelayLong(Long)}
-	 */
-	@Deprecated(since = "3.1.2", forRemoval = true)
-	public void setReceivedDelay(Integer receivedDelay) {
-		setReceivedDelayLong(receivedDelay != null ? receivedDelay.longValue() : null);
-	}
-
-	/**
-	 * When a delayed message exchange is used the x-delay header on a
-	 * received message contains the delay.
-	 * @return the received delay.
 	 * @since 3.1.2
 	 * @see #getDelayLong()
 	 */
@@ -464,30 +438,6 @@ public class MessageProperties implements Serializable {
 
 	public void setConsumerQueue(String consumerQueue) {
 		this.consumerQueue = consumerQueue;
-	}
-
-	/**
-	 * The x-delay header (outbound).
-	 * @return the delay.
-	 * @since 1.6
-	 * @deprecated in favor of {@link #getDelayLong()}
-	 * @see #getReceivedDelay()
-	 */
-	@Deprecated(since = "3.1.2", forRemoval = true)
-	public Integer getDelay() {
-		Long delay = getDelayLong();
-		return delay != null ? Math.toIntExact(delay) : null;
-	}
-
-	/**
-	 * Set the x-delay header.
-	 * @param delay the delay.
-	 * @since 1.6
-	 * @deprecated in favor of {@link #setDelayLong(Long)}
-	 */
-	@Deprecated(since = "3.1.2", forRemoval = true)
-	public void setDelay(Integer delay) {
-		setDelayLong(delay != null ? delay.longValue() : null);
 	}
 
 	/**

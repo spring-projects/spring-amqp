@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 the original author or authors.
+ * Copyright 2014-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -284,17 +284,10 @@ public class MessagingMessageListenerAdapterTests {
 		Channel channel = mock(Channel.class);
 		AtomicBoolean ehCalled = new AtomicBoolean();
 		MessagingMessageListenerAdapter listener = getSimpleInstance("fail",
-				new RabbitListenerErrorHandler() {
-
-			@Override
-			public Object handleError(org.springframework.amqp.core.Message amqpMessage, Message<?> message,
-					ListenerExecutionFailedException exception) throws Exception {
-
-				ehCalled.set(true);
-				return null;
-			}
-
-		}, false, String.class);
+				(amqpMessage, channel1, message1, exception) -> {
+					ehCalled.set(true);
+					return null;
+				}, false, String.class);
 		listener.setMessageConverter(new MessageConverter() {
 
 			@Override
@@ -319,17 +312,10 @@ public class MessagingMessageListenerAdapterTests {
 		Channel channel = mock(Channel.class);
 		AtomicBoolean ehCalled = new AtomicBoolean();
 		MessagingMessageListenerAdapter listener = getSimpleInstance("fail",
-				new RabbitListenerErrorHandler() {
-
-			@Override
-			public Object handleError(org.springframework.amqp.core.Message amqpMessage, Message<?> message,
-					ListenerExecutionFailedException exception) throws Exception {
-
-				ehCalled.set(true);
-				return "foo";
-			}
-
-		}, false, String.class);
+				(amqpMessage, channel1, message1, exception) -> {
+					ehCalled.set(true);
+					return "foo";
+				}, false, String.class);
 		listener.setMessageConverter(new MessageConverter() {
 
 			@Override

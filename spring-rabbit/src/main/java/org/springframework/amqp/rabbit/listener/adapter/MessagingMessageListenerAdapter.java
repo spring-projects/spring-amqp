@@ -28,7 +28,6 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.support.AmqpHeaderMapper;
-import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.MessagingMessageConverter;
@@ -41,7 +40,6 @@ import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
@@ -179,14 +177,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 		if (this.errorHandler != null) {
 			try {
-				Message<?> messageWithChannel = null;
-				if (message != null) {
-					messageWithChannel = MessageBuilder.fromMessage(message)
-							// TODO won't be necessary starting with version 3.2
-							.setHeader(AmqpHeaders.CHANNEL, channel)
-							.build();
-				}
-				Object errorResult = this.errorHandler.handleError(amqpMessage, channel, messageWithChannel, e);
+				Object errorResult = this.errorHandler.handleError(amqpMessage, channel, message, e);
 				if (errorResult != null) {
 					Object payload = message == null ? null : message.getPayload();
 					InvocationResult invResult = payload == null
@@ -240,9 +231,9 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		Object payload = message == null ? null : message.getPayload();
 		try {
 			handleResult(new InvocationResult(new RemoteInvocationResult(throwableToReturn), null,
-						payload == null ? Object.class : this.handlerAdapter.getReturnTypeFor(payload),
-						this.handlerAdapter.getBean(),
-						payload == null ? null : this.handlerAdapter.getMethodFor(payload)),
+							payload == null ? Object.class : this.handlerAdapter.getReturnTypeFor(payload),
+							this.handlerAdapter.getBean(),
+							payload == null ? null : this.handlerAdapter.getMethodFor(payload)),
 					amqpMessage, channel, message);
 		}
 		catch (ReplyFailureException rfe) {
@@ -405,8 +396,8 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 				boolean isPayload = methodParameter.hasParameterAnnotation(Payload.class);
 				if (isHeaderOrHeaders && isPayload && MessagingMessageListenerAdapter.this.logger.isWarnEnabled()) {
 					MessagingMessageListenerAdapter.this.logger.warn(this.method.getName()
-						+ ": Cannot annotate a parameter with both @Header and @Payload; "
-						+ "ignored for payload conversion");
+							+ ": Cannot annotate a parameter with both @Header and @Payload; "
+							+ "ignored for payload conversion");
 				}
 				if (isEligibleParameter(methodParameter) // NOSONAR
 						&& (!isHeaderOrHeaders || isPayload) && !(isHeaderOrHeaders && isPayload)) {
@@ -416,7 +407,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 						if (this.isBatch && !this.isCollection) {
 							throw new IllegalStateException(
 									"Mis-configuration; a batch listener must consume a List<?> or "
-									+ "Collection<?> for method: " + this.method);
+											+ "Collection<?> for method: " + this.method);
 						}
 
 					}
@@ -467,8 +458,8 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 				}
 				else if (this.isBatch
 						&& ((parameterizedType.getRawType().equals(List.class)
-								|| parameterizedType.getRawType().equals(Collection.class))
-								&& parameterizedType.getActualTypeArguments().length == 1)) {
+						|| parameterizedType.getRawType().equals(Collection.class))
+						&& parameterizedType.getActualTypeArguments().length == 1)) {
 
 					this.isCollection = true;
 					Type paramType = parameterizedType.getActualTypeArguments()[0];
@@ -487,6 +478,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			}
 			return genericParameterType;
 		}
+
 	}
 
 }

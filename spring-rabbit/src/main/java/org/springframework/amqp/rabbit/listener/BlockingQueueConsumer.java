@@ -878,18 +878,6 @@ public class BlockingQueueConsumer {
 	 * Perform a commit or message acknowledgement, as appropriate.
 	 * NOTE: This method was never been intended tobe public.
 	 * @param localTx Whether the channel is locally transacted.
-	 * @return true if at least one delivery tag exists.
-	 * @deprecated in favor of {@link #commitIfNecessary(boolean, boolean)}
-	 */
-	@Deprecated(forRemoval = true, since = "3.1.2")
-	public boolean commitIfNecessary(boolean localTx) {
-		return commitIfNecessary(localTx, false);
-	}
-
-	/**
-	 * Perform a commit or message acknowledgement, as appropriate.
-	 * NOTE: This method was never been intended tobe public.
-	 * @param localTx Whether the channel is locally transacted.
 	 * @param forceAck perform {@link Channel#basicAck(long, boolean)} independently of {@link #acknowledgeMode}.
 	 * @return true if at least one delivery tag exists.
 	 * @since 3.1.2
