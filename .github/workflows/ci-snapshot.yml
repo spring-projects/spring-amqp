@@ -15,9 +15,10 @@ jobs:
   build-snapshot:
     uses: spring-io/spring-github-workflows/.github/workflows/spring-artifactory-gradle-snapshot.yml@main
     with:
-      artifactoryUrl: https://repo.spring.vmware.com
-      targetRepository: spring-commercial-snapshot-local
+      artifactoryUrl: https://usw1.packages.broadcom.com
+      targetRepository: spring-enterprise-maven-dev-local
       artifactoryProjectKey: spring
+      runner: ubuntu22-2-8
     secrets:
       ARTIFACTORY_USERNAME: ${{ secrets.COMMERCIAL_ARTIFACTORY_USERNAME }}
       ARTIFACTORY_PASSWORD: ${{ secrets.COMMERCIAL_ARTIFACTORY_PASSWORD }}
