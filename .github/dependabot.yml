@@ -18,7 +18,7 @@ updates:
          update-types:
           - patch
          patterns: 
-         - com.gradle.enterprise
+         - com.gradle.*
          - com.github.spotbugs
          - io.spring.*
          - org.ajoberstar.grgit
@@ -51,7 +51,7 @@ updates:
         update-types:
           - patch
         patterns:
-          - com.gradle.enterprise
+          - com.gradle.*
           - com.github.spotbugs
           - io.spring.*
           - org.ajoberstar.grgit
