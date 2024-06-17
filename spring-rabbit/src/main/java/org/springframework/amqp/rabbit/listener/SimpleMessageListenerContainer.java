@@ -1396,6 +1396,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			finally {
+				SimpleMessageListenerContainer.this.cancellationLock.release(this.consumer);
 				if (getTransactionManager() != null) {
 					ConsumerChannelRegistry.unRegisterConsumerChannel();
 				}
