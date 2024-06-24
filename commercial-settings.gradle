@@ -6,7 +6,7 @@ allprojects {
 	repositories {
 		if (isCI) {
 			maven {
-				url 'https://repo.spring.vmware.com/artifactory/spring-commercial'
+				url 'https://usw1.packages.broadcom.com/artifactory/spring-enterprise-maven-prod-local'
 				credentials {
 					username = artifactoryUsername
 					password = artifactoryPassword
@@ -14,14 +14,15 @@ allprojects {
 			}
 			if (version.endsWith('SNAPSHOT')) {
 				maven {
-					url 'https://repo.spring.vmware.com/artifactory/spring-commercial-snapshot-local'
+					url 'https://usw1.packages.broadcom.com/artifactory/spring-enterprise-maven-dev-local'
 					credentials {
 						username = artifactoryUsername
 						password = artifactoryPassword
 					}
 				}
 			}
-		} else {
+		}
+		else {
 			maven { url 'https://repo.spring.io/spring-commercial-release-remote' }
 			if (version.endsWith('SNAPSHOT')) {
 				maven { url 'https://repo.spring.io/spring-commercial-snapshot-remote' }
