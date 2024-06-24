@@ -14,10 +14,11 @@ jobs:
 
     uses: spring-io/spring-github-workflows/.github/workflows/spring-artifactory-gradle-release.yml@main
     with:
-      artifactoryUrl: https://repo.spring.vmware.com
-      stagingRepository: spring-commercial-staging-local
-      targetReleaseRepository: spring-commercial-release-local
+      artifactoryUrl: https://usw1.packages.broadcom.com
+      stagingRepository: spring-enterprise-maven-stage-local
+      targetReleaseRepository: spring-enterprise-maven-prod-local
       artifactoryProjectKey: spring
+      runner: ubuntu22-2-8
     secrets:
       GH_ACTIONS_REPO_TOKEN: ${{ secrets.GH_ACTIONS_REPO_TOKEN }}
       JF_ARTIFACTORY_SPRING: ${{ secrets.COMMERCIAL_JF_ARTIFACTORY_SPRING }}

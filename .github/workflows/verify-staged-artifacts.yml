@@ -14,7 +14,7 @@ env:
 
 jobs:
   verify-staged-with-samples:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu22-2-8
     steps:
 
       - name: Checkout Samples Repo
@@ -32,7 +32,7 @@ jobs:
           printf "allprojects {
                   repositories {
                     maven { 
-                      url 'https://repo.spring.vmware.com/artifactory/spring-commercial-staging-local'
+                      url 'https://usw1.packages.broadcom.com/artifactory/spring-enterprise-maven-stage-local'
                       credentials {
                         username = '$ARTIFACTORY_USERNAME'
                         password = '$ARTIFACTORY_PASSWORD'
