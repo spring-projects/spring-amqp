@@ -5,6 +5,9 @@ on:
 
 run-name: Release current version for branch ${{ github.ref_name }}
 
+env:
+  ARTIFACTORY_URL: ${{ secrets.COMMERCIAL_ARTIFACTORY_URL }}
+
 jobs:
   release:
     permissions:
@@ -14,7 +17,7 @@ jobs:
 
     uses: spring-io/spring-github-workflows/.github/workflows/spring-artifactory-gradle-release.yml@main
     with:
-      artifactoryUrl: ${{ secrets.COMMERCIAL_ARTIFACTORY_URL }}
+      artifactoryUrl: ${{ env.ARTIFACTORY_URL }}
       stagingRepository: spring-enterprise-maven-stage-local
       targetReleaseRepository: spring-enterprise-maven-prod-local
       artifactoryProjectKey: spring

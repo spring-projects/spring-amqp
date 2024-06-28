@@ -13,12 +13,14 @@ on:
         description: 'The Artifactory Build Number'
         required: true
 
+env:
+  ARTIFACTORY_URL: ${{ secrets.COMMERCIAL_ARTIFACTORY_URL }}
 
 jobs:
   distribute-release-to-spring-enterprise:
     uses: spring-io/spring-github-workflows/.github/workflows/spring-enterprise-release-bundle.yml@main
     with:
-      artifactoryUrl: ${{ secrets.COMMERCIAL_ARTIFACTORY_URL }}
+      artifactoryUrl: ${{ env.ARTIFACTORY_URL }}
       bundleName: TNZ-${{ github.event.repository.name }}
       releaseVersion: ${{ inputs.releaseVersion }}
       buildName: ${{ inputs.buildName }}
