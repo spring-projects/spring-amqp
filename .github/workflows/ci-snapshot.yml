@@ -11,14 +11,11 @@ concurrency:
   group: group-snapshot-for-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  ARTIFACTORY_URL: ${{ secrets.COMMERCIAL_ARTIFACTORY_URL }}
-
 jobs:
   build-snapshot:
     uses: spring-io/spring-github-workflows/.github/workflows/spring-artifactory-gradle-snapshot.yml@main
     with:
-      artifactoryUrl: ${{ env.ARTIFACTORY_URL }}
+      artifactoryUrl: https://usw1.packages.broadcom.com
       targetRepository: spring-enterprise-maven-dev-local
       artifactoryProjectKey: spring
       runner: ubuntu22-2-8
