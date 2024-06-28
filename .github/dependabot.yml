@@ -2,9 +2,9 @@ version: 2
 registries:
   spring-commercial:
     type: maven-repository
-    url: https://repo.spring.vmware.com/artifactory/spring-commercial
-    username: ${{ secrets.COMMERCIAL_ARTIFACTORY_RO_USERNAME }}
-    password: ${{ secrets.COMMERCIAL_ARTIFACTORY_RO_PASSWORD }}
+    url: https://repo.spring.io/artifactory/spring-commercial-release-remote-cache
+    username: ${{ secrets.ARTIFACTORY_RO_USERNAME }}
+    password: ${{ secrets.ARTIFACTORY_RO_PASSWORD }}
 
 updates:
 

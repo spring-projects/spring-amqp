@@ -11,6 +11,7 @@ on:
 env:
   ARTIFACTORY_USERNAME: ${{ secrets.COMMERCIAL_ARTIFACTORY_USERNAME }}
   ARTIFACTORY_PASSWORD: ${{ secrets.COMMERCIAL_ARTIFACTORY_PASSWORD }}
+  ARTIFACTORY_URL: ${{ secrets.COMMERCIAL_ARTIFACTORY_URL }}
 
 jobs:
   verify-staged-with-samples:
@@ -32,7 +33,7 @@ jobs:
           printf "allprojects {
                   repositories {
                     maven { 
-                      url 'https://usw1.packages.broadcom.com/artifactory/spring-enterprise-maven-stage-local'
+                      url '$ARTIFACTORY_URL/artifactory/spring-enterprise-maven-stage-local'
                       credentials {
                         username = '$ARTIFACTORY_USERNAME'
                         password = '$ARTIFACTORY_PASSWORD'

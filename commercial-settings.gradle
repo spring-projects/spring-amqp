@@ -23,9 +23,9 @@ allprojects {
 			}
 		}
 		else {
-			maven { url 'https://repo.spring.io/spring-commercial-release-remote' }
+			maven { url 'https://repo.spring.io/artifactory/spring-commercial-release-remote-cache' }
 			if (version.endsWith('SNAPSHOT')) {
-				maven { url 'https://repo.spring.io/spring-commercial-snapshot-remote' }
+				maven { url 'https://repo.spring.io/artifactory/spring-commercial-snapshot-remote-cache' }
 			}
 		}
 	}
