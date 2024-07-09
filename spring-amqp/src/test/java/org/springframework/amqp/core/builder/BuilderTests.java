@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,11 @@
 package org.springframework.amqp.core.builder;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.amqp.core.ConsistentHashExchange;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.ExchangeBuilder;
@@ -31,8 +33,8 @@ import org.springframework.amqp.core.TopicExchange;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 1.6
- *
  */
 public class BuilderTests {
 
@@ -89,6 +91,23 @@ public class BuilderTests {
 		assertThat(exchange.isDurable()).isTrue();
 		assertThat(exchange.isInternal()).isFalse();
 		assertThat(exchange.isDelayed()).isFalse();
+
+		exchange = ExchangeBuilder.consistentHashExchange("foo")
+				.ignoreDeclarationExceptions()
+				.hashHeader("my_header")
+				.build();
+
+		assertThat(exchange).isInstanceOf(ConsistentHashExchange.class);
+		assertThat((String) exchange.getArguments().get("hash-header")).isEqualTo("my_header");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() ->
+						ExchangeBuilder.consistentHashExchange("wrong_exchange")
+								.hashHeader("my_header")
+								.hashProperty("my_property")
+								.build())
+				.withMessage("The 'hash-header' and 'hash-property' are mutually exclusive.");
+
 	}
 
 }

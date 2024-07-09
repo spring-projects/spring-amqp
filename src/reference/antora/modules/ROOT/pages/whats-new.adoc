@@ -9,3 +9,8 @@
 === Spring Framework 6.1
 
 This version requires Spring Framework 6.2.
+
+[[x32-consistent-hash-exchange]]
+=== Consistent Hash Exchange
+
+The convenient `ConsistentHashExchange` and respective `ExchangeBuilder.consistentHashExchange()` API has been introduced.

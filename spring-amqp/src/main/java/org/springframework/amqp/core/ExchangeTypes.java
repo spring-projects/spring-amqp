@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,9 @@ package org.springframework.amqp.core;
  *
  * @author Mark Fisher
  * @author Gary Russell
+ * @author Artem Bilan
  */
-public abstract class ExchangeTypes {
+public final class ExchangeTypes {
 
 	/**
 	 * Direct exchange.
@@ -45,8 +46,19 @@ public abstract class ExchangeTypes {
 	public static final String HEADERS = "headers";
 
 	/**
-	 * System exchange.
+	 * Consistent Hash exchange.
+	 * @since 3.2
 	 */
+	public static final String CONSISTENT_HASH = "x-consistent-hash";
+
+	/**
+	 * System exchange.
+	 * @deprecated with no replacement (for removal): there is no such an exchange type in AMQP.
+	 */
+	@Deprecated(since = "3.2", forRemoval = true)
 	public static final String SYSTEM = "system";
+
+	private ExchangeTypes() {
+	}
 
 }
