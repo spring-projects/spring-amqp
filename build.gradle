@@ -43,7 +43,7 @@ ext {
                                 .filter { f -> f.name.endsWith('.java') || f.name.endsWith('.kt') }
                     }
 
-	assertjVersion = '3.26.0'
+	assertjVersion = '3.26.3'
 	assertkVersion = '0.28.1'
 	awaitilityVersion = '4.2.1'
 	commonsCompressVersion = '1.26.2'
