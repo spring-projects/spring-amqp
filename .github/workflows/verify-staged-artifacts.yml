@@ -8,8 +8,16 @@ on:
         required: true
         type: string
 
+
+env:
+  GRADLE_ENTERPRISE_CACHE_USERNAME: ${{ secrets.GRADLE_ENTERPRISE_CACHE_USER }}
+  GRADLE_ENTERPRISE_CACHE_PASSWORD: ${{ secrets.GRADLE_ENTERPRISE_CACHE_PASSWORD }}
+  GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GRADLE_ENTERPRISE_SECRET_ACCESS_KEY }}
+  ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+  ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+
 jobs:
-  verify-staged-with-samples:
+  verify-staged-with-spring-integration:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,36 +28,31 @@ jobs:
           ports: '5672:5672 15672:15672 5552:5552'
           plugins: rabbitmq_stream,rabbitmq_management
 
-      - name: Checkout Samples Repo
+      - name: Checkout Spring Integration Repo
         uses: actions/checkout@v4
         with:
-          repository: spring-projects/spring-amqp-samples
-          ref: ${{ github.ref_name }}
+          repository: spring-projects/spring-integration
           show-progress: false
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-          cache: 'maven'
 
-      - uses: jfrog/setup-jfrog-cli@v4
-        env:
-          JF_ENV_SPRING: ${{ secrets.JF_ARTIFACTORY_SPRING }}
+      - name: Set up Gradle
+        uses: spring-io/spring-gradle-build-action@v2
 
-      - name: Configure JFrog Cli
-        run: jf mvnc --repo-resolve-releases=libs-release-staging --repo-resolve-snapshots=snapshot
-
-      - name: Verify samples against staged release
+      - name: Prepare Spring Integration project against Staging
         run: |
-          mvn versions:set -DnewVersion=${{ inputs.releaseVersion }} -DgenerateBackupPoms=false -DprocessAllModules=true -B -ntp
-          jf mvn verify -B -ntp
+          printf "allprojects {
+                  repositories {
+                    maven { 
+                      url 'https://repo.spring.io/libs-staging-local'
+                      credentials {
+                        username = '$ARTIFACTORY_USERNAME'
+                        password = '$ARTIFACTORY_PASSWORD'
+                      }
+                    }
+                  }
+                }" > staging-repo-init.gradle
+          
+          sed -i "1,/springAmqpVersion.*/s/springAmqpVersion.*/springAmqpVersion='${{ inputs.releaseVersion }}'/" build.gradle  
 
-      - name: Capture Test Results
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: '**/target/surefire-reports/**/*.*'
-          retention-days: 1
+      - name: Verify Spring Integration AMQP module against staged release
+        run: gradle :spring-integration-amqp:check --init-script staging-repo-init.gradle
