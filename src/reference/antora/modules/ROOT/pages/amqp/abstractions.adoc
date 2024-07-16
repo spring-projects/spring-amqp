@@ -53,7 +53,7 @@ IMPORTANT: Starting with versions `1.5.7`, `1.6.11`, `1.7.4`, and `2.0.0`, if a 
 This is to prevent unsafe deserialization.
 By default, only `java.util` and `java.lang` classes are deserialized.
 To revert to the previous behavior, you can add allowable class/package patterns by invoking `Message.addAllowedListPatterns(...)`.
-A simple `*` wildcard is supported, for example `com.something.*, *.MyClass`.
+A simple `\*` wildcard is supported, for example `com.something.*, *.MyClass`.
 Bodies that cannot be deserialized are represented by `byte[<size>]` in log messages.
 
 [[exchange]]
