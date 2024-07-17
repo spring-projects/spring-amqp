@@ -72,7 +72,6 @@
 *** xref:appendix/previous-whats-new/changes-in-3-0-since-2-4.adoc[]
 *** xref:appendix/previous-whats-new/changes-in-2-4-since-2-3.adoc[]
 *** xref:appendix/previous-whats-new/message-converter-changes.adoc[]
-*** xref:appendix/previous-whats-new/message-converter-changes-1.adoc[]
 *** xref:appendix/previous-whats-new/stream-support-changes.adoc[]
 *** xref:appendix/previous-whats-new/changes-in-2-3-since-2-2.adoc[]
 *** xref:appendix/previous-whats-new/changes-in-2-2-since-2-1.adoc[]
