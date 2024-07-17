@@ -242,7 +242,7 @@ See <<java-deserialization>> for more information.
 
 Improvements to the JSON message converter now allow the consumption of messages that do not have type information
 in message headers.
-See xref:amqp/receiving-messages/async-annotation-driven/conversion.adoc[Message Conversion for Annotated Methods] and <<json-message-converter>> for more information.
+See xref:amqp/receiving-messages/async-annotation-driven/conversion.adoc[Message Conversion for Annotated Methods] and xref:amqp/message-converters.adoc#json-message-converter[`Jackson2JsonMessageConverter`] for more information.
 
 [[logging-appenders]]
 == Logging Appenders

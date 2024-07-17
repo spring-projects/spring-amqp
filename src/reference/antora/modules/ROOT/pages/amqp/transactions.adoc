@@ -116,7 +116,7 @@ See xref:amqp/containerAttributes.adoc[Message Listener Container Configuration]
 [[using-rabbittransactionmanager]]
 == Using `RabbitTransactionManager`
 
-The https://docs.spring.io/spring-amqp/docs/latest_ga/api/org/springframework/amqp/rabbit/transaction/RabbitTransactionManager.html[RabbitTransactionManager] is an alternative to executing Rabbit operations within, and synchronized with, external transactions.
+The https://docs.spring.io/spring-amqp/docs/current/api/org/springframework/amqp/rabbit/transaction/RabbitTransactionManager.html[RabbitTransactionManager] is an alternative to executing Rabbit operations within, and synchronized with, external transactions.
 This transaction manager is an implementation of the https://docs.spring.io/spring/docs/current/javadoc-api/org/springframework/transaction/PlatformTransactionManager.html[`PlatformTransactionManager`] interface and should be used with a single Rabbit `ConnectionFactory`.
 
 IMPORTANT: This strategy is not able to provide XA transactions -- for example, in order to share transactions between messaging and database access.
