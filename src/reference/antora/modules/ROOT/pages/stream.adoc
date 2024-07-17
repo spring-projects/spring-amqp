@@ -298,7 +298,7 @@ The container now also supports Micrometer timers (when observation is not enabl
 Set `observationEnabled` on each component to enable observation; this will disable xref:amqp/receiving-messages/micrometer.adoc[Micrometer Timers] because the timers will now be managed with each observation.
 When using annotated listeners, set `observationEnabled` on the container factory.
 
-Refer to https://micrometer.io/docs/tracing[Micrometer Tracing] for more information.
+Refer to https://docs.micrometer.io/tracing/reference/[Micrometer Tracing] for more information.
 
 To add tags to timers/traces, configure a custom `RabbitStreamTemplateObservationConvention` or `RabbitStreamListenerObservationConvention` to the template or listener container, respectively.
 
