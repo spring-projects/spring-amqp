@@ -32,9 +32,9 @@ To build api Javadoc (results will be in `build/api`):
 
 	./gradlew api
 
-To build reference documentation (results will be in `build/reference`):
+To build reference documentation (results will be in `build/site`):
 
-	./gradlew reference
+	./gradlew antora
 
 To build complete distribution including `-dist`, `-docs`, and `-schema` zip files (results will be in `build/distributions`)
 
@@ -92,7 +92,7 @@ Here are some ways for you to get involved in the community:
 * Get involved with the Spring community on Stack Overflow by responding to questions and joining the debate.
 
 * Create Github issues for bugs and new features and comment and vote on the ones that you are interested in.
-* Github is for social coding: if you want to write code, we encourage contributions through pull requests from [forks of this repository](https://help.github.com/forking/).
+* Github is for social coding: if you want to write code, we encourage contributions through pull requests from [forks of this repository](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo).
 If you want to contribute code this way, please reference the specific Github issue you are addressing.
 
 Before we accept a non-trivial patch or pull request we will need you to sign the [contributor's agreement](https://cla.pivotal.io/sign/spring).
