@@ -66,7 +66,7 @@ ext {
 	springRetryVersion = '2.0.7'
 	springVersion = project.hasProperty('springVersion') ? project.springVersion : '6.0.13'
 	testcontainersVersion = '1.19.8'
-	zstdJniVersion = '1.5.6-3'
+	zstdJniVersion = '1.5.6-4'
 
 	javaProjects = subprojects - project(':spring-amqp-bom')
 }
