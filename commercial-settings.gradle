@@ -6,7 +6,7 @@ def releaseRepository = 'https://repo.spring.io/artifactory/spring-commercial-re
 def snapshotRepository = 'https://repo.spring.io/artifactory/spring-commercial-snapshot-remote-cache'
 
 if (isCI && !isDependabotPr) {
-	releaseRepository 'https://usw1.packages.broadcom.com/artifactory/spring-enterprise-maven-prod-local'
+	releaseRepository = 'https://usw1.packages.broadcom.com/artifactory/spring-enterprise-maven-prod-local'
 	snapshotRepository = 'https://usw1.packages.broadcom.com/artifactory/spring-enterprise-maven-dev-local'
 }
 
