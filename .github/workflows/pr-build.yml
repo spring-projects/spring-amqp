@@ -10,6 +10,7 @@ jobs:
     uses: spring-io/spring-github-workflows/.github/workflows/spring-gradle-pull-request-build.yml@main
     with:
       runner: ubuntu22-2-8
+#      The secrets in PRs are available only for Dependabot scope
     secrets:
-      ARTIFACTORY_USERNAME: ${{ secrets.COMMERCIAL_ARTIFACTORY_USERNAME }}
-      ARTIFACTORY_PASSWORD: ${{ secrets.COMMERCIAL_ARTIFACTORY_PASSWORD }}
+      ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_RO_USERNAME }}
+      ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_RO_PASSWORD }}
