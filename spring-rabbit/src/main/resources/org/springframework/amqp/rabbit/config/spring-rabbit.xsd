@@ -1303,21 +1303,6 @@
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
-			<xsd:attribute name="return-callback" type="xsd:string" use="optional">
-				<xsd:annotation>
-					<xsd:documentation><![CDATA[
-	A reference to an implementation of RabbitTemplate.ReturnCallback - invoked if
-	a return is received for a message published with mandatory set
-	that couldn't be delivered according to the semantics of that option.
-	DEPRECTATED - use 'returns-callback' instead.
-					]]></xsd:documentation>
-					<xsd:appinfo>
-						<tool:annotation kind="ref">
-							<tool:expected-type type="org.springframework.amqp.core.RabbitTemplate.ReturnCallback"/>
-						</tool:annotation>
-					</xsd:appinfo>
-				</xsd:annotation>
-			</xsd:attribute>
 			<xsd:attribute name="returns-callback" type="xsd:string" use="optional">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
