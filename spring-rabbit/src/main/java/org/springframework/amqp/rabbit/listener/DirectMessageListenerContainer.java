@@ -271,8 +271,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		Assert.noNullElements(queues, "'queues' cannot contain null elements");
 		try {
 			Arrays.stream(queues)
-				.map(Queue::getActualName)
-				.forEach(this.removedQueues::remove);
+					.map(Queue::getActualName)
+					.forEach(this.removedQueues::remove);
 			addQueues(Arrays.stream(queues).map(Queue::getName));
 		}
 		catch (AmqpIOException e) {
@@ -340,8 +340,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			checkStartState();
 			this.consumersToRestart.clear();
 			for (String queue : getQueueNames()) {
-				while (this.consumersByQueue.get(queue) == null
-						|| this.consumersByQueue.get(queue).size() < newCount) { // NOSONAR never null
+				while (isActive() &&
+						(this.consumersByQueue.get(queue) == null
+								|| this.consumersByQueue.get(queue).size() < newCount)) { // NOSONAR never null
 					List<SimpleConsumer> cBQ = this.consumersByQueue.get(queue);
 					int index = 0;
 					if (cBQ != null) {
