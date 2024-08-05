@@ -25,24 +25,25 @@ plugins {
 	id 'org.antora' version '1.0.0'
 	id 'io.spring.antora.generate-antora-yml' version '0.0.1'
 	id 'com.github.spotbugs' version '6.0.19'
+	id 'io.freefair.aggregate-javadoc' version '8.6'
 }
 
 description = 'Spring AMQP'
 
 ext {
 	linkHomepage = 'https://projects.spring.io/spring-amqp'
-	linkCi       = 'https://build.spring.io/browse/AMQP'
-	linkIssue    = 'https://jira.spring.io/browse/AMQP'
-	linkScmUrl           = 'https://github.com/spring-projects/spring-amqp'
-	linkScmConnection    = 'git://github.com/spring-projects/spring-amqp.git'
+	linkCi = 'https://build.spring.io/browse/AMQP'
+	linkIssue = 'https://jira.spring.io/browse/AMQP'
+	linkScmUrl = 'https://github.com/spring-projects/spring-amqp'
+	linkScmConnection = 'git://github.com/spring-projects/spring-amqp.git'
 	linkScmDevConnection = 'git@github.com:spring-projects/spring-amqp.git'
 
 	modifiedFiles =
-            files()
-                    .from {
-                        files(grgit.status().unstaged.modified)
-                                .filter { f -> f.name.endsWith('.java') || f.name.endsWith('.kt') }
-                    }
+			files()
+					.from {
+						files(grgit.status().unstaged.modified)
+								.filter { f -> f.name.endsWith('.java') || f.name.endsWith('.kt') }
+					}
 	modifiedFiles.finalizeValueOnRead()
 
 	assertjVersion = '3.24.2'
@@ -81,20 +82,20 @@ ext {
 antora {
 	version = '3.2.0-alpha.2'
 	playbook = file('src/reference/antora/antora-playbook.yml')
-	options = ['to-dir' : project.layout.buildDirectory.dir('site').get().toString(), clean: true, fetch: !project.gradle.startParameter.offline, stacktrace: true]
+	options = ['to-dir': project.layout.buildDirectory.dir('site').get().toString(), clean: true, fetch: !project.gradle.startParameter.offline, stacktrace: true]
 	dependencies = [
-			'@antora/atlas-extension': '1.0.0-alpha.1',
-			'@antora/collector-extension': '1.0.0-alpha.3',
-			'@asciidoctor/tabs': '1.0.0-beta.3',
-			'@springio/antora-extensions': '1.4.2',
+			'@antora/atlas-extension'         : '1.0.0-alpha.1',
+			'@antora/collector-extension'     : '1.0.0-alpha.3',
+			'@asciidoctor/tabs'               : '1.0.0-beta.3',
+			'@springio/antora-extensions'     : '1.4.2',
 			'@springio/asciidoctor-extensions': '1.0.0-alpha.8',
 	]
 }
 
 tasks.named('generateAntoraYml') {
-	asciidocAttributes = project.provider( {
-		return ['project-version' : project.version ]
-	} )
+	asciidocAttributes = project.provider({
+		return ['project-version': project.version]
+	})
 	baseAntoraYmlFile = file('src/reference/antora/antora.yml')
 }
 
@@ -153,9 +154,9 @@ allprojects {
 ext {
 	expandPlaceholders = '**/quick-tour.xml'
 	javadocLinks = [
-		'https://docs.oracle.com/en/java/javase/17/docs/api/',
-		'https://jakarta.ee/specifications/platform/9/apidocs/',
-		'https://docs.spring.io/spring-framework/docs/current/javadoc-api/'
+			'https://docs.oracle.com/en/java/javase/17/docs/api/',
+			'https://jakarta.ee/specifications/platform/9/apidocs/',
+			'https://docs.spring.io/spring-framework/docs/current/javadoc-api/'
 	] as String[]
 }
 
@@ -167,7 +168,7 @@ configure(javaProjects) { subproject ->
 	apply plugin: 'kotlin'
 	apply plugin: 'kotlin-spring'
 
-	apply from:   "${rootProject.projectDir}/gradle/publish-maven.gradle"
+	apply from: "${rootProject.projectDir}/gradle/publish-maven.gradle"
 
 	def scopeAttribute = Attribute.of('dependency.scope', String)
 
@@ -184,7 +185,7 @@ configure(javaProjects) { subproject ->
 	}
 
 	components.java.addVariantsFromConfiguration(configurations.optional) {
-			mapToOptional()
+		mapToOptional()
 	}
 
 	java {
@@ -220,7 +221,7 @@ configure(javaProjects) { subproject ->
 
 		testImplementation 'org.apache.logging.log4j:log4j-core'
 		testImplementation "org.hamcrest:hamcrest-core:$hamcrestVersion"
-		testImplementation ("org.mockito:mockito-core:$mockitoVersion") {
+		testImplementation("org.mockito:mockito-core:$mockitoVersion") {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
 		}
 		testImplementation "org.mockito:mockito-junit-jupiter:$mockitoVersion"
@@ -371,7 +372,7 @@ project('spring-amqp') {
 
 	dependencies {
 		api 'org.springframework:spring-core'
-		api ("org.springframework.retry:spring-retry:$springRetryVersion") {
+		api("org.springframework.retry:spring-retry:$springRetryVersion") {
 			exclude group: 'org.springframework'
 		}
 		optional 'org.springframework:spring-messaging'
@@ -385,11 +386,11 @@ project('spring-amqp') {
 		optional 'com.fasterxml.jackson.module:jackson-module-parameter-names'
 		optional 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 		optional 'com.fasterxml.jackson.datatype:jackson-datatype-joda'
-		optional ('com.fasterxml.jackson.module:jackson-module-kotlin') {
+		optional('com.fasterxml.jackson.module:jackson-module-kotlin') {
 			exclude group: 'org.jetbrains.kotlin'
 		}
 		// Spring Data projection message binding support
-		optional ('org.springframework.data:spring-data-commons') {
+		optional('org.springframework.data:spring-data-commons') {
 			exclude group: 'org.springframework'
 			exclude group: 'io.micrometer'
 		}
@@ -443,7 +444,7 @@ project('spring-rabbit') {
 		optional 'io.micrometer:micrometer-core'
 		optional 'io.micrometer:micrometer-tracing'
 		// Spring Data projection message binding support
-		optional ("org.springframework.data:spring-data-commons") {
+		optional("org.springframework.data:spring-data-commons") {
 			exclude group: 'org.springframework'
 		}
 		optional "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
@@ -464,7 +465,7 @@ project('spring-rabbit') {
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind'
 		testRuntimeOnly 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
 		testRuntimeOnly 'com.fasterxml.jackson.module:jackson-module-kotlin'
-		testRuntimeOnly ("junit:junit:$junit4Version") {
+		testRuntimeOnly("junit:junit:$junit4Version") {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
 		}
 	}
@@ -514,7 +515,7 @@ project('spring-rabbit-junit') {
 		api 'org.springframework:spring-web'
 		api 'org.junit.jupiter:junit-jupiter-api'
 		api "org.assertj:assertj-core:$assertjVersion"
-		optional ("junit:junit:$junit4Version") {
+		optional("junit:junit:$junit4Version") {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
 		}
 		optional "org.testcontainers:rabbitmq"
@@ -575,15 +576,19 @@ tasks.register('filterMetricsDocsContent', Copy) {
 	filter { line -> line.replaceAll('org.springframework.*.micrometer.', '').replaceAll('^Fully qualified n', 'N') }
 }
 
-tasks.register('api', Javadoc) {
-	group = 'Documentation'
-	description = 'Generates aggregated Javadoc API documentation.'
+dependencies {
+	javaProjects.each {
+		javadoc it
+	}
+}
+
+javadoc {
 	title = "${rootProject.description} ${version} API"
 	options {
 		encoding = 'UTF-8'
 		memberLevel = JavadocMemberLevel.PROTECTED
 		author = true
-		header = rootProject.description
+		header = project.description
 		use = true
 		overview = 'src/api/overview.html'
 		splitIndex = true
@@ -591,22 +596,25 @@ tasks.register('api', Javadoc) {
 		addBooleanOption('Xdoclint:syntax', true) // only check syntax with doclint
 	}
 
-	source javaProjects.collect { project ->
-		project.sourceSets.main.allJava
-	}
-	destinationDir = new File('build', 'api')
+	destinationDir = file('build/api')
 	classpath = files().from { files(javaProjects.collect { it.sourceSets.main.compileClasspath }) }
+}
+
+tasks.register('api') {
+	group = 'Documentation'
+	description = 'Generates aggregated Javadoc API documentation.'
+	dependsOn javadoc
 }
 
 tasks.register('schemaZip', Zip) {
 	group = 'Distribution'
 	archiveClassifier = 'schema'
 	description = "Builds -${archiveClassifier} archive containing all " +
-		"XSDs for deployment at static.springframework.org/schema."
+			"XSDs for deployment at static.springframework.org/schema."
 
 	javaProjects.each { subproject ->
-		def Set files = new HashSet()
-		def Properties schemas = new Properties();
+		Set files = new HashSet()
+		Properties schemas = new Properties();
 		def shortName = subproject.name.replaceFirst("${rootProject.name}-", '')
 
 		if (subproject.name.endsWith('-rabbit')) {
@@ -646,7 +654,7 @@ tasks.register('docsZip', Zip) {
 		include 'changelog.txt'
 	}
 
-	from(api) {
+	from(javadoc) {
 		into 'api'
 	}
 }
