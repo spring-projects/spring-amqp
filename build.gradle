@@ -42,6 +42,7 @@ ext {
                         files(grgit.status().unstaged.modified)
                                 .filter { f -> f.name.endsWith('.java') || f.name.endsWith('.kt') }
                     }
+	modifiedFiles.finalizeValueOnRead()
 
 	assertjVersion = '3.26.3'
 	assertkVersion = '0.28.1'
@@ -76,8 +77,6 @@ ext {
 	javaProjects = subprojects - project(':spring-amqp-bom')
 }
 
-
-
 antora {
 	version = '3.2.0-alpha.2'
 	playbook = file('src/reference/antora/antora-playbook.yml')
@@ -98,12 +97,12 @@ tasks.named('generateAntoraYml') {
 	baseAntoraYmlFile = file('src/reference/antora/antora.yml')
 }
 
-tasks.create(name: 'createAntoraPartials', type: Sync) {
+tasks.register('createAntoraPartials', Sync) {
 	from { tasks.filterMetricsDocsContent.outputs }
 	into layout.buildDirectory.dir('generated-antora-resources/modules/ROOT/partials')
 }
 
-tasks.create('generateAntoraResources') {
+tasks.register('generateAntoraResources') {
 	dependsOn 'createAntoraPartials'
 	dependsOn 'generateAntoraYml'
 }
@@ -171,15 +170,24 @@ configure(javaProjects) { subproject ->
 	apply plugin: 'kotlin'
 	apply plugin: 'kotlin-spring'
 
+	configurations {
+		optional
+	}
+
+	components.java.with {
+		it.addVariantsFromConfiguration(configurations.optional) {
+			mapToOptional()
+		}
+	}
+
 	java {
 		withJavadocJar()
 		withSourcesJar()
-		registerFeature('optional') {
-			usingSourceSet(sourceSets.main)
-		}
-		registerFeature('provided') {
-			usingSourceSet(sourceSets.main)
-		}
+	}
+
+	sourceSets.all {
+		compileClasspath += configurations.optional
+		runtimeClasspath += configurations.optional
 	}
 
 	compileJava {
@@ -228,8 +236,6 @@ configure(javaProjects) { subproject ->
 
 		testImplementation 'org.jetbrains.kotlin:kotlin-reflect'
 		testImplementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
-
-
 	}
 
 	// enable all compiler warnings; individual projects may customize further
@@ -241,23 +247,11 @@ configure(javaProjects) { subproject ->
 			mavenJava(MavenPublication) {
 				suppressAllPomMetadataWarnings()
 				from components.java
-				pom.withXml {
-					def pomDeps = asNode().dependencies.first()
-					subproject.configurations.providedImplementation.allDependencies.each { dep ->
-						pomDeps.remove(pomDeps.'*'.find { it.artifactId.text() == dep.name })
-						pomDeps.appendNode('dependency').with {
-							it.appendNode('groupId', dep.group)
-							it.appendNode('artifactId', dep.name)
-							it.appendNode('version', dep.version)
-							it.appendNode('scope', 'provided')
-						}
-					}
-				}
 			}
 		}
 	}
 
-	task updateCopyrights {
+	tasks.register('updateCopyrights') {
 		onlyIf { !isCI }
 		inputs.files(modifiedFiles.filter { f -> f.path.contains(subproject.name) })
 		outputs.dir('build/classes')
@@ -310,7 +304,9 @@ configure(javaProjects) { subproject ->
 		}
 	}
 
-	task testAll(type: Test, dependsOn: check)
+	tasks.register('testAll', Test) {
+		dependsOn check
+	}
 
 	gradle.taskGraph.whenReady { graph ->
 		if (graph.hasTask(testAll)) {
@@ -318,7 +314,7 @@ configure(javaProjects) { subproject ->
 		}
 	}
 
-	tasks.withType(Test).all {
+	tasks.withType(Test).configureEach {
 		// suppress all console output during testing unless running `gradle -i`
 		logging.captureStandardOutput(LogLevel.INFO)
 
@@ -360,39 +356,37 @@ configure(javaProjects) { subproject ->
 	}
 
 	check.dependsOn javadoc
-
 }
 
 project('spring-amqp') {
 	description = 'Spring AMQP Core'
 
 	dependencies {
-
 		api 'org.springframework:spring-core'
-		optionalApi 'org.springframework:spring-messaging'
-		optionalApi 'org.springframework:spring-oxm'
-		optionalApi 'org.springframework:spring-context'
+		optional 'org.springframework:spring-messaging'
+		optional 'org.springframework:spring-oxm'
+		optional 'org.springframework:spring-context'
 		api ("org.springframework.retry:spring-retry:$springRetryVersion") {
 			exclude group: 'org.springframework'
 		}
 
-		optionalApi 'com.fasterxml.jackson.core:jackson-core'
-		optionalApi 'com.fasterxml.jackson.core:jackson-databind'
-		optionalApi 'com.fasterxml.jackson.core:jackson-annotations'
-		optionalApi 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
-		optionalApi 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8'
-		optionalApi 'com.fasterxml.jackson.module:jackson-module-parameter-names'
-		optionalApi 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
-		optionalApi 'com.fasterxml.jackson.datatype:jackson-datatype-joda'
-		optionalApi ('com.fasterxml.jackson.module:jackson-module-kotlin') {
+		optional 'com.fasterxml.jackson.core:jackson-core'
+		optional 'com.fasterxml.jackson.core:jackson-databind'
+		optional 'com.fasterxml.jackson.core:jackson-annotations'
+		optional 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
+		optional 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8'
+		optional 'com.fasterxml.jackson.module:jackson-module-parameter-names'
+		optional 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+		optional 'com.fasterxml.jackson.datatype:jackson-datatype-joda'
+		optional ('com.fasterxml.jackson.module:jackson-module-kotlin') {
 			exclude group: 'org.jetbrains.kotlin'
 		}
 		// Spring Data projection message binding support
-		optionalApi ('org.springframework.data:spring-data-commons') {
+		optional ('org.springframework.data:spring-data-commons') {
 			exclude group: 'org.springframework'
 			exclude group: 'io.micrometer'
 		}
-		optionalApi "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
+		optional "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
 
 		testImplementation "org.assertj:assertj-core:$assertjVersion"
 	}
@@ -425,34 +419,29 @@ project('spring-amqp-bom') {
 project('spring-rabbit') {
 	description = 'Spring RabbitMQ Support'
 
-	configurations {
-		adoc
-	}
-
 	dependencies {
-
 		api project(':spring-amqp')
 		api "com.rabbitmq:amqp-client:$rabbitmqVersion"
-		optionalApi 'org.springframework:spring-aop'
 		api 'org.springframework:spring-context'
 		api 'org.springframework:spring-messaging'
 		api 'org.springframework:spring-tx'
-		optionalApi 'org.springframework:spring-webflux'
-		optionalApi "org.apache.httpcomponents.client5:httpclient5:$commonsHttpClientVersion"
-		optionalApi 'io.projectreactor:reactor-core'
-		optionalApi 'io.projectreactor.netty:reactor-netty-http'
-		optionalApi "ch.qos.logback:logback-classic:$logbackVersion"
-		optionalApi 'org.apache.logging.log4j:log4j-core'
-		optionalApi 'io.micrometer:micrometer-core'
 		api 'io.micrometer:micrometer-observation'
-		optionalApi 'io.micrometer:micrometer-tracing'
+		optional 'org.springframework:spring-aop'
+		optional 'org.springframework:spring-webflux'
+		optional "org.apache.httpcomponents.client5:httpclient5:$commonsHttpClientVersion"
+		optional 'io.projectreactor:reactor-core'
+		optional 'io.projectreactor.netty:reactor-netty-http'
+		optional "ch.qos.logback:logback-classic:$logbackVersion"
+		optional 'org.apache.logging.log4j:log4j-core'
+		optional 'io.micrometer:micrometer-core'
+		optional 'io.micrometer:micrometer-tracing'
 		// Spring Data projection message binding support
-		optionalApi ("org.springframework.data:spring-data-commons") {
+		optional ("org.springframework.data:spring-data-commons") {
 			exclude group: 'org.springframework'
 		}
-		optionalApi "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
-		optionalApi "org.apache.commons:commons-pool2:$commonsPoolVersion"
-		optionalApi "org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$kotlinCoroutinesVersion"
+		optional "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
+		optional "org.apache.commons:commons-pool2:$commonsPoolVersion"
+		optional "org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$kotlinCoroutinesVersion"
 
 		testApi project(':spring-rabbit-junit')
 		testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
@@ -470,9 +459,7 @@ project('spring-rabbit') {
 		testRuntimeOnly 'com.fasterxml.jackson.module:jackson-module-kotlin'
 		testRuntimeOnly ("junit:junit:$junit4Version") {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
-
 		}
-
 	}
 
 	compileKotlin {
@@ -480,17 +467,15 @@ project('spring-rabbit') {
 			allWarningsAsErrors = true
 		}
 	}
-
 }
 
 project('spring-rabbit-stream') {
 	description = 'Spring RabbitMQ Stream Support'
 
 	dependencies {
-
 		api project(':spring-rabbit')
 		api "com.rabbitmq:stream-client:$rabbitmqStreamVersion"
-		optionalApi 'io.micrometer:micrometer-core'
+		optional 'io.micrometer:micrometer-core'
 
 		testApi project(':spring-rabbit-junit')
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core'
@@ -510,37 +495,33 @@ project('spring-rabbit-stream') {
 		testImplementation 'io.micrometer:micrometer-tracing-test'
 		testImplementation 'io.micrometer:micrometer-tracing-integration-test'
 	}
-
 }
 
 project('spring-rabbit-junit') {
 	description = 'Spring Rabbit JUnit Support'
 
 	dependencies { // no spring-amqp dependencies allowed
-
 		api 'org.springframework:spring-core'
 		api 'org.springframework:spring-test'
-		optionalApi ("junit:junit:$junit4Version") {
+		optional ("junit:junit:$junit4Version") {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
 		}
 		api "com.rabbitmq:amqp-client:$rabbitmqVersion"
 		api 'org.springframework:spring-web'
 		api 'org.junit.jupiter:junit-jupiter-api'
 		api "org.assertj:assertj-core:$assertjVersion"
-		optionalApi "org.testcontainers:rabbitmq"
-		optionalApi "org.testcontainers:junit-jupiter"
-		optionalApi "ch.qos.logback:logback-classic:$logbackVersion"
-		optionalApi 'org.apache.logging.log4j:log4j-core'
+		optional "org.testcontainers:rabbitmq"
+		optional "org.testcontainers:junit-jupiter"
+		optional "ch.qos.logback:logback-classic:$logbackVersion"
+		optional 'org.apache.logging.log4j:log4j-core'
 		compileOnly 'org.apiguardian:apiguardian-api:1.0.0'
 	}
-
 }
 
 project('spring-rabbit-test') {
 	description = 'Spring Rabbit Test Support'
 
 	dependencies {
-
 		api project(':spring-rabbit')
 		api project(':spring-rabbit-junit')
 		api "org.hamcrest:hamcrest-library:$hamcrestVersion"
@@ -548,7 +529,6 @@ project('spring-rabbit-test') {
 		api "org.mockito:mockito-core:$mockitoVersion"
 		testImplementation project(':spring-rabbit').sourceSets.test.output
 	}
-
 }
 
 configurations {
@@ -562,7 +542,7 @@ dependencies {
 def observationInputDir = file('build/docs/microsources').absolutePath
 def generatedDocsDir = file('build/docs/generated').absolutePath
 
-task copyObservation(type: Copy) {
+tasks.register('copyObservation', Copy) {
 	from file('spring-rabbit/src/main/java/org/springframework/amqp/rabbit/support/micrometer').absolutePath
 	from file('spring-rabbit-stream/src/main/java/org/springframework/rabbit/stream/micrometer').absolutePath
 	include '*.java'
@@ -570,7 +550,7 @@ task copyObservation(type: Copy) {
 	into observationInputDir
 }
 
-task generateObservabilityDocs(type: JavaExec) {
+tasks.register('generateObservabilityDocs', JavaExec) {
 	dependsOn copyObservation
 	mainClass = 'io.micrometer.docs.DocsGeneratorCommand'
 	inputs.dir(observationInputDir)
@@ -579,7 +559,7 @@ task generateObservabilityDocs(type: JavaExec) {
 	args observationInputDir, /.+/, generatedDocsDir
 }
 
-task filterMetricsDocsContent(type: Copy) {
+tasks.register('filterMetricsDocsContent', Copy) {
 	dependsOn generateObservabilityDocs
 	from generatedDocsDir
 	include '_*.adoc'
@@ -588,7 +568,7 @@ task filterMetricsDocsContent(type: Copy) {
 	filter { line -> line.replaceAll('org.springframework.*.micrometer.', '').replaceAll('^Fully qualified n', 'N') }
 }
 
-task api(type: Javadoc) {
+tasks.register('api', Javadoc) {
 	group = 'Documentation'
 	description = 'Generates aggregated Javadoc API documentation.'
 	title = "${rootProject.description} ${version} API"
@@ -607,13 +587,11 @@ task api(type: Javadoc) {
 	source javaProjects.collect { project ->
 		project.sourceSets.main.allJava
 	}
-	destinationDir = new File(buildDir, 'api')
-	classpath = files(javaProjects.collect { project ->
-		project.sourceSets.main.compileClasspath
-	})
+	destinationDir = new File('build', 'api')
+	classpath = files().from { files(javaProjects.collect { it.sourceSets.main.compileClasspath }) }
 }
 
-task schemaZip(type: Zip) {
+tasks.register('schemaZip', Zip) {
 	group = 'Distribution'
 	archiveClassifier = 'schema'
 	description = "Builds -${archiveClassifier} archive containing all " +
@@ -651,7 +629,7 @@ task schemaZip(type: Zip) {
 	}
 }
 
-task docsZip(type: Zip) {
+tasks.register('docsZip', Zip) {
 		group = 'Distribution'
 		archiveClassifier = 'docs'
 		description = "Builds -${archiveClassifier} archive containing api and reference " +
@@ -666,7 +644,9 @@ task docsZip(type: Zip) {
 		}
 }
 
-task distZip(type: Zip, dependsOn: [docsZip, schemaZip]) {
+tasks.register('distZip', Zip) {
+	dependsOn 'docsZip'
+	dependsOn 'schemaZip'
 	group = 'Distribution'
 	archiveClassifier = 'dist'
 	description = "Builds -${archiveClassifier} archive, containing all jars and docs, " +
@@ -746,7 +726,8 @@ artifacts {
 	archives schemaZip
 }
 
-task dist(dependsOn: assemble) {
+tasks.register('dist') {
+	dependsOn assemble
 	group = 'Distribution'
 	description = 'Builds -dist, -docs and -schema distribution archives.'
 }
