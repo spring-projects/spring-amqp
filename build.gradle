@@ -23,7 +23,7 @@ plugins {
 	id 'io.spring.dependency-management' version '1.1.6' apply false
 	id 'org.antora' version '1.0.0'
 	id 'io.spring.antora.generate-antora-yml' version '0.0.1'
-	id 'com.github.spotbugs' version '6.0.19'
+	id 'com.github.spotbugs' version '6.0.20'
 	id 'io.freefair.aggregate-javadoc' version '8.6'
 }
 
@@ -47,7 +47,7 @@ ext {
 
 	assertjVersion = '3.26.3'
 	assertkVersion = '0.28.1'
-	awaitilityVersion = '4.2.1'
+	awaitilityVersion = '4.2.2'
 	commonsCompressVersion = '1.26.2'
 	commonsHttpClientVersion = '5.3.1'
 	commonsPoolVersion = '2.12.0'
