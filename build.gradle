@@ -68,7 +68,7 @@ ext {
 	rabbitmqStreamVersion = '0.15.0'
 	rabbitmqVersion = '5.21.0'
 	reactorVersion = '2024.0.0-SNAPSHOT'
-	snappyVersion = '1.1.10.5'
+	snappyVersion = '1.1.10.6'
 	springDataVersion = '2024.0.2'
 	springRetryVersion = '2.0.7'
 	springVersion = '6.2.0-SNAPSHOT'
