@@ -169,27 +169,12 @@ configure(javaProjects) { subproject ->
 
 	apply from: "${rootProject.projectDir}/gradle/publish-maven.gradle"
 
-	def scopeAttribute = Attribute.of('dependency.scope', String)
-
-	configurations {
-		optional {
-			attributes {
-				attribute(scopeAttribute, 'optional')
-			}
-		}
-
-		compileClasspath.extendsFrom(optional)
-		testCompileClasspath.extendsFrom(optional)
-		testRuntimeClasspath.extendsFrom(optional)
-	}
-
-	components.java.addVariantsFromConfiguration(configurations.optional) {
-		mapToOptional()
-	}
-
 	java {
 		withJavadocJar()
 		withSourcesJar()
+		registerFeature('optional') {
+			usingSourceSet(sourceSets.main)
+		}
 	}
 
 	compileJava {
@@ -210,10 +195,6 @@ configure(javaProjects) { subproject ->
 
 	// dependencies that are common across all java projects
 	dependencies {
-		attributesSchema {
-			attribute(scopeAttribute)
-		}
-
 		def spotbugsAnnotations = "com.github.spotbugs:spotbugs-annotations:${spotbugs.toolVersion.get()}"
 		compileOnly spotbugsAnnotations
 		testCompileOnly spotbugsAnnotations
@@ -261,7 +242,6 @@ configure(javaProjects) { subproject ->
 	tasks.register('updateCopyrights') {
 		onlyIf { !isCI }
 		inputs.files(modifiedFiles.filter { f -> f.path.contains(subproject.name) })
-		outputs.dir('build/classes')
 
 		doLast {
 			def now = Calendar.instance.get(Calendar.YEAR) as String
@@ -374,26 +354,26 @@ project('spring-amqp') {
 		api("org.springframework.retry:spring-retry:$springRetryVersion") {
 			exclude group: 'org.springframework'
 		}
-		optional 'org.springframework:spring-messaging'
-		optional 'org.springframework:spring-oxm'
-		optional 'org.springframework:spring-context'
-		optional 'com.fasterxml.jackson.core:jackson-core'
-		optional 'com.fasterxml.jackson.core:jackson-databind'
-		optional 'com.fasterxml.jackson.core:jackson-annotations'
-		optional 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
-		optional 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8'
-		optional 'com.fasterxml.jackson.module:jackson-module-parameter-names'
-		optional 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
-		optional 'com.fasterxml.jackson.datatype:jackson-datatype-joda'
-		optional('com.fasterxml.jackson.module:jackson-module-kotlin') {
+		optionalApi 'org.springframework:spring-messaging'
+		optionalApi 'org.springframework:spring-oxm'
+		optionalApi 'org.springframework:spring-context'
+		optionalApi 'com.fasterxml.jackson.core:jackson-core'
+		optionalApi 'com.fasterxml.jackson.core:jackson-databind'
+		optionalApi 'com.fasterxml.jackson.core:jackson-annotations'
+		optionalApi 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
+		optionalApi 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8'
+		optionalApi 'com.fasterxml.jackson.module:jackson-module-parameter-names'
+		optionalApi 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+		optionalApi 'com.fasterxml.jackson.datatype:jackson-datatype-joda'
+		optionalApi('com.fasterxml.jackson.module:jackson-module-kotlin') {
 			exclude group: 'org.jetbrains.kotlin'
 		}
 		// Spring Data projection message binding support
-		optional('org.springframework.data:spring-data-commons') {
+		optionalApi('org.springframework.data:spring-data-commons') {
 			exclude group: 'org.springframework'
 			exclude group: 'io.micrometer'
 		}
-		optional "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
+		optionalApi "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
 
 		testImplementation "org.assertj:assertj-core:$assertjVersion"
 	}
@@ -433,22 +413,22 @@ project('spring-rabbit') {
 		api 'org.springframework:spring-messaging'
 		api 'org.springframework:spring-tx'
 		api 'io.micrometer:micrometer-observation'
-		optional 'org.springframework:spring-aop'
-		optional 'org.springframework:spring-webflux'
-		optional "org.apache.httpcomponents.client5:httpclient5:$commonsHttpClientVersion"
-		optional 'io.projectreactor:reactor-core'
-		optional 'io.projectreactor.netty:reactor-netty-http'
-		optional "ch.qos.logback:logback-classic:$logbackVersion"
-		optional 'org.apache.logging.log4j:log4j-core'
-		optional 'io.micrometer:micrometer-core'
-		optional 'io.micrometer:micrometer-tracing'
+		optionalApi 'org.springframework:spring-aop'
+		optionalApi 'org.springframework:spring-webflux'
+		optionalApi "org.apache.httpcomponents.client5:httpclient5:$commonsHttpClientVersion"
+		optionalApi 'io.projectreactor:reactor-core'
+		optionalApi 'io.projectreactor.netty:reactor-netty-http'
+		optionalApi "ch.qos.logback:logback-classic:$logbackVersion"
+		optionalApi 'org.apache.logging.log4j:log4j-core'
+		optionalApi 'io.micrometer:micrometer-core'
+		optionalApi 'io.micrometer:micrometer-tracing'
 		// Spring Data projection message binding support
-		optional("org.springframework.data:spring-data-commons") {
+		optionalApi("org.springframework.data:spring-data-commons") {
 			exclude group: 'org.springframework'
 		}
-		optional "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
-		optional "org.apache.commons:commons-pool2:$commonsPoolVersion"
-		optional "org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$kotlinCoroutinesVersion"
+		optionalApi "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
+		optionalApi "org.apache.commons:commons-pool2:$commonsPoolVersion"
+		optionalApi "org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$kotlinCoroutinesVersion"
 
 		testApi project(':spring-rabbit-junit')
 		testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
@@ -482,7 +462,7 @@ project('spring-rabbit-stream') {
 	dependencies {
 		api project(':spring-rabbit')
 		api "com.rabbitmq:stream-client:$rabbitmqStreamVersion"
-		optional 'io.micrometer:micrometer-core'
+		optionalApi 'io.micrometer:micrometer-core'
 
 		testApi project(':spring-rabbit-junit')
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core'
@@ -514,13 +494,13 @@ project('spring-rabbit-junit') {
 		api 'org.springframework:spring-web'
 		api 'org.junit.jupiter:junit-jupiter-api'
 		api "org.assertj:assertj-core:$assertjVersion"
-		optional("junit:junit:$junit4Version") {
+		optionalApi("junit:junit:$junit4Version") {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
 		}
-		optional "org.testcontainers:rabbitmq"
-		optional "org.testcontainers:junit-jupiter"
-		optional "ch.qos.logback:logback-classic:$logbackVersion"
-		optional 'org.apache.logging.log4j:log4j-core'
+		optionalApi "org.testcontainers:rabbitmq"
+		optionalApi "org.testcontainers:junit-jupiter"
+		optionalApi "ch.qos.logback:logback-classic:$logbackVersion"
+		optionalApi 'org.apache.logging.log4j:log4j-core'
 		compileOnly 'org.apiguardian:apiguardian-api:1.0.0'
 	}
 }
