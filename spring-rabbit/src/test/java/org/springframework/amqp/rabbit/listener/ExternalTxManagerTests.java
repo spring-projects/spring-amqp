@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,6 +69,7 @@ import com.rabbitmq.client.Envelope;
 
 /**
  * @author Gary Russell
+ * @author Thomas Badie
  * @since 1.1.2
  *
  */
@@ -758,7 +759,7 @@ public abstract class ExternalTxManagerTests {
 		container.stop();
 	}
 
-	private Answer<Channel> ensureOneChannelAnswer(final Channel onlyChannel,
+	protected Answer<Channel> ensureOneChannelAnswer(final Channel onlyChannel,
 			final AtomicReference<Exception> tooManyChannels) {
 		final AtomicBoolean done = new AtomicBoolean();
 		return invocation -> {
@@ -776,7 +777,7 @@ public abstract class ExternalTxManagerTests {
 	protected abstract AbstractMessageListenerContainer createContainer(AbstractConnectionFactory connectionFactory);
 
 	@SuppressWarnings("serial")
-	private static class DummyTxManager extends AbstractPlatformTransactionManager {
+	protected static class DummyTxManager extends AbstractPlatformTransactionManager {
 
 		private volatile boolean committed;
 
@@ -803,6 +804,30 @@ public abstract class ExternalTxManagerTests {
 		protected void doRollback(DefaultTransactionStatus status) throws TransactionException {
 			this.rolledBack = true;
 			this.latch.countDown();
+		}
+
+		public boolean isCommitted() {
+			return committed;
+		}
+
+		public void setCommitted(boolean committed) {
+			this.committed = committed;
+		}
+
+		public boolean isRolledBack() {
+			return rolledBack;
+		}
+
+		public void setRolledBack(boolean rolledBack) {
+			this.rolledBack = rolledBack;
+		}
+
+		public CountDownLatch getLatch() {
+			return latch;
+		}
+
+		public void setLatch(CountDownLatch latch) {
+			this.latch = latch;
 		}
 	}
 
