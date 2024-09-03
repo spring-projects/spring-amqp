@@ -83,6 +83,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Tim Bourquin
  * @author Jeonggi Kim
  * @author Java4ye
+ * @author Thomas Badie
  *
  * @since 1.0
  */
@@ -1012,6 +1013,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			catch (WrappedTransactionException e) { // NOSONAR exception flow control
 				throw (Exception) e.getCause();
+			}
+			finally {
+				ConnectionFactoryUtils.checkAfterCompletion();
 			}
 		}
 
