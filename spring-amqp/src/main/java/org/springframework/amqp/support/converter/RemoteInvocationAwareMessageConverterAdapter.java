@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022 the original author or authors.
+ * Copyright 2016-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,9 +51,9 @@ public class RemoteInvocationAwareMessageConverterAdapter implements MessageConv
 	@Override
 	public Object fromMessage(Message message) throws MessageConversionException {
 		Object result = this.delegate.fromMessage(message);
-		if (result instanceof RemoteInvocationResult) {
+		if (result instanceof RemoteInvocationResult remoteInvocationResult) {
 			try {
-				result = ((RemoteInvocationResult) result).recreate();
+				result = remoteInvocationResult.recreate();
 				if (result == null) {
 					throw new MessageConversionException("RemoteInvocationResult returned null");
 				}

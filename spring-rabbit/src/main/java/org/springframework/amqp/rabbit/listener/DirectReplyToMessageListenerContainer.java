@@ -86,10 +86,10 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 
 	@Override
 	public void setMessageListener(MessageListener messageListener) {
-		if (messageListener instanceof ChannelAwareMessageListener) {
+		if (messageListener instanceof ChannelAwareMessageListener channelAwareMessageListener) {
 			super.setMessageListener((ChannelAwareMessageListener) (message, channel) -> {
 				try {
-					((ChannelAwareMessageListener) messageListener).onMessage(message, channel);
+					channelAwareMessageListener.onMessage(message, channel);
 				}
 				finally {
 					this.inUseConsumerChannels.remove(channel);

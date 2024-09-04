@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2021-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,8 +143,8 @@ public class RemoteInvocationResult implements Serializable {
 	public Object recreate() throws Throwable {
 		if (this.exception != null) {
 			Throwable exToThrow = this.exception;
-			if (this.exception instanceof InvocationTargetException) {
-				exToThrow = ((InvocationTargetException) this.exception).getTargetException();
+			if (this.exception instanceof InvocationTargetException invocationTargetException) {
+				exToThrow = invocationTargetException.getTargetException();
 			}
 			RemoteInvocationUtils.fillInClientStackTraceIfPossible(exToThrow);
 			throw exToThrow;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2022 the original author or authors.
+ * Copyright 2018-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -246,8 +246,8 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 		if (this.typeMapperSet) {
 			throw new IllegalStateException("When providing your own type mapper, you should set the precedence on it");
 		}
-		if (this.javaTypeMapper instanceof DefaultJackson2JavaTypeMapper) {
-			((DefaultJackson2JavaTypeMapper) this.javaTypeMapper).setTypePrecedence(typePrecedence);
+		if (this.javaTypeMapper instanceof DefaultJackson2JavaTypeMapper defaultJackson2JavaTypeMapper) {
+			defaultJackson2JavaTypeMapper.setTypePrecedence(typePrecedence);
 		}
 		else {
 			throw new IllegalStateException("Type precedence is available with the DefaultJackson2JavaTypeMapper");
@@ -384,10 +384,10 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 			content = tryConverType(message, encoding, inferredType);
 		}
 		if (content == null) {
-			if (conversionHint instanceof ParameterizedTypeReference) {
+			if (conversionHint instanceof ParameterizedTypeReference<?> parameterizedTypeReference) {
 				content = convertBytesToObject(message.getBody(), encoding,
 						this.objectMapper.getTypeFactory().constructType(
-								((ParameterizedTypeReference<?>) conversionHint).getType()));
+							parameterizedTypeReference.getType()));
 			}
 			else if (getClassMapper() == null) {
 				JavaType targetJavaType = getJavaTypeMapper()

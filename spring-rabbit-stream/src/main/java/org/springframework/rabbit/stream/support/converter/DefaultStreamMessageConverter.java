@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2021-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,35 +115,35 @@ public class DefaultStreamMessageConverter implements StreamMessageConverter {
 	}
 
 	private void mapProp(String key, Object val, ApplicationPropertiesBuilder builder) { // NOSONAR - complexity
-		if (val instanceof String) {
-			builder.entry(key, (String) val);
+		if (val instanceof String string) {
+			builder.entry(key, string);
 		}
-		else if (val instanceof Long) {
-			builder.entry(key, (Long) val);
+		else if (val instanceof Long longValue) {
+			builder.entry(key, longValue);
 		}
-		else if (val instanceof Integer) {
-			builder.entry(key, (Integer) val);
+		else if (val instanceof Integer intValue) {
+			builder.entry(key, intValue);
 		}
-		else if (val instanceof Short) {
-			builder.entry(key, (Short) val);
+		else if (val instanceof Short shortValue) {
+			builder.entry(key, shortValue);
 		}
-		else if (val instanceof Byte) {
-			builder.entry(key, (Byte) val);
+		else if (val instanceof Byte byteValue) {
+			builder.entry(key, byteValue);
 		}
-		else if (val instanceof Double) {
-			builder.entry(key, (Double) val);
+		else if (val instanceof Double doubleValue) {
+			builder.entry(key, doubleValue);
 		}
-		else if (val instanceof Float) {
-			builder.entry(key, (Float) val);
+		else if (val instanceof Float floatValue) {
+			builder.entry(key, floatValue);
 		}
-		else if (val instanceof Character) {
-			builder.entry(key, (Character) val);
+		else if (val instanceof Character character) {
+			builder.entry(key, character);
 		}
-		else if (val instanceof UUID) {
-			builder.entry(key, (UUID) val);
+		else if (val instanceof UUID uuid) {
+			builder.entry(key, uuid);
 		}
-		else if (val instanceof byte[]) {
-			builder.entry(key, (byte[]) val);
+		else if (val instanceof byte[] bytes) {
+			builder.entry(key, bytes);
 		}
 	}
 

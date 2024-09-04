@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,8 +77,8 @@ public class RabbitListenerContainerFactoryIntegrationTests {
 		SimpleMessageListenerContainer messageListenerContainer =
 				containerFactory.createListenerContainer(endpoint);
 		Object listener = messageListenerContainer.getMessageListener();
-		if (listener instanceof ChannelAwareMessageListener) {
-			((ChannelAwareMessageListener) listener).onMessage(message, mock(Channel.class));
+		if (listener instanceof ChannelAwareMessageListener awareMessageListener) {
+			awareMessageListener.onMessage(message, mock(Channel.class));
 		}
 		else {
 			((MessageListener) listener).onMessage(message);

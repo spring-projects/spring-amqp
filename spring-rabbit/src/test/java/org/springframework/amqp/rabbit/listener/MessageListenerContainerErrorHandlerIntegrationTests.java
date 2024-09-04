@@ -257,8 +257,8 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		// Verify that the exception strategy has access to the message
 		final AtomicReference<Message> failed = new AtomicReference<Message>();
 		ConditionalRejectingErrorHandler eh = new ConditionalRejectingErrorHandler(t -> {
-			if (t instanceof ListenerExecutionFailedException) {
-				failed.set(((ListenerExecutionFailedException) t).getFailedMessage());
+			if (t instanceof ListenerExecutionFailedException exception) {
+				failed.set(exception.getFailedMessage());
 			}
 			return t instanceof ListenerExecutionFailedException
 					&& t.getCause() instanceof MessageConversionException;

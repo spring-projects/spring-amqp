@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,8 +51,8 @@ public final class RabbitExceptionTranslator {
 
 	public static RuntimeException convertRabbitAccessException(Throwable ex) {
 		Assert.notNull(ex, "Exception must not be null");
-		if (ex instanceof AmqpException) {
-			return (AmqpException) ex;
+		if (ex instanceof AmqpException amqpException) {
+			return amqpException;
 		}
 		if (ex instanceof ShutdownSignalException sigEx) {
 			return new AmqpConnectException(sigEx);
@@ -75,8 +75,8 @@ public final class RabbitExceptionTranslator {
 		if (ex instanceof ConsumerCancelledException) {
 			return new org.springframework.amqp.rabbit.support.ConsumerCancelledException(ex);
 		}
-		if (ex instanceof org.springframework.amqp.rabbit.support.ConsumerCancelledException) {
-			return (org.springframework.amqp.rabbit.support.ConsumerCancelledException) ex;
+		if (ex instanceof org.springframework.amqp.rabbit.support.ConsumerCancelledException consumerCancelledException) {
+			return consumerCancelledException;
 		}
 		// fallback
 		return new UncategorizedAmqpException(ex);

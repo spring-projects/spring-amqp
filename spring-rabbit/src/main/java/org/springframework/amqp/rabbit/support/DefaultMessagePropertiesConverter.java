@@ -203,9 +203,9 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 			}
 			value = writableArray;
 		}
-		else if (value instanceof List<?>) {
-			List<Object> writableList = new ArrayList<>(((List<?>) value).size());
-			for (Object listValue : (List<?>) value) {
+		else if (value instanceof List<?> values) {
+			List<Object> writableList = new ArrayList<>(values.size());
+			for (Object listValue : values) {
 				writableList.add(convertHeaderValueIfNecessary(listValue));
 			}
 			value = writableList;

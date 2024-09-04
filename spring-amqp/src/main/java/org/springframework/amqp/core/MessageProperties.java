@@ -447,12 +447,10 @@ public class MessageProperties implements Serializable {
 	 */
 	public Long getDelayLong() {
 		Object delay = this.headers.get(X_DELAY);
-		if (delay instanceof Long) {
-			return (Long) delay;
+		if (delay instanceof Long delayLong) {
+			return delayLong;
 		}
-		else {
-			return null;
-		}
+		return null;
 	}
 
 	/**

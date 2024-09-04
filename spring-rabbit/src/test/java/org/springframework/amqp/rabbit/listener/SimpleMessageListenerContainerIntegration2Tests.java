@@ -220,8 +220,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 
 			@Override
 			public void publishEvent(ApplicationEvent event) {
-				if (event instanceof AsyncConsumerStartedEvent) {
-					newConsumer.set(((AsyncConsumerStartedEvent) event).getConsumer());
+				if (event instanceof AsyncConsumerStartedEvent asyncConsumerStartedEvent) {
+					newConsumer.set(asyncConsumerStartedEvent.getConsumer());
 					latch2.countDown();
 				}
 			}
