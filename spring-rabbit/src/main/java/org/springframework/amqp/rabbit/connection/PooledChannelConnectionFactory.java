@@ -343,8 +343,8 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory
 			@Override
 			public void destroyObject(PooledObject<Channel> p) throws Exception {
 				Channel channel = p.getObject();
-				if (channel instanceof ChannelProxy) {
-					channel = ((ChannelProxy) channel).getTargetChannel();
+				if (channel instanceof ChannelProxy channelProxy) {
+					channel = channelProxy.getTargetChannel();
 				}
 
 				ConnectionWrapper.this.physicalClose(channel);

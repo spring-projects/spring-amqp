@@ -140,8 +140,7 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 			endpoint.setupListenerContainer(instance);
 		}
 		Object iml = instance.getMessageListener();
-		if (iml instanceof AbstractAdaptableMessageListener) {
-			AbstractAdaptableMessageListener messageListener = (AbstractAdaptableMessageListener) iml;
+		if (iml instanceof AbstractAdaptableMessageListener messageListener) {
 			JavaUtils.INSTANCE // NOSONAR
 					.acceptIfNotNull(this.beforeSendReplyPostProcessors,
 							messageListener::setBeforeSendReplyPostProcessors)

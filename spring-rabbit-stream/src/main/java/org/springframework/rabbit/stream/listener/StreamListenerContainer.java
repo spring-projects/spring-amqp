@@ -338,11 +338,11 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 			}
 			else {
 				Message message2 = this.streamConverter.toMessage(message, new StreamMessageProperties(context));
-				if (this.messageListener instanceof ChannelAwareMessageListener) {
+				if (this.messageListener instanceof ChannelAwareMessageListener channelAwareMessageListener) {
 					try {
 						observation.observe(() -> {
 							try {
-								((ChannelAwareMessageListener) this.messageListener).onMessage(message2, null);
+								channelAwareMessageListener.onMessage(message2, null);
 								if (finalSample != null) {
 									micrometerHolder.success(finalSample, this.streamName);
 								}
@@ -375,8 +375,8 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 
 	private void adviseIfNeeded(MessageListener messageListener) {
 		this.messageListener = messageListener;
-		if (messageListener instanceof StreamMessageListener) {
-			this.streamListener = (StreamMessageListener) messageListener;
+		if (messageListener instanceof StreamMessageListener streamMessageListener) {
+			this.streamListener = streamMessageListener;
 		}
 		if (this.adviceChain != null && this.adviceChain.length > 0) {
 			ProxyFactory factory = new ProxyFactory(messageListener);

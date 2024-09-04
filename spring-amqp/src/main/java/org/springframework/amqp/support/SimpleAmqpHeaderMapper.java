@@ -66,8 +66,8 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 					amqpMessageProperties::setContentLength)
 			.acceptIfHasText(extractContentTypeAsString(headers), amqpMessageProperties::setContentType);
 		Object correlationId = headers.get(AmqpHeaders.CORRELATION_ID);
-		if (correlationId instanceof String) {
-			amqpMessageProperties.setCorrelationId((String) correlationId);
+		if (correlationId instanceof String string) {
+			amqpMessageProperties.setCorrelationId(string);
 		}
 		javaUtils
 			.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.DELAY, Long.class),
@@ -195,8 +195,8 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 			if (contentType instanceof MimeType) {
 				contentTypeStringValue = contentType.toString();
 			}
-			else if (contentType instanceof String) {
-				contentTypeStringValue = (String) contentType;
+			else if (contentType instanceof String string) {
+				contentTypeStringValue = string;
 			}
 			else {
 				if (logger.isWarnEnabled()) {

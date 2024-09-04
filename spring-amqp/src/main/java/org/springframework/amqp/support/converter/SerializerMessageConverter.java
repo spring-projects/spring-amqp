@@ -187,9 +187,9 @@ public class SerializerMessageConverter extends AllowedListDeserializingMessageC
 			throws MessageConversionException {
 
 		byte[] bytes;
-		if (object instanceof String) {
+		if (object instanceof String string) {
 			try {
-				bytes = ((String) object).getBytes(this.defaultCharset);
+				bytes = string.getBytes(this.defaultCharset);
 			}
 			catch (UnsupportedEncodingException e) {
 				throw new MessageConversionException("failed to convert Message content", e);
@@ -197,8 +197,8 @@ public class SerializerMessageConverter extends AllowedListDeserializingMessageC
 			messageProperties.setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN);
 			messageProperties.setContentEncoding(this.defaultCharset);
 		}
-		else if (object instanceof byte[]) {
-			bytes = (byte[]) object;
+		else if (object instanceof byte[] objectBytes) {
+			bytes = objectBytes;
 			messageProperties.setContentType(MessageProperties.CONTENT_TYPE_BYTES);
 		}
 		else {

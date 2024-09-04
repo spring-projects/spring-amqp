@@ -83,7 +83,7 @@ public abstract class AbstractDecompressingPostProcessor implements MessagePostP
 	public Message postProcessMessage(Message message) throws AmqpException {
 		Object autoDecompress = message.getMessageProperties().getHeaders()
 				.get(MessageProperties.SPRING_AUTO_DECOMPRESS);
-		if (this.alwaysDecompress || (autoDecompress instanceof Boolean && ((Boolean) autoDecompress))) {
+		if (this.alwaysDecompress || (autoDecompress instanceof Boolean isAutoDecompress && isAutoDecompress)) {
 			ByteArrayInputStream zipped = new ByteArrayInputStream(message.getBody());
 			try {
 				InputStream unzipper = getDecompressorStream(zipped);

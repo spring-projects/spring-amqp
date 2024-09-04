@@ -104,8 +104,8 @@ public class StreamRabbitListenerContainerFactory
 
 	@Override
 	public StreamListenerContainer createListenerContainer(RabbitListenerEndpoint endpoint) {
-		if (endpoint instanceof MethodRabbitListenerEndpoint && this.nativeListener) {
-			((MethodRabbitListenerEndpoint) endpoint).setAdapterProvider(
+		if (endpoint instanceof MethodRabbitListenerEndpoint methodRabbitListenerEndpoint && this.nativeListener) {
+			methodRabbitListenerEndpoint.setAdapterProvider(
 					(boolean batch, Object bean, Method method, boolean returnExceptions,
 							RabbitListenerErrorHandler errorHandler, @Nullable BatchingStrategy batchingStrategy) -> {
 

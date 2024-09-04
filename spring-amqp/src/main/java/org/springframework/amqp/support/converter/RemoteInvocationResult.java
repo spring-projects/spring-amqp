@@ -143,8 +143,8 @@ public class RemoteInvocationResult implements Serializable {
 	public Object recreate() throws Throwable {
 		if (this.exception != null) {
 			Throwable exToThrow = this.exception;
-			if (this.exception instanceof InvocationTargetException) {
-				exToThrow = ((InvocationTargetException) this.exception).getTargetException();
+			if (this.exception instanceof InvocationTargetException invocationTargetException) {
+				exToThrow = invocationTargetException.getTargetException();
 			}
 			RemoteInvocationUtils.fillInClientStackTraceIfPossible(exToThrow);
 			throw exToThrow;

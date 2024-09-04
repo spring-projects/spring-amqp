@@ -77,8 +77,8 @@ public class BlockingQueueConsumerIntegrationTests {
 		CountDownLatch latch = new CountDownLatch(2);
 		List<ConsumeOkEvent> events = new ArrayList<>();
 		blockingQueueConsumer.setApplicationEventPublisher(e -> {
-			if (e instanceof ConsumeOkEvent) {
-				events.add((ConsumeOkEvent) e);
+			if (e instanceof ConsumeOkEvent consumeOkEvent) {
+				events.add(consumeOkEvent);
 				latch.countDown();
 			}
 		});

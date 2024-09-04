@@ -314,8 +314,8 @@ public abstract class RabbitUtils {
 		Throwable cause = e;
 		ShutdownSignalException sig = null;
 		while (cause != null && sig == null) {
-			if (cause instanceof ShutdownSignalException) {
-				sig = (ShutdownSignalException) cause;
+			if (cause instanceof ShutdownSignalException shutdownSignalException) {
+				sig = shutdownSignalException;
 			}
 			cause = cause.getCause();
 		}
@@ -344,8 +344,8 @@ public abstract class RabbitUtils {
 		Throwable cause = e;
 		ShutdownSignalException sig = null;
 		while (cause != null && sig == null) {
-			if (cause instanceof ShutdownSignalException) {
-				sig = (ShutdownSignalException) cause;
+			if (cause instanceof ShutdownSignalException shutdownSignalException) {
+				sig = shutdownSignalException;
 			}
 			cause = cause.getCause();
 		}

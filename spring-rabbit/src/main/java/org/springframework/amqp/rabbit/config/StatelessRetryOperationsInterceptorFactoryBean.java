@@ -74,11 +74,11 @@ public class StatelessRetryOperationsInterceptorFactoryBean extends AbstractRetr
 		if (messageRecoverer == null) {
 			this.logger.warn("Message(s) dropped on recovery: " + arg, cause);
 		}
-		else if (arg instanceof Message) {
-			messageRecoverer.recover((Message) arg, cause);
+		else if (arg instanceof Message message) {
+			messageRecoverer.recover(message, cause);
 		}
-		else if (arg instanceof List && messageRecoverer instanceof MessageBatchRecoverer) {
-			((MessageBatchRecoverer) messageRecoverer).recover((List<Message>) arg, cause);
+		else if (arg instanceof List && messageRecoverer instanceof MessageBatchRecoverer messageBatchRecoverer) {
+			messageBatchRecoverer.recover((List<Message>) arg, cause);
 		}
 		return null;
 	}

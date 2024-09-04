@@ -143,9 +143,8 @@ public class TestRabbitTemplate extends RabbitTemplate
 		Channel channel = mock(Channel.class);
 		final AtomicReference<Message> reply = new AtomicReference<>();
 		Object listener = listenersForRoute.next();
-		if (listener instanceof AbstractAdaptableMessageListener) {
+		if (listener instanceof AbstractAdaptableMessageListener adapter) {
 			try {
-				AbstractAdaptableMessageListener adapter = (AbstractAdaptableMessageListener) listener;
 				willAnswer(i -> {
 					Envelope envelope = new Envelope(1, false, "", REPLY_QUEUE);
 					reply.set(MessageBuilder.withBody(i.getArgument(4)) // NOSONAR magic #
@@ -170,16 +169,16 @@ public class TestRabbitTemplate extends RabbitTemplate
 	}
 
 	private void invoke(Object listener, Message message, Channel channel) {
-		if (listener instanceof ChannelAwareMessageListener) {
+		if (listener instanceof ChannelAwareMessageListener channelAwareMessageListener) {
 			try {
-				((ChannelAwareMessageListener) listener).onMessage(message, channel);
+				channelAwareMessageListener.onMessage(message, channel);
 			}
 			catch (Exception e) {
 				throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 			}
 		}
-		else if (listener instanceof MessageListener) {
-			((MessageListener) listener).onMessage(message);
+		else if (listener instanceof MessageListener messageListener) {
+			messageListener.onMessage(message);
 		}
 		else {
 			// Not really necessary since the container doesn't allow it, but no hurt

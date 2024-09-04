@@ -112,13 +112,13 @@ public class SimpleMessageConverter extends AllowedListDeserializingMessageConve
 			throws MessageConversionException {
 
 		byte[] bytes = null;
-		if (object instanceof byte[]) {
-			bytes = (byte[]) object;
+		if (object instanceof byte[] objectBytes) {
+			bytes = objectBytes;
 			messageProperties.setContentType(MessageProperties.CONTENT_TYPE_BYTES);
 		}
-		else if (object instanceof String) {
+		else if (object instanceof String string) {
 			try {
-				bytes = ((String) object).getBytes(this.defaultCharset);
+				bytes = string.getBytes(this.defaultCharset);
 			}
 			catch (UnsupportedEncodingException e) {
 				throw new MessageConversionException("failed to convert to Message content", e);
