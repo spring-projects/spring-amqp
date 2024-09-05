@@ -98,13 +98,13 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 	 */
 	private String getContainerFactoryBeanName(final String containerFactory) {
 
-		var rawValue = this.expressionParser.parseExpression(containerFactory, this.templateParserContext).getExpressionString();
-		if (containerFactory.startsWith(this.templateParserContext.getExpressionPrefix()) && rawValue.startsWith("@")) {
+		var beanName = this.expressionParser.parseExpression(containerFactory, this.templateParserContext).getExpressionString();
+		if (containerFactory.startsWith(this.templateParserContext.getExpressionPrefix()) && beanName.startsWith("@")) {
 
-			return rawValue.substring(1);
+			return beanName.substring(1);
 		}
 
-		return rawValue;
+		return beanName;
 	}
 
 	public void setExpressionParser(ExpressionParser expressionParser) {
