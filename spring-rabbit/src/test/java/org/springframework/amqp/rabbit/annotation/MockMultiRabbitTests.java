@@ -241,7 +241,7 @@ class MockMultiRabbitTests {
 		public void handleItB(String body) {
 		}
 
-		@RabbitListener(queues = "testQueueC", containerFactory = "brokerC")
+		@RabbitListener(queues = "testQueueC", containerFactory = "#{@brokerC}")
 		public void handleItC(String body) {
 		}
 	}

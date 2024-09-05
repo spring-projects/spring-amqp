@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 the original author or authors.
+ * Copyright 2020-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,10 @@ import java.util.Collection;
 
 import org.springframework.amqp.core.Declarable;
 import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.ParserContext;
+import org.springframework.expression.common.TemplateParserContext;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.util.StringUtils;
 
 /**
@@ -39,6 +43,10 @@ import org.springframework.util.StringUtils;
  * @since 2.3
  */
 public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListenerAnnotationBeanPostProcessor {
+
+	private ExpressionParser expressionParser = new SpelExpressionParser();
+
+	private ParserContext templateParserContext = new TemplateParserContext();
 
 	@Override
 	protected Collection<Declarable> processAmqpListener(RabbitListener rabbitListener, Method method,
@@ -70,14 +78,45 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 	 * @return The name of the RabbitAdmin bean.
 	 */
 	protected String resolveMultiRabbitAdminName(RabbitListener rabbitListener) {
-		String admin = super.resolveExpressionAsString(rabbitListener.admin(), "admin");
-		if (!StringUtils.hasText(admin) && StringUtils.hasText(rabbitListener.containerFactory())) {
-			admin = rabbitListener.containerFactory() + RabbitListenerConfigUtils.MULTI_RABBIT_ADMIN_SUFFIX;
+		if (StringUtils.hasText(rabbitListener.admin())) {
+			return rabbitListener.admin();
 		}
-		if (!StringUtils.hasText(admin)) {
-			admin = RabbitListenerConfigUtils.RABBIT_ADMIN_BEAN_NAME;
+
+		if (StringUtils.hasText(rabbitListener.containerFactory())) {
+			var resolved = getContainerFactoryBeanName(rabbitListener.containerFactory());
+			return resolved + RabbitListenerConfigUtils.MULTI_RABBIT_ADMIN_SUFFIX;
 		}
-		return admin;
+
+		return RabbitListenerConfigUtils.RABBIT_ADMIN_BEAN_NAME;
+	}
+
+	/**
+	 * Resolves the name of containerFactory bean based on the RabbitListener.
+	 *
+	 * @param containerFactory a SpEL expression is provided ({@code #{...}})
+	 * @return The name of bean.
+	 */
+	private String getContainerFactoryBeanName(final String containerFactory) {
+
+		var rawValue = this.expressionParser.parseExpression(containerFactory, this.templateParserContext).getExpressionString();
+		if (containerFactory.startsWith(this.templateParserContext.getExpressionPrefix()) && rawValue.startsWith("@")) {
+
+			return rawValue.substring(1);
+		}
+
+		return rawValue;
+	}
+
+	public void setExpressionParser(ExpressionParser expressionParser) {
+		if (expressionParser != null) {
+			this.expressionParser = expressionParser;
+		}
+	}
+
+	public void setTemplateParserContext(ParserContext templateParserContext) {
+		if (templateParserContext != null) {
+			this.templateParserContext = templateParserContext;
+		}
 	}
 
 	/**
