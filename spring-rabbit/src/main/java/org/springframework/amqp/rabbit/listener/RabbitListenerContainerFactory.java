@@ -49,10 +49,7 @@ public interface RabbitListenerContainerFactory<C extends MessageListenerContain
 		return createListenerContainer(null);
 	}
 
-	/**
-	 * set a bean name.
-	 * @since 3.2
-	 */
+	@Override
 	default void setBeanName(String name) {
 
 	}
