@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,8 @@ public class RabbitListenerContainerTestFactory implements RabbitListenerContain
 	private final Map<String, MessageListenerTestContainer> listenerContainers =
 			new LinkedHashMap<String, MessageListenerTestContainer>();
 
+	private String beanName;
+
 	public List<MessageListenerTestContainer> getListenerContainers() {
 		return new ArrayList<MessageListenerTestContainer>(this.listenerContainers.values());
 	}
@@ -61,6 +63,15 @@ public class RabbitListenerContainerTestFactory implements RabbitListenerContain
 				+ " without an id").isNotNull();
 		this.listenerContainers.put(id, container);
 		return container;
+	}
+
+	@Override
+	public void setBeanName(String name) {
+		this.beanName = name;
+	}
+
+	public String getBeanName() {
+		return this.beanName;
 	}
 
 }

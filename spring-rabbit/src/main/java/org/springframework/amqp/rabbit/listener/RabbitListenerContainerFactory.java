@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.lang.Nullable;
 
 /**
@@ -26,8 +27,7 @@ import org.springframework.lang.Nullable;
  * @since 1.4
  * @see RabbitListenerEndpoint
  */
-@FunctionalInterface
-public interface RabbitListenerContainerFactory<C extends MessageListenerContainer> {
+public interface RabbitListenerContainerFactory<C extends MessageListenerContainer> extends BeanNameAware {
 
 	/**
 	 * Create a {@link MessageListenerContainer} for the given

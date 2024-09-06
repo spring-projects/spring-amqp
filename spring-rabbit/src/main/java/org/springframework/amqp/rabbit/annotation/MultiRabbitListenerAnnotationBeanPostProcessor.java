@@ -23,9 +23,9 @@ import java.lang.reflect.Proxy;
 import java.util.Collection;
 
 import org.springframework.amqp.core.Declarable;
+import org.springframework.amqp.rabbit.config.BaseRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
-import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.util.StringUtils;
 
 /**
@@ -72,34 +72,30 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 	 * @return The name of the RabbitAdmin bean.
 	 */
 	protected String resolveMultiRabbitAdminName(RabbitListener rabbitListener) {
-		String admin = super.resolveExpressionAsString(rabbitListener.admin(), "admin");
-		if (StringUtils.hasText(admin)) {
 
-			return admin;
+		if (StringUtils.hasText(rabbitListener.admin())) {
+
+			var admin = super.resolveExpression(rabbitListener.admin());
+			if (admin instanceof RabbitAdmin rabbitAdmin) {
+
+				return rabbitAdmin.getBeanName();
+			}
+
+			return resolveExpressionAsString(rabbitListener.admin(), "admin");
 		}
 
-		if (!StringUtils.hasText(rabbitListener.containerFactory())) {
-
-			return RabbitListenerConfigUtils.RABBIT_ADMIN_BEAN_NAME;
-		}
-
-		if (this.beanFactory instanceof ConfigurableListableBeanFactory clbf) {
+		if (StringUtils.hasText(rabbitListener.containerFactory())) {
 
 			Object resolved = super.resolveExpression(rabbitListener.containerFactory());
-			if (resolved instanceof RabbitListenerContainerFactory<?> rlcf) {
+			if (resolved instanceof BaseRabbitListenerContainerFactory<?> rlcf) {
 
-				var containerFactoryByName = clbf.getBeansOfType(RabbitListenerContainerFactory.class);
-				for (var entry : containerFactoryByName.entrySet()) {
-
-					if (entry.getValue() == rlcf) {
-
-						return entry.getKey() + RabbitListenerConfigUtils.MULTI_RABBIT_ADMIN_SUFFIX;
-					}
-				}
+				return rlcf.getBeanName() + RabbitListenerConfigUtils.MULTI_RABBIT_ADMIN_SUFFIX;
 			}
+
+			return rabbitListener.containerFactory() + RabbitListenerConfigUtils.MULTI_RABBIT_ADMIN_SUFFIX;
 		}
 
-		return rabbitListener.containerFactory() + RabbitListenerConfigUtils.MULTI_RABBIT_ADMIN_SUFFIX;
+		return RabbitListenerConfigUtils.RABBIT_ADMIN_BEAN_NAME;
 	}
 
 	/**

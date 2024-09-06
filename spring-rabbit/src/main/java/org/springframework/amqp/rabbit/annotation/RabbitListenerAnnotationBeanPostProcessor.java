@@ -151,7 +151,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	private String defaultContainerFactoryBeanName = DEFAULT_RABBIT_LISTENER_CONTAINER_FACTORY_BEAN_NAME;
 
-	protected BeanFactory beanFactory;
+	private BeanFactory beanFactory;
 
 	private ClassLoader beanClassLoader;
 

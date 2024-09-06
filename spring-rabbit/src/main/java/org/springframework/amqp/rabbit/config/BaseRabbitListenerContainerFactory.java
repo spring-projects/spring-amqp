@@ -67,6 +67,8 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 
 	private ApplicationContext applicationContext;
 
+	private String beanName;
+
 	@Override
 	public abstract C createListenerContainer(RabbitListenerEndpoint endpoint);
 
@@ -216,6 +218,15 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 
 	protected ApplicationContext getApplicationContext() {
 		return this.applicationContext;
+	}
+
+	@Override
+	public void setBeanName(String name) {
+		this.beanName = name;
+	}
+
+	public String getBeanName() {
+		return this.beanName;
 	}
 
 }
