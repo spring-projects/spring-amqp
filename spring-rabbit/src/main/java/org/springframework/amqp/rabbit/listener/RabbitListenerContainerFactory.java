@@ -59,6 +59,7 @@ public interface RabbitListenerContainerFactory<C extends MessageListenerContain
 	 * @return the bean name.
 	 * @since 3.2
 	 */
+	@Nullable
 	default String getBeanName() {
 		return null;
 	}
