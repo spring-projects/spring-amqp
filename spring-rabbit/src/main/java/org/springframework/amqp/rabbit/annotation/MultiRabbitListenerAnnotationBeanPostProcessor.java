@@ -74,26 +74,28 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 	 */
 	protected String resolveMultiRabbitAdminName(RabbitListener rabbitListener) {
 
-		if (StringUtils.hasText(rabbitListener.admin())) {
+		var admin = rabbitListener.admin();
+		if (StringUtils.hasText(admin)) {
 
-			var admin = super.resolveExpression(rabbitListener.admin());
-			if (admin instanceof RabbitAdmin rabbitAdmin) {
+			var resolved = super.resolveExpression(admin);
+			if (resolved instanceof RabbitAdmin rabbitAdmin) {
 
 				return rabbitAdmin.getBeanName();
 			}
 
-			return super.resolveExpressionAsString(rabbitListener.admin(), "admin");
+			return super.resolveExpressionAsString(admin, "admin");
 		}
 
-		if (StringUtils.hasText(rabbitListener.containerFactory())) {
+		var containerFactory = rabbitListener.containerFactory();
+		if (StringUtils.hasText(containerFactory)) {
 
-			Object resolved = super.resolveExpression(rabbitListener.containerFactory());
+			var resolved = super.resolveExpression(containerFactory);
 			if (resolved instanceof RabbitListenerContainerFactory<?> rlcf) {
 
 				return rlcf.getBeanName() + RabbitListenerConfigUtils.MULTI_RABBIT_ADMIN_SUFFIX;
 			}
 
-			return rabbitListener.containerFactory() + RabbitListenerConfigUtils.MULTI_RABBIT_ADMIN_SUFFIX;
+			return containerFactory + RabbitListenerConfigUtils.MULTI_RABBIT_ADMIN_SUFFIX;
 		}
 
 		return RabbitListenerConfigUtils.RABBIT_ADMIN_BEAN_NAME;
