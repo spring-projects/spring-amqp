@@ -37,6 +37,7 @@ import org.springframework.util.StringUtils;
  * configuration, preventing the server from automatic binding non-related structures.
  *
  * @author Wander Costa
+ * @author Ngoc Nhan
  *
  * @since 2.3
  */
