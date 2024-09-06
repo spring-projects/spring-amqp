@@ -88,8 +88,8 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 			Object resolved = super.resolveExpression(rabbitListener.containerFactory());
 			if (resolved instanceof RabbitListenerContainerFactory<?> rlcf) {
 
-				var beans = clbf.getBeansOfType(RabbitListenerContainerFactory.class);
-				for (var entry :beans.entrySet()) {
+				var containerFactoryByName = clbf.getBeansOfType(RabbitListenerContainerFactory.class);
+				for (var entry : containerFactoryByName.entrySet()) {
 
 					if (entry.getValue() == rlcf) {
 
