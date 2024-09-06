@@ -53,13 +53,17 @@ public interface RabbitListenerContainerFactory<C extends MessageListenerContain
 	 * set a bean name.
 	 * @since 3.2
 	 */
-	void setBeanName(String name);
+	default void setBeanName(String name){
+
+	}
 
 	/**
 	 * Return a bean name of the component or null if not a bean.
 	 * @return the bean name.
 	 * @since 3.2
 	 */
-	String getBeanName();
+	default String getBeanName(){
+		return null;
+	}
 
 }
