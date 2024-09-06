@@ -23,9 +23,9 @@ import java.lang.reflect.Proxy;
 import java.util.Collection;
 
 import org.springframework.amqp.core.Declarable;
-import org.springframework.amqp.rabbit.config.BaseRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.util.StringUtils;
 
 /**
@@ -87,7 +87,7 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 		if (StringUtils.hasText(rabbitListener.containerFactory())) {
 
 			Object resolved = super.resolveExpression(rabbitListener.containerFactory());
-			if (resolved instanceof BaseRabbitListenerContainerFactory<?> rlcf) {
+			if (resolved instanceof RabbitListenerContainerFactory<?> rlcf) {
 
 				return rlcf.getBeanName() + RabbitListenerConfigUtils.MULTI_RABBIT_ADMIN_SUFFIX;
 			}
