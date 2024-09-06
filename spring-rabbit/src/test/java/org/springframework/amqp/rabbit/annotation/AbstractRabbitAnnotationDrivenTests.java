@@ -48,6 +48,7 @@ import com.rabbitmq.client.Channel;
  *
  * @author Stephane Nicoll
  * @author Gary Russell
+ * @author Ngoc Nhan
  */
 public abstract class AbstractRabbitAnnotationDrivenTests {
 

@@ -119,6 +119,7 @@ import org.springframework.validation.Validator;
  * @author Gary Russell
  * @author Alex Panchenko
  * @author Artem Bilan
+ * @author Ngoc Nhan
  *
  * @since 1.4
  *

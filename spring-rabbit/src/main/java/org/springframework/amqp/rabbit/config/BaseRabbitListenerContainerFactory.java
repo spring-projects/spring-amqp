@@ -43,6 +43,7 @@ import org.springframework.util.Assert;
  * @param <C> the container type that the factory creates.
  *
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 2.4
  *
  */

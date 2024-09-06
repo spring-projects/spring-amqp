@@ -32,6 +32,7 @@ import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
  *
  * @author Stephane Nicoll
  * @author Gary Russell
+ * @author Ngoc Nhan
  */
 public class RabbitListenerContainerTestFactory implements RabbitListenerContainerFactory<MessageListenerTestContainer> {
 

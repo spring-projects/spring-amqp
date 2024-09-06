@@ -24,6 +24,7 @@ import org.springframework.lang.Nullable;
  * @param <C> the container type.
  * @author Stephane Nicoll
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 1.4
  * @see RabbitListenerEndpoint
  */
