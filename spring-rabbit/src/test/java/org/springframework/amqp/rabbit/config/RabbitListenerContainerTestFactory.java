@@ -40,8 +40,6 @@ public class RabbitListenerContainerTestFactory implements RabbitListenerContain
 	private final Map<String, MessageListenerTestContainer> listenerContainers =
 			new LinkedHashMap<String, MessageListenerTestContainer>();
 
-	private String beanName;
-
 	public List<MessageListenerTestContainer> getListenerContainers() {
 		return new ArrayList<MessageListenerTestContainer>(this.listenerContainers.values());
 	}
