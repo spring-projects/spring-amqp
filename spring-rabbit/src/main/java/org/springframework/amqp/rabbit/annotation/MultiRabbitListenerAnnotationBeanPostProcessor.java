@@ -24,10 +24,8 @@ import java.util.Collection;
 
 import org.springframework.amqp.core.Declarable;
 import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
-import org.springframework.expression.ExpressionParser;
-import org.springframework.expression.ParserContext;
-import org.springframework.expression.common.TemplateParserContext;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.util.StringUtils;
 
 /**
@@ -43,10 +41,6 @@ import org.springframework.util.StringUtils;
  * @since 2.3
  */
 public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListenerAnnotationBeanPostProcessor {
-
-	private ExpressionParser expressionParser = new SpelExpressionParser();
-
-	private ParserContext templateParserContext = new TemplateParserContext();
 
 	@Override
 	protected Collection<Declarable> processAmqpListener(RabbitListener rabbitListener, Method method,
@@ -78,45 +72,34 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 	 * @return The name of the RabbitAdmin bean.
 	 */
 	protected String resolveMultiRabbitAdminName(RabbitListener rabbitListener) {
-		if (StringUtils.hasText(rabbitListener.admin())) {
-			return rabbitListener.admin();
+		String admin = super.resolveExpressionAsString(rabbitListener.admin(), "admin");
+		if (StringUtils.hasText(admin)) {
+
+			return admin;
 		}
 
-		if (StringUtils.hasText(rabbitListener.containerFactory())) {
-			var resolved = getContainerFactoryBeanName(rabbitListener.containerFactory());
-			return resolved + RabbitListenerConfigUtils.MULTI_RABBIT_ADMIN_SUFFIX;
+		if (!StringUtils.hasText(rabbitListener.containerFactory())) {
+
+			return RabbitListenerConfigUtils.RABBIT_ADMIN_BEAN_NAME;
 		}
 
-		return RabbitListenerConfigUtils.RABBIT_ADMIN_BEAN_NAME;
-	}
+		if (this.beanFactory instanceof ConfigurableListableBeanFactory clbf) {
 
-	/**
-	 * Resolves the name of containerFactory bean based on the RabbitListener.
-	 *
-	 * @param containerFactory a SpEL expression is provided ({@code #{...}})
-	 * @return The name of bean.
-	 */
-	private String getContainerFactoryBeanName(final String containerFactory) {
+			Object resolved = super.resolveExpression(rabbitListener.containerFactory());
+			if (resolved instanceof RabbitListenerContainerFactory<?> rlcf) {
 
-		var beanName = this.expressionParser.parseExpression(containerFactory, this.templateParserContext).getExpressionString();
-		if (containerFactory.startsWith(this.templateParserContext.getExpressionPrefix()) && beanName.startsWith("@")) {
+				var beans = clbf.getBeansOfType(RabbitListenerContainerFactory.class);
+				for (var entry :beans.entrySet()) {
 
-			return beanName.substring(1);
+					if (entry.getValue() == rlcf) {
+
+						return entry.getKey() + RabbitListenerConfigUtils.MULTI_RABBIT_ADMIN_SUFFIX;
+					}
+				}
+			}
 		}
 
-		return beanName;
-	}
-
-	public void setExpressionParser(ExpressionParser expressionParser) {
-		if (expressionParser != null) {
-			this.expressionParser = expressionParser;
-		}
-	}
-
-	public void setTemplateParserContext(ParserContext templateParserContext) {
-		if (templateParserContext != null) {
-			this.templateParserContext = templateParserContext;
-		}
+		return rabbitListener.containerFactory() + RabbitListenerConfigUtils.MULTI_RABBIT_ADMIN_SUFFIX;
 	}
 
 	/**

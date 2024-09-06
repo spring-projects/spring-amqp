@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2023 the original author or authors.
+ * Copyright 2014-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,7 +151,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	private String defaultContainerFactoryBeanName = DEFAULT_RABBIT_LISTENER_CONTAINER_FACTORY_BEAN_NAME;
 
-	private BeanFactory beanFactory;
+	protected BeanFactory beanFactory;
 
 	private ClassLoader beanClassLoader;
 
@@ -961,7 +961,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 	}
 
-	private Object resolveExpression(String value) {
+	protected Object resolveExpression(String value) {
 		String resolvedValue = resolve(value);
 
 		return this.resolver.evaluate(resolvedValue, this.expressionContext);
