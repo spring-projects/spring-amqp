@@ -81,7 +81,7 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 				return rabbitAdmin.getBeanName();
 			}
 
-			return resolveExpressionAsString(rabbitListener.admin(), "admin");
+			return super.resolveExpressionAsString(rabbitListener.admin(), "admin");
 		}
 
 		if (StringUtils.hasText(rabbitListener.containerFactory())) {
