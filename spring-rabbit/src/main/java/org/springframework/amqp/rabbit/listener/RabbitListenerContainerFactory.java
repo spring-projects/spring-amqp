@@ -28,6 +28,7 @@ import org.springframework.lang.Nullable;
  * @since 1.4
  * @see RabbitListenerEndpoint
  */
+@FunctionalInterface
 public interface RabbitListenerContainerFactory<C extends MessageListenerContainer> extends BeanNameAware {
 
 	/**
