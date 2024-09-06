@@ -48,6 +48,7 @@ import com.rabbitmq.client.Channel;
  *
  * @author Stephane Nicoll
  * @author Gary Russell
+ * @author Ngoc Nhan
  */
 public abstract class AbstractRabbitAnnotationDrivenTests {
 
@@ -87,7 +88,9 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 				context.getBean("rabbitListenerContainerFactory", RabbitListenerContainerTestFactory.class);
 		RabbitListenerContainerTestFactory simpleFactory =
 				context.getBean("simpleFactory", RabbitListenerContainerTestFactory.class);
+		assertThat(defaultFactory.getBeanName()).isEqualTo("rabbitListenerContainerFactory");
 		assertThat(defaultFactory.getListenerContainers()).hasSize(expectedDefaultContainers);
+		assertThat(simpleFactory.getBeanName()).isEqualTo("simpleFactory");
 		assertThat(simpleFactory.getListenerContainers()).hasSize(1);
 		Map<String, org.springframework.amqp.core.Queue> queues = context
 				.getBeansOfType(org.springframework.amqp.core.Queue.class);
@@ -129,6 +132,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	public void testFullConfiguration(ApplicationContext context) {
 		RabbitListenerContainerTestFactory simpleFactory =
 				context.getBean("simpleFactory", RabbitListenerContainerTestFactory.class);
+		assertThat(simpleFactory.getBeanName()).isEqualTo("simpleFactory");
 		assertThat(simpleFactory.getListenerContainers()).hasSize(1);
 		MethodRabbitListenerEndpoint endpoint = (MethodRabbitListenerEndpoint)
 				simpleFactory.getListenerContainers().get(0).getEndpoint();
@@ -168,7 +172,9 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 				context.getBean("rabbitListenerContainerFactory", RabbitListenerContainerTestFactory.class);
 		RabbitListenerContainerTestFactory customFactory =
 				context.getBean("customFactory", RabbitListenerContainerTestFactory.class);
+		assertThat(defaultFactory.getBeanName()).isEqualTo("rabbitListenerContainerFactory");
 		assertThat(defaultFactory.getListenerContainers()).hasSize(1);
+		assertThat(customFactory.getBeanName()).isEqualTo("customFactory");
 		assertThat(customFactory.getListenerContainers()).hasSize(1);
 		RabbitListenerEndpoint endpoint = defaultFactory.getListenerContainers().get(0).getEndpoint();
 		assertThat(endpoint.getClass()).as("Wrong endpoint type").isEqualTo(SimpleRabbitListenerEndpoint.class);
@@ -191,6 +197,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	public void testExplicitContainerFactoryConfiguration(ApplicationContext context) {
 		RabbitListenerContainerTestFactory defaultFactory =
 				context.getBean("simpleFactory", RabbitListenerContainerTestFactory.class);
+		assertThat(defaultFactory.getBeanName()).isEqualTo("simpleFactory");
 		assertThat(defaultFactory.getListenerContainers()).hasSize(1);
 	}
 

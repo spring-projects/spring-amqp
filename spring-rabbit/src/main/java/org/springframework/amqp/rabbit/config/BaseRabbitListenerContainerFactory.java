@@ -43,6 +43,7 @@ import org.springframework.util.Assert;
  * @param <C> the container type that the factory creates.
  *
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 2.4
  *
  */
@@ -66,6 +67,8 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	private Boolean observationEnabled;
 
 	private ApplicationContext applicationContext;
+
+	private String beanName;
 
 	@Override
 	public abstract C createListenerContainer(RabbitListenerEndpoint endpoint);
@@ -216,6 +219,16 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 
 	protected ApplicationContext getApplicationContext() {
 		return this.applicationContext;
+	}
+
+	@Override
+	public void setBeanName(String name) {
+		this.beanName = name;
+	}
+
+	@Override
+	public String getBeanName() {
+		return this.beanName;
 	}
 
 }
