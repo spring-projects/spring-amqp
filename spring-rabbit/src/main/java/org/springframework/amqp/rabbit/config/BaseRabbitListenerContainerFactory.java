@@ -225,6 +225,7 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 		this.beanName = name;
 	}
 
+	@Override
 	public String getBeanName() {
 		return this.beanName;
 	}
