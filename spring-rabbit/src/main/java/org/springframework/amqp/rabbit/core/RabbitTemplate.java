@@ -2486,7 +2486,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		ObservationRegistry registry = getObservationRegistry();
 		Observation observation = RabbitTemplateObservation.TEMPLATE_OBSERVATION.observation(this.observationConvention,
 				DefaultRabbitTemplateObservationConvention.INSTANCE,
-					() -> new RabbitMessageSenderContext(message, this.beanName, exch + "/" + rKey), registry);
+					() -> new RabbitMessageSenderContext(message, this.beanName, exch, rKey), registry);
 
 		observation.observe(() -> sendToRabbit(channel, exch, rKey, mandatory, message));
 	}

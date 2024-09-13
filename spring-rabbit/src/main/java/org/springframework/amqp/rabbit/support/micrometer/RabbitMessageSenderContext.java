@@ -33,11 +33,17 @@ public class RabbitMessageSenderContext extends SenderContext<Message> {
 
 	private final String destination;
 
-	public RabbitMessageSenderContext(Message message, String beanName, String destination) {
+	private final String exchange;
+
+	private final String routingKey;
+
+	public RabbitMessageSenderContext(Message message, String beanName, String exchange, String routingKey) {
 		super((carrier, key, value) -> message.getMessageProperties().setHeader(key, value));
 		setCarrier(message);
 		this.beanName = beanName;
-		this.destination = destination;
+		this.exchange = exchange;
+		this.routingKey = routingKey;
+		this.destination = exchange + "/" + routingKey;
 		setRemoteServiceName("RabbitMQ");
 	}
 
@@ -51,6 +57,22 @@ public class RabbitMessageSenderContext extends SenderContext<Message> {
 	 */
 	public String getDestination() {
 		return this.destination;
+	}
+
+	/**
+	 * Return the exchange.
+	 * @return the exchange.
+	 */
+	public String getExchange() {
+		return this.exchange;
+	}
+
+	/**
+	 * Return the routingKey.
+	 * @return the routingKey.
+	 */
+	public String getRoutingKey() {
+		return this.routingKey;
 	}
 
 }
