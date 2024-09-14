@@ -356,7 +356,7 @@ It has been replaced by `AbstractJackson2MessageConverter`.
 
 Yet another option is the `MarshallingMessageConverter`.
 It delegates to the Spring OXM library's implementations of the `Marshaller` and `Unmarshaller` strategy interfaces.
-You can read more about that library https://docs.spring.io/spring/docs/current/spring-framework-reference/html/oxm.html[here].
+You can read more about that library {spring-framework-docs}/data-access/oxm.html[here].
 In terms of configuration, it is most common to provide only the constructor argument, since most implementations of `Marshaller` also implement `Unmarshaller`.
 The following example shows how to configure a `MarshallingMessageConverter`:
 

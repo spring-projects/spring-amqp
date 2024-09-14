@@ -5,7 +5,7 @@
 When the management plugin is enabled, the RabbitMQ server exposes a REST API to monitor and configure the broker.
 A https://github.com/rabbitmq/hop[Java Binding for the API] is now provided.
 The `com.rabbitmq.http.client.Client` is a standard, immediate, and, therefore, blocking API.
-It is based on the https://docs.spring.io/spring/docs/current/spring-framework-reference/web.html#spring-web[Spring Web] module and its `RestTemplate` implementation.
+It is based on the {spring-framework-docs}/web.html[Spring Web] module and its `RestTemplate` implementation.
 On the other hand, the `com.rabbitmq.http.client.ReactorNettyClient` is a reactive, non-blocking implementation based on the https://projectreactor.io/docs/netty/release/reference/docs/index.html[Reactor Netty] project.
 
 The hop dependency (`com.rabbitmq:http-client`) is now also `optional`.

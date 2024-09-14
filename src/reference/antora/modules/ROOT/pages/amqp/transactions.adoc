@@ -69,7 +69,7 @@ If the `channelTransacted` flag was set to `false` (the default) in the precedin
 Prior to version 1.6.6, adding a rollback rule to a container's `transactionAttribute` when using an external transaction manager (such as JDBC) had no effect.
 Exceptions always rolled back the transaction.
 
-Also, when using a https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/html/transaction.html#transaction-declarative[transaction advice] in the container's advice chain, conditional rollback was not very useful, because all listener exceptions are wrapped in a `ListenerExecutionFailedException`.
+Also, when using a {spring-framework-docs}/data-access/transaction/declarative.html[transaction advice] in the container's advice chain, conditional rollback was not very useful, because all listener exceptions are wrapped in a `ListenerExecutionFailedException`.
 
 The first problem has been corrected, and the rules are now applied properly.
 Further, the `ListenerFailedRuleBasedTransactionAttribute` is now provided.
@@ -116,13 +116,13 @@ See xref:amqp/containerAttributes.adoc[Message Listener Container Configuration]
 [[using-rabbittransactionmanager]]
 == Using `RabbitTransactionManager`
 
-The https://docs.spring.io/spring-amqp/docs/current/api/org/springframework/amqp/rabbit/transaction/RabbitTransactionManager.html[RabbitTransactionManager] is an alternative to executing Rabbit operations within, and synchronized with, external transactions.
-This transaction manager is an implementation of the https://docs.spring.io/spring/docs/current/javadoc-api/org/springframework/transaction/PlatformTransactionManager.html[`PlatformTransactionManager`] interface and should be used with a single Rabbit `ConnectionFactory`.
+The {spring-amqp-java-docs}/rabbit/transaction/RabbitTransactionManager.html[RabbitTransactionManager] is an alternative to executing Rabbit operations within, and synchronized with, external transactions.
+This transaction manager is an implementation of the {spring-framework-java-docs}/transaction/PlatformTransactionManager.html[`PlatformTransactionManager`] interface and should be used with a single Rabbit `ConnectionFactory`.
 
 IMPORTANT: This strategy is not able to provide XA transactions -- for example, in order to share transactions between messaging and database access.
 
 Application code is required to retrieve the transactional Rabbit resources through `ConnectionFactoryUtils.getTransactionalResourceHolder(ConnectionFactory, boolean)` instead of a standard `Connection.createChannel()` call with subsequent channel creation.
-When using Spring AMQP's https://docs.spring.io/spring-amqp/docs/latest_ga/api/org/springframework/amqp/rabbit/core/RabbitTemplate.html[RabbitTemplate], it will autodetect a thread-bound Channel and automatically participate in its transaction.
+When using Spring AMQP's {spring-amqp-java-docs}/rabbit/core/RabbitTemplate.html[RabbitTemplate], it will autodetect a thread-bound Channel and automatically participate in its transaction.
 
 With Java Configuration, you can setup a new RabbitTransactionManager by using the following bean:
 

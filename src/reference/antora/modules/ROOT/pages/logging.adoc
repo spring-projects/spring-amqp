@@ -395,7 +395,7 @@ public class MyEnhancedAppender extends AmqpAppender {
 }
 ----
 
-The Log4j 2 appender supports using a https://logging.apache.org/log4j/2.x/manual/appenders.html#BlockingQueueFactory[`BlockingQueueFactory`], as the following example shows:
+The Log4j 2 appender supports using a https://logging.apache.org/log4j/2.x/manual/appenders/delegating.html#BlockingQueueFactory[`BlockingQueueFactory`], as the following example shows:
 
 [source, xml]
 ----

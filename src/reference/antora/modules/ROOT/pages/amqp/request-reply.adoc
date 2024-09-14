@@ -6,11 +6,11 @@ Those methods are quite useful for request-reply scenarios, since they handle th
 
 Similar request-reply methods are also available where the `MessageConverter` is applied to both the request and reply.
 Those methods are named `convertSendAndReceive`.
-See the https://docs.spring.io/spring-amqp/docs/current/api/org/springframework/amqp/core/AmqpTemplate.html[Javadoc of `AmqpTemplate`] for more detail.
+See the {spring-amqp-java-docs}/core/AmqpTemplate.html[Javadoc of `AmqpTemplate`] for more detail.
 
 Starting with version 1.5.0, each of the `sendAndReceive` method variants has an overloaded version that takes `CorrelationData`.
 Together with a properly configured connection factory, this enables the receipt of publisher confirms for the send side of the operation.
-See xref:amqp/template.adoc#template-confirms[Correlated Publisher Confirms and Returns] and the https://docs.spring.io/spring-amqp/docs/current/api/org/springframework/amqp/rabbit/core/RabbitOperations.html[Javadoc for `RabbitOperations`] for more information.
+See xref:amqp/template.adoc#template-confirms[Correlated Publisher Confirms and Returns] and the {spring-amqp-java-docs}/rabbit/core/RabbitOperations.html[Javadoc for `RabbitOperations`] for more information.
 
 Starting with version 2.0, there are variants of these methods (`convertSendAndReceiveAsType`) that take an additional `ParameterizedTypeReference` argument to convert complex returned types.
 The template must be configured with a `SmartMessageConverter`.

@@ -483,7 +483,7 @@ public class MyService {
 ----
 
 It is important to unbind the resource after use.
-For more information, see the https://docs.spring.io/spring-amqp/docs/current/api/org/springframework/amqp/rabbit/connection/AbstractRoutingConnectionFactory.html[JavaDoc] for `AbstractRoutingConnectionFactory`.
+For more information, see the {spring-amqp-java-docs}/rabbit/connection/AbstractRoutingConnectionFactory.html[JavaDoc] for `AbstractRoutingConnectionFactory`.
 
 Starting with version 1.4, `RabbitTemplate` supports the SpEL `sendConnectionFactorySelectorExpression` and `receiveConnectionFactorySelectorExpression` properties, which are evaluated on each AMQP protocol interaction operation (`send`, `sendAndReceive`, `receive`, or `receiveAndReply`), resolving to a `lookupKey` value for the provided `AbstractRoutingConnectionFactory`.
 You can use bean references, such as `@vHostResolver.getVHost(#root)` in the expression.

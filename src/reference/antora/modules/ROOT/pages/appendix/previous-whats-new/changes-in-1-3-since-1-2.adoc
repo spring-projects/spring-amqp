@@ -5,14 +5,14 @@
 == Listener Concurrency
 
 The listener container now supports dynamic scaling of the number of consumers based on workload, or you can programmatically change the concurrency without stopping the container.
-See <<listener-concurrency>>.
+See xref:amqp/listener-concurrency.adoc#listener-concurrency[Listener Concurrency].
 
 [[listener-queues]]
 == Listener Queues
 
 The listener container now permits the queues on which it listens to be modified at runtime.
 Also, the container now starts if at least one of its configured queues is available for use.
-See <<listener-queues>>
+See xref:amqp/listener-queues.adoc#listener-queues[Listener Container Queues]
 
 This listener container now redeclares any auto-delete queues during startup.
 See xref:amqp/receiving-messages/async-consumer.adoc#lc-auto-delete[`auto-delete` Queues].
@@ -21,13 +21,13 @@ See xref:amqp/receiving-messages/async-consumer.adoc#lc-auto-delete[`auto-delete
 == Consumer Priority
 
 The listener container now supports consumer arguments, letting the `x-priority` argument be set.
-See <<consumer-priority>>.
+See xref:amqp/receiving-messages/async-consumer.adoc#consumer-priority[Consumer Priority].
 
 [[exclusive-consumer]]
 == Exclusive Consumer
 
 You can now configure `SimpleMessageListenerContainer` with a single `exclusive` consumer, preventing other consumers from listening to the queue.
-See <<exclusive-consumer>>.
+See xref:amqp/exclusive-consumer.adoc[Exclusive Consumer].
 
 [[rabbit-admin]]
 == Rabbit Admin
@@ -47,7 +47,7 @@ If you wish to bind with an empty string routing key, you need to specify `key="
 
 The `AmqpTemplate` now provides several synchronous `receiveAndReply` methods.
 These are implemented by the `RabbitTemplate`.
-For more information see <<receiving-messages>>.
+For more information see xref:amqp/receiving-messages.adoct[Receiving Messages].
 
 The `RabbitTemplate` now supports configuring a `RetryTemplate` to attempt retries (with optional back-off policy) for when the broker is not available.
 For more information see xref:amqp/template.adoc#template-retry[Adding Retry Capabilities].
@@ -66,12 +66,11 @@ You can now configure the `<binding>` of the `<headers-exchange>` with a `key/va
 These options are mutually exclusive.
 See xref:amqp/broker-configuration.adoc#headers-exchange[Headers Exchange].
 
-[[routing-connection-factory]]
 == Routing Connection Factory
 
 A new `SimpleRoutingConnectionFactory` has been introduced.
 It allows configuration of `ConnectionFactories` mapping, to determine the target `ConnectionFactory` to use at runtime.
-See <<routing-connection-factory>>.
+See xref:amqp/connections.adoc#routing-connection-factory[routing-connection-factory].
 
 [[messagebuilder-and-messagepropertiesbuilder]]
 == `MessageBuilder` and `MessagePropertiesBuilder`

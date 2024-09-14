@@ -100,7 +100,7 @@ Message message = MessageBuilder.withBody("foo".getBytes())
     .build();
 ----
 
-Each of the properties defined on the https://docs.spring.io/spring-amqp/docs/current/api/org/springframework/amqp/core/MessageProperties.html[`MessageProperties`] can be set.
+Each of the properties defined on the {spring-amqp-java-docs}/core/MessageProperties.html[`MessageProperties`] can be set.
 Other methods include `setHeader(String key, String value)`, `removeHeader(String key)`, `removeHeaders()`, and `copyProperties(MessageProperties properties)`.
 Each property setting method has a `set*IfAbsent()` variant.
 In the cases where a default initial value exists, the method is named `set*IfAbsentOrDefault()`.

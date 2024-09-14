@@ -5,7 +5,7 @@
 == `spring-erlang` Is No Longer Supported
 
 The `spring-erlang` jar is no longer included in the distribution.
-Use <<management-rest-api, the RabbitMQ REST API>> instead.
+Use xref:amqp/management-rest-api.adoc#management-rest-api[RabbitMQ REST API] instead.
 
 [[cachingconnectionfactory-changes]]
 == `CachingConnectionFactory` Changes
@@ -122,7 +122,7 @@ See xref:amqp/request-reply.adoc#reply-listener[Reply Listener Container] for mo
 == `RabbitManagementTemplate` Added
 
 The `RabbitManagementTemplate` has been introduced to monitor and configure the RabbitMQ Broker by using the REST API provided by its https://www.rabbitmq.com/management.html[management plugin].
-See <<management-rest-api>> for more information.
+See xref:amqp/management-rest-api.adoc#management-rest-api[RabbitMQ REST API] for more information.
 
 [[listener-container-bean-names-xml]]
 == Listener Container Bean Names (XML)
@@ -160,7 +160,7 @@ See xref:amqp/containerAttributes.adoc[Message Listener Container Configuration]
 == Channel Close Logging
 
 A mechanism to control the log levels of channel closure has been introduced.
-See <<channel-close-logging>>.
+See xref:amqp/connections.adoc#channel-close-logging[Logging Channel Close Events].
 
 [[application-events]]
 == Application Events
