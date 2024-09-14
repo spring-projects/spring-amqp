@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import io.micrometer.observation.transport.SenderContext;
  * {@link SenderContext} for {@link Message}s.
  *
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 3.0
  *
  */
@@ -37,6 +38,27 @@ public class RabbitMessageSenderContext extends SenderContext<Message> {
 
 	private final String routingKey;
 
+	@Deprecated(since = "3.2")
+	public RabbitMessageSenderContext(Message message, String beanName, String destination) {
+		super((carrier, key, value) -> message.getMessageProperties().setHeader(key, value));
+		setCarrier(message);
+		this.beanName = beanName;
+		this.exchange = null;
+		this.routingKey = null;
+		this.destination = destination;
+		setRemoteServiceName("RabbitMQ");
+	}
+
+
+	/**
+	 * Create an instance {@code RabbitMessageSenderContext}.
+	 *
+	 * @param message a message to send
+	 * @param beanName the bean name
+	 * @param exchange the name of the exchange
+	 * @param routingKey the routing key
+	 * @since 3.2
+	 */
 	public RabbitMessageSenderContext(Message message, String beanName, String exchange, String routingKey) {
 		super((carrier, key, value) -> message.getMessageProperties().setHeader(key, value));
 		setCarrier(message);
@@ -62,6 +84,7 @@ public class RabbitMessageSenderContext extends SenderContext<Message> {
 	/**
 	 * Return the exchange.
 	 * @return the exchange.
+	 * @since 3.2
 	 */
 	public String getExchange() {
 		return this.exchange;
@@ -70,6 +93,7 @@ public class RabbitMessageSenderContext extends SenderContext<Message> {
 	/**
 	 * Return the routingKey.
 	 * @return the routingKey.
+	 * @since 3.2
 	 */
 	public String getRoutingKey() {
 		return this.routingKey;
