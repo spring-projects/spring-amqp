@@ -81,6 +81,7 @@ import com.rabbitmq.client.Channel;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Christian Tzolov
+ * @author Ngoc Nhan
  */
 @ManagedResource(description = "Admin Tasks")
 public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, ApplicationEventPublisherAware,
@@ -648,8 +649,14 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@Override // NOSONAR complexity
 	public void initialize() {
 
+		redeclareBeanDeclarables();
 		redeclareManualDeclarables();
+	}
 
+	/**
+	 * Process bean declarables.
+	 */
+	private void redeclareBeanDeclarables() {
 		if (this.applicationContext == null) {
 			this.logger.debug("no ApplicationContext has been set, cannot auto-declare Exchanges, Queues, and Bindings");
 			return;
