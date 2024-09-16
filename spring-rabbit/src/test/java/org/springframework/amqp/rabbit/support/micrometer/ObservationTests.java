@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,7 @@ import io.micrometer.tracing.test.simple.SimpleTracer;
 
 /**
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 3.0
  *
  */
@@ -110,7 +111,9 @@ public class ObservationTests {
 
 			@Override
 			public KeyValues getLowCardinalityKeyValues(RabbitMessageSenderContext context) {
-				return super.getLowCardinalityKeyValues(context).and("foo", "bar");
+				return super.getLowCardinalityKeyValues(context).and("foo", "bar")
+					.and("messaging.destination.name", context.getExchange())
+					.and("messaging.rabbitmq.destination.routing_key", context.getRoutingKey());
 			}
 
 		});
@@ -135,6 +138,8 @@ public class ObservationTests {
 		span = spans.poll();
 		assertThat(span.getTags()).containsEntry("spring.rabbit.template.name", "template");
 		assertThat(span.getTags()).containsEntry("foo", "bar");
+		assertThat(span.getTags()).containsEntry("messaging.destination.name", "");
+		assertThat(span.getTags()).containsEntry("messaging.rabbitmq.destination.routing_key", "observation.testQ1");
 		assertThat(span.getName()).isEqualTo("/observation.testQ1 send");
 		await().until(() -> spans.peekFirst().getTags().size() == 4);
 		span = spans.poll();
@@ -142,10 +147,12 @@ public class ObservationTests {
 				.containsAllEntriesOf(Map.of("spring.rabbit.listener.id", "obs1", "foo", "some foo value", "bar",
 						"some bar value", "baz", "qux"));
 		assertThat(span.getName()).isEqualTo("observation.testQ1 receive");
-		await().until(() -> spans.peekFirst().getTags().size() == 2);
+		await().until(() -> spans.peekFirst().getTags().size() == 4);
 		span = spans.poll();
 		assertThat(span.getTags()).containsEntry("spring.rabbit.template.name", "template");
 		assertThat(span.getTags()).containsEntry("foo", "bar");
+		assertThat(span.getTags()).containsEntry("messaging.destination.name", "");
+		assertThat(span.getTags()).containsEntry("messaging.rabbitmq.destination.routing_key", "observation.testQ2");
 		assertThat(span.getName()).isEqualTo("/observation.testQ2 send");
 		await().until(() -> spans.peekFirst().getTags().size() == 3);
 		span = spans.poll();
