@@ -90,7 +90,7 @@ public StatefulRetryOperationsInterceptor interceptor() {
 
 Only a subset of retry capabilities can be configured this way.
 More advanced features would need the configuration of a `RetryTemplate` as a Spring bean.
-See the https://docs.spring.io/spring-retry/docs/api/current/[Spring Retry Javadoc] for complete information about available policies and their configuration.
+See the {spring-retry-java-docs}[Spring Retry Javadoc] for complete information about available policies and their configuration.
 
 [[batch-retry]]
 == Retry with Batch Listeners

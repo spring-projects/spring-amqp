@@ -81,7 +81,7 @@ See xref:amqp/message-converters.adoc#jackson2xml[`Jackson2XmlMessageConverter`]
 == Management REST API
 
 The `RabbitManagementTemplate` is now deprecated in favor of the direct `com.rabbitmq.http.client.Client` (or `com.rabbitmq.http.client.ReactorNettyClient`) usage.
-See <<management-rest-api>> for more information.
+See xref:amqp/management-rest-api.adoc#management-rest-api[RabbitMQ REST API] for more information.
 
 [[rabbitlistener-changes]]
 == `@RabbitListener` Changes

@@ -68,7 +68,7 @@ See xref:amqp/request-reply.adoc#async-template[Async Rabbit Template] for more 
 The `RabbitTemplate` and `AsyncRabbitTemplate` now have `receiveAndConvert` and `convertSendAndReceiveAsType` methods that take a `ParameterizedTypeReference<T>` argument, letting the caller specify the type to which to convert the result.
 This is particularly useful for complex types or when type information is not conveyed in message headers.
 It requires a `SmartMessageConverter` such as the `Jackson2JsonMessageConverter`.
-See xref:amqp/request-reply.adoc[Request/Reply Messaging], xref:amqp/request-reply.adoc#async-template[Async Rabbit Template], xref:amqp/message-converters.adoc#json-complex[Converting From a `Message` With `RabbitTemplate`], and <<json-complex>> for more information.
+See xref:amqp/request-reply.adoc[Request/Reply Messaging], xref:amqp/request-reply.adoc#async-template[Async Rabbit Template], xref:amqp/message-converters.adoc#json-complex[Converting From a `Message` With `RabbitTemplate`], and xref:amqp/message-converters.adoc#json-complex[Converting From a `Message` With `RabbitTemplate`] for more information.
 
 You can now use a `RabbitTemplate` to perform multiple operations on a dedicated channel.
 See xref:amqp/template.adoc#scoped-operations[Scoped Operations] for more information.
@@ -179,7 +179,7 @@ See xref:amqp/transactions.adoc#conditional-rollback[Conditional Rollback] for m
 
 Deprecated in previous versions, Jackson `1.x` converters and related components have now been deleted.
 You can use similar components based on Jackson 2.x.
-See <<json-message-converter>> for more information.
+See xref:amqp/message-converters.adoc#json-message-converter[`Jackson2JsonMessageConverter`] for more information.
 
 [[json-message-converter]]
 == JSON Message Converter

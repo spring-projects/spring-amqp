@@ -359,7 +359,7 @@ public Exchange exchange() {
 }
 ----
 
-See the Javadoc for https://docs.spring.io/spring-amqp/docs/current/api/org/springframework/amqp/core/QueueBuilder.html[`org.springframework.amqp.core.QueueBuilder`] and https://docs.spring.io/spring-amqp/docs/current/api/org/springframework/amqp/core/ExchangeBuilder.html[`org.springframework.amqp.core.ExchangeBuilder`] for more information.
+See the Javadoc for {spring-amqp-java-docs}/core/QueueBuilder.html[`org.springframework.amqp.core.QueueBuilder`] and {spring-amqp-java-docs}/core/ExchangeBuilder.html[`org.springframework.amqp.core.ExchangeBuilder`] for more information.
 
 Starting with version 2.0, the `ExchangeBuilder` now creates durable exchanges by default, to be consistent with the simple constructors on the individual `AbstractExchange` classes.
 To make a non-durable exchange with the builder, use `.durable(false)` before invoking `.build()`.

@@ -189,7 +189,7 @@ See xref:amqp/receiving-messages/async-annotation-driven.adoc[Annotation-driven 
 == Delayed Message Exchange
 
 Spring AMQP now has first class support for the RabbitMQ Delayed Message Exchange plugin.
-See <<delayed-message-exchange>> for more information.
+See xref:amqp/delayed-message-exchange.adoc[Delayed Message Exchange] for more information.
 
 [[exchange-internal-flag]]
 == Exchange Internal Flag
@@ -235,7 +235,7 @@ factory.
 You can now configure a "`allowed list`" of allowable classes when you use Java deserialization.
 You should consider creating an allowed list if you accept messages with serialized java objects from
 untrusted sources.
-See <<java-deserialization>> for more information.
+See amqp/message-converters.adoc#java-deserialization[Java Deserialization] for more information.
 
 [[json-messageconverter]]
 == JSON `MessageConverter`

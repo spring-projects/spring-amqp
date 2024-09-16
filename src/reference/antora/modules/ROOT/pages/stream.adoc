@@ -109,7 +109,7 @@ You can also send native stream `Message` s directly; with the `messageBuilder()
 
 The `ProducerCustomizer` provides a mechanism to customize the producer before it is built.
 
-Refer to the https://rabbitmq.github.io/rabbitmq-stream-java-client/stable/htmlsingle/[Java Client Documentation] about customizing the `Environment` and `Producer`.
+Refer to the {rabbitmq-stream-docs}[Java Client Documentation] about customizing the `Environment` and `Producer`.
 
 IMPORTANT: Starting with version 3.0, the method return types are `CompletableFuture` instead of `ListenableFuture`.
 
@@ -135,7 +135,7 @@ See xref:amqp/containerAttributes.adoc[Message Listener Container Configuration]
 
 Similar the template, the container has a `ConsumerCustomizer` property.
 
-Refer to the https://rabbitmq.github.io/rabbitmq-stream-java-client/stable/htmlsingle/[Java Client Documentation] about customizing the `Environment` and `Consumer`.
+Refer to the {rabbitmq-stream-docs}[Java Client Documentation] about customizing the `Environment` and `Consumer`.
 
 When using `@RabbitListener`, configure a `StreamRabbitListenerContainerFactory`; at this time, most `@RabbitListener` properties (`concurrency`, etc) are ignored. Only `id`, `queues`, `autoStartup` and `containerFactory` are supported.
 In addition, `queues` can only contain one stream name.
@@ -287,7 +287,7 @@ StreamListenerContainer container(Environment env, String name) {
 ----
 
 IMPORTANT: At this time, when the concurrency is greater than 1, the actual concurrency is further controlled by the `Environment`; to achieve full concurrency, set the environment's `maxConsumersByConnection` to 1.
-See https://rabbitmq.github.io/rabbitmq-stream-java-client/snapshot/htmlsingle/#configuring-the-environment[Configuring the Environment].
+See {rabbitmq-stream-docs}/#configuring-the-environment[Configuring the Environment].
 
 [[stream-micrometer-observation]]
 == Micrometer Observation
@@ -298,7 +298,7 @@ The container now also supports Micrometer timers (when observation is not enabl
 Set `observationEnabled` on each component to enable observation; this will disable xref:amqp/receiving-messages/micrometer.adoc[Micrometer Timers] because the timers will now be managed with each observation.
 When using annotated listeners, set `observationEnabled` on the container factory.
 
-Refer to https://docs.micrometer.io/tracing/reference/[Micrometer Tracing] for more information.
+Refer to {micrometer-tracing-docs}[Micrometer Tracing] for more information.
 
 To add tags to timers/traces, configure a custom `RabbitStreamTemplateObservationConvention` or `RabbitStreamListenerObservationConvention` to the template or listener container, respectively.
 

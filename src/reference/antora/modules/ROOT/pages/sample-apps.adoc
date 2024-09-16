@@ -20,7 +20,7 @@ You can import the `spring-rabbit-helloworld` sample into the IDE and then follo
 Within the `src/main/java` directory, navigate to the `org.springframework.amqp.helloworld` package.
 Open the `HelloWorldConfiguration` class and notice that it contains the `@Configuration` annotation at the class level and notice some `@Bean` annotations at method-level.
 This is an example of Spring's Java-based configuration.
-You can read more about that https://docs.spring.io/spring/docs/current/spring-framework-reference/html/beans.html#beans-java[here].
+You can read more about that {spring-framework-docs}/core/beans/java.html[here].
 
 The following listing shows how the connection factory is created:
 
@@ -144,7 +144,7 @@ static class ScheduledProducer {
 ----
 
 You do not need to understand all of the details, since the real focus should be on the receiving side (which we cover next).
-However, if you are not yet familiar with Spring task scheduling support, you can learn more https://docs.spring.io/spring/docs/current/spring-framework-reference/html/scheduling.html#scheduling-annotation-support[here].
+However, if you are not yet familiar with Spring task scheduling support, you can learn more {spring-framework-docs}/integration/scheduling.html#scheduling-annotation-support-scheduled[here].
 The short story is that the `postProcessor` bean in the `ProducerConfiguration` registers the task with a scheduler.
 
 Now we can turn to the receiving side.
@@ -351,4 +351,4 @@ Spring applications, when sending JSON, set the `__TypeId__` header to the fully
 
 The `spring-rabbit-json` sample explores several techniques to convert the JSON from a non-Spring application.
 
-See also xref:amqp/message-converters.adoc#json-message-converter[`Jackson2JsonMessageConverter`] as well as the https://docs.spring.io/spring-amqp/docs/current/api/index.html?org/springframework/amqp/support/converter/DefaultClassMapper.html[Javadoc for the `DefaultClassMapper`].
+See also xref:amqp/message-converters.adoc#json-message-converter[`Jackson2JsonMessageConverter`] as well as the {spring-amqp-java-docs}/index.html?org/springframework/amqp/support/converter/DefaultClassMapper.html[Javadoc for the `DefaultClassMapper`].

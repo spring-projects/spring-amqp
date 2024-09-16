@@ -47,7 +47,7 @@ See xref:amqp/broker-configuration.adoc#conditional-declaration[Conditional Decl
 == AMQP Remoting
 
 Facilities are now provided for using Spring remoting techniques, using AMQP as the transport for the RPC calls.
-For more information see <<remoting>>
+For more information see xref:amqp/request-reply.adoc#remoting[Spring Remoting with AMQP].
 
 [[requested-heart-beats]]
 == Requested Heart Beats

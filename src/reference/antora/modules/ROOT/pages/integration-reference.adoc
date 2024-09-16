@@ -13,7 +13,7 @@ We provide an inbound-channel-adapter, an outbound-channel-adapter, an inbound-g
 
 Since the AMQP adapters are part of the Spring Integration release, the documentation is available as part of the Spring Integration distribution.
 We provide a quick overview of the main features here.
-See the https://docs.spring.io/spring-integration/reference[Spring Integration Reference Guide] for much more detail.
+See the {spring-integration-docs}[Spring Integration Reference Guide] for much more detail.
 
 [[inbound-channel-adapter]]
 == Inbound Channel Adapter

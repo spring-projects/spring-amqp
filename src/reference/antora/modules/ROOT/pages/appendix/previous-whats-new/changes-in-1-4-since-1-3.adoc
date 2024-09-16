@@ -35,14 +35,14 @@ See xref:amqp/template.adoc#template-confirms[Correlated Publisher Confirms and 
 
 `RabbitConnectionFactoryBean` creates the underlying RabbitMQ `ConnectionFactory` used by the `CachingConnectionFactory`.
 This enables configuration of SSL options using Spring's dependency injection.
-See <<connection-factory>>.
+See xref:amqp/connections.adoc#connection-factory[Configuring the Underlying Client Connection Factory].
 
 [[using-cachingconnectionfactory]]
 == Using `CachingConnectionFactory`
 
 The `CachingConnectionFactory` now lets the `connectionTimeout` be set as a property or as an attribute in the namespace.
 It sets the property on the underlying RabbitMQ `ConnectionFactory`.
-See <<connection-factory>>.
+See xref:amqp/connections.adoc#connection-factory[Configuring the Underlying Client Connection Factory].
 
 [[log-appender]]
 == Log Appender
@@ -71,13 +71,13 @@ The `mandatoryExpression`, `sendConnectionFactorySelectorExpression`, and `recei
 The `mandatoryExpression` is used to evaluate a `mandatory` boolean value against each request message when a `ReturnCallback` is in use.
 See xref:amqp/template.adoc#template-confirms[Correlated Publisher Confirms and Returns].
 The `sendConnectionFactorySelectorExpression` and `receiveConnectionFactorySelectorExpression` are used when an `AbstractRoutingConnectionFactory` is provided, to determine the `lookupKey` for the target `ConnectionFactory` at runtime on each AMQP protocol interaction operation.
-See <<routing-connection-factory>>.
+See xref:amqp/connections.adoc#routing-connection-factory[routing-connection-factory].
 
 [[listeners-and-the-routing-connection-factory]]
 == Listeners and the Routing Connection Factory
 
 You can configure a `SimpleMessageListenerContainer` with a routing connection factory to enable connection selection based on the queue names.
-See <<routing-connection-factory>>.
+See xref:amqp/connections.adoc#routing-connection-factory[routing-connection-factory].
 
 [[rabbittemplate:-recoverycallback-option]]
 == `RabbitTemplate`: `RecoveryCallback` Option

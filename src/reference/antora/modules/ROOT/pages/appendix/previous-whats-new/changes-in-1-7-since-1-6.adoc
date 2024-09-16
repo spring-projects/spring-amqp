@@ -51,7 +51,7 @@ The framework is no longer compatible with previous versions.
 == JUnit `@Rules`
 
 Rules that have previously been used internally by the framework have now been made available in a separate jar called `spring-rabbit-junit`.
-See <<junit-rules>> for more information.
+See xref:testing.adoc#junit-rules[JUnit4 `@Rules`] for more information.
 
 [[container-conditional-rollback]]
 == Container Conditional Rollback
