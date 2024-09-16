@@ -47,7 +47,7 @@ If you wish to bind with an empty string routing key, you need to specify `key="
 
 The `AmqpTemplate` now provides several synchronous `receiveAndReply` methods.
 These are implemented by the `RabbitTemplate`.
-For more information see xref:amqp/receiving-messages.adoct[Receiving Messages].
+For more information see xref:amqp/receiving-messages.adoc[Receiving Messages].
 
 The `RabbitTemplate` now supports configuring a `RetryTemplate` to attempt retries (with optional back-off policy) for when the broker is not available.
 For more information see xref:amqp/template.adoc#template-retry[Adding Retry Capabilities].
