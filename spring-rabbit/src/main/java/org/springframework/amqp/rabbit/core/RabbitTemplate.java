@@ -159,6 +159,7 @@ import io.micrometer.observation.ObservationRegistry;
  * @author Mohammad Hewedy
  * @author Alexey Platonov
  * @author Leonardo Ferreira
+ * @author Ngoc Nhan
  *
  * @since 1.0
  */
@@ -2486,7 +2487,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		ObservationRegistry registry = getObservationRegistry();
 		Observation observation = RabbitTemplateObservation.TEMPLATE_OBSERVATION.observation(this.observationConvention,
 				DefaultRabbitTemplateObservationConvention.INSTANCE,
-					() -> new RabbitMessageSenderContext(message, this.beanName, exch + "/" + rKey), registry);
+					() -> new RabbitMessageSenderContext(message, this.beanName, exch, rKey), registry);
 
 		observation.observe(() -> sendToRabbit(channel, exch, rKey, mandatory, message));
 	}
