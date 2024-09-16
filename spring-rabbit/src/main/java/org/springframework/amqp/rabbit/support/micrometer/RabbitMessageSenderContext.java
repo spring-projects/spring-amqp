@@ -52,7 +52,6 @@ public class RabbitMessageSenderContext extends SenderContext<Message> {
 
 	/**
 	 * Create an instance {@code RabbitMessageSenderContext}.
-	 *
 	 * @param message a message to send
 	 * @param beanName the bean name
 	 * @param exchange the name of the exchange
