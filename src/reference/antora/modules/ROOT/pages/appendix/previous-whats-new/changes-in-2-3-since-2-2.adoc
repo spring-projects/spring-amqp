@@ -43,7 +43,7 @@ See xref:amqp/request-reply.adoc#direct-reply-to[RabbitMQ Direct reply-to] for m
 [[listener-container-changes]]
 == Listener Container Changes
 
-A new listener container property `consumeDelay` is now available; it is helpful when using the https://github.com/rabbitmq/rabbitmq-sharding[RabbitMQ Sharding Plugin].
+A new listener container property `consumeDelay` is now available; it is helpful when using the {rabbitmq-server-github}/rabbitmq_sharding[RabbitMQ Sharding Plugin].
 
 The default `JavaLangErrorHandler` now calls `System.exit(99)`.
 To revert to the previous behavior (do nothing), add a no-op handler.

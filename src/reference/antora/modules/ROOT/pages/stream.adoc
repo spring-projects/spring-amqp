@@ -1,7 +1,7 @@
 [[stream-support]]
 = Using the RabbitMQ Stream Plugin
 
-Version 2.4 introduces initial support for the https://github.com/rabbitmq/rabbitmq-stream-java-client[RabbitMQ Stream Plugin Java Client] for the https://rabbitmq.com/stream.html[RabbitMQ Stream Plugin].
+Version 2.4 introduces initial support for the {rabbitmq-github}/rabbitmq-stream-java-client[RabbitMQ Stream Plugin Java Client] for the https://rabbitmq.com/stream.html[RabbitMQ Stream Plugin].
 
 * `RabbitStreamTemplate`
 * `StreamListenerContainer`

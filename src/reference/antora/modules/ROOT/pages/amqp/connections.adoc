@@ -429,7 +429,7 @@ Starting with version 3.0, the underlying connection factory will attempt to con
 To revert to the previous behavior of attempting to connect from first to last, set the `addressShuffleMode` property to `AddressShuffleMode.NONE`.
 
 Starting with version 2.3, the `INORDER` shuffle mode was added, which means the first address is moved to the end after a connection is created.
-You may wish to use this mode with the https://github.com/rabbitmq/rabbitmq-sharding[RabbitMQ Sharding Plugin] with `CacheMode.CONNECTION` and suitable concurrency if you wish to consume from all shards on all nodes.
+You may wish to use this mode with the {rabbitmq-server-github}/rabbitmq_sharding[RabbitMQ Sharding Plugin] with `CacheMode.CONNECTION` and suitable concurrency if you wish to consume from all shards on all nodes.
 
 [source, java]
 ----
