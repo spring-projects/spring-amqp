@@ -93,7 +93,7 @@ Starting with version 3.2, the `ConsistentHashExchange` type has been introduced
 It provided options like `x-consistent-hash` for an exchange type.
 Allows to configure `hash-header` or `hash-property` exchange definition argument.
 The respective RabbitMQ `rabbitmq_consistent_hash_exchange` plugin has to be enabled on the broker.
-More information about the purpose, logic and behavior of the Consistent Hash Exchange are in the official RabbitMQ https://github.com/rabbitmq/rabbitmq-server/tree/main/deps/rabbitmq_consistent_hash_exchange[documentation].
+More information about the purpose, logic and behavior of the Consistent Hash Exchange are in the official RabbitMQ {rabbitmq-server-github}/rabbitmq_consistent_hash_exchange[documentation].
 
 NOTE: The AMQP specification also requires that any broker provide a "`default`" direct exchange that has no name.
 All queues that are declared are bound to that default `Exchange` with their names as routing keys.

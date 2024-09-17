@@ -26,3 +26,5 @@ asciidoc:
     micrometer-tracing-docs: '{micrometer-docs}/tracing/reference/'
     micrometer-micrometer-docs: '{micrometer-docs}/micrometer/reference/'
     rabbitmq-stream-docs: 'https://rabbitmq.github.io/rabbitmq-stream-java-client/stable/htmlsingle'
+    rabbitmq-github: 'https://github.com/rabbitmq'
+    rabbitmq-server-github: '{rabbitmq-github}/rabbitmq-server/tree/main/deps'

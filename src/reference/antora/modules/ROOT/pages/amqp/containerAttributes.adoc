@@ -250,7 +250,7 @@ a|
 |[[consumeDelay]]<<consumeDelay,`consumeDelay`>> +
 (N/A)
 
-|When using the https://github.com/rabbitmq/rabbitmq-sharding[RabbitMQ Sharding Plugin] with `concurrentConsumers > 1`, there is a race condition that can prevent even distribution of the consumers across the shards.
+|When using the {rabbitmq-server-github}/rabbitmq_sharding[RabbitMQ Sharding Plugin] with `concurrentConsumers > 1`, there is a race condition that can prevent even distribution of the consumers across the shards.
 Use this property to add a small delay between consumer starts to avoid this race condition.
 You should experiment with values to determine the suitable delay for your environment.
 
