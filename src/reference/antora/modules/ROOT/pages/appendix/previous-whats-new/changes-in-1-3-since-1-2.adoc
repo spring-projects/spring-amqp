@@ -70,7 +70,7 @@ See xref:amqp/broker-configuration.adoc#headers-exchange[Headers Exchange].
 
 A new `SimpleRoutingConnectionFactory` has been introduced.
 It allows configuration of `ConnectionFactories` mapping, to determine the target `ConnectionFactory` to use at runtime.
-See xref:amqp/connections.adoc#routing-connection-factory[routing-connection-factory].
+See xref:amqp/connections.adoc#routing-connection-factory[Routing Connection Factory].
 
 [[messagebuilder-and-messagepropertiesbuilder]]
 == `MessageBuilder` and `MessagePropertiesBuilder`
