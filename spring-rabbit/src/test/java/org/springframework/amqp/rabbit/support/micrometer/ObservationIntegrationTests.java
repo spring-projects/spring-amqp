@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,16 +72,20 @@ public class ObservationIntegrationTests extends SampleTestRunner {
 					.hasSize(4);
 			List<FinishedSpan> producerSpans = finishedSpans.stream()
 					.filter(span -> span.getKind().equals(Kind.PRODUCER))
-					.collect(Collectors.toList());
+					.toList();
 			List<FinishedSpan> consumerSpans = finishedSpans.stream()
 					.filter(span -> span.getKind().equals(Kind.CONSUMER))
-					.collect(Collectors.toList());
+					.toList();
 			SpanAssert.assertThat(producerSpans.get(0))
-					.hasTag("spring.rabbit.template.name", "template");
+					.hasTag("spring.rabbit.template.name", "template")
+					.hasTag("messaging.destination.name", "")
+					.hasTag("messaging.rabbitmq.destination.routing_key", "int.observation.testQ1");
 			SpanAssert.assertThat(producerSpans.get(0))
 					.hasRemoteServiceNameEqualTo("RabbitMQ");
 			SpanAssert.assertThat(producerSpans.get(1))
-					.hasTag("spring.rabbit.template.name", "template");
+					.hasTag("spring.rabbit.template.name", "template")
+					.hasTag("messaging.destination.name", "")
+					.hasTag("messaging.rabbitmq.destination.routing_key", "int.observation.testQ2");
 			SpanAssert.assertThat(consumerSpans.get(0))
 					.hasTagWithKey("spring.rabbit.listener.id");
 			SpanAssert.assertThat(consumerSpans.get(0))
