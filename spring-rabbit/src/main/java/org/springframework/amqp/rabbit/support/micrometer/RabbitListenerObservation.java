@@ -68,7 +68,7 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 		},
 
 		/**
-		 * The exchange the listener is plugged to (empty if default exchange)
+		 * The exchange the listener is plugged to (empty if default exchange).
 		 * @since 3.2
 		 */
 		EXCHANGE {
@@ -80,7 +80,7 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 		},
 
 		/**
-		 * The routing key the listener is plugged to
+		 * The routing key the listener is plugged to.
 		 * @since 3.2
 		 */
 		ROUTING_KEY {
