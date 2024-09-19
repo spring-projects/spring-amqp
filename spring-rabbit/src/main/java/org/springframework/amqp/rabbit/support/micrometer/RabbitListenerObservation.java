@@ -24,6 +24,7 @@ import io.micrometer.observation.docs.ObservationDocumentation;
 
 /**
  * Spring Rabbit Observation for listeners.
+ *
  * @author Gary Russell
  * @author Vincent Meunier
  * @since 3.0
@@ -34,6 +35,7 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 	 * Observation for Rabbit listeners.
 	 */
 	LISTENER_OBSERVATION {
+
 		@Override
 		public Class<? extends ObservationConvention<? extends Context>> getDefaultConvention() {
 			return DefaultRabbitListenerObservationConvention.class;
@@ -60,6 +62,7 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 		 * Listener id.
 		 */
 		LISTENER_ID {
+
 			@Override
 			public String asString() {
 				return "spring.rabbit.listener.id";
@@ -69,9 +72,11 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 
 		/**
 		 * The queue the listener is plugged to.
+		 *
 		 * @since 3.2
 		 */
 		DESTINATION_NAME {
+
 			@Override
 			public String asString() {
 				return "messaging.destination.name";
@@ -81,9 +86,11 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 
 		/**
 		 * The delivery tag.
+		 *
 		 * @since 3.2
 		 */
 		DELIVERY_TAG {
+
 			@Override
 			public String asString() {
 				return "messaging.rabbitmq.message.delivery_tag";
