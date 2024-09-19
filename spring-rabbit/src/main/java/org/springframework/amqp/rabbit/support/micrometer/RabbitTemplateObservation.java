@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import io.micrometer.observation.docs.ObservationDocumentation;
  * Spring RabbitMQ Observation for {@link org.springframework.amqp.rabbit.core.RabbitTemplate}.
  *
  * @author Gary Russell
+ * @author Vincent Meunier
  * @since 3.0
  *
  */
@@ -68,7 +69,34 @@ public enum RabbitTemplateObservation implements ObservationDocumentation {
 				return "spring.rabbit.template.name";
 			}
 
+		},
+
+		/**
+		 * The destination exchange (empty if default exchange).
+		 * @since 3.2
+		 */
+		EXCHANGE {
+
+			@Override
+			public String asString() {
+				return "messaging.destination.name";
+			}
+
+		},
+
+		/**
+		 * The destination routing key.
+		 * @since 3.2
+		 */
+		ROUTING_KEY {
+
+			@Override
+			public String asString() {
+				return "messaging.rabbitmq.destination.routing_key";
+			}
+
 		}
+
 
 	}
 
@@ -85,8 +113,11 @@ public enum RabbitTemplateObservation implements ObservationDocumentation {
 
 		@Override
 		public KeyValues getLowCardinalityKeyValues(RabbitMessageSenderContext context) {
-			return KeyValues.of(RabbitTemplateObservation.TemplateLowCardinalityTags.BEAN_NAME.asString(),
-							context.getBeanName());
+			return KeyValues.of(
+					TemplateLowCardinalityTags.BEAN_NAME.asString(), context.getBeanName(),
+					TemplateLowCardinalityTags.EXCHANGE.asString(), context.getExchange(),
+					TemplateLowCardinalityTags.ROUTING_KEY.asString(), context.getRoutingKey()
+			);
 		}
 
 		@Override

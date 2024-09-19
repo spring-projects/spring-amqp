@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@ import io.micrometer.observation.docs.ObservationDocumentation;
  * Spring Rabbit Observation for listeners.
  *
  * @author Gary Russell
+ * @author Vincent Meunier
  * @since 3.0
- *
  */
 public enum RabbitListenerObservation implements ObservationDocumentation {
 
@@ -35,7 +35,6 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 	 * Observation for Rabbit listeners.
 	 */
 	LISTENER_OBSERVATION {
-
 
 		@Override
 		public Class<? extends ObservationConvention<? extends Context>> getDefaultConvention() {
@@ -69,6 +68,34 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 				return "spring.rabbit.listener.id";
 			}
 
+		},
+
+		/**
+		 * The queue the listener is plugged to.
+		 *
+		 * @since 3.2
+		 */
+		DESTINATION_NAME {
+
+			@Override
+			public String asString() {
+				return "messaging.destination.name";
+			}
+
+		},
+
+		/**
+		 * The delivery tag.
+		 *
+		 * @since 3.2
+		 */
+		DELIVERY_TAG {
+
+			@Override
+			public String asString() {
+				return "messaging.rabbitmq.message.delivery_tag";
+			}
+
 		}
 
 	}
@@ -86,8 +113,14 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 
 		@Override
 		public KeyValues getLowCardinalityKeyValues(RabbitMessageReceiverContext context) {
-			return KeyValues.of(RabbitListenerObservation.ListenerLowCardinalityTags.LISTENER_ID.asString(),
-							context.getListenerId());
+			final var messageProperties = context.getCarrier().getMessageProperties();
+			return KeyValues.of(
+					RabbitListenerObservation.ListenerLowCardinalityTags.LISTENER_ID.asString(), context.getListenerId(),
+					RabbitListenerObservation.ListenerLowCardinalityTags.DESTINATION_NAME.asString(),
+					messageProperties.getConsumerQueue(),
+					RabbitListenerObservation.ListenerLowCardinalityTags.DELIVERY_TAG.asString(),
+					String.valueOf(messageProperties.getDeliveryTag())
+			);
 		}
 
 		@Override
