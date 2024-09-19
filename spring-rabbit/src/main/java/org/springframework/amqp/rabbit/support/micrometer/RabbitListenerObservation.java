@@ -80,7 +80,7 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 		},
 
 		/**
-		 * The delivery tags.
+		 * The delivery tag.
 		 * @since 3.2
 		 */
 		DELIVERY_TAG {
