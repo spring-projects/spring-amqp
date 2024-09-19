@@ -68,10 +68,10 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 		},
 
 		/**
-		 * The exchange the listener is plugged to (empty if default exchange).
+		 * The queue the listener is plugged to.
 		 * @since 3.2
 		 */
-		EXCHANGE {
+		DESTINATION_NAME {
 			@Override
 			public String asString() {
 				return "messaging.destination.name";
@@ -80,16 +80,17 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 		},
 
 		/**
-		 * The routing key the listener is plugged to.
+		 * The delivery tags.
 		 * @since 3.2
 		 */
-		ROUTING_KEY {
+		DELIVERY_TAG {
 			@Override
 			public String asString() {
-				return "messaging.rabbitmq.destination.routing_key";
+				return "messaging.rabbitmq.message.delivery_tag";
 			}
 
 		}
+
 	}
 
 	/**
@@ -105,12 +106,13 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 
 		@Override
 		public KeyValues getLowCardinalityKeyValues(RabbitMessageReceiverContext context) {
+			final var messageProperties = context.getCarrier().getMessageProperties();
 			return KeyValues.of(
 					RabbitListenerObservation.ListenerLowCardinalityTags.LISTENER_ID.asString(), context.getListenerId(),
-					RabbitListenerObservation.ListenerLowCardinalityTags.EXCHANGE.asString(),
-					context.getCarrier().getMessageProperties().getReceivedExchange(),
-					RabbitListenerObservation.ListenerLowCardinalityTags.ROUTING_KEY.asString(),
-					context.getCarrier().getMessageProperties().getReceivedRoutingKey()
+					RabbitListenerObservation.ListenerLowCardinalityTags.DESTINATION_NAME.asString(),
+					messageProperties.getConsumerQueue(),
+					RabbitListenerObservation.ListenerLowCardinalityTags.DELIVERY_TAG.asString(),
+					String.valueOf(messageProperties.getDeliveryTag())
 			);
 		}
 

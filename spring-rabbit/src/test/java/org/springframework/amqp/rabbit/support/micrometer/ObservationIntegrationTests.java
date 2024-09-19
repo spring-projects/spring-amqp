@@ -87,8 +87,8 @@ public class ObservationIntegrationTests extends SampleTestRunner {
 					.hasTag("messaging.rabbitmq.destination.routing_key", "int.observation.testQ2");
 			SpanAssert.assertThat(consumerSpans.get(0))
 					.hasTagWithKey("spring.rabbit.listener.id")
-					.hasTag("messaging.destination.name", "")
-					.hasTag("messaging.rabbitmq.destination.routing_key", "int.observation.testQ1");
+					.hasTag("messaging.destination.name", "int.observation.testQ1")
+					.hasTag("messaging.rabbitmq.message.delivery_tag", "1");
 			SpanAssert.assertThat(consumerSpans.get(0))
 					.hasRemoteServiceNameEqualTo("RabbitMQ");
 			assertThat(consumerSpans.get(0).getTags().get("spring.rabbit.listener.id")).isIn("obs1", "obs2");
@@ -97,8 +97,8 @@ public class ObservationIntegrationTests extends SampleTestRunner {
 			assertThat(consumerSpans.get(1).getTags().get("spring.rabbit.listener.id")).isIn("obs1", "obs2");
 			SpanAssert.assertThat(consumerSpans.get(1))
 					.hasTagWithKey("spring.rabbit.listener.id")
-					.hasTag("messaging.destination.name", "")
-					.hasTag("messaging.rabbitmq.destination.routing_key", "int.observation.testQ2");
+					.hasTag("messaging.destination.name", "int.observation.testQ2")
+					.hasTag("messaging.rabbitmq.message.delivery_tag", "1");
 			assertThat(consumerSpans.get(0).getTags().get("spring.rabbit.listener.id"))
 					.isNotEqualTo(consumerSpans.get(1).getTags().get("spring.rabbit.listener.id"));
 
@@ -120,15 +120,15 @@ public class ObservationIntegrationTests extends SampleTestRunner {
 					.hasTimerWithNameAndTags("spring.rabbit.listener",
 							KeyValues.of(
 									KeyValue.of("spring.rabbit.listener.id", "obs1"),
-									KeyValue.of("messaging.destination.name", ""),
-									KeyValue.of("messaging.rabbitmq.destination.routing_key", "int.observation.testQ1")
+									KeyValue.of("messaging.destination.name", "int.observation.testQ1"),
+									KeyValue.of("messaging.rabbitmq.message.delivery_tag", "1")
 							)
 					)
 					.hasTimerWithNameAndTags("spring.rabbit.listener",
 							KeyValues.of(
 									KeyValue.of("spring.rabbit.listener.id", "obs2"),
-									KeyValue.of("messaging.destination.name", ""),
-									KeyValue.of("messaging.rabbitmq.destination.routing_key", "int.observation.testQ2")
+									KeyValue.of("messaging.destination.name", "int.observation.testQ2"),
+									KeyValue.of("messaging.rabbitmq.message.delivery_tag", "1")
 							)
 					);
 		};
