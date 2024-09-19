@@ -73,6 +73,7 @@ public enum RabbitTemplateObservation implements ObservationDocumentation {
 
 		/**
 		 * The destination exchange (empty if default exchange)
+		 * @since 3.2
 		 */
 		EXCHANGE {
 
@@ -85,6 +86,7 @@ public enum RabbitTemplateObservation implements ObservationDocumentation {
 
 		/**
 		 * The destination routing key
+		 * @since 3.2
 		 */
 		ROUTING_KEY {
 

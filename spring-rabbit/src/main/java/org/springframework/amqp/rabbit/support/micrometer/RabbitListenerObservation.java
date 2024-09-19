@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,9 @@ import io.micrometer.observation.docs.ObservationDocumentation;
 
 /**
  * Spring Rabbit Observation for listeners.
- *
  * @author Gary Russell
+ * @author Vincent Meunier
  * @since 3.0
- *
  */
 public enum RabbitListenerObservation implements ObservationDocumentation {
 
@@ -35,8 +34,6 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 	 * Observation for Rabbit listeners.
 	 */
 	LISTENER_OBSERVATION {
-
-
 		@Override
 		public Class<? extends ObservationConvention<? extends Context>> getDefaultConvention() {
 			return DefaultRabbitListenerObservationConvention.class;
@@ -63,14 +60,36 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 		 * Listener id.
 		 */
 		LISTENER_ID {
-
 			@Override
 			public String asString() {
 				return "spring.rabbit.listener.id";
 			}
 
-		}
+		},
 
+		/**
+		 * The exchange the listener is plugged to (empty if default exchange)
+		 * @since 3.2
+		 */
+		EXCHANGE {
+			@Override
+			public String asString() {
+				return "messaging.destination.name";
+			}
+
+		},
+
+		/**
+		 * The routing key the listener is plugged to
+		 * @since 3.2
+		 */
+		ROUTING_KEY {
+			@Override
+			public String asString() {
+				return "messaging.rabbitmq.destination.routing_key";
+			}
+
+		}
 	}
 
 	/**
@@ -86,8 +105,13 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 
 		@Override
 		public KeyValues getLowCardinalityKeyValues(RabbitMessageReceiverContext context) {
-			return KeyValues.of(RabbitListenerObservation.ListenerLowCardinalityTags.LISTENER_ID.asString(),
-							context.getListenerId());
+			return KeyValues.of(
+					RabbitListenerObservation.ListenerLowCardinalityTags.LISTENER_ID.asString(), context.getListenerId(),
+					RabbitListenerObservation.ListenerLowCardinalityTags.EXCHANGE.asString(),
+					context.getCarrier().getMessageProperties().getReceivedExchange(),
+					RabbitListenerObservation.ListenerLowCardinalityTags.ROUTING_KEY.asString(),
+					context.getCarrier().getMessageProperties().getReceivedRoutingKey()
+			);
 		}
 
 		@Override

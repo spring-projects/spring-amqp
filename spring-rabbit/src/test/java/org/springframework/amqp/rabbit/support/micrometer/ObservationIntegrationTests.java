@@ -35,6 +35,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 import io.micrometer.core.tck.MeterRegistryAssert;
 import io.micrometer.observation.ObservationRegistry;
@@ -47,7 +48,6 @@ import io.micrometer.tracing.test.simple.SpansAssert;
 /**
  * @author Artem Bilan
  * @author Gary Russell
- *
  * @since 3.0
  */
 @RabbitAvailable(queues = { "int.observation.testQ1", "int.observation.testQ2" })
@@ -87,28 +87,53 @@ public class ObservationIntegrationTests extends SampleTestRunner {
 					.hasTag("messaging.destination.name", "")
 					.hasTag("messaging.rabbitmq.destination.routing_key", "int.observation.testQ2");
 			SpanAssert.assertThat(consumerSpans.get(0))
-					.hasTagWithKey("spring.rabbit.listener.id");
+					.hasTagWithKey("spring.rabbit.listener.id")
+					.hasTag("messaging.destination.name", "")
+					.hasTag("messaging.rabbitmq.destination.routing_key", "int.observation.testQ1");
 			SpanAssert.assertThat(consumerSpans.get(0))
 					.hasRemoteServiceNameEqualTo("RabbitMQ");
 			assertThat(consumerSpans.get(0).getTags().get("spring.rabbit.listener.id")).isIn("obs1", "obs2");
 			SpanAssert.assertThat(consumerSpans.get(1))
 					.hasTagWithKey("spring.rabbit.listener.id");
 			assertThat(consumerSpans.get(1).getTags().get("spring.rabbit.listener.id")).isIn("obs1", "obs2");
+			SpanAssert.assertThat(consumerSpans.get(1))
+					.hasTagWithKey("spring.rabbit.listener.id")
+					.hasTag("messaging.destination.name", "")
+					.hasTag("messaging.rabbitmq.destination.routing_key", "int.observation.testQ2");
 			assertThat(consumerSpans.get(0).getTags().get("spring.rabbit.listener.id"))
 					.isNotEqualTo(consumerSpans.get(1).getTags().get("spring.rabbit.listener.id"));
 
 			MeterRegistryAssert.assertThat(getMeterRegistry())
 					.hasTimerWithNameAndTags("spring.rabbit.template",
-							KeyValues.of("spring.rabbit.template.name", "template"))
+							KeyValues.of(
+									KeyValue.of("spring.rabbit.template.name", "template"),
+									KeyValue.of("messaging.destination.name", ""),
+									KeyValue.of("messaging.rabbitmq.destination.routing_key", "int.observation.testQ1")
+							)
+					)
 					.hasTimerWithNameAndTags("spring.rabbit.template",
-							KeyValues.of("spring.rabbit.template.name", "template"))
+							KeyValues.of(
+									KeyValue.of("spring.rabbit.template.name", "template"),
+									KeyValue.of("messaging.destination.name", ""),
+									KeyValue.of("messaging.rabbitmq.destination.routing_key", "int.observation.testQ2")
+							)
+					)
 					.hasTimerWithNameAndTags("spring.rabbit.listener",
-							KeyValues.of("spring.rabbit.listener.id", "obs1"))
+							KeyValues.of(
+									KeyValue.of("spring.rabbit.listener.id", "obs1"),
+									KeyValue.of("messaging.destination.name", ""),
+									KeyValue.of("messaging.rabbitmq.destination.routing_key", "int.observation.testQ1")
+							)
+					)
 					.hasTimerWithNameAndTags("spring.rabbit.listener",
-							KeyValues.of("spring.rabbit.listener.id", "obs2"));
+							KeyValues.of(
+									KeyValue.of("spring.rabbit.listener.id", "obs2"),
+									KeyValue.of("messaging.destination.name", ""),
+									KeyValue.of("messaging.rabbitmq.destination.routing_key", "int.observation.testQ2")
+							)
+					);
 		};
 	}
-
 
 	@Configuration
 	@EnableRabbit
@@ -162,6 +187,5 @@ public class ObservationIntegrationTests extends SampleTestRunner {
 		}
 
 	}
-
 
 }
