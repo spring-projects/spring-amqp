@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,11 +27,12 @@ import com.rabbitmq.client.ShutdownSignalException;
  *
  * @author Dave Syer
  * @author Gary Russell
+ * @author Ngoc Nhan
  *
  */
 public class CompositeConnectionListener implements ConnectionListener {
 
-	private List<ConnectionListener> delegates = new CopyOnWriteArrayList<ConnectionListener>();
+	private List<ConnectionListener> delegates = new CopyOnWriteArrayList<>();
 
 	@Override
 	public void onCreate(Connection connection) {
@@ -54,7 +55,7 @@ public class CompositeConnectionListener implements ConnectionListener {
 	}
 
 	public void setDelegates(List<? extends ConnectionListener> delegates) {
-		this.delegates = new ArrayList<ConnectionListener>(delegates);
+		this.delegates = new ArrayList<>(delegates);
 	}
 
 	public void addDelegate(ConnectionListener delegate) {

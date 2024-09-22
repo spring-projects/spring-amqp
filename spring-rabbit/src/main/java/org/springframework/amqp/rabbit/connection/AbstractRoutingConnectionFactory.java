@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,15 +36,16 @@ import org.springframework.util.Assert;
  * @author Josh Chappelle
  * @author Gary Russell
  * @author Leonardo Ferreira
+ * @author Ngoc Nhan
  * @since 1.3
  */
 public abstract class AbstractRoutingConnectionFactory implements ConnectionFactory, RoutingConnectionFactory,
 		InitializingBean, DisposableBean {
 
 	private final Map<Object, ConnectionFactory> targetConnectionFactories =
-			new ConcurrentHashMap<Object, ConnectionFactory>();
+			new ConcurrentHashMap<>();
 
-	private final List<ConnectionListener> connectionListeners = new ArrayList<ConnectionListener>();
+	private final List<ConnectionListener> connectionListeners = new ArrayList<>();
 
 	private ConnectionFactory defaultTargetConnectionFactory;
 

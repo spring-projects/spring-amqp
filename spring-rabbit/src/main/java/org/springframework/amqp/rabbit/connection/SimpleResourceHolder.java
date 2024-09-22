@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import org.springframework.util.Assert;
  *
  * @author Artem Bilan
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 1.3
  */
 public final class SimpleResourceHolder {
@@ -56,10 +57,10 @@ public final class SimpleResourceHolder {
 	private static final Log LOGGER = LogFactory.getLog(SimpleResourceHolder.class);
 
 	private static final ThreadLocal<Map<Object, Object>> RESOURCES =
-			new NamedThreadLocal<Map<Object, Object>>("Simple resources");
+			new NamedThreadLocal<>("Simple resources");
 
 	private static final ThreadLocal<Map<Object, Deque<Object>>> STACK =
-			new NamedThreadLocal<Map<Object, Deque<Object>>>("Simple resources");
+			new NamedThreadLocal<>("Simple resources");
 
 	/**
 	 * Return all resources that are bound to the current thread.
@@ -126,7 +127,7 @@ public final class SimpleResourceHolder {
 		Map<Object, Object> map = RESOURCES.get();
 		// set ThreadLocal Map if none found
 		if (map == null) {
-			map = new HashMap<Object, Object>();
+			map = new HashMap<>();
 			RESOURCES.set(map);
 		}
 		Object oldValue = map.put(key, value);

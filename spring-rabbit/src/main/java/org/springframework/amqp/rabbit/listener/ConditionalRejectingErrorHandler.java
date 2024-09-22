@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2023 the original author or authors.
+ * Copyright 2014-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ import org.springframework.util.ErrorHandler;
  * {@link AmqpRejectAndDontRequeueException}.
  *
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 1.3.2
  *
  */
@@ -136,7 +137,7 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 				Message failed = lefe.getFailedMessage();
 				if (failed != null) {
 					List<Map<String, ?>> xDeath = failed.getMessageProperties().getXDeathHeader();
-					if (xDeath != null && xDeath.size() > 0) {
+					if (xDeath != null && !xDeath.isEmpty()) {
 						this.logger.error("x-death header detected on a message with a fatal exception; "
 								+ "perhaps requeued from a DLQ? - discarding: " + failed);
 						handleDiscarded(failed);

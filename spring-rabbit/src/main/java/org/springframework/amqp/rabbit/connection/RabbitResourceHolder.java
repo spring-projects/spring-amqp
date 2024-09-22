@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import com.rabbitmq.client.Channel;
  * @author Mark Fisher
  * @author Dave Syer
  * @author Gary Russell
+ * @author Ngoc Nhan
  *
  * @see org.springframework.amqp.rabbit.transaction.RabbitTransactionManager
  * @see org.springframework.amqp.rabbit.core.RabbitTemplate
@@ -120,7 +121,7 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 			if (connection != null) {
 				List<Channel> channelsForConnection = this.channelsPerConnection.get(connection);
 				if (channelsForConnection == null) {
-					channelsForConnection = new LinkedList<Channel>();
+					channelsForConnection = new LinkedList<>();
 					this.channelsPerConnection.put(connection, channelsForConnection);
 				}
 				channelsForConnection.add(channel);

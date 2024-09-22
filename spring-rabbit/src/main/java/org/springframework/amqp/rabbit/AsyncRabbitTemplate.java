@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 the original author or authors.
+ * Copyright 2022-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,6 +88,7 @@ import com.rabbitmq.client.Channel;
  * @author Gary Russell
  * @author Artem Bilan
  * @author FengYang Su
+ * @author Ngoc Nhan
  *
  * @since 1.6
  */
@@ -482,7 +483,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	private <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object,
 			MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<C> responseType) {
 
-		AsyncCorrelationData<C> correlationData = new AsyncCorrelationData<C>(messagePostProcessor, responseType,
+		AsyncCorrelationData<C> correlationData = new AsyncCorrelationData<>(messagePostProcessor, responseType,
 				this.enableConfirms);
 		if (this.container != null) {
 			this.template.convertAndSend(exchange, routingKey, object, this.messagePostProcessor, correlationData);
@@ -731,7 +732,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 				messageToSend = correlationData.userPostProcessor.postProcessMessage(message);
 			}
 			String correlationId = getOrSetCorrelationIdAndSetReplyTo(messageToSend, correlationData);
-			correlationData.future = new RabbitConverterFuture<C>(correlationId, message,
+			correlationData.future = new RabbitConverterFuture<>(correlationId, message,
 					AsyncRabbitTemplate.this::canceler, AsyncRabbitTemplate.this::timeoutTask);
 			if (correlationData.enableConfirms) {
 				correlationData.setId(correlationId);

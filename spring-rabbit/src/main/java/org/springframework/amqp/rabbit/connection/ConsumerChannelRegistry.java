@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import com.rabbitmq.client.Channel;
  * tangle with RabbitResourceHolder.
  *
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 1.2
  *
  */
@@ -39,7 +40,7 @@ public final class ConsumerChannelRegistry {
 	private static final Log logger = LogFactory.getLog(ConsumerChannelRegistry.class); // NOSONAR - lower case
 
 	private static final ThreadLocal<ChannelHolder> consumerChannel // NOSONAR - lower case
-		= new ThreadLocal<ChannelHolder>();
+		= new ThreadLocal<>();
 
 	private ConsumerChannelRegistry() {
 	}

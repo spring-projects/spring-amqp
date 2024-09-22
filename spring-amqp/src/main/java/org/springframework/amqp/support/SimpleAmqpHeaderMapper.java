@@ -49,6 +49,7 @@ import org.springframework.util.StringUtils;
  * @author Artem Bilan
  * @author Stephane Nicoll
  * @author Raylax Grey
+ * @author Ngoc Nhan
  * @since 1.4
  */
 public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperties> implements AmqpHeaderMapper {
@@ -125,7 +126,7 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 
 	@Override
 	public MessageHeaders toHeaders(MessageProperties amqpMessageProperties) {
-		Map<String, Object> headers = new HashMap<String, Object>();
+		Map<String, Object> headers = new HashMap<>();
 		try {
 			BiConsumer<String, Object> putObject = headers::put;
 			BiConsumer<String, String> putString = headers::put;
