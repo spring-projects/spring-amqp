@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,11 +29,12 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Dave Syer
  * @author Artem Bilan
+ * @author Ngoc Nhan
  *
  */
 public class ActiveObjectCounter<T> {
 
-	private final ConcurrentMap<T, CountDownLatch> locks = new ConcurrentHashMap<T, CountDownLatch>();
+	private final ConcurrentMap<T, CountDownLatch> locks = new ConcurrentHashMap<>();
 
 	private volatile boolean active = true;
 
@@ -56,7 +57,7 @@ public class ActiveObjectCounter<T> {
 			if (this.locks.isEmpty()) {
 				return true;
 			}
-			Collection<T> objects = new HashSet<T>(this.locks.keySet());
+			Collection<T> objects = new HashSet<>(this.locks.keySet());
 			for (T object : objects) {
 				CountDownLatch lock = this.locks.get(object);
 				if (lock == null) {

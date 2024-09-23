@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,15 +29,16 @@ import org.springframework.core.PriorityOrdered;
  * Utilities for message post processors.
  *
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 1.4.2
  *
  */
 public final class MessagePostProcessorUtils {
 
 	public static Collection<MessagePostProcessor> sort(Collection<MessagePostProcessor> processors) {
-		List<MessagePostProcessor> priorityOrdered = new ArrayList<MessagePostProcessor>();
-		List<MessagePostProcessor> ordered = new ArrayList<MessagePostProcessor>();
-		List<MessagePostProcessor> unOrdered = new ArrayList<MessagePostProcessor>();
+		List<MessagePostProcessor> priorityOrdered = new ArrayList<>();
+		List<MessagePostProcessor> ordered = new ArrayList<>();
+		List<MessagePostProcessor> unOrdered = new ArrayList<>();
 		for (MessagePostProcessor processor : processors) {
 			if (processor instanceof PriorityOrdered) {
 				priorityOrdered.add(processor);
@@ -49,7 +50,7 @@ public final class MessagePostProcessorUtils {
 				unOrdered.add(processor);
 			}
 		}
-		List<MessagePostProcessor> sorted = new ArrayList<MessagePostProcessor>();
+		List<MessagePostProcessor> sorted = new ArrayList<>();
 		OrderComparator.sort(priorityOrdered);
 		sorted.addAll(priorityOrdered);
 		OrderComparator.sort(ordered);

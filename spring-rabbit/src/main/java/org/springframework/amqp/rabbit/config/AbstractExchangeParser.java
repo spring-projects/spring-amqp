@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import org.springframework.util.xml.DomUtils;
  * @author Gary Russell
  * @author Felipe Gutierrez
  * @author Artem Bilan
+ * @author Ngoc Nhan
  *
  */
 public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitionParser {
@@ -144,7 +145,7 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 			Map<?, ?> map = parserContext.getDelegate().parseMapElement(argumentsElement,
 					builder.getRawBeanDefinition());
 			if (StringUtils.hasText(ref)) {
-				if (map != null && map.size() > 0) {
+				if (map != null && !map.isEmpty()) {
 					parserContext.getReaderContext().error("You cannot have both a 'ref' and a nested map", element);
 				}
 				if (propertyName == null) {

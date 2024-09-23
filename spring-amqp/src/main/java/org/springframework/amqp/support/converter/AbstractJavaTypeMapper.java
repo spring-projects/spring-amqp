@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
  * @author Sam Nelson
  * @author Andreas Asplund
  * @author Gary Russell
+ * @author Ngoc Nhan
  */
 public abstract class AbstractJavaTypeMapper implements BeanClassLoaderAware {
 
@@ -44,9 +45,9 @@ public abstract class AbstractJavaTypeMapper implements BeanClassLoaderAware {
 
 	public static final String DEFAULT_KEY_CLASSID_FIELD_NAME = "__KeyTypeId__";
 
-	private final Map<String, Class<?>> idClassMapping = new HashMap<String, Class<?>>();
+	private final Map<String, Class<?>> idClassMapping = new HashMap<>();
 
-	private final Map<Class<?>, String> classIdMapping = new HashMap<Class<?>, String>();
+	private final Map<Class<?>, String> classIdMapping = new HashMap<>();
 
 	private ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,6 +91,7 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
  * @author Arnaud Cogoluègnes
  * @author Artem Bilan
  * @author Christian Tzolov
+ * @author Ngoc Nhan
  *
  * @since 1.0.1
  *
@@ -924,7 +925,7 @@ public class PublisherCallbackChannelImpl
 				return Collections.<PendingConfirm>emptyList();
 			}
 			else {
-				List<PendingConfirm> expired = new ArrayList<PendingConfirm>();
+				List<PendingConfirm> expired = new ArrayList<>();
 				Iterator<Entry<Long, PendingConfirm>> iterator = pendingConfirmsForListener.entrySet().iterator();
 				while (iterator.hasNext()) {
 					PendingConfirm pendingConfirm = iterator.next().getValue();
@@ -1025,7 +1026,7 @@ public class PublisherCallbackChannelImpl
 		 */
 		Map<Long, Listener> involvedListeners = this.listenerForSeq.headMap(seq + 1);
 		// eliminate duplicates
-		Set<Listener> listenersForAcks = new HashSet<Listener>(involvedListeners.values());
+		Set<Listener> listenersForAcks = new HashSet<>(involvedListeners.values());
 		for (Listener involvedListener : listenersForAcks) {
 			// find all unack'd confirms for this listener and handle them
 			SortedMap<Long, PendingConfirm> confirmsMap = this.pendingConfirms.get(involvedListener);
@@ -1047,7 +1048,7 @@ public class PublisherCallbackChannelImpl
 				}
 			}
 		}
-		List<Long> seqs = new ArrayList<Long>(involvedListeners.keySet());
+		List<Long> seqs = new ArrayList<>(involvedListeners.keySet());
 		for (Long key : seqs) {
 			this.listenerForSeq.remove(key);
 		}

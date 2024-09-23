@@ -364,7 +364,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	private void processMultiMethodListeners(RabbitListener[] classLevelListeners, Method[] multiMethods,
 			Object bean, String beanName) {
 
-		List<Method> checkedMethods = new ArrayList<Method>();
+		List<Method> checkedMethods = new ArrayList<>();
 		Method defaultMethod = null;
 		for (Method method : multiMethods) {
 			Method checked = checkProxy(method, bean);
@@ -734,7 +734,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	}
 
 	private String[] registerBeansForDeclaration(RabbitListener rabbitListener, Collection<Declarable> declarables) {
-		List<String> queues = new ArrayList<String>();
+		List<String> queues = new ArrayList<>();
 		if (this.beanFactory instanceof ConfigurableBeanFactory) {
 			for (QueueBinding binding : rabbitListener.bindings()) {
 				String queueName = declareQueue(binding.value(), declarables);
