@@ -632,6 +632,17 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		this.evaluationContext.setBeanResolver(new BeanFactoryResolver(beanFactory));
 		this.evaluationContext.addPropertyAccessor(new MapAccessor());
 	}
+			
+	/**
+	 * Return configured before post {@link MessagePostProcessor}s or {@code null}.
+	 * @return configured before post {@link MessagePostProcessor}s or {@code null}.
+	 */
+	@Nullable
+	public Collection<MessagePostProcessor> getBeforePublishPostProcessors() {
+		return this.beforePublishPostProcessors != null
+				? Collections.unmodifiableCollection(this.beforePublishPostProcessors)
+				: null;
+	}
 
 	/**
 	 * Set {@link MessagePostProcessor}s that will be invoked immediately before invoking
