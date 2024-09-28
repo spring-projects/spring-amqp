@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 the original author or authors.
+ * Copyright 2020-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ import com.rabbitmq.client.ShutdownListener;
  * @author Gary Russell
  * @author Leonardo Ferreira
  * @author Christian Tzolov
+ * @author Ngoc Nhan
  * @since 2.3
  *
  */
@@ -191,7 +192,7 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory
 				this.connection.forceClose();
 				this.connection = null;
 			}
-			if (this.switchesInProgress.size() > 0 && this.logger.isWarnEnabled()) {
+			if (!this.switchesInProgress.isEmpty() && this.logger.isWarnEnabled()) {
 				this.logger.warn("Unclaimed context switches from threads:" +
 						this.switchesInProgress.values()
 								.stream()

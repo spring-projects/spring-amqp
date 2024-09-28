@@ -41,6 +41,7 @@ import com.rabbitmq.stream.codec.WrapperMessageBuilder;
  * Default {@link StreamMessageConverter}.
  *
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 2.4
  *
  */
@@ -105,7 +106,7 @@ public class DefaultStreamMessageConverter implements StreamMessageConverter {
 				.acceptIfNotNull(mProps.getGroupSequence(), propsBuilder::groupSequence)
 				.acceptIfNotNull(mProps.getReplyToGroupId(), propsBuilder::replyToGroupId);
 		ApplicationPropertiesBuilder appPropsBuilder = builder.applicationProperties();
-		if (mProps.getHeaders().size() > 0) {
+		if (!mProps.getHeaders().isEmpty()) {
 			mProps.getHeaders().forEach((key, val) -> {
 				mapProp(key, val, appPropsBuilder);
 			});

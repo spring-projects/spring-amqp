@@ -56,6 +56,7 @@ import org.springframework.util.backoff.BackOff;
  * @author Artem Bilan
  * @author Johno Crawford
  * @author Jeonggi Kim
+ * @author Ngoc Nhan
  *
  * @since 2.0
  *
@@ -542,7 +543,7 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 					.acceptIfNotNull(this.exclusiveConsumerExceptionLogger,
 							container::setExclusiveConsumerExceptionLogger)
 					.acceptIfNotNull(this.micrometerEnabled, container::setMicrometerEnabled)
-					.acceptIfCondition(this.micrometerTags.size() > 0, this.micrometerTags,
+					.acceptIfCondition(!this.micrometerTags.isEmpty(), this.micrometerTags,
 							container::setMicrometerTags);
 			if (this.smlcCustomizer != null && this.type.equals(Type.simple)) {
 				this.smlcCustomizer.configure((SimpleMessageListenerContainer) container);

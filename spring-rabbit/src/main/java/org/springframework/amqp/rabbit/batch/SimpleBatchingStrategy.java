@@ -88,7 +88,7 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 		}
 		int bufferUse = Integer.BYTES + message.getBody().length;
 		MessageBatch batch = null;
-		if (this.messages.size() > 0 && this.currentSize + bufferUse > this.bufferLimit) {
+		if (!this.messages.isEmpty() && this.currentSize + bufferUse > this.bufferLimit) {
 			batch = doReleaseBatch();
 			this.exchange = exch;
 			this.routingKey = routKey;
@@ -104,7 +104,7 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 
 	@Override
 	public Date nextRelease() {
-		if (this.messages.size() == 0 || this.timeout <= 0) {
+		if (this.messages.isEmpty() || this.timeout <= 0) {
 			return null;
 		}
 		else if (this.currentSize >= this.bufferLimit) {
@@ -128,7 +128,7 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 	}
 
 	private MessageBatch doReleaseBatch() {
-		if (this.messages.size() < 1) {
+		if (this.messages.isEmpty()) {
 			return null;
 		}
 		Message message = assembleMessage();

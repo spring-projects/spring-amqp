@@ -904,12 +904,12 @@ public class PublisherCallbackChannelImpl
 	@Override
 	public void addListener(Listener listener) {
 		Assert.notNull(listener, "Listener cannot be null");
-		if (this.listeners.size() == 0) {
+		if (this.listeners.isEmpty()) {
 			this.delegate.addConfirmListener(this);
 			this.delegate.addReturnListener(this);
 		}
 		if (this.listeners.putIfAbsent(listener.getUUID(), listener) == null) {
-			this.pendingConfirms.put(listener, new ConcurrentSkipListMap<Long, PendingConfirm>());
+			this.pendingConfirms.put(listener, new ConcurrentSkipListMap<>());
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug("Added listener " + listener);
 			}

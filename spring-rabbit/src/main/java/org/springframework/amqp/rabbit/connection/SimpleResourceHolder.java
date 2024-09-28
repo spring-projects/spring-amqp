@@ -176,7 +176,7 @@ public final class SimpleResourceHolder {
 		Map<Object, Deque<Object>> stack = STACK.get();
 		if (stack != null) {
 			Deque<Object> deque = stack.get(key);
-			if (deque != null && deque.size() > 0) {
+			if (deque != null && !deque.isEmpty()) {
 				Object previousValue = deque.pop();
 				if (previousValue != null) {
 					bind(key, previousValue);
