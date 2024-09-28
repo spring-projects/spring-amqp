@@ -397,8 +397,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 				throw new IllegalStateException("Queues or queue names must be provided but not both for " + this);
 			}
 			if (queuesEmpty) {
-				Collection<String> names = qNames;
-				container.setQueueNames(names.toArray(new String[0]));
+				container.setQueueNames(qNames.toArray(new String[0]));
 			}
 			else {
 				Collection<Queue> instances = getQueues();

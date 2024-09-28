@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -358,28 +358,22 @@ public final class RabbitNamespaceUtils {
 	}
 
 	private static AcknowledgeMode parseAcknowledgeMode(Element ele, ParserContext parserContext) {
-		AcknowledgeMode acknowledgeMode = null;
 		String acknowledge = ele.getAttribute(ACKNOWLEDGE_ATTRIBUTE);
 		if (StringUtils.hasText(acknowledge)) {
-			if (ACKNOWLEDGE_AUTO.equals(acknowledge)) {
-				acknowledgeMode = AcknowledgeMode.AUTO;
-			}
-			else if (ACKNOWLEDGE_MANUAL.equals(acknowledge)) {
-				acknowledgeMode = AcknowledgeMode.MANUAL;
-			}
-			else if (ACKNOWLEDGE_NONE.equals(acknowledge)) {
-				acknowledgeMode = AcknowledgeMode.NONE;
-			}
-			else {
-				parserContext.getReaderContext().error(
+			return switch (acknowledge) {
+				case ACKNOWLEDGE_AUTO -> AcknowledgeMode.AUTO;
+				case ACKNOWLEDGE_MANUAL -> AcknowledgeMode.MANUAL;
+				case ACKNOWLEDGE_NONE -> AcknowledgeMode.NONE;
+				default -> {
+					parserContext.getReaderContext().error(
 						"Invalid listener container 'acknowledge' setting [" + acknowledge
-								+ "]: only \"auto\", \"manual\", and \"none\" supported.", ele);
-			}
-			return acknowledgeMode;
+							+ "]: only \"auto\", \"manual\", and \"none\" supported.", ele);
+					yield null;
+				}
+			};
 		}
-		else {
-			return null;
-		}
+
+		return null;
 	}
 
 }
