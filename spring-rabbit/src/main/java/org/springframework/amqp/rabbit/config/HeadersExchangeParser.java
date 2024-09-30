@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import org.springframework.util.xml.DomUtils;
  * @author Dave Syer
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Ngoc Nhan
  *
  */
 public class HeadersExchangeParser extends AbstractExchangeParser {
@@ -63,7 +64,7 @@ public class HeadersExchangeParser extends AbstractExchangeParser {
 				parserContext.getReaderContext()
 						.error("At least one of 'binding-arguments' sub-element or 'key/value' attributes pair have to be declared.", binding);
 			}
-			ManagedMap<TypedStringValue, TypedStringValue> map = new ManagedMap<TypedStringValue, TypedStringValue>();
+			ManagedMap<TypedStringValue, TypedStringValue> map = new ManagedMap<>();
 			map.put(new TypedStringValue(key), new TypedStringValue(value));
 			builder.addPropertyValue("arguments", map);
 		}

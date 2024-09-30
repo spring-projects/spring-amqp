@@ -34,6 +34,7 @@ import org.springframework.util.xml.DomUtils;
  * @author Dave Syer
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Ngoc Nhan
  */
 class TemplateParser extends AbstractSingleBeanDefinitionParser {
 
@@ -160,7 +161,7 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 		BeanDefinition replyContainer = null;
 		Element childElement = null;
 		List<Element> childElements = DomUtils.getChildElementsByTagName(element, LISTENER_ELEMENT);
-		if (childElements.size() > 0) {
+		if (!childElements.isEmpty()) {
 			childElement = childElements.get(0);
 		}
 		if (childElement != null) {

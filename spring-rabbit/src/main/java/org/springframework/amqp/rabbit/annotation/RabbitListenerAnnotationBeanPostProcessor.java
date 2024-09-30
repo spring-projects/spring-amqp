@@ -317,12 +317,12 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	private TypeMetadata buildMetadata(Class<?> targetClass) {
 		List<RabbitListener> classLevelListeners = findListenerAnnotations(targetClass);
-		final boolean hasClassLevelListeners = classLevelListeners.size() > 0;
+		final boolean hasClassLevelListeners = !classLevelListeners.isEmpty();
 		final List<ListenerMethod> methods = new ArrayList<>();
 		final List<Method> multiMethods = new ArrayList<>();
 		ReflectionUtils.doWithMethods(targetClass, method -> {
 			List<RabbitListener> listenerAnnotations = findListenerAnnotations(method);
-			if (listenerAnnotations.size() > 0) {
+			if (!listenerAnnotations.isEmpty()) {
 				methods.add(new ListenerMethod(method,
 						listenerAnnotations.toArray(new RabbitListener[listenerAnnotations.size()])));
 			}
@@ -880,7 +880,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				}
 			}
 		}
-		return map.size() < 1 ? null : map;
+		return map.isEmpty() ? null : map;
 	}
 
 	private void addToMap(Map<String, Object> map, String key, Object value, Class<?> typeClass, String typeName) {

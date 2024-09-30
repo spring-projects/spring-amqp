@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 the original author or authors.
+ * Copyright 2021-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ import io.micrometer.observation.ObservationRegistry;
  *
  * @author Gary Russell
  * @author Christian Tzolov
+ * @author Ngoc Nhan
  * @since 2.4
  *
  */
@@ -251,7 +252,7 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 	public boolean isRunning() {
 		this.lock.lock();
 		try {
-			return this.consumers.size() > 0;
+			return !this.consumers.isEmpty();
 		}
 		finally {
 			this.lock.unlock();
@@ -262,7 +263,7 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 	public void start() {
 		this.lock.lock();
 		try {
-			if (this.consumers.size() == 0) {
+			if (this.consumers.isEmpty()) {
 				this.consumerCustomizer.accept(getListenerId(), this.builder);
 				if (this.simpleStream) {
 					this.consumers.add(this.builder.build());

@@ -82,7 +82,7 @@ public final class BindingBuilder {
 		}
 
 		public Binding to(FanoutExchange exchange) {
-			return new Binding(this.queue, this.name, this.type, exchange.getName(), "", new HashMap<String, Object>());
+			return new Binding(this.queue, this.name, this.type, exchange.getName(), "", new HashMap<>());
 		}
 
 		public HeadersExchangeMapConfigurer to(HeadersExchange exchange) {
