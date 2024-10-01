@@ -67,6 +67,8 @@ import io.micrometer.tracing.test.simple.SimpleTracer;
 /**
  * @author Gary Russell
  * @author Ngoc Nhan
+ * @author Artem Bilan
+ *
  * @since 3.0
  *
  */
@@ -91,17 +93,17 @@ public class ObservationTests {
 		SimpleSpan span = spans.poll();
 		assertThat(span.getTags()).containsEntry("spring.rabbit.template.name", "template");
 		assertThat(span.getName()).isEqualTo("/observation.testQ1 send");
-		await().until(() -> spans.peekFirst().getTags().size() == 3);
+		await().until(() -> spans.peekFirst().getTags().size() == 5);
 		span = spans.poll();
 		assertThat(span.getTags())
 				.containsAllEntriesOf(
 						Map.of("spring.rabbit.listener.id", "obs1", "foo", "some foo value", "bar", "some bar value"));
 		assertThat(span.getName()).isEqualTo("observation.testQ1 receive");
-		await().until(() -> spans.peekFirst().getTags().size() == 1);
+		await().until(() -> spans.peekFirst().getTags().size() == 3);
 		span = spans.poll();
 		assertThat(span.getTags()).containsEntry("spring.rabbit.template.name", "template");
 		assertThat(span.getName()).isEqualTo("/observation.testQ2 send");
-		await().until(() -> spans.peekFirst().getTags().size() == 3);
+		await().until(() -> spans.peekFirst().getTags().size() == 5);
 		span = spans.poll();
 		assertThat(span.getTags())
 				.containsAllEntriesOf(
@@ -141,7 +143,7 @@ public class ObservationTests {
 		assertThat(span.getTags()).containsEntry("messaging.destination.name", "");
 		assertThat(span.getTags()).containsEntry("messaging.rabbitmq.destination.routing_key", "observation.testQ1");
 		assertThat(span.getName()).isEqualTo("/observation.testQ1 send");
-		await().until(() -> spans.peekFirst().getTags().size() == 4);
+		await().until(() -> spans.peekFirst().getTags().size() == 6);
 		span = spans.poll();
 		assertThat(span.getTags())
 				.containsAllEntriesOf(Map.of("spring.rabbit.listener.id", "obs1", "foo", "some foo value", "bar",
@@ -154,7 +156,7 @@ public class ObservationTests {
 		assertThat(span.getTags()).containsEntry("messaging.destination.name", "");
 		assertThat(span.getTags()).containsEntry("messaging.rabbitmq.destination.routing_key", "observation.testQ2");
 		assertThat(span.getName()).isEqualTo("/observation.testQ2 send");
-		await().until(() -> spans.peekFirst().getTags().size() == 3);
+		await().until(() -> spans.peekFirst().getTags().size() == 5);
 		span = spans.poll();
 		assertThat(span.getTags())
 				.containsAllEntriesOf(
