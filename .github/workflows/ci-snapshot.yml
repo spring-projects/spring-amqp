@@ -22,17 +22,13 @@ jobs:
     env:
       DEVELOCITY_ACCESS_KEY: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
 
-    services:
-      rabbitmq:
-        image: rabbitmq:3.13.7-management
-        options: --name rabbitmq
-        ports:
-          - 5672:5672
-          - 15672:15672
-          - 5552:5552
-
     steps:
-      - run: docker exec rabbitmq rabbitmq-plugins enable rabbitmq_stream
+      - name: Start RabbitMQ
+        uses: namoshek/rabbitmq-github-action@v1
+        with:
+          ports: '5672:5672 15672:15672 5552:5552'
+          plugins: rabbitmq_stream,rabbitmq_management
+
       - uses: actions/checkout@v4
         with:
           show-progress: false
