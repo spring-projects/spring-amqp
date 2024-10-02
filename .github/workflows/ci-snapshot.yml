@@ -48,6 +48,6 @@ jobs:
         timeout-minutes: 30
         uses: ./spring-github-workflows/.github/actions/spring-artifactory-gradle-build
         with:
-          gradleTasks: ${{ github.event_name == 'schedule' && '--rerun-tasks' || '' }}
+          gradleTasks: ${{ github.event_name == 'schedule' && '--rerun-tasks' || '--rerun-tasks' }}
           artifactoryUsername: ${{ secrets.ARTIFACTORY_USERNAME }}
           artifactoryPassword: ${{ secrets.ARTIFACTORY_PASSWORD }}
