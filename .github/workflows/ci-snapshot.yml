@@ -27,7 +27,7 @@ jobs:
         uses: namoshek/rabbitmq-github-action@v1
         with:
           ports: '5672:5672 15672:15672 5552:5552'
-          plugins: rabbitmq_stream,rabbitmq_management
+          plugins: rabbitmq_stream,rabbitmq_management,rabbitmq_delayed_message_exchange,rabbitmq_consistent_hash_exchange
 
       - uses: actions/checkout@v4
         with:
@@ -44,6 +44,6 @@ jobs:
         timeout-minutes: 30
         uses: ./spring-github-workflows/.github/actions/spring-artifactory-gradle-build
         with:
-          gradleTasks: ${{ github.event_name == 'schedule' && '--rerun-tasks' || '--rerun-tasks' }}
+          gradleTasks: ${{ github.event_name == 'schedule' && '--rerun-tasks' || '' }}
           artifactoryUsername: ${{ secrets.ARTIFACTORY_USERNAME }}
           artifactoryPassword: ${{ secrets.ARTIFACTORY_PASSWORD }}
