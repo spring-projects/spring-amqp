@@ -17,10 +17,37 @@ concurrency:
 
 jobs:
   build-snapshot:
-    uses: spring-io/spring-github-workflows/.github/workflows/spring-artifactory-gradle-snapshot.yml@main
-    with:
-      gradleTasks: ${{ github.event_name == 'schedule' && '--rerun-tasks' || '' }}
-    secrets:
+    runs-on: ubuntu-latest
+    name: CI Build SNAPSHOT for ${{ github.ref_name }}
+    env:
       DEVELOCITY_ACCESS_KEY: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
-      ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
-      ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+
+    services:
+      rabbitmq:
+        image: rabbitmq:3.13.7-management
+        options: --name rabbitmq
+        ports:
+          - 5672:5672
+          - 15672:15672
+          - 5552:5552
+
+    steps:
+      - run: docker exec rabbitmq rabbitmq-plugins enable rabbitmq_stream
+      - uses: actions/checkout@v4
+        with:
+          show-progress: false
+
+      - name: Checkout Common Repo
+        uses: actions/checkout@v4
+        with:
+          repository: spring-io/spring-github-workflows
+          path: spring-github-workflows
+          show-progress: false
+
+      - name: Build and Publish
+        timeout-minutes: 30
+        uses: ./spring-github-workflows/.github/actions/spring-artifactory-gradle-build
+        with:
+          gradleTasks: ${{ github.event_name == 'schedule' && '--rerun-tasks' || '' }}
+          artifactoryUsername: ${{ secrets.ARTIFACTORY_USERNAME }}
+          artifactoryPassword: ${{ secrets.ARTIFACTORY_PASSWORD }}
