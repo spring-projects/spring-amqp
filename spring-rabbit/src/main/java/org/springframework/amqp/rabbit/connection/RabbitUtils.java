@@ -354,8 +354,8 @@ public abstract class RabbitUtils {
 		}
 		else {
 			Method shutdownReason = sig.getReason();
-			return shutdownReason instanceof AMQP.Connection.Close closeReason
-					&& AMQP.COMMAND_INVALID == closeReason.getReplyCode()
+			return shutdownReason instanceof AMQP.Channel.Close closeReason
+					&& AMQP.PRECONDITION_FAILED == closeReason.getReplyCode()
 					&& closeReason.getClassId() == EXCHANGE_CLASS_ID_40
 					&& closeReason.getMethodId() == DECLARE_METHOD_ID_10;
 		}
