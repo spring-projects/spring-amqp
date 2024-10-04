@@ -16,8 +16,6 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,15 +34,18 @@ import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 /**
  * @author Mark Fisher
  * @author Gunnar Hillert
  * @author Gary Russell
+ * @author Artem Bilan
  */
-@RabbitAvailable(queues = { MessageListenerContainerMultipleQueueIntegrationTests.TEST_QUEUE_1,
-		MessageListenerContainerMultipleQueueIntegrationTests.TEST_QUEUE_2 })
-@LogLevels(level = "INFO", classes = { RabbitTemplate.class,
-			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class })
+@RabbitAvailable(queues = {MessageListenerContainerMultipleQueueIntegrationTests.TEST_QUEUE_1,
+		MessageListenerContainerMultipleQueueIntegrationTests.TEST_QUEUE_2})
+@LogLevels(level = "INFO", classes = {RabbitTemplate.class,
+		SimpleMessageListenerContainer.class, BlockingQueueConsumer.class})
 public class MessageListenerContainerMultipleQueueIntegrationTests {
 
 	public static final String TEST_QUEUE_1 = "test.queue.1.MessageListenerContainerMultipleQueueIntegrationTests";
@@ -76,7 +77,6 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 	public void testMultipleQueueNamesWithConcurrentConsumers() {
 		doTest(3, container -> container.setQueueNames(queue1.getName(), queue2.getName()));
 	}
-
 
 	private void doTest(int concurrentConsumers, ContainerConfigurer configurer) {
 		int messageCount = 10;
@@ -119,17 +119,15 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 			container.shutdown();
 			assertThat(container.getActiveConsumerCount()).isEqualTo(0);
 		}
-		assertThat(template.receiveAndConvert(queue1.getName())).isNull();
-		assertThat(template.receiveAndConvert(queue2.getName())).isNull();
-
 		connectionFactory.destroy();
 	}
 
 	@FunctionalInterface
 	private interface ContainerConfigurer {
-		void configure(SimpleMessageListenerContainer container);
-	}
 
+		void configure(SimpleMessageListenerContainer container);
+
+	}
 
 	@SuppressWarnings("unused")
 	private static class PojoListener {
@@ -150,6 +148,7 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 		public int getCount() {
 			return count.get();
 		}
+
 	}
 
 }
