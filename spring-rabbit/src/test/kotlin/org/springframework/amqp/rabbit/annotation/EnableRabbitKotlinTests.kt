@@ -105,8 +105,8 @@ class EnableRabbitKotlinTests {
 		@RabbitListener(id = "batch", queues = ["kotlinBatchQueue"],
 				containerFactory = "batchRabbitListenerContainerFactory")
 		suspend fun receiveBatch(messages: List<String>) {
-			batchReceived.countDown()
 			batch = messages
+			batchReceived.countDown()
 		}
 
 		@Bean
