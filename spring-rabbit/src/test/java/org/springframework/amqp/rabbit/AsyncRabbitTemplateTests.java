@@ -473,7 +473,8 @@ public class AsyncRabbitTemplateTests {
 		});
 		assertThat(cdl.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(new String(resultRef.get().getBody())).isEqualTo(expected);
-		assertThat(TestUtils.getPropertyValue(future, "timeoutTask", Future.class).isCancelled()).isTrue();
+		await().untilAsserted(() ->
+				assertThat(TestUtils.getPropertyValue(future, "timeoutTask", Future.class).isCancelled()).isTrue());
 		return resultRef.get();
 	}
 
