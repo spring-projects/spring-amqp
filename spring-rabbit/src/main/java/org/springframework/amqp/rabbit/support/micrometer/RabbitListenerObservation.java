@@ -27,6 +27,8 @@ import io.micrometer.observation.docs.ObservationDocumentation;
  *
  * @author Gary Russell
  * @author Vincent Meunier
+ * @author Artem Bilan
+ *
  * @since 3.0
  */
 public enum RabbitListenerObservation implements ObservationDocumentation {
@@ -39,11 +41,6 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 		@Override
 		public Class<? extends ObservationConvention<? extends Context>> getDefaultConvention() {
 			return DefaultRabbitListenerObservationConvention.class;
-		}
-
-		@Override
-		public String getPrefix() {
-			return "spring.rabbit.listener";
 		}
 
 		@Override

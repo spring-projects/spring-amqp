@@ -27,6 +27,8 @@ import io.micrometer.observation.docs.ObservationDocumentation;
  *
  * @author Gary Russell
  * @author Vincent Meunier
+ * @author Artem Bilan
+ *
  * @since 3.0
  *
  */
@@ -40,11 +42,6 @@ public enum RabbitTemplateObservation implements ObservationDocumentation {
 		@Override
 		public Class<? extends ObservationConvention<? extends Context>> getDefaultConvention() {
 			return DefaultRabbitTemplateObservationConvention.class;
-		}
-
-		@Override
-		public String getPrefix() {
-			return "spring.rabbit.template";
 		}
 
 		@Override
