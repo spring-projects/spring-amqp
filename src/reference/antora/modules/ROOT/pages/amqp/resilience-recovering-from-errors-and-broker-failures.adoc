@@ -210,3 +210,40 @@ When `true`, it travers exception causes until it finds a match or there is no c
 
 To use this classifier for retry, you can use a `SimpleRetryPolicy` created with the constructor that takes the max attempts, the `Map` of `Exception` instances, and the boolean (`traverseCauses`) and inject this policy into the `RetryTemplate`.
 
+[[retry-over-broker]]
+== Retry Over Broker
+
+The message dead-lettered from the queue can be republished back to this queue after re-routing from a DLX.
+This retry behaviour is controlled on the broker side via an `x-death` header.
+More information about this approach in the official https://www.rabbitmq.com/docs/dlx[RabbitMQ documentation].
+
+The other approach is to re-publish failed message back to the original exchange manually from the application.
+Starting with version `4.0`, the RabbitMQ broker does not consider `x-death` header sent from the client.
+Essentially, any `x-*` headers are ignored from the client.
+
+To mitigate this new behavior of the RabbitMQ broker, Spring AMQP has introduced a `retry_count` header starting with version 3.2.
+When this header is absent and a server side DLX is in action, the `x-death.count` property is mapped to this header.
+When the failed message is re-published manually for retries, the `retry_count` header value has to be incremented manually.
+See `MessageProperties.incrementRetryCount()` JavaDocs for more information.
+
+The following example summarise an algorithm for manual retry over the broker:
+
+[source,java]
+----
+@RabbitListener(queueNames = "some_queue")
+public void rePublish(Message message) {
+    try {
+    // Process message
+    }
+    catch (Exception ex) {
+        Long retryCount = message.getMessageProperties().getRetryCount();
+        if (retryCount < 3) {
+            message.getMessageProperties().incrementRetryCount();
+            this.rabbitTemplate.send("", "some_queue", message);
+        }
+        else {
+            throw new ImmediateAcknowledgeAmqpException("Failed after 4 attempts");
+		}
+    }
+}
+----

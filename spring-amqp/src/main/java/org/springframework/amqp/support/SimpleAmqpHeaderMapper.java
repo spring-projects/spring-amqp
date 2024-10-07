@@ -97,6 +97,8 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 					amqpMessageProperties::setTimestamp)
 			.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.TYPE, String.class),
 					amqpMessageProperties::setType)
+			.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.RETRY_COUNT, Long.class),
+					amqpMessageProperties::setRetryCount)
 			.acceptIfHasText(getHeaderIfAvailable(headers, AmqpHeaders.USER_ID, String.class),
 					amqpMessageProperties::setUserId);
 
@@ -166,11 +168,10 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 					.acceptIfHasText(AmqpHeaders.CONSUMER_TAG, amqpMessageProperties.getConsumerTag(), putString)
 					.acceptIfHasText(AmqpHeaders.CONSUMER_QUEUE, amqpMessageProperties.getConsumerQueue(), putString);
 			headers.put(AmqpHeaders.LAST_IN_BATCH, amqpMessageProperties.isLastInBatch());
+			headers.put(AmqpHeaders.RETRY_COUNT, amqpMessageProperties.getRetryCount());
 
 			// Map custom headers
-			for (Map.Entry<String, Object> entry : amqpMessageProperties.getHeaders().entrySet()) {
-				headers.put(entry.getKey(), entry.getValue());
-			}
+			headers.putAll(amqpMessageProperties.getHeaders());
 		}
 		catch (Exception e) {
 			if (logger.isWarnEnabled()) {

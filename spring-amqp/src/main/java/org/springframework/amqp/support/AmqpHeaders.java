@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,5 +137,11 @@ public abstract class AmqpHeaders {
 	 * @since 2.2
 	 */
 	public static final String BATCH_SIZE = PREFIX + "batchSize";
+
+	/**
+	 * The number of retries for the message over server republishing.
+	 * @since 3.2
+	 */
+	public static final String RETRY_COUNT = PREFIX + "retryCount";
 
 }

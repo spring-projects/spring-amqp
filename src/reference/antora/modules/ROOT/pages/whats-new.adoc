@@ -14,3 +14,8 @@ This version requires Spring Framework 6.2.
 === Consistent Hash Exchange
 
 The convenient `ConsistentHashExchange` and respective `ExchangeBuilder.consistentHashExchange()` API has been introduced.
+
+[[x32-retry-count-header]]
+=== The `retry_count` header
+
+The `retry_count` header should be used now instead of relying on server side increment for the `x-death.count` property.

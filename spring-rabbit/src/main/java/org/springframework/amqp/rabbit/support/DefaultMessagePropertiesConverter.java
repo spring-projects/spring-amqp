@@ -100,6 +100,12 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 						target.setHeader(key, receivedDelayLongValue);
 					}
 				}
+				else if (MessageProperties.RETRY_COUNT.equals(key)) {
+					Object value = entry.getValue();
+					if (value instanceof Number numberValue) {
+						target.setRetryCount(numberValue.longValue());
+					}
+				}
 				else {
 					target.setHeader(key, convertLongStringIfNecessary(entry.getValue(), charset));
 				}
@@ -134,13 +140,26 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 			target.setRedelivered(envelope.isRedeliver());
 			target.setDeliveryTag(envelope.getDeliveryTag());
 		}
+
+		if (target.getRetryCount() == 0) {
+			List<Map<String, ?>> xDeathHeader = target.getXDeathHeader();
+			if (!CollectionUtils.isEmpty(xDeathHeader)) {
+				target.setRetryCount((long) xDeathHeader.get(0).get("count"));
+			}
+		}
+
 		return target;
 	}
 
 	@Override
 	public BasicProperties fromMessageProperties(final MessageProperties source, final String charset) {
 		BasicProperties.Builder target = new BasicProperties.Builder();
-		target.headers(this.convertHeadersIfNecessary(source.getHeaders()))
+		Map<String, Object> headers = convertHeadersIfNecessary(source.getHeaders());
+		long retryCount = source.getRetryCount();
+		if (retryCount > 0) {
+			headers.put(MessageProperties.RETRY_COUNT, retryCount);
+		}
+		target.headers(headers)
 			.timestamp(source.getTimestamp())
 			.messageId(source.getMessageId())
 			.userId(source.getUserId())
