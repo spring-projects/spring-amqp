@@ -636,6 +636,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	/**
 	 * Return configured before post {@link MessagePostProcessor}s or {@code null}.
 	 * @return configured before post {@link MessagePostProcessor}s or {@code null}.
+	 * @since 3.2
 	 */
 	@Nullable
 	public Collection<MessagePostProcessor> getBeforePublishPostProcessors() {
