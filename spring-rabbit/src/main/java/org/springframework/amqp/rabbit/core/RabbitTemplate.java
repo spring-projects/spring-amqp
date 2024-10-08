@@ -634,6 +634,18 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	/**
+	 * Return configured before post {@link MessagePostProcessor}s or {@code null}.
+	 * @return configured before post {@link MessagePostProcessor}s or {@code null}.
+	 * @since 3.2
+	 */
+	@Nullable
+	public Collection<MessagePostProcessor> getBeforePublishPostProcessors() {
+		return this.beforePublishPostProcessors != null
+				? Collections.unmodifiableCollection(this.beforePublishPostProcessors)
+				: null;
+	}
+
+	/**
 	 * Set {@link MessagePostProcessor}s that will be invoked immediately before invoking
 	 * {@code Channel#basicPublish()}, after all other processing, except creating the
 	 * {@link BasicProperties} from {@link MessageProperties}. May be used for operations
