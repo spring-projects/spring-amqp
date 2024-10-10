@@ -2833,7 +2833,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		return consumer;
 	}
 
-	private static class PendingReply {
+	private static final class PendingReply {
 
 		@Nullable
 		private volatile String savedReplyTo;

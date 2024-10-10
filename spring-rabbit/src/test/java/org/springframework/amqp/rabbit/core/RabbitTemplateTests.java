@@ -742,7 +742,7 @@ public class RabbitTemplateTests {
 
 	}
 
-	private class DoNothingMPP implements MessagePostProcessor {
+	private static final class DoNothingMPP implements MessagePostProcessor {
 
 		@Override
 		public Message postProcessMessage(Message message) throws AmqpException {

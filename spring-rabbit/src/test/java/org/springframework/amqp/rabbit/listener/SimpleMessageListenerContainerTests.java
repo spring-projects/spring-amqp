@@ -882,7 +882,7 @@ public class SimpleMessageListenerContainerTests {
 	}
 
 	@SuppressWarnings("serial")
-	private static class TestTransactionManager extends AbstractPlatformTransactionManager {
+	private static final class TestTransactionManager extends AbstractPlatformTransactionManager {
 
 		@Override
 		protected void doBegin(Object transaction, TransactionDefinition definition) throws TransactionException {

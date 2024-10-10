@@ -676,7 +676,7 @@ public class BatchingRabbitTemplateTests {
 		return TestUtils.getPropertyValue(zipStream, "def.level", Integer.class);
 	}
 
-	private static class HeaderPostProcessor implements MessagePostProcessor {
+	private static final class HeaderPostProcessor implements MessagePostProcessor {
 		@Override
 		public Message postProcessMessage(Message message) throws AmqpException {
 			message.getMessageProperties().getHeaders().put("someHeader", "someValue");

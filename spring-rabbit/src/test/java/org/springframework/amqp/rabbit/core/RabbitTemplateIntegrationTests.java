@@ -1733,7 +1733,7 @@ public class RabbitTemplateIntegrationTests {
 	}
 
 	@SuppressWarnings("serial")
-	private class TestTransactionManager extends AbstractPlatformTransactionManager {
+	private final class TestTransactionManager extends AbstractPlatformTransactionManager {
 
 		@Override
 		protected void doBegin(Object transaction, TransactionDefinition definition) throws TransactionException {

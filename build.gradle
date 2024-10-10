@@ -18,13 +18,13 @@ buildscript {
 plugins {
 	id 'base'
 	id 'idea'
-	id 'org.ajoberstar.grgit' version '5.2.2'
+	id 'org.ajoberstar.grgit' version '5.3.0'
 	id 'io.spring.nohttp' version '0.0.11'
 	id 'io.spring.dependency-management' version '1.1.6' apply false
 	id 'org.antora' version '1.0.0'
 	id 'io.spring.antora.generate-antora-yml' version '0.0.1'
 	id 'com.github.spotbugs' version '6.0.24'
-	id 'io.freefair.aggregate-javadoc' version '8.6'
+	id 'io.freefair.aggregate-javadoc' version '8.10.2'
 }
 
 description = 'Spring AMQP'
@@ -49,9 +49,9 @@ ext {
 	assertkVersion = '0.28.1'
 	awaitilityVersion = '4.2.2'
 	commonsCompressVersion = '1.27.1'
-	commonsHttpClientVersion = '5.3.1'
+	commonsHttpClientVersion = '5.4'
 	commonsPoolVersion = '2.12.0'
-	hamcrestVersion = '2.2'
+	hamcrestVersion = '3.0'
 	hibernateValidationVersion = '8.0.1.Final'
 	jacksonBomVersion = '2.18.0'
 	jaywayJsonPathVersion = '2.9.0'
@@ -60,20 +60,17 @@ ext {
 	kotlinCoroutinesVersion = '1.8.1'
 	log4jVersion = '2.24.1'
 	logbackVersion = '1.5.8'
-	lz4Version = '1.8.0'
 	micrometerDocsVersion = '1.0.4'
 	micrometerVersion = '1.14.0-SNAPSHOT'
 	micrometerTracingVersion = '1.4.0-SNAPSHOT'
-	mockitoVersion = '5.13.0'
-	rabbitmqStreamVersion = '0.15.0'
-	rabbitmqVersion = '5.21.0'
+	mockitoVersion = '5.14.1'
+	rabbitmqStreamVersion = '0.17.0'
+	rabbitmqVersion = '5.22.0'
 	reactorVersion = '2024.0.0-SNAPSHOT'
-	snappyVersion = '1.1.10.7'
-	springDataVersion = '2024.0.4'
+	springDataVersion = '2024.1.0-SNAPSHOT'
 	springRetryVersion = '2.0.9'
 	springVersion = '6.2.0-SNAPSHOT'
 	testcontainersVersion = '1.20.2'
-	zstdJniVersion = '1.5.6-6'
 
 	javaProjects = subprojects - project(':spring-amqp-bom')
 }
@@ -315,7 +312,7 @@ configure(javaProjects) { subproject ->
 
 	checkstyle {
 		configDirectory.set(rootProject.file("src/checkstyle"))
-		toolVersion = '10.8.0'
+		toolVersion = '10.18.2'
 	}
 
 	jar {
@@ -470,12 +467,10 @@ project('spring-rabbit-stream') {
 		testRuntimeOnly 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
 		testRuntimeOnly 'com.fasterxml.jackson.module:jackson-module-kotlin'
 		testRuntimeOnly "org.apache.commons:commons-compress:$commonsCompressVersion"
-		testRuntimeOnly "org.xerial.snappy:snappy-java:$snappyVersion"
-		testRuntimeOnly "org.lz4:lz4-java:$lz4Version"
-		testRuntimeOnly "com.github.luben:zstd-jni:$zstdJniVersion"
+
 		testImplementation "org.testcontainers:rabbitmq"
 		testImplementation "org.testcontainers:junit-jupiter"
-		testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+		testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl'
 		testImplementation 'org.springframework:spring-webflux'
 		testImplementation 'io.micrometer:micrometer-observation-test'
 		testImplementation 'io.micrometer:micrometer-tracing-bridge-brave'

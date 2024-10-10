@@ -488,7 +488,7 @@ public class MessagingMessageListenerAdapterTests {
 
 	}
 
-	private static class Foo {
+	private static final class Foo {
 
 		private String foo;
 
