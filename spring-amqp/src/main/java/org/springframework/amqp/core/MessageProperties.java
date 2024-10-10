@@ -36,6 +36,7 @@ import org.springframework.util.Assert;
  * @author Artem Bilan
  * @author Csaba Soti
  * @author Raylax Grey
+ * @author Ngoc Nhan
  */
 public class MessageProperties implements Serializable {
 
@@ -812,14 +813,9 @@ public class MessageProperties implements Serializable {
 			return false;
 		}
 		if (this.userId == null) {
-			if (other.userId != null) {
-				return false;
-			}
+			return other.userId == null;
 		}
-		else if (!this.userId.equals(other.userId)) {
-			return false;
-		}
-		return true;
+		return this.userId.equals(other.userId);
 	}
 
 	@Override // NOSONAR complexity
