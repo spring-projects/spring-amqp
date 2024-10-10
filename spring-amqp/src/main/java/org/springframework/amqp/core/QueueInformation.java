@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 the original author or authors.
+ * Copyright 2019-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package org.springframework.amqp.core;
  * Information about a queue, resulting from a passive declaration.
  *
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 2.2
  *
  */
@@ -70,14 +71,9 @@ public class QueueInformation {
 		}
 		QueueInformation other = (QueueInformation) obj;
 		if (this.name == null) {
-			if (other.name != null) {
-				return false;
-			}
+			return other.name == null;
 		}
-		else if (!this.name.equals(other.name)) {
-			return false;
-		}
-		return true;
+		return this.name.equals(other.name);
 	}
 
 	@Override
