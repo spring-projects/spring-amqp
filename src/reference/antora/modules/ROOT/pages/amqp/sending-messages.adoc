@@ -13,7 +13,7 @@ void send(String exchange, String routingKey, Message message) throws AmqpExcept
 ----
 
 We can begin our discussion with the last method in the preceding listing, since it is actually the most explicit.
-It lets an AMQP exchange name  (along with a routing key)be provided at runtime.
+It lets an AMQP exchange name  (along with a routing key) be provided at runtime.
 The last parameter is the callback that is responsible for actual creating the message instance.
 An example of using this method to send a message might look like this:
 The following example shows how to use the `send` method to send a message:
