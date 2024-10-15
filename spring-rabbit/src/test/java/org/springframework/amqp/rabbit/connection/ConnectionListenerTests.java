@@ -27,10 +27,11 @@ import org.springframework.amqp.AmqpIOException;
 
 /**
  * @author Gary Russell
+ * @author DongMin Park
  * @since 2.2.17
  *
  */
-public class ConnnectionListenerTests {
+public class ConnectionListenerTests {
 
 	@Test
 	void cantConnectCCF() {
