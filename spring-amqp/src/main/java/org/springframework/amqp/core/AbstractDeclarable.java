@@ -25,9 +25,9 @@ import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-import org.springframework.util.ObjectUtils;
 
 /**
  * Base class for {@link Declarable} classes.
@@ -40,7 +40,7 @@ import org.springframework.util.ObjectUtils;
  */
 public abstract class AbstractDeclarable implements Declarable {
 
-	private final Lock lock = new ReentrantLock();
+	 private final Lock lock = new ReentrantLock();
 
 	private boolean shouldDeclare = true;
 
@@ -103,18 +103,16 @@ public abstract class AbstractDeclarable implements Declarable {
 
 	@Override
 	public void setAdminsThatShouldDeclare(Object... adminArgs) {
-		this.declaringAdmins = new ArrayList<>();
-		if (ObjectUtils.isEmpty(adminArgs)) {
-			return;
+		Collection<Object> admins = new ArrayList<>();
+		if (adminArgs != null) {
+			if (adminArgs.length > 1) {
+				Assert.noNullElements(adminArgs, "'admins' cannot contain null elements");
+			}
+			if (adminArgs.length > 0 && !(adminArgs.length == 1 && adminArgs[0] == null)) {
+				admins.addAll(Arrays.asList(adminArgs));
+			}
 		}
-
-		if (adminArgs.length > 1) {
-			Assert.noNullElements(adminArgs, "'admins' cannot contain null elements");
-			this.declaringAdmins.addAll(Arrays.asList(adminArgs));
-		}
-		else if (adminArgs[0] != null) {
-			this.declaringAdmins.add(adminArgs[0]);
-		}
+		this.declaringAdmins = admins;
 	}
 
 	@Override
