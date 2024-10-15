@@ -98,22 +98,20 @@ public class DelegatingDecompressingPostProcessor implements MessagePostProcesso
 		if (encoding == null) {
 			return message;
 		}
-		else {
-			int delimAt = encoding.indexOf(':');
-			if (delimAt < 0) {
-				delimAt = encoding.indexOf(',');
-			}
-			if (delimAt > 0) {
-				encoding = encoding.substring(0, delimAt);
-			}
-			MessagePostProcessor decompressor = this.decompressors.get(encoding);
-			if (decompressor != null) {
-				return decompressor.postProcessMessage(message);
-			}
-			else {
-				return message;
-			}
+
+		int delimAt = encoding.indexOf(':');
+		if (delimAt < 0) {
+			delimAt = encoding.indexOf(',');
 		}
+		if (delimAt > 0) {
+			encoding = encoding.substring(0, delimAt);
+		}
+		MessagePostProcessor decompressor = this.decompressors.get(encoding);
+		if (decompressor != null) {
+			return decompressor.postProcessMessage(message);
+		}
+
+		return message;
 	}
 
 }

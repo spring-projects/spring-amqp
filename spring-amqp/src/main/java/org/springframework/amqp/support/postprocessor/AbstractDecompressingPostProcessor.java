@@ -38,6 +38,7 @@ import org.springframework.util.FileCopyUtils;
  * the final content encoding of the decompressed message.
  *
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 1.4.2
  */
 public abstract class AbstractDecompressingPostProcessor implements MessagePostProcessor, Ordered {
@@ -115,9 +116,8 @@ public abstract class AbstractDecompressingPostProcessor implements MessagePostP
 				throw new AmqpIOException(e);
 			}
 		}
-		else {
-			return message;
-		}
+
+		return message;
 	}
 
 	/**

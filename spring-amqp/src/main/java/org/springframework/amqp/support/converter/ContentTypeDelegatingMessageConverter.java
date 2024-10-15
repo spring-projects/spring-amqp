@@ -109,9 +109,8 @@ public class ContentTypeDelegatingMessageConverter implements MessageConverter {
 		if (delegate == null) {
 			throw new MessageConversionException("No delegate converter is specified for content type " + contentType);
 		}
-		else {
-			return delegate;
-		}
+
+		return delegate;
 	}
 
 }
