@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 the original author or authors.
+ * Copyright 2014-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import org.springframework.util.Assert;
  * is considered to be a request).
  *
  * @author Stephane Nicoll
+ * @author Ngoc Nhan
  * @since 1.4
  */
 public class MessagingMessageConverter implements MessageConverter, InitializingBean {
@@ -104,11 +105,10 @@ public class MessagingMessageConverter implements MessageConverter, Initializing
 	public org.springframework.amqp.core.Message toMessage(Object object, MessageProperties messageProperties)
 			throws MessageConversionException {
 
-		if (!(object instanceof Message)) {
+		if (!(object instanceof Message<?> input)) {
 			throw new IllegalArgumentException("Could not convert [" + object + "] - only [" +
 					Message.class.getName() + "] is handled by this converter");
 		}
-		Message<?> input = (Message<?>) object;
 		this.headerMapper.fromHeaders(input.getHeaders(), messageProperties);
 		org.springframework.amqp.core.Message amqpMessage = this.payloadConverter.toMessage(
 				input.getPayload(), messageProperties);
