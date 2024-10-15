@@ -1490,7 +1490,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Execute the specified listener, committing or rolling back the transaction afterwards (if necessary).
+	 * Execute the specified listener, committing or rolling back the transaction afterward (if necessary).
 	 * @param channel the Rabbit Channel to operate on
 	 * @param data the received Rabbit Message
 	 * @see #invokeListener

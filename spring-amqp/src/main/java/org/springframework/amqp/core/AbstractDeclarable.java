@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -40,15 +39,15 @@ import org.springframework.util.Assert;
  */
 public abstract class AbstractDeclarable implements Declarable {
 
-	 private final Lock lock = new ReentrantLock();
+	private final Lock lock = new ReentrantLock();
+
+	private final Map<String, Object> arguments;
 
 	private boolean shouldDeclare = true;
 
-	private Collection<Object> declaringAdmins = new ArrayList<>();
-
 	private boolean ignoreDeclarationExceptions;
 
-	private final Map<String, Object> arguments;
+	private Collection<Object> declaringAdmins = new ArrayList<>();
 
 	public AbstractDeclarable() {
 		this(null);
@@ -74,7 +73,7 @@ public abstract class AbstractDeclarable implements Declarable {
 	}
 
 	/**
-	 * Whether or not this object should be automatically declared
+	 * Whether this object should be automatically declared
 	 * by any {@code AmqpAdmin}. Default is {@code true}.
 	 * @param shouldDeclare true or false.
 	 */
@@ -102,14 +101,14 @@ public abstract class AbstractDeclarable implements Declarable {
 	}
 
 	@Override
-	public void setAdminsThatShouldDeclare(Object... adminArgs) {
+	public void setAdminsThatShouldDeclare(@Nullable Object... adminArgs) {
 		Collection<Object> admins = new ArrayList<>();
 		if (adminArgs != null) {
 			if (adminArgs.length > 1) {
 				Assert.noNullElements(adminArgs, "'admins' cannot contain null elements");
 			}
 			if (adminArgs.length > 0 && !(adminArgs.length == 1 && adminArgs[0] == null)) {
-				admins.addAll(Arrays.asList(adminArgs));
+				admins = Arrays.asList(adminArgs);
 			}
 		}
 		this.declaringAdmins = admins;
