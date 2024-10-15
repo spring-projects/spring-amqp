@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import org.springframework.util.Assert;
  * @author Mark Fisher
  * @author Dave Syer
  * @author Gary Russell
+ * @author Ngoc Nhan
  *
  * @see AmqpAdmin
  */
@@ -74,7 +75,7 @@ public class Binding extends AbstractDeclarable {
 			String exchange, @Nullable String routingKey, @Nullable Map<String, Object> arguments) {
 
 		super(arguments);
-		Assert.isTrue(lazyQueue == null || destinationType.equals(DestinationType.QUEUE),
+		Assert.isTrue(lazyQueue == null || destinationType == DestinationType.QUEUE,
 				"'lazyQueue' must be null for destination type " + destinationType);
 		Assert.isTrue(lazyQueue != null || destination != null, "`destination` cannot be null");
 		this.lazyQueue = lazyQueue;

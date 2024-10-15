@@ -99,11 +99,9 @@ public abstract class AbstractJavaTypeMapper implements BeanClassLoaderAware {
 	protected String retrieveHeaderAsString(MessageProperties properties, String headerName) {
 		Map<String, Object> headers = properties.getHeaders();
 		Object classIdFieldNameValue = headers.get(headerName);
-		String classId = null;
-		if (classIdFieldNameValue != null) {
-			classId = classIdFieldNameValue.toString();
-		}
-		return classId;
+		return classIdFieldNameValue != null
+				? classIdFieldNameValue.toString()
+				: null;
 	}
 
 	private void createReverseMap() {
