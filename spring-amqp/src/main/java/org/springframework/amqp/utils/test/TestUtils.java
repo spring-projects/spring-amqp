@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2019 the original author or authors.
+ * Copyright 2013-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.springframework.util.Assert;
  * @author Iwein Fuld
  * @author Oleg Zhurakousky
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 1.2
  */
 public final class TestUtils {
@@ -47,13 +48,14 @@ public final class TestUtils {
 			value = accessor.getPropertyValue(tokens[i]);
 			if (value != null) {
 				accessor = new DirectFieldAccessor(value);
+				continue;
 			}
-			else if (i == tokens.length - 1) {
+
+			if (i == tokens.length - 1) {
 				return null;
 			}
-			else {
-				throw new IllegalArgumentException("intermediate property '" + tokens[i] + "' is null");
-			}
+
+			throw new IllegalArgumentException("intermediate property '" + tokens[i] + "' is null");
 		}
 		return value;
 	}

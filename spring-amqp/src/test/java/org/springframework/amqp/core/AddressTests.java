@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
  * @author Mark Fisher
  * @author Artem Bilan
  * @author Gary Russell
+ * @author Ngoc Nhan
  */
 public class AddressTests {
 
@@ -100,6 +101,9 @@ public class AddressTests {
 	@Test
 	public void testEquals() {
 		assertThat(new Address("foo/bar")).isEqualTo(new Address("foo/bar"));
+		assertThat(new Address("foo", null)).isEqualTo(new Address("foo", null));
+		assertThat(new Address(null, "bar")).isEqualTo(new Address(null, "bar"));
+		assertThat(new Address(null, null)).isEqualTo(new Address(null, null));
 	}
 
 }

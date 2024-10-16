@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import org.springframework.util.Assert;
  * @author Arjen Poutsma
  * @author Juergen Hoeller
  * @author James Carr
+ * @author Ngoc Nhan
  * @see org.springframework.amqp.core.AmqpTemplate#convertAndSend(Object)
  * @see org.springframework.amqp.core.AmqpTemplate#receiveAndConvert()
  */
@@ -77,10 +78,9 @@ public class MarshallingMessageConverter extends AbstractMessageConverter implem
 					"interface. Please set an Unmarshaller explicitly by using the " +
 					"MarshallingMessageConverter(Marshaller, Unmarshaller) constructor.");
 		}
-		else {
-			this.marshaller = marshaller;
-			this.unmarshaller = (Unmarshaller) marshaller;
-		}
+
+		this.marshaller = marshaller;
+		this.unmarshaller = (Unmarshaller) marshaller;
 	}
 
 	/**

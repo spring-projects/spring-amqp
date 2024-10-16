@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.core;
 
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,6 +40,7 @@ import org.springframework.util.StringUtils;
  * @author Dave Syer
  * @author Artem Bilan
  * @author Gary Russell
+ * @author Ngoc Nhan
  */
 public class Address {
 
@@ -111,21 +113,9 @@ public class Address {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-
-		Address address = (Address) o;
-
-		return !(this.exchangeName != null
-				? !this.exchangeName.equals(address.exchangeName)
-				: address.exchangeName != null)
-				&& !(this.routingKey != null
-				? !this.routingKey.equals(address.routingKey)
-				: address.routingKey != null);
+		return o instanceof Address address
+				&& Objects.equals(this.exchangeName, address.exchangeName)
+				&& Objects.equals(this.routingKey, address.routingKey);
 	}
 
 	@Override

@@ -26,6 +26,7 @@ import org.springframework.lang.Nullable;
  *
  * @author Juergen Hoeller
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 3.0
  */
 public class RemoteInvocationResult implements Serializable {
@@ -142,16 +143,13 @@ public class RemoteInvocationResult implements Serializable {
 	@Nullable
 	public Object recreate() throws Throwable {
 		if (this.exception != null) {
-			Throwable exToThrow = this.exception;
-			if (this.exception instanceof InvocationTargetException invocationTargetException) {
-				exToThrow = invocationTargetException.getTargetException();
-			}
+			Throwable exToThrow = this.exception instanceof InvocationTargetException invocationTargetException
+					? invocationTargetException.getTargetException()
+					: this.exception;
 			RemoteInvocationUtils.fillInClientStackTraceIfPossible(exToThrow);
 			throw exToThrow;
 		}
-		else {
-			return this.value;
-		}
+		return this.value;
 	}
 
 }

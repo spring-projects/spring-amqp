@@ -231,12 +231,12 @@ public final class BindingBuilder {
 
 		public Binding with(String routingKey) {
 			return new Binding(destination.queue, destination.name, destination.type, exchange, routingKey,
-					Collections.<String, Object>emptyMap());
+					Collections.emptyMap());
 		}
 
 		public Binding with(Enum<?> routingKeyEnum) {
 			return new Binding(destination.queue, destination.name, destination.type, exchange,
-					routingKeyEnum.toString(), Collections.<String, Object>emptyMap());
+					routingKeyEnum.toString(), Collections.emptyMap());
 		}
 	}
 
@@ -282,7 +282,7 @@ public final class BindingBuilder {
 		public Binding noargs() {
 			return new Binding(this.configurer.destination.queue,
 					this.configurer.destination.name, this.configurer.destination.type, this.configurer.exchange,
-					this.routingKey, Collections.<String, Object>emptyMap());
+					this.routingKey, Collections.emptyMap());
 		}
 
 	}
@@ -298,17 +298,17 @@ public final class BindingBuilder {
 
 		public Binding with(String routingKey) {
 			return new Binding(destination.queue, destination.name, destination.type, exchange, routingKey,
-					Collections.<String, Object>emptyMap());
+					Collections.emptyMap());
 		}
 
 		public Binding with(Enum<?> routingKeyEnum) {
 			return new Binding(destination.queue, destination.name, destination.type, exchange,
-					routingKeyEnum.toString(), Collections.<String, Object>emptyMap());
+					routingKeyEnum.toString(), Collections.emptyMap());
 		}
 
 		public Binding withQueueName() {
 			return new Binding(destination.queue, destination.name, destination.type, exchange, destination.name,
-					Collections.<String, Object>emptyMap());
+					Collections.emptyMap());
 		}
 
 	}
