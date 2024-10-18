@@ -17,8 +17,7 @@
 package org.springframework.rabbit.stream.producer;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 import org.springframework.amqp.core.Message;
@@ -55,14 +54,13 @@ import io.micrometer.observation.ObservationRegistry;
  *
  * @author Gary Russell
  * @author Christian Tzolov
+ * @author Jeonggi Kim
  * @since 2.4
  *
  */
 public class RabbitStreamTemplate implements RabbitStreamOperations, ApplicationContextAware, BeanNameAware {
 
 	protected final LogAccessor logger = new LogAccessor(getClass()); // NOSONAR
-
-	private final Lock lock = new ReentrantLock();
 
 	private ApplicationContext applicationContext;
 
@@ -74,9 +72,9 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 
 	private MessageConverter messageConverter = new SimpleMessageConverter();
 
-	private StreamMessageConverter streamConverter = new DefaultStreamMessageConverter();
+	private StreamMessageConverter streamMessageConverter = new DefaultStreamMessageConverter();
 
-	private boolean streamConverterSet;
+	private final AtomicBoolean producerInitialized = new AtomicBoolean(false);
 
 	private Producer producer;
 
@@ -107,29 +105,23 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 
 
 	private Producer createOrGetProducer() {
-		this.lock.lock();
-		try {
-			if (this.producer == null) {
-				ProducerBuilder builder = this.environment.producerBuilder();
-				if (this.superStreamRouting == null) {
-					builder.stream(this.streamName);
-				}
-				else {
-					builder.superStream(this.streamName)
-							.routing(this.superStreamRouting);
-				}
-				this.producerCustomizer.accept(this.beanName, builder);
-				this.producer = builder.build();
-				if (!this.streamConverterSet) {
-					((DefaultStreamMessageConverter) this.streamConverter).setBuilderSupplier(
-							() -> this.producer.messageBuilder());
-				}
+		if (this.producerInitialized.compareAndSet(false, true)) {
+			ProducerBuilder builder = this.environment.producerBuilder();
+			if (this.superStreamRouting == null) {
+				builder.stream(this.streamName);
 			}
-			return this.producer;
+			else {
+				builder.superStream(this.streamName)
+						.routing(this.superStreamRouting);
+			}
+			this.producerCustomizer.accept(this.beanName, builder);
+			this.producer = builder.build();
+			if (this.streamMessageConverter instanceof DefaultStreamMessageConverter) {
+				((DefaultStreamMessageConverter) this.streamMessageConverter).setBuilderSupplier(
+						() -> this.producer.messageBuilder());
+			}
 		}
-		finally {
-			this.lock.unlock();
-		}
+		return this.producer;
 	}
 
 	@Override
@@ -139,13 +131,8 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 
 	@Override
 	public void setBeanName(String name) {
-		this.lock.lock();
-		try {
-			this.beanName = name;
-		}
-		finally {
-			this.lock.unlock();
-		}
+		throwIfProducerAlreadyInitialized();
+		this.beanName = name;
 	}
 
 	/**
@@ -154,13 +141,8 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 	 * @since 3.0
 	 */
 	public void setSuperStreamRouting(Function<com.rabbitmq.stream.Message, String> superStreamRouting) {
-		this.lock.lock();
-		try {
-			this.superStreamRouting = superStreamRouting;
-		}
-		finally {
-			this.lock.unlock();
-		}
+		throwIfProducerAlreadyInitialized();
+		this.superStreamRouting = superStreamRouting;
 	}
 
 
@@ -176,18 +158,12 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 	/**
 	 * Set a converter to convert from {@link Message} to {@link com.rabbitmq.stream.Message}
 	 * for {@link #send(Message)} and {@link #convertAndSend(Object)} methods.
-	 * @param streamConverter the converter.
+	 * @param streamMessageConverter the converter.
 	 */
-	public void setStreamConverter(StreamMessageConverter streamConverter) {
-		Assert.notNull(streamConverter, "'streamConverter' cannot be null");
-		this.lock.lock();
-		try {
-			this.streamConverter = streamConverter;
-			this.streamConverterSet = true;
-		}
-		finally {
-			this.lock.unlock();
-		}
+	public void setStreamConverter(StreamMessageConverter streamMessageConverter) {
+		Assert.notNull(streamMessageConverter, "'streamMessageConverter' cannot be null");
+		throwIfProducerAlreadyInitialized();
+		this.streamMessageConverter = streamMessageConverter;
 	}
 
 	/**
@@ -196,12 +172,13 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 	 */
 	public void setProducerCustomizer(ProducerCustomizer producerCustomizer) {
 		Assert.notNull(producerCustomizer, "'producerCustomizer' cannot be null");
-		this.lock.lock();
-		try {
-			this.producerCustomizer = producerCustomizer;
-		}
-		finally {
-			this.lock.unlock();
+		throwIfProducerAlreadyInitialized();
+		this.producerCustomizer = producerCustomizer;
+	}
+
+	private void throwIfProducerAlreadyInitialized() {
+		if (producerInitialized.get()) {
+			throw new IllegalStateException("producer is already initialized");
 		}
 	}
 
@@ -223,14 +200,14 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 
 	@Override
 	public StreamMessageConverter streamMessageConverter() {
-		return this.streamConverter;
+		return this.streamMessageConverter;
 	}
 
 
 	@Override
 	public CompletableFuture<Boolean> send(Message message) {
 		CompletableFuture<Boolean> future = new CompletableFuture<>();
-		observeSend(this.streamConverter.fromMessage(message), future);
+		observeSend(this.streamMessageConverter.fromMessage(message), future);
 		return future;
 	}
 
@@ -339,15 +316,9 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 	 */
 	@Override
 	public void close() {
-		this.lock.lock();
-		try {
-			if (this.producer != null) {
-				this.producer.close();
-				this.producer = null;
-			}
-		}
-		finally {
-			this.lock.unlock();
+		Producer producer = this.producer;
+		if (this.producerInitialized.compareAndSet(true, false)) {
+			producer.close();
 		}
 	}
 
