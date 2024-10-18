@@ -177,7 +177,7 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 	}
 
 	private void throwIfProducerAlreadyInitialized() {
-		if (producerInitialized.get()) {
+		if (this.producerInitialized.get()) {
 			throw new IllegalStateException("producer is already initialized");
 		}
 	}
