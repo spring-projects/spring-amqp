@@ -55,6 +55,7 @@ import com.rabbitmq.client.ShutdownListener;
  * @author Gary Russell
  * @author Leonardo Ferreira
  * @author Christian Tzolov
+ * @author Ngoc Nhan
  * @since 2.3
  *
  */
@@ -255,23 +256,21 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory
 			Advice advice =
 					(MethodInterceptor) invocation -> {
 						String method = invocation.getMethod().getName();
-						switch (method) {
-						case "close":
-							handleClose(channel, transacted, proxy);
-							return null;
-						case "getTargetChannel":
-							return channel;
-						case "isTransactional":
-							return transacted;
-						case "confirmSelect":
-							confirmSelected.set(true);
-							return channel.confirmSelect();
-						case "isConfirmSelected":
-							return confirmSelected.get();
-						case "isPublisherConfirms":
-							return false;
-						}
-						return null;
+						return switch (method) {
+							case "close" -> {
+								handleClose(channel, transacted, proxy);
+								yield null;
+							}
+							case "getTargetChannel" -> channel;
+							case "isTransactional" -> transacted;
+							case "confirmSelect" -> {
+								confirmSelected.set(true);
+								yield channel.confirmSelect();
+							}
+							case "isConfirmSelected" -> confirmSelected.get();
+							case "isPublisherConfirms" -> false;
+							default -> null;
+						};
 					};
 			NameMatchMethodPointcutAdvisor advisor = new NameMatchMethodPointcutAdvisor(advice);
 			advisor.addMethodName("close");

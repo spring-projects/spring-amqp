@@ -101,8 +101,8 @@ class ListenerContainerParser implements BeanDefinitionParser {
 		}
 
 		List<Element> childElements = DomUtils.getChildElementsByTagName(element, LISTENER_ELEMENT);
-		for (int i = 0; i < childElements.size(); i++) {
-			parseListener(childElements.get(i), element, parserContext, containerList);
+		for (Element childElement : childElements) {
+			parseListener(childElement, element, parserContext, containerList);
 		}
 
 		parserContext.popAndRegisterContainingComponent();
@@ -190,8 +190,8 @@ class ListenerContainerParser implements BeanDefinitionParser {
 			else {
 				String[] names = StringUtils.commaDelimitedListToStringArray(queues);
 				List<RuntimeBeanReference> values = new ManagedList<>();
-				for (int i = 0; i < names.length; i++) {
-					values.add(new RuntimeBeanReference(names[i].trim()));
+				for (String name : names) {
+					values.add(new RuntimeBeanReference(name.trim()));
 				}
 				containerDef.getPropertyValues().add("queues", values);
 			}

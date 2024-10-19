@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import org.springframework.retry.support.RetryTemplate;
  *
  * @author Dave Syer
  * @author Gary Russell
+ * @author Ngoc Nhan
  *
  * @see RetryOperations#execute(org.springframework.retry.RetryCallback, org.springframework.retry.RecoveryCallback,
  * org.springframework.retry.RetryState)
@@ -90,9 +91,8 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 			if (StatefulRetryOperationsInterceptorFactoryBean.this.newMessageIdentifier == null) {
 				return !message.getMessageProperties().isRedelivered();
 			}
-			else {
-				return StatefulRetryOperationsInterceptorFactoryBean.this.newMessageIdentifier.isNew(message);
-			}
+
+			return StatefulRetryOperationsInterceptorFactoryBean.this.newMessageIdentifier.isNew(message);
 		};
 	}
 
@@ -127,23 +127,19 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 				}
 				return messageId;
 			}
-			else {
-				return StatefulRetryOperationsInterceptorFactoryBean.this.messageKeyGenerator.getKey(message);
-			}
+			return StatefulRetryOperationsInterceptorFactoryBean.this.messageKeyGenerator.getKey(message);
 		};
 	}
 
-	@SuppressWarnings("unchecked")
 	private Message argToMessage(Object[] args) {
 		Object arg = args[1];
-		Message message = null;
 		if (arg instanceof Message msg) {
-			message = msg;
+			return msg;
 		}
-		else if (arg instanceof List) {
-			message = ((List<Message>) arg).get(0);
+		if (arg instanceof List<?> list) {
+			return (Message) list.get(0);
 		}
-		return message;
+		return null;
 	}
 
 	@Override
