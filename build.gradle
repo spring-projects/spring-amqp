@@ -70,7 +70,7 @@ ext {
 	rabbitmqVersion = '5.19.0'
 	reactorVersion = '2023.0.10'
 	snappyVersion = '1.1.10.7'
-	springDataVersion = '2023.1.10'
+	springDataVersion = '2023.1.11'
 	springRetryVersion = '2.0.9'
 	springVersion = '6.1.13'
 	testcontainersVersion = '1.19.8'
