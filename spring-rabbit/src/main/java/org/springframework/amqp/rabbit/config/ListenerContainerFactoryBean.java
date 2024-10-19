@@ -575,14 +575,13 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 					.acceptIfNotNull(this.retryDeclarationInterval, container::setRetryDeclarationInterval);
 			return container;
 		}
-		else {
-			DirectMessageListenerContainer container = new DirectMessageListenerContainer(this.connectionFactory);
-			JavaUtils.INSTANCE
-					.acceptIfNotNull(this.consumersPerQueue, container::setConsumersPerQueue)
-					.acceptIfNotNull(this.taskScheduler, container::setTaskScheduler)
-					.acceptIfNotNull(this.monitorInterval, container::setMonitorInterval);
-			return container;
-		}
+
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(this.connectionFactory);
+		JavaUtils.INSTANCE
+				.acceptIfNotNull(this.consumersPerQueue, container::setConsumersPerQueue)
+				.acceptIfNotNull(this.taskScheduler, container::setTaskScheduler)
+				.acceptIfNotNull(this.monitorInterval, container::setMonitorInterval);
+		return container;
 	}
 
 	@Override

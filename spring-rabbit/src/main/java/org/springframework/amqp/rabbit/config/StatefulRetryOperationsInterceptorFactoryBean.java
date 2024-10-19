@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,12 +27,14 @@ import org.springframework.amqp.rabbit.retry.MessageBatchRecoverer;
 import org.springframework.amqp.rabbit.retry.MessageKeyGenerator;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbit.retry.NewMessageIdentifier;
+import org.springframework.lang.Nullable;
 import org.springframework.retry.RetryOperations;
 import org.springframework.retry.interceptor.MethodArgumentsKeyGenerator;
 import org.springframework.retry.interceptor.MethodInvocationRecoverer;
 import org.springframework.retry.interceptor.NewMethodArgumentsIdentifier;
 import org.springframework.retry.interceptor.StatefulRetryOperationsInterceptor;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.util.Assert;
 
 /**
  * Convenient factory bean for creating a stateful retry interceptor for use in a message listener container, giving you
@@ -47,6 +49,7 @@ import org.springframework.retry.support.RetryTemplate;
  *
  * @author Dave Syer
  * @author Gary Russell
+ * @author Ngoc Nhan
  *
  * @see RetryOperations#execute(org.springframework.retry.RetryCallback, org.springframework.retry.RecoveryCallback,
  * org.springframework.retry.RetryState)
@@ -90,9 +93,8 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 			if (StatefulRetryOperationsInterceptorFactoryBean.this.newMessageIdentifier == null) {
 				return !message.getMessageProperties().isRedelivered();
 			}
-			else {
-				return StatefulRetryOperationsInterceptorFactoryBean.this.newMessageIdentifier.isNew(message);
-			}
+
+			return StatefulRetryOperationsInterceptorFactoryBean.this.newMessageIdentifier.isNew(message);
 		};
 	}
 
@@ -120,6 +122,7 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 	private MethodArgumentsKeyGenerator createKeyGenerator() {
 		return args -> {
 			Message message = argToMessage(args);
+			Assert.notNull(message, "The 'args' must not convert to null");
 			if (StatefulRetryOperationsInterceptorFactoryBean.this.messageKeyGenerator == null) {
 				String messageId = message.getMessageProperties().getMessageId();
 				if (messageId == null && message.getMessageProperties().isRedelivered()) {
@@ -127,33 +130,25 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 				}
 				return messageId;
 			}
-			else {
-				return StatefulRetryOperationsInterceptorFactoryBean.this.messageKeyGenerator.getKey(message);
-			}
+			return StatefulRetryOperationsInterceptorFactoryBean.this.messageKeyGenerator.getKey(message);
 		};
 	}
 
-	@SuppressWarnings("unchecked")
+	@Nullable
 	private Message argToMessage(Object[] args) {
 		Object arg = args[1];
-		Message message = null;
 		if (arg instanceof Message msg) {
-			message = msg;
+			return msg;
 		}
-		else if (arg instanceof List) {
-			message = ((List<Message>) arg).get(0);
+		if (arg instanceof List<?> list) {
+			return (Message) list.get(0);
 		}
-		return message;
+		return null;
 	}
 
 	@Override
 	public Class<?> getObjectType() {
 		return StatefulRetryOperationsInterceptor.class;
-	}
-
-	@Override
-	public boolean isSingleton() {
-		return true;
 	}
 
 }

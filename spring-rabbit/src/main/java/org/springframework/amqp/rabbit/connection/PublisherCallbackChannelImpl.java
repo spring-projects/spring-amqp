@@ -922,27 +922,26 @@ public class PublisherCallbackChannelImpl
 		try {
 			SortedMap<Long, PendingConfirm> pendingConfirmsForListener = this.pendingConfirms.get(listener);
 			if (pendingConfirmsForListener == null) {
-				return Collections.<PendingConfirm>emptyList();
+				return Collections.emptyList();
 			}
-			else {
-				List<PendingConfirm> expired = new ArrayList<>();
-				Iterator<Entry<Long, PendingConfirm>> iterator = pendingConfirmsForListener.entrySet().iterator();
-				while (iterator.hasNext()) {
-					PendingConfirm pendingConfirm = iterator.next().getValue();
-					if (pendingConfirm.getTimestamp() < cutoffTime) {
-						expired.add(pendingConfirm);
-						iterator.remove();
-						CorrelationData correlationData = pendingConfirm.getCorrelationData();
-						if (correlationData != null && StringUtils.hasText(correlationData.getId())) {
-							this.pendingReturns.remove(correlationData.getId()); // NOSONAR never null
-						}
-					}
-					else {
-						break;
+
+			List<PendingConfirm> expired = new ArrayList<>();
+			Iterator<Entry<Long, PendingConfirm>> iterator = pendingConfirmsForListener.entrySet().iterator();
+			while (iterator.hasNext()) {
+				PendingConfirm pendingConfirm = iterator.next().getValue();
+				if (pendingConfirm.getTimestamp() < cutoffTime) {
+					expired.add(pendingConfirm);
+					iterator.remove();
+					CorrelationData correlationData = pendingConfirm.getCorrelationData();
+					if (correlationData != null && StringUtils.hasText(correlationData.getId())) {
+						this.pendingReturns.remove(correlationData.getId()); // NOSONAR never null
 					}
 				}
-				return expired;
+				else {
+					break;
+				}
 			}
+			return expired;
 		}
 		finally {
 			this.lock.unlock();

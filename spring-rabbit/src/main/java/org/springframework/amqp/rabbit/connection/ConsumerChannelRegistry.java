@@ -84,11 +84,9 @@ public final class ConsumerChannelRegistry {
 	@Nullable
 	public static Channel getConsumerChannel() {
 		ChannelHolder channelHolder = consumerChannel.get();
-		Channel channel = null;
-		if (channelHolder != null) {
-			channel = channelHolder.getChannel();
-		}
-		return channel;
+		return channelHolder != null
+				? channelHolder.getChannel()
+				: null;
 	}
 
 	/**

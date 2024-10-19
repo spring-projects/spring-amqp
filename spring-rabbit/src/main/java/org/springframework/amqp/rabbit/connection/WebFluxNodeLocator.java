@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import org.springframework.web.util.UriUtils;
  * A {@link NodeLocator} using the Spring WebFlux {@link WebClient}.
  *
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 2.4.8
  *
  */
@@ -46,14 +47,13 @@ public class WebFluxNodeLocator implements NodeLocator<WebClient> {
 
 		URI uri = new URI(baseUri)
 				.resolve("/api/queues/" + UriUtils.encodePathSegment(vhost, StandardCharsets.UTF_8) + "/" + queue);
-		HashMap<String, Object> queueInfo = client.get()
+		return client.get()
 				.uri(uri)
 				.accept(MediaType.APPLICATION_JSON)
 				.retrieve()
 				.bodyToMono(new ParameterizedTypeReference<HashMap<String, Object>>() {
 				})
 				.block(Duration.ofSeconds(10)); // NOSONAR magic#
-		return queueInfo != null ? queueInfo : null;
 	}
 
 	/**

@@ -69,7 +69,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 		Assert.noNullElements(targetConnectionFactories.values().toArray(),
 				"'targetConnectionFactories' cannot have null values.");
 		this.targetConnectionFactories.putAll(targetConnectionFactories);
-		targetConnectionFactories.values().stream().forEach(cf -> checkConfirmsAndReturns(cf));
+		targetConnectionFactories.values().forEach(this::checkConfirmsAndReturns);
 	}
 
 	/**
@@ -293,7 +293,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 
 	@Override
 	public void resetConnection() {
-		this.targetConnectionFactories.values().forEach(factory -> factory.resetConnection());
+		this.targetConnectionFactories.values().forEach(ConnectionFactory::resetConnection);
 		this.defaultTargetConnectionFactory.resetConnection();
 	}
 

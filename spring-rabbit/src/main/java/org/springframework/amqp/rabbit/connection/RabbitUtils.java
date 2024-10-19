@@ -228,12 +228,7 @@ public abstract class RabbitUtils {
 	 */
 	public static boolean isPhysicalCloseRequired() {
 		Boolean mustClose = physicalCloseRequired.get();
-		if (mustClose == null) {
-			return false;
-		}
-		else {
-			return mustClose;
-		}
+		return mustClose != null && mustClose;
 	}
 
 	/**
@@ -322,13 +317,12 @@ public abstract class RabbitUtils {
 		if (sig == null) {
 			return false;
 		}
-		else {
-			Method shutdownReason = sig.getReason();
-			return shutdownReason instanceof AMQP.Channel.Close closeReason
-					&& AMQP.PRECONDITION_FAILED == closeReason.getReplyCode()
-					&& closeReason.getClassId() == QUEUE_CLASS_ID_50
-					&& closeReason.getMethodId() == DECLARE_METHOD_ID_10;
-		}
+
+		Method shutdownReason = sig.getReason();
+		return shutdownReason instanceof AMQP.Channel.Close closeReason
+				&& AMQP.PRECONDITION_FAILED == closeReason.getReplyCode()
+				&& closeReason.getClassId() == QUEUE_CLASS_ID_50
+				&& closeReason.getMethodId() == DECLARE_METHOD_ID_10;
 	}
 
 	/**
@@ -352,13 +346,12 @@ public abstract class RabbitUtils {
 		if (sig == null) {
 			return false;
 		}
-		else {
-			Method shutdownReason = sig.getReason();
-			return shutdownReason instanceof AMQP.Channel.Close closeReason
-					&& AMQP.PRECONDITION_FAILED == closeReason.getReplyCode()
-					&& closeReason.getClassId() == EXCHANGE_CLASS_ID_40
-					&& closeReason.getMethodId() == DECLARE_METHOD_ID_10;
-		}
+
+		Method shutdownReason = sig.getReason();
+		return shutdownReason instanceof AMQP.Channel.Close closeReason
+				&& AMQP.PRECONDITION_FAILED == closeReason.getReplyCode()
+				&& closeReason.getClassId() == EXCHANGE_CLASS_ID_40
+				&& closeReason.getMethodId() == DECLARE_METHOD_ID_10;
 	}
 
 	/**
@@ -395,18 +388,13 @@ public abstract class RabbitUtils {
 	public static SaslConfig stringToSaslConfig(String saslConfig,
 			com.rabbitmq.client.ConnectionFactory connectionFactory) {
 
-		switch (saslConfig) {
-		case "DefaultSaslConfig.PLAIN":
-			return DefaultSaslConfig.PLAIN;
-		case "DefaultSaslConfig.EXTERNAL":
-			return DefaultSaslConfig.EXTERNAL;
-		case "JDKSaslConfig":
-			return new JDKSaslConfig(connectionFactory);
-		case "CRDemoSaslConfig":
-			return new CRDemoMechanism.CRDemoSaslConfig();
-		default:
-			throw new IllegalStateException("Unrecognized SaslConfig: " + saslConfig);
-		}
+		return switch (saslConfig) {
+			case "DefaultSaslConfig.PLAIN" -> DefaultSaslConfig.PLAIN;
+			case "DefaultSaslConfig.EXTERNAL" -> DefaultSaslConfig.EXTERNAL;
+			case "JDKSaslConfig" -> new JDKSaslConfig(connectionFactory);
+			case "CRDemoSaslConfig" -> new CRDemoMechanism.CRDemoSaslConfig();
+			default -> throw new IllegalStateException("Unrecognized SaslConfig: " + saslConfig);
+		};
 	}
 
 	/**

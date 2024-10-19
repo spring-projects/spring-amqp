@@ -76,6 +76,7 @@ import org.springframework.context.EnvironmentAware;
 import org.springframework.context.expression.StandardBeanExpressionResolver;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.core.annotation.MergedAnnotation;
 import org.springframework.core.annotation.MergedAnnotations;
 import org.springframework.core.annotation.MergedAnnotations.SearchStrategy;
 import org.springframework.core.convert.ConversionService;
@@ -357,7 +358,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 					}
 					return !name.contains("$MockitoMock$");
 				})
-				.map(ann -> ann.synthesize())
+				.map(MergedAnnotation::synthesize)
 				.collect(Collectors.toList());
 	}
 
@@ -893,7 +894,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			}
 		}
 		else {
-			if (value instanceof String && !StringUtils.hasText((String) value)) {
+			if (value instanceof String string && !StringUtils.hasText(string)) {
 				putEmpty(map, key);
 			}
 			else {

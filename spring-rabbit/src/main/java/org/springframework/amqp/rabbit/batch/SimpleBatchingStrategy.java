@@ -107,13 +107,12 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 		if (this.messages.isEmpty() || this.timeout <= 0) {
 			return null;
 		}
-		else if (this.currentSize >= this.bufferLimit) {
+		if (this.currentSize >= this.bufferLimit) {
 			// release immediately, we're already over the limit
 			return new Date();
 		}
-		else {
-			return new Date(System.currentTimeMillis() + this.timeout);
-		}
+
+		return new Date(System.currentTimeMillis() + this.timeout);
 	}
 
 	@Override
@@ -122,9 +121,8 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 		if (batch == null) {
 			return Collections.emptyList();
 		}
-		else {
-			return Collections.singletonList(batch);
-		}
+
+		return Collections.singletonList(batch);
 	}
 
 	private MessageBatch doReleaseBatch() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import io.micrometer.core.instrument.Timer.Sample;
  * Abstraction to avoid hard reference to Micrometer.
  *
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 2.4.6
  *
  */
@@ -95,7 +96,7 @@ public final class MicrometerHolder {
 				.tag("result", result)
 				.tag("exception", exception);
 		if (this.tags != null && !this.tags.isEmpty()) {
-			this.tags.forEach((key, value) -> builder.tag(key, value));
+			this.tags.forEach(builder::tag);
 		}
 		Timer registeredTimer = builder.register(this.registry);
 		this.timers.put(queue + exception, registeredTimer);
