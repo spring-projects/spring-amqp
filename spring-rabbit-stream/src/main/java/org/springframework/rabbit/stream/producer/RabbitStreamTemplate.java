@@ -111,6 +111,7 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 		if (this.producer == null) {
 			this.lock.lock();
 			try {
+				if (this.producer == null) {
 					ProducerBuilder builder = this.environment.producerBuilder();
 					if (this.superStreamRouting == null) {
 						builder.stream(this.streamName);
@@ -125,6 +126,7 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 						((DefaultStreamMessageConverter) this.streamConverter).setBuilderSupplier(
 								() -> this.producer.messageBuilder());
 					}
+				}
 			}
 			finally {
 				this.lock.unlock();
@@ -332,8 +334,10 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 		if (this.producer != null) {
 			this.lock.lock();
 			try {
+				if (this.producer != null) {
 					this.producer.close();
 					this.producer = null;
+				}
 			}
 			finally {
 				this.lock.unlock();
