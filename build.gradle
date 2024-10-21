@@ -48,7 +48,6 @@ ext {
 	assertjVersion = '3.26.3'
 	assertkVersion = '0.28.1'
 	awaitilityVersion = '4.2.2'
-	commonsCompressVersion = '1.27.1'
 	commonsHttpClientVersion = '5.4'
 	commonsPoolVersion = '2.12.0'
 	hamcrestVersion = '3.0'
@@ -61,15 +60,15 @@ ext {
 	log4jVersion = '2.24.1'
 	logbackVersion = '1.5.11'
 	micrometerDocsVersion = '1.0.4'
-	micrometerVersion = '1.14.0-SNAPSHOT'
-	micrometerTracingVersion = '1.4.0-SNAPSHOT'
+	micrometerVersion = '1.14.0-RC1'
+	micrometerTracingVersion = '1.4.0-RC1'
 	mockitoVersion = '5.14.2'
-	rabbitmqStreamVersion = '0.17.0'
+	rabbitmqStreamVersion = '0.18.0'
 	rabbitmqVersion = '5.22.0'
-	reactorVersion = '2024.0.0-SNAPSHOT'
-	springDataVersion = '2024.1.0-SNAPSHOT'
+	reactorVersion = '2024.0.0-RC1'
+	springDataVersion = '2024.1.0-RC1'
 	springRetryVersion = '2.0.10'
-	springVersion = '6.2.0-SNAPSHOT'
+	springVersion = '6.2.0-RC2'
 	testcontainersVersion = '1.20.2'
 
 	javaProjects = subprojects - project(':spring-amqp-bom')
@@ -80,11 +79,11 @@ antora {
 	playbook = file('src/reference/antora/antora-playbook.yml')
 	options = ['to-dir' : project.layout.buildDirectory.dir('site').get().toString(), clean: true, fetch: !project.gradle.startParameter.offline, stacktrace: true]
 	dependencies = [
-			'@antora/atlas-extension': '1.0.0-alpha.1',
-			'@antora/collector-extension': '1.0.0-alpha.3',
-			'@asciidoctor/tabs': '1.0.0-beta.3',
-			'@springio/antora-extensions': '1.11.1',
-			'@springio/asciidoctor-extensions': '1.0.0-alpha.10',
+			'@antora/atlas-extension': '1.0.0-alpha.2',
+			'@antora/collector-extension': '1.0.0-beta.3',
+			'@asciidoctor/tabs': '1.0.0-beta.6',
+			'@springio/antora-extensions': '1.14.2',
+			'@springio/asciidoctor-extensions': '1.0.0-alpha.14',
 	]
 }
 
@@ -466,7 +465,6 @@ project('spring-rabbit-stream') {
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind'
 		testRuntimeOnly 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
 		testRuntimeOnly 'com.fasterxml.jackson.module:jackson-module-kotlin'
-		testRuntimeOnly "org.apache.commons:commons-compress:$commonsCompressVersion"
 
 		testImplementation "org.testcontainers:rabbitmq"
 		testImplementation "org.testcontainers:junit-jupiter"
