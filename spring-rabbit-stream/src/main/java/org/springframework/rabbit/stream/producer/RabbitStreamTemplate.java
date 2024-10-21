@@ -79,8 +79,6 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 
 	private boolean streamConverterSet;
 
-	private Producer producer;
-
 	private String beanName;
 
 	private ProducerCustomizer producerCustomizer = (name, builder) -> { };
@@ -90,9 +88,11 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 	@Nullable
 	private RabbitStreamTemplateObservationConvention observationConvention;
 
-	private volatile boolean observationRegistryObtained;
-
 	private ObservationRegistry observationRegistry;
+
+	private volatile Producer producer;
+
+	private volatile boolean observationRegistryObtained;
 
 	/**
 	 * Construct an instance with the provided {@link Environment}.
