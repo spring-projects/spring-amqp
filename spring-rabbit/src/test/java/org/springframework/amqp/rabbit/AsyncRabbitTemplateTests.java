@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.mock;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
@@ -35,6 +36,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Address;
@@ -90,6 +93,11 @@ public class AsyncRabbitTemplateTests {
 	private AtomicReference<CountDownLatch> latch;
 
 	private final Message fooMessage = new SimpleMessageConverter().toMessage("foo", new MessageProperties());
+
+	@BeforeAll
+	static void setup() {
+		Awaitility.setDefaultTimeout(Duration.ofSeconds(30));
+	}
 
 	@Test
 	public void testConvert1Arg() throws Exception {
