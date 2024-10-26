@@ -60,7 +60,7 @@ ext {
 	log4jVersion = '2.24.1'
 	logbackVersion = '1.5.11'
 	micrometerDocsVersion = '1.0.4'
-	micrometerVersion = '1.14.0-RC1'
+	micrometerVersion = '1.14.0-SNAPSHOT'
 	micrometerTracingVersion = '1.4.0-RC1'
 	mockitoVersion = '5.14.2'
 	rabbitmqStreamVersion = '0.18.0'
