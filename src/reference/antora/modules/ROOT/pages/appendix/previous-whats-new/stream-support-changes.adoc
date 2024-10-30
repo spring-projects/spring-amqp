@@ -1,7 +1,0 @@
-[[stream-support-changes]]
-= Stream Support Changes
-:page-section-summary-toc: 1
-
-`RabbitStreamOperations` and `RabbitStreamTemplate` have been deprecated in favor of `RabbitStreamOperations2` and `RabbitStreamTemplate2` respectively; they return `CompletableFuture` instead of `ListenableFuture`.
-See xref:stream.adoc[Using the RabbitMQ Stream Plugin] for more information.
-

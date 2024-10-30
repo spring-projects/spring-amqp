@@ -290,8 +290,6 @@ Version 2.0 introduced variants of these methods (`convertSendAndReceiveAsType`)
 You must configure the underlying `RabbitTemplate` with a `SmartMessageConverter`.
 See xref:amqp/message-converters.adoc#json-complex[Converting From a `Message` With `RabbitTemplate`] for more information.
 
-IMPORTANT: Starting with version 3.0, the `AsyncRabbitTemplate` methods now return `CompletableFuture` s instead of `ListenableFuture` s.
-
 [[remoting]]
 == Spring Remoting with AMQP
 

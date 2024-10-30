@@ -1,7 +1,0 @@
-[[message-converter-changes]]
-= Message Converter Changes
-:page-section-summary-toc: 1
-
-The `Jackson2JsonMessageConverter` can now determine the charset from the `contentEncoding` header.
-See xref:amqp/message-converters.adoc#json-message-converter[`Jackson2JsonMessageConverter`] for more information.
-
