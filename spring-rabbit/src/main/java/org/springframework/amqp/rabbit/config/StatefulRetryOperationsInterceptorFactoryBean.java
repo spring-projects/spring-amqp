@@ -63,8 +63,8 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 
 	private NewMessageIdentifier newMessageIdentifier;
 
-	public void setMessageKeyGenerator(MessageKeyGenerator messageKeyGeneretor) {
-		this.messageKeyGenerator = messageKeyGeneretor;
+	public void setMessageKeyGenerator(MessageKeyGenerator messageKeyGenerator) {
+		this.messageKeyGenerator = messageKeyGenerator;
 	}
 
 	public void setNewMessageIdentifier(NewMessageIdentifier newMessageIdentifier) {

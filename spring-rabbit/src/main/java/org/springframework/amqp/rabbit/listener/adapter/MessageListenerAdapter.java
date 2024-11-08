@@ -89,7 +89,7 @@ import com.rabbitmq.client.Channel;
  *
  * This next example illustrates a <code>Message</code> delegate that just consumes the <code>String</code> contents of
  * {@link Message Messages}. Notice also how the name of the <code>Message</code> handling method is different from the
- * {@link #ORIGINAL_DEFAULT_LISTENER_METHOD original} (this will have to be configured in the attandant bean
+ * {@link #ORIGINAL_DEFAULT_LISTENER_METHOD original} (this will have to be configured in the attendant bean
  * definition). Again, no <code>Message</code> will be sent back as the method returns <code>void</code>.
  *
  * <pre class="code">

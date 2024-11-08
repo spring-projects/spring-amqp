@@ -63,7 +63,7 @@ import com.rabbitmq.client.impl.nio.NioParams;
  * optionally enabling SSL, with or without certificate validation. When
  * {@link #setSslPropertiesLocation(Resource) sslPropertiesLocation} is not null, the
  * default implementation loads a {@code PKCS12} keystore and a {@code JKS} truststore
- * using the supplied properties and intializes key and trust manager factories, using
+ * using the supplied properties and initializes key and trust manager factories, using
  * algorithm {@code SunX509} by default. These are then used to initialize an
  * {@link SSLContext} using the {@link #setSslAlgorithm(String) sslAlgorithm} (default
  * TLSv1.2, falling back to TLSv1.1, if 1.2 is not available).
