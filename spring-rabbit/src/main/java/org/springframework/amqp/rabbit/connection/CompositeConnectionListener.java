@@ -23,7 +23,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import com.rabbitmq.client.ShutdownSignalException;
 
 /**
- * A composite listener that invokes its delegages in turn.
+ * A composite listener that invokes its delegates in turn.
  *
  * @author Dave Syer
  * @author Gary Russell

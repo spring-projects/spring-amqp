@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2023 the original author or authors.
+ * Copyright 2014-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -344,7 +344,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	/**
 	 * Set to true to stop the container after the current message(s) are processed and
 	 * requeue any prefetched. Useful when using exclusive or single-active consumers.
-	 * @param forceStop true to stop when current messsage(s) are processed.
+	 * @param forceStop true to stop when current message(s) are processed.
 	 * @since 2.4.15
 	 */
 	public void setForceStop(boolean forceStop) {
