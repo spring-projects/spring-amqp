@@ -24,8 +24,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-import com.rabbitmq.client.Channel;
-
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
@@ -46,6 +44,8 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.util.Assert;
 import org.springframework.util.TypeUtils;
+
+import com.rabbitmq.client.Channel;
 
 /**
  * A {@link org.springframework.amqp.core.MessageListener MessageListener}
