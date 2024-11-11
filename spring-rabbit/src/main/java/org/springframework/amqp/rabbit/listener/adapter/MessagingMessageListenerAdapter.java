@@ -24,6 +24,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import com.rabbitmq.client.Channel;
+
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
@@ -43,8 +45,7 @@ import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.util.Assert;
-
-import com.rabbitmq.client.Channel;
+import org.springframework.util.TypeUtils;
 
 /**
  * A {@link org.springframework.amqp.core.MessageListener MessageListener}
@@ -240,9 +241,9 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		Object payload = message == null ? null : message.getPayload();
 		try {
 			handleResult(new InvocationResult(new RemoteInvocationResult(throwableToReturn), null,
-						payload == null ? Object.class : this.handlerAdapter.getReturnTypeFor(payload),
-						this.handlerAdapter.getBean(),
-						payload == null ? null : this.handlerAdapter.getMethodFor(payload)),
+							payload == null ? Object.class : this.handlerAdapter.getReturnTypeFor(payload),
+							this.handlerAdapter.getBean(),
+							payload == null ? null : this.handlerAdapter.getMethodFor(payload)),
 					amqpMessage, channel, message);
 		}
 		catch (ReplyFailureException rfe) {
@@ -405,8 +406,8 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 				boolean isPayload = methodParameter.hasParameterAnnotation(Payload.class);
 				if (isHeaderOrHeaders && isPayload && MessagingMessageListenerAdapter.this.logger.isWarnEnabled()) {
 					MessagingMessageListenerAdapter.this.logger.warn(this.method.getName()
-						+ ": Cannot annotate a parameter with both @Header and @Payload; "
-						+ "ignored for payload conversion");
+							+ ": Cannot annotate a parameter with both @Header and @Payload; "
+							+ "ignored for payload conversion");
 				}
 				if (isEligibleParameter(methodParameter) // NOSONAR
 						&& (!isHeaderOrHeaders || isPayload) && !(isHeaderOrHeaders && isPayload)) {
@@ -416,7 +417,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 						if (this.isBatch && !this.isCollection) {
 							throw new IllegalStateException(
 									"Mis-configuration; a batch listener must consume a List<?> or "
-									+ "Collection<?> for method: " + this.method);
+											+ "Collection<?> for method: " + this.method);
 						}
 
 					}
@@ -467,15 +468,16 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 				}
 				else if (this.isBatch
 						&& ((parameterizedType.getRawType().equals(List.class)
-								|| parameterizedType.getRawType().equals(Collection.class))
-								&& parameterizedType.getActualTypeArguments().length == 1)) {
+						|| parameterizedType.getRawType().equals(Collection.class))
+						&& parameterizedType.getActualTypeArguments().length == 1)) {
 
 					this.isCollection = true;
 					Type paramType = parameterizedType.getActualTypeArguments()[0];
 					boolean messageHasGeneric = paramType instanceof ParameterizedType pType
 							&& pType.getRawType().equals(Message.class);
-					this.isMessageList = paramType.equals(Message.class) || messageHasGeneric;
-					this.isAmqpMessageList = paramType.equals(org.springframework.amqp.core.Message.class);
+					this.isMessageList = TypeUtils.isAssignable(paramType, Message.class) || messageHasGeneric;
+					this.isAmqpMessageList =
+							TypeUtils.isAssignable(paramType, org.springframework.amqp.core.Message.class);
 					if (messageHasGeneric) {
 						genericParameterType = ((ParameterizedType) paramType).getActualTypeArguments()[0];
 					}
@@ -487,6 +489,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			}
 			return genericParameterType;
 		}
+
 	}
 
 }

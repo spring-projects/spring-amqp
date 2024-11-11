@@ -66,7 +66,7 @@ class EnableRabbitKotlinTests {
 		assertThat(result).isEqualTo("TEST")
 		val listener = registry.getListenerContainer("single").messageListener
 		assertThat(TestUtils.getPropertyValue(listener, "messagingMessageConverter.inferredArgumentType").toString())
-				.isEqualTo("class java.lang.String")
+			.isEqualTo("class java.lang.String")
 	}
 
 	@Test
@@ -83,17 +83,17 @@ class EnableRabbitKotlinTests {
 	class Config {
 
 		@RabbitListener(id = "single", queues = ["kotlinQueue"])
-		suspend fun handle(@Suppress("UNUSED_PARAMETER") data: String) : String? {
+		suspend fun handle(@Suppress("UNUSED_PARAMETER") data: String): String? {
 			return data.uppercase()
 		}
 
 		@Bean
 		fun rabbitListenerContainerFactory(cf: CachingConnectionFactory) =
-				SimpleRabbitListenerContainerFactory().also {
-					it.setAcknowledgeMode(AcknowledgeMode.MANUAL)
-					it.setReceiveTimeout(10)
-					it.setConnectionFactory(cf)
-				}
+			SimpleRabbitListenerContainerFactory().also {
+				it.setAcknowledgeMode(AcknowledgeMode.MANUAL)
+				it.setReceiveTimeout(10)
+				it.setConnectionFactory(cf)
+			}
 
 		@Bean
 		fun cf() = CachingConnectionFactory(RabbitAvailableCondition.getBrokerRunning().connectionFactory)
