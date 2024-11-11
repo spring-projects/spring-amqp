@@ -19,9 +19,11 @@ package org.springframework.amqp.rabbit.annotation
 import assertk.assertThat
 import assertk.assertions.containsOnly
 import assertk.assertions.isEqualTo
+import assertk.assertions.isInstanceOf
 import assertk.assertions.isTrue
 import org.junit.jupiter.api.Test
 import org.springframework.amqp.core.AcknowledgeMode
+import org.springframework.amqp.core.Message
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory
 import org.springframework.amqp.rabbit.core.RabbitTemplate
@@ -77,7 +79,8 @@ class EnableRabbitKotlinTests {
 		template.convertAndSend("kotlinBatchQueue", "test1")
 		template.convertAndSend("kotlinBatchQueue", "test2")
 		assertThat(this.config.batchReceived.await(10, TimeUnit.SECONDS)).isTrue()
-		assertThat(this.config.batch).containsOnly("test1", "test2")
+		assertThat(this.config.batch[0]).isInstanceOf(Message::class.java)
+		assertThat(this.config.batch.map { m -> String(m.body) }).containsOnly("test1", "test2")
 	}
 
 	@Test
@@ -100,11 +103,11 @@ class EnableRabbitKotlinTests {
 
 		val batchReceived = CountDownLatch(1)
 
-		lateinit var batch: List<String>
+		lateinit var batch: List<Message>
 
 		@RabbitListener(id = "batch", queues = ["kotlinBatchQueue"],
 				containerFactory = "batchRabbitListenerContainerFactory")
-		suspend fun receiveBatch(messages: List<String>) {
+		suspend fun receiveBatch(messages: List<Message>) {
 			batch = messages
 			batchReceived.countDown()
 		}

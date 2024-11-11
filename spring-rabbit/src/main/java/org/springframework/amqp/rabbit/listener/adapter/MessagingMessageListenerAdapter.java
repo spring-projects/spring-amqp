@@ -41,6 +41,7 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.util.Assert;
+import org.springframework.util.TypeUtils;
 
 import com.rabbitmq.client.Channel;
 
@@ -456,17 +457,18 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 				if (parameterizedType.getRawType().equals(Message.class)) {
 					genericParameterType = ((ParameterizedType) genericParameterType).getActualTypeArguments()[0];
 				}
-				else if (this.isBatch
-						&& ((parameterizedType.getRawType().equals(List.class)
-						|| parameterizedType.getRawType().equals(Collection.class))
-						&& parameterizedType.getActualTypeArguments().length == 1)) {
+				else if (this.isBatch &&
+						(parameterizedType.getRawType().equals(List.class) ||
+								(parameterizedType.getRawType().equals(Collection.class) &&
+										parameterizedType.getActualTypeArguments().length == 1))) {
 
 					this.isCollection = true;
 					Type paramType = parameterizedType.getActualTypeArguments()[0];
 					boolean messageHasGeneric = paramType instanceof ParameterizedType pType
 							&& pType.getRawType().equals(Message.class);
-					this.isMessageList = paramType.equals(Message.class) || messageHasGeneric;
-					this.isAmqpMessageList = paramType.equals(org.springframework.amqp.core.Message.class);
+					this.isMessageList = TypeUtils.isAssignable(paramType, Message.class) || messageHasGeneric;
+					this.isAmqpMessageList =
+							TypeUtils.isAssignable(paramType, org.springframework.amqp.core.Message.class);
 					if (messageHasGeneric) {
 						genericParameterType = ((ParameterizedType) paramType).getActualTypeArguments()[0];
 					}
