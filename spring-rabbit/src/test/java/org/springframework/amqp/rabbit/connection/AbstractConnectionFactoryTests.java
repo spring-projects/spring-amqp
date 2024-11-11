@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
@@ -64,11 +65,11 @@ public abstract class AbstractConnectionFactoryTests {
 
 	@Test
 	public void testWithListener() throws Exception {
-
-		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
-		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
+		com.rabbitmq.client.Connection mockConnection = mock();
 
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
+		given(mockConnectionFactory.newConnection(any(), anyList(), anyString())).willReturn(mockConnection);
 
 		final AtomicInteger called = new AtomicInteger(0);
 		AbstractConnectionFactory connectionFactory = createConnectionFactory(mockConnectionFactory);
@@ -125,9 +126,8 @@ public abstract class AbstractConnectionFactoryTests {
 
 	@Test
 	public void testWithListenerRegisteredAfterOpen() throws Exception {
-
-		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
-		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
+		com.rabbitmq.client.Connection mockConnection = mock();
 
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 
@@ -168,10 +168,9 @@ public abstract class AbstractConnectionFactoryTests {
 
 	@Test
 	public void testCloseInvalidConnection() throws Exception {
-
-		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
-		com.rabbitmq.client.Connection mockConnection1 = mock(com.rabbitmq.client.Connection.class);
-		com.rabbitmq.client.Connection mockConnection2 = mock(com.rabbitmq.client.Connection.class);
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
+		com.rabbitmq.client.Connection mockConnection1 = mock();
+		com.rabbitmq.client.Connection mockConnection2 = mock();
 
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString()))
 				.willReturn(mockConnection1, mockConnection2);
@@ -194,8 +193,7 @@ public abstract class AbstractConnectionFactoryTests {
 
 	@Test
 	public void testDestroyBeforeUsed() throws Exception {
-
-		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
 
 		AbstractConnectionFactory connectionFactory = createConnectionFactory(mockConnectionFactory);
 		connectionFactory.destroy();
@@ -205,7 +203,7 @@ public abstract class AbstractConnectionFactoryTests {
 
 	@Test
 	public void testCreatesConnectionWithGivenFactory() {
-		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
 		willCallRealMethod().given(mockConnectionFactory).params(any(ExecutorService.class));
 		willCallRealMethod().given(mockConnectionFactory).setThreadFactory(any(ThreadFactory.class));
 		willCallRealMethod().given(mockConnectionFactory).getThreadFactory();

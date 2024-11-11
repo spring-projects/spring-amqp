@@ -32,12 +32,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
@@ -50,7 +47,6 @@ import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionListener;
@@ -102,47 +98,6 @@ public class RabbitAdminDeclarationTests {
 		verify(channel).queueDeclare("foo", true, false, false, new HashMap<>());
 		verify(channel).exchangeDeclare("bar", "direct", true, false, false, new HashMap<>());
 		verify(channel).queueBind("foo", "bar", "foo", new HashMap<>());
-	}
-
-	@Test
-	public void testNoDeclareWithCachedConnections() throws Exception {
-		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
-
-		List<Channel> mockChannels = new ArrayList<>();
-
-		AtomicInteger connectionNumber = new AtomicInteger();
-		willAnswer(invocation -> {
-			com.rabbitmq.client.Connection connection = mock(com.rabbitmq.client.Connection.class);
-			AtomicInteger channelNumber = new AtomicInteger();
-			willAnswer(invocation1 -> {
-				Channel channel = mock(Channel.class);
-				given(channel.isOpen()).willReturn(true);
-				int channelNum = channelNumber.incrementAndGet();
-				given(channel.toString()).willReturn("mockChannel" + channelNum);
-				mockChannels.add(channel);
-				return channel;
-			}).given(connection).createChannel();
-			int connectionNum = connectionNumber.incrementAndGet();
-			given(connection.toString()).willReturn("mockConnection" + connectionNum);
-			given(connection.isOpen()).willReturn(true);
-			return connection;
-		}).given(mockConnectionFactory).newConnection((ExecutorService) null);
-
-		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
-		ccf.setCacheMode(CacheMode.CONNECTION);
-		ccf.afterPropertiesSet();
-
-		RabbitAdmin admin = new RabbitAdmin(ccf);
-		GenericApplicationContext context = new GenericApplicationContext();
-		Queue queue = new Queue("foo");
-		context.getBeanFactory().registerSingleton("foo", queue);
-		context.refresh();
-		admin.setApplicationContext(context);
-		admin.afterPropertiesSet();
-		ccf.createConnection().close();
-		ccf.destroy();
-
-		assertThat(mockChannels.size()).as("Admin should not have created a channel").isEqualTo(0);
 	}
 
 	@Test

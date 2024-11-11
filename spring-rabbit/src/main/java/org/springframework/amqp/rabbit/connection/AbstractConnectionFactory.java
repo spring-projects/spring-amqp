@@ -166,6 +166,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	@Nullable
 	private BackOff connectionCreatingBackOff;
+
 	/**
 	 * Create a new AbstractConnectionFactory for the given target ConnectionFactory, with no publisher connection
 	 * factory.
@@ -580,8 +581,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	protected final Connection createBareConnection() {
 		try {
 			String connectionName = this.connectionNameStrategy.obtainNewConnectionName(this);
-
 			com.rabbitmq.client.Connection rabbitConnection = connect(connectionName);
+			rabbitConnection.addShutdownListener(this);
 			Connection connection = new SimpleConnection(rabbitConnection, this.closeTimeout,
 					this.connectionCreatingBackOff == null ? null : this.connectionCreatingBackOff.start());
 			if (rabbitConnection instanceof AutorecoveringConnection auto) {
@@ -732,16 +733,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		}
 	}
 
-	private static final class ConnectionBlockedListener implements BlockedListener {
-
-		private final Connection connection;
-
-		private final ApplicationEventPublisher applicationEventPublisher;
-
-		ConnectionBlockedListener(Connection connection, ApplicationEventPublisher applicationEventPublisher) {
-			this.connection = connection;
-			this.applicationEventPublisher = applicationEventPublisher;
-		}
+	private record ConnectionBlockedListener(Connection connection, ApplicationEventPublisher applicationEventPublisher)
+			implements BlockedListener {
 
 		@Override
 		public void handleBlocked(String reason) {

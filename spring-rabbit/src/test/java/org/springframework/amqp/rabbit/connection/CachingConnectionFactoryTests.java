@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -117,7 +118,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertThat(ccf.toString()).contains(", addresses=[h3:1236, h4:1237]")
 				.doesNotContain("host")
 				.doesNotContain("port");
-		ccf.setAddressResolver(() ->  {
+		ccf.setAddressResolver(() -> {
 			throw new IOException("test");
 		});
 		ccf.setPort(0);
@@ -710,7 +711,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		willAnswer(invoc -> {
 			open.set(false); // so the logical close detects a closed delegate
 			return null;
-		}).given(mockChannel).basicPublish(any(), any(), anyBoolean(),  any(), any());
+		}).given(mockChannel).basicPublish(any(), any(), anyBoolean(), any(), any());
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setExecutor(mock(ExecutorService.class));
@@ -722,7 +723,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		rabbitTemplate.convertAndSend("foo", "bar");
 		open.set(true);
 		rabbitTemplate.convertAndSend("foo", "bar");
-		verify(mockChannel, times(2)).basicPublish(any(), any(), anyBoolean(),  any(), any());
+		verify(mockChannel, times(2)).basicPublish(any(), any(), anyBoolean(), any(), any());
 	}
 
 	@Test
@@ -1300,7 +1301,6 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verify(mockConnections.get(3)).close(30000);
 	}
 
-
 	@Test
 	public void testWithConnectionFactoryCachedConnectionAndChannels() throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
@@ -1644,6 +1644,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	@Test
 	public void setAddressesEmpty() throws Exception {
 		ConnectionFactory mock = mock(com.rabbitmq.client.ConnectionFactory.class);
+		given(mock.newConnection(any(ExecutorService.class), anyString()))
+				.willReturn(mock(com.rabbitmq.client.Connection.class));
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mock);
 		ccf.setExecutor(mock(ExecutorService.class));
 		ccf.setHost("abc");
@@ -1663,6 +1665,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	@Test
 	public void setAddressesOneHost() throws Exception {
 		ConnectionFactory mock = mock(com.rabbitmq.client.ConnectionFactory.class);
+		given(mock.newConnection(any(), anyList(), anyString()))
+				.willReturn(mock(com.rabbitmq.client.Connection.class));
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mock);
 		ccf.setAddresses("mq1");
 		ccf.createConnection();
@@ -1674,8 +1678,9 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 	@Test
 	public void setAddressesTwoHosts() throws Exception {
-		ConnectionFactory mock = mock(com.rabbitmq.client.ConnectionFactory.class);
+		ConnectionFactory mock = mock();
 		willReturn(true).given(mock).isAutomaticRecoveryEnabled();
+		willReturn(mock(com.rabbitmq.client.Connection.class)).given(mock).newConnection(any(), anyList(), anyString());
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mock);
 		ccf.setAddresses("mq1,mq2");
 		ccf.createConnection();
@@ -1683,7 +1688,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verify(mock).setAutomaticRecoveryEnabled(false);
 		verify(mock).newConnection(
 				isNull(),
-				argThat((ArgumentMatcher<List<Address>>) a -> a.size() == 2 && a.contains(new Address("mq1")) && a.contains(new Address("mq2"))),
+				argThat((ArgumentMatcher<List<Address>>) a -> a.size() == 2
+						&& a.contains(new Address("mq1")) && a.contains(new Address("mq2"))),
 				anyString());
 		verifyNoMoreInteractions(mock);
 	}
@@ -1692,7 +1698,9 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	public void setUri() throws Exception {
 		URI uri = new URI("amqp://localhost:1234/%2f");
 
-		ConnectionFactory mock = mock(com.rabbitmq.client.ConnectionFactory.class);
+		ConnectionFactory mock = mock();
+		given(mock.newConnection(any(ExecutorService.class), anyString()))
+				.willReturn(mock(com.rabbitmq.client.Connection.class));
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mock);
 		ccf.setExecutor(mock(ExecutorService.class));
 
@@ -1854,12 +1862,12 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	@SuppressWarnings("unchecked")
 	@Test
 	public void testShuffleRandom() throws IOException, TimeoutException {
-		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
-		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
+		com.rabbitmq.client.Connection mockConnection = mock();
 		Channel mockChannel = mock(Channel.class);
 
-		given(mockConnectionFactory.newConnection((ExecutorService) isNull(), any(List.class), anyString()))
-			.willReturn(mockConnection);
+		given(mockConnectionFactory.newConnection(any(), anyList(), anyString()))
+				.willReturn(mockConnection);
 		given(mockConnection.createChannel()).willReturn(mockChannel);
 		given(mockChannel.isOpen()).willReturn(true);
 		given(mockConnection.isOpen()).willReturn(true);
@@ -1873,11 +1881,11 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ArgumentCaptor<List<Address>> captor = ArgumentCaptor.forClass(List.class);
 		verify(mockConnectionFactory, times(100)).newConnection(isNull(), captor.capture(), anyString());
 		List<String> firstAddress = captor.getAllValues()
-			.stream()
-			.map(addresses -> addresses.get(0).getHost())
-			.distinct()
-			.sorted()
-			.collect(Collectors.toList());
+				.stream()
+				.map(addresses -> addresses.get(0).getHost())
+				.distinct()
+				.sorted()
+				.collect(Collectors.toList());
 		assertThat(firstAddress).containsExactly("host1", "host2", "host3");
 	}
 
@@ -1888,8 +1896,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel = mock(Channel.class);
 
-		given(mockConnectionFactory.newConnection((ExecutorService) isNull(), any(List.class), anyString()))
-			.willReturn(mockConnection);
+		given(mockConnectionFactory.newConnection(isNull(), anyList(), anyString()))
+				.willReturn(mockConnection);
 		given(mockConnection.createChannel()).willReturn(mockChannel);
 		given(mockChannel.isOpen()).willReturn(true);
 		given(mockConnection.isOpen()).willReturn(true);
@@ -1903,17 +1911,17 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ArgumentCaptor<List<Address>> captor = ArgumentCaptor.forClass(List.class);
 		verify(mockConnectionFactory, times(3)).newConnection(isNull(), captor.capture(), anyString());
 		List<String> connectAddresses = captor.getAllValues()
-			.stream()
-			.map(addresses -> addresses.get(0).getHost())
-			.collect(Collectors.toList());
+				.stream()
+				.map(addresses -> addresses.get(0).getHost())
+				.collect(Collectors.toList());
 		assertThat(connectAddresses).containsExactly("host1", "host2", "host3");
 	}
 
 	@Test
 	void testResolver() throws Exception {
-		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
-		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
-		Channel mockChannel = mock(Channel.class);
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
+		com.rabbitmq.client.Connection mockConnection = mock();
+		Channel mockChannel = mock();
 
 		AddressResolver resolver = () -> Collections.singletonList(Address.parseAddress("foo:5672"));
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), eq(resolver), anyString()))
@@ -1934,7 +1942,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 	@Test
 	void nullShutdownCause() {
-		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
 		AbstractConnectionFactory cf = createConnectionFactory(mockConnectionFactory);
 		AtomicBoolean connShutDown = new AtomicBoolean();
 		cf.addConnectionListener(new ConnectionListener() {
