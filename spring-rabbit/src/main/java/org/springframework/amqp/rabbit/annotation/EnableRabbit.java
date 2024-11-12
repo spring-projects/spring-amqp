@@ -104,7 +104,7 @@ import org.springframework.context.annotation.Import;
  * <p>Annotated methods can use flexible signature; in particular, it is possible to use
  * the {@link org.springframework.messaging.Message Message} abstraction and related annotations,
  * see {@link RabbitListener} Javadoc for more details. For instance, the following would
- * inject the content of the message and a a custom "myCounter" AMQP header:
+ * inject the content of the message and a custom "myCounter" AMQP header:
  *
  * <pre class="code">
  * &#064;RabbitListener(containerFactory = "myRabbitListenerContainerFactory", queues = "myQueue")

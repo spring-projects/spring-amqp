@@ -426,7 +426,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	 * Create a {@link MessageListener} that is able to serve this endpoint for the
 	 * specified container.
 	 * @param container the {@link MessageListenerContainer} to create a {@link MessageListener}.
-	 * @return a a {@link MessageListener} instance.
+	 * @return a {@link MessageListener} instance.
 	 */
 	protected abstract MessageListener createMessageListener(MessageListenerContainer container);
 

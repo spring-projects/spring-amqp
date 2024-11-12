@@ -23,7 +23,7 @@ import org.springframework.amqp.AmqpException;
  * Exception to be thrown by message converters if they encounter a problem with converting a message or object.
  * </p>
  * <p>
- * N.B. this is <em>not</em> an {@link AmqpException} because it is a a client exception, not a protocol or broker
+ * N.B. this is <em>not</em> an {@link AmqpException} because it is a client exception, not a protocol or broker
  * problem.
  * </p>
  *
