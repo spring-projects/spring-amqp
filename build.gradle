@@ -61,7 +61,7 @@ ext {
 	logbackVersion = '1.5.12'
 	micrometerDocsVersion = '1.0.4'
 	micrometerVersion = '1.14.2-SNAPSHOT'
-	micrometerTracingVersion = '1.4.0-SNAPSHOT'
+	micrometerTracingVersion = '1.4.1-SNAPSHOT'
 	mockitoVersion = '5.14.2'
 	rabbitmqStreamVersion = '0.18.0'
 	rabbitmqVersion = '5.22.0'
