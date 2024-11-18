@@ -479,8 +479,9 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	/**
-	 * How long to wait (milliseconds) for a response to a connection close operation from the broker; default 30000 (30
-	 * seconds).
+	 * How long to wait (milliseconds) for a response to a connection close operation from the broker;
+	 * default 30000 (30 seconds).
+	 * Also used for {@link com.rabbitmq.client.Channel#waitForConfirms()}.
 	 * @param closeTimeout the closeTimeout to set.
 	 */
 	public void setCloseTimeout(int closeTimeout) {
