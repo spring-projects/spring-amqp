@@ -435,7 +435,7 @@ a|
 (mismatched-queues-fatal)
 
 a|When the container starts, if this property is `true` (default: `false`), the container checks that all queues declared in the context are compatible with queues already on the broker.
-If mismatched properties (such as `auto-delete`) or arguments (skuch as `x-message-ttl`) exist, the container (and application context) fails to start with a fatal exception.
+If mismatched properties (such as `auto-delete`) or arguments (such as `x-message-ttl`) exist, the container (and application context) fails to start with a fatal exception.
 
 If the problem is detected during recovery (for example, after a lost connection), the container is stopped.
 

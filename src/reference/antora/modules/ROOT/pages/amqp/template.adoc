@@ -195,7 +195,7 @@ In general, this means that only one confirm is outstanding on a channel at a ti
 NOTE: Starting with version 2.2, the callbacks are invoked on one of the connection factory's `executor` threads.
 This is to avoid a potential deadlock if you perform Rabbit operations from within the callback.
 With previous versions, the callbacks were invoked directly on the `amqp-client` connection I/O thread; this would deadlock if you perform some RPC operation (such as opening a new channel) since the I/O thread blocks waiting for the result, but the result needs to be processed by the I/O thread itself.
-With those versions, it was necessary to hand off work (such as sending a messasge) to another thread within the callback.
+With those versions, it was necessary to hand off work (such as sending a message) to another thread within the callback.
 This is no longer necessary since the framework now hands off the callback invocation to the executor.
 
 IMPORTANT: The guarantee of receiving a returned message before the ack is still maintained as long as the return callback executes in 60 seconds or less.
