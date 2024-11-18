@@ -1087,8 +1087,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	private final class CachedChannelInvocationHandler implements InvocationHandler {
 
-		private static final int ASYNC_CLOSE_TIMEOUT = 5_000;
-
 		private final ChannelCachingConnectionProxy theConnection;
 
 		private final Deque<ChannelProxy> channelList;
@@ -1302,7 +1300,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					getChannelsExecutor()
 							.execute(() -> {
 								try {
-									publisherCallbackChannel.waitForConfirms(ASYNC_CLOSE_TIMEOUT);
+									publisherCallbackChannel.waitForConfirms(getCloseTimeout());
 								}
 								catch (InterruptedException ex) {
 									Thread.currentThread().interrupt();
@@ -1426,10 +1424,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				executorService.execute(() -> {
 					try {
 						if (ConfirmType.CORRELATED.equals(CachingConnectionFactory.this.confirmType)) {
-							channel.waitForConfirmsOrDie(ASYNC_CLOSE_TIMEOUT);
+							channel.waitForConfirmsOrDie(getCloseTimeout());
 						}
 						else {
-							Thread.sleep(ASYNC_CLOSE_TIMEOUT);
+							Thread.sleep(5_000); // NOSONAR - some time to give the channel a chance to ack
 						}
 					}
 					catch (@SuppressWarnings(UNUSED) InterruptedException e1) {
