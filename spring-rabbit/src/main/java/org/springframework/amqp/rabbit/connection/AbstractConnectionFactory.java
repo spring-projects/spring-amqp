@@ -344,7 +344,16 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	/**
 	 * Set addresses for clustering. This property overrides the host+port properties if not empty.
-	 * @param addresses list of addresses with form "host[:port],..."
+	 * @param addresses list of addresses in form {@code host[:port]}.
+	 * @since 3.2.1
+	 */
+	public void setAddresses(List<String> addresses) {
+		Assert.notEmpty(addresses, "Addresses must not be empty");
+		setAddresses(String.join(",", addresses));
+	}
+	/**
+	 * Set addresses for clustering. This property overrides the host+port properties if not empty.
+	 * @param addresses list of addresses with form {@code host1[:port1],host2[:port2],...}.
 	 */
 	public void setAddresses(String addresses) {
 		this.lock.lock();

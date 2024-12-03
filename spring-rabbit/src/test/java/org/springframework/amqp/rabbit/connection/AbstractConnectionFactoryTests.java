@@ -33,6 +33,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -110,7 +111,7 @@ public abstract class AbstractConnectionFactoryTests {
 
 		verify(mockConnectionFactory, times(1)).newConnection(any(ExecutorService.class), anyString());
 
-		connectionFactory.setAddresses("foo:5672,bar:5672");
+		connectionFactory.setAddresses(List.of("foo:5672", "bar:5672"));
 		connectionFactory.setAddressShuffleMode(AddressShuffleMode.NONE);
 		con = connectionFactory.createConnection();
 		assertThat(called.get()).isEqualTo(1);
