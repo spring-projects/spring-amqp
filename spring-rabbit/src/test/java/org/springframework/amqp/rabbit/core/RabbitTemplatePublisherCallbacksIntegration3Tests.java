@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2021 the original author or authors.
+ * Copyright 2018-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,10 +41,10 @@ import com.rabbitmq.client.Channel;
  * @since 2.1
  *
  */
-@RabbitAvailable(queues = { RabbitTemplatePublisherCallbacksIntegrationTests3.QUEUE1,
-		RabbitTemplatePublisherCallbacksIntegrationTests3.QUEUE2,
-		RabbitTemplatePublisherCallbacksIntegrationTests3.QUEUE3 })
-public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
+@RabbitAvailable(queues = { RabbitTemplatePublisherCallbacksIntegration3Tests.QUEUE1,
+		RabbitTemplatePublisherCallbacksIntegration3Tests.QUEUE2,
+		RabbitTemplatePublisherCallbacksIntegration3Tests.QUEUE3 })
+public class RabbitTemplatePublisherCallbacksIntegration3Tests {
 
 	public static final String QUEUE1 = "synthetic.nack";
 

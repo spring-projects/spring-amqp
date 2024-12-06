@@ -95,8 +95,8 @@ import com.rabbitmq.client.ConnectionFactory;
  * @since 1.1
  *
  */
-@RabbitAvailable(queues = RabbitTemplatePublisherCallbacksIntegrationTests.ROUTE)
-public class RabbitTemplatePublisherCallbacksIntegrationTests {
+@RabbitAvailable(queues = RabbitTemplatePublisherCallbacksIntegration1Tests.ROUTE)
+public class RabbitTemplatePublisherCallbacksIntegration1Tests {
 
 	public static final String ROUTE = "test.queue.RabbitTemplatePublisherCallbacksIntegrationTests";
 

@@ -861,8 +861,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 */
 	@Override
 	public final void destroy() {
-		super.destroy();
-		resetConnection();
 		if (getContextStopped()) {
 			this.stopped = true;
 			this.connectionLock.lock();
@@ -890,6 +888,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				this.connectionLock.unlock();
 			}
 		}
+		super.destroy();
+		resetConnection();
 	}
 
 	/**
