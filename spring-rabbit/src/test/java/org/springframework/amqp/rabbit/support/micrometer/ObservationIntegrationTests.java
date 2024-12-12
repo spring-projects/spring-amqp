@@ -47,6 +47,7 @@ import io.micrometer.tracing.test.simple.SpansAssert;
 /**
  * @author Artem Bilan
  * @author Gary Russell
+ *
  * @since 3.0
  */
 @RabbitAvailable(queues = { "int.observation.testQ1", "int.observation.testQ2" })
@@ -120,15 +121,13 @@ public class ObservationIntegrationTests extends SampleTestRunner {
 					.hasTimerWithNameAndTags("spring.rabbit.listener",
 							KeyValues.of(
 									KeyValue.of("spring.rabbit.listener.id", "obs1"),
-									KeyValue.of("messaging.destination.name", "int.observation.testQ1"),
-									KeyValue.of("messaging.rabbitmq.message.delivery_tag", "1")
+									KeyValue.of("messaging.destination.name", "int.observation.testQ1")
 							)
 					)
 					.hasTimerWithNameAndTags("spring.rabbit.listener",
 							KeyValues.of(
 									KeyValue.of("spring.rabbit.listener.id", "obs2"),
-									KeyValue.of("messaging.destination.name", "int.observation.testQ2"),
-									KeyValue.of("messaging.rabbitmq.message.delivery_tag", "1")
+									KeyValue.of("messaging.destination.name", "int.observation.testQ2")
 							)
 					);
 		};

@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.rabbit.support.micrometer;
 
+import java.util.Arrays;
+
 import io.micrometer.common.KeyValues;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.observation.Observation.Context;
@@ -45,7 +47,14 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 
 		@Override
 		public KeyName[] getLowCardinalityKeyNames() {
-			return ListenerLowCardinalityTags.values();
+			return Arrays.stream(ListenerLowCardinalityTags.values())
+					.filter((key) -> !ListenerLowCardinalityTags.DELIVERY_TAG.equals(key))
+					.toArray(KeyName[]::new);
+		}
+
+		@Override
+		public KeyName[] getHighCardinalityKeyNames() {
+			return ListenerHighCardinalityTags.values();
 		}
 
 	};
@@ -83,8 +92,33 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 
 		/**
 		 * The delivery tag.
+		 * After deprecation this key is not exposed as a low cardinality tag.
 		 *
 		 * @since 3.2
+		 *
+		 * @deprecated in favor of {@link ListenerHighCardinalityTags#DELIVERY_TAG}
+		 */
+		@Deprecated(since = "3.2.1", forRemoval = true)
+		DELIVERY_TAG {
+
+			@Override
+			public String asString() {
+				return "messaging.rabbitmq.message.delivery_tag";
+			}
+
+		}
+
+	}
+
+	/**
+	 * High cardinality tags.
+	 *
+	 * @since 3.2.1
+	 */
+	public enum ListenerHighCardinalityTags implements KeyName {
+
+		/**
+		 * The delivery tag.
 		 */
 		DELIVERY_TAG {
 
@@ -96,6 +130,7 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 		}
 
 	}
+
 
 	/**
 	 * Default {@link RabbitListenerObservationConvention} for Rabbit listener key values.
@@ -112,12 +147,16 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 		public KeyValues getLowCardinalityKeyValues(RabbitMessageReceiverContext context) {
 			final var messageProperties = context.getCarrier().getMessageProperties();
 			return KeyValues.of(
-					RabbitListenerObservation.ListenerLowCardinalityTags.LISTENER_ID.asString(), context.getListenerId(),
+					RabbitListenerObservation.ListenerLowCardinalityTags.LISTENER_ID.asString(),
+					context.getListenerId(),
 					RabbitListenerObservation.ListenerLowCardinalityTags.DESTINATION_NAME.asString(),
-					messageProperties.getConsumerQueue(),
-					RabbitListenerObservation.ListenerLowCardinalityTags.DELIVERY_TAG.asString(),
-					String.valueOf(messageProperties.getDeliveryTag())
-			);
+					messageProperties.getConsumerQueue());
+		}
+
+		@Override
+		public KeyValues getHighCardinalityKeyValues(RabbitMessageReceiverContext context) {
+			return KeyValues.of(RabbitListenerObservation.ListenerHighCardinalityTags.DELIVERY_TAG.asString(),
+					String.valueOf(context.getCarrier().getMessageProperties().getDeliveryTag()));
 		}
 
 		@Override
