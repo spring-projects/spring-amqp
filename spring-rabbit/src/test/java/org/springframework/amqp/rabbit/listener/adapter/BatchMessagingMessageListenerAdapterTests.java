@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 the original author or authors.
+ * Copyright 2022-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,6 +58,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 @SpringJUnitConfig
 @RabbitAvailable(queues = "test.batchQueue")
+@DirtiesContext
 public class BatchMessagingMessageListenerAdapterTests {
 
 	@Test

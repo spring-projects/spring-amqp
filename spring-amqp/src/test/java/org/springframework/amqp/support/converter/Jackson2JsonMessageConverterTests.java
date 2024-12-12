@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.web.JsonPath;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.util.MimeTypeUtils;
 
@@ -54,6 +55,7 @@ import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
  * @author Artem Bilan
  */
 @SpringJUnitConfig
+@DirtiesContext
 public class Jackson2JsonMessageConverterTests {
 
 	public static final String TRUSTED_PACKAGE = Jackson2JsonMessageConverterTests.class.getPackage().getName();

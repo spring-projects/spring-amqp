@@ -44,6 +44,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.Nullable;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import io.micrometer.common.KeyValues;
@@ -74,6 +75,7 @@ import io.micrometer.tracing.test.simple.SimpleTracer;
  */
 @SpringJUnitConfig
 @RabbitAvailable(queues = { "observation.testQ1", "observation.testQ2" })
+@DirtiesContext
 public class ObservationTests {
 
 	@Test

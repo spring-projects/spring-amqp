@@ -39,6 +39,7 @@ import org.springframework.amqp.rabbit.test.TestRabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import com.rabbitmq.client.AMQP;
@@ -53,6 +54,7 @@ import com.rabbitmq.client.Channel;
  *
  */
 @SpringJUnitConfig
+@DirtiesContext
 public class TestRabbitTemplateTests {
 
 	@Autowired

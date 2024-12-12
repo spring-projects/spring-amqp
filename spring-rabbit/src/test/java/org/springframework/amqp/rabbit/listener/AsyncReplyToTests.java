@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 the original author or authors.
+ * Copyright 2021-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import com.rabbitmq.client.Channel;
@@ -55,6 +56,7 @@ import com.rabbitmq.client.Channel;
  */
 @SpringJUnitConfig
 @RabbitAvailable(queues = { "async1", "async2" })
+@DirtiesContext
 public class AsyncReplyToTests {
 
 	@Test

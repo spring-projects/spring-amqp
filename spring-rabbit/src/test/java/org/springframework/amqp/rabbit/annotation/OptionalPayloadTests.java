@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -52,6 +53,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 @SpringJUnitConfig
 @RabbitAvailable(queues = { "op.1", "op.2" })
+@DirtiesContext
 public class OptionalPayloadTests {
 
 	@Test
