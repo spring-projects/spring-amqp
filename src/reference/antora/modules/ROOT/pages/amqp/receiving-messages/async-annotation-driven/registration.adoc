@@ -14,6 +14,7 @@ public class AppConfig implements RabbitListenerConfigurer {
     @Override
     public void configureRabbitListeners(RabbitListenerEndpointRegistrar registrar) {
         SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
+		endpoint.setId("someRabbitListenerEndpoint");
         endpoint.setQueueNames("anotherQueue");
         endpoint.setMessageListener(message -> {
             // processing
@@ -24,6 +25,8 @@ public class AppConfig implements RabbitListenerConfigurer {
 ----
 
 In the preceding example, we used `SimpleRabbitListenerEndpoint`, which provides the actual `MessageListener` to invoke, but you could just as well build your own endpoint variant to describe a custom invocation mechanism.
+
+NOTE: the `id` property is required for `SimpleRabbitListenerEndpoint` definition.
 
 It should be noted that you could just as well skip the use of `@RabbitListener` altogether and register your endpoints programmatically through `RabbitListenerConfigurer`.
 
