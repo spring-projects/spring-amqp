@@ -16,8 +16,6 @@
 
 package org.springframework.amqp.rabbit.support.micrometer;
 
-import java.util.Arrays;
-
 import io.micrometer.common.KeyValues;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.observation.Observation.Context;
@@ -47,9 +45,7 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 
 		@Override
 		public KeyName[] getLowCardinalityKeyNames() {
-			return Arrays.stream(ListenerLowCardinalityTags.values())
-					.filter((key) -> !ListenerLowCardinalityTags.DELIVERY_TAG.equals(key))
-					.toArray(KeyName[]::new);
+			return ListenerLowCardinalityTags.values();
 		}
 
 		@Override
