@@ -28,6 +28,7 @@ import io.micrometer.observation.docs.ObservationDocumentation;
  * @author Gary Russell
  * @author Vincent Meunier
  * @author Artem Bilan
+ * @author Ngoc Nhan
  *
  * @since 3.0
  */
@@ -82,24 +83,6 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 			@Override
 			public String asString() {
 				return "messaging.destination.name";
-			}
-
-		},
-
-		/**
-		 * The delivery tag.
-		 * After deprecation this key is not exposed as a low cardinality tag.
-		 *
-		 * @since 3.2
-		 *
-		 * @deprecated in favor of {@link ListenerHighCardinalityTags#DELIVERY_TAG}
-		 */
-		@Deprecated(since = "3.2.1", forRemoval = true)
-		DELIVERY_TAG {
-
-			@Override
-			public String asString() {
-				return "messaging.rabbitmq.message.delivery_tag";
 			}
 
 		}
