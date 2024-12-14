@@ -51,7 +51,7 @@ ext {
 	commonsHttpClientVersion = '5.4.1'
 	commonsPoolVersion = '2.12.0'
 	hamcrestVersion = '3.0'
-	hibernateValidationVersion = '8.0.1.Final'
+	hibernateValidationVersion = '8.0.2.Final'
 	jacksonBomVersion = '2.18.2'
 	jaywayJsonPathVersion = '2.9.0'
 	junit4Version = '4.13.2'
