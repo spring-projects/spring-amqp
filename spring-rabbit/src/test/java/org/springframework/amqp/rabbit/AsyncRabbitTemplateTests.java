@@ -57,6 +57,7 @@ import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
+import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.support.postprocessor.GUnzipPostProcessor;
 import org.springframework.amqp.support.postprocessor.GZipPostProcessor;
@@ -72,6 +73,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 /**
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Ben Efrati
  *
  * @since 1.6
  */
@@ -392,6 +394,29 @@ public class AsyncRabbitTemplateTests {
 		 */
 		future.complete("foo");
 		assertThat(callback.result).isNull();
+	}
+
+	@Test
+	@DirtiesContext
+	public void testConversionException() throws InterruptedException {
+		this.asyncTemplate.getRabbitTemplate().setMessageConverter(new SimpleMessageConverter() {
+			@Override
+			public Object fromMessage(Message message) throws MessageConversionException {
+				throw new MessageConversionException("Failed to convert message");
+			}
+		});
+
+		RabbitConverterFuture<String> replyFuture = this.asyncTemplate.convertSendAndReceive("conversionException");
+
+		final CountDownLatch cdl = new CountDownLatch(1);
+		final AtomicReference<Object> resultRef = new AtomicReference<>();
+        replyFuture.whenComplete((result, ex) -> {
+			resultRef.set(result);
+			cdl.countDown();
+		});
+        assertThat(cdl.await(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(replyFuture).isCompletedExceptionally();
+        assertThat(resultRef.get()).isNull();
 	}
 
 	@Test
