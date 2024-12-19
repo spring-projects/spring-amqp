@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,18 +17,17 @@
 package org.springframework.amqp.rabbit.connection;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.hc.client5.http.auth.AuthCache;
 import org.apache.hc.client5.http.impl.auth.BasicAuthCache;
 import org.apache.hc.client5.http.impl.auth.BasicScheme;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.HttpHost;
-import org.apache.hc.core5.http.protocol.BasicHttpContext;
-import org.apache.hc.core5.http.protocol.HttpContext;
 
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -42,44 +41,43 @@ import org.springframework.web.util.UriUtils;
  * A {@link NodeLocator} using the {@link RestTemplate}.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 3.0
  *
  */
-public class RestTemplateNodeLocator implements NodeLocator<RestTemplateHolder> {
+public class RestTemplateNodeLocator implements NodeLocator<RestTemplate> {
+
+	private final AuthCache authCache = new BasicAuthCache();
+
+	private final AtomicBoolean authSchemeIsSetToCache = new AtomicBoolean(false);
 
 	@Override
-	public RestTemplateHolder createClient(String userName, String password) {
-		return new RestTemplateHolder(userName, password);
+	public RestTemplate createClient(String userName, String password) {
+		HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
+		requestFactory.setHttpContextFactory((httpMethod, uri) -> {
+			HttpClientContext context = HttpClientContext.create();
+			context.setAuthCache(this.authCache);
+			return context;
+		});
+		RestTemplate template = new RestTemplate(requestFactory);
+		template.getInterceptors().add(new BasicAuthenticationInterceptor(userName, password));
+		return template;
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	@Nullable
-	public Map<String, Object> restCall(RestTemplateHolder client, String baseUri, String vhost, String queue)
-			throws URISyntaxException {
-
-		if (client.template == null) {
-			URI uri = new URI(baseUri);
-			HttpHost host = new HttpHost(uri.getHost(), uri.getPort());
-			client.template = new RestTemplate(new HttpComponentsClientHttpRequestFactory() {
-
-				@Override
-				@Nullable
-				protected HttpContext createHttpContext(HttpMethod httpMethod, URI uri) {
-					AuthCache cache = new BasicAuthCache();
-					BasicScheme scheme = new BasicScheme();
-					cache.put(host, scheme);
-					BasicHttpContext context = new BasicHttpContext();
-					context.setAttribute(HttpClientContext.AUTH_CACHE, cache);
-					return context;
-				}
-
-			});
-			client.template.getInterceptors().add(new BasicAuthenticationInterceptor(client.userName, client.password));
+	public Map<String, Object> restCall(RestTemplate client, String baseUri, String vhost, String queue) {
+		URI theBaseUri = URI.create(baseUri);
+		if (!this.authSchemeIsSetToCache.getAndSet(true)) {
+			this.authCache.put(HttpHost.create(theBaseUri), new BasicScheme());
 		}
-		URI uri = new URI(baseUri)
+		URI uri = theBaseUri
 				.resolve("/api/queues/" + UriUtils.encodePathSegment(vhost, StandardCharsets.UTF_8) + "/" + queue);
-		ResponseEntity<Map> response = client.template.exchange(uri, HttpMethod.GET, null, Map.class);
+		ResponseEntity<Map<String, Object>> response =
+				client.exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<>() {
+
+				});
 		return response.getStatusCode().equals(HttpStatus.OK) ? response.getBody() : null;
 	}
 
