@@ -18,7 +18,6 @@ package org.springframework.amqp.rabbit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.mock;
 
@@ -102,7 +101,7 @@ public class AsyncRabbitTemplateTests {
 	}
 
 	@Test
-	public void testConvert1Arg() throws Exception {
+	public void testConvert1Arg()  {
 		final AtomicBoolean mppCalled = new AtomicBoolean();
 		CompletableFuture<String> future = this.asyncTemplate.convertSendAndReceive("foo", m -> {
 			mppCalled.set(true);
@@ -113,7 +112,7 @@ public class AsyncRabbitTemplateTests {
 	}
 
 	@Test
-	public void testConvert1ArgDirect() throws Exception {
+	public void testConvert1ArgDirect() {
 		this.latch.set(new CountDownLatch(1));
 		CompletableFuture<String> future1 = this.asyncDirectTemplate.convertSendAndReceive("foo");
 		CompletableFuture<String> future2 = this.asyncDirectTemplate.convertSendAndReceive("bar");
@@ -141,19 +140,19 @@ public class AsyncRabbitTemplateTests {
 	}
 
 	@Test
-	public void testConvert2Args() throws Exception {
+	public void testConvert2Args() {
 		CompletableFuture<String> future = this.asyncTemplate.convertSendAndReceive(this.requests.getName(), "foo");
 		checkConverterResult(future, "FOO");
 	}
 
 	@Test
-	public void testConvert3Args() throws Exception {
+	public void testConvert3Args() {
 		CompletableFuture<String> future = this.asyncTemplate.convertSendAndReceive("", this.requests.getName(), "foo");
 		checkConverterResult(future, "FOO");
 	}
 
 	@Test
-	public void testConvert4Args() throws Exception {
+	public void testConvert4Args() {
 		CompletableFuture<String> future = this.asyncTemplate.convertSendAndReceive("", this.requests.getName(), "foo",
 				message -> {
 					String body = new String(message.getBody());
@@ -189,7 +188,7 @@ public class AsyncRabbitTemplateTests {
 		assertThat(TestUtils
 				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount",
 						AtomicInteger.class).get())
-				.isEqualTo(0);
+				.isZero();
 	}
 
 	private void waitForZeroInUseConsumers() {
@@ -216,7 +215,7 @@ public class AsyncRabbitTemplateTests {
 	public void testCancel() {
 		CompletableFuture<String> future = this.asyncTemplate.convertSendAndReceive("foo");
 		future.cancel(false);
-		assertThat(TestUtils.getPropertyValue(asyncTemplate, "pending", Map.class)).hasSize(0);
+		assertThat(TestUtils.getPropertyValue(asyncTemplate, "pending", Map.class)).isEmpty();
 	}
 
 	@Test
@@ -236,44 +235,46 @@ public class AsyncRabbitTemplateTests {
 
 	@Test
 	@DirtiesContext
-	public void testReturn() throws Exception {
+	public void testReturn() {
 		this.asyncTemplate.setMandatory(true);
 		CompletableFuture<String> future = this.asyncTemplate.convertSendAndReceive(this.requests.getName() + "x",
 				"foo");
-		try {
-			future.get(10, TimeUnit.SECONDS);
-			fail("Expected exception");
-		}
-		catch (ExecutionException e) {
-			assertThat(e.getCause()).isInstanceOf(AmqpMessageReturnedException.class);
-			assertThat(((AmqpMessageReturnedException) e.getCause()).getRoutingKey()).isEqualTo(this.requests.getName() + "x");
-		}
+		assertThat(future)
+				.as("Expected exception")
+				.failsWithin(Duration.ofSeconds(10))
+				.withThrowableOfType(ExecutionException.class)
+				.havingCause()
+				.isInstanceOf(AmqpMessageReturnedException.class)
+				.extracting(cause -> ((AmqpMessageReturnedException) cause).getRoutingKey())
+				.isEqualTo(this.requests.getName() + "x");
 	}
 
 	@Test
 	@DirtiesContext
-	public void testReturnDirect() throws Exception {
+	public void testReturnDirect() {
 		this.asyncDirectTemplate.setMandatory(true);
 		CompletableFuture<String> future = this.asyncDirectTemplate.convertSendAndReceive(this.requests.getName() + "x",
 				"foo");
-		try {
-			future.get(10, TimeUnit.SECONDS);
-			fail("Expected exception");
-		}
-		catch (ExecutionException e) {
-			assertThat(e.getCause()).isInstanceOf(AmqpMessageReturnedException.class);
-			assertThat(((AmqpMessageReturnedException) e.getCause()).getRoutingKey()).isEqualTo(this.requests.getName() + "x");
-		}
+
+		assertThat(future)
+				.as("Expected exception")
+				.failsWithin(Duration.ofSeconds(10))
+				.withThrowableOfType(ExecutionException.class)
+				.havingCause()
+				.isInstanceOf(AmqpMessageReturnedException.class)
+				.extracting(cause -> ((AmqpMessageReturnedException) cause).getRoutingKey())
+				.isEqualTo(this.requests.getName() + "x");
 	}
 
 	@Test
 	@DirtiesContext
-	public void testConvertWithConfirm() throws Exception {
+	public void testConvertWithConfirm() {
 		this.asyncTemplate.setEnableConfirms(true);
 		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("sleep");
 		CompletableFuture<Boolean> confirm = future.getConfirm();
-		assertThat(confirm).isNotNull();
-		assertThat(confirm.get(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(confirm).isNotNull()
+				.succeedsWithin(Duration.ofSeconds(10))
+				.isEqualTo(true);
 		checkConverterResult(future, "SLEEP");
 	}
 
@@ -284,19 +285,21 @@ public class AsyncRabbitTemplateTests {
 		RabbitMessageFuture future = this.asyncTemplate
 				.sendAndReceive(new SimpleMessageConverter().toMessage("sleep", new MessageProperties()));
 		CompletableFuture<Boolean> confirm = future.getConfirm();
-		assertThat(confirm).isNotNull();
-		assertThat(confirm.get(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(confirm).isNotNull()
+				.succeedsWithin(Duration.ofSeconds(10))
+				.isEqualTo(true);
 		checkMessageResult(future, "SLEEP");
 	}
 
 	@Test
 	@DirtiesContext
-	public void testConvertWithConfirmDirect() throws Exception {
+	public void testConvertWithConfirmDirect() {
 		this.asyncDirectTemplate.setEnableConfirms(true);
 		RabbitConverterFuture<String> future = this.asyncDirectTemplate.convertSendAndReceive("sleep");
 		CompletableFuture<Boolean> confirm = future.getConfirm();
-		assertThat(confirm).isNotNull();
-		assertThat(confirm.get(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(confirm).isNotNull()
+				.succeedsWithin(Duration.ofSeconds(10))
+				.isEqualTo(true);
 		checkConverterResult(future, "SLEEP");
 	}
 
@@ -307,8 +310,9 @@ public class AsyncRabbitTemplateTests {
 		RabbitMessageFuture future = this.asyncDirectTemplate
 				.sendAndReceive(new SimpleMessageConverter().toMessage("sleep", new MessageProperties()));
 		CompletableFuture<Boolean> confirm = future.getConfirm();
-		assertThat(confirm).isNotNull();
-		assertThat(confirm.get(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(confirm).isNotNull()
+				.succeedsWithin(Duration.ofSeconds(10))
+				.isEqualTo(true);
 		checkMessageResult(future, "SLEEP");
 	}
 
@@ -321,14 +325,12 @@ public class AsyncRabbitTemplateTests {
 		TheCallback callback = new TheCallback();
 		future.whenComplete(callback);
 		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(1);
-		try {
-			future.get(10, TimeUnit.SECONDS);
-			fail("Expected ExecutionException");
-		}
-		catch (ExecutionException e) {
-			assertThat(e.getCause()).isInstanceOf(AmqpReplyTimeoutException.class);
-		}
-		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(0);
+		assertThat(future)
+				.as("Expected ExecutionException")
+				.failsWithin(Duration.ofSeconds(10))
+				.withThrowableOfType(ExecutionException.class)
+				.withCauseInstanceOf(AmqpReplyTimeoutException.class);
+		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).isEmpty();
 		assertThat(callback.latch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(callback.ex).isInstanceOf(AmqpReplyTimeoutException.class);
 	}
@@ -342,14 +344,13 @@ public class AsyncRabbitTemplateTests {
 		TheCallback callback = new TheCallback();
 		future.whenComplete(callback);
 		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(1);
-		try {
-			future.get(10, TimeUnit.SECONDS);
-			fail("Expected ExecutionException");
-		}
-		catch (ExecutionException e) {
-			assertThat(e.getCause()).isInstanceOf(AmqpReplyTimeoutException.class);
-		}
-		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(0);
+
+		assertThat(future)
+				.as("Expected ExecutionException")
+				.failsWithin(Duration.ofSeconds(10))
+				.withThrowableOfType(ExecutionException.class)
+				.withCauseInstanceOf(AmqpReplyTimeoutException.class);
+		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).isEmpty();
 		assertThat(callback.latch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(callback.ex).isInstanceOf(AmqpReplyTimeoutException.class);
 
@@ -375,16 +376,17 @@ public class AsyncRabbitTemplateTests {
 		this.asyncTemplate.stop();
 		// Second stop() to be sure that it is idempotent
 		this.asyncTemplate.stop();
-		try {
-			future.get(10, TimeUnit.SECONDS);
-			fail("Expected CancellationException");
-		}
-		catch (CancellationException e) {
-			assertThat(future.getNackCause()).isEqualTo("AsyncRabbitTemplate was stopped while waiting for reply");
-		}
-		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(0);
+		assertThat(future)
+				.as("Expected CancellationException")
+				.failsWithin(Duration.ofSeconds(10))
+				.withThrowableOfType(CancellationException.class)
+				.satisfies(e -> {
+					assertThat(future.getNackCause()).isEqualTo("AsyncRabbitTemplate was stopped while waiting for reply");
+					assertThat(future).isCancelled();
+				});
+
+		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).isEmpty();
 		assertThat(callback.latch.await(10, TimeUnit.SECONDS)).isTrue();
-		assertThat(future.isCancelled()).isTrue();
 		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "taskScheduler")).isNull();
 
 		/*
@@ -398,7 +400,7 @@ public class AsyncRabbitTemplateTests {
 
 	@Test
 	@DirtiesContext
-	public void testConversionException() throws InterruptedException {
+	public void testConversionException() {
 		this.asyncTemplate.getRabbitTemplate().setMessageConverter(new SimpleMessageConverter() {
 			@Override
 			public Object fromMessage(Message message) throws MessageConversionException {
@@ -480,15 +482,10 @@ public class AsyncRabbitTemplateTests {
 		connectionFactory.destroy();
 	}
 
-	private void checkConverterResult(CompletableFuture<String> future, String expected) throws InterruptedException {
-		final CountDownLatch cdl = new CountDownLatch(1);
-		final AtomicReference<String> resultRef = new AtomicReference<>();
-		future.whenComplete((result, ex) -> {
-			resultRef.set(result);
-			cdl.countDown();
-		});
-		assertThat(cdl.await(10, TimeUnit.SECONDS)).isTrue();
-		assertThat(resultRef.get()).isEqualTo(expected);
+	private void checkConverterResult(CompletableFuture<String> future, String expected) {
+		assertThat(future)
+				.succeedsWithin(Duration.ofSeconds(10))
+				.isEqualTo(expected);
 	}
 
 	private Message checkMessageResult(CompletableFuture<Message> future, String expected) throws InterruptedException {
