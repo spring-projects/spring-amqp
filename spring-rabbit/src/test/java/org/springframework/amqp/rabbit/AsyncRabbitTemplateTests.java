@@ -408,15 +408,9 @@ public class AsyncRabbitTemplateTests {
 
 		RabbitConverterFuture<String> replyFuture = this.asyncTemplate.convertSendAndReceive("conversionException");
 
-		final CountDownLatch cdl = new CountDownLatch(1);
-		final AtomicReference<Object> resultRef = new AtomicReference<>();
-        replyFuture.whenComplete((result, ex) -> {
-			resultRef.set(result);
-			cdl.countDown();
-		});
-        assertThat(cdl.await(10, TimeUnit.SECONDS)).isTrue();
-        assertThat(replyFuture).isCompletedExceptionally();
-        assertThat(resultRef.get()).isNull();
+		assertThat(replyFuture).failsWithin(Duration.ofSeconds(10))
+				.withThrowableThat()
+				.withCauseInstanceOf(MessageConversionException.class);
 	}
 
 	@Test
