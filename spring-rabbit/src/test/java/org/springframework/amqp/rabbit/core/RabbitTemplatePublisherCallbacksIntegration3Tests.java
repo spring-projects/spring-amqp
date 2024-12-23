@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -33,11 +34,15 @@ import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.event.ContextClosedEvent;
 
 import com.rabbitmq.client.Channel;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.1
  *
  */
@@ -72,15 +77,17 @@ public class RabbitTemplatePublisherCallbacksIntegration3Tests {
 
 	@Test
 	public void testDeferredChannelCacheNack() throws Exception {
-		final CachingConnectionFactory cf = new CachingConnectionFactory(
+		CachingConnectionFactory cf = new CachingConnectionFactory(
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
 		cf.setPublisherReturns(true);
 		cf.setPublisherConfirmType(ConfirmType.CORRELATED);
-		final RabbitTemplate template = new RabbitTemplate(cf);
-		final CountDownLatch returnLatch = new CountDownLatch(1);
-		final CountDownLatch confirmLatch = new CountDownLatch(1);
-		final AtomicInteger cacheCount = new AtomicInteger();
-		final AtomicBoolean returnCalledFirst = new AtomicBoolean();
+		ApplicationContext mockApplicationContext = mock();
+		cf.setApplicationContext(mockApplicationContext);
+		RabbitTemplate template = new RabbitTemplate(cf);
+		CountDownLatch returnLatch = new CountDownLatch(1);
+		CountDownLatch confirmLatch = new CountDownLatch(1);
+		AtomicInteger cacheCount = new AtomicInteger();
+		AtomicBoolean returnCalledFirst = new AtomicBoolean();
 		template.setConfirmCallback((cd, a, c) -> {
 			cacheCount.set(TestUtils.getPropertyValue(cf, "cachedChannelsNonTransactional", List.class).size());
 			returnCalledFirst.set(returnLatch.getCount() == 0);
@@ -104,6 +111,7 @@ public class RabbitTemplatePublisherCallbacksIntegration3Tests {
 		assertThat(cacheCount.get()).isEqualTo(1);
 		assertThat(returnCalledFirst.get()).isTrue();
 		assertThat(correlationData.getReturned()).isNotNull();
+		cf.onApplicationEvent(new ContextClosedEvent(mockApplicationContext));
 		cf.destroy();
 	}
 
