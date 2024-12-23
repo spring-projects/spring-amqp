@@ -95,7 +95,7 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 				return rlcf.getBeanName() + RabbitListenerConfigUtils.MULTI_RABBIT_ADMIN_SUFFIX;
 			}
 
-			return containerFactory + RabbitListenerConfigUtils.MULTI_RABBIT_ADMIN_SUFFIX;
+			return resolved + RabbitListenerConfigUtils.MULTI_RABBIT_ADMIN_SUFFIX;
 		}
 
 		return RabbitListenerConfigUtils.RABBIT_ADMIN_BEAN_NAME;
