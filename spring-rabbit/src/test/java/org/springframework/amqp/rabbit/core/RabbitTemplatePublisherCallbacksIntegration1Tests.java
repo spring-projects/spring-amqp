@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,6 +79,8 @@ import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 
@@ -99,6 +101,8 @@ import com.rabbitmq.client.ConnectionFactory;
 public class RabbitTemplatePublisherCallbacksIntegration1Tests {
 
 	public static final String ROUTE = "test.queue.RabbitTemplatePublisherCallbacksIntegrationTests";
+
+	private static final ApplicationContext APPLICATION_CONTEXT = mock();
 
 	private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
@@ -122,25 +126,35 @@ public class RabbitTemplatePublisherCallbacksIntegration1Tests {
 		connectionFactory.setHost("localhost");
 		connectionFactory.setChannelCacheSize(10);
 		connectionFactory.setPort(BrokerTestUtils.getPort());
+		connectionFactory.setApplicationContext(APPLICATION_CONTEXT);
+
 		connectionFactoryWithConfirmsEnabled = new CachingConnectionFactory();
 		connectionFactoryWithConfirmsEnabled.setHost("localhost");
 		connectionFactoryWithConfirmsEnabled.setChannelCacheSize(100);
 		connectionFactoryWithConfirmsEnabled.setPort(BrokerTestUtils.getPort());
 		connectionFactoryWithConfirmsEnabled.setPublisherConfirmType(ConfirmType.CORRELATED);
+		connectionFactoryWithConfirmsEnabled.setApplicationContext(APPLICATION_CONTEXT);
+
 		templateWithConfirmsEnabled = new RabbitTemplate(connectionFactoryWithConfirmsEnabled);
+
 		connectionFactoryWithReturnsEnabled = new CachingConnectionFactory();
 		connectionFactoryWithReturnsEnabled.setHost("localhost");
 		connectionFactoryWithReturnsEnabled.setChannelCacheSize(1);
 		connectionFactoryWithReturnsEnabled.setPort(BrokerTestUtils.getPort());
 		connectionFactoryWithReturnsEnabled.setPublisherReturns(true);
+		connectionFactoryWithReturnsEnabled.setApplicationContext(APPLICATION_CONTEXT);
+
 		templateWithReturnsEnabled = new RabbitTemplate(connectionFactoryWithReturnsEnabled);
 		templateWithReturnsEnabled.setMandatory(true);
+
 		connectionFactoryWithConfirmsAndReturnsEnabled = new CachingConnectionFactory();
 		connectionFactoryWithConfirmsAndReturnsEnabled.setHost("localhost");
 		connectionFactoryWithConfirmsAndReturnsEnabled.setChannelCacheSize(100);
 		connectionFactoryWithConfirmsAndReturnsEnabled.setPort(BrokerTestUtils.getPort());
 		connectionFactoryWithConfirmsAndReturnsEnabled.setPublisherConfirmType(ConfirmType.CORRELATED);
 		connectionFactoryWithConfirmsAndReturnsEnabled.setPublisherReturns(true);
+		connectionFactoryWithConfirmsAndReturnsEnabled.setApplicationContext(APPLICATION_CONTEXT);
+
 		templateWithConfirmsAndReturnsEnabled = new RabbitTemplate(connectionFactoryWithConfirmsAndReturnsEnabled);
 		templateWithConfirmsAndReturnsEnabled.setMandatory(true);
 	}
@@ -149,9 +163,19 @@ public class RabbitTemplatePublisherCallbacksIntegration1Tests {
 	public void cleanUp() {
 		this.templateWithConfirmsEnabled.stop();
 		this.templateWithReturnsEnabled.stop();
+
+		this.connectionFactory.onApplicationEvent(new ContextClosedEvent(APPLICATION_CONTEXT));
 		this.connectionFactory.destroy();
+
+		this.connectionFactoryWithConfirmsEnabled.onApplicationEvent(new ContextClosedEvent(APPLICATION_CONTEXT));
 		this.connectionFactoryWithConfirmsEnabled.destroy();
+
+		this.connectionFactoryWithReturnsEnabled.onApplicationEvent(new ContextClosedEvent(APPLICATION_CONTEXT));
 		this.connectionFactoryWithReturnsEnabled.destroy();
+
+		this.connectionFactoryWithConfirmsAndReturnsEnabled.onApplicationEvent(new ContextClosedEvent(APPLICATION_CONTEXT));
+		this.connectionFactoryWithConfirmsAndReturnsEnabled.destroy();
+
 		this.executorService.shutdown();
 	}
 
@@ -159,7 +183,7 @@ public class RabbitTemplatePublisherCallbacksIntegration1Tests {
 	public void testPublisherConfirmReceived() throws Exception {
 		final CountDownLatch latch = new CountDownLatch(10000);
 		final AtomicInteger acks = new AtomicInteger();
-		final AtomicReference<CorrelationData> confirmCorrelation = new AtomicReference<CorrelationData>();
+		final AtomicReference<CorrelationData> confirmCorrelation = new AtomicReference<>();
 		AtomicReference<String> callbackThreadName = new AtomicReference<>();
 		this.templateWithConfirmsEnabled.setConfirmCallback((correlationData, ack, cause) -> {
 			acks.incrementAndGet();
@@ -208,7 +232,7 @@ public class RabbitTemplatePublisherCallbacksIntegration1Tests {
 		this.templateWithConfirmsEnabled.execute(channel -> {
 			Map<?, ?> listenerMap = TestUtils.getPropertyValue(((ChannelProxy) channel).getTargetChannel(),
 					"listenerForSeq", Map.class);
-			await().until(() -> listenerMap.size() == 0);
+			await().until(listenerMap::isEmpty);
 			return null;
 		});
 
@@ -227,7 +251,8 @@ public class RabbitTemplatePublisherCallbacksIntegration1Tests {
 			confirmCD.set(correlationData);
 			latch.countDown();
 		});
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactoryWithConfirmsEnabled);
+		SimpleMessageListenerContainer container =
+				new SimpleMessageListenerContainer(this.connectionFactoryWithConfirmsEnabled);
 		container.setQueueNames(ROUTE);
 		container.setReceiveTimeout(10);
 		container.setMessageListener(
@@ -642,7 +667,6 @@ public class RabbitTemplatePublisherCallbacksIntegration1Tests {
 		channel.handleAck(3, false);
 		assertThat(waitForAll3AcksLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(acks.get()).isEqualTo(3);
-
 
 		channel.basicConsume("foo", false, (Map) null, null);
 		verify(mockChannel).basicConsume("foo", false, (Map) null, null);
