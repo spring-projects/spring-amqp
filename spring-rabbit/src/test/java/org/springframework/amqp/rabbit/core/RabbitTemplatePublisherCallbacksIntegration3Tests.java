@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 the original author or authors.
+ * Copyright 2018-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,9 +46,9 @@ import com.rabbitmq.client.Channel;
  * @since 2.1
  *
  */
-@RabbitAvailable(queues = { RabbitTemplatePublisherCallbacksIntegration3Tests.QUEUE1,
+@RabbitAvailable(queues = {RabbitTemplatePublisherCallbacksIntegration3Tests.QUEUE1,
 		RabbitTemplatePublisherCallbacksIntegration3Tests.QUEUE2,
-		RabbitTemplatePublisherCallbacksIntegration3Tests.QUEUE3 })
+		RabbitTemplatePublisherCallbacksIntegration3Tests.QUEUE3})
 public class RabbitTemplatePublisherCallbacksIntegration3Tests {
 
 	public static final String QUEUE1 = "synthetic.nack";
@@ -117,9 +117,11 @@ public class RabbitTemplatePublisherCallbacksIntegration3Tests {
 
 	@Test
 	public void testDeferredChannelCacheAck() throws Exception {
-		final CachingConnectionFactory cf = new CachingConnectionFactory(
-				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
+		CachingConnectionFactory cf =
+				new CachingConnectionFactory(RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
 		cf.setPublisherConfirmType(ConfirmType.CORRELATED);
+		ApplicationContext mockApplicationContext = mock();
+		cf.setApplicationContext(mockApplicationContext);
 		final RabbitTemplate template = new RabbitTemplate(cf);
 		final CountDownLatch confirmLatch = new CountDownLatch(1);
 		final AtomicInteger cacheCount = new AtomicInteger();
@@ -138,6 +140,7 @@ public class RabbitTemplatePublisherCallbacksIntegration3Tests {
 		template.convertAndSend("", QUEUE2, "foo", new CorrelationData("foo"));
 		assertThat(confirmLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(cacheCount.get()).isEqualTo(1);
+		cf.onApplicationEvent(new ContextClosedEvent(mockApplicationContext));
 		cf.destroy();
 	}
 
@@ -146,6 +149,8 @@ public class RabbitTemplatePublisherCallbacksIntegration3Tests {
 		CachingConnectionFactory cf = new CachingConnectionFactory(
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
 		cf.setPublisherConfirmType(ConfirmType.CORRELATED);
+		ApplicationContext mockApplicationContext = mock();
+		cf.setApplicationContext(mockApplicationContext);
 		RabbitTemplate template = new RabbitTemplate(cf);
 		template.setReplyTimeout(0);
 		final CountDownLatch confirmLatch = new CountDownLatch(2);
@@ -157,6 +162,8 @@ public class RabbitTemplatePublisherCallbacksIntegration3Tests {
 		assertThat(confirmLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(template.receive(QUEUE3, 10_000)).isNotNull();
 		assertThat(template.receive(QUEUE3, 10_000)).isNotNull();
+		cf.onApplicationEvent(new ContextClosedEvent(mockApplicationContext));
+		cf.destroy();
 	}
 
 }
