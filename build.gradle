@@ -49,7 +49,7 @@ ext {
 	assertkVersion = '0.28.1'
 	awaitilityVersion = '4.2.2'
 	commonsHttpClientVersion = '5.4.1'
-	commonsPoolVersion = '2.12.0'
+	commonsPoolVersion = '2.12.1'
 	hamcrestVersion = '3.0'
 	hibernateValidationVersion = '8.0.2.Final'
 	jacksonBomVersion = '2.18.2'
