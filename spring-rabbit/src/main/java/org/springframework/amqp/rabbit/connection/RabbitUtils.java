@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,6 @@ package org.springframework.amqp.rabbit.connection;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import org.springframework.amqp.AmqpIOException;
-import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
-
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.Channel;
@@ -37,6 +29,13 @@ import com.rabbitmq.client.SaslConfig;
 import com.rabbitmq.client.ShutdownSignalException;
 import com.rabbitmq.client.impl.CRDemoMechanism;
 import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import org.springframework.amqp.AmqpIOException;
+import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 /**
  * @author Mark Fisher

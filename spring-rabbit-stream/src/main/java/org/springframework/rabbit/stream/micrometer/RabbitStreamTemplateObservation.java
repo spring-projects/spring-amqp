@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,13 @@
 
 package org.springframework.rabbit.stream.micrometer;
 
-import org.springframework.rabbit.stream.producer.RabbitStreamTemplate;
-
 import io.micrometer.common.KeyValues;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.observation.Observation.Context;
 import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.docs.ObservationDocumentation;
+
+import org.springframework.rabbit.stream.producer.RabbitStreamTemplate;
 
 /**
  * Spring RabbitMQ Observation for

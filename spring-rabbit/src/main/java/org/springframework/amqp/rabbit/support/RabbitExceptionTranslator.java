@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,10 @@ import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
 import java.util.concurrent.TimeoutException;
 
+import com.rabbitmq.client.ConsumerCancelledException;
+import com.rabbitmq.client.PossibleAuthenticationFailureException;
+import com.rabbitmq.client.ShutdownSignalException;
+
 import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
@@ -29,10 +33,6 @@ import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.AmqpUnsupportedEncodingException;
 import org.springframework.amqp.UncategorizedAmqpException;
 import org.springframework.util.Assert;
-
-import com.rabbitmq.client.ConsumerCancelledException;
-import com.rabbitmq.client.PossibleAuthenticationFailureException;
-import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * Translates Rabbit Exceptions to the {@link AmqpException} class

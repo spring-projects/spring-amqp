@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2024 the original author or authors.
+ * Copyright 2016-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,6 @@
  */
 
 package org.springframework.amqp.rabbit;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.awaitility.Awaitility.await;
-import static org.mockito.Mockito.mock;
 
 import java.time.Duration;
 import java.util.Map;
@@ -69,6 +64,11 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.awaitility.Awaitility.await;
+import static org.mockito.Mockito.mock;
+
 /**
  * @author Gary Russell
  * @author Artem Bilan
@@ -101,7 +101,7 @@ public class AsyncRabbitTemplateTests {
 	}
 
 	@Test
-	public void testConvert1Arg()  {
+	public void testConvert1Arg() {
 		final AtomicBoolean mppCalled = new AtomicBoolean();
 		CompletableFuture<String> future = this.asyncTemplate.convertSendAndReceive("foo", m -> {
 			mppCalled.set(true);
@@ -402,6 +402,7 @@ public class AsyncRabbitTemplateTests {
 	@DirtiesContext
 	public void testConversionException() {
 		this.asyncTemplate.getRabbitTemplate().setMessageConverter(new SimpleMessageConverter() {
+
 			@Override
 			public Object fromMessage(Message message) throws MessageConversionException {
 				throw new MessageConversionException("Failed to convert message");
@@ -436,7 +437,7 @@ public class AsyncRabbitTemplateTests {
 				.isEqualTo("rq");
 		assertThat(template).extracting("container")
 				.extracting("queueNames")
-				.isEqualTo(new String[] { "rq" });
+				.isEqualTo(new String[] {"rq"});
 		template = new AsyncRabbitTemplate(mock(ConnectionFactory.class), "ex", "rk", "rq", "ra");
 		assertThat(template).extracting(AsyncRabbitTemplate::getRabbitTemplate)
 				.extracting("exchange")
@@ -449,7 +450,7 @@ public class AsyncRabbitTemplateTests {
 				.isEqualTo("ra");
 		assertThat(template).extracting("container")
 				.extracting("queueNames")
-				.isEqualTo(new String[] { "rq" });
+				.isEqualTo(new String[] {"rq"});
 		template = new AsyncRabbitTemplate(mock(RabbitTemplate.class), mock(AbstractMessageListenerContainer.class),
 				"rq");
 		assertThat(template)
@@ -509,7 +510,6 @@ public class AsyncRabbitTemplateTests {
 		private volatile String result;
 
 		private volatile Throwable ex;
-
 
 		@Override
 		public void accept(String result, Throwable ex) {

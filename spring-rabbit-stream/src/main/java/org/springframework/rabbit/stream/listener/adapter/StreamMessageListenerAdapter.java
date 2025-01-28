@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 the original author or authors.
+ * Copyright 2021-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,14 @@ package org.springframework.rabbit.stream.listener.adapter;
 
 import java.lang.reflect.Method;
 
+import com.rabbitmq.stream.Message;
+import com.rabbitmq.stream.MessageHandler.Context;
+
 import org.springframework.amqp.rabbit.listener.adapter.InvocationResult;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.rabbit.stream.listener.StreamMessageListener;
-
-import com.rabbitmq.stream.Message;
-import com.rabbitmq.stream.MessageHandler.Context;
 
 /**
  * A listener adapter that receives native stream messages.

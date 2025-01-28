@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 the original author or authors.
+ * Copyright 2021-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import com.rabbitmq.stream.Codec;
+import com.rabbitmq.stream.MessageBuilder;
+import com.rabbitmq.stream.MessageBuilder.ApplicationPropertiesBuilder;
+import com.rabbitmq.stream.MessageBuilder.PropertiesBuilder;
+import com.rabbitmq.stream.Properties;
+import com.rabbitmq.stream.codec.WrapperMessageBuilder;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.converter.MessageConversionException;
@@ -29,13 +36,6 @@ import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.rabbit.stream.support.StreamMessageProperties;
 import org.springframework.util.Assert;
-
-import com.rabbitmq.stream.Codec;
-import com.rabbitmq.stream.MessageBuilder;
-import com.rabbitmq.stream.MessageBuilder.ApplicationPropertiesBuilder;
-import com.rabbitmq.stream.MessageBuilder.PropertiesBuilder;
-import com.rabbitmq.stream.Properties;
-import com.rabbitmq.stream.codec.WrapperMessageBuilder;
 
 /**
  * Default {@link StreamMessageConverter}.

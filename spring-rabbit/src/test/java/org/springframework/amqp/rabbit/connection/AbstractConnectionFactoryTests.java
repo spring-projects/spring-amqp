@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2024 the original author or authors.
+ * Copyright 2010-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,26 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.ConnectionFactory;
+import org.apache.commons.logging.Log;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
+import org.springframework.amqp.AmqpResourceNotAvailableException;
+import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.AddressShuffleMode;
+import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.beans.DirectFieldAccessor;
+import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
+import org.springframework.util.StopWatch;
+import org.springframework.util.backoff.FixedBackOff;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,27 +51,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.commons.logging.Log;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
-import org.springframework.amqp.AmqpResourceNotAvailableException;
-import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.AddressShuffleMode;
-import org.springframework.amqp.utils.test.TestUtils;
-import org.springframework.beans.DirectFieldAccessor;
-import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
-import org.springframework.util.StopWatch;
-import org.springframework.util.backoff.FixedBackOff;
-
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.ConnectionFactory;
 
 /**
  * @author Dave Syer

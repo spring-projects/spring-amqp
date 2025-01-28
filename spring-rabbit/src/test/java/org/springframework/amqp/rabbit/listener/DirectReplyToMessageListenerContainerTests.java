@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 the original author or authors.
+ * Copyright 2016-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,14 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import com.rabbitmq.client.AMQP.BasicProperties;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.GetResponse;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Address;
@@ -34,9 +34,8 @@ import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 
-import com.rabbitmq.client.AMQP.BasicProperties;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.GetResponse;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 /**
  * DirectReplyToMessageListenerContainer Tests.
@@ -57,7 +56,8 @@ public class DirectReplyToMessageListenerContainerTests {
 		final CountDownLatch latch = new CountDownLatch(1);
 
 		// Populate void MessageListener for wrapping in the DirectReplyToMessageListenerContainer
-		container.setMessageListener(m -> { });
+		container.setMessageListener(m -> {
+		});
 
 		// Extract actual ChannelAwareMessageListener from container
 		// with the inUseConsumerChannels.remove(channel); operation

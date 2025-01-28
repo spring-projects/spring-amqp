@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,10 @@
 
 package org.springframework.amqp.rabbit.annotation;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.Mockito.mock;
-
 import java.util.Collection;
 import java.util.Map;
 
+import com.rabbitmq.client.Channel;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Message;
@@ -42,7 +39,9 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 import org.springframework.validation.annotation.Validated;
 
-import com.rabbitmq.client.Channel;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
 
 /**
  *
@@ -283,6 +282,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 		@RabbitListener(containerFactory = "simpleFactory", queues = "myQueue")
 		public void simpleHandle(String msg) {
 		}
+
 	}
 
 	@Component
@@ -293,6 +293,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 		public void fullHandle(String msg) {
 
 		}
+
 	}
 
 	@Component
@@ -305,6 +306,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 		public void fullHandle(String msg) {
 
 		}
+
 	}
 
 	@Component
@@ -313,6 +315,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 		@RabbitListener(id = "listenerId", containerFactory = "customFactory", queues = "myQueue")
 		public void customHandle(String msg) {
 		}
+
 	}
 
 	static class DefaultBean {
@@ -320,6 +323,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 		@RabbitListener(queues = "myQueue")
 		public void handleIt(String msg) {
 		}
+
 	}
 
 	@Component
@@ -328,6 +332,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 		@RabbitListener(containerFactory = "defaultFactory", queues = "myQueue")
 		public void defaultHandle(@Validated String msg) {
 		}
+
 	}
 
 	@Component
@@ -365,6 +370,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 				errors.reject("TEST: expected invalid value");
 			}
 		}
+
 	}
 
 }

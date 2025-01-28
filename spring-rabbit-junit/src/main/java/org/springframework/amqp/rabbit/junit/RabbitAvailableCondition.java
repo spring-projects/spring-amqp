@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.junit;
 import java.lang.reflect.AnnotatedElement;
 import java.util.Optional;
 
+import com.rabbitmq.client.ConnectionFactory;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
@@ -32,8 +33,6 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 
 import org.springframework.core.annotation.MergedAnnotations;
 import org.springframework.util.Assert;
-
-import com.rabbitmq.client.ConnectionFactory;
 
 /**
  * JUnit5 {@link ExecutionCondition}. Looks for {@code @RabbitAvailable} annotated classes

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2021-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 
 package org.springframework.rabbit.stream.listener;
 
-import org.springframework.amqp.core.MessageListener;
-
 import com.rabbitmq.stream.Message;
 import com.rabbitmq.stream.MessageHandler.Context;
+
+import org.springframework.amqp.core.MessageListener;
 
 /**
  * A message listener that receives native stream messages.

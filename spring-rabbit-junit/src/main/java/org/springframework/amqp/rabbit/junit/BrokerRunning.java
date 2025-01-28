@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,9 @@
 
 package org.springframework.amqp.rabbit.junit;
 
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeNoException;
-
 import java.util.Map;
 
+import com.rabbitmq.client.ConnectionFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.rules.TestWatcher;
@@ -29,7 +27,8 @@ import org.junit.runners.model.Statement;
 
 import org.springframework.amqp.rabbit.junit.BrokerRunningSupport.BrokerNotAliveException;
 
-import com.rabbitmq.client.ConnectionFactory;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeNoException;
 
 /**
  * A rule that prevents integration tests from failing if the Rabbit broker application is

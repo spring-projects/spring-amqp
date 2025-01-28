@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 the original author or authors.
+ * Copyright 2021-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.rabbit.stream.config;
 
 import java.lang.reflect.Method;
 
+import com.rabbitmq.stream.Environment;
 import org.aopalliance.aop.Advice;
 
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
@@ -33,8 +34,6 @@ import org.springframework.rabbit.stream.listener.StreamListenerContainer;
 import org.springframework.rabbit.stream.listener.adapter.StreamMessageListenerAdapter;
 import org.springframework.rabbit.stream.micrometer.RabbitStreamListenerObservationConvention;
 import org.springframework.util.Assert;
-
-import com.rabbitmq.stream.Environment;
 
 /**
  * Factory for StreamListenerContainer.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 the original author or authors.
+ * Copyright 2021-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,15 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
+import com.rabbitmq.stream.ConfirmationHandler;
+import com.rabbitmq.stream.Constants;
+import com.rabbitmq.stream.Environment;
+import com.rabbitmq.stream.MessageBuilder;
+import com.rabbitmq.stream.Producer;
+import com.rabbitmq.stream.ProducerBuilder;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -40,15 +49,6 @@ import org.springframework.rabbit.stream.support.StreamMessageProperties;
 import org.springframework.rabbit.stream.support.converter.DefaultStreamMessageConverter;
 import org.springframework.rabbit.stream.support.converter.StreamMessageConverter;
 import org.springframework.util.Assert;
-
-import com.rabbitmq.stream.ConfirmationHandler;
-import com.rabbitmq.stream.Constants;
-import com.rabbitmq.stream.Environment;
-import com.rabbitmq.stream.MessageBuilder;
-import com.rabbitmq.stream.Producer;
-import com.rabbitmq.stream.ProducerBuilder;
-import io.micrometer.observation.Observation;
-import io.micrometer.observation.ObservationRegistry;
 
 /**
  * Default implementation of {@link RabbitStreamOperations}.

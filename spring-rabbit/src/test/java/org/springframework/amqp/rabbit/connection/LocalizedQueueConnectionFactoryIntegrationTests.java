@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2022 the original author or authors.
+ * Copyright 2015-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,6 @@
  */
 
 package org.springframework.amqp.rabbit.connection;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -41,6 +38,8 @@ import org.springframework.web.reactive.function.client.ExchangeFilterFunctions;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriUtils;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 /**
  *
@@ -67,10 +66,10 @@ public class LocalizedQueueConnectionFactoryIntegrationTests extends AbstractTes
 		this.testContainerAdmin = new RabbitAdmin(this.testContainerFactory);
 		BrokerRunningSupport brokerRunning = RabbitAvailableCondition.getBrokerRunning();
 
-		String[] addresses = new String[] { brokerRunning.getHostName() + ":" + brokerRunning.getPort(),
-				RABBITMQ.getHost() + ":" + RABBITMQ.getAmqpPort() };
-		String[] adminUris = new String[] { brokerRunning.getAdminUri(), RABBITMQ.getHttpUrl() };
-		String[] nodes = new String[] { findLocalNode(), findTcNode() };
+		String[] addresses = new String[] {brokerRunning.getHostName() + ":" + brokerRunning.getPort(),
+				RABBITMQ.getHost() + ":" + RABBITMQ.getAmqpPort()};
+		String[] adminUris = new String[] {brokerRunning.getAdminUri(), RABBITMQ.getHttpUrl()};
+		String[] nodes = new String[] {findLocalNode(), findTcNode()};
 		String vhost = "/";
 		String username = brokerRunning.getAdminUser();
 		String password = brokerRunning.getAdminPassword();
@@ -108,7 +107,7 @@ public class LocalizedQueueConnectionFactoryIntegrationTests extends AbstractTes
 		BrokerRunningSupport brokerRunning = RabbitAvailableCondition.getBrokerRunning();
 		LocalizedQueueConnectionFactory lqcf = new LocalizedQueueConnectionFactory(defaultCf,
 				Map.of(findLocalNode(), brokerRunning.getHostName() + ":" + brokerRunning.getPort()),
-				new String[] { brokerRunning.getAdminUri() },
+				new String[] {brokerRunning.getAdminUri()},
 				"/", brokerRunning.getAdminUser(), brokerRunning.getAdminPassword(), false, null);
 		ConnectionFactory cf = lqcf.getTargetConnectionFactory("[local]");
 		RabbitAdmin admin = new RabbitAdmin(cf);
@@ -140,6 +139,7 @@ public class LocalizedQueueConnectionFactoryIntegrationTests extends AbstractTes
 				.accept(MediaType.APPLICATION_JSON)
 				.retrieve()
 				.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
+
 				})
 				.block(Duration.ofSeconds(10));
 		this.testContainerAdmin.deleteQueue(queue.getName());
@@ -168,6 +168,7 @@ public class LocalizedQueueConnectionFactoryIntegrationTests extends AbstractTes
 				.accept(MediaType.APPLICATION_JSON)
 				.retrieve()
 				.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
+
 				})
 				.block(Duration.ofSeconds(10));
 		this.defaultAdmin.deleteQueue(queue.getName());

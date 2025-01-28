@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,13 @@ package org.springframework.rabbit.stream.micrometer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservation;
-import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservationConvention;
-import org.springframework.amqp.rabbit.support.micrometer.RabbitMessageReceiverContext;
-
 import com.rabbitmq.stream.Message;
 import io.micrometer.common.KeyValues;
 import io.micrometer.observation.transport.ReceiverContext;
+
+import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservation;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservationConvention;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitMessageReceiverContext;
 
 /**
  * {@link ReceiverContext} for stream {@link Message}s.

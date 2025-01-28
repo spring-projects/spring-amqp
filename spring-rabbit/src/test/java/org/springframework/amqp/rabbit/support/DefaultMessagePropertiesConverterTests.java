@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package org.springframework.amqp.rabbit.support;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.DataInputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
@@ -25,16 +23,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.rabbitmq.client.AMQP.BasicProperties;
+import com.rabbitmq.client.Envelope;
+import com.rabbitmq.client.LongString;
+import com.rabbitmq.client.impl.LongStringHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 
-import com.rabbitmq.client.AMQP.BasicProperties;
-import com.rabbitmq.client.Envelope;
-import com.rabbitmq.client.LongString;
-import com.rabbitmq.client.impl.LongStringHelper;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Soeren Unruh

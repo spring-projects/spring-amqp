@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 the original author or authors.
+ * Copyright 2022-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,13 @@
 
 package org.springframework.rabbit.stream.listener;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import com.rabbitmq.stream.Environment;
+import com.rabbitmq.stream.OffsetSpecification;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Declarables;
@@ -40,8 +40,7 @@ import org.springframework.rabbit.stream.config.SuperStream;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-import com.rabbitmq.stream.Environment;
-import com.rabbitmq.stream.OffsetSpecification;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Gary Russell

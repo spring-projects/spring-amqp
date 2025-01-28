@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2019 the original author or authors.
+ * Copyright 2013-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 
 package org.springframework.amqp.rabbit.transaction;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
 
+import com.rabbitmq.client.PossibleAuthenticationFailureException;
+import com.rabbitmq.client.ShutdownSignalException;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.AmqpAuthenticationException;
@@ -32,8 +32,7 @@ import org.springframework.amqp.AmqpUnsupportedEncodingException;
 import org.springframework.amqp.UncategorizedAmqpException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 
-import com.rabbitmq.client.PossibleAuthenticationFailureException;
-import com.rabbitmq.client.ShutdownSignalException;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Sergey Shcherbakov
@@ -56,6 +55,7 @@ public class RabbitExceptionTranslatorTests {
 		assertThat(RabbitExceptionTranslator.convertRabbitAccessException(new UnsupportedEncodingException())).isInstanceOf(AmqpUnsupportedEncodingException.class);
 
 		assertThat(RabbitExceptionTranslator.convertRabbitAccessException(new Exception() {
+
 			private static final long serialVersionUID = 1L;
 		})).isInstanceOf(UncategorizedAmqpException.class);
 

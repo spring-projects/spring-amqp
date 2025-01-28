@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 package org.springframework.amqp.rabbit.connection;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import java.io.PrintStream;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
+import com.rabbitmq.client.ConnectionFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -36,7 +36,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-import com.rabbitmq.client.ConnectionFactory;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Lars Hvile
@@ -47,6 +47,8 @@ import com.rabbitmq.client.ConnectionFactory;
 @SpringJUnitConfig
 @Disabled("Requires user interaction")
 public class RabbitReconnectProblemTests {
+
+	private static final PrintStream SOUT = System.out;
 
 	@Autowired
 	CachingConnectionFactory connFactory;
@@ -67,7 +69,7 @@ public class RabbitReconnectProblemTests {
 	@Test
 	public void surviveAReconnect() throws Exception {
 		checkIt(0);
-		System .out .println("Restart RabbitMQ & press any key...");
+		SOUT.println("Restart RabbitMQ & press any key...");
 		System.in.read();
 
 		for (int i = 1; i < 10; i++) {
@@ -79,14 +81,14 @@ public class RabbitReconnectProblemTests {
 				.iterator()
 				.next())
 				.availablePermits();
-		System .out .println("Permits after test: " + availablePermits);
+		SOUT.println("Permits after test: " + availablePermits);
 		assertThat(availablePermits).isEqualTo(2);
 	}
 
 	void checkIt(int counter) {
-		System .out .println("\n#" + counter);
+		SOUT.println("\n#" + counter);
 		template.receive(myQueue.getName());
-		System .out .println("OK");
+		SOUT.println("OK");
 	}
 
 	@Configuration
@@ -113,5 +115,7 @@ public class RabbitReconnectProblemTests {
 		AmqpTemplate rabbitTemplate() throws Exception {
 			return new RabbitTemplate(connectionFactory());
 		}
+
 	}
+
 }

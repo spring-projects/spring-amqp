@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2024 the original author or authors.
+ * Copyright 2015-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,32 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Consumer;
+import org.apache.commons.logging.Log;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.internal.stubbing.answers.CallsRealMethods;
+import reactor.core.publisher.Mono;
+
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.beans.DirectFieldAccessor;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ClientHttpConnector;
+import org.springframework.test.web.reactive.server.HttpHandlerConnector;
+import org.springframework.web.reactive.function.client.WebClient;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -28,34 +54,6 @@ import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.apache.commons.logging.Log;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.internal.stubbing.answers.CallsRealMethods;
-
-import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
-import org.springframework.amqp.utils.test.TestUtils;
-import org.springframework.beans.DirectFieldAccessor;
-import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.client.reactive.ClientHttpConnector;
-import org.springframework.test.web.reactive.server.HttpHandlerConnector;
-import org.springframework.web.reactive.function.client.WebClient;
-
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Consumer;
-import reactor.core.publisher.Mono;
-
 
 /**
  * @author Gary Russell
@@ -74,9 +72,9 @@ public class LocalizedQueueConnectionFactoryTests {
 		ConnectionFactory defaultConnectionFactory = mockCF("localhost:1234", null);
 		String rabbit1 = "localhost:1235";
 		String rabbit2 = "localhost:1236";
-		String[] addresses = new String[]{rabbit1, rabbit2};
-		String[] adminUris = new String[]{"http://localhost:11235", "http://localhost:11236"};
-		String[] nodes = new String[]{"rabbit@foo", "rabbit@bar"};
+		String[] addresses = new String[] {rabbit1, rabbit2};
+		String[] adminUris = new String[] {"http://localhost:11235", "http://localhost:11236"};
+		String[] nodes = new String[] {"rabbit@foo", "rabbit@bar"};
 		String vhost = "/";
 		String username = "guest";
 		String password = "guest";
@@ -174,9 +172,9 @@ public class LocalizedQueueConnectionFactoryTests {
 		try {
 			String rabbit1 = "localhost:1235";
 			String rabbit2 = "localhost:1236";
-			String[] addresses = new String[]{rabbit1, rabbit2};
-			String[] adminUris = new String[]{"http://localhost:11235", "http://localhost:11236"};
-			String[] nodes = new String[]{"rabbit@foo", "rabbit@bar"};
+			String[] addresses = new String[] {rabbit1, rabbit2};
+			String[] adminUris = new String[] {"http://localhost:11235", "http://localhost:11236"};
+			String[] nodes = new String[] {"rabbit@foo", "rabbit@bar"};
 			String vhost = "/";
 			String username = "guest";
 			String password = "guest";

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,6 @@
 
 package org.springframework.amqp.rabbit.connection;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -41,6 +31,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.net.ServerSocketFactory;
 import javax.net.SocketFactory;
 
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.DefaultConsumer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -67,8 +59,15 @@ import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ContextClosedEvent;
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.DefaultConsumer;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 /**
  * @author Dave Syer
@@ -80,8 +79,8 @@ import com.rabbitmq.client.DefaultConsumer;
  *
  */
 @RabbitAvailable(queues = CachingConnectionFactoryIntegrationTests.CF_INTEGRATION_TEST_QUEUE)
-@LogLevels(classes = { CachingConnectionFactoryIntegrationTests.class,
-		CachingConnectionFactory.class }, categories = "com.rabbitmq", level = "DEBUG")
+@LogLevels(classes = {CachingConnectionFactoryIntegrationTests.class,
+		CachingConnectionFactory.class}, categories = "com.rabbitmq", level = "DEBUG")
 public class CachingConnectionFactoryIntegrationTests {
 
 	public static final String CF_INTEGRATION_TEST_QUEUE = "cfIntegrationTest";
@@ -269,16 +268,16 @@ public class CachingConnectionFactoryIntegrationTests {
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 
 		assertThatThrownBy(() -> template.receiveAndConvert("foo"))
-			.isInstanceOfAny(
-					// Wrong vhost is very unfriendly to client - the exception has no clue (just an EOF)
-					AmqpIOException.class,
-					AmqpAuthenticationException.class,
-					/*
-					 * If localhost also resolves to an IPv6 address, the client will try that
-					 * after a failure due to an invalid vHost and, if Rabbit is not listening there,
-					 * we'll get an...
-					 */
-					AmqpConnectException.class);
+				.isInstanceOfAny(
+						// Wrong vhost is very unfriendly to client - the exception has no clue (just an EOF)
+						AmqpIOException.class,
+						AmqpAuthenticationException.class,
+						/*
+						 * If localhost also resolves to an IPv6 address, the client will try that
+						 * after a failure due to an invalid vHost and, if Rabbit is not listening there,
+						 * we'll get an...
+						 */
+						AmqpConnectException.class);
 	}
 
 	@Test
@@ -295,7 +294,7 @@ public class CachingConnectionFactoryIntegrationTests {
 
 		// The queue was removed when the channel was closed
 		assertThatThrownBy(() -> template.receiveAndConvert(queue.getName()))
-			.isInstanceOf(AmqpIOException.class);
+				.isInstanceOf(AmqpIOException.class);
 		template.stop();
 	}
 
@@ -315,11 +314,11 @@ public class CachingConnectionFactoryIntegrationTests {
 
 		// The channel is not transactional
 		assertThatThrownBy(() ->
-			template2.execute(channel -> {
-				// Should be an exception because the channel is not transactional
-				channel.txRollback();
-				return null;
-			})).isInstanceOf(AmqpIOException.class);
+				template2.execute(channel -> {
+					// Should be an exception because the channel is not transactional
+					channel.txRollback();
+					return null;
+				})).isInstanceOf(AmqpIOException.class);
 
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 the original author or authors.
+ * Copyright 2022-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,19 @@
 
 package org.springframework.amqp.rabbit.support.micrometer;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import io.micrometer.common.KeyValue;
+import io.micrometer.common.KeyValues;
+import io.micrometer.core.tck.MeterRegistryAssert;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.tracing.Span.Kind;
+import io.micrometer.tracing.exporter.FinishedSpan;
+import io.micrometer.tracing.test.SampleTestRunner;
+import io.micrometer.tracing.test.simple.SpanAssert;
+import io.micrometer.tracing.test.simple.SpansAssert;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
@@ -34,15 +42,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import io.micrometer.common.KeyValue;
-import io.micrometer.common.KeyValues;
-import io.micrometer.core.tck.MeterRegistryAssert;
-import io.micrometer.observation.ObservationRegistry;
-import io.micrometer.tracing.Span.Kind;
-import io.micrometer.tracing.exporter.FinishedSpan;
-import io.micrometer.tracing.test.SampleTestRunner;
-import io.micrometer.tracing.test.simple.SpanAssert;
-import io.micrometer.tracing.test.simple.SpansAssert;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Artem Bilan

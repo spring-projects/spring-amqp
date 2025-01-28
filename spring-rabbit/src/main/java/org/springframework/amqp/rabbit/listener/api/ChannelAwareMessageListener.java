@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,11 @@ package org.springframework.amqp.rabbit.listener.api;
 
 import java.util.List;
 
+import com.rabbitmq.client.Channel;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.lang.Nullable;
-
-import com.rabbitmq.client.Channel;
 
 /**
  * A message listener that is aware of the Channel on which the message was received.

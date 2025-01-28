@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 package org.springframework.amqp.support.converter;
 
-import org.springframework.amqp.core.MessageProperties;
-import org.springframework.util.MimeTypeUtils;
-
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.springframework.amqp.core.MessageProperties;
+import org.springframework.util.MimeTypeUtils;
 
 /**
  * JSON converter that uses the Jackson 2 Json library.

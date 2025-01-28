@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2021 the original author or authors.
+ * Copyright 2016-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,6 @@
 
 package org.springframework.amqp.rabbit.log4j2;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
@@ -33,6 +23,10 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.DefaultSaslConfig;
+import com.rabbitmq.client.JDKSaslConfig;
+import com.rabbitmq.client.impl.CRDemoMechanism;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -57,10 +51,15 @@ import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.DefaultSaslConfig;
-import com.rabbitmq.client.JDKSaslConfig;
-import com.rabbitmq.client.impl.CRDemoMechanism;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 /**
  * @author Gary Russell
@@ -185,24 +184,24 @@ public class AmqpAppenderTests {
 				Map.class).get("sasl1");
 		assertThat(RabbitUtils.stringToSaslConfig(TestUtils.getPropertyValue(appender, "manager.saslConfig",
 				String.class), mock(ConnectionFactory.class)))
-			.isInstanceOf(DefaultSaslConfig.class)
-			.hasFieldOrPropertyWithValue("mechanism", "PLAIN");
+				.isInstanceOf(DefaultSaslConfig.class)
+				.hasFieldOrPropertyWithValue("mechanism", "PLAIN");
 		appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
 				Map.class).get("sasl2");
 		assertThat(RabbitUtils.stringToSaslConfig(TestUtils.getPropertyValue(appender, "manager.saslConfig",
 				String.class), mock(ConnectionFactory.class)))
-			.isInstanceOf(DefaultSaslConfig.class)
-			.hasFieldOrPropertyWithValue("mechanism", "EXTERNAL");
+				.isInstanceOf(DefaultSaslConfig.class)
+				.hasFieldOrPropertyWithValue("mechanism", "EXTERNAL");
 		appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
 				Map.class).get("sasl3");
 		assertThat(RabbitUtils.stringToSaslConfig(TestUtils.getPropertyValue(appender, "manager.saslConfig",
 				String.class), mock(ConnectionFactory.class)))
-			.isInstanceOf(JDKSaslConfig.class);
+				.isInstanceOf(JDKSaslConfig.class);
 		appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
 				Map.class).get("sasl4");
 		assertThat(RabbitUtils.stringToSaslConfig(TestUtils.getPropertyValue(appender, "manager.saslConfig",
 				String.class), mock(ConnectionFactory.class)))
-			.isInstanceOf(CRDemoMechanism.CRDemoSaslConfig.class);
+				.isInstanceOf(CRDemoMechanism.CRDemoSaslConfig.class);
 	}
 
 	@Test

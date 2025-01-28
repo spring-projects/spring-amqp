@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,9 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.awaitility.Awaitility.await;
-
 import java.util.Set;
 
+import com.rabbitmq.client.ConnectionFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
@@ -36,7 +33,9 @@ import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import com.rabbitmq.client.ConnectionFactory;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+import static org.awaitility.Awaitility.await;
 
 /**
  * @author Gary Russell
@@ -64,7 +63,6 @@ public class SimpleMessageListenerContainerLongTests {
 	private final Log logger = LogFactory.getLog(SimpleMessageListenerContainerLongTests.class);
 
 	private final SingleConnectionFactory connectionFactory;
-
 
 	public SimpleMessageListenerContainerLongTests(ConnectionFactory connectionFactory) {
 		this.connectionFactory = new SingleConnectionFactory(connectionFactory);
@@ -101,7 +99,7 @@ public class SimpleMessageListenerContainerLongTests {
 			for (int i = 0; i < 20; i++) {
 				template.convertAndSend(QUEUE, "foo");
 			}
-			waitForNConsumers(container, 2);		// increased consumers due to work
+			waitForNConsumers(container, 2);        // increased consumers due to work
 			waitForNConsumers(container, 1, 20000); // should stop the extra consumer after 10 seconds idle
 			container.setConcurrentConsumers(3);
 			waitForNConsumers(container, 3);
@@ -118,7 +116,8 @@ public class SimpleMessageListenerContainerLongTests {
 	public void testAddQueuesAndStartInCycle() {
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(
 				this.connectionFactory);
-		container.setMessageListener(message -> { });
+		container.setMessageListener(message -> {
+		});
 		container.setConcurrentConsumers(2);
 		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();

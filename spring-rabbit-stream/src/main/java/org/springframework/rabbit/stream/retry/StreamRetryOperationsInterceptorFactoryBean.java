@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,15 @@
 
 package org.springframework.rabbit.stream.retry;
 
+import com.rabbitmq.stream.Message;
+import com.rabbitmq.stream.MessageHandler.Context;
+
 import org.springframework.amqp.rabbit.config.StatelessRetryOperationsInterceptorFactoryBean;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.rabbit.stream.listener.StreamListenerContainer;
 import org.springframework.retry.RetryOperations;
 import org.springframework.retry.interceptor.MethodInvocationRecoverer;
 import org.springframework.retry.support.RetryTemplate;
-
-import com.rabbitmq.stream.Message;
-import com.rabbitmq.stream.MessageHandler.Context;
 
 /**
  * Convenient factory bean for creating a stateless retry interceptor for use in a
