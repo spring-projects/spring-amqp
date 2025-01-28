@@ -1,13 +1,9 @@
 buildscript {
-	ext.kotlinVersion = '1.9.25'
+	ext.kotlinVersion = '2.1.10'
 	ext.isCI = System.getenv('GITHUB_ACTION')
 	repositories {
 		mavenCentral()
 		gradlePluginPortal()
-		maven { url 'https://repo.spring.io/plugins-release-local' }
-		if (version.endsWith('SNAPSHOT')) {
-			maven { url 'https://repo.spring.io/snapshot' }
-		}
 	}
 	dependencies {
 		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
@@ -23,8 +19,8 @@ plugins {
 	id 'io.spring.dependency-management' version '1.1.7' apply false
 	id 'org.antora' version '1.0.0'
 	id 'io.spring.antora.generate-antora-yml' version '0.0.1'
-	id 'com.github.spotbugs' version '6.0.28'
-	id 'io.freefair.aggregate-javadoc' version '8.10.2'
+	id 'com.github.spotbugs' version '6.1.2'
+	id 'io.freefair.aggregate-javadoc' version '8.11'
 }
 
 description = 'Spring AMQP'
@@ -45,30 +41,30 @@ ext {
 					}
 	modifiedFiles.finalizeValueOnRead()
 
-	assertjVersion = '3.26.3'
+	assertjVersion = '3.27.3'
 	assertkVersion = '0.28.1'
 	awaitilityVersion = '4.2.2'
 	commonsHttpClientVersion = '5.4.1'
-	commonsPoolVersion = '2.12.0'
+	commonsPoolVersion = '2.12.1'
 	hamcrestVersion = '3.0'
 	hibernateValidationVersion = '8.0.2.Final'
 	jacksonBomVersion = '2.18.2'
 	jaywayJsonPathVersion = '2.9.0'
 	junit4Version = '4.13.2'
 	junitJupiterVersion = '5.11.4'
-	kotlinCoroutinesVersion = '1.8.1'
+	kotlinCoroutinesVersion = '1.10.1'
 	log4jVersion = '2.24.3'
 	logbackVersion = '1.5.16'
 	micrometerDocsVersion = '1.0.4'
-	micrometerVersion = '1.14.3'
-	micrometerTracingVersion = '1.4.2'
-	mockitoVersion = '5.14.2'
-	rabbitmqStreamVersion = '0.18.0'
-	rabbitmqVersion = '5.22.0'
+	micrometerVersion = '1.15.0-SNAPSHOT'
+	micrometerTracingVersion = '1.5.0-SNAPSHOT'
+	mockitoVersion = '5.15.2'
+	rabbitmqStreamVersion = '0.22.0'
+	rabbitmqVersion = '5.24.0'
 	reactorVersion = '2024.0.2'
-	springDataVersion = '2024.1.2'
+	springDataVersion = '2025.1.0-SNAPSHOT'
 	springRetryVersion = '2.0.11'
-	springVersion = '6.2.2'
+	springVersion = '7.0.0-SNAPSHOT'
 	testcontainersVersion = '1.20.4'
 
 	javaProjects = subprojects - project(':spring-amqp-bom')
@@ -150,7 +146,7 @@ ext {
 	expandPlaceholders = '**/quick-tour.xml'
 	javadocLinks = [
 			'https://docs.oracle.com/en/java/javase/17/docs/api/',
-			'https://jakarta.ee/specifications/platform/9/apidocs/',
+			'https://jakarta.ee/specifications/platform/11/apidocs/',
 			'https://docs.spring.io/spring-framework/docs/current/javadoc-api/'
 	] as String[]
 }
@@ -213,18 +209,13 @@ configure(javaProjects) { subproject ->
 			exclude group: 'org.hamcrest'
 		}
 
-		// To avoid compiler warnings about @API annotations in JUnit code
-		testCompileOnly 'org.apiguardian:apiguardian-api:1.0.0'
-
 		testImplementation 'org.jetbrains.kotlin:kotlin-reflect'
 		testImplementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
-
-
 	}
 
 	// enable all compiler warnings; individual projects may customize further
 	ext.xLintArg = '-Xlint:all,-options,-processing,-deprecation'
-	[compileJava, compileTestJava]*.options*.compilerArgs = [xLintArg]
+	[compileJava, compileTestJava]*.options*.compilerArgs = [xLintArg, '-parameters']
 
 	publishing {
 		publications {
@@ -310,8 +301,8 @@ configure(javaProjects) { subproject ->
 	}
 
 	checkstyle {
-		configDirectory.set(rootProject.file("src/checkstyle"))
-		toolVersion = '10.18.2'
+		configDirectory.set(rootProject.file('src/checkstyle'))
+		toolVersion = '10.21.1'
 	}
 
 	jar {
@@ -339,7 +330,6 @@ configure(javaProjects) { subproject ->
 	}
 
 	check.dependsOn javadoc
-
 }
 
 project('spring-amqp') {
@@ -361,14 +351,9 @@ project('spring-amqp') {
 		optionalApi 'com.fasterxml.jackson.module:jackson-module-parameter-names'
 		optionalApi 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 		optionalApi 'com.fasterxml.jackson.datatype:jackson-datatype-joda'
-		optionalApi('com.fasterxml.jackson.module:jackson-module-kotlin') {
-			exclude group: 'org.jetbrains.kotlin'
-		}
+		optionalApi 'com.fasterxml.jackson.module:jackson-module-kotlin'
 		// Spring Data projection message binding support
-		optionalApi('org.springframework.data:spring-data-commons') {
-			exclude group: 'org.springframework'
-			exclude group: 'io.micrometer'
-		}
+		optionalApi 'org.springframework.data:spring-data-commons'
 		optionalApi "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
 
 		testImplementation "org.assertj:assertj-core:$assertjVersion"
@@ -409,6 +394,7 @@ project('spring-rabbit') {
 		api 'org.springframework:spring-messaging'
 		api 'org.springframework:spring-tx'
 		api 'io.micrometer:micrometer-observation'
+
 		optionalApi 'org.springframework:spring-aop'
 		optionalApi 'org.springframework:spring-webflux'
 		optionalApi "org.apache.httpcomponents.client5:httpclient5:$commonsHttpClientVersion"
@@ -419,23 +405,23 @@ project('spring-rabbit') {
 		optionalApi 'io.micrometer:micrometer-core'
 		optionalApi 'io.micrometer:micrometer-tracing'
 		// Spring Data projection message binding support
-		optionalApi("org.springframework.data:spring-data-commons") {
-			exclude group: 'org.springframework'
-		}
+		optionalApi 'org.springframework.data:spring-data-commons'
 		optionalApi "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
 		optionalApi "org.apache.commons:commons-pool2:$commonsPoolVersion"
 		optionalApi "org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$kotlinCoroutinesVersion"
 
 		testApi project(':spring-rabbit-junit')
+
 		testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
 		testImplementation "org.hibernate.validator:hibernate-validator:$hibernateValidationVersion"
 		testImplementation 'io.micrometer:micrometer-observation-test'
 		testImplementation 'io.micrometer:micrometer-tracing-bridge-brave'
 		testImplementation 'io.micrometer:micrometer-tracing-test'
 		testImplementation 'io.micrometer:micrometer-tracing-integration-test'
-		testImplementation "org.testcontainers:rabbitmq"
+		testImplementation 'org.testcontainers:rabbitmq'
 		testImplementation 'org.testcontainers:junit-jupiter'
 		testImplementation "org.apache.httpcomponents.client5:httpclient5:$commonsHttpClientVersion"
+
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core'
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind'
 		testRuntimeOnly 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
@@ -461,13 +447,14 @@ project('spring-rabbit-stream') {
 		optionalApi 'io.micrometer:micrometer-core'
 
 		testApi project(':spring-rabbit-junit')
+
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core'
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind'
 		testRuntimeOnly 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
 		testRuntimeOnly 'com.fasterxml.jackson.module:jackson-module-kotlin'
 
-		testImplementation "org.testcontainers:rabbitmq"
-		testImplementation "org.testcontainers:junit-jupiter"
+		testImplementation 'org.testcontainers:rabbitmq'
+		testImplementation 'org.testcontainers:junit-jupiter'
 		testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl'
 		testImplementation 'org.springframework:spring-webflux'
 		testImplementation 'io.micrometer:micrometer-observation-test'
@@ -487,11 +474,12 @@ project('spring-rabbit-junit') {
 		api 'org.springframework:spring-web'
 		api 'org.junit.jupiter:junit-jupiter-api'
 		api "org.assertj:assertj-core:$assertjVersion"
+
 		optionalApi("junit:junit:$junit4Version") {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
 		}
-		optionalApi "org.testcontainers:rabbitmq"
-		optionalApi "org.testcontainers:junit-jupiter"
+		optionalApi 'org.testcontainers:rabbitmq'
+		optionalApi 'org.testcontainers:junit-jupiter'
 		optionalApi "ch.qos.logback:logback-classic:$logbackVersion"
 		optionalApi 'org.apache.logging.log4j:log4j-core'
 		compileOnly 'org.apiguardian:apiguardian-api:1.0.0'
@@ -507,6 +495,7 @@ project('spring-rabbit-test') {
 		api "org.hamcrest:hamcrest-library:$hamcrestVersion"
 		api "org.hamcrest:hamcrest-core:$hamcrestVersion"
 		api "org.mockito:mockito-core:$mockitoVersion"
+
 		testImplementation project(':spring-rabbit').sourceSets.test.output
 	}
 }
