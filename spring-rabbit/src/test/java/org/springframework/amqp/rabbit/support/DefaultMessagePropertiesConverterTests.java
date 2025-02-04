@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Soeren Unruh
  * @author Gary Russell
+ * @author Johan Kaving
  * @since 1.3
  */
 public class DefaultMessagePropertiesConverterTests {
@@ -198,6 +199,17 @@ public class DefaultMessagePropertiesConverterTests {
 		props.setHeader("aClass", getClass());
 		BasicProperties basic = new DefaultMessagePropertiesConverter().fromMessageProperties(props, "UTF8");
 		assertThat(basic.getHeaders().get("aClass")).isEqualTo(getClass().getName());
+	}
+
+	@Test
+	public void testRetryCount() {
+		MessageProperties props = new MessageProperties();
+		props.incrementRetryCount();
+		BasicProperties basic = new DefaultMessagePropertiesConverter().fromMessageProperties(props, "UTF8");
+		assertThat(basic.getHeaders().get(MessageProperties.RETRY_COUNT)).isEqualTo(1L);
+		props.incrementRetryCount();
+		basic = new DefaultMessagePropertiesConverter().fromMessageProperties(props, "UTF8");
+		assertThat(basic.getHeaders().get(MessageProperties.RETRY_COUNT)).isEqualTo(2L);
 	}
 
 	private static class Foo {
