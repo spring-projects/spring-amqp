@@ -43,6 +43,7 @@ import org.springframework.util.StringUtils;
  * @author Raylax Grey
  * @author Artem Bilan
  * @author Ngoc Nhan
+ * @author Johan Kaving
  *
  * @since 1.0
  */
@@ -155,11 +156,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	@Override
 	public BasicProperties fromMessageProperties(final MessageProperties source, final String charset) {
 		BasicProperties.Builder target = new BasicProperties.Builder();
-		Map<String, Object> headers = convertHeadersIfNecessary(source.getHeaders());
-		long retryCount = source.getRetryCount();
-		if (retryCount > 0) {
-			headers.put(MessageProperties.RETRY_COUNT, retryCount);
-		}
+		Map<String, Object> headers = convertHeadersIfNecessary(source);
 		target.headers(headers)
 			.timestamp(source.getTimestamp())
 			.messageId(source.getMessageId())
@@ -186,13 +183,19 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		return target.build();
 	}
 
-	private Map<String, Object> convertHeadersIfNecessary(Map<String, Object> headers) {
-		if (CollectionUtils.isEmpty(headers)) {
+	private Map<String, Object> convertHeadersIfNecessary(MessageProperties source) {
+		Map<String, Object> headers = source.getHeaders();
+		long retryCount = source.getRetryCount();
+
+		if (CollectionUtils.isEmpty(headers) && retryCount == 0) {
 			return Collections.emptyMap();
 		}
 		Map<String, Object> writableHeaders = new HashMap<>();
 		for (Map.Entry<String, Object> entry : headers.entrySet()) {
 			writableHeaders.put(entry.getKey(), this.convertHeaderValueIfNecessary(entry.getValue()));
+		}
+		if (retryCount > 0) {
+			writableHeaders.put(MessageProperties.RETRY_COUNT, retryCount);
 		}
 		return writableHeaders;
 	}
