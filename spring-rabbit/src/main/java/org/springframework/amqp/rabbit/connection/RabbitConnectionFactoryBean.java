@@ -48,13 +48,13 @@ import com.rabbitmq.client.SocketConfigurator;
 import com.rabbitmq.client.impl.CredentialsProvider;
 import com.rabbitmq.client.impl.CredentialsRefreshService;
 import com.rabbitmq.client.impl.nio.NioParams;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -130,29 +130,29 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private boolean useSSL;
 
-	private Resource sslPropertiesLocation;
+	private @Nullable Resource sslPropertiesLocation;
 
-	private String keyStore;
+	private @Nullable String keyStore;
 
-	private String trustStore;
+	private @Nullable String trustStore;
 
-	private Resource keyStoreResource;
+	private @Nullable Resource keyStoreResource;
 
-	private Resource trustStoreResource;
+	private @Nullable Resource trustStoreResource;
 
-	private String keyStorePassphrase;
+	private @Nullable String keyStorePassphrase;
 
-	private String trustStorePassphrase;
+	private @Nullable String trustStorePassphrase;
 
-	private String keyStoreType;
+	private @Nullable String keyStoreType;
 
-	private String trustStoreType;
+	private @Nullable String trustStoreType;
 
 	private String sslAlgorithm = DEFAULT_PROTOCOL;
 
 	private boolean sslAlgorithmSet;
 
-	private SecureRandom secureRandom;
+	private @Nullable SecureRandom secureRandom;
 
 	private boolean skipServerCertificateValidation;
 
@@ -167,7 +167,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	}
 
 	/**
-	 * Whether or not Server Side certificate has to be validated or not.
+	 * Whether Server Side certificate has to be validated or not.
 	 * @return true if Server Side certificate has to be skipped
 	 * @since 1.6.6
 	 */
@@ -176,7 +176,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	}
 
 	/**
-	 * Whether or not Server Side certificate has to be validated or not.
+	 * Whether Server Side certificate has to be validated or not.
 	 * This would be used if useSSL is set to true and should only be used on dev or Qa regions
 	 * skipServerCertificateValidation should <b> never be set to true in production</b>
 	 * @param skipServerCertificateValidation Flag to override Server side certificate checks;
@@ -235,15 +235,15 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * set property in this bean.
 	 * @param sslPropertiesLocation the Resource to the ssl properties
 	 */
-	public void setSslPropertiesLocation(Resource sslPropertiesLocation) {
+	public void setSslPropertiesLocation(@Nullable Resource sslPropertiesLocation) {
 		this.sslPropertiesLocation = sslPropertiesLocation;
 	}
 
 	/**
-	 * @return the properties location.
+	 * @return the properties file location.
 	 * @since 1.4.4
 	 */
-	protected Resource getSslPropertiesLocation() {
+	protected @Nullable Resource getSslPropertiesLocation() {
 		return this.sslPropertiesLocation;
 	}
 
@@ -263,11 +263,11 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * @param keyStore the keystore resource.
 	 * @since 1.5
 	 */
-	public void setKeyStore(String keyStore) {
+	public void setKeyStore(@Nullable String keyStore) {
 		this.keyStore = keyStore;
 	}
 
-	protected Resource getKeyStoreResource() {
+	protected @Nullable Resource getKeyStoreResource() {
 		return this.keyStoreResource;
 	}
 
@@ -296,11 +296,11 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * @param trustStore the truststore resource.
 	 * @since 1.5
 	 */
-	public void setTrustStore(String trustStore) {
+	public void setTrustStore(@Nullable String trustStore) {
 		this.trustStore = trustStore;
 	}
 
-	protected Resource getTrustStoreResource() {
+	protected @Nullable Resource getTrustStoreResource() {
 		return this.trustStoreResource;
 	}
 
@@ -317,7 +317,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * @return the key store pass phrase.
 	 * @since 1.5
 	 */
-	protected String getKeyStorePassphrase() {
+	protected @Nullable String getKeyStorePassphrase() {
 		return this.keyStorePassphrase == null ? this.sslProperties.getProperty(KEY_STORE_PASS_PHRASE)
 				: this.keyStorePassphrase;
 	}
@@ -328,7 +328,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * @param keyStorePassphrase the key store pass phrase.
 	 * @since 1.5
 	 */
-	public void setKeyStorePassphrase(String keyStorePassphrase) {
+	public void setKeyStorePassphrase(@Nullable String keyStorePassphrase) {
 		this.keyStorePassphrase = keyStorePassphrase;
 	}
 
@@ -336,7 +336,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * @return the trust store pass phrase.
 	 * @since 1.5
 	 */
-	protected String getTrustStorePassphrase() {
+	protected @Nullable String getTrustStorePassphrase() {
 		return this.trustStorePassphrase == null ? this.sslProperties.getProperty(TRUST_STORE_PASS_PHRASE)
 				: this.trustStorePassphrase;
 	}
@@ -347,7 +347,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * @param trustStorePassphrase the trust store pass phrase.
 	 * @since 1.5
 	 */
-	public void setTrustStorePassphrase(String trustStorePassphrase) {
+	public void setTrustStorePassphrase(@Nullable String trustStorePassphrase) {
 		this.trustStorePassphrase = trustStorePassphrase;
 	}
 
@@ -375,7 +375,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * @since 1.6.2
 	 * @see java.security.KeyStore#getInstance(String)
 	 */
-	public void setKeyStoreType(String keyStoreType) {
+	public void setKeyStoreType(@Nullable String keyStoreType) {
 		this.keyStoreType = keyStoreType;
 	}
 
@@ -403,11 +403,11 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * @since 1.6.2
 	 * @see java.security.KeyStore#getInstance(String)
 	 */
-	public void setTrustStoreType(String trustStoreType) {
+	public void setTrustStoreType(@Nullable String trustStoreType) {
 		this.trustStoreType = trustStoreType;
 	}
 
-	protected SecureRandom getSecureRandom() {
+	protected @Nullable SecureRandom getSecureRandom() {
 		return this.secureRandom;
 	}
 
@@ -439,7 +439,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	}
 
 	/**
-	 * @param username the user name.
+	 * @param username the username.
 	 * @see com.rabbitmq.client.ConnectionFactory#setUsername(java.lang.String)
 	 */
 	public void setUsername(String username) {
@@ -596,7 +596,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	}
 
 	/**
-	 * Whether or not the factory should be configured to use Java NIO.
+	 * Whether the factory should be configured to use Java NIO.
 	 * @param useNio true to use Java NIO, false to use blocking IO
 	 * @see com.rabbitmq.client.ConnectionFactory#useNio()
 	 */
@@ -811,8 +811,8 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		}
 	}
 
-	@Nullable
-	protected KeyManager[] configureKeyManagers() throws KeyStoreException, IOException, NoSuchAlgorithmException,
+	protected KeyManager @Nullable [] configureKeyManagers()
+			throws KeyStoreException, IOException, NoSuchAlgorithmException,
 			CertificateException, UnrecoverableKeyException {
 		String keyStoreName = getKeyStore();
 		String keyStorePassword = getKeyStorePassphrase();
@@ -836,8 +836,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		return keyManagers;
 	}
 
-	@Nullable
-	protected TrustManager[] configureTrustManagers()
+	protected TrustManager @Nullable [] configureTrustManagers()
 			throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
 		String trustStoreName = getTrustStore();
 		String trustStorePassword = getTrustStorePassphrase();
@@ -871,7 +870,6 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	protected SSLContext createSSLContext() throws NoSuchAlgorithmException {
 		return SSLContext.getInstance(this.sslAlgorithm);
 	}
-
 
 	private void useDefaultTrustStoreMechanism()
 			throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException {

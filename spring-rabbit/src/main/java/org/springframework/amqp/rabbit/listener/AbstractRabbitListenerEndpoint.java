@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.MessageListener;
@@ -37,7 +39,6 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.expression.BeanResolver;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -55,7 +56,7 @@ import org.springframework.util.Assert;
  */
 public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEndpoint, BeanFactoryAware {
 
-	private String id;
+	private @Nullable String id;
 
 	private final Collection<Queue> queues = new ArrayList<>();
 
@@ -63,37 +64,37 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 
 	private boolean exclusive;
 
-	private Integer priority;
+	private @Nullable Integer priority;
 
-	private String concurrency;
+	private @Nullable String concurrency;
 
-	private AmqpAdmin admin;
+	private @Nullable AmqpAdmin admin;
 
-	private BeanFactory beanFactory;
+	private @Nullable BeanFactory beanFactory;
 
-	private BeanExpressionResolver resolver;
+	private @Nullable BeanExpressionResolver resolver;
 
-	private BeanExpressionContext expressionContext;
+	private @Nullable BeanExpressionContext expressionContext;
 
-	private BeanResolver beanResolver;
+	private @Nullable BeanResolver beanResolver;
 
-	private String group;
+	private @Nullable String group;
 
-	private Boolean autoStartup;
+	private @Nullable Boolean autoStartup;
 
-	private MessageConverter messageConverter;
+	private @Nullable MessageConverter messageConverter;
 
-	private TaskExecutor taskExecutor;
+	private @Nullable TaskExecutor taskExecutor;
 
-	private Boolean batchListener;
+	private @Nullable Boolean batchListener;
 
-	private BatchingStrategy batchingStrategy;
+	private @Nullable BatchingStrategy batchingStrategy;
 
-	private AcknowledgeMode ackMode;
+	private @Nullable AcknowledgeMode ackMode;
 
-	private ReplyPostProcessor replyPostProcessor;
+	private @Nullable ReplyPostProcessor replyPostProcessor;
 
-	private String replyContentType;
+	private @Nullable String replyContentType;
 
 	private boolean converterWinsContentType = true;
 
@@ -107,20 +108,19 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 		this.beanResolver = new BeanFactoryResolver(beanFactory);
 	}
 
-	@Nullable
-	protected BeanFactory getBeanFactory() {
+	protected @Nullable BeanFactory getBeanFactory() {
 		return this.beanFactory;
 	}
 
-	protected BeanExpressionResolver getResolver() {
+	protected @Nullable BeanExpressionResolver getResolver() {
 		return this.resolver;
 	}
 
-	protected BeanResolver getBeanResolver() {
+	protected @Nullable BeanResolver getBeanResolver() {
 		return this.beanResolver;
 	}
 
-	protected BeanExpressionContext getBeanExpressionContext() {
+	protected @Nullable BeanExpressionContext getBeanExpressionContext() {
 		return this.expressionContext;
 	}
 
@@ -129,7 +129,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	}
 
 	@Override
-	public String getId() {
+	public @Nullable String getId() {
 		return this.id;
 	}
 
@@ -200,7 +200,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	 * @return the priority of this endpoint or {@code null} if
 	 * no priority is set.
 	 */
-	public Integer getPriority() {
+	public @Nullable Integer getPriority() {
 		return this.priority;
 	}
 
@@ -210,7 +210,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	 * @param concurrency the concurrency.
 	 * @since 2.0
 	 */
-	public void setConcurrency(String concurrency) {
+	public void setConcurrency(@Nullable String concurrency) {
 		this.concurrency = concurrency;
 	}
 
@@ -221,7 +221,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	 * @since 2.0
 	 */
 	@Override
-	public String getConcurrency() {
+	public @Nullable String getConcurrency() {
 		return this.concurrency;
 	}
 
@@ -237,12 +237,12 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	 * @return the {@link AmqpAdmin} instance to use or {@code null} if
 	 * none is configured.
 	 */
-	public AmqpAdmin getAdmin() {
+	public @Nullable AmqpAdmin getAdmin() {
 		return this.admin;
 	}
 
 	@Override
-	public String getGroup() {
+	public @Nullable String getGroup() {
 		return this.group;
 	}
 
@@ -255,7 +255,6 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 		this.group = group;
 	}
 
-
 	/**
 	 * Override the default autoStartup property.
 	 * @param autoStartup the autoStartup.
@@ -266,12 +265,12 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	}
 
 	@Override
-	public Boolean getAutoStartup() {
+	public @Nullable Boolean getAutoStartup() {
 		return this.autoStartup;
 	}
 
 	@Override
-	public MessageConverter getMessageConverter() {
+	public @Nullable MessageConverter getMessageConverter() {
 		return this.messageConverter;
 	}
 
@@ -281,7 +280,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	}
 
 	@Override
-	public TaskExecutor getTaskExecutor() {
+	public @Nullable TaskExecutor getTaskExecutor() {
 		return this.taskExecutor;
 	}
 
@@ -302,14 +301,13 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 		return this.batchListener != null && this.batchListener;
 	}
 
-	@Override
 	/**
 	 * True if this endpoint is for a batch listener.
 	 * @return {@link Boolean#TRUE} if batch.
 	 * @since 3.0
 	 */
-	@Nullable
-	public Boolean getBatchListener() {
+	@Override
+	public @Nullable Boolean getBatchListener() {
 		return this.batchListener;
 	}
 
@@ -325,8 +323,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	}
 
 	@Override
-	@Nullable
-	public BatchingStrategy getBatchingStrategy() {
+	public @Nullable BatchingStrategy getBatchingStrategy() {
 		return this.batchingStrategy;
 	}
 
@@ -336,8 +333,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	}
 
 	@Override
-	@Nullable
-	public AcknowledgeMode getAckMode() {
+	public @Nullable AcknowledgeMode getAckMode() {
 		return this.ackMode;
 	}
 
@@ -346,7 +342,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	}
 
 	@Override
-	public ReplyPostProcessor getReplyPostProcessor() {
+	public @Nullable ReplyPostProcessor getReplyPostProcessor() {
 		return this.replyPostProcessor;
 	}
 
@@ -360,7 +356,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	}
 
 	@Override
-	public String getReplyContentType() {
+	public @Nullable String getReplyContentType() {
 		return this.replyContentType;
 	}
 
@@ -428,7 +424,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	 * @param container the {@link MessageListenerContainer} to create a {@link MessageListener}.
 	 * @return a {@link MessageListener} instance.
 	 */
-	protected abstract MessageListener createMessageListener(MessageListenerContainer container);
+	protected abstract @Nullable MessageListener createMessageListener(MessageListenerContainer container);
 
 	private void setupMessageListener(MessageListenerContainer container) {
 		MessageListener messageListener = createMessageListener(container);

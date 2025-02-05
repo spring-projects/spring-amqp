@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 the original author or authors.
+ * Copyright 2018-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.amqp.support;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
@@ -48,7 +50,7 @@ public final class SendRetryContextAccessor {
 	 * @return the message.
 	 * @see #MESSAGE
 	 */
-	public static Message getMessage(RetryContext context) {
+	public static @Nullable Message getMessage(RetryContext context) {
 		return (Message) context.getAttribute(MESSAGE);
 	}
 
@@ -58,7 +60,7 @@ public final class SendRetryContextAccessor {
 	 * @return the address.
 	 * @see #ADDRESS
 	 */
-	public static Address getAddress(RetryContext context) {
+	public static @Nullable Address getAddress(RetryContext context) {
 		return (Address) context.getAttribute(ADDRESS);
 	}
 

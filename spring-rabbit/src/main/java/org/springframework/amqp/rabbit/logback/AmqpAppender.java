@@ -41,6 +41,7 @@ import ch.qos.logback.core.AppenderBase;
 import ch.qos.logback.core.Layout;
 import ch.qos.logback.core.encoder.Encoder;
 import com.rabbitmq.client.ConnectionFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpApplicationContextClosedException;
 import org.springframework.amqp.AmqpException;
@@ -157,17 +158,18 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	/**
 	 * Configuration arbitrary application ID.
 	 */
-	private String applicationId = null;
+	private @Nullable String applicationId = null;
 
 	/**
 	 * Where LoggingEvents are queued to send.
 	 */
+	@SuppressWarnings("NullAway.Init")
 	private BlockingQueue<Event> events;
 
 	/**
 	 * The pool of senders.
 	 */
-	private ExecutorService senderPool = null;
+	private @Nullable ExecutorService senderPool;
 
 	/**
 	 * How many senders to use at once. Use more senders if you have lots of log output going through this appender.
@@ -187,55 +189,56 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	/**
 	 * RabbitMQ ConnectionFactory.
 	 */
+	@SuppressWarnings("NullAway.Init")
 	private AbstractConnectionFactory connectionFactory;
 
 	/**
 	 * A name for the connection (appears on the RabbitMQ Admin UI).
 	 */
-	private String connectionName;
+	private @Nullable String connectionName;
 
 	/**
 	 * Additional client connection properties added to the rabbit connection, with the form
 	 * {@code key:value[,key:value]...}.
 	 */
-	private String clientConnectionProperties;
+	private @Nullable String clientConnectionProperties;
 
 	/**
 	 * A comma-delimited list of broker addresses: host:port[,host:port]*
 	 *
 	 * @since 1.5.6
 	 */
-	private String addresses;
+	private @Nullable String addresses;
 
 	/**
 	 * RabbitMQ host to connect to.
 	 */
-	private URI uri;
+	private @Nullable URI uri;
 
 	/**
 	 * RabbitMQ host to connect to.
 	 */
-	private String host;
+	private @Nullable String host;
 
 	/**
 	 * RabbitMQ virtual host to connect to.
 	 */
-	private String virtualHost;
+	private @Nullable String virtualHost;
 
 	/**
 	 * RabbitMQ port to connect to.
 	 */
-	private Integer port;
+	private @Nullable Integer port;
 
 	/**
 	 * RabbitMQ user to connect as.
 	 */
-	private String username;
+	private @Nullable String username;
 
 	/**
 	 * RabbitMQ password for this user.
 	 */
-	private String password;
+	private @Nullable String password;
 
 	/**
 	 * Use an SSL connection.
@@ -245,22 +248,22 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	/**
 	 * The SSL algorithm to use.
 	 */
-	private String sslAlgorithm;
+	private @Nullable String sslAlgorithm;
 
 	/**
 	 * Location of resource containing keystore and truststore information.
 	 */
-	private String sslPropertiesLocation;
+	private @Nullable String sslPropertiesLocation;
 
 	/**
 	 * Keystore location.
 	 */
-	private String keyStore;
+	private @Nullable String keyStore;
 
 	/**
 	 * Keystore passphrase.
 	 */
-	private String keyStorePassphrase;
+	private @Nullable String keyStorePassphrase;
 
 	/**
 	 * Keystore type.
@@ -270,12 +273,12 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	/**
 	 * Truststore location.
 	 */
-	private String trustStore;
+	private @Nullable String trustStore;
 
 	/**
 	 * Truststore passphrase.
 	 */
-	private String trustStorePassphrase;
+	private @Nullable String trustStorePassphrase;
 
 	/**
 	 * Truststore type.
@@ -286,7 +289,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 * SaslConfig.
 	 * @see RabbitUtils#stringToSaslConfig(String, ConnectionFactory)
 	 */
-	private String saslConfig;
+	private @Nullable String saslConfig;
 
 	private boolean verifyHostname = true;
 
@@ -298,10 +301,10 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	/**
 	 * Default content-encoding of log messages.
 	 */
-	private String contentEncoding = null;
+	private @Nullable String contentEncoding = null;
 
 	/**
-	 * Whether or not to try and declare the configured exchange when this appender starts.
+	 * Whether to try and declare the configured exchange when this appender starts.
 	 */
 	private boolean declareExchange = false;
 
@@ -310,10 +313,10 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 * If the charset is unsupported on the current platform, we fall back to using
 	 * the system charset.
 	 */
-	private String charset;
+	private @Nullable String charset;
 
 	/**
-	 * Whether or not add MDC properties into message headers. true by default for backward compatibility
+	 * Whether add MDC properties into message headers. true by default for backward compatibility
 	 */
 	private boolean addMdcAsHeaders = true;
 
@@ -328,11 +331,11 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 */
 	private boolean generateId = false;
 
-	private Layout<ILoggingEvent> layout;
+	private @Nullable Layout<ILoggingEvent> layout;
 
-	private Encoder<ILoggingEvent> encoder;
+	private @Nullable Encoder<ILoggingEvent> encoder;
 
-	private TargetLengthBasedClassNameAbbreviator abbreviator;
+	private @Nullable TargetLengthBasedClassNameAbbreviator abbreviator;
 
 	private boolean includeCallerData;
 
@@ -340,7 +343,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.routingKeyLayout.setPattern("%nopex{}" + routingKeyPattern);
 	}
 
-	public URI getUri() {
+	public @Nullable URI getUri() {
 		return this.uri;
 	}
 
@@ -348,7 +351,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.uri = uri;
 	}
 
-	public String getHost() {
+	public @Nullable String getHost() {
 		return this.host;
 	}
 
@@ -356,7 +359,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.host = host;
 	}
 
-	public Integer getPort() {
+	public @Nullable Integer getPort() {
 		return this.port;
 	}
 
@@ -368,11 +371,11 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.addresses = addresses;
 	}
 
-	public String getAddresses() {
+	public @Nullable String getAddresses() {
 		return this.addresses;
 	}
 
-	public String getVirtualHost() {
+	public @Nullable String getVirtualHost() {
 		return this.virtualHost;
 	}
 
@@ -380,7 +383,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.virtualHost = virtualHost;
 	}
 
-	public String getUsername() {
+	public @Nullable String getUsername() {
 		return this.username;
 	}
 
@@ -388,7 +391,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.username = username;
 	}
 
-	public String getPassword() {
+	public @Nullable String getPassword() {
 		return this.password;
 	}
 
@@ -423,7 +426,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		return this.verifyHostname;
 	}
 
-	public String getSslAlgorithm() {
+	public @Nullable String getSslAlgorithm() {
 		return this.sslAlgorithm;
 	}
 
@@ -431,7 +434,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.sslAlgorithm = sslAlgorithm;
 	}
 
-	public String getSslPropertiesLocation() {
+	public @Nullable String getSslPropertiesLocation() {
 		return this.sslPropertiesLocation;
 	}
 
@@ -439,7 +442,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.sslPropertiesLocation = sslPropertiesLocation;
 	}
 
-	public String getKeyStore() {
+	public @Nullable String getKeyStore() {
 		return this.keyStore;
 	}
 
@@ -447,7 +450,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.keyStore = keyStore;
 	}
 
-	public String getKeyStorePassphrase() {
+	public @Nullable String getKeyStorePassphrase() {
 		return this.keyStorePassphrase;
 	}
 
@@ -463,7 +466,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.keyStoreType = keyStoreType;
 	}
 
-	public String getTrustStore() {
+	public @Nullable String getTrustStore() {
 		return this.trustStore;
 	}
 
@@ -471,7 +474,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.trustStore = trustStore;
 	}
 
-	public String getTrustStorePassphrase() {
+	public @Nullable String getTrustStorePassphrase() {
 		return this.trustStorePassphrase;
 	}
 
@@ -487,7 +490,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.trustStoreType = trustStoreType;
 	}
 
-	public String getSaslConfig() {
+	public @Nullable String getSaslConfig() {
 		return this.saslConfig;
 	}
 
@@ -537,7 +540,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.contentType = contentType;
 	}
 
-	public String getContentEncoding() {
+	public @Nullable String getContentEncoding() {
 		return this.contentEncoding;
 	}
 
@@ -545,7 +548,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.contentEncoding = contentEncoding;
 	}
 
-	public String getApplicationId() {
+	public @Nullable String getApplicationId() {
 		return this.applicationId;
 	}
 
@@ -609,7 +612,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.generateId = generateId;
 	}
 
-	public String getCharset() {
+	public @Nullable String getCharset() {
 		return this.charset;
 	}
 
@@ -621,7 +624,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.layout = layout;
 	}
 
-	public Encoder<ILoggingEvent> getEncoder() {
+	public @Nullable Encoder<ILoggingEvent> getEncoder() {
 		return this.encoder;
 	}
 
@@ -666,7 +669,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 	/**
 	 * If true, the caller data will be available in the target AMQP message.
-	 * By default no caller data is sent to the RabbitMQ.
+	 * By default, no caller data is sent to the RabbitMQ.
 	 * @param includeCallerData include or on caller data
 	 * @since 1.7.1
 	 * @see ILoggingEvent#getCallerData()
@@ -676,14 +679,17 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	@Override
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	public void start() {
 		this.events = createEventQueue();
 
 		ConnectionFactory rabbitConnectionFactory = createRabbitConnectionFactory();
 		if (rabbitConnectionFactory != null) {
 			super.start();
-			this.routingKeyLayout.setPattern(this.routingKeyLayout.getPattern()
-					.replaceAll("%property\\{applicationId}", this.applicationId));
+			if (this.applicationId != null) {
+				this.routingKeyLayout.setPattern(this.routingKeyLayout.getPattern()
+						.replaceAll("%property\\{applicationId}", this.applicationId));
+			}
 			this.routingKeyLayout.setContext(getContext());
 			this.routingKeyLayout.start();
 			this.locationLayout.setContext(getContext());
@@ -700,10 +706,11 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 					this.clientConnectionProperties);
 			updateConnectionClientProperties(this.connectionFactory.getRabbitConnectionFactory().getClientProperties());
 			setUpExchangeDeclaration();
-			this.senderPool = Executors.newCachedThreadPool();
+			ExecutorService executorService = Executors.newCachedThreadPool();
 			for (int i = 0; i < this.senderPoolSize; i++) {
-				this.senderPool.submit(new EventSender());
+				executorService.submit(new EventSender());
 			}
+			this.senderPool = executorService;
 		}
 	}
 
@@ -711,7 +718,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 * Create the {@link ConnectionFactory}.
 	 * @return a {@link ConnectionFactory}.
 	 */
-	protected ConnectionFactory createRabbitConnectionFactory() {
+	protected @Nullable ConnectionFactory createRabbitConnectionFactory() {
 		RabbitConnectionFactoryBean factoryBean = new RabbitConnectionFactoryBean();
 		configureRabbitConnectionFactory(factoryBean);
 		try {
@@ -725,7 +732,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	/**
-	 * Configure the {@link RabbitConnectionFactoryBean}. Sub-classes may override to
+	 * Configure the {@link RabbitConnectionFactoryBean}. Subclasses may override to
 	 * customize the configuration of the bean.
 	 * @param factoryBean the {@link RabbitConnectionFactoryBean}.
 	 */
@@ -799,14 +806,12 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	@Override
 	public void stop() {
 		super.stop();
-		if (null != this.senderPool) {
+		if (this.senderPool != null) {
 			this.senderPool.shutdownNow();
 			this.senderPool = null;
 		}
-		if (null != this.connectionFactory) {
-			this.connectionFactory.destroy();
-			this.connectionFactory.onApplicationEvent(new ContextClosedEvent(this.context));
-		}
+		this.connectionFactory.destroy();
+		this.connectionFactory.onApplicationEvent(new ContextClosedEvent(this.context));
 		this.retryTimer.cancel();
 		this.routingKeyLayout.stop();
 	}
@@ -823,22 +828,12 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	protected void setUpExchangeDeclaration() {
 		RabbitAdmin admin = new RabbitAdmin(this.connectionFactory);
 		if (this.declareExchange) {
-			Exchange x;
-			if ("topic".equals(this.exchangeType)) {
-				x = new TopicExchange(this.exchangeName, this.durable, this.autoDelete);
-			}
-			else if ("direct".equals(this.exchangeType)) {
-				x = new DirectExchange(this.exchangeName, this.durable, this.autoDelete);
-			}
-			else if ("fanout".equals(this.exchangeType)) {
-				x = new FanoutExchange(this.exchangeName, this.durable, this.autoDelete);
-			}
-			else if ("headers".equals(this.exchangeType)) {
-				x = new HeadersExchange(this.exchangeType, this.durable, this.autoDelete);
-			}
-			else {
-				x = new TopicExchange(this.exchangeName, this.durable, this.autoDelete);
-			}
+			Exchange x = switch (this.exchangeType) {
+				case "direct" -> new DirectExchange(this.exchangeName, this.durable, this.autoDelete);
+				case "fanout" -> new FanoutExchange(this.exchangeName, this.durable, this.autoDelete);
+				case "headers" -> new HeadersExchange(this.exchangeType, this.durable, this.autoDelete);
+				default -> new TopicExchange(this.exchangeName, this.durable, this.autoDelete);
+			};
 			this.connectionFactory.addConnectionListener(new DeclareExchangeConnectionListener(x, admin));
 		}
 	}
@@ -996,6 +991,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 				return AmqpAppender.this.encoder.encode(logEvent);
 			}
 
+			@SuppressWarnings("NullAway") // Dataflow analysis limitation
 			String msgBody = AmqpAppender.this.layout.doLayout(logEvent);
 			if (AmqpAppender.this.charset != null) {
 				try {

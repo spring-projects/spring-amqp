@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2023 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.DisposableBean;
@@ -38,7 +39,6 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -77,10 +77,9 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 
 	private int phase = Integer.MAX_VALUE;
 
-	private ConfigurableApplicationContext applicationContext;
+	private @Nullable ConfigurableApplicationContext applicationContext;
 
 	private boolean contextRefreshed;
-
 
 	@Override
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
@@ -97,7 +96,7 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 	 * @see RabbitListenerEndpoint#getId()
 	 * @see #getListenerContainerIds()
 	 */
-	public MessageListenerContainer getListenerContainer(String id) {
+	public @Nullable MessageListenerContainer getListenerContainer(String id) {
 		Assert.hasText(id, "Container identifier must not be empty");
 		return this.listenerContainers.get(id);
 	}
@@ -141,9 +140,9 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 	 * @see #getListenerContainers()
 	 * @see #getListenerContainer(String)
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({"unchecked", "NullAway"}) // Dataflow analysis limitation
 	public void registerListenerContainer(RabbitListenerEndpoint endpoint, RabbitListenerContainerFactory<?> factory,
-				boolean startImmediately) {
+			boolean startImmediately) {
 
 		Assert.notNull(endpoint, "Endpoint must not be null");
 		Assert.notNull(factory, "Factory must not be null");
@@ -228,7 +227,6 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 		}
 	}
 
-
 	// Delegating implementation of SmartLifecycle
 
 	@Override
@@ -298,14 +296,12 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 		}
 	}
 
-
 	@Override
 	public void onApplicationEvent(ContextRefreshedEvent event) {
 		if (event.getApplicationContext().equals(this.applicationContext)) {
 			this.contextRefreshed = true;
 		}
 	}
-
 
 	private static final class AggregatingCallback implements Runnable {
 

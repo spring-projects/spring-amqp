@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,8 @@ package org.springframework.amqp.core;
 
 import java.util.Map;
 
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.util.Assert;
 
 /**
@@ -31,6 +32,7 @@ import org.springframework.util.Assert;
  * @author Dave Syer
  * @author Gary Russell
  * @author Ngoc Nhan
+ * @author Artem Bilan
  *
  * @see AmqpAdmin
  */
@@ -52,27 +54,24 @@ public class Binding extends AbstractDeclarable {
 		EXCHANGE;
 	}
 
-	@Nullable
-	private final String destination;
+	private final @Nullable String destination;
 
-	private final String exchange;
+	private final @Nullable String exchange;
 
-	@Nullable
-	private final String routingKey;
+	private final @Nullable String routingKey;
 
 	private final DestinationType destinationType;
 
-	@Nullable
-	private final Queue lazyQueue;
+	private final @Nullable Queue lazyQueue;
 
-	public Binding(String destination, DestinationType destinationType, String exchange, String routingKey,
-			@Nullable Map<String, Object> arguments) {
+	public Binding(String destination, DestinationType destinationType, @Nullable String exchange, String routingKey,
+			@Nullable Map<String, @Nullable Object> arguments) {
 
 		this(null, destination, destinationType, exchange, routingKey, arguments);
 	}
 
 	public Binding(@Nullable Queue lazyQueue, @Nullable String destination, DestinationType destinationType,
-			String exchange, @Nullable String routingKey, @Nullable Map<String, Object> arguments) {
+			@Nullable String exchange, @Nullable String routingKey, @Nullable Map<String, @Nullable Object> arguments) {
 
 		super(arguments);
 		Assert.isTrue(lazyQueue == null || destinationType == DestinationType.QUEUE,
@@ -85,7 +84,7 @@ public class Binding extends AbstractDeclarable {
 		this.routingKey = routingKey;
 	}
 
-	public String getDestination() {
+	public @Nullable String getDestination() {
 		if (this.lazyQueue != null) {
 			return this.lazyQueue.getActualName();
 		}
@@ -98,11 +97,11 @@ public class Binding extends AbstractDeclarable {
 		return this.destinationType;
 	}
 
-	public String getExchange() {
+	public @Nullable String getExchange() {
 		return this.exchange;
 	}
 
-	public String getRoutingKey() {
+	public @Nullable String getRoutingKey() {
 		if (this.routingKey == null && this.lazyQueue != null) {
 			return this.lazyQueue.getActualName();
 		}

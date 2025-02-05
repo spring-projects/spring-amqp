@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,11 @@ package org.springframework.amqp.rabbit;
 
 import java.util.concurrent.ConcurrentMap;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.core.AmqpReplyTimeoutException;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
-import org.springframework.lang.Nullable;
 
 /**
  * A {@link Runnable} used to time out a {@link RabbitFuture}.
@@ -35,7 +36,7 @@ public class TimeoutTask implements Runnable {
 
 	private final ConcurrentMap<String, RabbitFuture<?>> pending;
 
-	private final DirectReplyToMessageListenerContainer container;
+	private final @Nullable DirectReplyToMessageListenerContainer container;
 
 	TimeoutTask(RabbitFuture<?> future, ConcurrentMap<String, RabbitFuture<?>> pending,
 			@Nullable DirectReplyToMessageListenerContainer container) {

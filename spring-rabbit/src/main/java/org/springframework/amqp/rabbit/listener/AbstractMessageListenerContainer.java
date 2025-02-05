@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -39,6 +40,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.aopalliance.aop.Advice;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpIOException;
@@ -84,7 +86,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
-import org.springframework.lang.Nullable;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.interceptor.DefaultTransactionAttribute;
 import org.springframework.transaction.interceptor.TransactionAttribute;
@@ -144,10 +145,9 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 
 	private long shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
 
-	private ApplicationEventPublisher applicationEventPublisher;
+	private @Nullable ApplicationEventPublisher applicationEventPublisher;
 
-	@Nullable
-	private PlatformTransactionManager transactionManager;
+	private @Nullable PlatformTransactionManager transactionManager;
 
 	private TransactionAttribute transactionAttribute = new DefaultTransactionAttribute();
 
@@ -159,7 +159,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 
 	private MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
 
-	private AmqpAdmin amqpAdmin;
+	private @Nullable AmqpAdmin amqpAdmin;
 
 	private boolean missingQueuesFatal = true;
 
@@ -187,7 +187,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 
 	private boolean exposeListenerChannel = true;
 
-	private MessageListener messageListener;
+	private @Nullable MessageListener messageListener;
 
 	private AcknowledgeMode acknowledgeMode = AcknowledgeMode.AUTO;
 
@@ -195,12 +195,11 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 
 	private boolean initialized;
 
-	private Collection<MessagePostProcessor> afterReceivePostProcessors;
+	private @Nullable Collection<MessagePostProcessor> afterReceivePostProcessors;
 
 	private Advice[] adviceChain = new Advice[0];
 
-	@Nullable
-	private ConsumerTagStrategy consumerTagStrategy;
+	private @Nullable ConsumerTagStrategy consumerTagStrategy;
 
 	private boolean exclusive;
 
@@ -242,10 +241,10 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 
 	private boolean asyncReplies;
 
-	private MessageAckListener messageAckListener = (success, deliveryTag, cause) -> { };
+	private MessageAckListener messageAckListener = (success, deliveryTag, cause) -> {
+	};
 
-	@Nullable
-	private RabbitListenerObservationConvention observationConvention;
+	private @Nullable RabbitListenerObservationConvention observationConvention;
 
 	private boolean forceStop;
 
@@ -254,8 +253,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		this.applicationEventPublisher = applicationEventPublisher;
 	}
 
-	@Nullable
-	protected ApplicationEventPublisher getApplicationEventPublisher() {
+	protected @Nullable ApplicationEventPublisher getApplicationEventPublisher() {
 		return this.applicationEventPublisher;
 	}
 
@@ -457,8 +455,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * @return the message listener.
 	 */
 	@Override
-	@Nullable
-	public MessageListener getMessageListener() {
+	public @Nullable MessageListener getMessageListener() {
 		return this.messageListener;
 	}
 
@@ -589,8 +586,8 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	public ConnectionFactory getConnectionFactory() {
 		ConnectionFactory connectionFactory = super.getConnectionFactory();
 		if (connectionFactory instanceof RoutingConnectionFactory rcf) {
-			ConnectionFactory targetConnectionFactory = rcf
-					.getTargetConnectionFactory(getRoutingLookupKey()); // NOSONAR never null
+			@SuppressWarnings("NullAway") // Dataflow analysis limitation
+			ConnectionFactory targetConnectionFactory = rcf.getTargetConnectionFactory(getRoutingLookupKey());
 			if (targetConnectionFactory != null) {
 				return targetConnectionFactory;
 			}
@@ -636,8 +633,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * @since 1.6.9
 	 * @see #setLookupKeyQualifier(String)
 	 */
-	@Nullable
-	protected String getRoutingLookupKey() {
+	protected @Nullable String getRoutingLookupKey() {
 		return super.getConnectionFactory() instanceof RoutingConnectionFactory
 				? this.lookupKeyQualifier + queuesAsListString()
 				: null;
@@ -650,14 +646,13 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	}
 
 	/**
-	 * Return the (@link RoutingConnectionFactory} if the connection factory is a
+	 * Return the {@link RoutingConnectionFactory} if the connection factory is a
 	 * {@link RoutingConnectionFactory}; null otherwise.
 	 * @return the {@link RoutingConnectionFactory} or null.
 	 * @since 1.6.9
 	 */
-	@Nullable
-	protected RoutingConnectionFactory getRoutingConnectionFactory() {
-		return super.getConnectionFactory() instanceof RoutingConnectionFactory rcf ? rcf  : null;
+	protected @Nullable RoutingConnectionFactory getRoutingConnectionFactory() {
+		return super.getConnectionFactory() instanceof RoutingConnectionFactory rcf ? rcf : null;
 	}
 
 	/**
@@ -675,8 +670,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * @return the strategy.
 	 * @since 2.0
 	 */
-	@Nullable
-	protected ConsumerTagStrategy getConsumerTagStrategy() {
+	protected @Nullable ConsumerTagStrategy getConsumerTagStrategy() {
 		return this.consumerTagStrategy;
 	}
 
@@ -843,8 +837,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		this.transactionManager = transactionManager;
 	}
 
-	@Nullable
-	protected PlatformTransactionManager getTransactionManager() {
+	protected @Nullable PlatformTransactionManager getTransactionManager() {
 		return this.transactionManager;
 	}
 
@@ -915,8 +908,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		return this.messagePropertiesConverter;
 	}
 
-	@Nullable
-	protected AmqpAdmin getAmqpAdmin() {
+	protected @Nullable AmqpAdmin getAmqpAdmin() {
 		return this.amqpAdmin;
 	}
 
@@ -970,7 +962,6 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		return this.mismatchedQueuesFatal;
 	}
 
-
 	public void setPossibleAuthenticationFailureFatal(boolean possibleAuthenticationFailureFatal) {
 		doSetPossibleAuthenticationFailureFatal(possibleAuthenticationFailureFatal);
 		this.possibleAuthenticationFailureFatalSet = true;
@@ -987,6 +978,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	protected boolean isPossibleAuthenticationFailureFatalSet() {
 		return this.possibleAuthenticationFailureFatalSet;
 	}
+
 	protected boolean isAsyncReplies() {
 		return this.asyncReplies;
 	}
@@ -1099,7 +1091,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		return this.batchingStrategy;
 	}
 
-	protected Collection<MessagePostProcessor> getAfterReceivePostProcessors() {
+	protected @Nullable Collection<MessagePostProcessor> getAfterReceivePostProcessors() {
 		return this.afterReceivePostProcessors;
 	}
 
@@ -1141,8 +1133,21 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * is called.
 	 * @param javaLangErrorHandler the handler.
 	 * @since 2.2.12
+	 * @deprecated in favor of {@link #setJavaLangErrorHandler(JavaLangErrorHandler)}
 	 */
+	@Deprecated(since = "4.0.0", forRemoval = true)
 	public void setjavaLangErrorHandler(JavaLangErrorHandler javaLangErrorHandler) {
+		Assert.notNull(javaLangErrorHandler, "'javaLangErrorHandler' cannot be null");
+		this.javaLangErrorHandler = javaLangErrorHandler;
+	}
+
+	/**
+	 * Provide a JavaLangErrorHandler implementation; by default, {@code System.exit(99)}
+	 * is called.
+	 * @param javaLangErrorHandler the handler.
+	 * @since 4.0.0
+	 */
+	public void setJavaLangErrorHandler(JavaLangErrorHandler javaLangErrorHandler) {
 		Assert.notNull(javaLangErrorHandler, "'javaLangErrorHandler' cannot be null");
 		this.javaLangErrorHandler = javaLangErrorHandler;
 	}
@@ -1368,7 +1373,6 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	protected void shutdownAndWaitOrCallback(@Nullable Runnable callback) {
 	}
 
-
 	/**
 	 * @return Whether this container is currently active, that is, whether it has been set up but not shut down yet.
 	 */
@@ -1469,18 +1473,13 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * @see #setErrorHandler
 	 */
 	protected void invokeErrorHandler(Throwable ex) {
-		if (this.errorHandler != null) {
-			try {
-				this.errorHandler.handleError(ex);
-			}
-			catch (Exception e) {
-				LogFactory.getLog(this.errorHandlerLoggerName).error(
-						"Execution of Rabbit message listener failed, and the error handler threw an exception", e);
-				throw e;
-			}
+		try {
+			this.errorHandler.handleError(ex);
 		}
-		else {
-			logger.warn("Execution of Rabbit message listener failed, and no ErrorHandler has been set.", ex);
+		catch (Exception e) {
+			LogFactory.getLog(this.errorHandlerLoggerName).error(
+					"Execution of Rabbit message listener failed, and the error handler threw an exception", e);
+			throw e;
 		}
 	}
 
@@ -1501,7 +1500,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		if (data instanceof Message message) {
 			observation = RabbitListenerObservation.LISTENER_OBSERVATION.observation(this.observationConvention,
 					DefaultRabbitListenerObservationConvention.INSTANCE,
-						() -> new RabbitMessageReceiverContext(message, getListenerId()), registry);
+					() -> new RabbitMessageReceiverContext(message, getListenerId()), registry);
 			observation.observe(() -> executeListenerAndHandleException(channel, data));
 		}
 		else {
@@ -1525,16 +1524,16 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		}
 		try {
 			doExecuteListener(channel, data);
-			if (sample != null) {
+			if (micrometerHolder != null && sample != null) {
 				micrometerHolder.success(sample, data instanceof Message message
-						? message.getMessageProperties().getConsumerQueue()
+						? Objects.requireNonNull(message.getMessageProperties().getConsumerQueue())
 						: queuesAsListString());
 			}
 		}
 		catch (RuntimeException ex) {
-			if (sample != null) {
+			if (micrometerHolder != null && sample != null) {
 				micrometerHolder.failure(sample, data instanceof Message message
-						? message.getMessageProperties().getConsumerQueue()
+						? Objects.requireNonNull(message.getMessageProperties().getConsumerQueue())
 						: queuesAsListString(), ex.getClass().getSimpleName());
 			}
 			Message message;
@@ -1569,10 +1568,6 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 			if (this.afterReceivePostProcessors != null) {
 				for (MessagePostProcessor processor : this.afterReceivePostProcessors) {
 					message = processor.postProcessMessage(message);
-					if (message == null) {
-						throw new ImmediateAcknowledgeAmqpException(
-								"Message Post Processor returned 'null', discarding message");
-					}
 				}
 			}
 			if (this.deBatchingEnabled && this.batchingStrategy.canDebatch(message.getMessageProperties())) {
@@ -1598,11 +1593,12 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * @see #setMessageListener(MessageListener)
 	 */
 	protected void actualInvokeListener(Channel channel, Object data) {
-		Object listener = getMessageListener();
+		MessageListener listener = getMessageListener();
+		Assert.notNull(listener, "listener cannot be null");
 		if (listener instanceof ChannelAwareMessageListener chaml) {
 			doInvokeListener(chaml, channel, data);
 		}
-		else if (listener instanceof MessageListener msgListener) { // NOSONAR
+		else {
 			boolean bindChannel = isExposeListenerChannel() && isChannelLocallyTransacted();
 			if (bindChannel) {
 				RabbitResourceHolder resourceHolder = new RabbitResourceHolder(channel, false);
@@ -1610,7 +1606,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 				TransactionSynchronizationManager.bindResource(getConnectionFactory(), resourceHolder);
 			}
 			try {
-				doInvokeListener(msgListener, data);
+				doInvokeListener(listener, data);
 			}
 			finally {
 				if (bindChannel) {
@@ -1618,13 +1614,6 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 					TransactionSynchronizationManager.unbindResource(getConnectionFactory());
 				}
 			}
-		}
-		else if (listener != null) {
-			throw new FatalListenerExecutionException("Only MessageListener and SessionAwareMessageListener supported: "
-					+ listener);
-		}
-		else {
-			throw new FatalListenerExecutionException("No message listener specified - see property 'messageListener'");
 		}
 	}
 
@@ -1638,10 +1627,10 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * @see ChannelAwareMessageListener
 	 * @see #setExposeListenerChannel(boolean)
 	 */
-	@SuppressWarnings(UNCHECKED)
+	@SuppressWarnings({UNCHECKED, "NullAway"}) // Dataflow analysis limitation
 	protected void doInvokeListener(ChannelAwareMessageListener listener, Channel channel, Object data) {
 
-		Message message = null;
+		Message message;
 		RabbitResourceHolder resourceHolder = null;
 		Channel channelToUse = channel;
 		boolean boundHere = false;
@@ -1686,7 +1675,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 			}
 		}
 		finally {
-			cleanUpAfterInvoke(resourceHolder, channelToUse, boundHere); // NOSONAR channel not null here
+			cleanUpAfterInvoke(resourceHolder, channelToUse, boundHere);
 		}
 	}
 
@@ -1725,7 +1714,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 */
 	@SuppressWarnings(UNCHECKED)
 	protected void doInvokeListener(MessageListener listener, Object data) {
-		Message message = null;
+		Message message;
 		try {
 			if (data instanceof List) {
 				listener.onMessageBatch((List<Message>) data);
@@ -1796,7 +1785,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		return (ListenerExecutionFailedException) e;
 	}
 
-	protected void publishConsumerFailedEvent(String reason, boolean fatal, @Nullable Throwable t) {
+	protected void publishConsumerFailedEvent(@Nullable String reason, boolean fatal, @Nullable Throwable t) {
 		if (this.applicationEventPublisher != null) {
 			this.applicationEventPublisher
 					.publishEvent(t == null ? new ListenerContainerConsumerTerminatedEvent(this, reason) :
@@ -1837,12 +1826,12 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 				if ((isAutoDeclare() || isMismatchedQueuesFatal()) && this.logger.isDebugEnabled()) {
 					logger.debug("For 'autoDeclare' and 'mismatchedQueuesFatal' to work, there must be exactly one "
 							+ "AmqpAdmin in the context or you must inject one into this container; found: "
-							+ admins.size() + " for container " + toString());
+							+ admins.size() + " for container " + this);
 				}
 				if (isMismatchedQueuesFatal()) {
 					throw new IllegalStateException("When 'mismatchedQueuesFatal' is 'true', there must be exactly "
 							+ "one AmqpAdmin in the context or you must inject one into this container; found: "
-							+ admins.size() + " for container " + toString());
+							+ admins.size() + " for container " + this);
 				}
 			}
 		}
@@ -1868,9 +1857,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		else {
 			try {
 				Connection connection = getConnectionFactory().createConnection(); // NOSONAR
-				if (connection != null) {
-					connection.close();
-				}
+				connection.close();
 			}
 			catch (Exception e) {
 				logger.info("Broker not available; cannot force queue declarations during start: " + e.getMessage());
@@ -2120,7 +2107,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	public static class DefaultExclusiveConsumerLogger implements ConditionalExceptionLogger {
 
 		@Override
-		public void log(Log logger, String message, Throwable cause) {
+		public void log(Log logger, String message, @Nullable Throwable cause) {
 			if (logger.isDebugEnabled()) {
 				logger.debug(message + ": " + cause);
 			}

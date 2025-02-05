@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.config;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.w3c.dom.Element;
 
 import org.springframework.amqp.core.AnonymousQueue;
@@ -38,7 +39,7 @@ import org.springframework.util.xml.DomUtils;
  */
 public class QueueParser extends AbstractSingleBeanDefinitionParser {
 
-	private static final ThreadLocal<Element> CURRENT_ELEMENT = new ThreadLocal<>();
+	private static final ThreadLocal<@Nullable Element> CURRENT_ELEMENT = new ThreadLocal<>();
 
 	/**  Element OR attribute. */
 	private static final String ARGUMENTS = "queue-arguments";
@@ -135,7 +136,7 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 			Map<?, ?> map = parserContext.getDelegate().parseMapElement(argumentsElement,
 					builder.getRawBeanDefinition());
 			if (StringUtils.hasText(ref)) {
-				if (map != null && !map.isEmpty()) {
+				if (!map.isEmpty()) {
 					parserContext.getReaderContext()
 							.error("You cannot have both a 'ref' and a nested map", element);
 				}

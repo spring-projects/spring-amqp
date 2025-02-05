@@ -119,7 +119,6 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.web.JsonPath;
-import org.springframework.lang.NonNull;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.converter.GenericMessageConverter;
 import org.springframework.messaging.handler.annotation.Header;
@@ -2073,7 +2072,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 		@RabbitHandler
 		@SendTo("${foo.bar:#{sendToRepliesBean}}")
-		public String bar(@NonNull Bar bar) {
+		public String bar(Bar bar) {
 			if (bar.field.equals("crash")) {
 				throw new RuntimeException("Test reply from error handler");
 			}
@@ -2088,7 +2087,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		}
 
 		@RabbitHandler
-		public String qux(@Header("amqp_receivedRoutingKey") String rk, @NonNull @Payload Qux qux) {
+		public String qux(@Header("amqp_receivedRoutingKey") String rk, @Payload Qux qux) {
 			return "QUX: " + qux.field + ": " + rk;
 		}
 

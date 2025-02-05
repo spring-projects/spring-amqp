@@ -17,9 +17,9 @@
 package org.springframework.amqp.support.converter;
 
 import com.fasterxml.jackson.databind.JavaType;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.lang.Nullable;
 
 /**
  * Strategy for setting metadata on messages such that one can create the class that needs

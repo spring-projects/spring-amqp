@@ -36,9 +36,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
@@ -47,6 +47,7 @@ import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ShutdownSignalException;
 import org.apache.commons.logging.Log;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpApplicationContextClosedException;
 import org.springframework.amqp.AmqpAuthenticationException;
@@ -66,12 +67,12 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.ConsumerChannelRegistry;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
+import org.springframework.amqp.rabbit.connection.RoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SimpleResourceHolder;
 import org.springframework.amqp.rabbit.listener.support.ContainerUtils;
 import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
 import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.lang.Nullable;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -115,11 +116,11 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private final Set<String> removedQueues = ConcurrentHashMap.newKeySet();
 
-	private final MultiValueMap<String, SimpleConsumer> consumersByQueue = new LinkedMultiValueMap<>();
+	private final MultiValueMap<String, @Nullable SimpleConsumer> consumersByQueue = new LinkedMultiValueMap<>();
 
 	private final ActiveObjectCounter<SimpleConsumer> cancellationLock = new ActiveObjectCounter<>();
 
-	private TaskScheduler taskScheduler;
+	private @Nullable TaskScheduler taskScheduler;
 
 	private boolean taskSchedulerSet;
 
@@ -139,7 +140,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile int consumersPerQueue = 1;
 
-	private volatile ScheduledFuture<?> consumerMonitorTask;
+	private volatile @Nullable ScheduledFuture<?> consumerMonitorTask;
 
 	private volatile long lastAlertAt;
 
@@ -149,6 +150,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	 * Create an instance; {@link #setConnectionFactory(ConnectionFactory)} must
 	 * be called before starting.
 	 */
+	@SuppressWarnings("this-escape")
 	public DirectMessageListenerContainer() {
 		setMissingQueuesFatal(false);
 		doSetPossibleAuthenticationFailureFatal(false);
@@ -158,6 +160,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	 * Create an instance with the provided connection factory.
 	 * @param connectionFactory the connection factory.
 	 */
+	@SuppressWarnings("this-escape")
 	public DirectMessageListenerContainer(ConnectionFactory connectionFactory) {
 		setConnectionFactory(connectionFactory);
 		setMissingQueuesFatal(false);
@@ -202,7 +205,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	/**
 	 * Set how often to run a task to check for failed consumers and idle containers.
-	 * @param monitorInterval the interval; default 10000 but it will be adjusted down
+	 * @param monitorInterval the interval; default 10000, but it will be adjusted down
 	 * to the smallest of this, {@link #setIdleEventInterval(long) idleEventInterval} / 2
 	 * (if configured) or
 	 * {@link #setFailedDeclarationRetryInterval(long) failedDeclarationRetryInterval}.
@@ -333,6 +336,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	private void adjustConsumers(int newCount) {
 		this.consumersLock.lock();
 		try {
@@ -342,11 +346,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				while (isActive() &&
 						(this.consumersByQueue.get(queue) == null
 								|| this.consumersByQueue.get(queue).size() < newCount)) { // NOSONAR never null
-					List<SimpleConsumer> cBQ = this.consumersByQueue.get(queue);
+					List<@Nullable SimpleConsumer> cBQ = this.consumersByQueue.get(queue);
 					int index = 0;
 					if (cBQ != null) {
 						// find a gap or set the index to the end
 						List<Integer> indices = cBQ.stream()
+								.filter(Objects::nonNull)
 								.map(SimpleConsumer::getIndex)
 								.sorted()
 								.toList();
@@ -367,7 +372,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	private void reduceConsumersIfIdle(int newCount, String queue) {
-		List<SimpleConsumer> consumerList = this.consumersByQueue.get(queue);
+		List<@Nullable SimpleConsumer> consumerList = this.consumersByQueue.get(queue);
 		if (consumerList != null && consumerList.size() > newCount) {
 			int delta = consumerList.size() - newCount;
 			for (int i = 0; i < delta; i++) {
@@ -471,11 +476,11 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
+	@SuppressWarnings("try")
 	protected void checkConnect() {
 		if (isPossibleAuthenticationFailureFatal()) {
-			Connection connection = null;
-			try {
-				connection = getConnectionFactory().createConnection();
+			try (Connection __ = getConnectionFactory().createConnection()) {
+				// Authentication attempt
 			}
 			catch (AmqpAuthenticationException ex) {
 				this.logger.debug("Failed to authenticate", ex);
@@ -483,15 +488,11 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			catch (Exception ex) { // NOSONAR
 			}
-			finally {
-				if (connection != null) {
-					connection.close();
-				}
-			}
 		}
 	}
 
 	private void startMonitor(long idleEventInterval, final Map<String, Queue> namesToQueues) {
+		Assert.state(this.taskScheduler != null, "taskScheduler must be provided");
 		this.consumerMonitorTask = this.taskScheduler.scheduleAtFixedRate(() -> {
 			long now = System.currentTimeMillis();
 			checkIdle(idleEventInterval, now);
@@ -559,7 +560,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						}
 						return !open;
 					})
-					.collect(Collectors.toList());
+					.toList();
 		}
 		finally {
 			this.consumersLock.unlock();
@@ -602,6 +603,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			this.logger.error("Cannot connect to server", e);
 			if (e.getCause() instanceof AmqpApplicationContextClosedException) {
 				this.logger.error("Application context is closed, terminating");
+				Assert.state(this.taskScheduler != null, "taskScheduler must be provided");
 				this.taskScheduler.schedule(this::stop, Instant.now());
 			}
 			this.consumersToRestart.addAll(restartableConsumers);
@@ -635,8 +637,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						if (nextBackOff < 0 || e.getCause() instanceof AmqpApplicationContextClosedException) {
 							DirectMessageListenerContainer.this.aborted = true;
 							shutdown();
-							this.logger.error("Failed to start container - fatal error or backOffs exhausted",
-									e);
+							this.logger.error("Failed to start container - fatal error or backOffs exhausted", e);
+							Assert.state(this.taskScheduler != null, "taskScheduler must be provided");
 							this.taskScheduler.schedule(this::stop, Instant.now());
 							break;
 						}
@@ -662,8 +664,11 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	protected void doRedeclareElementsIfNecessary() {
 		String routingLookupKey = getRoutingLookupKey();
+		RoutingConnectionFactory routingConnectionFactory = null;
 		if (routingLookupKey != null) {
-			SimpleResourceHolder.push(getRoutingConnectionFactory(), routingLookupKey); // NOSONAR both never null here
+			routingConnectionFactory = getRoutingConnectionFactory();
+			Assert.state(routingConnectionFactory != null, "The 'routingConnectionFactory' must be provided");
+			SimpleResourceHolder.push(routingConnectionFactory, routingLookupKey);
 		}
 		try {
 			redeclareElementsIfNecessary();
@@ -672,8 +677,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			this.logger.error("Failed to redeclare elements", e);
 		}
 		finally {
-			if (routingLookupKey != null) {
-				SimpleResourceHolder.pop(getRoutingConnectionFactory()); // NOSONAR never null here
+			if (routingConnectionFactory != null) {
+				SimpleResourceHolder.pop(routingConnectionFactory);
 			}
 		}
 	}
@@ -720,8 +725,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	private void consumeFromQueue(String queue) {
-		List<SimpleConsumer> list = this.consumersByQueue.get(queue);
+		List<@Nullable SimpleConsumer> list = this.consumersByQueue.get(queue);
 		// Possible race with setConsumersPerQueue and the task launched by start()
 		if (CollectionUtils.isEmpty(list)) {
 			for (int i = 0; i < this.consumersPerQueue; i++) {
@@ -738,8 +744,11 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			return;
 		}
 		String routingLookupKey = getRoutingLookupKey();
+		RoutingConnectionFactory routingConnectionFactory = null;
 		if (routingLookupKey != null) {
-			SimpleResourceHolder.push(getRoutingConnectionFactory(), routingLookupKey); // NOSONAR both never null here
+			routingConnectionFactory = getRoutingConnectionFactory();
+			Assert.state(routingConnectionFactory != null, "The 'routingConnectionFactory' must be provided");
+			SimpleResourceHolder.push(routingConnectionFactory, routingLookupKey);
 		}
 		Connection connection = null; // NOSONAR (close)
 		try {
@@ -753,8 +762,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					: new AmqpConnectException(e);
 		}
 		finally {
-			if (routingLookupKey != null) {
-				SimpleResourceHolder.pop(getRoutingConnectionFactory()); // NOSONAR never null here
+			if (routingConnectionFactory != null) {
+				SimpleResourceHolder.pop(routingConnectionFactory);
 			}
 		}
 		SimpleConsumer consumer = consume(queue, index, connection);
@@ -778,8 +787,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
-	@Nullable
-	private SimpleConsumer consume(String queue, int index, Connection connection) {
+	private @Nullable SimpleConsumer consume(String queue, int index, Connection connection) {
 		Channel channel = null;
 		SimpleConsumer consumer = null;
 		try {
@@ -815,9 +823,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		return consumer;
 	}
 
-	@Nullable
-	private SimpleConsumer handleConsumeException(String queue, int index, @Nullable SimpleConsumer consumerArg,
-			Exception ex) {
+	private @Nullable SimpleConsumer handleConsumeException(String queue, int index,
+			@Nullable SimpleConsumer consumerArg, Exception ex) {
 
 		SimpleConsumer consumer = consumerArg;
 		if (RabbitUtils.exclusiveAccesssRefused(ex)) {
@@ -846,6 +853,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	@Override
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	protected void shutdownAndWaitOrCallback(@Nullable Runnable callback) {
 		LinkedList<SimpleConsumer> canceledConsumers = null;
 		boolean waitForConsumers = false;
@@ -915,7 +923,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	 * @param consumers a copy of this.consumers.
 	 */
 	private void actualShutDown(List<SimpleConsumer> consumers) {
-		Assert.state(getTaskExecutor() != null, "Cannot shut down if not initialized");
 		this.logger.debug("Shutting down");
 		if (isForceStop()) {
 			this.stopNow.set(true);
@@ -926,8 +933,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		this.consumers.clear();
 		this.consumersByQueue.clear();
 		this.logger.debug("All consumers canceled");
-		if (this.consumerMonitorTask != null) {
-			this.consumerMonitorTask.cancel(true);
+		ScheduledFuture<?> consumerMonitorTaskToUse = this.consumerMonitorTask;
+		if (consumerMonitorTaskToUse != null) {
+			consumerMonitorTaskToUse.cancel(true);
 			this.consumerMonitorTask = null;
 		}
 	}
@@ -982,7 +990,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		private final Log logger = DirectMessageListenerContainer.this.logger;
 
-		private final Connection connection;
+		private final @Nullable Connection connection;
 
 		private final String queue;
 
@@ -992,7 +1000,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		private final ConnectionFactory connectionFactory = getConnectionFactory();
 
-		private final PlatformTransactionManager transactionManager = getTransactionManager();
+		private final @Nullable PlatformTransactionManager transactionManager = getTransactionManager();
 
 		private final TransactionAttribute transactionAttribute = getTransactionAttribute();
 
@@ -1002,9 +1010,11 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		private final long ackTimeout = DirectMessageListenerContainer.this.ackTimeout;
 
-		private final Channel targetChannel;
+		private final @Nullable Channel targetChannel;
 
 		private final Lock lock = new ReentrantLock();
+
+		private final AtomicInteger epoch = new AtomicInteger(0);
 
 		private int pendingAcks;
 
@@ -1012,11 +1022,10 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		private long latestDeferredDeliveryTag;
 
+		@SuppressWarnings("NullAway.Init")
 		private volatile String consumerTag;
 
-		private volatile int epoch;
-
-		private volatile TransactionTemplate transactionTemplate;
+		private volatile @Nullable TransactionTemplate transactionTemplate;
 
 		private volatile boolean canceled;
 
@@ -1054,7 +1063,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		 * @return the epoch.
 		 */
 		int getEpoch() {
-			return this.epoch;
+			return this.epoch.get();
 		}
 
 		/**
@@ -1089,7 +1098,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		 * @return the epoch.
 		 */
 		int incrementAndGetEpoch() {
-			return ++this.epoch;
+			return this.epoch.incrementAndGet();
 		}
 
 		@Override
@@ -1146,6 +1155,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 
+		@SuppressWarnings("NullAway") // Dataflow analysis limitation
 		private void executeListenerInTransaction(Object data, long deliveryTag) {
 			if (this.isRabbitTxManager) {
 				ConsumerChannelRegistry.registerConsumerChannel(getChannel(), this.connectionFactory);
@@ -1377,7 +1387,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			publishConsumerFailedEvent(eventMessage, true, null);
 			DirectMessageListenerContainer.this.consumersLock.lock();
 			try {
-				List<SimpleConsumer> list = DirectMessageListenerContainer.this.consumersByQueue.get(this.queue);
+				List<@Nullable SimpleConsumer> list =
+						DirectMessageListenerContainer.this.consumersByQueue.get(this.queue);
 				if (list != null) {
 					list.remove(this);
 				}
@@ -1408,7 +1419,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			int result = 1;
 			result = prime * result + getEnclosingInstance().hashCode();
 			result = prime * result + this.index;
-			result = prime * result + ((this.queue == null) ? 0 : this.queue.hashCode());
+			result = prime * result + this.queue.hashCode();
 			return result;
 		}
 
@@ -1430,12 +1441,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			if (this.index != other.index) {
 				return false;
 			}
-			if (this.queue == null) {
-				return other.queue == null;
-			}
-			else {
-				return this.queue.equals(other.queue);
-			}
+			return this.queue.equals(other.queue);
 		}
 
 		private DirectMessageListenerContainer getEnclosingInstance() {

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import com.rabbitmq.client.Channel;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.batch.SimpleBatchingStrategy;
@@ -31,10 +32,10 @@ import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.listener.support.ContainerUtils;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.support.converter.MessageConversionException;
-import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.GenericMessage;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.util.Assert;
 
 /**
  * A listener adapter for batch listeners.
@@ -52,8 +53,9 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 
 	private final BatchingStrategy batchingStrategy;
 
-	public BatchMessagingMessageListenerAdapter(Object bean, Method method, boolean returnExceptions,
-			RabbitListenerErrorHandler errorHandler, @Nullable BatchingStrategy batchingStrategy) {
+	@SuppressWarnings("this-escape")
+	public BatchMessagingMessageListenerAdapter(@Nullable Object bean, @Nullable Method method, boolean returnExceptions,
+			@Nullable RabbitListenerErrorHandler errorHandler, @Nullable BatchingStrategy batchingStrategy) {
 
 		super(bean, method, returnExceptions, errorHandler, true);
 		this.converterAdapter = (MessagingMessageConverterAdapter) getMessagingMessageConverter();
@@ -61,7 +63,7 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 	}
 
 	@Override
-	public void onMessageBatch(List<org.springframework.amqp.core.Message> messages, Channel channel) {
+	public void onMessageBatch(List<org.springframework.amqp.core.Message> messages, @Nullable Channel channel) {
 		Message<?> converted;
 		if (this.converterAdapter.isAmqpMessageList()) {
 			converted = new GenericMessage<>(messages);
@@ -76,6 +78,7 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 				catch (MessageConversionException e) {
 					this.logger.error("Could not convert incoming message", e);
 					try {
+						Assert.notNull(channel, "'channel' cannot be null");
 						channel.basicReject(message.getMessageProperties().getDeliveryTag(), false);
 					}
 					catch (Exception ex) {
@@ -104,12 +107,13 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 	}
 
 	private void invokeHandlerAndProcessResult(List<org.springframework.amqp.core.Message> amqpMessages,
-			Channel channel, Message<?> message) {
+			@Nullable Channel channel, Message<?> message) {
 
 		if (logger.isDebugEnabled()) {
 			logger.debug("Processing [" + message + "]");
 		}
-		InvocationResult result = invokeHandler(null, channel, message);
+		InvocationResult result = invokeHandler(channel, message, true,
+				amqpMessages.toArray(new org.springframework.amqp.core.Message[0]));
 		if (result.getReturnValue() != null) {
 			handleResult(result, amqpMessages, channel);
 		}
@@ -118,8 +122,9 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 		}
 	}
 
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	private void handleResult(InvocationResult resultArg, List<org.springframework.amqp.core.Message> amqpMessages,
-			Channel channel) {
+			@Nullable Channel channel) {
 
 		if (channel != null) {
 			if (resultArg.getReturnValue() instanceof CompletableFuture<?> completable) {
@@ -175,16 +180,13 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 
 			if (this.converterAdapter.isMessageList()) {
 				List<Message<?>> messages = new ArrayList<>();
-				this.batchingStrategy.deBatch(amqpMessage, fragment -> {
-					messages.add(super.toMessagingMessage(fragment));
-				});
+				this.batchingStrategy.deBatch(amqpMessage, fragment -> messages.add(super.toMessagingMessage(fragment)));
 				return new GenericMessage<>(messages);
 			}
 			else {
 				List<Object> list = new ArrayList<>();
-				this.batchingStrategy.deBatch(amqpMessage, fragment -> {
-					list.add(this.converterAdapter.extractPayload(fragment));
-				});
+				this.batchingStrategy.deBatch(amqpMessage, fragment ->
+						list.add(this.converterAdapter.extractPayload(fragment)));
 				return MessageBuilder.withPayload(list)
 						.copyHeaders(this.converterAdapter
 								.getHeaderMapper()

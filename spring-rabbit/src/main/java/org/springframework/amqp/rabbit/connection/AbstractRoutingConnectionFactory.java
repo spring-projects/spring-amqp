@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.AmqpException;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -47,13 +48,13 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 
 	private final List<ConnectionListener> connectionListeners = new ArrayList<>();
 
-	private ConnectionFactory defaultTargetConnectionFactory;
+	private @Nullable ConnectionFactory defaultTargetConnectionFactory;
 
 	private boolean lenientFallback = true;
 
-	private Boolean confirms;
+	private @Nullable Boolean confirms;
 
-	private Boolean returns;
+	private @Nullable Boolean returns;
 
 	private boolean consistentConfirmsReturns = true;
 
@@ -108,12 +109,12 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 
 	@Override
 	public boolean isPublisherConfirms() {
-		return this.confirms;
+		return Boolean.TRUE.equals(this.confirms);
 	}
 
 	@Override
 	public boolean isPublisherReturns() {
-		return this.returns;
+		return Boolean.TRUE.equals(this.returns);
 	}
 
 	@Override
@@ -130,9 +131,9 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 		}
 
 		if (this.consistentConfirmsReturns) {
-			Assert.isTrue(this.confirms.booleanValue() == cf.isPublisherConfirms(),
+			Assert.isTrue(this.confirms == cf.isPublisherConfirms(),
 					"Target connection factories must have the same setting for publisher confirms");
-			Assert.isTrue(this.returns.booleanValue() == cf.isPublisherReturns(),
+			Assert.isTrue(this.returns == cf.isPublisherReturns(),
 					"Target connection factories must have the same setting for publisher returns");
 		}
 	}
@@ -212,27 +213,27 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	}
 
 	@Override
-	public String getHost() {
-		return this.determineTargetConnectionFactory().getHost();
+	public @Nullable String getHost() {
+		return determineTargetConnectionFactory().getHost();
 	}
 
 	@Override
 	public int getPort() {
-		return this.determineTargetConnectionFactory().getPort();
+		return determineTargetConnectionFactory().getPort();
 	}
 
 	@Override
 	public String getVirtualHost() {
-		return this.determineTargetConnectionFactory().getVirtualHost();
+		return determineTargetConnectionFactory().getVirtualHost();
 	}
 
 	@Override
 	public String getUsername() {
-		return this.determineTargetConnectionFactory().getUsername();
+		return determineTargetConnectionFactory().getUsername();
 	}
 
 	@Override
-	public ConnectionFactory getTargetConnectionFactory(Object key) {
+	public @Nullable ConnectionFactory getTargetConnectionFactory(Object key) {
 		return this.targetConnectionFactories.get(key);
 	}
 
@@ -283,8 +284,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	 *
 	 * @return The lookup key.
 	 */
-	@Nullable
-	protected abstract Object determineCurrentLookupKey();
+	protected abstract @Nullable Object determineCurrentLookupKey();
 
 	@Override
 	public void destroy() {
@@ -294,7 +294,9 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	@Override
 	public void resetConnection() {
 		this.targetConnectionFactories.values().forEach(ConnectionFactory::resetConnection);
-		this.defaultTargetConnectionFactory.resetConnection();
+		if (this.defaultTargetConnectionFactory != null) {
+			this.defaultTargetConnectionFactory.resetConnection();
+		}
 	}
 
 }

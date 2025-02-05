@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.rabbit.core;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
@@ -24,7 +26,6 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.context.Lifecycle;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.lang.Nullable;
 
 /**
  * Rabbit specific methods for Amqp functionality.
@@ -37,19 +38,18 @@ import org.springframework.lang.Nullable;
 public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 
 	/**
-	 * Execute the callback with a channel and reliably close the channel afterwards.
+	 * Execute the callback with a channel and reliably close the channel afterward.
 	 * @param action the call back.
 	 * @param <T> the return type.
 	 * @return the result from the
 	 * {@link ChannelCallback#doInRabbit(com.rabbitmq.client.Channel)}.
 	 * @throws AmqpException if one occurs.
 	 */
-	@Nullable
-	<T> T execute(ChannelCallback<T> action) throws AmqpException;
+	<T> @Nullable T execute(ChannelCallback<T> action) throws AmqpException;
 
 	/**
 	 * Invoke the callback and run all operations on the template argument in a dedicated
-	 * thread-bound channel and reliably close the channel afterwards.
+	 * thread-bound channel and reliably close the channel afterward.
 	 * @param action the call back.
 	 * @param <T> the return type.
 	 * @return the result from the
@@ -57,8 +57,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @throws AmqpException if one occurs.
 	 * @since 2.0
 	 */
-	@Nullable
-	default <T> T invoke(OperationsCallback<T> action) throws AmqpException {
+	default <T> @Nullable T invoke(OperationsCallback<T> action) throws AmqpException {
 		return invoke(action, null, null);
 	}
 
@@ -72,9 +71,8 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @return the result of the action method.
 	 * @since 2.1
 	 */
-	@Nullable
-	<T> T invoke(OperationsCallback<T> action, @Nullable com.rabbitmq.client.ConfirmCallback acks,
-			@Nullable com.rabbitmq.client.ConfirmCallback nacks);
+	<T> @Nullable T invoke(OperationsCallback<T> action, com.rabbitmq.client.@Nullable ConfirmCallback acks,
+			com.rabbitmq.client.@Nullable ConfirmCallback nacks);
 
 	/**
 	 * Delegate to the underlying dedicated channel to wait for confirms. The connection
@@ -132,7 +130,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @param correlationData data to correlate publisher confirms.
 	 * @throws AmqpException if there is a problem
 	 */
-	void send(String exchange, String routingKey, Message message, CorrelationData correlationData)
+	void send(String exchange, String routingKey, Message message, @Nullable CorrelationData correlationData)
 			throws AmqpException;
 
 	/**
@@ -206,7 +204,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @throws AmqpException if there is a problem
 	 */
 	void convertAndSend(String exchange, String routingKey, Object message, MessagePostProcessor messagePostProcessor,
-			CorrelationData correlationData) throws AmqpException;
+			@Nullable CorrelationData correlationData) throws AmqpException;
 
 	/**
 	 * Basic RPC pattern with conversion. Send a Java object converted to a message to a
@@ -269,7 +267,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 */
 	@Nullable
 	Object convertSendAndReceive(Object message, MessagePostProcessor messagePostProcessor,
-			CorrelationData correlationData) throws AmqpException;
+			@Nullable CorrelationData correlationData) throws AmqpException;
 
 	/**
 	 * Basic RPC pattern with conversion. Send a Java object converted to a message to a
@@ -286,7 +284,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 */
 	@Nullable
 	Object convertSendAndReceive(String routingKey, Object message,
-			MessagePostProcessor messagePostProcessor, CorrelationData correlationData) throws AmqpException;
+			MessagePostProcessor messagePostProcessor, @Nullable CorrelationData correlationData) throws AmqpException;
 
 	/**
 	 * Basic RPC pattern with conversion. Send a Java object converted to a message to a
@@ -304,7 +302,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 */
 	@Nullable
 	Object convertSendAndReceive(String exchange, String routingKey, Object message,
-			MessagePostProcessor messagePostProcessor, CorrelationData correlationData)
+			@Nullable MessagePostProcessor messagePostProcessor, @Nullable CorrelationData correlationData)
 			throws AmqpException;
 
 	/**
@@ -322,8 +320,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @return the response if there is one.
 	 * @throws AmqpException if there is a problem.
 	 */
-	@Nullable
-	<T> T convertSendAndReceiveAsType(Object message, CorrelationData correlationData,
+	<T> @Nullable T convertSendAndReceiveAsType(Object message, @Nullable CorrelationData correlationData,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;
 
 	/**
@@ -342,9 +339,8 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
-	@Nullable
-	<T> T convertSendAndReceiveAsType(String routingKey, Object message, CorrelationData correlationData,
-			ParameterizedTypeReference<T> responseType) throws AmqpException;
+	<T> @Nullable T convertSendAndReceiveAsType(String routingKey, Object message,
+			@Nullable CorrelationData correlationData, ParameterizedTypeReference<T> responseType) throws AmqpException;
 
 	/**
 	 * Basic RPC pattern with conversion. Send a Java object converted to a message to a
@@ -363,10 +359,9 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
-	@Nullable
-	default <T> T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
+	default <T> @Nullable T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
 			@Nullable CorrelationData correlationData, ParameterizedTypeReference<T> responseType)
-					throws AmqpException {
+			throws AmqpException {
 
 		return convertSendAndReceiveAsType(exchange, routingKey, message, null, correlationData, responseType);
 	}
@@ -387,9 +382,8 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
-	@Nullable
-	<T> T convertSendAndReceiveAsType(Object message, MessagePostProcessor messagePostProcessor,
-			CorrelationData correlationData, ParameterizedTypeReference<T> responseType) throws AmqpException;
+	<T> @Nullable T convertSendAndReceiveAsType(Object message, @Nullable MessagePostProcessor messagePostProcessor,
+			@Nullable CorrelationData correlationData, ParameterizedTypeReference<T> responseType) throws AmqpException;
 
 	/**
 	 * Basic RPC pattern with conversion. Send a Java object converted to a message to a
@@ -408,9 +402,8 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
-	@Nullable
-	<T> T convertSendAndReceiveAsType(String routingKey, Object message,
-			MessagePostProcessor messagePostProcessor, CorrelationData correlationData,
+	<T> @Nullable T convertSendAndReceiveAsType(String routingKey, Object message,
+			@Nullable MessagePostProcessor messagePostProcessor, @Nullable CorrelationData correlationData,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;
 
 	/**
@@ -431,12 +424,10 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
-	@Nullable
-	<T> T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
+	<T> @Nullable T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
 			@Nullable MessagePostProcessor messagePostProcessor,
 			@Nullable CorrelationData correlationData,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;
-
 
 	@Override
 	default void start() {

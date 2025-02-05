@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2021-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.rabbit.core;
 
+import java.io.Serial;
+
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 
@@ -29,6 +31,7 @@ import org.springframework.amqp.core.Message;
  */
 public class AmqpNackReceivedException extends AmqpException {
 
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	private final Message failedMessage;

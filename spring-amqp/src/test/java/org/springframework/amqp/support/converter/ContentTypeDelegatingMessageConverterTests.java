@@ -18,13 +18,14 @@ package org.springframework.amqp.support.converter;
 
 import java.io.Serializable;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
 /**
  * @author Gary Russell
@@ -34,6 +35,16 @@ import static org.assertj.core.api.Assertions.fail;
  *
  */
 public class ContentTypeDelegatingMessageConverterTests {
+
+	@BeforeAll
+	static void setUp() {
+		System.setProperty("spring.amqp.deserialization.trust.all", "true");
+	}
+
+	@AfterAll
+	static void tearDown() {
+		System.setProperty("spring.amqp.deserialization.trust.all", "false");
+	}
 
 	@Test
 	public void testDelegationOutbound() {
@@ -56,16 +67,6 @@ public class ContentTypeDelegatingMessageConverterTests {
 		assertThat(new String(message.getBody())).isEqualTo("{\"foo\":\"bar\"}");
 		converted = converter.fromMessage(message);
 		assertThat(converted).isInstanceOf(Foo.class);
-
-		converter = new ContentTypeDelegatingMessageConverter(null); // no default
-		try {
-			converter.toMessage(foo, props);
-			fail("Expected exception");
-		}
-		catch (Exception e) {
-			assertThat(e).isInstanceOf(MessageConversionException.class);
-			assertThat(e.getMessage()).contains("No delegate converter");
-		}
 	}
 
 	@SuppressWarnings("serial")

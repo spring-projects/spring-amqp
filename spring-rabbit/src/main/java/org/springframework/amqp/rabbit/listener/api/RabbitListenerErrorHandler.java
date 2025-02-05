@@ -17,10 +17,11 @@
 package org.springframework.amqp.rabbit.listener.api;
 
 import com.rabbitmq.client.Channel;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
-import org.springframework.lang.Nullable;
+
 /**
  * An error handler which is called when a {code @RabbitListener} method
  * throws an exception. This is invoked higher up the stack than the
@@ -47,8 +48,9 @@ public interface RabbitListenerErrorHandler {
 	 * @throws Exception an exception which may be the original or different.
 	 * @since 3.1.3
 	 */
-	Object handleError(Message amqpMessage, Channel channel,
-			@Nullable org.springframework.messaging.Message<?> message,
+	@Nullable
+	Object handleError(Message amqpMessage, @Nullable Channel channel,
+			org.springframework.messaging.@Nullable Message<?> message,
 			ListenerExecutionFailedException exception) throws Exception;
 
 }

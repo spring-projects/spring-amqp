@@ -179,7 +179,6 @@ public abstract class LocallyTransactedTests {
 		verify(onlyChannel, times(2)).basicNack(anyLong(), anyBoolean(), anyBoolean());
 		verify(onlyChannel, times(2)).txRollback();
 
-		container.setAfterReceivePostProcessors(m -> null);
 		container.setMessageListener(m -> {
 			// NOSONAR
 		});

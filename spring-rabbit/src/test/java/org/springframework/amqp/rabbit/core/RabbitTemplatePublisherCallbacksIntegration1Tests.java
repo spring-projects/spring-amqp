@@ -41,6 +41,7 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import org.apache.commons.logging.Log;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,6 +73,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -200,7 +202,9 @@ public class RabbitTemplatePublisherCallbacksIntegration1Tests {
 			}
 
 			@Override
-			public Message postProcessMessage(Message message, Correlation correlation, String exch, String rk) {
+			public Message postProcessMessage(Message message, @Nullable Correlation correlation,
+					String exch, String rk) {
+
 				assertThat(exch).isEqualTo("");
 				assertThat(rk).isEqualTo(ROUTE);
 				mppLatch.countDown();
@@ -217,7 +221,7 @@ public class RabbitTemplatePublisherCallbacksIntegration1Tests {
 					}
 				}
 				catch (Throwable t) {
-					t.printStackTrace();
+					ReflectionUtils.rethrowRuntimeException(t);
 				}
 			});
 		}
@@ -878,14 +882,14 @@ public class RabbitTemplatePublisherCallbacksIntegration1Tests {
 		admin.declareQueue(queue);
 		CorrelationData cd1 = new CorrelationData();
 		this.templateWithConfirmsEnabled.convertAndSend("", queue.getName(), "foo", cd1);
-		assertThat(cd1.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
+		assertThat(cd1.getFuture().get(10, TimeUnit.SECONDS).ack()).isTrue();
 		CorrelationData cd2 = new CorrelationData();
 		this.templateWithConfirmsEnabled.convertAndSend("", queue.getName(), "bar", cd2);
-		assertThat(cd2.getFuture().get(10, TimeUnit.SECONDS).isAck()).isFalse();
+		assertThat(cd2.getFuture().get(10, TimeUnit.SECONDS).ack()).isFalse();
 		CorrelationData cd3 = new CorrelationData();
 		this.templateWithConfirmsEnabled.convertAndSend("NO_EXCHANGE_HERE", queue.getName(), "foo", cd3);
-		assertThat(cd3.getFuture().get(10, TimeUnit.SECONDS).isAck()).isFalse();
-		assertThat(cd3.getFuture().get().getReason()).contains("NOT_FOUND");
+		assertThat(cd3.getFuture().get(10, TimeUnit.SECONDS).ack()).isFalse();
+		assertThat(cd3.getFuture().get().reason()).contains("NOT_FOUND");
 		CorrelationData cd4 = new CorrelationData("42");
 		AtomicBoolean resent = new AtomicBoolean();
 		AtomicReference<String> callbackThreadName = new AtomicReference<>();
@@ -897,7 +901,7 @@ public class RabbitTemplatePublisherCallbacksIntegration1Tests {
 			callbackLatch.countDown();
 		});
 		this.templateWithConfirmsAndReturnsEnabled.convertAndSend("", "NO_QUEUE_HERE", "foo", cd4);
-		assertThat(cd4.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
+		assertThat(cd4.getFuture().get(10, TimeUnit.SECONDS).ack()).isTrue();
 		assertThat(callbackLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(cd4.getReturned()).isNotNull();
 		assertThat(resent.get()).isTrue();

@@ -46,6 +46,7 @@ import com.rabbitmq.client.ShutdownSignalException;
 import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.support.ConditionalExceptionLogger;
@@ -57,7 +58,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
-import org.springframework.lang.Nullable;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
@@ -120,7 +120,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	private ConditionalExceptionLogger closeExceptionLogger = new DefaultChannelCloseLogger();
 
-	private AbstractConnectionFactory publisherConnectionFactory;
+	private @Nullable AbstractConnectionFactory publisherConnectionFactory;
 
 	private RecoveryListener recoveryListener = new RecoveryListener() {
 
@@ -140,9 +140,9 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	};
 
-	private ExecutorService executorService;
+	private @Nullable ExecutorService executorService;
 
-	private List<Address> addresses;
+	private @Nullable List<Address> addresses;
 
 	private AddressShuffleMode addressShuffleMode = AddressShuffleMode.RANDOM;
 
@@ -153,18 +153,18 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 			"#" + ObjectUtils.getIdentityHexString(this) + ":" +
 			this.defaultConnectionNameStrategyCounter.getAndIncrement();
 
-	private String beanName;
+	private @Nullable String beanName;
 
+	@SuppressWarnings("NullAway.Init")
 	private ApplicationContext applicationContext;
 
-	private ApplicationEventPublisher applicationEventPublisher;
+	private @Nullable ApplicationEventPublisher applicationEventPublisher;
 
-	private AddressResolver addressResolver;
+	private @Nullable AddressResolver addressResolver;
 
 	private volatile boolean contextStopped;
 
-	@Nullable
-	private BackOff connectionCreatingBackOff;
+	private @Nullable BackOff connectionCreatingBackOff;
 
 	/**
 	 * Create a new AbstractConnectionFactory for the given target ConnectionFactory, with no publisher connection
@@ -213,7 +213,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		}
 	}
 
-	protected ApplicationEventPublisher getApplicationEventPublisher() {
+	protected @Nullable ApplicationEventPublisher getApplicationEventPublisher() {
 		return this.applicationEventPublisher;
 	}
 
@@ -241,8 +241,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	/**
-	 * Return the user name from the underlying rabbit connection factory.
-	 * @return the user name.
+	 * Return the username from the underlying rabbit connection factory.
+	 * @return the username.
 	 * @since 1.6
 	 */
 	@Override
@@ -376,8 +376,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		}
 	}
 
-	@Nullable
-	protected List<Address> getAddresses() throws IOException {
+	protected @Nullable List<Address> getAddresses() throws IOException {
 		this.lock.lock();
 		try {
 			return this.addressResolver != null ? this.addressResolver.getAddresses() : this.addresses;
@@ -481,8 +480,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		}
 	}
 
-	@Nullable
-	protected ExecutorService getExecutorService() {
+	protected @Nullable ExecutorService getExecutorService() {
 		return this.executorService;
 	}
 
@@ -550,8 +548,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	 * @return the bean name or null.
 	 * @since 1.7.9
 	 */
-	@Nullable
-	protected String getBeanName() {
+	protected @Nullable String getBeanName() {
 		return this.beanName;
 	}
 
@@ -583,7 +580,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	@Override
-	public ConnectionFactory getPublisherConnectionFactory() {
+	public @Nullable ConnectionFactory getPublisherConnectionFactory() {
 		return this.publisherConnectionFactory;
 	}
 
@@ -617,7 +614,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 			if (this.logger.isInfoEnabled()) {
 				this.logger.info("Created new connection: " + connectionName + "/" + connection);
 			}
-			if (this.recoveryListener != null && rabbitConnection instanceof AutorecoveringConnection auto) {
+			if (rabbitConnection instanceof AutorecoveringConnection auto) {
 				auto.addRecoveryListener(this.recoveryListener);
 			}
 
@@ -663,6 +660,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 				connectionName);
 	}
 
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	private com.rabbitmq.client.Connection connectAddresses(String connectionName)
 			throws IOException, TimeoutException {
 
@@ -764,7 +762,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	public static class DefaultChannelCloseLogger implements ConditionalExceptionLogger {
 
 		@Override
-		public void log(Log logger, String message, Throwable t) {
+		public void log(Log logger, String message, @Nullable Throwable t) {
 			if (t instanceof ShutdownSignalException cause) {
 				if (RabbitUtils.isPassiveDeclarationChannelClose(cause)) {
 					if (logger.isDebugEnabled()) {

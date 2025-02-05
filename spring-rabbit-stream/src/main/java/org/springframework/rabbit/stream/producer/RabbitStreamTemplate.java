@@ -29,6 +29,7 @@ import com.rabbitmq.stream.Producer;
 import com.rabbitmq.stream.ProducerBuilder;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -40,7 +41,6 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.log.LogAccessor;
-import org.springframework.lang.Nullable;
 import org.springframework.rabbit.stream.micrometer.RabbitStreamMessageSenderContext;
 import org.springframework.rabbit.stream.micrometer.RabbitStreamTemplateObservation;
 import org.springframework.rabbit.stream.micrometer.RabbitStreamTemplateObservation.DefaultRabbitStreamTemplateObservationConvention;
@@ -65,13 +65,14 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 
 	private final Lock lock = new ReentrantLock();
 
+	@SuppressWarnings("NullAway.Init")
 	private ApplicationContext applicationContext;
 
 	private final Environment environment;
 
 	private final String streamName;
 
-	private Function<com.rabbitmq.stream.Message, String> superStreamRouting;
+	private @Nullable Function<com.rabbitmq.stream.Message, String> superStreamRouting;
 
 	private MessageConverter messageConverter = new SimpleMessageConverter();
 
@@ -79,18 +80,18 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 
 	private boolean streamConverterSet;
 
+	@SuppressWarnings("NullAway.Init")
 	private String beanName;
 
 	private ProducerCustomizer producerCustomizer = (name, builder) -> { };
 
 	private boolean observationEnabled;
 
-	@Nullable
-	private RabbitStreamTemplateObservationConvention observationConvention;
+	private @Nullable RabbitStreamTemplateObservationConvention observationConvention;
 
-	private ObservationRegistry observationRegistry;
+	private @Nullable ObservationRegistry observationRegistry;
 
-	private volatile Producer producer;
+	private volatile @Nullable Producer producer;
 
 	private volatile boolean observationRegistryObtained;
 
@@ -108,10 +109,12 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 
 
 	private Producer createOrGetProducer() {
-		if (this.producer == null) {
+		Producer producerToUse = this.producer;
+		if (producerToUse == null) {
 			this.lock.lock();
 			try {
-				if (this.producer == null) {
+				producerToUse = this.producer;
+				if (producerToUse == null) {
 					ProducerBuilder builder = this.environment.producerBuilder();
 					if (this.superStreamRouting == null) {
 						builder.stream(this.streamName);
@@ -121,10 +124,11 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 								.routing(this.superStreamRouting);
 					}
 					this.producerCustomizer.accept(this.beanName, builder);
-					this.producer = builder.build();
+					producerToUse = builder.build();
+					this.producer = producerToUse;
 					if (!this.streamConverterSet) {
-						((DefaultStreamMessageConverter) this.streamConverter).setBuilderSupplier(
-								() -> this.producer.messageBuilder());
+						((DefaultStreamMessageConverter) this.streamConverter)
+								.setBuilderSupplier(producerToUse::messageBuilder);
 					}
 				}
 			}
@@ -132,7 +136,7 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 				this.lock.unlock();
 			}
 		}
-		return this.producer;
+		return producerToUse;
 	}
 
 	@Override
@@ -245,15 +249,8 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 	@Override
 	public CompletableFuture<Boolean> convertAndSend(Object message, @Nullable MessagePostProcessor mpp) {
 		Message message2 = this.messageConverter.toMessage(message, new StreamMessageProperties());
-		Assert.notNull(message2, "The message converter returned null");
 		if (mpp != null) {
 			message2 = mpp.postProcessMessage(message2);
-			if (message2 == null) {
-				this.logger.debug("Message Post Processor returned null, message not sent");
-				CompletableFuture<Boolean> future = new CompletableFuture<>();
-				future.complete(false);
-				return future;
-			}
 		}
 		return send(message2);
 	}
@@ -266,6 +263,7 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 		return future;
 	}
 
+	@SuppressWarnings({ "NullAway", "try" }) // Dataflow analysis limitation
 	private void observeSend(com.rabbitmq.stream.Message message, CompletableFuture<Boolean> future) {
 		Observation observation = RabbitStreamTemplateObservation.STREAM_TEMPLATE_OBSERVATION.observation(
 				this.observationConvention, DefaultRabbitStreamTemplateObservationConvention.INSTANCE,
@@ -282,20 +280,18 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 		}
 	}
 
-	@Nullable
-	private ObservationRegistry obtainObservationRegistry() {
+	private @Nullable ObservationRegistry obtainObservationRegistry() {
 		if (!this.observationRegistryObtained && this.observationEnabled) {
-			if (this.applicationContext != null) {
-				ObjectProvider<ObservationRegistry> registry =
-						this.applicationContext.getBeanProvider(ObservationRegistry.class);
-				this.observationRegistry = registry.getIfUnique();
-			}
+			ObjectProvider<ObservationRegistry> registry =
+					this.applicationContext.getBeanProvider(ObservationRegistry.class);
+			this.observationRegistry = registry.getIfUnique();
 			this.observationRegistryObtained = true;
 		}
 		return this.observationRegistry;
 	}
 
 	@Override
+	@SuppressWarnings("try")
 	public MessageBuilder messageBuilder() {
 		return createOrGetProducer().messageBuilder();
 	}
@@ -334,8 +330,9 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 		if (this.producer != null) {
 			this.lock.lock();
 			try {
-				if (this.producer != null) {
-					this.producer.close();
+				Producer producerToCheck = this.producer;
+				if (producerToCheck != null) {
+					producerToCheck.close();
 					this.producer = null;
 				}
 			}

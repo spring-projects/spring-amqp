@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 the original author or authors.
+ * Copyright 2020-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.amqp.core;
 
 import java.util.concurrent.CompletableFuture;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.ParameterizedTypeReference;
 
@@ -123,7 +125,7 @@ public interface AsyncAmqpTemplate {
 	 * @return the {@link CompletableFuture}.
 	 */
 	<C> CompletableFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object,
-			MessagePostProcessor messagePostProcessor);
+			@Nullable MessagePostProcessor messagePostProcessor);
 
 	/**
 	 * Convert the object to a message and send it to the default exchange with the
@@ -185,7 +187,7 @@ public interface AsyncAmqpTemplate {
 	 * @return the {@link CompletableFuture}.
 	 */
 	<C> CompletableFuture<C> convertSendAndReceiveAsType(String routingKey, Object object,
-			MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<C> responseType);
+			@Nullable MessagePostProcessor messagePostProcessor, @Nullable ParameterizedTypeReference<C> responseType);
 
 	/**
 	 * Convert the object to a message and send it to the provided exchange and
@@ -200,6 +202,6 @@ public interface AsyncAmqpTemplate {
 	 * @return the {@link CompletableFuture}.
 	 */
 	<C> CompletableFuture<C> convertSendAndReceiveAsType(String exchange, String routingKey, Object object,
-			MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<C> responseType);
+			@Nullable MessagePostProcessor messagePostProcessor, @Nullable ParameterizedTypeReference<C> responseType);
 
 }

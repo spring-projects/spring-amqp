@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 the original author or authors.
+ * Copyright 2021-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.function.Function;
 
 import org.aopalliance.aop.Advice;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
@@ -32,7 +33,6 @@ import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.lang.Nullable;
 import org.springframework.retry.RecoveryCallback;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -44,34 +44,37 @@ import org.springframework.util.Assert;
  *
  * @author Gary Russell
  * @author Ngoc Nhan
+ * @author Artem Bilan
+ *
  * @since 2.4
  *
  */
 public abstract class BaseRabbitListenerContainerFactory<C extends MessageListenerContainer>
-	implements RabbitListenerContainerFactory<C>, ApplicationContextAware {
+		implements RabbitListenerContainerFactory<C>, ApplicationContextAware {
 
-	private Boolean defaultRequeueRejected;
+	private @Nullable Boolean defaultRequeueRejected;
 
-	private MessagePostProcessor[] beforeSendReplyPostProcessors;
+	private MessagePostProcessor @Nullable [] beforeSendReplyPostProcessors;
 
-	private RetryTemplate retryTemplate;
+	private @Nullable RetryTemplate retryTemplate;
 
-	private RecoveryCallback<?> recoveryCallback;
+	private @Nullable RecoveryCallback<?> recoveryCallback;
 
-	private Advice[] adviceChain;
+	private Advice @Nullable [] adviceChain;
 
-	private Function<String, ReplyPostProcessor> replyPostProcessorProvider;
+	private @Nullable Function<@Nullable String, @Nullable ReplyPostProcessor> replyPostProcessorProvider;
 
-	private Boolean micrometerEnabled;
+	private @Nullable Boolean micrometerEnabled;
 
-	private Boolean observationEnabled;
+	private @Nullable Boolean observationEnabled;
 
+	@SuppressWarnings("NullAway.Init")
 	private ApplicationContext applicationContext;
 
-	private String beanName;
+	private @Nullable String beanName;
 
 	@Override
-	public abstract C createListenerContainer(RabbitListenerEndpoint endpoint);
+	public abstract C createListenerContainer(@Nullable RabbitListenerEndpoint endpoint);
 
 	/**
 	 * @param requeueRejected true to reject by default.
@@ -85,7 +88,7 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	 * Return the defaultRequeueRejected.
 	 * @return the defaultRequeueRejected.
 	 */
-	protected Boolean getDefaultRequeueRejected() {
+	protected @Nullable Boolean getDefaultRequeueRejected() {
 		return this.defaultRequeueRejected;
 	}
 
@@ -131,15 +134,18 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	 * @param replyPostProcessorProvider the post processor.
 	 * @since 3.0
 	 */
-	public void setReplyPostProcessorProvider(Function<String, ReplyPostProcessor> replyPostProcessorProvider) {
+	public void setReplyPostProcessorProvider(
+			Function<@Nullable String, @Nullable ReplyPostProcessor> replyPostProcessorProvider) {
+
 		this.replyPostProcessorProvider = replyPostProcessorProvider;
 	}
 
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	protected void applyCommonOverrides(@Nullable RabbitListenerEndpoint endpoint, C instance) {
 		if (endpoint != null) { // endpoint settings overriding default factory settings
 			JavaUtils.INSTANCE
-				.acceptIfNotNull(endpoint.getAutoStartup(), instance::setAutoStartup);
-			instance.setListenerId(endpoint.getId());
+					.acceptIfNotNull(endpoint.getAutoStartup(), instance::setAutoStartup)
+					.acceptIfNotNull(endpoint.getId(), instance::setListenerId);
 			endpoint.setupListenerContainer(instance);
 		}
 		Object iml = instance.getMessageListener();
@@ -169,8 +175,7 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	 * @return the advice chain that was set. Defaults to {@code null}.
 	 * @since 1.7.4
 	 */
-	@Nullable
-	public Advice[] getAdviceChain() {
+	public Advice @Nullable [] getAdviceChain() {
 		return this.adviceChain == null ? null : Arrays.copyOf(this.adviceChain, this.adviceChain.length);
 	}
 
@@ -178,12 +183,12 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	 * @param adviceChain the advice chain to set.
 	 * @see AbstractMessageListenerContainer#setAdviceChain
 	 */
-	public void setAdviceChain(Advice... adviceChain) {
+	public void setAdviceChain(Advice @Nullable ... adviceChain) {
 		this.adviceChain = adviceChain == null ? null : Arrays.copyOf(adviceChain, adviceChain.length);
 	}
 
 	/**
-	 * Set to false to disable micrometer listener timers. When true, ignored
+	 * Set to {@code false} to disable micrometer listener timers. When true, ignored
 	 * if {@link #setObservationEnabled(boolean)} is set to true.
 	 * @param micrometerEnabled false to disable.
 	 * @since 3.0
@@ -193,7 +198,7 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 		this.micrometerEnabled = micrometerEnabled;
 	}
 
-	protected Boolean getMicrometerEnabled() {
+	protected @Nullable Boolean getMicrometerEnabled() {
 		return this.micrometerEnabled;
 	}
 
@@ -208,7 +213,7 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 		this.observationEnabled = observationEnabled;
 	}
 
-	protected Boolean getObservationEnabled() {
+	protected @Nullable Boolean getObservationEnabled() {
 		return this.observationEnabled;
 	}
 
@@ -227,7 +232,7 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	}
 
 	@Override
-	public String getBeanName() {
+	public @Nullable String getBeanName() {
 		return this.beanName;
 	}
 

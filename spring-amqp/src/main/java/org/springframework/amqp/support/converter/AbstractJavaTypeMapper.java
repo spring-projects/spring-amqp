@@ -22,10 +22,10 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.BeanClassLoaderAware;
-import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 
 /**
@@ -36,6 +36,7 @@ import org.springframework.util.ClassUtils;
  * @author Andreas Asplund
  * @author Gary Russell
  * @author Ngoc Nhan
+ * @author Artem Bilan
  */
 public abstract class AbstractJavaTypeMapper implements BeanClassLoaderAware {
 
@@ -49,7 +50,7 @@ public abstract class AbstractJavaTypeMapper implements BeanClassLoaderAware {
 
 	private final Map<Class<?>, String> classIdMapping = new HashMap<>();
 
-	private ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
+	private @Nullable ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
 
 	public String getClassIdFieldName() {
 		return DEFAULT_CLASSID_FIELD_NAME;
@@ -73,7 +74,7 @@ public abstract class AbstractJavaTypeMapper implements BeanClassLoaderAware {
 		this.classLoader = classLoader;
 	}
 
-	protected ClassLoader getClassLoader() {
+	protected @Nullable ClassLoader getClassLoader() {
 		return this.classLoader;
 	}
 
@@ -95,9 +96,8 @@ public abstract class AbstractJavaTypeMapper implements BeanClassLoaderAware {
 		return classId;
 	}
 
-	@Nullable
-	protected String retrieveHeaderAsString(MessageProperties properties, String headerName) {
-		Map<String, Object> headers = properties.getHeaders();
+	protected @Nullable String retrieveHeaderAsString(MessageProperties properties, String headerName) {
+		Map<String, @Nullable Object> headers = properties.getHeaders();
 		Object classIdFieldNameValue = headers.get(headerName);
 		return classIdFieldNameValue != null
 				? classIdFieldNameValue.toString()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 the original author or authors.
+ * Copyright 2018-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Base64UrlNamingStrategy;
@@ -39,20 +40,20 @@ import org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.context.SmartLifecycle;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 /**
- * When the event-exchange-plugin is enabled (see
- * https://www.rabbitmq.com/event-exchange.html), if an object of this type is declared as
- * a bean, selected events will be published as {@link BrokerEvent}s. Such events can then
- * be consumed using an {@code ApplicationListener} or {@code @EventListener} method.
+ * When the <a href="https://www.rabbitmq.com/event-exchange.html">Event Exchange Plugin</a> is enabled,
+ * if an object of this type is declared as a bean, selected events will be published as {@link BrokerEvent}s.
+ * Such events can then be consumed using an {@code ApplicationListener} or {@code @EventListener} method.
  * An {@link AnonymousQueue} will be bound to the {@code amq.rabbitmq.event} topic exchange
  * with the supplied keys.
  *
  * @author Gary Russell
  * @author Christian Tzolov
+ * @author Artem Bilan
+ *
  * @since 2.1
  *
  */
@@ -81,9 +82,9 @@ public class BrokerEventListener implements MessageListener, ApplicationEventPub
 
 	private boolean stopInvoked;
 
-	private Exception bindingsFailedException;
+	private @Nullable Exception bindingsFailedException;
 
-	private ApplicationEventPublisher applicationEventPublisher;
+	private @Nullable ApplicationEventPublisher applicationEventPublisher;
 
 	/**
 	 * Construct an instance using the supplied connection factory and event keys. Event
@@ -96,6 +97,7 @@ public class BrokerEventListener implements MessageListener, ApplicationEventPub
 	 * @param connectionFactory the connection factory.
 	 * @param eventKeys the event keys.
 	 */
+	@SuppressWarnings("this-escape")
 	public BrokerEventListener(ConnectionFactory connectionFactory, String... eventKeys) {
 		this(new DirectMessageListenerContainer(connectionFactory), true, eventKeys);
 	}
@@ -116,6 +118,7 @@ public class BrokerEventListener implements MessageListener, ApplicationEventPub
 		this(container, false, eventKeys);
 	}
 
+	@SuppressWarnings("this-escape")
 	private BrokerEventListener(AbstractMessageListenerContainer container, boolean ownContainer, String... eventKeys) {
 		Assert.notNull(container, "listener container cannot be null");
 		Assert.isTrue(!ObjectUtils.isEmpty(eventKeys), "At least one event key is required");

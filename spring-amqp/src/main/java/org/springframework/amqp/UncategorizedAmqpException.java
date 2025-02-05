@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.amqp;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * A "catch-all" exception type within the AmqpException hierarchy
  * when no more specific cause is known.
@@ -25,7 +27,7 @@ package org.springframework.amqp;
 @SuppressWarnings("serial")
 public class UncategorizedAmqpException extends AmqpException {
 
-	public UncategorizedAmqpException(Throwable cause) {
+	public UncategorizedAmqpException(@Nullable Throwable cause) {
 		super(cause);
 	}
 

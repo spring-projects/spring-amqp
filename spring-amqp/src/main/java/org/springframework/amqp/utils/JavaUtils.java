@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 the original author or authors.
+ * Copyright 2019-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.springframework.amqp.utils;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.util.StringUtils;
 
 /**
@@ -26,6 +28,8 @@ import org.springframework.util.StringUtils;
  * the singleton {@link #INSTANCE} and then chain calls to the utility methods.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.1.4
  *
  */
@@ -47,8 +51,8 @@ public final class JavaUtils {
 	 * @param <T> the value type.
 	 * @return this.
 	 */
-	public <T> JavaUtils acceptIfCondition(boolean condition, T value, Consumer<T> consumer) {
-		if (condition) {
+	public <T> JavaUtils acceptIfCondition(boolean condition, @Nullable T value, Consumer<T> consumer) {
+		if (condition && value != null) {
 			consumer.accept(value);
 		}
 		return this;
@@ -61,7 +65,7 @@ public final class JavaUtils {
 	 * @param <T> the value type.
 	 * @return this.
 	 */
-	public <T> JavaUtils acceptIfNotNull(T value, Consumer<T> consumer) {
+	public <T> JavaUtils acceptIfNotNull(@Nullable T value, Consumer<T> consumer) {
 		if (value != null) {
 			consumer.accept(value);
 		}
@@ -74,7 +78,7 @@ public final class JavaUtils {
 	 * @param consumer the consumer.
 	 * @return this.
 	 */
-	public JavaUtils acceptIfHasText(String value, Consumer<String> consumer) {
+	public JavaUtils acceptIfHasText(@Nullable String value, Consumer<String> consumer) {
 		if (StringUtils.hasText(value)) {
 			consumer.accept(value);
 		}
@@ -109,7 +113,7 @@ public final class JavaUtils {
 	 * @param <T2> the second argument type.
 	 * @return this.
 	 */
-	public <T1, T2> JavaUtils acceptIfNotNull(T1 t1, T2 t2, BiConsumer<T1, T2> consumer) {
+	public <T1, T2> JavaUtils acceptIfNotNull(T1 t1, @Nullable T2 t2, BiConsumer<T1, T2> consumer) {
 		if (t2 != null) {
 			consumer.accept(t1, t2);
 		}
@@ -125,7 +129,7 @@ public final class JavaUtils {
 	 * @param consumer the consumer.
 	 * @return this.
 	 */
-	public <T> JavaUtils acceptIfHasText(T t1, String value, BiConsumer<T, String> consumer) {
+	public <T> JavaUtils acceptIfHasText(T t1, @Nullable String value, BiConsumer<T, String> consumer) {
 		if (StringUtils.hasText(value)) {
 			consumer.accept(t1, value);
 		}

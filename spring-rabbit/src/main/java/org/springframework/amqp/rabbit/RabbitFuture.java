@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 the original author or authors.
+ * Copyright 2022-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
 
@@ -39,20 +41,22 @@ public abstract class RabbitFuture<T> extends CompletableFuture<T> {
 
 	private final Message requestMessage;
 
-	private final BiConsumer<String, ChannelHolder> canceler;
+	private final BiConsumer<String, @Nullable ChannelHolder> canceler;
 
-	private final Function<RabbitFuture<?>, ScheduledFuture<?>> timeoutTaskFunction;
+	private final Function<RabbitFuture<?>, @Nullable ScheduledFuture<?>> timeoutTaskFunction;
 
-	private ScheduledFuture<?> timeoutTask;
+	private @Nullable ScheduledFuture<?> timeoutTask;
 
+	@SuppressWarnings("NullAway.Init")
 	private volatile CompletableFuture<Boolean> confirm;
 
-	private String nackCause;
+	private @Nullable String nackCause;
 
-	private ChannelHolder channelHolder;
+	private @Nullable ChannelHolder channelHolder;
 
-	protected RabbitFuture(String correlationId, Message requestMessage, BiConsumer<String, ChannelHolder> canceler,
-			Function<RabbitFuture<?>, ScheduledFuture<?>> timeoutTaskFunction) {
+	protected RabbitFuture(String correlationId, Message requestMessage,
+			BiConsumer<String, @Nullable ChannelHolder> canceler,
+			Function<RabbitFuture<?>, @Nullable ScheduledFuture<?>> timeoutTaskFunction) {
 
 		this.correlationId = correlationId;
 		this.requestMessage = requestMessage;
@@ -68,6 +72,7 @@ public abstract class RabbitFuture<T> extends CompletableFuture<T> {
 		return this.correlationId;
 	}
 
+	@Nullable
 	ChannelHolder getChannelHolder() {
 		return this.channelHolder;
 	}
@@ -131,11 +136,11 @@ public abstract class RabbitFuture<T> extends CompletableFuture<T> {
 	 * the cause for the nack, if any.
 	 * @return the cause.
 	 */
-	public String getNackCause() {
+	public @Nullable String getNackCause() {
 		return this.nackCause;
 	}
 
-	void setNackCause(String nackCause) {
+	void setNackCause(@Nullable String nackCause) {
 		this.nackCause = nackCause;
 	}
 

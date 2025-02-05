@@ -50,12 +50,9 @@ import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.AmqpException;
-import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AnonymousQueue;
-import org.springframework.amqp.core.BatchMessageListener;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.Queue;
@@ -79,7 +76,6 @@ import org.springframework.util.backoff.FixedBackOff;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
-import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.with;
 import static org.mockito.ArgumentMatchers.any;
@@ -87,19 +83,15 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 
 /**
  * @author David Syer
@@ -139,7 +131,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setTransactionManager(new TestTransactionManager());
 		container.setReceiveTimeout(10);
 		assertThatIllegalStateException()
-			.isThrownBy(container::afterPropertiesSet);
+				.isThrownBy(container::afterPropertiesSet);
 		container.stop();
 		singleConnectionFactory.destroy();
 	}
@@ -154,7 +146,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setAcknowledgeMode(AcknowledgeMode.NONE);
 		container.setReceiveTimeout(10);
 		assertThatIllegalStateException()
-			.isThrownBy(container::afterPropertiesSet);
+				.isThrownBy(container::afterPropertiesSet);
 		container.stop();
 		singleConnectionFactory.destroy();
 	}
@@ -502,10 +494,10 @@ public class SimpleMessageListenerContainerTests {
 		CountDownLatch latch2 = new CountDownLatch(2);
 		willAnswer(messageToConsumer(mockChannel1, container, false, latch1))
 				.given(mockChannel1).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
-				anyMap(), any(Consumer.class));
+						anyMap(), any(Consumer.class));
 		willAnswer(messageToConsumer(mockChannel2, container, false, latch1))
 				.given(mockChannel2).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
-				anyMap(), any(Consumer.class));
+						anyMap(), any(Consumer.class));
 		willAnswer(messageToConsumer(mockChannel1, container, true, latch2)).given(mockChannel1).basicCancel(anyString());
 		willAnswer(messageToConsumer(mockChannel2, container, true, latch2)).given(mockChannel2).basicCancel(anyString());
 
@@ -618,34 +610,6 @@ public class SimpleMessageListenerContainerTests {
 	}
 
 	@Test
-	public void testNullMPP() {
-		class Container extends SimpleMessageListenerContainer {
-
-			@Override
-			public void executeListener(Channel channel, Object messageIn) {
-				super.executeListener(channel, messageIn);
-			}
-
-		}
-		Container container = new Container();
-		container.setMessageListener(m -> {
-			// NOSONAR
-		});
-		container.setAfterReceivePostProcessors(m -> null);
-		container.setConnectionFactory(mock(ConnectionFactory.class));
-		container.afterPropertiesSet();
-		container.start();
-		try {
-			container.executeListener(null, MessageBuilder.withBody("foo".getBytes()).build());
-			fail("Expected exception");
-		}
-		catch (ImmediateAcknowledgeAmqpException e) {
-			// NOSONAR
-		}
-		container.stop();
-	}
-
-	@Test
 	public void testChildClassLoader() {
 		ClassLoader child = new URLClassLoader(new URL[0], SimpleMessageListenerContainerTests.class.getClassLoader());
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
@@ -683,6 +647,7 @@ public class SimpleMessageListenerContainerTests {
 			public Message postProcessMessage(Message message) throws AmqpException {
 				return message;
 			}
+
 		}
 		Container container = new Container();
 
@@ -728,51 +693,6 @@ public class SimpleMessageListenerContainerTests {
 	}
 
 	@Test
-	void filterMppNoDoubleAck() throws Exception {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
-		Connection connection = mock(Connection.class);
-		Channel channel = mock(Channel.class);
-		given(connectionFactory.createConnection()).willReturn(connection);
-		given(connection.createChannel(false)).willReturn(channel);
-		final AtomicReference<Consumer> consumer = new AtomicReference<>();
-		willAnswer(invocation -> {
-			consumer.set(invocation.getArgument(6));
-			consumer.get().handleConsumeOk("1");
-			return "1";
-		}).given(channel)
-				.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
-						any(Consumer.class));
-		final CountDownLatch latch = new CountDownLatch(1);
-		willAnswer(invocation -> {
-			latch.countDown();
-			return null;
-		}).given(channel).basicAck(anyLong(), anyBoolean());
-
-		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
-		container.setAfterReceivePostProcessors(msg -> null);
-		container.setQueueNames("foo");
-		MessageListener listener = mock(BatchMessageListener.class);
-		container.setMessageListener(listener);
-		container.setBatchSize(2);
-		container.setConsumerBatchEnabled(true);
-		container.setReceiveTimeout(10);
-		container.start();
-		BasicProperties props = new BasicProperties();
-		byte[] payload = "baz".getBytes();
-		Envelope envelope = new Envelope(1L, false, "foo", "bar");
-		consumer.get().handleDelivery("1", envelope, props, payload);
-		envelope = new Envelope(2L, false, "foo", "bar");
-		consumer.get().handleDelivery("1", envelope, props, payload);
-		assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
-		verify(channel, never()).basicAck(eq(1), anyBoolean());
-		verify(channel).basicAck(2, true);
-		container.stop();
-		verify(listener).containerAckMode(AcknowledgeMode.AUTO);
-		verify(listener).isAsyncReplies();
-		verifyNoMoreInteractions(listener);
-	}
-
-	@Test
 	void testWithConsumerStartWhenNotActive() {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 		Connection connection = mock(Connection.class);
@@ -794,59 +714,6 @@ public class SimpleMessageListenerContainerTests {
 		CountDownLatch start = TestUtils.getPropertyValue(lastTask, "start", CountDownLatch.class);
 
 		assertThat(start.getCount()).isEqualTo(0L);
-	}
-
-	@Test
-	public void testBatchReceiveTimedOut() throws Exception {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
-		Connection connection = mock(Connection.class);
-		Channel channel = mock(Channel.class);
-		given(connectionFactory.createConnection()).willReturn(connection);
-		given(connection.createChannel(false)).willReturn(channel);
-		final AtomicReference<Consumer> consumer = new AtomicReference<>();
-		willAnswer(invocation -> {
-			consumer.set(invocation.getArgument(6));
-			consumer.get().handleConsumeOk("1");
-			return "1";
-		}).given(channel)
-				.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
-						any(Consumer.class));
-		final CountDownLatch latch = new CountDownLatch(2);
-		willAnswer(invocation -> {
-			latch.countDown();
-			return null;
-		}).given(channel).basicAck(anyLong(), anyBoolean());
-
-		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
-		container.setAfterReceivePostProcessors(msg -> null);
-		container.setQueueNames("foo");
-		MessageListener listener = mock(BatchMessageListener.class);
-		container.setMessageListener(listener);
-		container.setBatchSize(3);
-		container.setConsumerBatchEnabled(true);
-		container.setReceiveTimeout(10);
-		container.setBatchReceiveTimeout(20);
-		container.start();
-
-		BasicProperties props = new BasicProperties();
-		byte[] payload = "baz".getBytes();
-		Envelope envelope = new Envelope(1L, false, "foo", "bar");
-		consumer.get().handleDelivery("1", envelope, props, payload);
-		envelope = new Envelope(2L, false, "foo", "bar");
-		consumer.get().handleDelivery("1", envelope, props, payload);
-		// waiting for batch receive timed out
-		Thread.sleep(20);
-		envelope = new Envelope(3L, false, "foo", "bar");
-		consumer.get().handleDelivery("1", envelope, props, payload);
-		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
-		verify(channel, never()).basicAck(eq(1), anyBoolean());
-		verify(channel).basicAck(2, true);
-		verify(channel, never()).basicAck(eq(2), anyBoolean());
-		verify(channel).basicAck(3, true);
-		container.stop();
-		verify(listener).containerAckMode(AcknowledgeMode.AUTO);
-		verify(listener).isAsyncReplies();
-		verifyNoMoreInteractions(listener);
 	}
 
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,
@@ -929,6 +796,7 @@ public class SimpleMessageListenerContainerTests {
 			}
 			super.execute(task);
 		}
+
 	}
 
 }

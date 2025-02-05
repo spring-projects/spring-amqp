@@ -1,5 +1,5 @@
 /**
  * Provides classes for message listener containers.
  */
-@org.springframework.lang.NonNullApi
+@org.jspecify.annotations.NullMarked
 package org.springframework.amqp.rabbit.listener;

@@ -20,9 +20,9 @@ import java.io.IOException;
 import java.util.function.Consumer;
 
 import com.rabbitmq.client.Channel;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpIOException;
-import org.springframework.lang.Nullable;
 import org.springframework.transaction.support.ResourceHolderSynchronization;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -46,9 +46,9 @@ public final class ConnectionFactoryUtils {
 
 	private static final boolean WEB_FLUX_PRESENT =
 			ClassUtils.isPresent("org.springframework.web.reactive.function.client.WebClient",
-				ConnectionFactoryUtils.class.getClassLoader());
+					ConnectionFactoryUtils.class.getClassLoader());
 
-	private static final ThreadLocal<AfterCompletionFailedException> COMPLETION_EXCEPTIONS = new ThreadLocal<>();
+	private static final ThreadLocal<@Nullable AfterCompletionFailedException> COMPLETION_EXCEPTIONS = new ThreadLocal<>();
 
 	private static boolean captureAfterCompletionExceptions;
 
@@ -63,9 +63,6 @@ public final class ConnectionFactoryUtils {
 	 * @return whether the Channel is transactional
 	 */
 	public static boolean isChannelTransactional(Channel channel, ConnectionFactory connectionFactory) {
-		if (channel == null || connectionFactory == null) {
-			return false;
-		}
 		RabbitResourceHolder resourceHolder = (RabbitResourceHolder) TransactionSynchronizationManager
 				.getResource(connectionFactory);
 		return (resourceHolder != null && resourceHolder.containsChannel(channel));
@@ -82,6 +79,7 @@ public final class ConnectionFactoryUtils {
 	 */
 	public static RabbitResourceHolder getTransactionalResourceHolder(final ConnectionFactory connectionFactory,
 			final boolean synchedLocalTransactionAllowed) {
+
 		return getTransactionalResourceHolder(connectionFactory, synchedLocalTransactionAllowed, false);
 	}
 
@@ -108,8 +106,9 @@ public final class ConnectionFactoryUtils {
 	 * @param connectionFactory the RabbitMQ ConnectionFactory to bind for (used as TransactionSynchronizationManager
 	 * key)
 	 * @param resourceFactory the ResourceFactory to use for extracting or creating RabbitMQ resources
-	 * @return the transactional Channel, or <code>null</code> if none found
+	 * @return the transactional Channel
 	 */
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	private static RabbitResourceHolder doGetTransactionalResourceHolder(// NOSONAR complexity
 			ConnectionFactory connectionFactory, ResourceFactory resourceFactory) {
 
@@ -129,7 +128,7 @@ public final class ConnectionFactoryUtils {
 			resourceHolderToUse = new RabbitResourceHolder();
 		}
 		Connection connection = resourceFactory.getConnection(resourceHolderToUse); //NOSONAR
-		Channel channel = null;
+		Channel channel;
 		try {
 			/*
 			 * If we are in a listener container, first see if there's a channel registered
@@ -160,7 +159,7 @@ public final class ConnectionFactoryUtils {
 			if (!resourceHolderToUse.equals(resourceHolder)
 					&& TransactionSynchronizationManager.isSynchronizationActive()) {
 				bindResourceToTransaction(resourceHolderToUse, connectionFactory,
-						resourceFactory.isSynchedLocalTransactionAllowed());
+						resourceFactory.synchedLocalTransactionAllowed());
 			}
 
 			return resourceHolderToUse;
@@ -180,7 +179,7 @@ public final class ConnectionFactoryUtils {
 		RabbitUtils.closeConnection(resourceHolder.getConnection());
 	}
 
-	public static RabbitResourceHolder bindResourceToTransaction(RabbitResourceHolder resourceHolder,
+	public static @Nullable RabbitResourceHolder bindResourceToTransaction(RabbitResourceHolder resourceHolder,
 			ConnectionFactory connectionFactory, boolean synched) {
 
 		if (TransactionSynchronizationManager.hasResource(connectionFactory)
@@ -285,6 +284,7 @@ public final class ConnectionFactoryUtils {
 		 * @param holder the RabbitResourceHolder
 		 * @return an appropriate Connection fetched from the holder, or <code>null</code> if none found
 		 */
+		@Nullable
 		Connection getConnection(RabbitResourceHolder holder);
 
 		/**
@@ -308,35 +308,20 @@ public final class ConnectionFactoryUtils {
 		 * with the RabbitMQ transaction committing right after the main transaction.
 		 * @return whether to allow for synchronizing a local RabbitMQ transaction
 		 */
-		boolean isSynchedLocalTransactionAllowed();
+		boolean synchedLocalTransactionAllowed();
 
 	}
 
-	private static class RabbitResourceFactory implements ResourceFactory {
-
-		private final ConnectionFactory connectionFactory;
-
-		private final boolean synchedLocalTransactionAllowed;
-
-		private final boolean publisherConnectionIfPossible;
-
-		RabbitResourceFactory(ConnectionFactory connectionFactory, boolean synchedLocalTransactionAllowed,
-				boolean publisherConnectionIfPossible) {
-
-			this.connectionFactory = connectionFactory;
-			this.synchedLocalTransactionAllowed = synchedLocalTransactionAllowed;
-			this.publisherConnectionIfPossible = publisherConnectionIfPossible;
-		}
+	private record RabbitResourceFactory(ConnectionFactory connectionFactory, boolean synchedLocalTransactionAllowed,
+										 boolean publisherConnectionIfPossible) implements ResourceFactory {
 
 		@Override
-		@Nullable
-		public Channel getChannel(RabbitResourceHolder holder) {
+		public @Nullable Channel getChannel(RabbitResourceHolder holder) {
 			return holder.getChannel();
 		}
 
 		@Override
-		@Nullable
-		public Connection getConnection(RabbitResourceHolder holder) {
+		public @Nullable Connection getConnection(RabbitResourceHolder holder) {
 			return holder.getConnection();
 		}
 
@@ -349,11 +334,6 @@ public final class ConnectionFactoryUtils {
 		@Override
 		public Channel createChannel(Connection con) {
 			return con.createChannel(this.synchedLocalTransactionAllowed);
-		}
-
-		@Override
-		public boolean isSynchedLocalTransactionAllowed() {
-			return this.synchedLocalTransactionAllowed;
 		}
 
 	}

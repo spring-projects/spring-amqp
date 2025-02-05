@@ -24,6 +24,8 @@ import java.util.Map;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -37,11 +39,11 @@ import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.test.MessageTestUtils;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.AmqpMessageHeaderAccessor;
-import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.converter.MessageConversionException;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -62,7 +64,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-
 /**
  * @author Stephane Nicoll
  * @author Artem Bilan
@@ -78,20 +79,20 @@ public class MethodRabbitListenerEndpointTests {
 
 	public String testName;
 
+	@BeforeAll
+	static void setUp() {
+		System.setProperty("spring.amqp.deserialization.trust.all", "true");
+	}
+
+	@AfterAll
+	static void tearDown() {
+		System.setProperty("spring.amqp.deserialization.trust.all", "false");
+	}
+
 	@BeforeEach
 	public void setup(TestInfo info) {
 		initializeFactory(factory);
 		this.testName = info.getTestMethod().get().getName();
-	}
-
-	@Test
-	public void createMessageListenerNoFactory(TestInfo info) {
-		MethodRabbitListenerEndpoint endpoint = new MethodRabbitListenerEndpoint();
-		endpoint.setBean(this);
-		endpoint.setMethod(info.getTestMethod().get());
-
-		assertThatIllegalStateException()
-			.isThrownBy(() -> endpoint.createMessageListener(container));
 	}
 
 	@Test
@@ -240,7 +241,6 @@ public class MethodRabbitListenerEndpointTests {
 
 		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage(body, new MessageProperties());
 
-
 		processAndReply(listener, message, "fooQueue", "", false, null);
 		assertDefaultListenerMethodInvocation();
 	}
@@ -277,7 +277,6 @@ public class MethodRabbitListenerEndpointTests {
 		MessageProperties properties = new MessageProperties();
 		properties.setReplyToAddress(replyTo);
 		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage(body, properties);
-
 
 		processAndReply(listener, message, "replyToQueue", "myRouting", true, null);
 		assertDefaultListenerMethodInvocation();
@@ -328,8 +327,8 @@ public class MethodRabbitListenerEndpointTests {
 	@Test
 	public void invalidSendTo() {
 		assertThatIllegalStateException()
-			.isThrownBy(() -> createDefaultInstance(String.class))
-			.withMessageMatching(".*firstDestination, secondDestination.*");
+				.isThrownBy(() -> createDefaultInstance(String.class))
+				.withMessageMatching(".*firstDestination, secondDestination.*");
 	}
 
 	@Test
@@ -357,7 +356,7 @@ public class MethodRabbitListenerEndpointTests {
 		Channel channel = mock(Channel.class);
 
 		assertThatThrownBy(() -> listener.onMessage(MessageTestUtils.createTextMessage("invalid value"), channel))
-			.isInstanceOf(ListenerExecutionFailedException.class);
+				.isInstanceOf(ListenerExecutionFailedException.class);
 
 	}
 
@@ -370,9 +369,9 @@ public class MethodRabbitListenerEndpointTests {
 
 		// test is not a valid integer
 		assertThatThrownBy(() -> listener.onMessage(MessageTestUtils.createTextMessage("test"), channel))
-			.isInstanceOf(ListenerExecutionFailedException.class)
-			.hasCauseExactlyInstanceOf(org.springframework.messaging.converter.MessageConversionException.class)
-			.hasMessageContaining(getDefaultListenerMethod(Integer.class).toGenericString()); // ref to method
+				.isInstanceOf(ListenerExecutionFailedException.class)
+				.hasCauseExactlyInstanceOf(org.springframework.messaging.converter.MessageConversionException.class)
+				.hasMessageContaining(getDefaultListenerMethod(Integer.class).toGenericString()); // ref to method
 	}
 
 	@Test
@@ -382,9 +381,9 @@ public class MethodRabbitListenerEndpointTests {
 
 		// Message<String> as Message<Integer>
 		assertThatThrownBy(() -> listener.onMessage(MessageTestUtils.createTextMessage("test"), channel))
-			.extracting(t -> t.getCause())
-			.isInstanceOfAny(MethodArgumentTypeMismatchException.class,
-					org.springframework.messaging.converter.MessageConversionException.class);
+				.extracting(t -> t.getCause())
+				.isInstanceOfAny(MethodArgumentTypeMismatchException.class,
+						org.springframework.messaging.converter.MessageConversionException.class);
 	}
 
 	private MessagingMessageListenerAdapter createInstance(
@@ -433,6 +432,7 @@ public class MethodRabbitListenerEndpointTests {
 
 	private Validator testValidator(final String invalidValue) {
 		return new Validator() {
+
 			@Override
 			public boolean supports(Class<?> clazz) {
 				return String.class.isAssignableFrom(clazz);
@@ -574,9 +574,9 @@ public class MethodRabbitListenerEndpointTests {
 
 	}
 
-
 	@SuppressWarnings("serial")
 	static class MyBean implements Serializable {
+
 		private String name;
 
 	}

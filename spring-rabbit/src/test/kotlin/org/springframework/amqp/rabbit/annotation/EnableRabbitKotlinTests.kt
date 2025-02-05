@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 the original author or authors.
+ * Copyright 2018-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import assertk.assertThat
 import assertk.assertions.containsOnly
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
+import assertk.assertions.isNotNull
 import assertk.assertions.isTrue
 import org.junit.jupiter.api.Test
 import org.springframework.amqp.core.AcknowledgeMode
@@ -68,9 +69,13 @@ class EnableRabbitKotlinTests {
 		template.setReplyTimeout(10_000)
 		val result = template.convertSendAndReceive("kotlinQueue", "test")
 		assertThat(result).isEqualTo("TEST")
-		val listener = registry.getListenerContainer("single").messageListener
-		assertThat(TestUtils.getPropertyValue(listener, "messagingMessageConverter.inferredArgumentType").toString())
+		val listener = registry.getListenerContainer("single")?.messageListener
+		assertThat(listener).isNotNull()
+		listener?.let { nonNullableListener ->
+			assertThat(TestUtils.getPropertyValue(nonNullableListener, "messagingMessageConverter.inferredArgumentType")
+				.toString())
 				.isEqualTo("class java.lang.String")
+		}
 	}
 
 	@Test

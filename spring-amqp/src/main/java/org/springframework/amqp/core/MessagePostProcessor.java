@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.amqp.core;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpException;
 
@@ -56,7 +58,7 @@ public interface MessagePostProcessor {
 	 * @return the message.
 	 * @since 1.6.7
 	 */
-	default Message postProcessMessage(Message message, Correlation correlation) {
+	default Message postProcessMessage(Message message, @Nullable Correlation correlation) {
 		return postProcessMessage(message);
 	}
 
@@ -70,7 +72,9 @@ public interface MessagePostProcessor {
 	 * @return the message.
 	 * @since 2.3.4
 	 */
-	default Message postProcessMessage(Message message, Correlation correlation, String exchange, String routingKey) {
+	default Message postProcessMessage(Message message, @Nullable Correlation correlation,
+			String exchange, String routingKey) {
+
 		return postProcessMessage(message, correlation);
 	}
 

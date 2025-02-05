@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.amqp.rabbit.connection;
+
+import org.jspecify.annotations.Nullable;
 
 /**
  * Callback to determine the connection factory using the provided information.
@@ -32,6 +34,7 @@ public interface FactoryFinder {
 	 * @param nodeUri the node URI.
 	 * @return the factory.
 	 */
-	ConnectionFactory locate(String queueName, String node, String nodeUri);
+	@Nullable
+	ConnectionFactory locate(@Nullable String queueName, String node, String nodeUri);
 
 }

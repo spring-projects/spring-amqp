@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 the original author or authors.
+ * Copyright 2020-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 			return rabbitListener;
 		}
 		return (RabbitListener) Proxy.newProxyInstance(
-				RabbitListener.class.getClassLoader(), new Class<?>[]{RabbitListener.class},
+				RabbitListener.class.getClassLoader(), new Class<?>[] {RabbitListener.class},
 				new RabbitListenerAdminReplacementInvocationHandler(rabbitListener, rabbitAdmin));
 	}
 
@@ -104,15 +104,8 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 	/**
 	 * An {@link InvocationHandler} to provide a replacing admin() parameter of the listener.
 	 */
-	private static final class RabbitListenerAdminReplacementInvocationHandler implements InvocationHandler {
-
-		private final RabbitListener target;
-		private final String admin;
-
-		private RabbitListenerAdminReplacementInvocationHandler(final RabbitListener target, final String admin) {
-			this.target = target;
-			this.admin = admin;
-		}
+	private record RabbitListenerAdminReplacementInvocationHandler(RabbitListener target,
+																   String admin) implements InvocationHandler {
 
 		@Override
 		public Object invoke(final Object proxy, final Method method, final Object[] args)
@@ -122,6 +115,7 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 			}
 			return method.invoke(this.target, args);
 		}
+
 	}
 
 }

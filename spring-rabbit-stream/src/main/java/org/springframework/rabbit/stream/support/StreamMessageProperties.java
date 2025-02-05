@@ -16,12 +16,13 @@
 
 package org.springframework.rabbit.stream.support;
 
+import java.io.Serial;
 import java.util.Objects;
 
 import com.rabbitmq.stream.MessageHandler.Context;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.lang.Nullable;
 
 /**
  * {@link MessageProperties} extension for stream messages.
@@ -32,24 +33,25 @@ import org.springframework.lang.Nullable;
  */
 public class StreamMessageProperties extends MessageProperties {
 
+	@Serial
 	private static final long serialVersionUID = 1L;
 
-	private transient Context context;
+	private transient @Nullable Context context;
 
-	private String to;
+	private @Nullable String to;
 
-	private String subject;
+	private @Nullable String subject;
 
 	private long creationTime;
 
-	private String groupId;
+	private @Nullable String groupId;
 
 	private long groupSequence;
 
-	private String replyToGroupId;
+	private @Nullable String replyToGroupId;
 
 	/**
- 	 * Create a new instance.
+	 * Create a new instance.
 	 */
 	public StreamMessageProperties() {
 	}
@@ -66,8 +68,7 @@ public class StreamMessageProperties extends MessageProperties {
 	 * Return the stream {@link Context} for the message.
 	 * @return the context.
 	 */
-	@Nullable
-	public Context getContext() {
+	public @Nullable Context getContext() {
 		return this.context;
 	}
 
@@ -75,7 +76,7 @@ public class StreamMessageProperties extends MessageProperties {
 	 * See {@link com.rabbitmq.stream.Properties#getTo()}.
 	 * @return the to address.
 	 */
-	public String getTo() {
+	public @Nullable String getTo() {
 		return this.to;
 	}
 
@@ -91,7 +92,7 @@ public class StreamMessageProperties extends MessageProperties {
 	 * See {@link com.rabbitmq.stream.Properties#getSubject()}.
 	 * @return the subject.
 	 */
-	public String getSubject() {
+	public @Nullable String getSubject() {
 		return this.subject;
 	}
 
@@ -124,7 +125,7 @@ public class StreamMessageProperties extends MessageProperties {
 	 * See {@link com.rabbitmq.stream.Properties#getGroupId()}.
 	 * @return the group id.
 	 */
-	public String getGroupId() {
+	public @Nullable String getGroupId() {
 		return this.groupId;
 	}
 
@@ -157,7 +158,7 @@ public class StreamMessageProperties extends MessageProperties {
 	 * See {@link com.rabbitmq.stream.Properties#getReplyToGroupId()}.
 	 * @return the reply to group id.
 	 */
-	public String getReplyToGroupId() {
+	public @Nullable String getReplyToGroupId() {
 		return this.replyToGroupId;
 	}
 

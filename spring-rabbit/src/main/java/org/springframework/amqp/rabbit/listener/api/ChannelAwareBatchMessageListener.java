@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.listener.api;
 import java.util.List;
 
 import com.rabbitmq.client.Channel;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Message;
 
@@ -32,11 +33,11 @@ import org.springframework.amqp.core.Message;
 public interface ChannelAwareBatchMessageListener extends ChannelAwareMessageListener {
 
 	@Override
-	default void onMessage(Message message, Channel channel) throws Exception {
+	default void onMessage(Message message, @Nullable Channel channel) throws Exception {
 		throw new UnsupportedOperationException("Should never be called by the container");
 	}
 
 	@Override
-	void onMessageBatch(List<Message> messages, Channel channel);
+	void onMessageBatch(List<Message> messages, @Nullable Channel channel);
 
 }

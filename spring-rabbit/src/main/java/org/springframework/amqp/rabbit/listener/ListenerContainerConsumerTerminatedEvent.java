@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 the original author or authors.
+ * Copyright 2015-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,10 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import java.io.Serial;
+
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.event.AmqpEvent;
 
 /**
@@ -27,21 +31,22 @@ import org.springframework.amqp.event.AmqpEvent;
  */
 public class ListenerContainerConsumerTerminatedEvent extends AmqpEvent {
 
+	@Serial
 	private static final long serialVersionUID = -8122166328567190605L;
 
-	private final String reason;
+	private final @Nullable String reason;
 
 	/**
 	 * Construct an instance with the provided arguments.
 	 * @param source the source container.
 	 * @param reason the reason.
 	 */
-	public ListenerContainerConsumerTerminatedEvent(Object source, String reason) {
+	public ListenerContainerConsumerTerminatedEvent(Object source, @Nullable String reason) {
 		super(source);
 		this.reason = reason;
 	}
 
-	public String getReason() {
+	public @Nullable String getReason() {
 		return this.reason;
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import org.jspecify.annotations.Nullable;
 import org.w3c.dom.Element;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListenerAnnotationBeanPostProcessor;
@@ -34,12 +35,14 @@ import org.springframework.util.StringUtils;
  * Parser for the 'annotation-driven' element of the 'rabbit' namespace.
  *
  * @author Stephane Nicoll
+ * @author Artem Bilan
+ *
  * @since 1.4
  */
 class AnnotationDrivenParser implements BeanDefinitionParser {
 
 	@Override
-	public BeanDefinition parse(Element element, ParserContext parserContext) {
+	public @Nullable BeanDefinition parse(Element element, ParserContext parserContext) {
 		Object source = parserContext.extractSource(element);
 
 		// Register component for the surrounding <rabbit:annotation-driven> element.
@@ -85,7 +88,7 @@ class AnnotationDrivenParser implements BeanDefinitionParser {
 		return null;
 	}
 
-	private static void registerDefaultEndpointRegistry(Object source, ParserContext parserContext) {
+	private static void registerDefaultEndpointRegistry(@Nullable Object source, ParserContext parserContext) {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(RabbitListenerEndpointRegistry.class);
 		builder.getRawBeanDefinition().setSource(source);
 		registerInfrastructureBean(parserContext, builder,

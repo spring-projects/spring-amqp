@@ -31,10 +31,10 @@ import com.rabbitmq.client.impl.CRDemoMechanism;
 import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -82,12 +82,12 @@ public abstract class RabbitUtils {
 
 	private static final Log LOGGER = LogFactory.getLog(RabbitUtils.class);
 
-	private static final ThreadLocal<Boolean> physicalCloseRequired = new ThreadLocal<>(); // NOSONAR - lower case
+	private static final ThreadLocal<@Nullable Boolean> physicalCloseRequired = new ThreadLocal<>(); // NOSONAR - lower case
 
 	/**
 	 * Close the given RabbitMQ Connection and ignore any thrown exception. This is useful for typical
 	 * <code>finally</code> blocks in manual RabbitMQ code.
-	 * @param connection the RabbitMQ Connection to close (may be <code>null</code>)
+	 * @param connection the RabbitMQ Connection to close (maybe <code>null</code>)
 	 */
 	public static void closeConnection(@Nullable Connection connection) {
 		if (connection != null) {
@@ -106,7 +106,7 @@ public abstract class RabbitUtils {
 	/**
 	 * Close the given RabbitMQ Channel and ignore any thrown exception. This is useful for typical <code>finally</code>
 	 * blocks in manual RabbitMQ code.
-	 * @param channel the RabbitMQ Channel to close (may be <code>null</code>)
+	 * @param channel the RabbitMQ Channel to close (maybe <code>null</code>)
 	 */
 	public static void closeChannel(@Nullable Channel channel) {
 		if (channel != null) {

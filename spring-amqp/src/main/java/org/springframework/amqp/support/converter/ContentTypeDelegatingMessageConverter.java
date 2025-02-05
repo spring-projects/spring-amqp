@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2024 the original author or authors.
+ * Copyright 2015-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import org.springframework.amqp.core.MessageProperties;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Ngoc Nhan
+ *
  * @since 1.4.2
  */
 public class ContentTypeDelegatingMessageConverter implements MessageConverter {
@@ -51,7 +52,7 @@ public class ContentTypeDelegatingMessageConverter implements MessageConverter {
 	}
 
 	/**
-	 * Constructs an instance using a the supplied default converter.
+	 * Constructs an instance using the supplied default converter.
 	 * May be null meaning a strict content-type match is required.
 	 * @param defaultConverter the converter.
 	 */
@@ -104,10 +105,6 @@ public class ContentTypeDelegatingMessageConverter implements MessageConverter {
 		MessageConverter delegate = getDelegates().get(contentType);
 		if (delegate == null) {
 			delegate = this.defaultConverter;
-		}
-
-		if (delegate == null) {
-			throw new MessageConversionException("No delegate converter is specified for content type " + contentType);
 		}
 
 		return delegate;

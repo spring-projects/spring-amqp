@@ -73,7 +73,7 @@ public class Jackson2JsonMessageConverterTests {
 		trade.setAccountName("Acct1");
 		trade.setBuyRequest(true);
 		trade.setOrderType("Market");
-		trade.setPrice(new BigDecimal(103.30));
+		trade.setPrice(new BigDecimal("103.30"));
 		trade.setQuantity(100);
 		trade.setRequestId("R123");
 		trade.setTicker("VMW");
@@ -299,7 +299,6 @@ public class Jackson2JsonMessageConverterTests {
 		Object foo = j2Converter.fromMessage(message);
 		assertThat(foo).isInstanceOf(Foo.class);
 
-		messageProperties.setContentType(null);
 		foo = j2Converter.fromMessage(message);
 		assertThat(foo).isInstanceOf(Foo.class);
 
@@ -670,6 +669,7 @@ public class Jackson2JsonMessageConverterTests {
 	@SuppressWarnings("serial")
 	public static class BazModule extends SimpleModule {
 
+		@SuppressWarnings("this-escape")
 		public BazModule() {
 			addDeserializer(Baz.class, new BazDeserializer());
 		}

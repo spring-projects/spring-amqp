@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import java.io.ObjectStreamClass;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.BeanClassLoaderAware;
@@ -32,7 +34,6 @@ import org.springframework.core.serializer.DefaultDeserializer;
 import org.springframework.core.serializer.DefaultSerializer;
 import org.springframework.core.serializer.Deserializer;
 import org.springframework.core.serializer.Serializer;
-import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 
 /**
@@ -64,7 +65,7 @@ public class SerializerMessageConverter extends AllowedListDeserializingMessageC
 
 	private boolean ignoreContentType = false;
 
-	private ClassLoader defaultDeserializerClassLoader = ClassUtils.getDefaultClassLoader();
+	private @Nullable ClassLoader defaultDeserializerClassLoader = ClassUtils.getDefaultClassLoader();
 
 	private boolean usingDefaultDeserializer = true;
 
@@ -115,15 +116,12 @@ public class SerializerMessageConverter extends AllowedListDeserializingMessageC
 	public Object fromMessage(Message message) throws MessageConversionException {
 		Object content = null;
 		MessageProperties properties = message.getMessageProperties();
-		if (properties != null) {
-			String contentType = properties.getContentType();
-			if (contentType != null && contentType.startsWith("text") && !this.ignoreContentType) {
-				content = asString(message, properties);
-			}
-			else if (contentType != null && contentType.equals(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT)
-					|| this.ignoreContentType) {
-				content = deserialize(message);
-			}
+		String contentType = properties.getContentType();
+		if (contentType.startsWith("text") && !this.ignoreContentType) {
+			content = asString(message, properties);
+		}
+		else if (contentType.equals(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT) || this.ignoreContentType) {
+			content = deserialize(message);
 		}
 		if (content == null) {
 			content = message.getBody();

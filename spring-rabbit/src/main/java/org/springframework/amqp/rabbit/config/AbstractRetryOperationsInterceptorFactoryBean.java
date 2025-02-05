@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.config;
 
 import org.aopalliance.aop.Advice;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.beans.factory.FactoryBean;
@@ -30,9 +31,9 @@ import org.springframework.retry.RetryOperations;
  */
 public abstract class AbstractRetryOperationsInterceptorFactoryBean implements FactoryBean<Advice> {
 
-	private MessageRecoverer messageRecoverer;
+	private @Nullable MessageRecoverer messageRecoverer;
 
-	private RetryOperations retryTemplate;
+	private @Nullable RetryOperations retryTemplate;
 
 	public void setRetryOperations(RetryOperations retryTemplate) {
 		this.retryTemplate = retryTemplate;
@@ -42,11 +43,11 @@ public abstract class AbstractRetryOperationsInterceptorFactoryBean implements F
 		this.messageRecoverer = messageRecoverer;
 	}
 
-	protected RetryOperations getRetryOperations() {
+	protected @Nullable RetryOperations getRetryOperations() {
 		return this.retryTemplate;
 	}
 
-	protected MessageRecoverer getMessageRecoverer() {
+	protected @Nullable MessageRecoverer getMessageRecoverer() {
 		return this.messageRecoverer;
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2021-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.springframework.amqp.support.converter;
 
 import java.util.HashSet;
 import java.util.Set;
+
+import org.jspecify.annotations.Nullable;
 
 /**
  * General utilities for handling remote invocations.
@@ -40,7 +42,7 @@ public abstract class RemoteInvocationUtils {
 	 * @see Throwable#getStackTrace()
 	 * @see Throwable#setStackTrace(StackTraceElement[])
 	 */
-	public static void fillInClientStackTraceIfPossible(Throwable ex) {
+	public static void fillInClientStackTraceIfPossible(@Nullable Throwable ex) {
 		if (ex != null) {
 			StackTraceElement[] clientStack = new Throwable().getStackTrace();
 			Set<Throwable> visitedExceptions = new HashSet<>();

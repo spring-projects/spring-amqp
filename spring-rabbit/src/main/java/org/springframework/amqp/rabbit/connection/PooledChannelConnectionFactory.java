@@ -36,25 +36,27 @@ import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.apache.commons.pool2.impl.GenericObjectPool;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.NameMatchMethodPointcutAdvisor;
 import org.springframework.context.SmartLifecycle;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
  * A very simple connection factory that caches channels using Apache Pool2
  * {@link GenericObjectPool}s (one for transactional and one for non-transactional
- * channels). The pools have default configuration but they can be configured using
+ * channels). The pools have default configuration, but they can be configured using
  * a callback.
  *
  * @author Gary Russell
  * @author Leonardo Ferreira
  * @author Christian Tzolov
  * @author Ngoc Nhan
+ * @author Artem Bilan
+ *
  * @since 2.3
  *
  */
@@ -65,11 +67,12 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory
 
 	private final Lock lock = new ReentrantLock();
 
-	private volatile ConnectionWrapper connection;
+	private volatile @Nullable ConnectionWrapper connection;
 
 	private boolean simplePublisherConfirms;
 
-	private BiConsumer<GenericObjectPool<Channel>, Boolean> poolConfigurer = (pool, tx) -> { };
+	private BiConsumer<GenericObjectPool<Channel>, Boolean> poolConfigurer = (pool, tx) -> {
+	};
 
 	private boolean defaultPublisherFactory = true;
 
@@ -86,6 +89,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory
 	 * @param rabbitConnectionFactory the rabbitmq connection factory.
 	 * @param isPublisher true if we are creating a publisher connection factory.
 	 */
+	@SuppressWarnings("this-escape")
 	private PooledChannelConnectionFactory(ConnectionFactory rabbitConnectionFactory, boolean isPublisher) {
 		super(rabbitConnectionFactory);
 		if (!isPublisher) {
@@ -107,6 +111,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory
 	 * called with the transactional pool.
 	 * @param poolConfigurer the configurer.
 	 */
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	public void setPoolConfigurer(BiConsumer<GenericObjectPool<Channel>, Boolean> poolConfigurer) {
 		Assert.notNull(poolConfigurer, "'poolConfigurer' cannot be null");
 		this.poolConfigurer = poolConfigurer; // NOSONAR - sync inconsistency
@@ -124,11 +129,12 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory
 	 * Enable simple publisher confirms.
 	 * @param simplePublisherConfirms true to enable.
 	 */
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	public void setSimplePublisherConfirms(boolean simplePublisherConfirms) {
 		this.simplePublisherConfirms = simplePublisherConfirms;
 		if (this.defaultPublisherFactory) {
 			((PooledChannelConnectionFactory) getPublisherConnectionFactory())
-				.setSimplePublisherConfirms(simplePublisherConfirms); // NOSONAR
+					.setSimplePublisherConfirms(simplePublisherConfirms); // NOSONAR
 		}
 	}
 
@@ -136,8 +142,9 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory
 	public void addConnectionListener(ConnectionListener listener) {
 		super.addConnectionListener(listener); // handles publishing sub-factory
 		// If the connection is already alive we assume that the new listener wants to be notified
-		if (this.connection != null && this.connection.isOpen()) {
-			listener.onCreate(this.connection);
+		ConnectionWrapper connectionWrapper = this.connection;
+		if (connectionWrapper != null && connectionWrapper.isOpen()) {
+			listener.onCreate(connectionWrapper);
 		}
 	}
 
@@ -164,19 +171,24 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory
 
 	@Override
 	public Connection createConnection() throws AmqpException {
-		this.lock.lock();
-		try {
-			if (this.connection == null || !this.connection.isOpen()) {
-				Connection bareConnection = createBareConnection(); // NOSONAR - see destroy()
-				this.connection = new ConnectionWrapper(bareConnection.getDelegate(), getCloseTimeout(), // NOSONAR
-						this.simplePublisherConfirms, this.poolConfigurer, getChannelListener()); // NOSONAR
-				getConnectionListener().onCreate(this.connection);
+		ConnectionWrapper connectionWrapper = this.connection;
+		if (connectionWrapper == null || !connectionWrapper.isOpen()) {
+			this.lock.lock();
+			try {
+				connectionWrapper = this.connection;
+				if (connectionWrapper == null || !connectionWrapper.isOpen()) {
+					Connection bareConnection = createBareConnection();
+					connectionWrapper = new ConnectionWrapper(bareConnection.getDelegate(), getCloseTimeout(),
+							this.simplePublisherConfirms, this.poolConfigurer, getChannelListener());
+					this.connection = connectionWrapper;
+					getConnectionListener().onCreate(this.connection);
+				}
 			}
-			return this.connection;
+			finally {
+				this.lock.unlock();
+			}
 		}
-		finally {
-			this.lock.unlock();
-		}
+		return connectionWrapper;
 	}
 
 	/**
@@ -195,9 +207,10 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory
 		this.lock.lock();
 		try {
 			super.destroy();
-			if (this.connection != null) {
-				this.connection.forceClose();
-				getConnectionListener().onClose(this.connection);
+			ConnectionWrapper connectionWrapper = this.connection;
+			if (connectionWrapper != null) {
+				connectionWrapper.forceClose();
+				getConnectionListener().onClose(connectionWrapper);
 				this.connection = null;
 			}
 		}
@@ -248,6 +261,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory
 			}
 		}
 
+		@SuppressWarnings("NullAway") // Dataflow analysis limitation
 		private Channel createProxy(Channel channel, boolean transacted) {
 			ProxyFactory pf = new ProxyFactory(channel);
 			AtomicReference<Channel> proxy = new AtomicReference<>();

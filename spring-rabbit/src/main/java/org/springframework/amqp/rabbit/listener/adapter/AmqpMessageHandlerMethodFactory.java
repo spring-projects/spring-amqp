@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,10 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Optional;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.core.KotlinDetector;
 import org.springframework.core.MethodParameter;
-import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.converter.MessageConverter;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
@@ -49,9 +50,10 @@ public class AmqpMessageHandlerMethodFactory extends DefaultMessageHandlerMethod
 	private final HandlerMethodArgumentResolverComposite argumentResolvers =
 			new HandlerMethodArgumentResolverComposite();
 
+	@SuppressWarnings("NullAway.Init")
 	private MessageConverter messageConverter;
 
-	private Validator validator;
+	private @Nullable Validator validator;
 
 	@Override
 	public void setMessageConverter(MessageConverter messageConverter) {
@@ -93,7 +95,7 @@ public class AmqpMessageHandlerMethodFactory extends DefaultMessageHandlerMethod
 		}
 
 		@Override
-		public Object resolveArgument(MethodParameter parameter, Message<?> message) throws Exception { // NOSONAR
+		public @Nullable Object resolveArgument(MethodParameter parameter, Message<?> message) throws Exception { // NOSONAR
 			Object resolved;
 			try {
 				resolved = super.resolveArgument(parameter, message);
@@ -134,7 +136,7 @@ public class AmqpMessageHandlerMethodFactory extends DefaultMessageHandlerMethod
 		}
 
 		@Override
-		protected boolean isEmptyPayload(Object payload) {
+		protected boolean isEmptyPayload(@Nullable Object payload) {
 			return payload == null || payload.equals(Optional.empty());
 		}
 

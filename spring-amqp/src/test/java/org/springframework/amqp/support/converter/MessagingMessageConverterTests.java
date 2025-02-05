@@ -50,11 +50,6 @@ public class MessagingMessageConverterTests {
 	}
 
 	@Test
-	public void fromNull() {
-		assertThat(converter.fromMessage(null)).isNull();
-	}
-
-	@Test
 	public void customPayloadConverter() throws Exception {
 		converter.setPayloadConverter(new SimpleMessageConverter() {
 			@Override

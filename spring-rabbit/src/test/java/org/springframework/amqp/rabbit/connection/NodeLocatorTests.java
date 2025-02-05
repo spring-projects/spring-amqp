@@ -19,10 +19,9 @@ package org.springframework.amqp.rabbit.connection;
 import java.net.URISyntaxException;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import org.springframework.lang.Nullable;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
@@ -31,6 +30,8 @@ import static org.mockito.Mockito.verify;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 3.0
  *
  */
@@ -44,11 +45,10 @@ public class NodeLocatorTests {
 
 			@Override
 			public Object createClient(String userName, String password) {
-				return null;
+				return new Object();
 			}
 
 			@Override
-			@Nullable
 			public Map<String, Object> restCall(Object client, String baseUri, String vhost, String queue) {
 				if (baseUri.contains("foo")) {
 					return Map.of("node", "c@d");
@@ -59,10 +59,8 @@ public class NodeLocatorTests {
 			}
 
 		});
-		ConnectionFactory factory = nodeLocator.locate(new String[] { "http://foo", "http://bar" },
-				Map.of("a@b", "baz"), null, "q", null, null, (q, n, u) -> {
-					return null;
-		});
+		ConnectionFactory factory = nodeLocator.locate(new String[] {"http://foo", "http://bar"},
+				Map.of("a@b", "baz"), "/", "q", "guest", "guest", (q, n, u) -> null);
 		verify(nodeLocator, times(2)).restCall(any(), any(), any(), any());
 	}
 
@@ -74,12 +72,13 @@ public class NodeLocatorTests {
 
 			@Override
 			public Object createClient(String userName, String password) {
-				return null;
+				return new Object();
 			}
 
 			@Override
 			@Nullable
 			public Map<String, Object> restCall(Object client, String baseUri, String vhost, String queue) {
+
 				if (baseUri.contains("foo")) {
 					return null;
 				}
@@ -89,10 +88,8 @@ public class NodeLocatorTests {
 			}
 
 		});
-		ConnectionFactory factory = nodeLocator.locate(new String[] { "http://foo", "http://bar" },
-				Map.of("a@b", "baz"), null, "q", null, null, (q, n, u) -> {
-					return null;
-		});
+		ConnectionFactory factory = nodeLocator.locate(new String[] {"http://foo", "http://bar"},
+				Map.of("a@b", "baz"), "/", "q", "guest", "guest", (q, n, u) -> null);
 		verify(nodeLocator, times(2)).restCall(any(), any(), any(), any());
 	}
 
@@ -104,7 +101,7 @@ public class NodeLocatorTests {
 
 			@Override
 			public Object createClient(String userName, String password) {
-				return null;
+				return new Object();
 			}
 
 			@Override
@@ -114,10 +111,8 @@ public class NodeLocatorTests {
 			}
 
 		});
-		ConnectionFactory factory = nodeLocator.locate(new String[] { "http://foo", "http://bar" },
-				Map.of("a@b", "baz"), null, "q", null, null, (q, n, u) -> {
-					return null;
-		});
+		ConnectionFactory factory = nodeLocator.locate(new String[] {"http://foo", "http://bar"},
+				Map.of("a@b", "baz"), "/", "q", "guest", "guest", (q, n, u) -> null);
 		verify(nodeLocator, times(2)).restCall(any(), any(), any(), any());
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,8 @@ import org.springframework.util.FileCopyUtils;
  *
  * @author Gary Russell
  * @author Ngoc Nhan
+ * @author Artem Bilan
+ *
  * @since 1.4.2
  */
 public abstract class AbstractDecompressingPostProcessor implements MessagePostProcessor, Ordered {
@@ -91,7 +93,9 @@ public abstract class AbstractDecompressingPostProcessor implements MessagePostP
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
 				FileCopyUtils.copy(unzipper, out);
 				MessageProperties messageProperties = message.getMessageProperties();
-				String encoding = messageProperties.getContentEncoding();
+				String contentEncoding = messageProperties.getContentEncoding();
+				Assert.hasText(contentEncoding, "The 'encoding' message property is required");
+				String encoding = contentEncoding;
 				int delimAt = encoding.indexOf(':');
 				if (delimAt < 0) {
 					delimAt = encoding.indexOf(',');
@@ -105,9 +109,7 @@ public abstract class AbstractDecompressingPostProcessor implements MessagePostP
 					messageProperties.setContentEncoding(null);
 				}
 				else {
-					messageProperties.setContentEncoding(messageProperties.getContentEncoding()
-							.substring(delimAt + 1)
-							.trim());
+					messageProperties.setContentEncoding(contentEncoding.substring(delimAt + 1).trim());
 				}
 				messageProperties.getHeaders().remove(MessageProperties.SPRING_AUTO_DECOMPRESS);
 				return new Message(out.toByteArray(), messageProperties);

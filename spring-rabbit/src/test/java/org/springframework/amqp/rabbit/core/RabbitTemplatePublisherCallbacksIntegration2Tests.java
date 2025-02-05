@@ -117,13 +117,13 @@ public class RabbitTemplatePublisherCallbacksIntegration2Tests {
 		this.templateWithConfirmsEnabled.setMandatory(true);
 		CorrelationData corr = new CorrelationData();
 		this.templateWithConfirmsEnabled.convertAndSend("", ROUTE2, "foo", corr);
-		assertThat(corr.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
+		assertThat(corr.getFuture().get(10, TimeUnit.SECONDS).ack()).isTrue();
 		if (listener) {
 			assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 		}
 		corr = new CorrelationData();
 		this.templateWithConfirmsEnabled.convertAndSend("", "bad route", "foo", corr);
-		assertThat(corr.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
+		assertThat(corr.getFuture().get(10, TimeUnit.SECONDS).ack()).isTrue();
 		assertThat(corr.getReturned()).isNotNull();
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2023 the original author or authors.
+ * Copyright 2006-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamClass;
 import java.util.Set;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.ConfigurableObjectInputStream;
 import org.springframework.util.ObjectUtils;
@@ -58,7 +60,7 @@ public final class SerializationUtils {
 	 * @param object the object to serialize
 	 * @return an array of bytes representing the object in a portable fashion
 	 */
-	public static byte[] serialize(Object object) {
+	public static byte @Nullable [] serialize(@Nullable Object object) {
 		if (object == null) {
 			return null;
 		}
@@ -77,7 +79,7 @@ public final class SerializationUtils {
 	 * @param bytes a serialized object created
 	 * @return the result of deserializing the bytes
 	 */
-	public static Object deserialize(byte[] bytes) {
+	public static @Nullable Object deserialize(byte @Nullable [] bytes) {
 		if (bytes == null) {
 			return null;
 		}
@@ -94,7 +96,7 @@ public final class SerializationUtils {
 	 * @param stream an object stream created from a serialized object
 	 * @return the result of deserializing the bytes
 	 */
-	public static Object deserialize(ObjectInputStream stream) {
+	public static @Nullable Object deserialize(@Nullable ObjectInputStream stream) {
 		if (stream == null) {
 			return null;
 		}

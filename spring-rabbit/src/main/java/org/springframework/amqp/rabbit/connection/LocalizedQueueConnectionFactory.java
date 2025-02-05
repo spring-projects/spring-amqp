@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2024 the original author or authors.
+ * Copyright 2015-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -28,13 +29,13 @@ import java.util.stream.IntStream;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.core.io.Resource;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -78,15 +79,15 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 
 	private final boolean useSSL;
 
-	private final Resource sslPropertiesLocation;
+	private final @Nullable Resource sslPropertiesLocation;
 
-	private final String keyStore;
+	private final @Nullable String keyStore;
 
-	private final String trustStore;
+	private final @Nullable String trustStore;
 
-	private final String keyStorePassPhrase;
+	private final @Nullable String keyStorePassPhrase;
 
-	private final String trustStorePassPhrase;
+	private final @Nullable String trustStorePassPhrase;
 
 	private final AtomicBoolean running = new AtomicBoolean();
 
@@ -95,11 +96,11 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	/**
 	 * @param defaultConnectionFactory the fallback connection factory to use if the queue
 	 * can't be located.
-	 * @param nodeToAddress a Map of node to address: (rabbit@server1 : server1:5672)
-	 * @param adminUris the rabbitmq admin addresses (https://host:port, ...) must be the
+	 * @param nodeToAddress a Map of node to address: {@code rabbit@server1 : server1:5672}
+	 * @param adminUris the rabbitmq admin addresses ({@code https://host:port, ...}) must be the
 	 * same length as addresses.
 	 * @param vhost the virtual host.
-	 * @param username the user name.
+	 * @param username the username.
 	 * @param password the password.
 	 * @param useSSL use SSL.
 	 * @param sslPropertiesLocation the SSL properties location.
@@ -114,11 +115,11 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 
 	/**
 	 * @param defaultConnectionFactory the fallback connection factory to use if the queue can't be located.
-	 * @param nodeToAddress a Map of node to address: (rabbit@server1 : server1:5672)
-	 * @param adminUris the rabbitmq admin addresses (https://host:port, ...) must be the same length
+	 * @param nodeToAddress a Map of node to address: {@code rabbit@server1 : server1:5672}
+	 * @param adminUris the rabbitmq admin addresses ({@code https://host:port, ...}) must be the same length
 	 * as addresses.
 	 * @param vhost the virtual host.
-	 * @param username the user name.
+	 * @param username the username.
 	 * @param password the password.
 	 * @param useSSL use SSL.
 	 * @param keyStore the key store resource (e.g. "file:/foo/keystore").
@@ -139,11 +140,11 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	 * @param defaultConnectionFactory the fallback connection factory to use if the queue
 	 * can't be located.
 	 * @param addresses the rabbitmq server addresses (host:port, ...).
-	 * @param adminUris the rabbitmq admin addresses (https://host:port, ...)
+	 * @param adminUris the rabbitmq admin addresses ({@code https://host:port, ...})
 	 * @param nodes the rabbitmq nodes corresponding to addresses (rabbit@server1, ...)
 	 * must be the same length as addresses.
 	 * @param vhost the virtual host.
-	 * @param username the user name.
+	 * @param username the username.
 	 * @param password the password.
 	 * @param useSSL use SSL.
 	 * @param sslPropertiesLocation the SSL properties location.
@@ -159,11 +160,11 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	/**
 	 * @param defaultConnectionFactory the fallback connection factory to use if the queue can't be located.
 	 * @param addresses the rabbitmq server addresses (host:port, ...).
-	 * @param adminUris the rabbitmq admin addresses (https://host:port, ...).
+	 * @param adminUris the rabbitmq admin addresses ({@code https://host:port, ...}).
 	 * @param nodes the rabbitmq nodes corresponding to addresses (rabbit@server1, ...)  must be the same length
 	 * as addresses.
 	 * @param vhost the virtual host.
-	 * @param username the user name.
+	 * @param username the username.
 	 * @param password the password.
 	 * @param useSSL use SSL.
 	 * @param keyStore the key store resource (e.g. "file:/foo/keystore").
@@ -205,8 +206,8 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 		Assert.isTrue(addresses.length == nodes.length,
 				"'addresses' and 'nodes' properties must have equal length");
 		return IntStream.range(0, addresses.length)
-			.mapToObj(i -> new SimpleImmutableEntry<>(nodes[i], addresses[i]))
-			.collect(Collectors.toMap(SimpleImmutableEntry::getKey, SimpleImmutableEntry::getValue));
+				.mapToObj(i -> new SimpleImmutableEntry<>(nodes[i], addresses[i]))
+				.collect(Collectors.toMap(SimpleImmutableEntry::getKey, SimpleImmutableEntry::getValue));
 	}
 
 	/**
@@ -225,7 +226,7 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	}
 
 	@Override
-	public String getHost() {
+	public @Nullable String getHost() {
 		return this.defaultConnectionFactory.getHost();
 	}
 
@@ -287,16 +288,10 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 		Assert.isTrue(!queue.contains(","),
 				() -> "Cannot use LocalizedQueueConnectionFactory with more than one queue: " + key);
 		ConnectionFactory connectionFactory = determineConnectionFactory(queue);
-		if (connectionFactory == null) {
-			return this.defaultConnectionFactory;
-		}
-		else {
-			return connectionFactory;
-		}
+		return Objects.requireNonNullElse(connectionFactory, this.defaultConnectionFactory);
 	}
 
-	@Nullable
-	private ConnectionFactory determineConnectionFactory(String queue) {
+	private @Nullable ConnectionFactory determineConnectionFactory(String queue) {
 		ConnectionFactory cf = this.nodeLocator.locate(this.adminUris, this.nodeToAddress, this.vhost, this.username,
 				this.password, queue, this::nodeConnectionFactory);
 		if (cf == null) {
@@ -305,7 +300,7 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 		return cf;
 	}
 
-	private ConnectionFactory nodeConnectionFactory(String queue, String node, String address)  {
+	private ConnectionFactory nodeConnectionFactory(@Nullable String queue, String node, String address) {
 		this.lock.lock();
 		try {
 			if (this.logger.isInfoEnabled()) {

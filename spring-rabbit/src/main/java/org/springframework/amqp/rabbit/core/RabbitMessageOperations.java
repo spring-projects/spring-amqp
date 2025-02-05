@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.amqp.rabbit.core;
 
 import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessagingException;
@@ -100,8 +102,8 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * @param postProcessor the post processor to apply to the message
 	 * @throws MessagingException a messaging exception.
 	 */
-	void convertAndSend(String exchange, String routingKey, Object payload, Map<String,
-			Object> headers, MessagePostProcessor postProcessor) throws MessagingException;
+	void convertAndSend(String exchange, String routingKey, Object payload,
+			@Nullable Map<String, Object> headers, @Nullable MessagePostProcessor postProcessor) throws MessagingException;
 
 	/**
 	 * Send a request message to a specific exchange with a specific routing key and
@@ -113,6 +115,7 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * for example due to a timeout
 	 * @throws MessagingException a messaging exception.
 	 */
+	@Nullable
 	Message<?> sendAndReceive(String exchange, String routingKey, Message<?> requestMessage) throws MessagingException;
 
 	/**
@@ -129,7 +132,7 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * could not be received, for example due to a timeout
 	 * @throws MessagingException a messaging exception.
 	 */
-	<T> T convertSendAndReceive(String exchange, String routingKey, Object request, Class<T> targetClass)
+	<T> @Nullable T convertSendAndReceive(String exchange, String routingKey, Object request, Class<T> targetClass)
 			throws MessagingException;
 
 	/**
@@ -148,8 +151,8 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * could not be received, for example due to a timeout
 	 * @throws MessagingException a messaging exception.
 	 */
-	<T> T convertSendAndReceive(String exchange, String routingKey, Object request, Map<String, Object> headers,
-			Class<T> targetClass) throws MessagingException;
+	<T> @Nullable T convertSendAndReceive(String exchange, String routingKey, Object request,
+			@Nullable Map<String, Object> headers, Class<T> targetClass) throws MessagingException;
 
 	/**
 	 * Convert the given request Object to serialized form, possibly using a
@@ -167,15 +170,15 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * could not be received, for example due to a timeout
 	 * @throws MessagingException a messaging exception.
 	 */
-	<T> T convertSendAndReceive(String exchange, String routingKey, Object request, Class<T> targetClass,
-			MessagePostProcessor requestPostProcessor) throws MessagingException;
+	<T> @Nullable T convertSendAndReceive(String exchange, String routingKey, Object request, Class<T> targetClass,
+			@Nullable MessagePostProcessor requestPostProcessor) throws MessagingException;
 
 	/**
 	 * Convert the given request Object to serialized form, possibly using a
 	 * {@link org.springframework.messaging.converter.MessageConverter},
 	 * wrap it as a message with the given headers, apply the given post processor
 	 * and send the resulting {@link Message} to a specific exchange with a
-	 * specific routing key,, receive  the reply and convert its body of the
+	 * specific routing key, receive  the reply and convert its body of the
 	 * given target class.
 	 * @param exchange the name of the exchange
 	 * @param routingKey the routing key
@@ -188,7 +191,8 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * could not be received, for example due to a timeout
 	 * @throws MessagingException a messaging exception.
 	 */
-	<T> T convertSendAndReceive(String exchange, String routingKey, Object request, Map<String, Object> headers,
-			Class<T> targetClass, MessagePostProcessor requestPostProcessor) throws MessagingException;
+	<T> @Nullable T convertSendAndReceive(String exchange, String routingKey, Object request,
+			@Nullable Map<String, Object> headers, Class<T> targetClass,
+			@Nullable MessagePostProcessor requestPostProcessor) throws MessagingException;
 
 }

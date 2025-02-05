@@ -21,6 +21,7 @@ import java.util.List;
 
 import com.rabbitmq.client.BlockedListener;
 import com.rabbitmq.client.Channel;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.util.StringUtils;
@@ -39,7 +40,7 @@ import org.springframework.util.StringUtils;
 public class SingleConnectionFactory extends AbstractConnectionFactory {
 
 	/** Proxy Connection */
-	private SharedConnectionProxy connection;
+	private @Nullable SharedConnectionProxy connection;
 
 	/** Synchronization monitor for the shared Connection */
 	private final Object connectionMonitor = new Object();
@@ -64,7 +65,7 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 	 * Create a new SingleConnectionFactory given a host name.
 	 * @param hostname the host name to connect to
 	 */
-	public SingleConnectionFactory(String hostname) {
+	public SingleConnectionFactory(@Nullable String hostname) {
 		this(hostname, com.rabbitmq.client.ConnectionFactory.DEFAULT_AMQP_PORT);
 	}
 
@@ -73,7 +74,8 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 	 * @param hostname the host name to connect to
 	 * @param port the port number to connect to
 	 */
-	public SingleConnectionFactory(String hostname, int port) {
+	@SuppressWarnings("this-escape")
+	public SingleConnectionFactory(@Nullable String hostname, int port) {
 		super(new com.rabbitmq.client.ConnectionFactory());
 		if (!StringUtils.hasText(hostname)) {
 			hostname = getDefaultHostName();
@@ -86,6 +88,7 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 	 * Create a new SingleConnectionFactory given a {@link URI}.
 	 * @param uri the amqp uri configuring the connection
 	 */
+	@SuppressWarnings("this-escape")
 	public SingleConnectionFactory(URI uri) {
 		super(new com.rabbitmq.client.ConnectionFactory());
 		setUri(uri);
@@ -152,8 +155,7 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 	 * @return the new Connection
 	 */
 	protected Connection doCreateConnection() {
-		Connection connection = createBareConnection();
-		return connection;
+		return createBareConnection();
 	}
 
 	@Override
@@ -205,16 +207,13 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 		}
 
 		public void destroy() {
-			if (this.target != null) {
-				getConnectionListener().onClose(target);
-				RabbitUtils.closeConnection(this.target);
-			}
-			this.target = null;
+			getConnectionListener().onClose(target);
+			RabbitUtils.closeConnection(this.target);
 		}
 
 		@Override
 		public boolean isOpen() {
-			return target != null && target.isOpen();
+			return target.isOpen();
 		}
 
 		@Override
@@ -224,16 +223,17 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 
 		@Override
 		public int getLocalPort() {
-			Connection target = this.target;
-			if (target != null) {
-				return target.getLocalPort();
-			}
-			return 0;
+			return this.target.getLocalPort();
+		}
+
+		@Override
+		public com.rabbitmq.client.Connection getDelegate() {
+			return this.target.getDelegate();
 		}
 
 		@Override
 		public int hashCode() {
-			return 31 + ((target == null) ? 0 : target.hashCode());
+			return 31 + target.hashCode();
 		}
 
 		@Override
@@ -248,15 +248,7 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 				return false;
 			}
 			SharedConnectionProxy other = (SharedConnectionProxy) obj;
-			if (target == null) {
-				if (other.target != null) {
-					return false;
-				}
-			}
-			else if (!target.equals(other.target)) {
-				return false;
-			}
-			return true;
+			return target.equals(other.target);
 		}
 
 		@Override

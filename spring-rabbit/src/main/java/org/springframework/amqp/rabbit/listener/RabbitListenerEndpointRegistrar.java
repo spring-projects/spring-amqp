@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2023 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,11 @@ import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.lang.Nullable;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
 import org.springframework.messaging.handler.invocation.HandlerMethodArgumentResolver;
 import org.springframework.util.Assert;
@@ -52,20 +53,20 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 
 	private List<HandlerMethodArgumentResolver> customMethodArgumentResolvers = new ArrayList<>();
 
-	@Nullable
-	private RabbitListenerEndpointRegistry endpointRegistry;
+	private @Nullable RabbitListenerEndpointRegistry endpointRegistry;
 
-	private MessageHandlerMethodFactory messageHandlerMethodFactory;
+	private @Nullable MessageHandlerMethodFactory messageHandlerMethodFactory;
 
-	private RabbitListenerContainerFactory<?> containerFactory;
+	private @Nullable RabbitListenerContainerFactory<?> containerFactory;
 
-	private String containerFactoryBeanName;
+	private @Nullable String containerFactoryBeanName;
 
+	@SuppressWarnings("NullAway.Init")
 	private BeanFactory beanFactory;
 
 	private boolean startImmediately;
 
-	private Validator validator;
+	private @Nullable Validator validator;
 
 	/**
 	 * Set the {@link RabbitListenerEndpointRegistry} instance to use.
@@ -79,8 +80,7 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	 * @return the {@link RabbitListenerEndpointRegistry} instance for this
 	 * registrar, may be {@code null}.
 	 */
-	@Nullable
-	public RabbitListenerEndpointRegistry getEndpointRegistry() {
+	public @Nullable RabbitListenerEndpointRegistry getEndpointRegistry() {
 		return this.endpointRegistry;
 	}
 
@@ -92,7 +92,6 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	public List<HandlerMethodArgumentResolver> getCustomMethodArgumentResolvers() {
 		return Collections.unmodifiableList(this.customMethodArgumentResolvers);
 	}
-
 
 	/**
 	 * Add custom methods arguments resolvers to
@@ -111,7 +110,7 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	 * <p>
 	 * By default,
 	 * {@link org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory}
-	 * is used and it can be configured further to support additional method arguments or
+	 * is used, and it can be configured further to support additional method arguments or
 	 * to customize conversion and validation support. See
 	 * {@link org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory}
 	 * javadoc for more details.
@@ -125,7 +124,7 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	/**
 	 * @return the custom {@link MessageHandlerMethodFactory} to use, if any.
 	 */
-	public MessageHandlerMethodFactory getMessageHandlerMethodFactory() {
+	public @Nullable MessageHandlerMethodFactory getMessageHandlerMethodFactory() {
 		return this.messageHandlerMethodFactory;
 	}
 
@@ -167,8 +166,7 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	 * @return the validator.
 	 * @since 2.3.7
 	 */
-	@Nullable
-	public Validator getValidator() {
+	public @Nullable Validator getValidator() {
 		return this.validator;
 	}
 
@@ -214,9 +212,8 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 			return this.containerFactory;
 		}
 		else if (this.containerFactoryBeanName != null) {
-			Assert.state(this.beanFactory != null, "BeanFactory must be set to obtain container factory by bean name");
-			this.containerFactory = this.beanFactory.getBean(
-					this.containerFactoryBeanName, RabbitListenerContainerFactory.class);
+			this.containerFactory =
+					this.beanFactory.getBean(this.containerFactoryBeanName, RabbitListenerContainerFactory.class);
 			return this.containerFactory;  // Consider changing this if live change of the factory is required
 		}
 		else {
@@ -234,8 +231,10 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	 * @param endpoint the {@link RabbitListenerEndpoint} instance to register.
 	 * @param factory the {@link RabbitListenerContainerFactory} to use.
 	 */
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	public void registerEndpoint(RabbitListenerEndpoint endpoint,
 			@Nullable RabbitListenerContainerFactory<?> factory) {
+
 		Assert.notNull(endpoint, "Endpoint must be set");
 		Assert.hasText(endpoint.getId(), "Endpoint id must be set");
 		Assert.state(!this.startImmediately || this.endpointRegistry != null, "No registry available");
@@ -267,16 +266,9 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 		registerEndpoint(endpoint, null);
 	}
 
-
 	private record AmqpListenerEndpointDescriptor(RabbitListenerEndpoint endpoint,
-												  RabbitListenerContainerFactory<?> containerFactory) {
+												  @Nullable RabbitListenerContainerFactory<?> containerFactory) {
 
-			private AmqpListenerEndpointDescriptor(RabbitListenerEndpoint endpoint,
-					@Nullable RabbitListenerContainerFactory<?> containerFactory) {
-				this.endpoint = endpoint;
-				this.containerFactory = containerFactory;
-			}
-
-		}
+	}
 
 }

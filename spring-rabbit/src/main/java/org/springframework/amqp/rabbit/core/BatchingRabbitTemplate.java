@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,13 +21,14 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.batch.MessageBatch;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
-import org.springframework.lang.Nullable;
 import org.springframework.scheduling.TaskScheduler;
 
 /**
@@ -51,7 +52,7 @@ public class BatchingRabbitTemplate extends RabbitTemplate {
 
 	private final TaskScheduler scheduler;
 
-	private volatile ScheduledFuture<?> scheduledTask;
+	private volatile @Nullable ScheduledFuture<?> scheduledTask;
 
 	/**
 	 * Create an instance with the supplied parameters.
@@ -79,7 +80,7 @@ public class BatchingRabbitTemplate extends RabbitTemplate {
 	}
 
 	@Override
-	public void send(String exchange, String routingKey, Message message,
+	public void send(@Nullable String exchange, @Nullable String routingKey, Message message,
 			@Nullable CorrelationData correlationData) throws AmqpException {
 		this.lock.lock();
 		try {
@@ -95,7 +96,7 @@ public class BatchingRabbitTemplate extends RabbitTemplate {
 				}
 				MessageBatch batch = this.batchingStrategy.addToBatch(exchange, routingKey, message);
 				if (batch != null) {
-					super.send(batch.getExchange(), batch.getRoutingKey(), batch.getMessage(), null);
+					super.send(batch.exchange(), batch.routingKey(), batch.message(), null);
 				}
 				Date next = this.batchingStrategy.nextRelease();
 				if (next != null) {
@@ -119,7 +120,7 @@ public class BatchingRabbitTemplate extends RabbitTemplate {
 		this.lock.lock();
 		try {
 			for (MessageBatch batch : this.batchingStrategy.releaseBatches()) {
-				super.send(batch.getExchange(), batch.getRoutingKey(), batch.getMessage(), null);
+				super.send(batch.exchange(), batch.routingKey(), batch.message(), null);
 			}
 		}
 		finally {

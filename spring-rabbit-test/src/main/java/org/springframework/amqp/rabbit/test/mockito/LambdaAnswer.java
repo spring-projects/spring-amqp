@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2023 the original author or authors.
+ * Copyright 2016-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,9 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.jspecify.annotations.Nullable;
 import org.mockito.internal.stubbing.defaultanswers.ForwardsInvocations;
 import org.mockito.invocation.InvocationOnMock;
-
-import org.springframework.lang.Nullable;
 
 /**
  * An {@link org.mockito.stubbing.Answer} to optionally call the real method and allow
@@ -96,7 +95,7 @@ public class LambdaAnswer<T> extends ForwardsInvocations {
 	@FunctionalInterface
 	public interface ValueToReturn<T> {
 
-		T apply(InvocationOnMock invocation, T result);
+		T apply(InvocationOnMock invocation, @Nullable T result);
 
 	}
 

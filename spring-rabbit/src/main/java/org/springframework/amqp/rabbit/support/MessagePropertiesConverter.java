@@ -18,9 +18,9 @@ package org.springframework.amqp.rabbit.support;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Envelope;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.lang.Nullable;
 
 /**
  * Strategy interface for converting between Spring AMQP {@link MessageProperties}

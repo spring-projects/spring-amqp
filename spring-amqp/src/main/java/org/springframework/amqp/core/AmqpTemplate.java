@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,14 @@
 
 package org.springframework.amqp.core;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.AmqpException;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.lang.Nullable;
 
 /**
  * Specifies a basic set of AMQP operations.
- *
+ * <p>
  * Provides synchronous send and receive methods. The {@link #convertAndSend(Object)} and
  * {@link #receiveAndConvert()} methods allow let you send and receive POJO objects.
  * Implementations are expected to delegate to an instance of
@@ -34,6 +35,7 @@ import org.springframework.lang.Nullable;
  * @author Artem Bilan
  * @author Ernest Sadykov
  * @author Gary Russell
+ * @author Artem Bilan
  */
 public interface AmqpTemplate {
 
@@ -250,8 +252,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem.
 	 * @since 2.0
 	 */
-	@Nullable
-	<T> T receiveAndConvert(ParameterizedTypeReference<T> type) throws AmqpException;
+	<T> @Nullable T receiveAndConvert(ParameterizedTypeReference<T> type) throws AmqpException;
 
 	/**
 	 * Receive a message if there is one from a specific queue and convert it to a Java
@@ -265,8 +266,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 * @since 2.0
 	 */
-	@Nullable
-	<T> T receiveAndConvert(String queueName, ParameterizedTypeReference<T> type) throws AmqpException;
+	<T> @Nullable T receiveAndConvert(String queueName, ParameterizedTypeReference<T> type) throws AmqpException;
 
 	/**
 	 * Receive a message if there is one from a default queue and convert it to a Java
@@ -283,8 +283,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 * @since 2.0
 	 */
-	@Nullable
-	<T> T receiveAndConvert(long timeoutMillis, ParameterizedTypeReference<T> type) throws AmqpException;
+	<T> @Nullable T receiveAndConvert(long timeoutMillis, ParameterizedTypeReference<T> type) throws AmqpException;
 
 	/**
 	 * Receive a message if there is one from a specific queue and convert it to a Java
@@ -302,8 +301,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 * @since 2.0
 	 */
-	@Nullable
-	<T> T receiveAndConvert(String queueName, long timeoutMillis, ParameterizedTypeReference<T> type)
+	<T> @Nullable T receiveAndConvert(String queueName, long timeoutMillis, ParameterizedTypeReference<T> type)
 			throws AmqpException;
 
 	// receive and send methods for provided callback
@@ -559,8 +557,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem.
 	 * @since 2.0
 	 */
-	@Nullable
-	<T> T convertSendAndReceiveAsType(Object message, ParameterizedTypeReference<T> responseType)
+	<T> @Nullable T convertSendAndReceiveAsType(Object message, ParameterizedTypeReference<T> responseType)
 			throws AmqpException;
 
 	/**
@@ -577,8 +574,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem.
 	 * @since 2.0
 	 */
-	@Nullable
-	<T> T convertSendAndReceiveAsType(String routingKey, Object message,
+	<T> @Nullable T convertSendAndReceiveAsType(String routingKey, Object message,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;
 
 	/**
@@ -592,12 +588,11 @@ public interface AmqpTemplate {
 	 * @param message a message to send.
 	 * @param responseType the type to convert the reply to.
 	 * @param <T> the type.
- 	 * @return the response; or null if the reply times out.
+	 * @return the response; or null if the reply times out.
 	 * @throws AmqpException if there is a problem.
 	 * @since 2.0
 	 */
-	@Nullable
-	<T> T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
+	<T> @Nullable T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;
 
 	/**
@@ -614,8 +609,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem.
 	 * @since 2.0
 	 */
-	@Nullable
-	<T> T convertSendAndReceiveAsType(Object message, MessagePostProcessor messagePostProcessor,
+	<T> @Nullable T convertSendAndReceiveAsType(Object message, MessagePostProcessor messagePostProcessor,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;
 
 	/**
@@ -633,8 +627,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem.
 	 * @since 2.0
 	 */
-	@Nullable
-	<T> T convertSendAndReceiveAsType(String routingKey, Object message,
+	<T> @Nullable T convertSendAndReceiveAsType(String routingKey, Object message,
 			MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<T> responseType)
 			throws AmqpException;
 
@@ -654,8 +647,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem.
 	 * @since 2.0
 	 */
-	@Nullable
-	<T> T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
+	<T> @Nullable T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
 			MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<T> responseType)
 			throws AmqpException;
 

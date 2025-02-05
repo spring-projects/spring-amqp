@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
@@ -60,9 +61,9 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 
 	private final Set<String> trustedPackages = new LinkedHashSet<>(TRUSTED_PACKAGES);
 
-	private volatile Map<String, Class<?>> idClassMapping = new HashMap<>();
+	private final Map<Class<?>, String> classIdMapping = new HashMap<>();
 
-	private volatile Map<Class<?>, String> classIdMapping = new HashMap<>();
+	private volatile Map<String, Class<?>> idClassMapping = new HashMap<>();
 
 	private volatile Class<?> defaultMapClass = LinkedHashMap.class; // NOSONAR concrete type
 
@@ -117,7 +118,7 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 	 * @param trustedPackages the trusted Java packages for deserialization
 	 * @since 1.6.11
 	 */
-	public void setTrustedPackages(@Nullable String... trustedPackages) {
+	public void setTrustedPackages(String @Nullable ... trustedPackages) {
 		if (trustedPackages != null) {
 			for (String trusted : trustedPackages) {
 				if ("*".equals(trusted)) {
@@ -169,22 +170,14 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 
 	@Override
 	public Class<?> toClass(MessageProperties properties) {
-		Map<String, Object> headers = properties.getHeaders();
+		Map<String, @Nullable Object> headers = properties.getHeaders();
 		Object classIdFieldNameValue = headers.get(getClassIdFieldName());
 		String classId = null;
 		if (classIdFieldNameValue != null) {
 			classId = classIdFieldNameValue.toString();
 		}
 		if (classId == null) {
-			if (this.defaultType != null) {
-				return this.defaultType;
-			}
-			else {
-				throw new MessageConversionException(
-						"failed to convert Message content. Could not resolve "
-								+ getClassIdFieldName() + " in header " +
-								"and no defaultType provided");
-			}
+			return this.defaultType;
 		}
 		return toClass(classId);
 	}

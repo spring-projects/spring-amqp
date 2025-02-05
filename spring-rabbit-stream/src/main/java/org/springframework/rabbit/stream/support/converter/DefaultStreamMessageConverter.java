@@ -33,7 +33,6 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.utils.JavaUtils;
-import org.springframework.lang.Nullable;
 import org.springframework.rabbit.stream.support.StreamMessageProperties;
 import org.springframework.util.Assert;
 
@@ -55,15 +54,15 @@ public class DefaultStreamMessageConverter implements StreamMessageConverter {
 	 * Construct an instance using a {@link WrapperMessageBuilder}.
 	 */
 	public DefaultStreamMessageConverter() {
-		this.builderSupplier = () -> new WrapperMessageBuilder();
+		this.builderSupplier = WrapperMessageBuilder::new;
 	}
 
 	/**
 	 * Construct an instance using the provided codec.
 	 * @param codec the codec.
 	 */
-	public DefaultStreamMessageConverter(@Nullable Codec codec) {
-		this.builderSupplier = () -> codec.messageBuilder();
+	public DefaultStreamMessageConverter(Codec codec) {
+		this.builderSupplier = codec::messageBuilder;
 	}
 
 	/**

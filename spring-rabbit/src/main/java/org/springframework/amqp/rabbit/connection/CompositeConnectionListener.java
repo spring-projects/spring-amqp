@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.rabbitmq.client.ShutdownSignalException;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A composite listener that invokes its delegates in turn.
@@ -35,7 +36,7 @@ public class CompositeConnectionListener implements ConnectionListener {
 	private List<ConnectionListener> delegates = new CopyOnWriteArrayList<>();
 
 	@Override
-	public void onCreate(Connection connection) {
+	public void onCreate(@Nullable Connection connection) {
 		this.delegates.forEach(delegate -> delegate.onCreate(connection));
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,16 @@ package org.springframework.amqp.core;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Simple container collecting information to describe a topic exchange.
  * Used in conjunction with administrative operations.
  *
  * @author Mark Pollack
  * @author Dave Syer
+ * @author Artem Bilan
+ *
  * @see AmqpAdmin
  */
 public class TopicExchange extends AbstractExchange {
@@ -36,7 +40,9 @@ public class TopicExchange extends AbstractExchange {
 		super(name, durable, autoDelete);
 	}
 
-	public TopicExchange(String name, boolean durable, boolean autoDelete, Map<String, Object> arguments) {
+	public TopicExchange(String name, boolean durable, boolean autoDelete,
+			@Nullable Map<String, @Nullable Object> arguments) {
+
 		super(name, durable, autoDelete, arguments);
 	}
 

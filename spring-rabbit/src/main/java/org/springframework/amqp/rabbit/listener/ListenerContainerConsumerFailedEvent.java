@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 the original author or authors.
+ * Copyright 2015-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,31 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import java.io.Serial;
+
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.event.AmqpEvent;
-import org.springframework.lang.Nullable;
 
 /**
  * Published when a listener consumer fails.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.5
  *
  */
 public class ListenerContainerConsumerFailedEvent extends AmqpEvent {
 
+	@Serial
 	private static final long serialVersionUID = -8122166328567190605L;
 
-	private final String reason;
+	private final @Nullable String reason;
 
 	private final boolean fatal;
 
-	private final Throwable throwable;
+	private final @Nullable Throwable throwable;
 
 	/**
 	 * Construct an instance with the provided arguments.
@@ -43,7 +49,7 @@ public class ListenerContainerConsumerFailedEvent extends AmqpEvent {
 	 * @param throwable the throwable.
 	 * @param fatal true if the startup failure was fatal (will not be retried).
 	 */
-	public ListenerContainerConsumerFailedEvent(Object source, String reason,
+	public ListenerContainerConsumerFailedEvent(Object source, @Nullable String reason,
 			@Nullable Throwable throwable, boolean fatal) {
 		super(source);
 		this.reason = reason;
@@ -51,7 +57,7 @@ public class ListenerContainerConsumerFailedEvent extends AmqpEvent {
 		this.throwable = throwable;
 	}
 
-	public String getReason() {
+	public @Nullable String getReason() {
 		return this.reason;
 	}
 
@@ -59,7 +65,7 @@ public class ListenerContainerConsumerFailedEvent extends AmqpEvent {
 		return this.fatal;
 	}
 
-	public Throwable getThrowable() {
+	public @Nullable Throwable getThrowable() {
 		return this.throwable;
 	}
 

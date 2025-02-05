@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 the original author or authors.
+ * Copyright 2021-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.util.StringUtils;
 
 /**
@@ -32,11 +34,14 @@ import org.springframework.util.StringUtils;
  * @since 3.1
  */
 public class SuperStreamBuilder {
+
 	private final Map<String, Object> arguments = new HashMap<>();
-	private String name;
+
+	private @Nullable String name;
+
 	private int partitions = -1;
 
-	private BiFunction<String, Integer, List<String>> routingKeyStrategy;
+	private @Nullable BiFunction<String, Integer, List<String>> routingKeyStrategy;
 
 	/**
 	 * Creates a builder for Super Stream.
@@ -163,4 +168,5 @@ public class SuperStreamBuilder {
 
 		return new SuperStream(this.name, this.partitions, this.routingKeyStrategy, this.arguments);
 	}
+
 }

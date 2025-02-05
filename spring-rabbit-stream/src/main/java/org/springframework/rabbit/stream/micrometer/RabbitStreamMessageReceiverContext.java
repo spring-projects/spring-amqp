@@ -38,10 +38,9 @@ public class RabbitStreamMessageReceiverContext extends ReceiverContext<Message>
 
 	private final String listenerId;
 
-	private final Message message;
-
 	private final String stream;
 
+	@SuppressWarnings("this-escape")
 	public RabbitStreamMessageReceiverContext(Message message, String listenerId, String stream) {
 		super((carrier, key) -> {
 			Map<String, Object> props = carrier.getApplicationProperties();
@@ -57,7 +56,6 @@ public class RabbitStreamMessageReceiverContext extends ReceiverContext<Message>
 			return null;
 		});
 		setCarrier(message);
-		this.message = message;
 		this.listenerId = listenerId;
 		this.stream = stream;
 		setRemoteServiceName("RabbitMQ Stream");

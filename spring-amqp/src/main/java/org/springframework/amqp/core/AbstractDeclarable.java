@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,8 @@ import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.util.Assert;
 
 /**
@@ -41,7 +42,7 @@ public abstract class AbstractDeclarable implements Declarable {
 
 	private final Lock lock = new ReentrantLock();
 
-	private final Map<String, Object> arguments;
+	protected final Map<String, Object> arguments;
 
 	private boolean shouldDeclare = true;
 
@@ -58,7 +59,7 @@ public abstract class AbstractDeclarable implements Declarable {
 	 * @param arguments the arguments.
 	 * @since 2.2.2
 	 */
-	public AbstractDeclarable(@Nullable Map<String, Object> arguments) {
+	public AbstractDeclarable(@Nullable Map<String, @Nullable Object> arguments) {
 		if (arguments != null) {
 			this.arguments = new HashMap<>(arguments);
 		}
@@ -101,7 +102,8 @@ public abstract class AbstractDeclarable implements Declarable {
 	}
 
 	@Override
-	public void setAdminsThatShouldDeclare(@Nullable Object... adminArgs) {
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
+	public void setAdminsThatShouldDeclare(@Nullable Object @Nullable ... adminArgs) {
 		Collection<Object> admins = new ArrayList<>();
 		if (adminArgs != null) {
 			if (adminArgs.length > 1) {

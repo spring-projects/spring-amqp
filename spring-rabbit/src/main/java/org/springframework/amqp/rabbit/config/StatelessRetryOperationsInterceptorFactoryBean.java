@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.retry.MessageBatchRecoverer;
@@ -36,7 +37,7 @@ import org.springframework.retry.support.RetryTemplate;
  * if your listener can be called repeatedly between failures with no side effects. The semantics of stateless retry
  * mean that a listener exception is not propagated to the container until the retry attempts are exhausted. When the
  * retry attempts are exhausted it can be processed using a {@link MessageRecoverer} if one is provided, in the same
- * transaction (in which case no exception is propagated). If a recoverer is not provided the exception will be
+ * transaction (in which case no exception is propagated). If a recoverer is not provided, the exception will be
  * propagated and the message may be redelivered if the channel is transactional.
  *
  * @author Dave Syer
@@ -62,13 +63,12 @@ public class StatelessRetryOperationsInterceptorFactoryBean extends AbstractRetr
 
 	}
 
-	@SuppressWarnings("unchecked")
 	protected MethodInvocationRecoverer<?> createRecoverer() {
 		return this::recover;
 	}
 
 	@SuppressWarnings("unchecked")
-	protected Object recover(Object[] args, Throwable cause) {
+	protected @Nullable Object recover(Object[] args, Throwable cause) {
 		MessageRecoverer messageRecoverer = getMessageRecoverer();
 		Object arg = args[1];
 		if (messageRecoverer == null) {
@@ -86,11 +86,6 @@ public class StatelessRetryOperationsInterceptorFactoryBean extends AbstractRetr
 	@Override
 	public Class<?> getObjectType() {
 		return RetryOperationsInterceptor.class;
-	}
-
-	@Override
-	public boolean isSingleton() {
-		return true;
 	}
 
 }

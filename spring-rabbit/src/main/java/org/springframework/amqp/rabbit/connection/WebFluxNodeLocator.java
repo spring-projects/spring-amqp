@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 the original author or authors.
+ * Copyright 2022-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,10 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
-import org.springframework.lang.Nullable;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunctions;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriUtils;
@@ -41,8 +42,7 @@ import org.springframework.web.util.UriUtils;
 public class WebFluxNodeLocator implements NodeLocator<WebClient> {
 
 	@Override
-	@Nullable
-	public Map<String, Object> restCall(WebClient client, String baseUri, String vhost, String queue)
+	public @Nullable Map<String, Object> restCall(WebClient client, String baseUri, String vhost, String queue)
 			throws URISyntaxException {
 
 		URI uri = new URI(baseUri)

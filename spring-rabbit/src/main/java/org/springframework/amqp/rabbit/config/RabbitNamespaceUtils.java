@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.config;
 
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
 import org.w3c.dom.Element;
 
 import org.springframework.amqp.core.AcknowledgeMode;
@@ -357,7 +358,7 @@ public final class RabbitNamespaceUtils {
 		return containerDef;
 	}
 
-	private static AcknowledgeMode parseAcknowledgeMode(Element ele, ParserContext parserContext) {
+	private static @Nullable AcknowledgeMode parseAcknowledgeMode(Element ele, ParserContext parserContext) {
 		String acknowledge = ele.getAttribute(ACKNOWLEDGE_ATTRIBUTE);
 		if (StringUtils.hasText(acknowledge)) {
 			return switch (acknowledge) {

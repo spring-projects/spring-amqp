@@ -27,12 +27,12 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.MimeType;
@@ -73,22 +73,21 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	 */
 	private MimeType supportedContentType;
 
-	private String supportedCTCharset;
+	private @Nullable String supportedCTCharset;
 
-	@Nullable
-	private ClassMapper classMapper = null;
+	private @Nullable ClassMapper classMapper = null;
 
 	private Charset defaultCharset = DEFAULT_CHARSET;
 
 	private boolean typeMapperSet;
 
-	private ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
+	private @Nullable ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
 
 	private Jackson2JavaTypeMapper javaTypeMapper = new DefaultJackson2JavaTypeMapper();
 
 	private boolean useProjectionForInterfaces;
 
-	private ProjectingMessageConverter projectingConverter;
+	private @Nullable ProjectingMessageConverter projectingConverter;
 
 	private boolean charsetIsUtf8 = true;
 
@@ -192,7 +191,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 		}
 	}
 
-	protected ClassLoader getClassLoader() {
+	protected @Nullable ClassLoader getClassLoader() {
 		return this.classLoader;
 	}
 
@@ -201,7 +200,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	}
 
 	/**
-	 * Whether or not an explicit java type mapper has been provided.
+	 * Whether an explicit java type mapper has been provided.
 	 * @return false if the default type mapper is being used.
 	 * @since 2.2
 	 * @see #setJavaTypeMapper(Jackson2JavaTypeMapper)
@@ -286,8 +285,8 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	}
 
 	/**
-	 * By default the supported content type is assumed when there is no contentType
-	 * property or it is set to the default ('application/octet-stream'). Set to 'false'
+	 * By default, the supported content type is assumed when there is no contentType
+	 * property, or it is set to the default ('application/octet-stream'). Set to 'false'
 	 * to revert to the previous behavior of returning an unconverted 'byte[]' when this
 	 * condition exists.
 	 * @param assumeSupportedContentType set false to not assume the content type is
@@ -311,19 +310,18 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	public Object fromMessage(Message message, @Nullable Object conversionHint) throws MessageConversionException {
 		Object content = null;
 		MessageProperties properties = message.getMessageProperties();
-		if (properties != null) {
-			String contentType = properties.getContentType();
-			if ((this.assumeSupportedContentType // NOSONAR Boolean complexity
-					&& (contentType == null || contentType.equals(MessageProperties.DEFAULT_CONTENT_TYPE)))
-					|| (contentType != null && contentType.contains(this.supportedContentType.getSubtype()))) {
-				String encoding = determineEncoding(properties, contentType);
-				content = doFromMessage(message, conversionHint, properties, encoding);
-			}
-			else {
-				if (this.log.isWarnEnabled()) {
-					this.log.warn("Could not convert incoming message with content-type ["
-							+ contentType + "], '" + this.supportedContentType.getSubtype() + "' keyword missing.");
-				}
+		String contentType = properties.getContentType();
+		// NOSONAR Boolean complexity
+		if (this.assumeSupportedContentType && contentType.equals(MessageProperties.DEFAULT_CONTENT_TYPE)
+				|| contentType.contains(this.supportedContentType.getSubtype())) {
+
+			String encoding = determineEncoding(properties, contentType);
+			content = doFromMessage(message, conversionHint, properties, encoding);
+		}
+		else {
+			if (this.log.isWarnEnabled()) {
+				this.log.warn("Could not convert incoming message with content-type ["
+						+ contentType + "], '" + this.supportedContentType.getSubtype() + "' keyword missing.");
 			}
 		}
 		if (content == null) {
@@ -342,11 +340,10 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 		if (encoding == null && contentType != null) {
 			try {
 				MimeType mimeType = MimeTypeUtils.parseMimeType(contentType);
-				if (mimeType != null) {
-					encoding = mimeType.getParameter("charset");
-				}
+				encoding = mimeType.getParameter("charset");
 			}
 			catch (RuntimeException e) {
+				// Ignore
 			}
 		}
 		if (encoding == null) {
@@ -355,7 +352,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 		return encoding;
 	}
 
-	private Object doFromMessage(Message message, Object conversionHint, MessageProperties properties,
+	private Object doFromMessage(Message message, @Nullable Object conversionHint, MessageProperties properties,
 			String encoding) {
 
 		Object content = null;
@@ -369,7 +366,8 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 		return content;
 	}
 
-	private Object convertContent(Message message, Object conversionHint, MessageProperties properties, String encoding)
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
+	private Object convertContent(Message message, @Nullable Object conversionHint, MessageProperties properties, String encoding)
 			throws IOException {
 
 		Object content = null;
@@ -380,7 +378,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 			properties.setProjectionUsed(true);
 		}
 		else if (inferredType != null && this.alwaysConvertToInferredType) {
-			content = tryConverType(message, encoding, inferredType);
+			content = tryConvertType(message, encoding, inferredType);
 		}
 		if (content == null) {
 			if (conversionHint instanceof ParameterizedTypeReference<?> parameterizedTypeReference) {
@@ -408,8 +406,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	 * Unfortunately, mapper.canDeserialize() always returns true (adds an AbstractDeserializer
 	 * to the cache); so all we can do is try a conversion.
 	 */
-	@Nullable
-	private Object tryConverType(Message message, String encoding, JavaType inferredType) {
+	private @Nullable Object tryConvertType(Message message, String encoding, JavaType inferredType) {
 		try {
 			return convertBytesToObject(message.getBody(), encoding, inferredType);
 		}

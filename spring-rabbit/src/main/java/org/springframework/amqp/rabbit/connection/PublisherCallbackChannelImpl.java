@@ -71,6 +71,7 @@ import com.rabbitmq.client.ShutdownSignalException;
 import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -78,7 +79,6 @@ import org.springframework.amqp.core.ReturnedMessage;
 import org.springframework.amqp.rabbit.connection.CorrelationData.Confirm;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -116,7 +116,7 @@ public class PublisherCallbackChannelImpl
 
 	private final ExecutorService executor;
 
-	private volatile java.util.function.Consumer<Channel> afterAckCallback;
+	private volatile java.util.function.@Nullable Consumer<Channel> afterAckCallback;
 
 	/**
 	 * Create a {@link PublisherCallbackChannelImpl} instance based on the provided
@@ -124,6 +124,7 @@ public class PublisherCallbackChannelImpl
 	 * @param delegate the delegate channel.
 	 * @param executor the executor.
 	 */
+	@SuppressWarnings("this-escape")
 	public PublisherCallbackChannelImpl(Channel delegate, ExecutorService executor) {
 		Assert.notNull(executor, "'executor' must not be null");
 		this.delegate = delegate;
@@ -135,7 +136,7 @@ public class PublisherCallbackChannelImpl
 	public void setAfterAckCallback(java.util.function.Consumer<Channel> callback) {
 		this.lock.lock();
 		try {
-			if (getPendingConfirmsCount() == 0 && callback != null) {
+			if (getPendingConfirmsCount() == 0) {
 				callback.accept(this);
 			}
 			else {
@@ -146,10 +147,6 @@ public class PublisherCallbackChannelImpl
 			this.lock.unlock();
 		}
 	}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// BEGIN PURE DELEGATE METHODS
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	@Override
 	public void addShutdownListener(ShutdownListener listener) {
@@ -816,10 +813,6 @@ public class PublisherCallbackChannelImpl
 		return this.delegate;
 	}
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// END PURE DELEGATE METHODS
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 	@Override
 	public void close() throws IOException, TimeoutException {
 		if (this.logger.isDebugEnabled()) {
@@ -848,7 +841,7 @@ public class PublisherCallbackChannelImpl
 				for (Entry<Long, PendingConfirm> confirmEntry : entry.getValue().entrySet()) {
 					confirmEntry.getValue().setCause(cause);
 					if (this.logger.isDebugEnabled()) {
-						this.logger.debug(this.toString() + " PC:Nack:(close):" + confirmEntry.getKey());
+						this.logger.debug(this + " PC:Nack:(close):" + confirmEntry.getKey());
 					}
 					processAck(confirmEntry.getKey(), false, false, false);
 				}
@@ -952,7 +945,7 @@ public class PublisherCallbackChannelImpl
 	@Override
 	public void handleAck(long seq, boolean multiple) {
 		if (this.logger.isDebugEnabled()) {
-			this.logger.debug(this.toString() + " PC:Ack:" + seq + ":" + multiple);
+			this.logger.debug(this + " PC:Ack:" + seq + ":" + multiple);
 		}
 		processAck(seq, true, multiple, true);
 	}
@@ -960,7 +953,7 @@ public class PublisherCallbackChannelImpl
 	@Override
 	public void handleNack(long seq, boolean multiple) {
 		if (this.logger.isDebugEnabled()) {
-			this.logger.debug(this.toString() + " PC:Nack:" + seq + ":" + multiple);
+			this.logger.debug(this + " PC:Nack:" + seq + ":" + multiple);
 		}
 		processAck(seq, false, multiple, true);
 	}
@@ -1018,7 +1011,7 @@ public class PublisherCallbackChannelImpl
 
 	private void processMultipleAck(long seq, boolean ack) {
 		/*
-		 * Piggy-backed ack - extract all Listeners for this and earlier
+		 * Piggybacked ack - extract all Listeners for this and earlier
 		 * sequences. Then, for each Listener, handle each of it's acks.
 		 * Finally, remove the sequences from listenerForSeq.
 		 */
@@ -1125,7 +1118,7 @@ public class PublisherCallbackChannelImpl
 	public void handle(Return returned) {
 
 		if (this.logger.isDebugEnabled()) {
-			this.logger.debug("Return " + this.toString());
+			this.logger.debug("Return " + this);
 		}
 		PendingConfirm confirm = findConfirm(returned);
 		Listener listener = findListener(returned.getProperties());
@@ -1138,26 +1131,23 @@ public class PublisherCallbackChannelImpl
 			if (confirm != null) {
 				confirm.setReturned(true);
 			}
-			Listener listenerToInvoke = listener;
-			PendingConfirm toCountDown = confirm;
 			this.executor.execute(() -> {
 				try {
-					listenerToInvoke.handleReturn(returned);
+					listener.handleReturn(returned);
 				}
 				catch (Exception e) {
 					this.logger.error("Exception delivering returned message ", e);
 				}
 				finally {
-					if (toCountDown != null) {
-						toCountDown.countDown();
+					if (confirm != null) {
+						confirm.countDown();
 					}
 				}
 			});
 		}
 	}
 
-	@Nullable
-	private PendingConfirm findConfirm(Return returned) {
+	private @Nullable PendingConfirm findConfirm(Return returned) {
 		LongString returnCorrelation = (LongString) returned.getProperties().getHeaders()
 				.get(RETURNED_MESSAGE_CORRELATION_KEY);
 		PendingConfirm confirm = null;
@@ -1177,8 +1167,7 @@ public class PublisherCallbackChannelImpl
 		return confirm;
 	}
 
-	@Nullable
-	private Listener findListener(AMQP.BasicProperties properties) {
+	private @Nullable Listener findListener(AMQP.BasicProperties properties) {
 		Listener listener = null;
 		Object returnListenerHeader = properties.getHeaders().get(RETURN_LISTENER_CORRELATION_KEY);
 		String uuidObject = null;
@@ -1198,7 +1187,8 @@ public class PublisherCallbackChannelImpl
 
 	@Override
 	public void shutdownCompleted(ShutdownSignalException cause) {
-		shutdownCompleted(cause.getMessage());
+		String causeMessage = cause.getMessage();
+		shutdownCompleted(causeMessage != null  ? causeMessage : "Normal");
 	}
 
 // Object
@@ -1216,7 +1206,7 @@ public class PublisherCallbackChannelImpl
 
 	@Override
 	public String toString() {
-		return "PublisherCallbackChannelImpl: " + this.delegate.toString();
+		return "PublisherCallbackChannelImpl: " + this.delegate;
 	}
 
 	public static PublisherCallbackChannelFactory factory() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2023 the original author or authors.
+ * Copyright 2016-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.test.mockito;
 
+import java.io.Serial;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -23,10 +24,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.jspecify.annotations.Nullable;
 import org.mockito.internal.stubbing.defaultanswers.ForwardsInvocations;
 import org.mockito.invocation.InvocationOnMock;
-
-import org.springframework.lang.Nullable;
 
 /**
  * An {@link org.mockito.stubbing.Answer} for void returning methods that calls the real
@@ -40,11 +40,12 @@ import org.springframework.lang.Nullable;
  */
 public class LatchCountDownAndCallRealMethodAnswer extends ForwardsInvocations {
 
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	private final transient CountDownLatch latch;
 
-	private final Set<Exception> exceptions = ConcurrentHashMap.newKeySet();
+	private final transient Set<Exception> exceptions = ConcurrentHashMap.newKeySet();
 
 	private final boolean hasDelegate;
 
@@ -62,7 +63,7 @@ public class LatchCountDownAndCallRealMethodAnswer extends ForwardsInvocations {
 	}
 
 	@Override
-	public Object answer(InvocationOnMock invocation) throws Throwable {
+	public @Nullable Object answer(InvocationOnMock invocation) throws Throwable {
 		try {
 			if (this.hasDelegate) {
 				return super.answer(invocation);

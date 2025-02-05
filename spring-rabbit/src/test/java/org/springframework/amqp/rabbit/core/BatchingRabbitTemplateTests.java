@@ -62,7 +62,6 @@ import org.springframework.amqp.support.postprocessor.UnzipPostProcessor;
 import org.springframework.amqp.support.postprocessor.ZipPostProcessor;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
-import org.springframework.lang.Nullable;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StopWatch;
@@ -343,7 +342,8 @@ public class BatchingRabbitTemplateTests {
 	public void testDebatchByContainerBadMessageRejected() throws Exception {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactory);
 		container.setQueueNames(ROUTE);
-		container.setMessageListener(message -> { });
+		container.setMessageListener(message -> {
+		});
 		container.setReceiveTimeout(10);
 		ConditionalRejectingErrorHandler errorHandler = new ConditionalRejectingErrorHandler();
 		container.setErrorHandler(errorHandler);
@@ -623,8 +623,7 @@ public class BatchingRabbitTemplateTests {
 		assertThat(new String(message.getBody())).isEqualTo("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar");
 	}
 
-	@Nullable
-	private Message receive(BatchingRabbitTemplate template) throws InterruptedException {
+	private Message receive(BatchingRabbitTemplate template) {
 		return await().with().pollInterval(Duration.ofMillis(50))
 				.until(() -> template.receive(ROUTE), msg -> msg != null);
 	}
@@ -676,10 +675,13 @@ public class BatchingRabbitTemplateTests {
 	}
 
 	private static final class HeaderPostProcessor implements MessagePostProcessor {
+
 		@Override
 		public Message postProcessMessage(Message message) throws AmqpException {
 			message.getMessageProperties().getHeaders().put("someHeader", "someValue");
 			return message;
 		}
+
 	}
+
 }

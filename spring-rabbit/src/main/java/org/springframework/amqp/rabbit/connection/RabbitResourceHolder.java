@@ -25,10 +25,10 @@ import java.util.Map;
 import com.rabbitmq.client.Channel;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
-import org.springframework.lang.Nullable;
 import org.springframework.transaction.support.ResourceHolderSupport;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
@@ -118,11 +118,8 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 		if (!this.channels.contains(channel)) {
 			this.channels.add(channel);
 			if (connection != null) {
-				List<Channel> channelsForConnection = this.channelsPerConnection.get(connection);
-				if (channelsForConnection == null) {
-					channelsForConnection = new LinkedList<>();
-					this.channelsPerConnection.put(connection, channelsForConnection);
-				}
+				List<Channel> channelsForConnection =
+						this.channelsPerConnection.computeIfAbsent(connection, k -> new LinkedList<>());
 				channelsForConnection.add(channel);
 			}
 		}
@@ -132,13 +129,11 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 		return this.channels.contains(channel);
 	}
 
-	@Nullable
-	public Connection getConnection() {
+	public @Nullable Connection getConnection() {
 		return (!this.connections.isEmpty() ? this.connections.get(0) : null);
 	}
 
-	@Nullable
-	public Channel getChannel() {
+	public @Nullable Channel getChannel() {
 		return (!this.channels.isEmpty() ? this.channels.get(0) : null);
 	}
 

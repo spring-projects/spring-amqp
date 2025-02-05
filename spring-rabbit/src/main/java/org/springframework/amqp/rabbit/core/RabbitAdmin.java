@@ -39,6 +39,7 @@ import com.rabbitmq.client.AMQP.Queue.PurgeOk;
 import com.rabbitmq.client.Channel;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.AmqpAdmin;
@@ -63,7 +64,6 @@ import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.jmx.export.annotation.ManagedOperation;
 import org.springframework.jmx.export.annotation.ManagedResource;
-import org.springframework.lang.Nullable;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
@@ -136,19 +136,20 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	private final Lock manualDeclarablesLock = new ReentrantLock();
 
+	@SuppressWarnings("NullAway.Init")
 	private String beanName;
 
-	private RetryTemplate retryTemplate;
+	private @Nullable RetryTemplate retryTemplate;
 
 	private boolean retryDisabled;
 
 	private boolean autoStartup = true;
 
-	private ApplicationContext applicationContext;
+	private @Nullable ApplicationContext applicationContext;
 
 	private boolean ignoreDeclarationExceptions;
 
-	private ApplicationEventPublisher applicationEventPublisher;
+	private @Nullable ApplicationEventPublisher applicationEventPublisher;
 
 	private TaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();
 
@@ -158,7 +159,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	private volatile boolean running = false;
 
-	private volatile DeclarationExceptionEvent lastDeclarationExceptionEvent;
+	private volatile @Nullable DeclarationExceptionEvent lastDeclarationExceptionEvent;
 
 	/**
 	 * Construct an instance using the provided {@link ConnectionFactory}.
@@ -205,10 +206,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	/**
 	 * @return the last {@link DeclarationExceptionEvent} that was detected in this admin.
-	 *
 	 * @since 1.6
 	 */
-	public DeclarationExceptionEvent getLastDeclarationExceptionEvent() {
+	public @Nullable DeclarationExceptionEvent getLastDeclarationExceptionEvent() {
 		return this.lastDeclarationExceptionEvent;
 	}
 
@@ -247,8 +247,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	@Override
 	@ManagedOperation(description = "Delete an exchange from the broker")
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	public boolean deleteExchange(final String exchangeName) {
-		return this.rabbitTemplate.execute(channel -> { // NOSONAR never returns null
+		return this.rabbitTemplate.execute(channel -> {
 			if (isDeletingDefaultExchange(exchangeName)) {
 				return true;
 			}
@@ -264,6 +265,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		});
 	}
 
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	private void removeExchangeBindings(final String exchangeName) {
 		this.manualDeclarablesLock.lock();
 		try {
@@ -281,7 +283,6 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		}
 	}
 
-
 	// Queue operations
 
 	/**
@@ -296,8 +297,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 */
 	@Override
 	@ManagedOperation(description = "Declare a queue on the broker (this operation is not available remotely)")
-	@Nullable
-	public String declareQueue(final Queue queue) {
+	public @Nullable String declareQueue(final Queue queue) {
 		try {
 			return this.rabbitTemplate.execute(channel -> {
 				DeclareOk[] declared = declareQueues(channel, queue);
@@ -324,8 +324,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@Override
 	@ManagedOperation(description =
 			"Declare a queue with a broker-generated name (this operation is not available remotely)")
-	@Nullable
-	public Queue declareQueue() {
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
+	public @Nullable Queue declareQueue() {
 		try {
 			DeclareOk declareOk = this.rabbitTemplate.execute(Channel::queueDeclare);
 			return new Queue(declareOk.getQueue(), false, true, true); // NOSONAR never null
@@ -338,8 +338,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	@Override
 	@ManagedOperation(description = "Delete a queue from the broker")
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	public boolean deleteQueue(final String queueName) {
-		return this.rabbitTemplate.execute(channel -> { // NOSONAR never returns null
+		return this.rabbitTemplate.execute(channel -> {
 			try {
 				channel.queueDelete(queueName);
 				removeQueueBindings(queueName);
@@ -362,6 +363,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		});
 	}
 
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	private void removeQueueBindings(final String queueName) {
 		this.manualDeclarablesLock.lock();
 		try {
@@ -392,6 +394,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	@Override
 	@ManagedOperation(description = "Purge a queue and return the number of messages purged")
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	public int purgeQueue(final String queueName) {
 		return this.rabbitTemplate.execute(channel -> { // NOSONAR never returns null
 			PurgeOk queuePurged = channel.queuePurge(queueName);
@@ -436,7 +439,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 				channel.exchangeUnbind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
 						binding.getArguments());
 			}
-			this.manualDeclarables.remove(binding.toString());
+			this.manualDeclarables.remove(binding);
 			return null;
 		});
 	}
@@ -447,7 +450,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 */
 	@Override
 	@ManagedOperation(description = "Get queue name, message count and consumer count")
-	public Properties getQueueProperties(final String queueName) {
+	public @Nullable Properties getQueueProperties(final String queueName) {
 		QueueInformation queueInfo = getQueueInfo(queueName);
 		if (queueInfo != null) {
 			Properties props = new Properties();
@@ -462,7 +465,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	}
 
 	@Override
-	public QueueInformation getQueueInfo(String queueName) {
+	public @Nullable QueueInformation getQueueInfo(String queueName) {
 		Assert.hasText(queueName, "'queueName' cannot be null or empty");
 		return this.rabbitTemplate.execute(channel -> {
 			try {
@@ -481,6 +484,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 					}
 				}
 				catch (@SuppressWarnings(UNUSED) TimeoutException e1) {
+					// Ignore
 				}
 				return null;
 			}
@@ -506,7 +510,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	/**
 	 * Normally, when a connection is recovered, the admin only recovers auto-delete queues,
-	 * etc, that are declared as beans in the application context. When this is true, it
+	 * etc., that are declared as beans in the application context. When this is true, it
 	 * will also redeclare any manually declared {@link Declarable}s via admin methods.
 	 * @return true to redeclare.
 	 * @since 2.4
@@ -647,7 +651,6 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 */
 	@Override // NOSONAR complexity
 	public void initialize() {
-
 		redeclareBeanDeclarables();
 		redeclareManualDeclarables();
 	}
@@ -757,6 +760,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	private void processDeclarables(Collection<Exchange> contextExchanges, Collection<Queue> contextQueues,
 			Collection<Binding> contextBindings) {
 
+		@SuppressWarnings("NullAway") // Dataflow analysis limitation
 		Collection<Declarables> declarables = this.applicationContext.getBeansOfType(Declarables.class, false, true)
 				.values();
 		declarables.forEach(d -> {
@@ -782,7 +786,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 * @return a new collection containing {@link Declarable}s that should be declared by this
 	 * admin.
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "NullAway" }) // Dataflow analysis limitation
 	private <T extends Declarable> Collection<T> filterDeclarables(Collection<T> declarables,
 			Collection<DeclarableCustomizer> customizers) {
 
@@ -802,7 +806,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	private <T extends Declarable> boolean declarableByMe(T dec) {
 		return (dec.getDeclaringAdmins().isEmpty() && !this.explicitDeclarationsOnly) // NOSONAR boolean complexity
 				|| dec.getDeclaringAdmins().contains(this)
-				|| (this.beanName != null && dec.getDeclaringAdmins().contains(this.beanName));
+				|| dec.getDeclaringAdmins().contains(this.beanName);
 	}
 
 	// private methods for declaring Exchanges, Queues, and Bindings on a Channel
@@ -981,6 +985,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		return false;
 	}
 
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	private boolean isImplicitQueueBinding(Binding binding) {
 		return isDefaultExchange(binding.getExchange()) && binding.getDestination().equals(binding.getRoutingKey());
 	}

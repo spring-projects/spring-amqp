@@ -20,11 +20,13 @@ import java.lang.reflect.Method;
 
 import com.rabbitmq.stream.Message;
 import com.rabbitmq.stream.MessageHandler.Context;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.rabbit.listener.adapter.InvocationResult;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
+import org.springframework.messaging.support.GenericMessage;
 import org.springframework.rabbit.stream.listener.StreamMessageListener;
 
 /**
@@ -37,14 +39,19 @@ import org.springframework.rabbit.stream.listener.StreamMessageListener;
 public class StreamMessageListenerAdapter extends MessagingMessageListenerAdapter implements StreamMessageListener {
 
 	/**
+	 * The {@code org.springframework.messaging.handler.invocation.InvocableHandlerMethod} contact support.
+	 */
+	private static final GenericMessage<?> FAKE_MESSAGE = new GenericMessage<>("");
+
+	/**
 	 * Construct an instance with the provided arguments.
 	 * @param bean the bean.
 	 * @param method the method.
 	 * @param returnExceptions true to return exceptions.
 	 * @param errorHandler the error handler.
 	 */
-	public StreamMessageListenerAdapter(Object bean, Method method, boolean returnExceptions,
-			RabbitListenerErrorHandler errorHandler) {
+	public StreamMessageListenerAdapter(@Nullable Object bean, @Nullable Method method, boolean returnExceptions,
+			@Nullable RabbitListenerErrorHandler errorHandler) {
 
 		super(bean, method, returnExceptions, errorHandler);
 	}
@@ -52,7 +59,7 @@ public class StreamMessageListenerAdapter extends MessagingMessageListenerAdapte
 	@Override
 	public void onStreamMessage(Message message, Context context) {
 		try {
-			InvocationResult result = getHandlerAdapter().invoke(null, message, context);
+			InvocationResult result = getHandlerAdapter().invoke(FAKE_MESSAGE, message, context);
 			if (result.getReturnValue() != null) {
 				logger.warn("Replies are not currently supported with native Stream listeners");
 			}

@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 
 import com.rabbitmq.stream.Environment;
 import org.aopalliance.aop.Advice;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.config.BaseRabbitListenerContainerFactory;
@@ -28,7 +29,6 @@ import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.utils.JavaUtils;
-import org.springframework.lang.Nullable;
 import org.springframework.rabbit.stream.listener.ConsumerCustomizer;
 import org.springframework.rabbit.stream.listener.StreamListenerContainer;
 import org.springframework.rabbit.stream.listener.adapter.StreamMessageListenerAdapter;
@@ -49,11 +49,11 @@ public class StreamRabbitListenerContainerFactory
 
 	private boolean nativeListener;
 
-	private ConsumerCustomizer consumerCustomizer;
+	private @Nullable ConsumerCustomizer consumerCustomizer;
 
-	private ContainerCustomizer<StreamListenerContainer> containerCustomizer;
+	private @Nullable ContainerCustomizer<StreamListenerContainer> containerCustomizer;
 
-	private RabbitStreamListenerObservationConvention streamListenerObservationConvention;
+	private @Nullable RabbitStreamListenerObservationConvention streamListenerObservationConvention;
 
 	/**
 	 * Construct an instance using the provided environment.
@@ -102,11 +102,12 @@ public class StreamRabbitListenerContainerFactory
 	}
 
 	@Override
-	public StreamListenerContainer createListenerContainer(RabbitListenerEndpoint endpoint) {
+	public StreamListenerContainer createListenerContainer(@Nullable RabbitListenerEndpoint endpoint) {
 		if (endpoint instanceof MethodRabbitListenerEndpoint methodRabbitListenerEndpoint && this.nativeListener) {
 			methodRabbitListenerEndpoint.setAdapterProvider(
-					(boolean batch, Object bean, Method method, boolean returnExceptions,
-							RabbitListenerErrorHandler errorHandler, @Nullable BatchingStrategy batchingStrategy) -> {
+					(boolean batch, @Nullable Object bean, @Nullable Method method, boolean returnExceptions,
+							@Nullable RabbitListenerErrorHandler errorHandler,
+							@Nullable BatchingStrategy batchingStrategy) -> {
 
 								Assert.isTrue(!batch, "Batch listeners are not supported by the stream container");
 								return new StreamMessageListenerAdapter(bean, method, returnExceptions, errorHandler);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
@@ -116,11 +118,9 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 			String headerName = entry.getKey();
 			if (StringUtils.hasText(headerName) && !headerName.startsWith(AmqpHeaders.PREFIX)) {
 				Object value = entry.getValue();
-				if (value != null) {
-					String propertyName = this.fromHeaderName(headerName);
-					if (!amqpMessageProperties.getHeaders().containsKey(headerName)) {
-						amqpMessageProperties.setHeader(propertyName, value);
-					}
+				String propertyName = this.fromHeaderName(headerName);
+				if (!amqpMessageProperties.getHeaders().containsKey(headerName)) {
+					amqpMessageProperties.setHeader(propertyName, value);
 				}
 			}
 		}
@@ -152,7 +152,7 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 					.acceptIfNotNull(AmqpHeaders.MESSAGE_ID, amqpMessageProperties.getMessageId(), putObject);
 			Integer priority = amqpMessageProperties.getPriority();
 			javaUtils
-					.acceptIfCondition(priority != null && priority > 0, AmqpMessageHeaderAccessor.PRIORITY, priority,
+					.acceptIfCondition(priority > 0, AmqpMessageHeaderAccessor.PRIORITY, priority,
 							putObject)
 					.acceptIfNotNull(AmqpHeaders.RECEIVED_DELAY, amqpMessageProperties.getReceivedDelayLong(), putObject)
 					.acceptIfHasText(AmqpHeaders.RECEIVED_EXCHANGE, amqpMessageProperties.getReceivedExchange(),
@@ -188,7 +188,7 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 	 * @param headers the headers.
 	 * @return the content type.
 	 */
-	private String extractContentTypeAsString(Map<String, Object> headers) {
+	private @Nullable String extractContentTypeAsString(Map<String, Object> headers) {
 		String contentTypeStringValue = null;
 
 		Object contentType = getHeaderIfAvailable(headers, AmqpHeaders.CONTENT_TYPE, Object.class);

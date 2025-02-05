@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.amqp.core;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 
 /**
  * Common properties that describe all exchange types.
@@ -71,7 +72,9 @@ public abstract class AbstractExchange extends AbstractDeclarable implements Exc
 	 * longer in use
 	 * @param arguments the arguments used to declare the exchange
 	 */
-	public AbstractExchange(String name, boolean durable, boolean autoDelete, Map<String, Object> arguments) {
+	public AbstractExchange(String name, boolean durable, boolean autoDelete,
+			@Nullable Map<String, @Nullable Object> arguments) {
+
 		super(arguments);
 		this.name = name;
 		this.durable = durable;

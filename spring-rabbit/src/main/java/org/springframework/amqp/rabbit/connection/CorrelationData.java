@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,10 @@ package org.springframework.amqp.rabbit.connection;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.core.Correlation;
 import org.springframework.amqp.core.ReturnedMessage;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -44,10 +45,10 @@ public class CorrelationData implements Correlation {
 
 	private volatile String id;
 
-	private volatile ReturnedMessage returnedMessage;
+	private volatile @Nullable ReturnedMessage returnedMessage;
 
 	/**
-	 * Construct an instance with a null Id.
+	 * Construct an instance with a null {@code Id}.
 	 * @since 1.6.7
 	 */
 	public CorrelationData() {
@@ -76,7 +77,6 @@ public class CorrelationData implements Correlation {
 	 * Set the correlation id. Generally, the correlation id shouldn't be changed.
 	 * One use case, however, is when it needs to be set in a
 	 * {@link org.springframework.amqp.core.MessagePostProcessor}.
-	 *
 	 * @param id the id.
 	 * @since 1.6
 	 */
@@ -100,8 +100,7 @@ public class CorrelationData implements Correlation {
 	 * @return the {@link ReturnedMessage}.
 	 * @since 2.3.3
 	 */
-	@Nullable
-	public ReturnedMessage getReturned() {
+	public @Nullable ReturnedMessage getReturned() {
 		return this.returnedMessage;
 	}
 
@@ -122,35 +121,14 @@ public class CorrelationData implements Correlation {
 	/**
 	 * Represents a publisher confirmation. When the ack field is
 	 * true, the publish was successful; otherwise failed with a possible
-	 * reason (may be null, meaning unknown).
+	 * reason (maybe null, meaning unknown).
+	 *
+	 * @param ack true to confirm
+	 * @param reason the reason for nack
 	 *
 	 * @since 2.1
 	 */
-	public static class Confirm {
-
-		private final boolean ack;
-
-		private final String reason;
-
-		public Confirm(boolean ack, @Nullable String reason) {
-			this.ack = ack;
-			this.reason = reason;
-		}
-
-		public boolean isAck() {
-			return this.ack;
-		}
-
-		public String getReason() {
-			return this.reason;
-		}
-
-		@Override
-		public String toString() {
-			return "Confirm [ack=" + this.ack
-					+ (this.reason != null ? ", reason=" + this.reason : "")
-					+ "]";
-		}
+	public record Confirm(boolean ack, @Nullable String reason) {
 
 	}
 

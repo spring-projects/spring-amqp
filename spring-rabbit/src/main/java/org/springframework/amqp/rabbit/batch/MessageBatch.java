@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,47 +16,49 @@
 
 package org.springframework.amqp.rabbit.batch;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.core.Message;
 
 /**
  * An object encapsulating a {@link Message} containing the batch of messages,
  * the exchange, and routing key.
  *
+ * @param exchange the exchange for batch of messages
+ * @param routingKey the routing key for batch
+ * @param message the message with a batch
+ *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.4.1
  *
  */
-public class MessageBatch {
-
-	private final String exchange;
-
-	private final String routingKey;
-
-	private final Message message;
-
-	public MessageBatch(String exchange, String routingKey, Message message) {
-		this.exchange = exchange;
-		this.routingKey = routingKey;
-		this.message = message;
-	}
+public record MessageBatch(@Nullable String exchange, @Nullable String routingKey, Message message) {
 
 	/**
 	 * @return the exchange
+	 * @deprecated in favor or {@link #exchange()}.
 	 */
-	public String getExchange() {
+	@Deprecated(forRemoval = true, since = "4.0")
+	public @Nullable String getExchange() {
 		return this.exchange;
 	}
 
 	/**
 	 * @return the routingKey
+	 * @deprecated in favor or {@link #routingKey()}.
 	 */
-	public String getRoutingKey() {
+	@Deprecated(forRemoval = true, since = "4.0")
+	public @Nullable String getRoutingKey() {
 		return this.routingKey;
 	}
 
 	/**
 	 * @return the message
+	 * @deprecated in favor or {@link #message()} ()}.
 	 */
+	@Deprecated(forRemoval = true, since = "4.0")
 	public Message getMessage() {
 		return this.message;
 	}

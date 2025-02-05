@@ -19,8 +19,7 @@ package org.springframework.amqp.rabbit.connection;
 import com.rabbitmq.client.Channel;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Consumers register their primary channels with this class. This is used
@@ -38,8 +37,7 @@ public final class ConsumerChannelRegistry {
 
 	private static final Log logger = LogFactory.getLog(ConsumerChannelRegistry.class); // NOSONAR - lower case
 
-	private static final ThreadLocal<ChannelHolder> consumerChannel // NOSONAR - lower case
-		= new ThreadLocal<>();
+	private static final ThreadLocal<@Nullable ChannelHolder> CONSUMER_CHANNEL = new ThreadLocal<>();
 
 	private ConsumerChannelRegistry() {
 	}
@@ -58,9 +56,9 @@ public final class ConsumerChannelRegistry {
 	public static void registerConsumerChannel(Channel channel, ConnectionFactory connectionFactory) {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Registering consumer channel" + channel + " from factory " +
-							connectionFactory);
+					connectionFactory);
 		}
-		consumerChannel.set(new ChannelHolder(channel, connectionFactory));
+		CONSUMER_CHANNEL.set(new ChannelHolder(channel, connectionFactory));
 	}
 
 	/**
@@ -69,9 +67,9 @@ public final class ConsumerChannelRegistry {
 	 */
 	public static void unRegisterConsumerChannel() {
 		if (logger.isDebugEnabled()) {
-			logger.debug("Unregistering consumer channel" + consumerChannel.get());
+			logger.debug("Unregistering consumer channel" + CONSUMER_CHANNEL.get());
 		}
-		consumerChannel.remove();
+		CONSUMER_CHANNEL.remove();
 	}
 
 	/**
@@ -80,11 +78,10 @@ public final class ConsumerChannelRegistry {
 	 *
 	 * @return The channel.
 	 */
-	@Nullable
-	public static Channel getConsumerChannel() {
-		ChannelHolder channelHolder = consumerChannel.get();
+	public static @Nullable Channel getConsumerChannel() {
+		ChannelHolder channelHolder = CONSUMER_CHANNEL.get();
 		return channelHolder != null
-				? channelHolder.getChannel()
+				? channelHolder.channel()
 				: null;
 	}
 
@@ -95,33 +92,17 @@ public final class ConsumerChannelRegistry {
 	 * @param connectionFactory The connection factory.
 	 * @return The channel.
 	 */
-	@Nullable
-	public static Channel getConsumerChannel(ConnectionFactory connectionFactory) {
-		ChannelHolder channelHolder = consumerChannel.get();
+	public static @Nullable Channel getConsumerChannel(ConnectionFactory connectionFactory) {
+		ChannelHolder channelHolder = CONSUMER_CHANNEL.get();
 		Channel channel = null;
-		if (channelHolder != null && channelHolder.getConnectionFactory().equals(connectionFactory)) {
-			channel = channelHolder.getChannel();
+		if (channelHolder != null && channelHolder.connectionFactory().equals(connectionFactory)) {
+			channel = channelHolder.channel();
 		}
 		return channel;
 	}
 
-	private static final class ChannelHolder {
+	private record ChannelHolder(Channel channel, ConnectionFactory connectionFactory) {
 
-		private final Channel channel;
-
-		private final ConnectionFactory connectionFactory;
-
-		ChannelHolder(Channel channel, ConnectionFactory connectionFactory) {
-			this.channel = channel;
-			this.connectionFactory = connectionFactory;
-		}
-
-		private Channel getChannel() {
-			return this.channel;
-		}
-
-		private ConnectionFactory getConnectionFactory() {
-			return this.connectionFactory;
-		}
 	}
+
 }

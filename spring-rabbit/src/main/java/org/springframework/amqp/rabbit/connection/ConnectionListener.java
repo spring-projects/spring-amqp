@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import com.rabbitmq.client.ShutdownSignalException;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A listener for connection creation and closing.
@@ -32,7 +33,7 @@ public interface ConnectionListener {
 	 * Called when a new connection is established.
 	 * @param connection the connection.
 	 */
-	void onCreate(Connection connection);
+	void onCreate(@Nullable Connection connection);
 
 	/**
 	 * Called when a connection is closed.
@@ -44,7 +45,7 @@ public interface ConnectionListener {
 
 	/**
 	 * Called when a connection is force closed.
-	 * @param signal the shut down signal.
+	 * @param signal the shutdown signal.
 	 * @since 2.0
 	 */
 	default void onShutDown(ShutdownSignalException signal) {

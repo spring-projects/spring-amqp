@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.springframework.amqp.core;
 
 import java.util.Arrays;
 import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
@@ -51,7 +53,7 @@ public abstract class BaseExchangeBuilder<B extends BaseExchangeBuilder<B>> exte
 
 	private boolean declare = true;
 
-	private Object[] declaringAdmins;
+	private @Nullable Object @Nullable [] declaringAdmins;
 
 	/**
 	 * Construct an instance of the appropriate type.
@@ -101,7 +103,7 @@ public abstract class BaseExchangeBuilder<B extends BaseExchangeBuilder<B>> exte
 	 * @param arguments the arguments map.
 	 * @return the builder.
 	 */
-	public B withArguments(Map<String, Object> arguments) {
+	public B withArguments(Map<String, @Nullable Object> arguments) {
 		this.getOrCreateArguments().putAll(arguments);
 		return _this();
 	}
@@ -163,26 +165,16 @@ public abstract class BaseExchangeBuilder<B extends BaseExchangeBuilder<B>> exte
 
 	@SuppressWarnings("unchecked")
 	public <T extends Exchange> T build() {
-		AbstractExchange exchange;
-		if (ExchangeTypes.DIRECT.equals(this.type)) {
-			exchange = new DirectExchange(this.name, this.durable, this.autoDelete, getArguments());
-		}
-		else if (ExchangeTypes.TOPIC.equals(this.type)) {
-			exchange = new TopicExchange(this.name, this.durable, this.autoDelete, getArguments());
-		}
-		else if (ExchangeTypes.FANOUT.equals(this.type)) {
-			exchange = new FanoutExchange(this.name, this.durable, this.autoDelete, getArguments());
-		}
-		else if (ExchangeTypes.HEADERS.equals(this.type)) {
-			exchange = new HeadersExchange(this.name, this.durable, this.autoDelete, getArguments());
-		}
-		else {
-			exchange = new CustomExchange(this.name, this.type, this.durable, this.autoDelete, getArguments());
-		}
+		AbstractExchange exchange = switch (this.type) {
+			case ExchangeTypes.DIRECT -> new DirectExchange(this.name, this.durable, this.autoDelete, getArguments());
+			case ExchangeTypes.TOPIC -> new TopicExchange(this.name, this.durable, this.autoDelete, getArguments());
+			case ExchangeTypes.FANOUT -> new FanoutExchange(this.name, this.durable, this.autoDelete, getArguments());
+			case ExchangeTypes.HEADERS -> new HeadersExchange(this.name, this.durable, this.autoDelete, getArguments());
+			default -> new CustomExchange(this.name, this.type, this.durable, this.autoDelete, getArguments());
+		};
 
 		return (T) configureExchange(exchange);
 	}
-
 
 	protected <T extends AbstractExchange> T configureExchange(T exchange) {
 		exchange.setInternal(this.internal);

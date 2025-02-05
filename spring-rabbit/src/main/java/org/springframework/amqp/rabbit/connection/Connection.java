@@ -20,7 +20,6 @@ import com.rabbitmq.client.BlockedListener;
 import com.rabbitmq.client.Channel;
 
 import org.springframework.amqp.AmqpException;
-import org.springframework.lang.Nullable;
 
 /**
  * @author Dave Syer
@@ -41,9 +40,8 @@ public interface Connection extends AutoCloseable {
 	 * Close this connection and all its channels
 	 * with the {@link com.rabbitmq.client.AMQP#REPLY_SUCCESS} close code
 	 * and message 'OK'.
-	 *
+	 * <p>
 	 * Waits for all the close operations to complete.
-	 *
 	 * @throws AmqpException if an I/O problem is encountered
 	 */
 	@Override
@@ -60,7 +58,6 @@ public interface Connection extends AutoCloseable {
 	 * @return the local port if the underlying connection supports it.
 	 */
 	int getLocalPort();
-
 
 	/**
 	 * Add a {@link BlockedListener}.
@@ -84,9 +81,7 @@ public interface Connection extends AutoCloseable {
 	 * Return the underlying RabbitMQ connection.
 	 * @return the connection.
 	 */
-	default @Nullable com.rabbitmq.client.Connection getDelegate() {
-		return null;
-	}
+	com.rabbitmq.client.Connection getDelegate();
 
 	/**
 	 * Close any channel associated with the current thread.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2024 the original author or authors.
+ * Copyright 2013-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.amqp.utils.test;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.util.Assert;
@@ -40,7 +42,7 @@ public final class TestUtils {
 	 * @param propertyPath The path.
 	 * @return The field.
 	 */
-	public static Object getPropertyValue(Object root, String propertyPath) {
+	public static @Nullable Object getPropertyValue(Object root, String propertyPath) {
 		Object value = null;
 		DirectFieldAccessor accessor = new DirectFieldAccessor(root);
 		String[] tokens = propertyPath.split("\\.");
@@ -61,7 +63,7 @@ public final class TestUtils {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T> T getPropertyValue(Object root, String propertyPath, Class<T> type) {
+	public static <T> @Nullable T getPropertyValue(Object root, String propertyPath, Class<T> type) {
 		Object value = getPropertyValue(root, propertyPath);
 		if (value != null) {
 			Assert.isAssignable(type, value.getClass());

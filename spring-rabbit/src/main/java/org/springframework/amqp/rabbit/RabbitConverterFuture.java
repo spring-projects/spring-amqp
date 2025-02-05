@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
 import org.springframework.core.ParameterizedTypeReference;
@@ -34,20 +36,20 @@ import org.springframework.core.ParameterizedTypeReference;
  */
 public class RabbitConverterFuture<C> extends RabbitFuture<C> {
 
-	private volatile ParameterizedTypeReference<C> returnType;
+	private volatile @Nullable ParameterizedTypeReference<C> returnType;
 
 	RabbitConverterFuture(String correlationId, Message requestMessage,
-			BiConsumer<String, ChannelHolder> canceler,
-			Function<RabbitFuture<?>, ScheduledFuture<?>> timeoutTaskFunction) {
+			BiConsumer<String, @Nullable ChannelHolder> canceler,
+			Function<RabbitFuture<?>, @Nullable ScheduledFuture<?>> timeoutTaskFunction) {
 
 		super(correlationId, requestMessage, canceler, timeoutTaskFunction);
 	}
 
-	public ParameterizedTypeReference<C> getReturnType() {
+	public @Nullable ParameterizedTypeReference<C> getReturnType() {
 		return this.returnType;
 	}
 
-	public void setReturnType(ParameterizedTypeReference<C> returnType) {
+	public void setReturnType(@Nullable ParameterizedTypeReference<C> returnType) {
 		this.returnType = returnType;
 	}
 

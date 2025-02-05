@@ -1,5 +1,5 @@
 /**
  * Provides classes for supporting message conversion.
  */
-@org.springframework.lang.NonNullApi
+@org.jspecify.annotations.NullMarked
 package org.springframework.amqp.support.converter;

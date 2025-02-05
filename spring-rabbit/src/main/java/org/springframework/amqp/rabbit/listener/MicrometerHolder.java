@@ -24,16 +24,20 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.Builder;
 import io.micrometer.core.instrument.Timer.Sample;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
-import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 /**
  * Abstraction to avoid hard reference to Micrometer.
  *
  * @author Gary Russell
  * @author Ngoc Nhan
+ * @author Artem Bilan
+ *
  * @since 2.4.6
  *
  */
@@ -41,16 +45,16 @@ public final class MicrometerHolder {
 
 	private final ConcurrentMap<String, Timer> timers = new ConcurrentHashMap<>();
 
+	@SuppressWarnings("NullAway.Init")
 	private final MeterRegistry registry;
 
 	private final Map<String, String> tags;
 
 	private final String listenerId;
 
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	MicrometerHolder(@Nullable ApplicationContext context, String listenerId, Map<String, String> tags) {
-		if (context == null) {
-			throw new IllegalStateException("No micrometer registry present");
-		}
+		Assert.notNull(context, "'context' must not be null");
 		try {
 			this.registry = context.getBeanProvider(MeterRegistry.class).getIfUnique();
 		}
@@ -95,7 +99,7 @@ public final class MicrometerHolder {
 				.tag("queue", queue)
 				.tag("result", result)
 				.tag("exception", exception);
-		if (this.tags != null && !this.tags.isEmpty()) {
+		if (!CollectionUtils.isEmpty(this.tags)) {
 			this.tags.forEach(builder::tag);
 		}
 		Timer registeredTimer = builder.register(this.registry);

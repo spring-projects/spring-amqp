@@ -54,6 +54,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginConfiguration;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.apache.logging.log4j.core.util.Integers;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpApplicationContextClosedException;
 import org.springframework.amqp.AmqpException;
@@ -152,8 +153,8 @@ public class AmqpAppender extends AbstractAppender {
 	 * @param eventQueue the event queue.
 	 * @param properties the properties.
 	 */
-	public AmqpAppender(String name, Filter filter, Layout<? extends Serializable> layout, boolean ignoreExceptions,
-			Property[] properties, AmqpManager manager, BlockingQueue<Event> eventQueue) {
+	public AmqpAppender(String name, @Nullable Filter filter, Layout<? extends Serializable> layout,
+			boolean ignoreExceptions, Property[] properties, AmqpManager manager, BlockingQueue<Event> eventQueue) {
 
 		super(name, filter, layout, ignoreExceptions, properties);
 		this.manager = manager;
@@ -227,7 +228,7 @@ public class AmqpAppender extends AbstractAppender {
 		}
 
 		// Set applicationId, if we're using one
-		if (null != this.manager.applicationId) {
+		if (this.manager.applicationId != null) {
 			amqpProps.setAppId(this.manager.applicationId);
 		}
 
@@ -266,14 +267,11 @@ public class AmqpAppender extends AbstractAppender {
 				this.layoutMutex.unlock();
 			}
 			Message message = null;
-			if (this.manager.charset != null) {
-				try {
-					message = new Message(msgBody.toString().getBytes(this.manager.charset),
-							amqpProps);
-				}
-				catch (UnsupportedEncodingException e) {
-					/* fall back to default */
-				}
+			try {
+				message = new Message(msgBody.toString().getBytes(this.manager.charset), amqpProps);
+			}
+			catch (UnsupportedEncodingException e) {
+				/* fall back to default */
 			}
 			if (message == null) {
 				message = new Message(msgBody.toString().getBytes(), amqpProps); //NOSONAR (default charset)
@@ -345,7 +343,7 @@ public class AmqpAppender extends AbstractAppender {
 	/**
 	 * Helper class to encapsulate a LoggingEvent, its MDC properties, and the number of retries.
 	 */
-	protected static class Event {
+	public static class Event {
 
 		private final LogEvent event;
 
@@ -375,7 +373,7 @@ public class AmqpAppender extends AbstractAppender {
 	/**
 	 * Manager class for the appender.
 	 */
-	protected static class AmqpManager extends AbstractManager {
+	public static class AmqpManager extends AbstractManager {
 
 		private static final int DEFAULT_MAX_SENDER_RETRIES = 30;
 
@@ -404,12 +402,13 @@ public class AmqpAppender extends AbstractAppender {
 		/**
 		 * Log4J Layout to use to generate routing key.
 		 */
+		@SuppressWarnings("NullAway.Init")
 		private Layout<String> routingKeyLayout;
 
 		/**
 		 * Configuration arbitrary application ID.
 		 */
-		private String applicationId = null;
+		private @Nullable String applicationId;
 
 		/**
 		 * How many senders to use at once. Use more senders if you have lots of log output going through this appender.
@@ -424,42 +423,43 @@ public class AmqpAppender extends AbstractAppender {
 		/**
 		 * RabbitMQ ConnectionFactory.
 		 */
+		@SuppressWarnings("NullAway.Init")
 		private AbstractConnectionFactory connectionFactory;
 
 		/**
 		 * RabbitMQ host to connect to.
 		 */
-		private URI uri;
+		private @Nullable URI uri;
 
 		/**
 		 * RabbitMQ host to connect to.
 		 */
-		private String host;
+		private @Nullable String host;
 
 		/**
 		 * A comma-delimited list of broker addresses: host:port[,host:port]*.
 		 */
-		private String addresses;
+		private @Nullable String addresses;
 
 		/**
 		 * RabbitMQ virtual host to connect to.
 		 */
-		private String virtualHost;
+		private @Nullable String virtualHost;
 
 		/**
 		 * RabbitMQ port to connect to.
 		 */
-		private Integer port;
+		private @Nullable Integer port;
 
 		/**
 		 * RabbitMQ user to connect as.
 		 */
-		private String username;
+		private @Nullable String username;
 
 		/**
 		 * RabbitMQ password for this user.
 		 */
-		private String password;
+		private @Nullable String password;
 
 		/**
 		 * Use an SSL connection.
@@ -471,22 +471,22 @@ public class AmqpAppender extends AbstractAppender {
 		/**
 		 * The SSL algorithm to use.
 		 */
-		private String sslAlgorithm;
+		private @Nullable String sslAlgorithm;
 
 		/**
 		 * Location of resource containing keystore and truststore information.
 		 */
-		private String sslPropertiesLocation;
+		private @Nullable String sslPropertiesLocation;
 
 		/**
 		 * Keystore location.
 		 */
-		private String keyStore;
+		private @Nullable String keyStore;
 
 		/**
 		 * Keystore passphrase.
 		 */
-		private String keyStorePassphrase;
+		private @Nullable String keyStorePassphrase;
 
 		/**
 		 * Keystore type.
@@ -496,12 +496,12 @@ public class AmqpAppender extends AbstractAppender {
 		/**
 		 * Truststore location.
 		 */
-		private String trustStore;
+		private @Nullable String trustStore;
 
 		/**
 		 * Truststore passphrase.
 		 */
-		private String trustStorePassphrase;
+		private @Nullable String trustStorePassphrase;
 
 		/**
 		 * Truststore type.
@@ -512,7 +512,7 @@ public class AmqpAppender extends AbstractAppender {
 		 * SaslConfig.
 		 * @see RabbitUtils#stringToSaslConfig(String, ConnectionFactory)
 		 */
-		private String saslConfig;
+		private @Nullable String saslConfig;
 
 		/**
 		 * Default content-type of log messages.
@@ -522,23 +522,23 @@ public class AmqpAppender extends AbstractAppender {
 		/**
 		 * Default content-encoding of log messages.
 		 */
-		private String contentEncoding = null;
+		private @Nullable String contentEncoding;
 
 		/**
-		 * Whether or not to try and declare the configured exchange when this appender starts.
+		 * Whether to try and declare the configured exchange when this appender starts.
 		 */
 		private boolean declareExchange = false;
 
 		/**
 		 * A name for the connection (appears on the RabbitMQ Admin UI).
 		 */
-		private String connectionName;
+		private @Nullable String connectionName;
 
 		/**
 		 * Additional client connection properties to be added to the rabbit connection,
 		 * with the form {@code key:value[,key:value]...}.
 		 */
-		private String clientConnectionProperties;
+		private @Nullable String clientConnectionProperties;
 
 		/**
 		 * charset to use when converting String to byte[], default null (system default charset used).
@@ -548,7 +548,7 @@ public class AmqpAppender extends AbstractAppender {
 		private String charset = Charset.defaultCharset().name();
 
 		/**
-		 * Whether or not add MDC properties into message headers. true by default for backward compatibility
+		 * Whether add MDC properties into message headers. true by default for backward compatibility
 		 */
 		private boolean addMdcAsHeaders = true;
 
@@ -566,7 +566,8 @@ public class AmqpAppender extends AbstractAppender {
 		/**
 		 * The pool of senders.
 		 */
-		private ExecutorService senderPool = null;
+		@SuppressWarnings("NullAway.Init")
+		private ExecutorService senderPool;
 
 		/**
 		 * Retries are delayed like: N ^ log(N), where N is the retry number.
@@ -577,6 +578,7 @@ public class AmqpAppender extends AbstractAppender {
 			super(loggerContext, name);
 		}
 
+		@SuppressWarnings("NullAway") // Dataflow analysis limitation
 		private boolean activateOptions() {
 			ConnectionFactory rabbitConnectionFactory = createRabbitConnectionFactory();
 			if (rabbitConnectionFactory != null) {
@@ -595,10 +597,8 @@ public class AmqpAppender extends AbstractAppender {
 				if (this.addresses != null) {
 					this.connectionFactory.setAddresses(this.addresses);
 				}
-				if (this.clientConnectionProperties != null) {
-					ConnectionFactoryConfigurationUtils.updateClientConnectionProperties(this.connectionFactory,
+				ConnectionFactoryConfigurationUtils.updateClientConnectionProperties(this.connectionFactory,
 							this.clientConnectionProperties);
-				}
 				setUpExchangeDeclaration();
 				this.senderPool = Executors.newCachedThreadPool();
 				return true;
@@ -608,10 +608,9 @@ public class AmqpAppender extends AbstractAppender {
 
 		/**
 		 * Create the {@link ConnectionFactory}.
-		 *
 		 * @return a {@link ConnectionFactory}.
 		 */
-		protected ConnectionFactory createRabbitConnectionFactory() {
+		protected @Nullable ConnectionFactory createRabbitConnectionFactory() {
 			RabbitConnectionFactoryBean factoryBean = new RabbitConnectionFactoryBean();
 			configureRabbitConnectionFactory(factoryBean);
 			try {
@@ -691,65 +690,56 @@ public class AmqpAppender extends AbstractAppender {
 		protected void setUpExchangeDeclaration() {
 			RabbitAdmin admin = new RabbitAdmin(this.connectionFactory);
 			if (this.declareExchange) {
-				Exchange x;
-				if ("topic".equals(this.exchangeType)) {
-					x = new TopicExchange(this.exchangeName, this.durable, this.autoDelete);
-				}
-				else if ("direct".equals(this.exchangeType)) {
-					x = new DirectExchange(this.exchangeName, this.durable, this.autoDelete);
-				}
-				else if ("fanout".equals(this.exchangeType)) {
-					x = new FanoutExchange(this.exchangeName, this.durable, this.autoDelete);
-				}
-				else if ("headers".equals(this.exchangeType)) {
-					x = new HeadersExchange(this.exchangeName, this.durable, this.autoDelete);
-				}
-				else {
-					x = new TopicExchange(this.exchangeName, this.durable, this.autoDelete);
-				}
+				Exchange x = switch (this.exchangeType) {
+					case "direct" -> new DirectExchange(this.exchangeName, this.durable, this.autoDelete);
+					case "fanout" -> new FanoutExchange(this.exchangeName, this.durable, this.autoDelete);
+					case "headers" -> new HeadersExchange(this.exchangeName, this.durable, this.autoDelete);
+					default -> new TopicExchange(this.exchangeName, this.durable, this.autoDelete);
+				};
 				this.connectionFactory.addConnectionListener(new DeclareExchangeConnectionListener(x, admin));
 			}
 		}
 
 	}
 
-	protected static class Builder implements org.apache.logging.log4j.core.util.Builder<AmqpAppender> {
+	public static class Builder implements org.apache.logging.log4j.core.util.Builder<AmqpAppender> {
 
 		@PluginConfiguration
+		@SuppressWarnings("NullAway.Init")
 		private Configuration configuration;
 
 		@PluginBuilderAttribute("name")
-		private String name;
+		private @Nullable String name;
 
 		@PluginElement("Layout")
-		private Layout<? extends Serializable> layout;
+		private @Nullable Layout<? extends Serializable> layout;
 
 		@PluginElement("Filter")
-		private Filter filter;
+		private @Nullable Filter filter;
 
 		@PluginBuilderAttribute("ignoreExceptions")
 		private boolean ignoreExceptions;
 
 		@PluginBuilderAttribute("uri")
-		private URI uri;
+		private @Nullable URI uri;
 
 		@PluginBuilderAttribute("host")
-		private String host;
+		private @Nullable String host;
 
 		@PluginBuilderAttribute("port")
-		private String port;
+		private @Nullable String port;
 
 		@PluginBuilderAttribute("addresses")
-		private String addresses;
+		private @Nullable String addresses;
 
 		@PluginBuilderAttribute("user")
-		private String user;
+		private @Nullable String user;
 
 		@PluginBuilderAttribute("password")
-		private String password;
+		private @Nullable String password;
 
 		@PluginBuilderAttribute("virtualHost")
-		private String virtualHost;
+		private @Nullable String virtualHost;
 
 		@PluginBuilderAttribute("useSsl")
 		private boolean useSsl;
@@ -758,31 +748,31 @@ public class AmqpAppender extends AbstractAppender {
 		private boolean verifyHostname;
 
 		@PluginBuilderAttribute("sslAlgorithm")
-		private String sslAlgorithm;
+		private @Nullable String sslAlgorithm;
 
 		@PluginBuilderAttribute("sslPropertiesLocation")
-		private String sslPropertiesLocation;
+		private @Nullable String sslPropertiesLocation;
 
 		@PluginBuilderAttribute("keyStore")
-		private String keyStore;
+		private @Nullable String keyStore;
 
 		@PluginBuilderAttribute("keyStorePassphrase")
-		private String keyStorePassphrase;
+		private @Nullable String keyStorePassphrase;
 
 		@PluginBuilderAttribute("keyStoreType")
-		private String keyStoreType;
+		private @Nullable String keyStoreType;
 
 		@PluginBuilderAttribute("trustStore")
-		private String trustStore;
+		private @Nullable String trustStore;
 
 		@PluginBuilderAttribute("trustStorePassphrase")
-		private String trustStorePassphrase;
+		private @Nullable String trustStorePassphrase;
 
 		@PluginBuilderAttribute("trustStoreType")
-		private String trustStoreType;
+		private @Nullable String trustStoreType;
 
 		@PluginBuilderAttribute("saslConfig")
-		private String saslConfig;
+		private @Nullable String saslConfig;
 
 		@PluginBuilderAttribute("senderPoolSize")
 		private int senderPoolSize;
@@ -791,22 +781,22 @@ public class AmqpAppender extends AbstractAppender {
 		private int maxSenderRetries;
 
 		@PluginBuilderAttribute("applicationId")
-		private String applicationId;
+		private @Nullable String applicationId;
 
 		@PluginBuilderAttribute("routingKeyPattern")
-		private String routingKeyPattern;
+		private @Nullable String routingKeyPattern;
 
 		@PluginBuilderAttribute("generateId")
 		private boolean generateId;
 
 		@PluginBuilderAttribute("deliveryMode")
-		private String deliveryMode;
+		private @Nullable String deliveryMode;
 
 		@PluginBuilderAttribute("exchange")
-		private String exchange;
+		private @Nullable String exchange;
 
 		@PluginBuilderAttribute("exchangeType")
-		private String exchangeType;
+		private @Nullable String exchangeType;
 
 		@PluginBuilderAttribute("declareExchange")
 		private boolean declareExchange;
@@ -818,28 +808,28 @@ public class AmqpAppender extends AbstractAppender {
 		private boolean autoDelete;
 
 		@PluginBuilderAttribute("contentType")
-		private String contentType;
+		private @Nullable String contentType;
 
 		@PluginBuilderAttribute("contentEncoding")
-		private String contentEncoding;
+		private @Nullable String contentEncoding;
 
 		@PluginBuilderAttribute("connectionName")
-		private String connectionName;
+		private @Nullable String connectionName;
 
 		@PluginBuilderAttribute("clientConnectionProperties")
-		private String clientConnectionProperties;
+		private @Nullable String clientConnectionProperties;
 
 		@PluginBuilderAttribute("async")
 		private boolean async;
 
 		@PluginBuilderAttribute("charset")
-		private String charset;
+		private @Nullable String charset;
 
 		@PluginBuilderAttribute("bufferSize")
 		private int bufferSize = Integer.MAX_VALUE;
 
 		@PluginElement(BlockingQueueFactory.ELEMENT_TYPE)
-		private BlockingQueueFactory<Event> blockingQueueFactory;
+		private @Nullable BlockingQueueFactory<Event> blockingQueueFactory;
 
 		@PluginBuilderAttribute("addMdcAsHeaders")
 		private boolean addMdcAsHeaders = Boolean.TRUE;
@@ -1060,7 +1050,8 @@ public class AmqpAppender extends AbstractAppender {
 		}
 
 		@Override
-		public AmqpAppender build() {
+		@SuppressWarnings("NullAway") // Dataflow analysis limitation
+		public @Nullable AmqpAppender build() {
 			if (this.name == null) {
 				LOGGER.error("No name for AmqpAppender");
 			}
@@ -1093,7 +1084,8 @@ public class AmqpAppender extends AbstractAppender {
 				.acceptIfNotNull(this.applicationId, value -> manager.applicationId = value)
 				.acceptIfNotNull(this.routingKeyPattern, value -> manager.routingKeyPattern = value)
 				.acceptIfNotNull(this.generateId, value -> manager.generateId = value)
-				.acceptIfNotNull(this.deliveryMode, value -> manager.deliveryMode = MessageDeliveryMode.valueOf(this.deliveryMode))
+				.acceptIfNotNull(this.deliveryMode,
+						value -> manager.deliveryMode = MessageDeliveryMode.valueOf(this.deliveryMode))
 				.acceptIfNotNull(this.exchange, value -> manager.exchangeName = value)
 				.acceptIfNotNull(this.exchangeType, value -> manager.exchangeType = value)
 				.acceptIfNotNull(this.declareExchange, value -> manager.declareExchange = value)
@@ -1115,7 +1107,8 @@ public class AmqpAppender extends AbstractAppender {
 				eventQueue = this.blockingQueueFactory.create(this.bufferSize);
 			}
 
-			AmqpAppender appender = buildInstance(this.name, this.filter, theLayout, this.ignoreExceptions, manager, eventQueue);
+			AmqpAppender appender =
+					buildInstance(this.name, this.filter, theLayout, this.ignoreExceptions, manager, eventQueue);
 			if (manager.activateOptions()) {
 				appender.startSenders();
 				return appender;
@@ -1124,7 +1117,7 @@ public class AmqpAppender extends AbstractAppender {
 		}
 
 		/**
-		 * Subclasses can extends Builder, use same logic but need to modify class instance.
+		 * Subclasses can extend Builder, use same logic but need to modify class instance.
 		 *
 		 * @param name The Appender name.
 		 * @param filter The Filter to associate with the Appender.
@@ -1135,7 +1128,7 @@ public class AmqpAppender extends AbstractAppender {
 		 * @param eventQueue Where LoggingEvents are queued to send.
 		 * @return {@link AmqpAppender}
 		 */
-		protected AmqpAppender buildInstance(String name, Filter filter, Layout<? extends Serializable> layout,
+		protected AmqpAppender buildInstance(String name, @Nullable Filter filter, Layout<? extends Serializable> layout,
 				boolean ignoreExceptions, AmqpManager manager, BlockingQueue<Event> eventQueue) {
 
 			return new AmqpAppender(name, filter, layout, ignoreExceptions, Property.EMPTY_ARRAY, manager, eventQueue);

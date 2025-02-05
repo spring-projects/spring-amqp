@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 
@@ -31,6 +33,7 @@ import org.springframework.amqp.core.Message;
  *
  * @author Juergen Hoeller
  * @author Gary Russell
+ * @author Artem Bilan
  *
  * @see org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter
  */
@@ -50,8 +53,8 @@ public class ListenerExecutionFailedException extends AmqpException {
 		this.failedMessages.addAll(Arrays.asList(failedMessage));
 	}
 
-	public Message getFailedMessage() {
-		return this.failedMessages.get(0);
+	public @Nullable Message getFailedMessage() {
+		return this.failedMessages.isEmpty() ? null : this.failedMessages.get(0);
 	}
 
 	public Collection<Message> getFailedMessages() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,14 @@ package org.springframework.amqp.core;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Headers exchange.
  *
  * @author Mark Fisher
  * @author Dave Syer
+ * @author Artem Bilan
  */
 public class HeadersExchange extends AbstractExchange {
 
@@ -34,7 +37,9 @@ public class HeadersExchange extends AbstractExchange {
 		super(name, durable, autoDelete);
 	}
 
-	public HeadersExchange(String name, boolean durable, boolean autoDelete, Map<String, Object> arguments) {
+	public HeadersExchange(String name, boolean durable, boolean autoDelete,
+			@Nullable Map<String, @Nullable Object> arguments) {
+
 		super(name, durable, autoDelete, arguments);
 	}
 

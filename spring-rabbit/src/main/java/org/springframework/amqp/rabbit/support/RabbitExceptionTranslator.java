@@ -24,6 +24,7 @@ import java.util.concurrent.TimeoutException;
 import com.rabbitmq.client.ConsumerCancelledException;
 import com.rabbitmq.client.PossibleAuthenticationFailureException;
 import com.rabbitmq.client.ShutdownSignalException;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.AmqpConnectException;
@@ -32,7 +33,6 @@ import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.AmqpUnsupportedEncodingException;
 import org.springframework.amqp.UncategorizedAmqpException;
-import org.springframework.util.Assert;
 
 /**
  * Translates Rabbit Exceptions to the {@link AmqpException} class
@@ -49,8 +49,7 @@ public final class RabbitExceptionTranslator {
 	private RabbitExceptionTranslator() {
 	}
 
-	public static RuntimeException convertRabbitAccessException(Throwable ex) {
-		Assert.notNull(ex, "Exception must not be null");
+	public static RuntimeException convertRabbitAccessException(@Nullable Throwable ex) {
 		if (ex instanceof AmqpException amqpException) {
 			return amqpException;
 		}

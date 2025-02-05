@@ -111,7 +111,7 @@ class RabbitTemplateRoutingConnectionFactoryIntegrationTests {
 
 		final CorrelationData.Confirm confirm = correlationData.getFuture().get(10, TimeUnit.SECONDS);
 
-		assertThat(confirm.isAck()).isTrue();
+		assertThat(confirm.ack()).isTrue();
 
 		final Message received = rabbitTemplate.receive(ROUTE, Duration.ofSeconds(10).toMillis());
 		assertThat(received).isNotNull();

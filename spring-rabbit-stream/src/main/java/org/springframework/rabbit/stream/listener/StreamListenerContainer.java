@@ -30,6 +30,7 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import org.aopalliance.aop.Advice;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
@@ -40,7 +41,6 @@ import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.core.log.LogAccessor;
-import org.springframework.lang.Nullable;
 import org.springframework.rabbit.stream.micrometer.RabbitStreamListenerObservation;
 import org.springframework.rabbit.stream.micrometer.RabbitStreamListenerObservation.DefaultRabbitStreamListenerObservationConvention;
 import org.springframework.rabbit.stream.micrometer.RabbitStreamListenerObservationConvention;
@@ -56,6 +56,8 @@ import org.springframework.util.Assert;
  * @author Gary Russell
  * @author Christian Tzolov
  * @author Ngoc Nhan
+ * @author Artem Bilan
+ *
  * @since 2.4
  *
  */
@@ -71,7 +73,8 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 
 	private StreamMessageConverter streamConverter;
 
-	private ConsumerCustomizer consumerCustomizer = (id, con) -> { };
+	private ConsumerCustomizer consumerCustomizer = (id, con) -> {
+	};
 
 	private boolean simpleStream;
 
@@ -81,16 +84,16 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 
 	private boolean autoStartup = true;
 
-	private MessageListener messageListener;
+	private @Nullable MessageListener messageListener;
 
-	private StreamMessageListener streamListener;
+	private @Nullable StreamMessageListener streamListener;
 
-	private Advice[] adviceChain;
+	private Advice @Nullable [] adviceChain;
 
+	@SuppressWarnings("NullAway.Init")
 	private String streamName;
 
-	@Nullable
-	private RabbitStreamListenerObservationConvention observationConvention;
+	private @Nullable RabbitStreamListenerObservationConvention observationConvention;
 
 	/**
 	 * Construct an instance using the provided environment.
@@ -108,7 +111,10 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 	public StreamListenerContainer(Environment environment, @Nullable Codec codec) {
 		Assert.notNull(environment, "'environment' cannot be null");
 		this.builder = environment.consumerBuilder();
-		this.streamConverter = new DefaultStreamMessageConverter(codec);
+		this.streamConverter =
+				codec != null
+						? new DefaultStreamMessageConverter(codec)
+						: new DefaultStreamMessageConverter();
 	}
 
 	/**
@@ -116,7 +122,7 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 	 * Mutually exclusive with {@link #superStream(String, String)}.
 	 */
 	@Override
-	public void setQueueNames(String... queueNames) {
+	public void setQueueNames(String @Nullable ... queueNames) {
 		Assert.isTrue(!this.superStream, "setQueueNames() and superStream() are mutually exclusive");
 		Assert.isTrue(queueNames != null && queueNames.length == 1, "Only one stream is supported");
 		this.lock.lock();
@@ -226,8 +232,7 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 	}
 
 	@Override
-	@Nullable
-	public Object getMessageListener() {
+	public @Nullable Object getMessageListener() {
 		return this.messageListener;
 	}
 
@@ -314,22 +319,23 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 							() -> new RabbitStreamMessageReceiverContext(message, getListenerId(), this.streamName),
 							registry);
 			Object finalSample = sample;
-			if (this.streamListener != null) {
+			StreamMessageListener streamListenerToUse = this.streamListener;
+			if (streamListenerToUse != null) {
 				observation.observe(() -> {
 					try {
-						this.streamListener.onStreamMessage(message, context);
-						if (finalSample != null) {
+						streamListenerToUse.onStreamMessage(message, context);
+						if (micrometerHolder != null && finalSample != null) {
 							micrometerHolder.success(finalSample, this.streamName);
 						}
 					}
 					catch (RuntimeException rtex) {
-						if (finalSample != null) {
+						if (micrometerHolder != null && finalSample != null) {
 							micrometerHolder.failure(finalSample, this.streamName, rtex.getClass().getSimpleName());
 						}
 						throw rtex;
 					}
 					catch (Exception ex) {
-						if (finalSample != null) {
+						if (micrometerHolder != null && finalSample != null) {
 							micrometerHolder.failure(finalSample, this.streamName, ex.getClass().getSimpleName());
 						}
 						throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
@@ -343,19 +349,19 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 						observation.observe(() -> {
 							try {
 								channelAwareMessageListener.onMessage(message2, null);
-								if (finalSample != null) {
+								if (micrometerHolder != null && finalSample != null) {
 									micrometerHolder.success(finalSample, this.streamName);
 								}
 							}
 							catch (RuntimeException rtex) {
-								if (finalSample != null) {
+								if (micrometerHolder != null && finalSample != null) {
 									micrometerHolder.failure(finalSample, this.streamName,
 											rtex.getClass().getSimpleName());
 								}
 								throw rtex;
 							}
 							catch (Exception ex) {
-								if (finalSample != null) {
+								if (micrometerHolder != null && finalSample != null) {
 									micrometerHolder.failure(finalSample, this.streamName, ex.getClass().getSimpleName());
 								}
 								throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
@@ -367,7 +373,9 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 					}
 				}
 				else {
-					observation.observe(() -> this.messageListener.onMessage(message2));
+					MessageListener messageListenerToUse = this.messageListener;
+					Assert.state(messageListenerToUse != null, "'messageListener' or 'streamListener' is required");
+					observation.observe(() -> messageListenerToUse.onMessage(message2));
 				}
 			}
 		});

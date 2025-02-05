@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.amqp.rabbit.config;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
@@ -39,27 +41,27 @@ import org.springframework.amqp.utils.JavaUtils;
 public class SimpleRabbitListenerContainerFactory
 		extends AbstractRabbitListenerContainerFactory<SimpleMessageListenerContainer> {
 
-	private Integer batchSize;
+	private @Nullable Integer batchSize;
 
-	private Integer concurrentConsumers;
+	private @Nullable Integer concurrentConsumers;
 
-	private Integer maxConcurrentConsumers;
+	private @Nullable Integer maxConcurrentConsumers;
 
-	private Long startConsumerMinInterval;
+	private @Nullable Long startConsumerMinInterval;
 
-	private Long stopConsumerMinInterval;
+	private @Nullable Long stopConsumerMinInterval;
 
-	private Integer consecutiveActiveTrigger;
+	private @Nullable Integer consecutiveActiveTrigger;
 
-	private Integer consecutiveIdleTrigger;
+	private @Nullable Integer consecutiveIdleTrigger;
 
-	private Long receiveTimeout;
+	private @Nullable Long receiveTimeout;
 
-	private Long batchReceiveTimeout;
+	private @Nullable Long batchReceiveTimeout;
 
-	private Boolean consumerBatchEnabled;
+	private @Nullable Boolean consumerBatchEnabled;
 
-	private Boolean enforceImmediateAckForManual;
+	private @Nullable Boolean enforceImmediateAckForManual;
 
 	/**
 	 * @param batchSize the batch size.
@@ -166,35 +168,38 @@ public class SimpleRabbitListenerContainerFactory
 	public void setEnforceImmediateAckForManual(Boolean enforceImmediateAckForManual) {
 		this.enforceImmediateAckForManual = enforceImmediateAckForManual;
 	}
+
 	@Override
 	protected SimpleMessageListenerContainer createContainerInstance() {
 		return new SimpleMessageListenerContainer();
 	}
 
 	@Override
-	protected void initializeContainer(SimpleMessageListenerContainer instance, RabbitListenerEndpoint endpoint) {
+	protected void initializeContainer(SimpleMessageListenerContainer instance,
+			@Nullable RabbitListenerEndpoint endpoint) {
+
 		super.initializeContainer(instance, endpoint);
 
 		JavaUtils javaUtils = JavaUtils.INSTANCE
-			.acceptIfNotNull(this.batchSize, instance::setBatchSize);
+				.acceptIfNotNull(this.batchSize, instance::setBatchSize);
 		String concurrency = null;
 		if (endpoint != null) {
 			concurrency = endpoint.getConcurrency();
 			javaUtils.acceptIfNotNull(concurrency, instance::setConcurrency);
 		}
 		javaUtils
-			.acceptIfCondition(concurrency == null && this.concurrentConsumers != null, this.concurrentConsumers,
-				instance::setConcurrentConsumers)
-			.acceptIfCondition((concurrency == null || !(concurrency.contains("-")))
-					&& this.maxConcurrentConsumers != null,
-				this.maxConcurrentConsumers, instance::setMaxConcurrentConsumers)
-			.acceptIfNotNull(this.startConsumerMinInterval, instance::setStartConsumerMinInterval)
-			.acceptIfNotNull(this.stopConsumerMinInterval, instance::setStopConsumerMinInterval)
-			.acceptIfNotNull(this.consecutiveActiveTrigger, instance::setConsecutiveActiveTrigger)
-			.acceptIfNotNull(this.consecutiveIdleTrigger, instance::setConsecutiveIdleTrigger)
-			.acceptIfNotNull(this.receiveTimeout, instance::setReceiveTimeout)
-			.acceptIfNotNull(this.batchReceiveTimeout, instance::setBatchReceiveTimeout)
-			.acceptIfNotNull(this.enforceImmediateAckForManual, instance::setEnforceImmediateAckForManual);
+				.acceptIfCondition(concurrency == null && this.concurrentConsumers != null, this.concurrentConsumers,
+						instance::setConcurrentConsumers)
+				.acceptIfCondition((concurrency == null || !(concurrency.contains("-")))
+								&& this.maxConcurrentConsumers != null,
+						this.maxConcurrentConsumers, instance::setMaxConcurrentConsumers)
+				.acceptIfNotNull(this.startConsumerMinInterval, instance::setStartConsumerMinInterval)
+				.acceptIfNotNull(this.stopConsumerMinInterval, instance::setStopConsumerMinInterval)
+				.acceptIfNotNull(this.consecutiveActiveTrigger, instance::setConsecutiveActiveTrigger)
+				.acceptIfNotNull(this.consecutiveIdleTrigger, instance::setConsecutiveIdleTrigger)
+				.acceptIfNotNull(this.receiveTimeout, instance::setReceiveTimeout)
+				.acceptIfNotNull(this.batchReceiveTimeout, instance::setBatchReceiveTimeout)
+				.acceptIfNotNull(this.enforceImmediateAckForManual, instance::setEnforceImmediateAckForManual);
 		if (Boolean.TRUE.equals(this.consumerBatchEnabled)) {
 			instance.setConsumerBatchEnabled(true);
 			/*

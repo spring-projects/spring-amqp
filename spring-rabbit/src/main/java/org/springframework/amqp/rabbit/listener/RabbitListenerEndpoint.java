@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,13 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.core.task.TaskExecutor;
-import org.springframework.lang.Nullable;
 
 /**
  * Model for a Rabbit listener endpoint. Can be used against a
@@ -40,18 +41,21 @@ public interface RabbitListenerEndpoint {
 	 * container.
 	 * @see RabbitListenerContainerFactory#createListenerContainer
 	 */
+	@Nullable
 	String getId();
 
 	/**
 	 * @return the group of this endpoint or null if not in a group.
 	 * @since 1.5
 	 */
+	@Nullable
 	String getGroup();
 
 	/**
 	 * @return the concurrency of this endpoint.
 	 * @since 2.0
 	 */
+	@Nullable
 	String getConcurrency();
 
 	/**
@@ -59,10 +63,11 @@ public interface RabbitListenerEndpoint {
 	 * @return the autoStartup.
 	 * @since 2.0
 	 */
+	@Nullable
 	Boolean getAutoStartup();
 
 	/**
-	 * Setup the specified message listener container with the model
+	 * Set up the specified message listener container with the model
 	 * defined by this endpoint.
 	 * <p>This endpoint must provide the requested missing option(s) of
 	 * the specified container to make it usable. Usually, this is about
@@ -92,8 +97,7 @@ public interface RabbitListenerEndpoint {
 	 * @return the converter.
 	 * @since 2.0.8
 	 */
-	@Nullable
-	default MessageConverter getMessageConverter() {
+	default @Nullable MessageConverter getMessageConverter() {
 		return null;
 	}
 
@@ -103,8 +107,7 @@ public interface RabbitListenerEndpoint {
 	 * @return the executor.
 	 * @since 2.2
 	 */
-	@Nullable
-	default TaskExecutor getTaskExecutor() {
+	default @Nullable TaskExecutor getTaskExecutor() {
 		return null;
 	}
 
@@ -138,8 +141,7 @@ public interface RabbitListenerEndpoint {
 	 * @return the strategy.
 	 * @since 2.4.7
 	 */
-	@Nullable
-	default BatchingStrategy getBatchingStrategy() {
+	default @Nullable BatchingStrategy getBatchingStrategy() {
 		return null;
 	}
 
@@ -148,8 +150,7 @@ public interface RabbitListenerEndpoint {
 	 * @return the acknowledgment mode.
 	 * @since 2.2
 	 */
-	@Nullable
-	default AcknowledgeMode getAckMode() {
+	default @Nullable AcknowledgeMode getAckMode() {
 		return null;
 	}
 
@@ -159,8 +160,7 @@ public interface RabbitListenerEndpoint {
 	 * @return the post processor.
 	 * @since 2.2.5
 	 */
-	@Nullable
-	default ReplyPostProcessor getReplyPostProcessor() {
+	default @Nullable ReplyPostProcessor getReplyPostProcessor() {
 		return null;
 	}
 
@@ -169,8 +169,7 @@ public interface RabbitListenerEndpoint {
 	 * @return the content type.
 	 * @since 2.3
 	 */
-	@Nullable
-	default String getReplyContentType() {
+	default @Nullable String getReplyContentType() {
 		return null;
 	}
 

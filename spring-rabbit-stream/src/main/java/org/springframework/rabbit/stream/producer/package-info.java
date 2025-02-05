@@ -1,5 +1,5 @@
 /**
  * Provides classes for stream producers.
  */
-@org.springframework.lang.NonNullApi
+@org.jspecify.annotations.NullMarked
 package org.springframework.rabbit.stream.producer;

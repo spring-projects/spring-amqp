@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ public interface ChannelListener {
 	/**
 	 * Called when the underlying RabbitMQ channel is closed for any
 	 * reason.
-	 * @param signal the shut down signal.
+	 * @param signal the shutdown signal.
 	 */
 	default void onShutDown(ShutdownSignalException signal) {
 	}

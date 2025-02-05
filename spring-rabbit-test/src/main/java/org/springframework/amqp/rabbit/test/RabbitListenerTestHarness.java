@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022 the original author or authors.
+ * Copyright 2016-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 import org.mockito.AdditionalAnswers;
 import org.mockito.Mockito;
 
@@ -73,13 +74,15 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 	private final AnnotationAttributes attributes;
 
 	public RabbitListenerTestHarness(AnnotationMetadata importMetadata) {
-		Map<String, Object> map = importMetadata.getAnnotationAttributes(RabbitListenerTest.class.getName());
-		this.attributes = AnnotationAttributes.fromMap(map);
-		Assert.notNull(this.attributes,
+		Map<String, @Nullable Object> map = importMetadata.getAnnotationAttributes(RabbitListenerTest.class.getName());
+		AnnotationAttributes annotationAttributes = AnnotationAttributes.fromMap(map);
+		Assert.notNull(annotationAttributes,
 				() -> "@RabbitListenerTest is not present on importing class " + importMetadata.getClassName());
+		this.attributes = annotationAttributes;
 	}
 
 	@Override
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	protected Collection<Declarable> processListener(MethodRabbitListenerEndpoint endpoint,
 			RabbitListener rabbitListener, Object bean, Object target, String beanName) {
 
@@ -110,7 +113,7 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 		else {
 			logger.info("The test harness can only proxy @RabbitListeners with an 'id' attribute");
 		}
-		return super.processListener(endpoint, rabbitListener, proxy, target, beanName); // NOSONAR proxy is not null
+		return super.processListener(endpoint, rabbitListener, proxy, target, beanName);
 	}
 
 	/**
@@ -138,7 +141,9 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 		return new LambdaAnswer<>(callRealMethod, callback, this.delegates.get(id));
 	}
 
-	public InvocationData getNextInvocationDataFor(String id, long wait, TimeUnit unit) throws InterruptedException {
+	public @Nullable InvocationData getNextInvocationDataFor(String id, long wait, TimeUnit unit)
+			throws InterruptedException {
+
 		CaptureAdvice advice = this.listenerCapture.get(id);
 		if (advice != null) {
 			return advice.invocationData.poll(wait, unit);
@@ -147,7 +152,7 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T> T getSpy(String id) {
+	public <T> @Nullable T getSpy(String id) {
 		return (T) this.listeners.get(id);
 	}
 
@@ -159,7 +164,7 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 	 * @since 2.1.16
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> T getDelegate(String id) {
+	public <T> @Nullable T getDelegate(String id) {
 		return (T) this.delegates.get(id);
 	}
 
@@ -171,7 +176,7 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 		}
 
 		@Override
-		public Object invoke(MethodInvocation invocation) throws Throwable {
+		public @Nullable Object invoke(MethodInvocation invocation) throws Throwable {
 			MergedAnnotations annotations = MergedAnnotations.from(invocation.getMethod());
 			boolean isListenerMethod = annotations.isPresent(RabbitListener.class)
 					|| annotations.isPresent(RabbitHandler.class);
@@ -196,11 +201,11 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 
 		private final MethodInvocation invocation;
 
-		private final Object result;
+		private final @Nullable Object result;
 
-		private final Throwable throwable;
+		private final @Nullable Throwable throwable;
 
-		public InvocationData(MethodInvocation invocation, Object result) {
+		public InvocationData(MethodInvocation invocation, @Nullable Object result) {
 			this.invocation = invocation;
 			this.result = result;
 			this.throwable = null;
@@ -212,15 +217,15 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 			this.throwable = throwable;
 		}
 
-		public Object[] getArguments() {
+		public @Nullable Object[] getArguments() {
 			return this.invocation.getArguments();
 		}
 
-		public Object getResult() {
+		public @Nullable Object getResult() {
 			return this.result;
 		}
 
-		public Throwable getThrowable() {
+		public @Nullable Throwable getThrowable() {
 			return this.throwable;
 		}
 

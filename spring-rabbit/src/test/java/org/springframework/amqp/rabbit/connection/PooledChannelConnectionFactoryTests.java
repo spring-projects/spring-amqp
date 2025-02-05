@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
 import org.apache.commons.pool2.impl.GenericObjectPool;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Queue;
@@ -273,6 +274,7 @@ public class PooledChannelConnectionFactoryTests {
 
 		boolean closed;
 
+		@Nullable
 		Connection connection;
 
 		boolean channelCreated;
@@ -284,27 +286,20 @@ public class PooledChannelConnectionFactoryTests {
 			pccf.addConnectionListener(new ConnectionListener() {
 
 				@Override
-				public void onCreate(Connection connection) {
+				public void onCreate(@Nullable Connection connection) {
 					Config.this.connection = connection;
 					Config.this.created = true;
 				}
 
 				@Override
 				public void onClose(Connection connection) {
-					if (Config.this.connection.equals(connection)) {
+					if (connection.equals(Config.this.connection)) {
 						Config.this.closed = true;
 					}
 				}
 
 			});
-			pccf.addChannelListener(new ChannelListener() {
-
-				@Override
-				public void onCreate(Channel channel, boolean transactional) {
-					Config.this.channelCreated = true;
-				}
-
-			});
+			pccf.addChannelListener((channel, transactional) -> Config.this.channelCreated = true);
 			return pccf;
 		}
 

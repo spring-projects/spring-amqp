@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,25 @@
 
 package org.springframework.amqp.core;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * To be used with the receive-and-reply methods of {@link org.springframework.amqp.core.AmqpTemplate}
  * as processor for inbound object and producer for outbound object.
  *
  * <p>This often as an anonymous class within a method implementation.
-
  * @param <R> The type of the request after conversion from the {@link Message}.
  * @param <S> The type of the response.
  *
  * @author Artem Bilan
  * @author Gary Russell
+ *
  * @since 1.3
  */
 @FunctionalInterface
 public interface ReceiveAndReplyCallback<R, S> {
 
+	@Nullable
 	S handle(R payload);
 
 }

@@ -95,8 +95,6 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 		assertThat(future.get(10, TimeUnit.SECONDS)).isTrue();
 		future = template.send(template.messageBuilder().addData("qux".getBytes()).build());
 		assertThat(future.get(10, TimeUnit.SECONDS)).isTrue();
-		future = template.convertAndSend("bar", msg -> null);
-		assertThat(future.get(10, TimeUnit.SECONDS)).isFalse();
 		assertThat(this.config.latch1.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.config.received).containsExactly("foo", "foo", "bar", "baz", "qux");
 		assertThat(this.config.id).isEqualTo("testNative");
@@ -154,9 +152,8 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 	}
 
 	private URI queueUri(String queue) throws URISyntaxException {
-		URI uri = new URI("http://localhost:" + managementPort() + "/api")
+		return new URI("http://localhost:" + managementPort() + "/api")
 				.resolve("/api/queues/" + UriUtils.encodePathSegment("/", StandardCharsets.UTF_8) + "/" + queue);
-		return uri;
 	}
 
 	private WebClient createClient(String adminUser, String adminPassword) {
@@ -302,9 +299,7 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 		@Bean
 		public StreamRetryOperationsInterceptorFactoryBean sfb() {
 			StreamRetryOperationsInterceptorFactoryBean rfb = new StreamRetryOperationsInterceptorFactoryBean();
-			rfb.setStreamMessageRecoverer((msg, context, throwable) -> {
-				this.latch4.countDown();
-			});
+			rfb.setStreamMessageRecoverer((msg, context, throwable) -> this.latch4.countDown());
 			return rfb;
 		}
 

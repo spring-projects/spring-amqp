@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 the original author or authors.
+ * Copyright 2021-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,11 @@
 
 package org.springframework.amqp.support.converter;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Encapsulates a remote invocation result, holding a result value or an exception.
@@ -32,14 +33,13 @@ import org.springframework.lang.Nullable;
 public class RemoteInvocationResult implements Serializable {
 
 	/** Use serialVersionUID from Spring 1.1 for interoperability. */
+	@Serial
 	private static final long serialVersionUID = 2138555143707773549L;
 
 
-	@Nullable
-	private Object value;
+	private transient @Nullable Object value;
 
-	@Nullable
-	private Throwable exception;
+	private @Nullable Throwable exception;
 
 
 	/**

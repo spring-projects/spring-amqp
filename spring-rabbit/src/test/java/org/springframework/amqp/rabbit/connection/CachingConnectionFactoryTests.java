@@ -558,10 +558,10 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	}
 
 	@Test
-	public void testCheckoutLimitWithRelease() throws IOException, Exception {
-		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
-		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
-		Channel mockChannel1 = mock(Channel.class);
+	public void testCheckoutLimitWithRelease() throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
+		com.rabbitmq.client.Connection mockConnection = mock();
+		Channel mockChannel1 = mock();
 
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.createChannel()).willReturn(mockChannel1);
@@ -610,19 +610,19 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	}
 
 	@Test
-	public void testCheckoutLimitWithPublisherConfirmsLogical() throws IOException, Exception {
+	public void testCheckoutLimitWithPublisherConfirmsLogical() throws Exception {
 		testCheckoutLimitWithPublisherConfirms(false);
 	}
 
 	@Test
-	public void testCheckoutLimitWithPublisherConfirmsPhysical() throws IOException, Exception {
+	public void testCheckoutLimitWithPublisherConfirmsPhysical() throws Exception {
 		testCheckoutLimitWithPublisherConfirms(true);
 	}
 
-	private void testCheckoutLimitWithPublisherConfirms(boolean physicalClose) throws IOException, Exception {
-		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
-		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
-		Channel mockChannel = mock(Channel.class);
+	private void testCheckoutLimitWithPublisherConfirms(boolean physicalClose) throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
+		com.rabbitmq.client.Connection mockConnection = mock();
+		Channel mockChannel = mock();
 
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.createChannel()).willReturn(mockChannel);
@@ -654,7 +654,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		RabbitTemplate rabbitTemplate = new RabbitTemplate(ccf);
 		if (physicalClose) {
 			Channel channel1 = con.createChannel(false);
-			RabbitUtils.setPhysicalCloseRequired(channel1, physicalClose);
+			RabbitUtils.setPhysicalCloseRequired(channel1, true);
 			channel1.close();
 		}
 		else {
@@ -693,7 +693,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	}
 
 	@Test
-	public void testCheckoutLimitWithPublisherConfirmsLogicalAlreadyCloses() throws IOException, Exception {
+	public void testCheckoutLimitWithPublisherConfirmsLogicalAlreadyCloses() throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel = mock(Channel.class);
@@ -1609,7 +1609,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 			Channel channel = con.createChannel(false);
 			RabbitUtils.setPhysicalCloseRequired(channel, true);
-			given(mockChannel.isOpen()).willReturn(false);
+			given(mockChannel.isOpen()).willReturn(true);
 			final CountDownLatch physicalCloseLatch = new CountDownLatch(1);
 			willAnswer(i -> {
 				physicalCloseLatch.countDown();

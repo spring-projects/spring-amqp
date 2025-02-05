@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 the original author or authors.
+ * Copyright 2019-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.support.postprocessor;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.InflaterInputStream;
 
@@ -28,6 +27,7 @@ import java.util.zip.InflaterInputStream;
  * @since 2.2
  */
 public class InflaterPostProcessor extends AbstractDecompressingPostProcessor {
+
 	public InflaterPostProcessor() {
 	}
 
@@ -35,11 +35,12 @@ public class InflaterPostProcessor extends AbstractDecompressingPostProcessor {
 		super(alwaysDecompress);
 	}
 
-	protected InputStream getDecompressorStream(InputStream zipped) throws IOException {
+	protected InputStream getDecompressorStream(InputStream zipped) {
 		return new InflaterInputStream(zipped);
 	}
 
 	protected String getEncoding() {
 		return "deflate";
 	}
+
 }

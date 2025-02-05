@@ -19,10 +19,10 @@ package org.springframework.amqp.rabbit.listener.api;
 import java.util.List;
 
 import com.rabbitmq.client.Channel;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
-import org.springframework.lang.Nullable;
 
 /**
  * A message listener that is aware of the Channel on which the message was received.
@@ -50,7 +50,7 @@ public interface ChannelAwareMessageListener extends MessageListener {
 	}
 
 	@SuppressWarnings("unused")
-	default void onMessageBatch(List<Message> messages, Channel channel) {
+	default void onMessageBatch(List<Message> messages, @Nullable Channel channel) {
 		throw new UnsupportedOperationException("This listener does not support message batches");
 	}
 

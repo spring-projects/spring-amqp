@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,17 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.event.AmqpEvent;
-import org.springframework.lang.Nullable;
 
 /**
  * An event that is emitted when a container is idle if the container
  * is configured to do so.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.6
  *
  */
@@ -36,8 +39,7 @@ public class ListenerContainerIdleEvent extends AmqpEvent {
 
 	private final long idleTime;
 
-	@Nullable
-	private final String listenerId;
+	private final @Nullable String listenerId;
 
 	private final List<String> queueNames;
 
@@ -61,7 +63,7 @@ public class ListenerContainerIdleEvent extends AmqpEvent {
 	 * @return the queue names.
 	 */
 	public String[] getQueueNames() {
-		return this.queueNames.toArray(new String[this.queueNames.size()]);
+		return this.queueNames.toArray(new String[0]);
 	}
 
 	/**

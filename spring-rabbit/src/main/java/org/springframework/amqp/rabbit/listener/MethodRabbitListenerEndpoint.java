@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2022 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,17 @@ package org.springframework.amqp.rabbit.listener;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.listener.adapter.BatchMessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.HandlerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.beans.factory.config.BeanExpressionContext;
+import org.springframework.beans.factory.config.BeanExpressionResolver;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.lang.Nullable;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
@@ -44,15 +47,17 @@ import org.springframework.util.Assert;
  */
 public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint {
 
+	@SuppressWarnings("NullAway.Init")
 	private Object bean;
 
-	private Method method;
+	private @Nullable Method method;
 
+	@SuppressWarnings("NullAway.Init")
 	private MessageHandlerMethodFactory messageHandlerMethodFactory;
 
 	private boolean returnExceptions;
 
-	private RabbitListenerErrorHandler errorHandler;
+	private @Nullable RabbitListenerErrorHandler errorHandler;
 
 	private AdapterProvider adapterProvider = new DefaultAdapterProvider();
 
@@ -76,7 +81,7 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 		this.method = method;
 	}
 
-	public Method getMethod() {
+	public @Nullable Method getMethod() {
 		return this.method;
 	}
 
@@ -113,7 +118,7 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 	/**
 	 * @return the messageHandlerMethodFactory
 	 */
-	protected MessageHandlerMethodFactory getMessageHandlerMethodFactory() {
+	protected @Nullable MessageHandlerMethodFactory getMessageHandlerMethodFactory() {
 		return this.messageHandlerMethodFactory;
 	}
 
@@ -128,8 +133,6 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 
 	@Override
 	protected MessagingMessageListenerAdapter createMessageListener(MessageListenerContainer container) {
-		Assert.state(this.messageHandlerMethodFactory != null,
-				"Could not create message listener - MessageHandlerMethodFactory not set");
 		MessagingMessageListenerAdapter messageListener = createMessageListenerInstance(getBatchListener());
 		messageListener.setHandlerAdapter(configureListenerAdapter(messageListener));
 		String replyToAddress = getDefaultReplyToAddress();
@@ -140,9 +143,7 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 		if (messageConverter != null) {
 			messageListener.setMessageConverter(messageConverter);
 		}
-		if (getBeanResolver() != null) {
-			messageListener.setBeanResolver(getBeanResolver());
-		}
+		messageListener.setBeanResolver(getBeanResolver());
 		return messageListener;
 	}
 
@@ -152,8 +153,10 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 	 * @return the handler adapter.
 	 */
 	protected HandlerAdapter configureListenerAdapter(MessagingMessageListenerAdapter messageListener) {
+		Method methodToUse = getMethod();
+		Assert.notNull(methodToUse, "'method' must be provided");
 		InvocableHandlerMethod invocableHandlerMethod =
-				this.messageHandlerMethodFactory.createInvocableHandlerMethod(getBean(), getMethod());
+				this.messageHandlerMethodFactory.createInvocableHandlerMethod(getBean(), methodToUse);
 		return new HandlerAdapter(invocableHandlerMethod);
 	}
 
@@ -167,8 +170,7 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 				this.returnExceptions, this.errorHandler, getBatchingStrategy());
 	}
 
-	@Nullable
-	private String getDefaultReplyToAddress() {
+	private @Nullable String getDefaultReplyToAddress() {
 		Method listenerMethod = getMethod();
 		if (listenerMethod != null) {
 			SendTo ann = AnnotationUtils.getAnnotation(listenerMethod, SendTo.class);
@@ -184,16 +186,19 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 		return null;
 	}
 
-	private String resolveSendTo(String value) {
-		if (getBeanFactory() != null) {
-			String resolvedValue = getBeanExpressionContext().getBeanFactory().resolveEmbeddedValue(value);
-			Object newValue = getResolver().evaluate(resolvedValue, getBeanExpressionContext());
-			Assert.isInstanceOf(String.class, newValue, "Invalid @SendTo expression");
-			return (String) newValue;
+	private @Nullable String resolveSendTo(String value) {
+		BeanExpressionContext beanExpressionContext = getBeanExpressionContext();
+		if (beanExpressionContext != null) {
+			String resolvedValue = beanExpressionContext.getBeanFactory().resolveEmbeddedValue(value);
+			BeanExpressionResolver resolverToUse = getResolver();
+			if (resolverToUse != null) {
+				Object newValue = resolverToUse.evaluate(resolvedValue, beanExpressionContext);
+				Assert.isInstanceOf(String.class, newValue, "Invalid @SendTo expression");
+				return (String) newValue;
+			}
 		}
-		else {
-			return value;
-		}
+
+		return value;
 	}
 
 	@Override
@@ -220,15 +225,17 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 		 * @param batchingStrategy the batching strategy for batch listeners.
 		 * @return the adapter.
 		 */
-		MessagingMessageListenerAdapter getAdapter(boolean batch, Object bean, Method method, boolean returnExceptions,
-				RabbitListenerErrorHandler errorHandler, @Nullable BatchingStrategy batchingStrategy);
+		MessagingMessageListenerAdapter getAdapter(boolean batch, @Nullable Object bean, @Nullable Method method,
+				boolean returnExceptions, @Nullable RabbitListenerErrorHandler errorHandler,
+				@Nullable BatchingStrategy batchingStrategy);
+
 	}
 
 	private static final class DefaultAdapterProvider implements AdapterProvider {
 
 		@Override
-		public MessagingMessageListenerAdapter getAdapter(boolean batch, Object bean, Method method,
-				boolean returnExceptions, RabbitListenerErrorHandler errorHandler,
+		public MessagingMessageListenerAdapter getAdapter(boolean batch, @Nullable Object bean, @Nullable Method method,
+				boolean returnExceptions, @Nullable RabbitListenerErrorHandler errorHandler,
 				@Nullable BatchingStrategy batchingStrategy) {
 
 			if (batch) {

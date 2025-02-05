@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -167,12 +167,10 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 		if (childElement != null) {
 			replyContainer = parseListener(childElement, element,
 					parserContext);
-			if (replyContainer != null) {
-				replyContainer.getPropertyValues().add("messageListener",
-						new RuntimeBeanReference(element.getAttribute(ID_ATTRIBUTE)));
-				String replyContainerName = element.getAttribute(ID_ATTRIBUTE) + ".replyListener";
-				parserContext.getRegistry().registerBeanDefinition(replyContainerName, replyContainer);
-			}
+			replyContainer.getPropertyValues().add("messageListener",
+					new RuntimeBeanReference(element.getAttribute(ID_ATTRIBUTE)));
+			String replyContainerName = element.getAttribute(ID_ATTRIBUTE) + ".replyListener";
+			parserContext.getRegistry().registerBeanDefinition(replyContainerName, replyContainer);
 		}
 		if (replyContainer == null && element.hasAttribute(REPLY_QUEUE_ATTRIBUTE)) {
 			parserContext.getReaderContext().error(
@@ -193,11 +191,9 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 	private BeanDefinition parseListener(Element childElement, Element element,
 			ParserContext parserContext) {
 		BeanDefinition replyContainer = RabbitNamespaceUtils.parseContainer(childElement, parserContext);
-		if (replyContainer != null) {
-			replyContainer.getPropertyValues().add(
-					"connectionFactory",
-					new RuntimeBeanReference(element.getAttribute(CONNECTION_FACTORY_ATTRIBUTE)));
-		}
+		replyContainer.getPropertyValues().add(
+				"connectionFactory",
+				new RuntimeBeanReference(element.getAttribute(CONNECTION_FACTORY_ATTRIBUTE)));
 		if (element.hasAttribute(REPLY_QUEUE_ATTRIBUTE)) {
 			replyContainer.getPropertyValues().add("queues",
 					new RuntimeBeanReference(element.getAttribute(REPLY_QUEUE_ATTRIBUTE)));

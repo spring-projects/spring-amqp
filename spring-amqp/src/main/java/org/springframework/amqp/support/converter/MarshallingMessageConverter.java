@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,11 @@ import java.io.IOException;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.lang.Nullable;
 import org.springframework.oxm.Marshaller;
 import org.springframework.oxm.Unmarshaller;
 import org.springframework.oxm.XmlMappingException;
@@ -45,12 +46,14 @@ import org.springframework.util.Assert;
  * @see org.springframework.amqp.core.AmqpTemplate#receiveAndConvert()
  */
 public class MarshallingMessageConverter extends AbstractMessageConverter implements InitializingBean {
+
+	@SuppressWarnings("NullAway.Init")
 	private volatile Marshaller marshaller;
 
+	@SuppressWarnings("NullAway.Init")
 	private volatile Unmarshaller unmarshaller;
 
-	private volatile String contentType;
-
+	private volatile @Nullable String contentType;
 
 	/**
 	 * Construct a new <code>MarshallingMessageConverter</code> with no {@link Marshaller} or {@link Unmarshaller} set.
@@ -75,8 +78,8 @@ public class MarshallingMessageConverter extends AbstractMessageConverter implem
 		if (!(marshaller instanceof Unmarshaller)) {
 			throw new IllegalArgumentException(
 					"Marshaller [" + marshaller + "] does not implement the Unmarshaller " +
-					"interface. Please set an Unmarshaller explicitly by using the " +
-					"MarshallingMessageConverter(Marshaller, Unmarshaller) constructor.");
+							"interface. Please set an Unmarshaller explicitly by using the " +
+							"MarshallingMessageConverter(Marshaller, Unmarshaller) constructor.");
 		}
 
 		this.marshaller = marshaller;
@@ -95,7 +98,6 @@ public class MarshallingMessageConverter extends AbstractMessageConverter implem
 		this.marshaller = marshaller;
 		this.unmarshaller = unmarshaller;
 	}
-
 
 	/**
 	 * Set the contentType to be used by this message converter.
@@ -131,7 +133,6 @@ public class MarshallingMessageConverter extends AbstractMessageConverter implem
 		Assert.notNull(this.marshaller, "Property 'marshaller' is required");
 		Assert.notNull(this.unmarshaller, "Property 'unmarshaller' is required");
 	}
-
 
 	/**
 	 * Marshals the given object to a {@link Message}.

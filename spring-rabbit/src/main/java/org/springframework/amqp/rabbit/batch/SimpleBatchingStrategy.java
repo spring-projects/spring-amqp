@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.function.Consumer;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -53,9 +55,9 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 
 	private final List<Message> messages = new ArrayList<>();
 
-	private String exchange;
+	private @Nullable String exchange;
 
-	private String routingKey;
+	private @Nullable String routingKey;
 
 	private int currentSize;
 
@@ -72,7 +74,7 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 	}
 
 	@Override
-	public MessageBatch addToBatch(String exch, String routKey, Message message) {
+	public @Nullable MessageBatch addToBatch(@Nullable String exch, @Nullable String routKey, Message message) {
 		if (this.exchange != null) {
 			Assert.isTrue(this.exchange.equals(exch), "Cannot send to different exchanges in the same batch");
 		}
@@ -103,7 +105,7 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 	}
 
 	@Override
-	public Date nextRelease() {
+	public @Nullable Date nextRelease() {
 		if (this.messages.isEmpty() || this.timeout <= 0) {
 			return null;
 		}
@@ -125,7 +127,7 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 		return Collections.singletonList(batch);
 	}
 
-	private MessageBatch doReleaseBatch() {
+	private @Nullable MessageBatch doReleaseBatch() {
 		if (this.messages.isEmpty()) {
 			return null;
 		}

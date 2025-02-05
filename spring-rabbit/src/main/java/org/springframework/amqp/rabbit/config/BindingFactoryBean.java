@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,37 +18,41 @@ package org.springframework.amqp.rabbit.config;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.beans.factory.FactoryBean;
+import org.springframework.util.Assert;
 
 /**
  * @author Dave Syer
  * @author Gary Russell
+ * @author Artem Bilan
  *
  */
 public class BindingFactoryBean implements FactoryBean<Binding> {
 
-	private Map<String, Object> arguments;
+	private @Nullable Map<String, @Nullable Object> arguments;
 
 	private String routingKey = "";
 
-	private String exchange;
+	private @Nullable String exchange;
 
-	private Queue destinationQueue;
+	private @Nullable Queue destinationQueue;
 
-	private Exchange destinationExchange;
+	private @Nullable Exchange destinationExchange;
 
-	private Boolean shouldDeclare;
+	private @Nullable Boolean shouldDeclare;
 
-	private Boolean ignoreDeclarationExceptions;
+	private @Nullable Boolean ignoreDeclarationExceptions;
 
-	private AmqpAdmin[] adminsThatShouldDeclare;
+	private AmqpAdmin @Nullable [] adminsThatShouldDeclare;
 
-	public void setArguments(Map<String, Object> arguments) {
+	public void setArguments(Map<String, @Nullable Object> arguments) {
 		this.arguments = arguments;
 	}
 
@@ -89,6 +93,7 @@ public class BindingFactoryBean implements FactoryBean<Binding> {
 			destinationType = DestinationType.QUEUE;
 		}
 		else {
+			Assert.notNull(this.destinationExchange, "Or 'destinationExchange', or 'destinationQueue' must be provided");
 			destination = this.destinationExchange.getName();
 			destinationType = DestinationType.EXCHANGE;
 		}

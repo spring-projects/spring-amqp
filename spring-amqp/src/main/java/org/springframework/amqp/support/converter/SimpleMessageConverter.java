@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,12 +24,13 @@ import java.io.ObjectStreamClass;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.core.ConfigurableObjectInputStream;
-import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 
 /**
@@ -50,7 +51,7 @@ public class SimpleMessageConverter extends AllowedListDeserializingMessageConve
 
 	private String defaultCharset = DEFAULT_CHARSET;
 
-	private ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
+	private @Nullable ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
 
 	/**
 	 * Specify the default charset to use when converting to or from text-based
@@ -73,29 +74,26 @@ public class SimpleMessageConverter extends AllowedListDeserializingMessageConve
 	public Object fromMessage(Message message) throws MessageConversionException {
 		Object content = null;
 		MessageProperties properties = message.getMessageProperties();
-		if (properties != null) {
-			String contentType = properties.getContentType();
-			if (contentType != null && contentType.startsWith("text")) {
-				String encoding = properties.getContentEncoding();
-				if (encoding == null) {
-					encoding = this.defaultCharset;
-				}
-				try {
-					content = new String(message.getBody(), encoding);
-				}
-				catch (UnsupportedEncodingException e) {
-					throw new MessageConversionException("failed to convert text-based Message content", e);
-				}
+		String contentType = properties.getContentType();
+		if (contentType.startsWith("text")) {
+			String encoding = properties.getContentEncoding();
+			if (encoding == null) {
+				encoding = this.defaultCharset;
 			}
-			else if (contentType != null &&
-					contentType.equals(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT)) {
-				try {
-					content = SerializationUtils.deserialize(
-							createObjectInputStream(new ByteArrayInputStream(message.getBody())));
-				}
-				catch (IOException | IllegalArgumentException | IllegalStateException e) {
-					throw new MessageConversionException("failed to convert serialized Message content", e);
-				}
+			try {
+				content = new String(message.getBody(), encoding);
+			}
+			catch (UnsupportedEncodingException e) {
+				throw new MessageConversionException("failed to convert text-based Message content", e);
+			}
+		}
+		else if (contentType.equals(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT)) {
+			try {
+				content = SerializationUtils.deserialize(
+						createObjectInputStream(new ByteArrayInputStream(message.getBody())));
+			}
+			catch (IOException | IllegalArgumentException | IllegalStateException e) {
+				throw new MessageConversionException("failed to convert serialized Message content", e);
 			}
 		}
 		if (content == null) {

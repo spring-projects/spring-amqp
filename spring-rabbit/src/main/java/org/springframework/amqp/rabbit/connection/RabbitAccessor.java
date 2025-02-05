@@ -20,12 +20,12 @@ import com.rabbitmq.client.Channel;
 import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationContext;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -39,6 +39,7 @@ public abstract class RabbitAccessor implements InitializingBean {
 	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR
 
+	@SuppressWarnings("NullAway.Init")
 	private volatile ConnectionFactory connectionFactory;
 
 	private volatile boolean transactional;
@@ -94,8 +95,7 @@ public abstract class RabbitAccessor implements InitializingBean {
 	 * @param holder the RabbitResourceHolder
 	 * @return an appropriate Connection fetched from the holder, or <code>null</code> if none found
 	 */
-	@Nullable
-	protected Connection getConnection(RabbitResourceHolder holder) {
+	protected @Nullable Connection getConnection(RabbitResourceHolder holder) {
 		return holder.getConnection();
 	}
 
@@ -105,8 +105,7 @@ public abstract class RabbitAccessor implements InitializingBean {
 	 * @param holder the RabbitResourceHolder
 	 * @return an appropriate Channel fetched from the holder, or <code>null</code> if none found
 	 */
-	@Nullable
-	protected Channel getChannel(RabbitResourceHolder holder) {
+	protected @Nullable Channel getChannel(RabbitResourceHolder holder) {
 		return holder.getChannel();
 	}
 

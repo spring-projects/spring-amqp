@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 the original author or authors.
+ * Copyright 2019-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbit.junit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -52,7 +51,7 @@ public final class JUnitUtils {
 	 * @return the parsed property value if it exists, false otherwise.
 	 */
 	public static boolean parseBooleanProperty(String property) {
-		for (String value : new String[] { System.getenv(property), System.getProperty(property) }) {
+		for (String value : new String[] {System.getenv(property), System.getProperty(property)}) {
 			if (Boolean.parseBoolean(value)) {
 				return true;
 			}
@@ -118,8 +117,8 @@ public final class JUnitUtils {
 				+ "Overridden log level setting for: "
 				+ classes.stream()
 				.map(Class::getSimpleName)
-				.collect(Collectors.toList())
-				+ " and " + categories.toString()
+				.toList()
+				+ " and " + categories
 				+ " for test " + methodName);
 		return new LevelsContainer(classLevels, categoryLevels, oldLbLevels);
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,8 +80,8 @@ public abstract class AbstractCompressingPostProcessor implements MessagePostPro
 	/**
 	 * Flag to indicate if {@link MessageProperties} should be used as is or cloned for new message
 	 * after compression.
-	 * By default this flag is turned off for better performance since in most cases the original message
-	 * is not used any more.
+	 * By default, this flag is turned off for better performance since in most cases the original message
+	 * is not used anymore.
 	 * @param copyProperties clone or reuse original message properties.
 	 * @since 2.1.5
 	 */

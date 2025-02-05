@@ -23,9 +23,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.rabbitmq.client.Channel;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpIOException;
-import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessageProperties;
@@ -40,7 +40,7 @@ import org.springframework.util.StringUtils;
 /**
  * Message listener adapter that delegates the handling of messages to target listener methods via reflection, with
  * flexible message type conversion. Allows listener methods to operate on message content types, completely independent
- * from the Rabbit API.
+ * of the Rabbit API.
  *
  * <p>
  * By default, the content of incoming Rabbit messages gets extracted before being passed into the target listener
@@ -67,6 +67,7 @@ import org.springframework.util.StringUtils;
  * <code>Message</code> will be sent back as all of these methods return <code>void</code>.
  *
  * <pre class="code">
+ * {@code
  * public interface MessageContentsDelegate {
  * 	void handleMessage(String text);
  *
@@ -76,14 +77,17 @@ import org.springframework.util.StringUtils;
  *
  * 	void handleMessage(Serializable obj);
  * }
+ * }
  * </pre>
  *
  * This next example handle a <code>Message</code> type and gets passed the actual (raw) <code>Message</code> as an
  * argument. Again, no <code>Message</code> will be sent back as all of these methods return <code>void</code>.
  *
  * <pre class="code">
+ * {@code
  * public interface RawMessageDelegate {
  * 	void handleMessage(Message message);
+ * }
  * }
  * </pre>
  *
@@ -93,8 +97,10 @@ import org.springframework.util.StringUtils;
  * definition). Again, no <code>Message</code> will be sent back as the method returns <code>void</code>.
  *
  * <pre class="code">
+ * {@code
  * public interface TextMessageContentDelegate {
  * 	void onMessage(String text);
+ * }
  * }
  * </pre>
  *
@@ -103,8 +109,10 @@ import org.springframework.util.StringUtils;
  * configured {@link MessageListenerAdapter} sending a {@link Message} in response.
  *
  * <pre class="code">
+ * {@code
  * public interface ResponsiveTextMessageContentDelegate {
  * 	String handleMessage(String text);
+ * }
  * }
  * </pre>
  *
@@ -119,6 +127,7 @@ import org.springframework.util.StringUtils;
  * @author Greg Turnquist
  * @author Cai Kun
  * @author Ngoc Nhan
+ * @author Artem Bilan
  *
  * @see #setDelegate
  * @see #setDefaultListenerMethod
@@ -137,11 +146,10 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	 */
 	public static final String ORIGINAL_DEFAULT_LISTENER_METHOD = "handleMessage";
 
-
+	@SuppressWarnings("NullAway.Init")
 	private Object delegate;
 
 	private String defaultListenerMethod = ORIGINAL_DEFAULT_LISTENER_METHOD;
-
 
 	/**
 	 * Create a new {@link MessageListenerAdapter} with default settings.
@@ -163,6 +171,7 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	 * @param delegate the delegate object
 	 * @param messageConverter the message converter to use
 	 */
+	@SuppressWarnings("this-escape")
 	public MessageListenerAdapter(Object delegate, MessageConverter messageConverter) {
 		doSetDelegate(delegate);
 		super.setMessageConverter(messageConverter);
@@ -219,7 +228,6 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 		return this.defaultListenerMethod;
 	}
 
-
 	/**
 	 * Set the mapping of queue name or consumer tag to method name. The first lookup
 	 * is by queue name, if that returns null, we lookup by consumer tag, if that
@@ -265,7 +273,7 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	 * @throws Exception if thrown by Rabbit API methods
 	 */
 	@Override
-	public void onMessage(Message message, Channel channel) throws Exception { // NOSONAR
+	public void onMessage(Message message, @Nullable Channel channel) throws Exception { // NOSONAR
 		// Check whether the delegate is a MessageListener impl itself.
 		// In that case, the adapter will simply act as a pass-through.
 		Object delegateListener = getDelegate();
@@ -283,11 +291,6 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 		// Regular case: find a handler method reflectively.
 		Object convertedMessage = extractMessage(message);
 		String methodName = getListenerMethodName(message, convertedMessage);
-		if (methodName == null) {
-			throw new AmqpIllegalStateException("No default listener method specified: "
-					+ "Either specify a non-null value for the 'defaultListenerMethod' property or "
-					+ "override the 'getListenerMethodName' method.");
-		}
 
 		// Invoke the handler method with appropriate arguments.
 		Object[] listenerArguments = buildListenerArguments(convertedMessage, channel, message);
@@ -344,8 +347,8 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	 * @return the array of arguments to be passed into the listener method (each element of the array corresponding to
 	 * a distinct method argument)
 	 */
-	protected Object[] buildListenerArguments(Object extractedMessage, Channel channel, Message message) {
-		return new Object[] { extractedMessage };
+	protected Object[] buildListenerArguments(Object extractedMessage, @Nullable Channel channel, Message message) {
+		return new Object[] {extractedMessage};
 	}
 
 	/**
@@ -357,12 +360,16 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	 * @see #getListenerMethodName
 	 * @see #buildListenerArguments
 	 */
-	protected Object invokeListenerMethod(String methodName, Object[] arguments, Message originalMessage) {
+	protected @Nullable Object invokeListenerMethod(String methodName, @Nullable Object @Nullable [] arguments,
+			Message originalMessage) {
+
 		try {
 			MethodInvoker methodInvoker = new MethodInvoker();
 			methodInvoker.setTargetObject(getDelegate());
 			methodInvoker.setTargetMethod(methodName);
-			methodInvoker.setArguments(arguments);
+			if (arguments != null) {
+				methodInvoker.setArguments(arguments);
+			}
 			methodInvoker.prepare();
 			return methodInvoker.invoke();
 		}
@@ -380,7 +387,7 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 			ArrayList<String> arrayClass = new ArrayList<>();
 			if (arguments != null) {
 				for (Object argument : arguments) {
-					arrayClass.add(argument.getClass().toString());
+					arrayClass.add(argument != null ? argument.getClass().toString() : " null");
 				}
 			}
 			throw new ListenerExecutionFailedException("Failed to invoke target method '" + methodName

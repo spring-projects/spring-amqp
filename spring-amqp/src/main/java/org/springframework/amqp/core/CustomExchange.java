@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,16 @@ package org.springframework.amqp.core;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Simple container collecting information to describe a custom exchange. Custom exchange types are allowed by the AMQP
  * specification, and their names should start with "x-" (but this is not enforced here). Used in conjunction with
  * administrative operations.
+ *
  * @author Dave Syer
+ * @author Artem Bilan
+ *
  * @see AmqpAdmin
  */
 public class CustomExchange extends AbstractExchange {
@@ -39,7 +44,9 @@ public class CustomExchange extends AbstractExchange {
 		this.type = type;
 	}
 
-	public CustomExchange(String name, String type, boolean durable, boolean autoDelete, Map<String, Object> arguments) {
+	public CustomExchange(String name, String type, boolean durable, boolean autoDelete,
+			@Nullable Map<String, @Nullable Object> arguments) {
+
 		super(name, durable, autoDelete, arguments);
 		this.type = type;
 	}

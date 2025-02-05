@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
 
@@ -31,8 +33,9 @@ import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerCont
  */
 public class RabbitMessageFuture extends RabbitFuture<Message> {
 
-	RabbitMessageFuture(String correlationId, Message requestMessage, BiConsumer<String, ChannelHolder> canceler,
-			Function<RabbitFuture<?>, ScheduledFuture<?>> timeoutTaskFunction) {
+	RabbitMessageFuture(String correlationId, Message requestMessage,
+			BiConsumer<String, @Nullable ChannelHolder> canceler,
+			Function<RabbitFuture<?>, @Nullable ScheduledFuture<?>> timeoutTaskFunction) {
 
 		super(correlationId, requestMessage, canceler, timeoutTaskFunction);
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,16 @@
 
 package org.springframework.amqp;
 
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Exception for listener implementations used to indicate the
- * basic.reject will be sent with requeue=false in order to enable
- * features such as DLQ.
+ * {@code basic.reject} will be sent with {@code requeue=false}
+ * in order to enable features such as DLQ.
+ *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.0.1
  *
  */

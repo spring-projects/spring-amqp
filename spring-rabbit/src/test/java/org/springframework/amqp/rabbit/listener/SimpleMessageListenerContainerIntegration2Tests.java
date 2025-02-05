@@ -656,7 +656,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		this.container = createContainer((m) -> {
 			throw new Error("testError");
 		}, false, this.queue.getName());
-		this.container.setjavaLangErrorHandler(error -> { });
+		this.container.setJavaLangErrorHandler(error -> { });
 		final CountDownLatch latch = new CountDownLatch(1);
 		this.container.setApplicationEventPublisher(event -> {
 			if (event instanceof ListenerContainerConsumerFailedEvent) {

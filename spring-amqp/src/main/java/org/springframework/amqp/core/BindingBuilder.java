@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,10 @@
 
 package org.springframework.amqp.core;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.util.Assert;
@@ -31,6 +32,7 @@ import org.springframework.util.Assert;
  * @author Dave Syer
  * @author Gary Russell
  * @author Ngoc Nhan
+ * @author Artem Bilan
  */
 public final class BindingBuilder {
 
@@ -38,7 +40,7 @@ public final class BindingBuilder {
 	}
 
 	public static DestinationConfigurer bind(Queue queue) {
-		if ("".equals(queue.getName())) {
+		if (queue.getName().isEmpty()) {
 			return new DestinationConfigurer(queue, DestinationType.QUEUE);
 		}
 		else {
@@ -50,8 +52,8 @@ public final class BindingBuilder {
 		return new DestinationConfigurer(exchange.getName(), DestinationType.EXCHANGE);
 	}
 
-	private static Map<String, Object> createMapForKeys(String... keys) {
-		Map<String, Object> map = new HashMap<>();
+	private static Map<String, @Nullable Object> createMapForKeys(String... keys) {
+		Map<String, @Nullable Object> map = new HashMap<>();
 		for (String key : keys) {
 			map.put(key, null);
 		}
@@ -63,11 +65,11 @@ public final class BindingBuilder {
 	 */
 	public static final class DestinationConfigurer {
 
-		protected final String name; // NOSONAR
+		protected final @Nullable String name; // NOSONAR
 
 		protected final DestinationType type; // NOSONAR
 
-		protected final Queue queue; // NOSONAR
+		protected final @Nullable Queue queue; // NOSONAR
 
 		DestinationConfigurer(String name, DestinationType type) {
 			this.queue = null;
@@ -100,6 +102,7 @@ public final class BindingBuilder {
 		public GenericExchangeRoutingKeyConfigurer to(Exchange exchange) {
 			return new GenericExchangeRoutingKeyConfigurer(this, exchange);
 		}
+
 	}
 
 	/**
@@ -156,13 +159,14 @@ public final class BindingBuilder {
 			}
 
 			public Binding matches(Object value) {
-				Map<String, Object> map = new HashMap<>();
+				Map<String, @Nullable Object> map = new HashMap<>();
 				map.put(this.key, value);
 				return new Binding(HeadersExchangeMapConfigurer.this.destination.queue,
 						HeadersExchangeMapConfigurer.this.destination.name,
 						HeadersExchangeMapConfigurer.this.destination.type,
 						HeadersExchangeMapConfigurer.this.exchange.getName(), "", map);
 			}
+
 		}
 
 		/**
@@ -170,7 +174,7 @@ public final class BindingBuilder {
 		 */
 		public final class HeadersExchangeKeysBindingCreator {
 
-			private final Map<String, Object> headerMap;
+			private final Map<String, @Nullable Object> headerMap;
 
 			HeadersExchangeKeysBindingCreator(String[] headerKeys, boolean matchAll) {
 				Assert.notEmpty(headerKeys, "header key list must not be empty");
@@ -184,6 +188,7 @@ public final class BindingBuilder {
 						HeadersExchangeMapConfigurer.this.destination.type,
 						HeadersExchangeMapConfigurer.this.exchange.getName(), "", this.headerMap);
 			}
+
 		}
 
 		/**
@@ -191,7 +196,7 @@ public final class BindingBuilder {
 		 */
 		public final class HeadersExchangeMapBindingCreator {
 
-			private final Map<String, Object> headerMap;
+			private final Map<String, @Nullable Object> headerMap;
 
 			HeadersExchangeMapBindingCreator(Map<String, Object> headerMap, boolean matchAll) {
 				Assert.notEmpty(headerMap, "header map must not be empty");
@@ -205,7 +210,9 @@ public final class BindingBuilder {
 						HeadersExchangeMapConfigurer.this.destination.type,
 						HeadersExchangeMapConfigurer.this.exchange.getName(), "", this.headerMap);
 			}
+
 		}
+
 	}
 
 	private abstract static class AbstractRoutingKeyConfigurer {
@@ -218,6 +225,7 @@ public final class BindingBuilder {
 			this.destination = destination;
 			this.exchange = exchange;
 		}
+
 	}
 
 	/**
@@ -230,14 +238,14 @@ public final class BindingBuilder {
 		}
 
 		public Binding with(String routingKey) {
-			return new Binding(destination.queue, destination.name, destination.type, exchange, routingKey,
-					Collections.emptyMap());
+			return new Binding(destination.queue, destination.name, destination.type, exchange, routingKey, null);
 		}
 
 		public Binding with(Enum<?> routingKeyEnum) {
 			return new Binding(destination.queue, destination.name, destination.type, exchange,
-					routingKeyEnum.toString(), Collections.emptyMap());
+					routingKeyEnum.toString(), null);
 		}
+
 	}
 
 	/**
@@ -273,7 +281,7 @@ public final class BindingBuilder {
 			this.routingKey = routingKey;
 		}
 
-		public Binding and(Map<String, Object> map) {
+		public Binding and(Map<String, @Nullable Object> map) {
 			return new Binding(this.configurer.destination.queue,
 					this.configurer.destination.name, this.configurer.destination.type, this.configurer.exchange,
 					this.routingKey, map);
@@ -282,7 +290,7 @@ public final class BindingBuilder {
 		public Binding noargs() {
 			return new Binding(this.configurer.destination.queue,
 					this.configurer.destination.name, this.configurer.destination.type, this.configurer.exchange,
-					this.routingKey, Collections.emptyMap());
+					this.routingKey, null);
 		}
 
 	}
@@ -297,18 +305,16 @@ public final class BindingBuilder {
 		}
 
 		public Binding with(String routingKey) {
-			return new Binding(destination.queue, destination.name, destination.type, exchange, routingKey,
-					Collections.emptyMap());
+			return new Binding(destination.queue, destination.name, destination.type, exchange, routingKey, null);
 		}
 
 		public Binding with(Enum<?> routingKeyEnum) {
 			return new Binding(destination.queue, destination.name, destination.type, exchange,
-					routingKeyEnum.toString(), Collections.emptyMap());
+					routingKeyEnum.toString(), null);
 		}
 
 		public Binding withQueueName() {
-			return new Binding(destination.queue, destination.name, destination.type, exchange, destination.name,
-					Collections.emptyMap());
+			return new Binding(destination.queue, destination.name, destination.type, exchange, destination.name, null);
 		}
 
 	}

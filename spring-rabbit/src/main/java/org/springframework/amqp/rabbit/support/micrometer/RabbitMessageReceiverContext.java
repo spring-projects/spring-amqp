@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.support.micrometer;
 
 import io.micrometer.observation.transport.ReceiverContext;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Message;
 
@@ -24,6 +25,8 @@ import org.springframework.amqp.core.Message;
  * {@link ReceiverContext} for {@link Message}s.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 3.0
  *
  */
@@ -33,6 +36,7 @@ public class RabbitMessageReceiverContext extends ReceiverContext<Message> {
 
 	private final Message message;
 
+	@SuppressWarnings("this-escape")
 	public RabbitMessageReceiverContext(Message message, String listenerId) {
 		super((carrier, key) -> carrier.getMessageProperties().getHeader(key));
 		setCarrier(message);
@@ -49,7 +53,7 @@ public class RabbitMessageReceiverContext extends ReceiverContext<Message> {
 	 * Return the source (queue) for this message.
 	 * @return the source.
 	 */
-	public String getSource() {
+	public @Nullable String getSource() {
 		return this.message.getMessageProperties().getConsumerQueue();
 	}
 

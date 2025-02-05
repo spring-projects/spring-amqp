@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 the original author or authors.
+ * Copyright 2020-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.amqp.rabbit.test.context;
 
 import java.util.List;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.test.context.ContextConfigurationAttributes;
@@ -36,7 +38,7 @@ import org.springframework.test.context.ContextCustomizerFactory;
 class SpringRabbitContextCustomizerFactory implements ContextCustomizerFactory {
 
 	@Override
-	public ContextCustomizer createContextCustomizer(Class<?> testClass,
+	public @Nullable ContextCustomizer createContextCustomizer(Class<?> testClass,
 			List<ContextConfigurationAttributes> configAttributes) {
 		SpringRabbitTest test =
 				AnnotatedElementUtils.findMergedAnnotation(testClass, SpringRabbitTest.class);

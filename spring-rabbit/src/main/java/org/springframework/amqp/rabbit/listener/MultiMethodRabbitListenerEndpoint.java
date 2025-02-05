@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2024 the original author or authors.
+ * Copyright 2015-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,16 +20,21 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.rabbit.listener.adapter.DelegatingInvocableHandler;
 import org.springframework.amqp.rabbit.listener.adapter.HandlerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
-import org.springframework.lang.Nullable;
+import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
+import org.springframework.util.Assert;
 import org.springframework.validation.Validator;
 
 /**
  * @author Gary Russell
  * @author Ngoc Nhan
+ * @author Artem Bilan
+ *
  * @since 1.5
  *
  */
@@ -37,9 +42,9 @@ public class MultiMethodRabbitListenerEndpoint extends MethodRabbitListenerEndpo
 
 	private final List<Method> methods;
 
-	private final Method defaultMethod;
+	private final @Nullable Method defaultMethod;
 
-	private Validator validator;
+	private @Nullable Validator validator;
 
 	/**
 	 * Construct an instance for the provided methods, default method and bean.
@@ -48,6 +53,7 @@ public class MultiMethodRabbitListenerEndpoint extends MethodRabbitListenerEndpo
 	 * @param bean the bean.
 	 * @since 2.0.3
 	 */
+	@SuppressWarnings("this-escape")
 	public MultiMethodRabbitListenerEndpoint(List<Method> methods, @Nullable Method defaultMethod, Object bean) {
 		this.methods = methods;
 		this.defaultMethod = defaultMethod;
@@ -67,9 +73,13 @@ public class MultiMethodRabbitListenerEndpoint extends MethodRabbitListenerEndpo
 	protected HandlerAdapter configureListenerAdapter(MessagingMessageListenerAdapter messageListener) {
 		List<InvocableHandlerMethod> invocableHandlerMethods = new ArrayList<>();
 		InvocableHandlerMethod defaultHandler = null;
+		MessageHandlerMethodFactory messageHandlerMethodFactory = getMessageHandlerMethodFactory();
+		Assert.state(messageHandlerMethodFactory != null,
+				"Could not create message listener - MessageHandlerMethodFactory not set");
+		Object beanToUse = getBean();
 		for (Method method : this.methods) {
-			InvocableHandlerMethod handler = getMessageHandlerMethodFactory()
-					.createInvocableHandlerMethod(getBean(), method);
+			InvocableHandlerMethod handler = messageHandlerMethodFactory
+					.createInvocableHandlerMethod(beanToUse, method);
 			invocableHandlerMethods.add(handler);
 			if (method.equals(this.defaultMethod)) {
 				defaultHandler = handler;

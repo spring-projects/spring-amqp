@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.amqp.rabbit.config;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
@@ -32,15 +34,15 @@ import org.springframework.scheduling.TaskScheduler;
 public class DirectRabbitListenerContainerFactory
 		extends AbstractRabbitListenerContainerFactory<DirectMessageListenerContainer> {
 
-	private TaskScheduler taskScheduler;
+	private @Nullable TaskScheduler taskScheduler;
 
-	private Long monitorInterval;
+	private @Nullable Long monitorInterval;
 
 	private Integer consumersPerQueue = 1;
 
-	private Integer messagesPerAck;
+	private @Nullable Integer messagesPerAck;
 
-	private Long ackTimeout;
+	private @Nullable Long ackTimeout;
 
 	/**
 	 * Set the task scheduler to use for the task that monitors idle containers and
@@ -53,7 +55,7 @@ public class DirectRabbitListenerContainerFactory
 
 	/**
 	 * Set how often to run a task to check for failed consumers and idle containers.
-	 * @param monitorInterval the interval; default 10000 but it will be adjusted down
+	 * @param monitorInterval the interval; default 10000, but it will be adjusted down
 	 * to the smallest of this, {@link #setIdleEventInterval(Long) idleEventInterval} / 2
 	 * (if configured) or
 	 * {@link #setFailedDeclarationRetryInterval(Long) failedDeclarationRetryInterval}.
@@ -102,13 +104,15 @@ public class DirectRabbitListenerContainerFactory
 	}
 
 	@Override
-	protected void initializeContainer(DirectMessageListenerContainer instance, RabbitListenerEndpoint endpoint) {
+	protected void initializeContainer(DirectMessageListenerContainer instance,
+			@Nullable RabbitListenerEndpoint endpoint) {
+
 		super.initializeContainer(instance, endpoint);
 
 		JavaUtils javaUtils = JavaUtils.INSTANCE.acceptIfNotNull(this.taskScheduler, instance::setTaskScheduler)
-			.acceptIfNotNull(this.monitorInterval, instance::setMonitorInterval)
-			.acceptIfNotNull(this.messagesPerAck, instance::setMessagesPerAck)
-			.acceptIfNotNull(this.ackTimeout, instance::setAckTimeout);
+				.acceptIfNotNull(this.monitorInterval, instance::setMonitorInterval)
+				.acceptIfNotNull(this.messagesPerAck, instance::setMessagesPerAck)
+				.acceptIfNotNull(this.ackTimeout, instance::setAckTimeout);
 		if (endpoint != null && endpoint.getConcurrency() != null) {
 			try {
 				instance.setConsumersPerQueue(Integer.parseInt(endpoint.getConcurrency()));

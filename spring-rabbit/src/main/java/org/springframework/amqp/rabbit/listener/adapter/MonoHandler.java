@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 the original author or authors.
+ * Copyright 2021-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,14 @@ package org.springframework.amqp.rabbit.listener.adapter;
 
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 /**
  * Class to prevent direct links to {@link Mono}.
+ *
  * @author Gary Russell
+ *
  * @since 2.2.21
  */
 final class MonoHandler { // NOSONAR - pointless to name it ..Utils|Helper
@@ -30,7 +33,7 @@ final class MonoHandler { // NOSONAR - pointless to name it ..Utils|Helper
 	private MonoHandler() {
 	}
 
-	static boolean isMono(Object result) {
+	static boolean isMono(@Nullable Object result) {
 		return result instanceof Mono;
 	}
 
@@ -39,7 +42,7 @@ final class MonoHandler { // NOSONAR - pointless to name it ..Utils|Helper
 	}
 
 	@SuppressWarnings("unchecked")
-	static void subscribe(Object returnValue, Consumer<? super Object> success,
+	static void subscribe(Object returnValue, @Nullable Consumer<? super Object> success,
 			Consumer<? super Throwable> failure, Runnable completeConsumer) {
 
 		((Mono<? super Object>) returnValue).subscribe(success, failure, completeConsumer);

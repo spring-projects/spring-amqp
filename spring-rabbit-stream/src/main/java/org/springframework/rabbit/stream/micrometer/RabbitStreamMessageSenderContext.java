@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ public class RabbitStreamMessageSenderContext extends SenderContext<Message> {
 
 	private final String destination;
 
+	@SuppressWarnings("this-escape")
 	public RabbitStreamMessageSenderContext(Message message, String beanName, String destination) {
 		super((carrier, key, value) -> {
 			Map<String, Object> props = message.getApplicationProperties();

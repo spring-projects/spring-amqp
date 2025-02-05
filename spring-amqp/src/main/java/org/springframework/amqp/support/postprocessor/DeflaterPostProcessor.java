@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 the original author or authors.
+ * Copyright 2019-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.support.postprocessor;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.util.zip.DeflaterOutputStream;
 
@@ -38,7 +37,7 @@ public class DeflaterPostProcessor extends AbstractDeflaterPostProcessor {
 	}
 
 	@Override
-	protected OutputStream getCompressorStream(OutputStream zipped) throws IOException {
+	protected OutputStream getCompressorStream(OutputStream zipped) {
 		return new DeflaterPostProcessor.SettableLevelDeflaterOutputStream(zipped, getLevel());
 	}
 
@@ -55,4 +54,5 @@ public class DeflaterPostProcessor extends AbstractDeflaterPostProcessor {
 		}
 
 	}
+
 }

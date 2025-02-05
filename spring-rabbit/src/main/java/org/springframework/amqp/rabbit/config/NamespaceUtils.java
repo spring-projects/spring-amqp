@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import org.jspecify.annotations.Nullable;
 import org.w3c.dom.Element;
 
 import org.springframework.amqp.rabbit.support.ExpressionFactoryBean;
@@ -43,8 +44,11 @@ import org.springframework.util.StringUtils;
 public abstract class NamespaceUtils {
 
 	public static final String BASE_PACKAGE = "org.springframework.amqp.core.rabbit.config";
+
 	public static final String REF_ATTRIBUTE = "ref";
+
 	public static final String METHOD_ATTRIBUTE = "method";
+
 	public static final String ORDER = "order";
 
 	/**
@@ -84,6 +88,7 @@ public abstract class NamespaceUtils {
 	 */
 	public static boolean setValueIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
 			String attributeName) {
+
 		return setValueIfAttributeDefined(builder, element, attributeName,
 				Conventions.attributeNameToPropertyName(attributeName));
 	}
@@ -111,6 +116,7 @@ public abstract class NamespaceUtils {
 	 */
 	public static boolean addConstructorArgValueIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
 			String attributeName) {
+
 		String value = element.getAttribute(attributeName);
 		if (StringUtils.hasText(value)) {
 			builder.addConstructorArgValue(new TypedStringValue(value));
@@ -130,6 +136,7 @@ public abstract class NamespaceUtils {
 	 */
 	public static void addConstructorArgBooleanValueIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
 			String attributeName, boolean defaultValue) {
+
 		String value = element.getAttribute(attributeName);
 		if (StringUtils.hasText(value)) {
 			builder.addConstructorArgValue(new TypedStringValue(value));
@@ -151,6 +158,7 @@ public abstract class NamespaceUtils {
 	 */
 	public static boolean addConstructorArgRefIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
 			String attributeName) {
+
 		String value = element.getAttribute(attributeName);
 		if (StringUtils.hasText(value)) {
 			builder.addConstructorArgReference(value);
@@ -171,6 +179,7 @@ public abstract class NamespaceUtils {
 	 */
 	public static boolean addConstructorArgParentRefIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
 			String attributeName) {
+
 		String value = element.getAttribute(attributeName);
 		if (StringUtils.hasText(value)) {
 			BeanDefinitionBuilder child = BeanDefinitionBuilder.genericBeanDefinition();
@@ -194,6 +203,7 @@ public abstract class NamespaceUtils {
 	 */
 	public static boolean setReferenceIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
 			String attributeName, String propertyName) {
+
 		String attributeValue = element.getAttribute(attributeName);
 		if (StringUtils.hasText(attributeValue)) {
 			builder.addPropertyReference(propertyName, attributeValue);
@@ -219,12 +229,13 @@ public abstract class NamespaceUtils {
 	 */
 	public static boolean setReferenceIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
 			String attributeName) {
+
 		return setReferenceIfAttributeDefined(builder, element, attributeName,
 				Conventions.attributeNameToPropertyName(attributeName));
 	}
 
 	/**
-	 * Provides a user friendly description of an element based on its node name and, if available, its "id" attribute
+	 * Provides a user-friendly description of an element based on its node name and, if available, its "id" attribute
 	 * value. This is useful for creating error messages from within bean definition parsers.
 	 *
 	 * @param element The element.
@@ -259,7 +270,7 @@ public abstract class NamespaceUtils {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, "ignore-declaration-exceptions");
 	}
 
-	public static BeanDefinition createExpressionDefinitionFromValueOrExpression(String valueElementName,
+	public static @Nullable BeanDefinition createExpressionDefinitionFromValueOrExpression(String valueElementName,
 			String expressionElementName, ParserContext parserContext, Element element, boolean oneRequired) {
 
 		Assert.hasText(valueElementName, "'valueElementName' must not be empty");
@@ -291,7 +302,8 @@ public abstract class NamespaceUtils {
 		return expressionDef;
 	}
 
-	public static BeanDefinition createExpressionDefIfAttributeDefined(String expressionElementName, Element element) {
+	public static @Nullable BeanDefinition createExpressionDefIfAttributeDefined(
+			String expressionElementName, Element element) {
 
 		Assert.hasText(expressionElementName, "'expressionElementName' must no be empty");
 

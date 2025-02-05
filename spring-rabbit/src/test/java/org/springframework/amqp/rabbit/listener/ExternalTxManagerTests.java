@@ -213,7 +213,6 @@ public abstract class ExternalTxManagerTests {
 
 		transactionManager.rolledBack = false;
 		transactionManager.latch = new CountDownLatch(1);
-		container.setAfterReceivePostProcessors(m -> null);
 		container.setMessageListener(m -> {
 			// NOSONAR
 		});

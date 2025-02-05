@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2022 the original author or authors.
+ * Copyright 2015-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,11 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.concurrent.CompletableFuture;
 
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
+import org.springframework.util.Assert;
 
 /**
  * A wrapper for either an {@link InvocableHandlerMethod} or
@@ -35,9 +37,9 @@ import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
  */
 public class HandlerAdapter {
 
-	private final InvocableHandlerMethod invokerHandlerMethod;
+	private final @Nullable InvocableHandlerMethod invokerHandlerMethod;
 
-	private final DelegatingInvocableHandler delegatingHandler;
+	private final @Nullable DelegatingInvocableHandler delegatingHandler;
 
 	private final boolean asyncReplies;
 
@@ -70,14 +72,16 @@ public class HandlerAdapter {
 	 * @return the invocation result.
 	 * @throws Exception if one occurs.
 	 */
-	public InvocationResult invoke(@Nullable Message<?> message, Object... providedArgs) throws Exception { // NOSONAR
-		if (this.invokerHandlerMethod != null) { // NOSONAR (nullable message)
-			return new InvocationResult(this.invokerHandlerMethod.invoke(message, providedArgs),
-					null, this.invokerHandlerMethod.getMethod().getGenericReturnType(),
-					this.invokerHandlerMethod.getBean(),
-					this.invokerHandlerMethod.getMethod());
+	public InvocationResult invoke(Message<?> message, @Nullable Object... providedArgs) throws Exception { // NOSONAR
+		InvocableHandlerMethod invokerHandlerMethodToUse = this.invokerHandlerMethod;
+		if (invokerHandlerMethodToUse != null) { // NOSONAR (nullable message)
+			return new InvocationResult(invokerHandlerMethodToUse.invoke(message, providedArgs),
+					null, invokerHandlerMethodToUse.getMethod().getGenericReturnType(),
+					invokerHandlerMethodToUse.getBean(),
+					invokerHandlerMethodToUse.getMethod());
 		}
-		else if (this.delegatingHandler.hasDefaultHandler()) {
+		Assert.notNull(this.delegatingHandler, "'delegatingHandler' or 'invokerHandlerMethod' is required");
+		if (this.delegatingHandler.hasDefaultHandler()) {
 			// Needed to avoid returning raw Message which matches Object
 			Object[] args = new Object[providedArgs.length + 1];
 			args[0] = message.getPayload();
@@ -99,6 +103,7 @@ public class HandlerAdapter {
 			return this.invokerHandlerMethod.getMethod().toGenericString();
 		}
 		else {
+			Assert.notNull(this.delegatingHandler, "'delegatingHandler' or 'invokerHandlerMethod' is required");
 			return this.delegatingHandler.getMethodNameFor(payload);
 		}
 	}
@@ -114,6 +119,7 @@ public class HandlerAdapter {
 			return this.invokerHandlerMethod.getMethod();
 		}
 		else {
+			Assert.notNull(this.delegatingHandler, "'delegatingHandler' or 'invokerHandlerMethod' is required");
 			return this.delegatingHandler.getMethodFor(payload);
 		}
 	}
@@ -129,6 +135,7 @@ public class HandlerAdapter {
 			return this.invokerHandlerMethod.getMethod().getReturnType();
 		}
 		else {
+			Assert.notNull(this.delegatingHandler, "'delegatingHandler' or 'invokerHandlerMethod' is required");
 			return this.delegatingHandler.getMethodFor(payload).getReturnType();
 		}
 	}
@@ -142,6 +149,7 @@ public class HandlerAdapter {
 			return this.invokerHandlerMethod.getBean();
 		}
 		else {
+			Assert.notNull(this.delegatingHandler, "'delegatingHandler' or 'invokerHandlerMethod' is required");
 			return this.delegatingHandler.getBean();
 		}
 	}
@@ -162,13 +170,13 @@ public class HandlerAdapter {
 	 * @return the invocation result.
 	 * @since 2.1.7
 	 */
-	@Nullable
-	public InvocationResult getInvocationResultFor(Object result, Object inboundPayload) {
+	public @Nullable InvocationResult getInvocationResultFor(Object result, Object inboundPayload) {
 		if (this.invokerHandlerMethod != null) {
 			return new InvocationResult(result, null, this.invokerHandlerMethod.getMethod().getGenericReturnType(),
 					this.invokerHandlerMethod.getBean(), this.invokerHandlerMethod.getMethod());
 		}
 		else {
+			Assert.notNull(this.delegatingHandler, "'delegatingHandler' or 'invokerHandlerMethod' is required");
 			return this.delegatingHandler.getInvocationResultFor(result, inboundPayload);
 		}
 	}

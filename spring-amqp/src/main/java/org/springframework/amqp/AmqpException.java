@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,13 @@
 
 package org.springframework.amqp;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Base RuntimeException for errors that occur when executing AMQP operations.
  *
  * @author Mark Fisher
+ * @author Artem Bilan
  */
 @SuppressWarnings("serial")
 public class AmqpException extends RuntimeException {
@@ -28,11 +31,11 @@ public class AmqpException extends RuntimeException {
 		super(message);
 	}
 
-	public AmqpException(Throwable cause) {
+	public AmqpException(@Nullable Throwable cause) {
 		super(cause);
 	}
 
-	public AmqpException(String message, Throwable cause) {
+	public AmqpException(@Nullable String message, @Nullable Throwable cause) {
 		super(message, cause);
 	}
 

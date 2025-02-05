@@ -19,12 +19,12 @@ package org.springframework.rabbit.stream.producer;
 import java.util.concurrent.CompletableFuture;
 
 import com.rabbitmq.stream.MessageBuilder;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.support.converter.MessageConverter;
-import org.springframework.lang.Nullable;
 import org.springframework.rabbit.stream.support.converter.StreamMessageConverter;
 
 /**

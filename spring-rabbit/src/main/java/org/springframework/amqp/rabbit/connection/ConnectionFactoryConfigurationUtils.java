@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 the original author or authors.
+ * Copyright 2018-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.amqp.rabbit.connection;
 
 import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
 
 /**
  * Utility methods for configuring connection factories.
@@ -38,7 +40,7 @@ public final class ConnectionFactoryConfigurationUtils {
 	 * @param clientConnectionProperties the properties.
 	 */
 	public static void updateClientConnectionProperties(AbstractConnectionFactory connectionFactory,
-			String clientConnectionProperties) {
+			@Nullable String clientConnectionProperties) {
 
 		if (clientConnectionProperties != null) {
 			String[] props = clientConnectionProperties.split(",");

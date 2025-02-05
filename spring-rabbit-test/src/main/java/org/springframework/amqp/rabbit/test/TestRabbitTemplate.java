@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Envelope;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
@@ -48,6 +49,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.util.Assert;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -74,11 +76,13 @@ public class TestRabbitTemplate extends RabbitTemplate
 
 	private final Map<String, Listeners> listeners = new HashMap<>();
 
+	@SuppressWarnings("NullAway.Init")
 	private ApplicationContext applicationContext;
 
 	@Autowired
 	private RabbitListenerEndpointRegistry registry;
 
+	@SuppressWarnings("this-escape")
 	public TestRabbitTemplate(ConnectionFactory connectionFactory) {
 		super(connectionFactory);
 		setReplyAddress(REPLY_QUEUE);
@@ -108,7 +112,9 @@ public class TestRabbitTemplate extends RabbitTemplate
 	}
 
 	private void setupListener(AbstractMessageListenerContainer container, String queue) {
-		this.listeners.computeIfAbsent(queue, v -> new Listeners()).listeners.add(container.getMessageListener());
+		MessageListener messageListener = container.getMessageListener();
+		Assert.notNull(messageListener, "'container.getMessageListener()' must not be null");
+		this.listeners.computeIfAbsent(queue, v -> new Listeners()).listeners.add(messageListener);
 	}
 
 	@Override
@@ -133,8 +139,8 @@ public class TestRabbitTemplate extends RabbitTemplate
 	}
 
 	@Override
-	protected Message doSendAndReceiveWithFixed(String exchange, String routingKey, Message message,
-			CorrelationData correlationData) {
+	protected @Nullable Message doSendAndReceiveWithFixed(@Nullable String exchange, @Nullable String routingKey,
+			Message message, @Nullable CorrelationData correlationData) {
 
 		Listeners listenersForRoute = this.listeners.get(routingKey);
 		if (listenersForRoute == null) {
@@ -163,7 +169,7 @@ public class TestRabbitTemplate extends RabbitTemplate
 			}
 		}
 		else {
-			throw new IllegalStateException("sendAndReceive not supported for " + listener.getClass().getName());
+			throw new IllegalStateException("sendAndReceive not supported for " + listener);
 		}
 		return reply.get();
 	}
@@ -192,7 +198,7 @@ public class TestRabbitTemplate extends RabbitTemplate
 
 		private final List<Object> listeners = new ArrayList<>();
 
-		private volatile Iterator<Object> iterator;
+		private volatile @Nullable Iterator<Object> iterator;
 
 		Listeners() {
 		}
@@ -200,10 +206,12 @@ public class TestRabbitTemplate extends RabbitTemplate
 		private Object next() {
 			this.lock.lock();
 			try {
-				if (this.iterator == null || !this.iterator.hasNext()) {
-					this.iterator = this.listeners.iterator();
+				Iterator<Object> iteratorToUse = this.iterator;
+				if (iteratorToUse == null || !iteratorToUse.hasNext()) {
+					iteratorToUse = this.listeners.iterator();
 				}
-				return this.iterator.next();
+				this.iterator = iteratorToUse;
+				return iteratorToUse.next();
 			}
 			finally {
 				this.lock.unlock();

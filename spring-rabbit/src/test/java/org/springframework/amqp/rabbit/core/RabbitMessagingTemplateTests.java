@@ -59,6 +59,7 @@ import static org.mockito.Mockito.verify;
 /**
  * @author Stephane Nicoll
  * @author Gary Russell
+ * @author Artem Bilan
  */
 public class RabbitMessagingTemplateTests {
 
@@ -75,6 +76,7 @@ public class RabbitMessagingTemplateTests {
 	@BeforeEach
 	public void setup() {
 		this.openMocks = MockitoAnnotations.openMocks(this);
+		given(this.rabbitTemplate.getMessageConverter()).willReturn(new SimpleMessageConverter());
 		messagingTemplate = new RabbitMessagingTemplate(rabbitTemplate);
 	}
 

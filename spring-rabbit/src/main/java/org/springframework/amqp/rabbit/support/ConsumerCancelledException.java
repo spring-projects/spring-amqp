@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.rabbit.support;
 
+import java.io.Serial;
+
 /**
  * Thrown when the broker cancels the consumer and the message
  * queue is drained.
@@ -26,6 +28,7 @@ package org.springframework.amqp.rabbit.support;
  */
 public class ConsumerCancelledException extends RuntimeException {
 
+	@Serial
 	private static final long serialVersionUID = 3815997920289066359L;
 
 	public ConsumerCancelledException() {

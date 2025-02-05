@@ -38,18 +38,6 @@ public class RabbitMessageSenderContext extends SenderContext<Message> {
 
 	private final String routingKey;
 
-	@Deprecated(since = "3.2")
-	public RabbitMessageSenderContext(Message message, String beanName, String destination) {
-		super((carrier, key, value) -> message.getMessageProperties().setHeader(key, value));
-		setCarrier(message);
-		this.beanName = beanName;
-		this.exchange = null;
-		this.routingKey = null;
-		this.destination = destination;
-		setRemoteServiceName("RabbitMQ");
-	}
-
-
 	/**
 	 * Create an instance {@code RabbitMessageSenderContext}.
 	 * @param message a message to send
@@ -58,6 +46,7 @@ public class RabbitMessageSenderContext extends SenderContext<Message> {
 	 * @param routingKey the routing key
 	 * @since 3.2
 	 */
+	@SuppressWarnings("this-escape")
 	public RabbitMessageSenderContext(Message message, String beanName, String exchange, String routingKey) {
 		super((carrier, key, value) -> message.getMessageProperties().setHeader(key, value));
 		setCarrier(message);

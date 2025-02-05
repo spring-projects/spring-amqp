@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,8 @@ import org.springframework.core.PriorityOrdered;
  *
  * @author Gary Russell
  * @author Ngoc Nhan
+ * @author Artem Bilan
+ *
  * @since 1.4.2
  *
  */
@@ -50,9 +52,8 @@ public final class MessagePostProcessorUtils {
 				unOrdered.add(processor);
 			}
 		}
-		List<MessagePostProcessor> sorted = new ArrayList<>();
 		OrderComparator.sort(priorityOrdered);
-		sorted.addAll(priorityOrdered);
+		List<MessagePostProcessor> sorted = new ArrayList<>(priorityOrdered);
 		OrderComparator.sort(ordered);
 		sorted.addAll(ordered);
 		sorted.addAll(unOrdered);

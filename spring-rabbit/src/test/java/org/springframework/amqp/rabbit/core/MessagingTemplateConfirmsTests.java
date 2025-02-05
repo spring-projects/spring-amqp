@@ -49,7 +49,7 @@ public class MessagingTemplateConfirmsTests {
 		CorrelationData data = new CorrelationData();
 		rmt.send("messaging.confirms",
 				new GenericMessage<>("foo", Collections.singletonMap(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION, data)));
-		assertThat(data.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
+		assertThat(data.getFuture().get(10, TimeUnit.SECONDS).ack()).isTrue();
 		ccf.destroy();
 	}
 
@@ -65,7 +65,7 @@ public class MessagingTemplateConfirmsTests {
 		CorrelationData data = new CorrelationData("foo");
 		rmt.send("messaging.confirms.unroutable",
 				new GenericMessage<>("foo", Collections.singletonMap(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION, data)));
-		assertThat(data.getFuture().get(10, TimeUnit.SECONDS).isAck()).isTrue();
+		assertThat(data.getFuture().get(10, TimeUnit.SECONDS).ack()).isTrue();
 		assertThat(data.getReturned()).isNotNull();
 		ccf.destroy();
 	}

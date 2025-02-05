@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,16 +19,19 @@ package org.springframework.amqp.rabbit.listener;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 3.0.5
  *
  */
@@ -36,13 +39,13 @@ public abstract class ObservableListenerContainer extends RabbitAccessor
 		implements MessageListenerContainer, ApplicationContextAware, BeanNameAware, DisposableBean {
 
 	private static final boolean MICROMETER_PRESENT = ClassUtils.isPresent(
-				"io.micrometer.core.instrument.MeterRegistry", AbstractMessageListenerContainer.class.getClassLoader());
+			"io.micrometer.core.instrument.MeterRegistry", AbstractMessageListenerContainer.class.getClassLoader());
 
-	private ApplicationContext applicationContext;
+	private @Nullable ApplicationContext applicationContext;
 
 	private final Map<String, String> micrometerTags = new HashMap<>();
 
-	private MicrometerHolder micrometerHolder;
+	private @Nullable MicrometerHolder micrometerHolder;
 
 	private boolean micrometerEnabled = true;
 
@@ -50,10 +53,9 @@ public abstract class ObservableListenerContainer extends RabbitAccessor
 
 	private String beanName = "not.a.Spring.bean";
 
-	private String listenerId;
+	private @Nullable String listenerId;
 
-	@Nullable
-	protected final ApplicationContext getApplicationContext() {
+	protected final @Nullable ApplicationContext getApplicationContext() {
 		return this.applicationContext;
 	}
 
@@ -62,7 +64,7 @@ public abstract class ObservableListenerContainer extends RabbitAccessor
 		this.applicationContext = applicationContext;
 	}
 
-	protected MicrometerHolder getMicrometerHolder() {
+	protected @Nullable MicrometerHolder getMicrometerHolder() {
 		return this.micrometerHolder;
 	}
 
@@ -71,14 +73,14 @@ public abstract class ObservableListenerContainer extends RabbitAccessor
 	 * @param tags the tags.
 	 * @since 2.2
 	 */
-	public void setMicrometerTags(Map<String, String> tags) {
+	public void setMicrometerTags(@Nullable Map<String, String> tags) {
 		if (tags != null) {
 			this.micrometerTags.putAll(tags);
 		}
 	}
 
 	/**
-	 * Set to false to disable micrometer listener timers. When true, ignored
+	 * Set to {@code false} to disable micrometer listener timers. When true, ignored
 	 * if {@link #setObservationEnabled(boolean)} is set to true.
 	 * @param micrometerEnabled false to disable.
 	 * @since 2.2
@@ -127,7 +129,6 @@ public abstract class ObservableListenerContainer extends RabbitAccessor
 	/**
 	 * @return The bean name that this listener container has been assigned in its containing bean factory, if any.
 	 */
-	@Nullable
 	protected final String getBeanName() {
 		return this.beanName;
 	}

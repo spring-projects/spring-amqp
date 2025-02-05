@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.springframework.amqp.rabbit.batch;
 import java.util.Collection;
 import java.util.Date;
 import java.util.function.Consumer;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -41,11 +43,13 @@ public interface BatchingStrategy {
 	 * @param message The message.
 	 * @return The batched message ({@link MessageBatch}), or null if not ready to release.
 	 */
-	MessageBatch addToBatch(String exchange, String routingKey, Message message);
+	@Nullable
+	MessageBatch addToBatch(@Nullable String exchange, @Nullable String routingKey, Message message);
 
 	/**
 	 * @return the date the next scheduled release should run, or null if no data to release.
 	 */
+	@Nullable
 	Date nextRelease();
 
 	/**

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
@@ -90,7 +91,7 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 	}
 
 	/**
-	 * Set to false to disable the (now) default behavior of logging and discarding
+	 * Set to {@code false} to disable the (now) default behavior of logging and discarding
 	 * messages that cause fatal exceptions and have an `x-death` header; which
 	 * usually means that the message has been republished after previously being
 	 * sent to a DLQ.
@@ -112,7 +113,7 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 	}
 
 	/**
-	 * Set to false to NOT reject a fatal message when MANUAL ack mode is being used.
+	 * Set to {@code false} to NOT reject a fatal message when MANUAL ack mode is being used.
 	 * @param rejectManual false to leave the message in an unack'd state.
 	 * @since 2.1.9
 	 */
@@ -202,7 +203,7 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 		@Override
 		public boolean isFatal(Throwable t) {
 			Throwable cause = t.getCause();
-			while ((cause instanceof MessagingException || cause instanceof  UndeclaredThrowableException)
+			while ((cause instanceof MessagingException || cause instanceof UndeclaredThrowableException)
 					&& !isCauseFatal(cause)) {
 
 				cause = cause.getCause();
@@ -214,7 +215,7 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 			return false;
 		}
 
-		private boolean isCauseFatal(Throwable cause) {
+		private boolean isCauseFatal(@Nullable Throwable cause) {
 			return cause instanceof MessageConversionException // NOSONAR boolean complexity
 					|| cause instanceof org.springframework.messaging.converter.MessageConversionException
 					|| cause instanceof MethodArgumentResolutionException
@@ -230,7 +231,7 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 		 * @param cause the root cause (skipping any general {@link MessagingException}s).
 		 * @since 2.2.4
 		 */
-		protected void logFatalException(ListenerExecutionFailedException t, Throwable cause) {
+		protected void logFatalException(ListenerExecutionFailedException t, @Nullable Throwable cause) {
 			if (this.logger.isWarnEnabled()) {
 				this.logger.warn(
 						"Fatal message conversion error; message rejected; "
@@ -244,7 +245,7 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 		 * @param cause the cause
 		 * @return true if the cause is fatal.
 		 */
-		protected boolean isUserCauseFatal(Throwable cause) {
+		protected boolean isUserCauseFatal(@Nullable Throwable cause) {
 			return false;
 		}
 

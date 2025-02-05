@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,13 @@ package org.springframework.amqp.core;
 
 /**
  * Enumeration for the message delivery mode. Can be persistent or
- * non persistent. Use the method 'toInt' to get the appropriate value
+ * non-persistent. Use the method 'toInt' to get the appropriate value
  * that is used by the AMQP protocol instead of the ordinal() value when
  * passing into AMQP APIs.
  *
  * @author Mark Pollack
  * @author Gary Russell
+ * @author Artem Bilan
  *
  */
 public enum MessageDeliveryMode {
@@ -39,25 +40,18 @@ public enum MessageDeliveryMode {
 	PERSISTENT;
 
 	public static int toInt(MessageDeliveryMode mode) {
-		switch (mode) {
-		case NON_PERSISTENT:
-			return 1;
-		case PERSISTENT:
-			return 2;
-		default:
-			return -1;
-		}
+		return switch (mode) {
+			case NON_PERSISTENT -> 1;
+			case PERSISTENT -> 2;
+		};
 	}
 
 	public static MessageDeliveryMode fromInt(int modeAsNumber) {
-		switch (modeAsNumber) {
-		case 1:
-			return NON_PERSISTENT;
-		case 2:
-			return PERSISTENT;
-		default:
-			return null;
-		}
+		return switch (modeAsNumber) {
+			case 1 -> NON_PERSISTENT;
+			case 2 -> PERSISTENT;
+			default -> throw new IllegalArgumentException("Unknown mode: " + modeAsNumber);
+		};
 	}
 
 }

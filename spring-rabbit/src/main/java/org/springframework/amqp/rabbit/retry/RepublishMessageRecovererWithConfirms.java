@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 the original author or authors.
+ * Copyright 2021-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.core.AmqpMessageReturnedException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
@@ -29,7 +31,6 @@ import org.springframework.amqp.rabbit.core.AmqpNackReceivedException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.expression.Expression;
-import org.springframework.lang.Nullable;
 
 /**
  * A {@link RepublishMessageRecoverer} supporting publisher confirms and returns.
@@ -85,7 +86,7 @@ public class RepublishMessageRecovererWithConfirms extends RepublishMessageRecov
 	 * @param errorRoutingKey the routing key.
 	 */
 	public RepublishMessageRecovererWithConfirms(RabbitTemplate errorTemplate, String errorExchange,
-			String errorRoutingKey, ConfirmType confirmType) {
+			@Nullable String errorRoutingKey, ConfirmType confirmType) {
 
 		super(errorTemplate, errorExchange, errorRoutingKey);
 		this.template = errorTemplate;
@@ -128,7 +129,7 @@ public class RepublishMessageRecovererWithConfirms extends RepublishMessageRecov
 		}
 	}
 
-	private void doSendCorrelated(String exchange, String routingKey, Message message) {
+	private void doSendCorrelated(@Nullable String exchange, String routingKey, Message message) {
 		CorrelationData cd = new CorrelationData();
 		if (exchange != null) {
 			this.template.send(exchange, routingKey, message, cd);
@@ -141,7 +142,7 @@ public class RepublishMessageRecovererWithConfirms extends RepublishMessageRecov
 			if (cd.getReturned() != null) {
 				throw new AmqpMessageReturnedException("Message returned", cd.getReturned());
 			}
-			if (!confirm.isAck()) {
+			if (!confirm.ack()) {
 				throw new AmqpNackReceivedException("Negative acknowledgment received", message);
 			}
 		}
@@ -157,7 +158,7 @@ public class RepublishMessageRecovererWithConfirms extends RepublishMessageRecov
 		}
 	}
 
-	private void doSendSimple(String exchange, String routingKey, Message message) {
+	private void doSendSimple(@Nullable String exchange, String routingKey, Message message) {
 		this.template.invoke(sender -> {
 			if (exchange != null) {
 				sender.send(exchange, routingKey, message);

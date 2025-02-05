@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.rabbit.aot;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.PublisherCallbackChannel;
 import org.springframework.aop.SpringProxy;
@@ -25,7 +27,6 @@ import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.aot.hint.TypeReference;
 import org.springframework.core.DecoratingProxy;
-import org.springframework.lang.Nullable;
 
 /**
  * {@link RuntimeHintsRegistrar} for spring-rabbit.
@@ -37,7 +38,7 @@ import org.springframework.lang.Nullable;
 public class RabbitRuntimeHints implements RuntimeHintsRegistrar {
 
 	@Override
-	public void registerHints(RuntimeHints hints, @Nullable	ClassLoader classLoader) {
+	public void registerHints(RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		ProxyHints proxyHints = hints.proxies();
 		proxyHints.registerJdkProxy(ChannelProxy.class);
 		proxyHints.registerJdkProxy(ChannelProxy.class, PublisherCallbackChannel.class);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2024 the original author or authors.
+ * Copyright 2016-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 
 import org.aopalliance.aop.Advice;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.MessageListener;
@@ -46,6 +47,7 @@ import org.springframework.context.SmartLifecycle;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.interceptor.TransactionAttribute;
+import org.springframework.util.Assert;
 import org.springframework.util.ErrorHandler;
 import org.springframework.util.backoff.BackOff;
 
@@ -66,123 +68,123 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 
 	private final Map<String, String> micrometerTags = new HashMap<>();
 
-	private ApplicationContext applicationContext;
+	private @Nullable ApplicationContext applicationContext;
 
-	private String beanName;
+	private @Nullable String beanName;
 
-	private ApplicationEventPublisher applicationEventPublisher;
+	private @Nullable ApplicationEventPublisher applicationEventPublisher;
 
 	private Type type = Type.simple;
 
-	private AbstractMessageListenerContainer listenerContainer;
+	private @Nullable AbstractMessageListenerContainer listenerContainer;
 
-	private ConnectionFactory connectionFactory;
+	private @Nullable ConnectionFactory connectionFactory;
 
-	private Boolean channelTransacted;
+	private @Nullable Boolean channelTransacted;
 
-	private AcknowledgeMode acknowledgeMode;
+	private @Nullable AcknowledgeMode acknowledgeMode;
 
-	private String[] queueNames;
+	private String @Nullable [] queueNames;
 
-	private Queue[] queues;
+	private Queue @Nullable [] queues;
 
-	private Boolean exposeListenerChannel;
+	private @Nullable Boolean exposeListenerChannel;
 
-	private MessageListener messageListener;
+	private @Nullable MessageListener messageListener;
 
-	private ErrorHandler errorHandler;
+	private @Nullable ErrorHandler errorHandler;
 
-	private Boolean deBatchingEnabled;
+	private @Nullable Boolean deBatchingEnabled;
 
-	private Advice[] adviceChain;
+	private Advice @Nullable [] adviceChain;
 
-	private MessagePostProcessor[] afterReceivePostProcessors;
+	private MessagePostProcessor @Nullable [] afterReceivePostProcessors;
 
-	private Boolean autoStartup;
+	private @Nullable Boolean autoStartup;
 
-	private Integer phase;
+	private @Nullable Integer phase;
 
-	private String listenerId;
+	private @Nullable String listenerId;
 
-	private ConsumerTagStrategy consumerTagStrategy;
+	private @Nullable ConsumerTagStrategy consumerTagStrategy;
 
-	private Map<String, Object> consumerArgs;
+	private @Nullable Map<String, Object> consumerArgs;
 
-	private Boolean noLocal;
+	private @Nullable Boolean noLocal;
 
-	private Boolean exclusive;
+	private @Nullable Boolean exclusive;
 
-	private Boolean defaultRequeueRejected;
+	private @Nullable Boolean defaultRequeueRejected;
 
-	private Integer prefetchCount;
+	private @Nullable Integer prefetchCount;
 
-	private Boolean globalQos;
+	private @Nullable Boolean globalQos;
 
-	private Long shutdownTimeout;
+	private @Nullable Long shutdownTimeout;
 
-	private Long idleEventInterval;
+	private @Nullable Long idleEventInterval;
 
-	private PlatformTransactionManager transactionManager;
+	private @Nullable PlatformTransactionManager transactionManager;
 
-	private TransactionAttribute transactionAttribute;
+	private @Nullable TransactionAttribute transactionAttribute;
 
-	private Executor taskExecutor;
+	private @Nullable Executor taskExecutor;
 
-	private Long recoveryInterval;
+	private @Nullable Long recoveryInterval;
 
-	private BackOff recoveryBackOff;
+	private @Nullable BackOff recoveryBackOff;
 
-	private MessagePropertiesConverter messagePropertiesConverter;
+	private @Nullable MessagePropertiesConverter messagePropertiesConverter;
 
-	private RabbitAdmin rabbitAdmin;
+	private @Nullable RabbitAdmin rabbitAdmin;
 
-	private Boolean missingQueuesFatal;
+	private @Nullable Boolean missingQueuesFatal;
 
-	private Boolean possibleAuthenticationFailureFatal;
+	private @Nullable Boolean possibleAuthenticationFailureFatal;
 
-	private Boolean mismatchedQueuesFatal;
+	private @Nullable Boolean mismatchedQueuesFatal;
 
-	private Boolean autoDeclare;
+	private @Nullable Boolean autoDeclare;
 
-	private Long failedDeclarationRetryInterval;
+	private @Nullable Long failedDeclarationRetryInterval;
 
-	private ConditionalExceptionLogger exclusiveConsumerExceptionLogger;
+	private @Nullable ConditionalExceptionLogger exclusiveConsumerExceptionLogger;
 
-	private Integer consumersPerQueue;
+	private @Nullable Integer consumersPerQueue;
 
-	private TaskScheduler taskScheduler;
+	private @Nullable TaskScheduler taskScheduler;
 
-	private Long monitorInterval;
+	private @Nullable Long monitorInterval;
 
-	private Integer concurrentConsumers;
+	private @Nullable Integer concurrentConsumers;
 
-	private Integer maxConcurrentConsumers;
+	private @Nullable Integer maxConcurrentConsumers;
 
-	private Long startConsumerMinInterval;
+	private @Nullable Long startConsumerMinInterval;
 
-	private Long stopConsumerMinInterval;
+	private @Nullable Long stopConsumerMinInterval;
 
-	private Integer consecutiveActiveTrigger;
+	private @Nullable Integer consecutiveActiveTrigger;
 
-	private Integer consecutiveIdleTrigger;
+	private @Nullable Integer consecutiveIdleTrigger;
 
-	private Long receiveTimeout;
+	private @Nullable Long receiveTimeout;
 
-	private Long batchReceiveTimeout;
+	private @Nullable Long batchReceiveTimeout;
 
-	private Integer batchSize;
+	private @Nullable Integer batchSize;
 
-	private Integer declarationRetries;
+	private @Nullable Integer declarationRetries;
 
-	private Long retryDeclarationInterval;
+	private @Nullable Long retryDeclarationInterval;
 
-	private Boolean consumerBatchEnabled;
+	private @Nullable Boolean consumerBatchEnabled;
 
-	private Boolean micrometerEnabled;
+	private @Nullable Boolean micrometerEnabled;
 
-	private ContainerCustomizer<SimpleMessageListenerContainer> smlcCustomizer;
+	private @Nullable ContainerCustomizer<SimpleMessageListenerContainer> smlcCustomizer;
 
-	private ContainerCustomizer<DirectMessageListenerContainer> dmlcCustomizer;
+	private @Nullable ContainerCustomizer<DirectMessageListenerContainer> dmlcCustomizer;
 
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
@@ -558,6 +560,7 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 	}
 
 	private AbstractMessageListenerContainer createContainer() {
+		Assert.notNull(this.connectionFactory, "'connectionFactory' is required");
 		if (this.type.equals(Type.simple)) {
 			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactory);
 			JavaUtils.INSTANCE

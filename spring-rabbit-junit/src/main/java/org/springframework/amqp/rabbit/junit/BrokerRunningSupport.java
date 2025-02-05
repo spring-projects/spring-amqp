@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.junit;
 
 import java.io.IOException;
+import java.io.Serial;
 import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.net.URI;
@@ -41,6 +42,7 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
@@ -58,6 +60,7 @@ import org.springframework.web.util.UriUtils;
  *
  * @author Dave Syer
  * @author Gary Russell
+ * @author Artem Bilan
  *
  * @since 2.2
  */
@@ -96,15 +99,15 @@ public final class BrokerRunningSupport {
 
 	private final boolean management;
 
-	private final String[] queues;
+	private final String @Nullable [] queues;
 
 	private int port;
 
 	private String hostName = fromEnvironment(BROKER_HOSTNAME, "localhost");
 
-	private String adminUri = fromEnvironment(BROKER_ADMIN_URI, null);
+	private @Nullable String adminUri = fromEnvironment(BROKER_ADMIN_URI);
 
-	private ConnectionFactory connectionFactory;
+	private @Nullable ConnectionFactory connectionFactory;
 
 	private String user = fromEnvironment(BROKER_USER, GUEST);
 
@@ -115,6 +118,19 @@ public final class BrokerRunningSupport {
 	private String adminPassword = fromEnvironment(BROKER_ADMIN_PW, GUEST);
 
 	private boolean purgeAfterEach;
+
+	private static @Nullable String fromEnvironment(String key) {
+		String environmentValue = ENVIRONMENT_OVERRIDES.get(key);
+		if (!StringUtils.hasText(environmentValue)) {
+			environmentValue = System.getenv(key);
+		}
+		if (StringUtils.hasText(environmentValue)) {
+			return environmentValue;
+		}
+		else {
+			return null;
+		}
+	}
 
 	private static String fromEnvironment(String key, String defaultValue) {
 		String environmentValue = ENVIRONMENT_OVERRIDES.get(key);
@@ -151,7 +167,6 @@ public final class BrokerRunningSupport {
 	/**
 	 * Ensure the broker is running and has a empty queue(s) with the specified name(s) in the
 	 * default exchange.
-	 *
 	 * @param names the queues to declare for the test.
 	 * @return a new rule that assumes an existing running broker
 	 */
@@ -193,7 +208,7 @@ public final class BrokerRunningSupport {
 		this(purge, false, queues);
 	}
 
-	BrokerRunningSupport(boolean purge, boolean management, String... queues) {
+	BrokerRunningSupport(boolean purge, boolean management, String @Nullable ... queues) {
 		if (queues != null) {
 			this.queues = Arrays.copyOf(queues, queues.length);
 		}
@@ -202,9 +217,10 @@ public final class BrokerRunningSupport {
 		}
 		this.purge = purge;
 		this.management = management;
-		setPort(fromEnvironment(BROKER_PORT, null) == null
+		String portFromEnvironment = fromEnvironment(BROKER_PORT);
+		setPort(portFromEnvironment == null
 				? BrokerTestUtils.getPort()
-				: Integer.valueOf(fromEnvironment(BROKER_PORT, null)));
+				: Integer.parseInt(portFromEnvironment));
 	}
 
 	private BrokerRunningSupport(boolean assumeOnline) {
@@ -313,7 +329,6 @@ public final class BrokerRunningSupport {
 		return this.adminPassword;
 	}
 
-
 	public boolean isPurgeAfterEach() {
 		return this.purgeAfterEach;
 	}
@@ -363,22 +378,24 @@ public final class BrokerRunningSupport {
 		Channel channel;
 		channel = connection.createChannel();
 
-		for (String queueName : this.queues) {
+		if (this.queues != null) {
+			for (String queueName : this.queues) {
+				if (this.purge) {
+					LOGGER.debug("Deleting queue: " + queueName);
+					// Delete completely - gets rid of consumers and bindings as well
+					channel.queueDelete(queueName);
+				}
 
-			if (this.purge) {
-				LOGGER.debug("Deleting queue: " + queueName);
-				// Delete completely - gets rid of consumers and bindings as well
-				channel.queueDelete(queueName);
-			}
-
-			if (isDefaultQueue(queueName)) {
-				// Just for test probe.
-				channel.queueDelete(queueName);
-			}
-			else {
-				channel.queueDeclare(queueName, true, false, false, null);
+				if (isDefaultQueue(queueName)) {
+					// Just for test probe.
+					channel.queueDelete(queueName);
+				}
+				else {
+					channel.queueDeclare(queueName, true, false, false, null);
+				}
 			}
 		}
+
 		if (this.management) {
 			alivenessTest();
 		}
@@ -418,7 +435,7 @@ public final class BrokerRunningSupport {
 			body = response.body();
 		}
 		if (body == null || !body.contentEquals("{\"status\":\"ok\"}")) {
-			throw new BrokerNotAliveException("Aliveness test failed for " + uri.toString()
+			throw new BrokerNotAliveException("Aliveness test failed for " + uri
 					+ " user: " + getAdminUser() + " pw: " + getAdminPassword()
 					+ " status: " + response.statusCode() + " body: " + body
 					+ "; management not available");
@@ -445,7 +462,7 @@ public final class BrokerRunningSupport {
 		UUID uuid = UUID.randomUUID();
 		ByteBuffer bb = ByteBuffer.wrap(new byte[SIXTEEN]);
 		bb.putLong(uuid.getMostSignificantBits())
-		  .putLong(uuid.getLeastSignificantBits());
+				.putLong(uuid.getLeastSignificantBits());
 		return "SpringBrokerRunning." + Base64.getUrlEncoder().encodeToString(bb.array()).replaceAll("=", "");
 	}
 
@@ -459,8 +476,8 @@ public final class BrokerRunningSupport {
 	 * @param additionalQueues additional queues to remove that might have been created by
 	 * tests.
 	 */
-	public void removeTestQueues(String... additionalQueues) {
-		List<String> queuesToRemove = Arrays.asList(this.queues);
+	public void removeTestQueues(String @Nullable ... additionalQueues) {
+		List<String> queuesToRemove = this.queues != null ? Arrays.asList(this.queues) : new ArrayList<>();
 		if (additionalQueues != null) {
 			queuesToRemove = new ArrayList<>(queuesToRemove);
 			queuesToRemove.addAll(Arrays.asList(additionalQueues));
@@ -620,7 +637,7 @@ public final class BrokerRunningSupport {
 		return this.adminUri;
 	}
 
-	private void closeResources(Connection connection, Channel channel) {
+	private void closeResources(@Nullable Connection connection, @Nullable Channel channel) {
 		if (channel != null) {
 			try {
 				channel.close();
@@ -645,6 +662,7 @@ public final class BrokerRunningSupport {
 	 */
 	public static class BrokerNotAliveException extends RuntimeException {
 
+		@Serial
 		private static final long serialVersionUID = 1L;
 
 		BrokerNotAliveException(String message) {

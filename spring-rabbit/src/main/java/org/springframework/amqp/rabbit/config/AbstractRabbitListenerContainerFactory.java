@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.rabbit.config;
 
-
 import java.util.Arrays;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.aopalliance.aop.Advice;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -67,57 +67,57 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 	protected final AtomicInteger counter = new AtomicInteger(); // NOSONAR
 
-	private ConnectionFactory connectionFactory;
+	private @Nullable ConnectionFactory connectionFactory;
 
-	private ErrorHandler errorHandler;
+	private @Nullable ErrorHandler errorHandler;
 
-	private MessageConverter messageConverter;
+	private @Nullable MessageConverter messageConverter;
 
-	private AcknowledgeMode acknowledgeMode;
+	private @Nullable AcknowledgeMode acknowledgeMode;
 
-	private Boolean channelTransacted;
+	private @Nullable Boolean channelTransacted;
 
-	private Executor taskExecutor;
+	private @Nullable Executor taskExecutor;
 
-	private PlatformTransactionManager transactionManager;
+	private @Nullable PlatformTransactionManager transactionManager;
 
-	private Integer prefetchCount;
+	private @Nullable Integer prefetchCount;
 
-	private Boolean globalQos;
+	private @Nullable Boolean globalQos;
 
-	private BackOff recoveryBackOff;
+	private @Nullable BackOff recoveryBackOff;
 
-	private Boolean missingQueuesFatal;
+	private @Nullable Boolean missingQueuesFatal;
 
-	private Boolean mismatchedQueuesFatal;
+	private @Nullable Boolean mismatchedQueuesFatal;
 
-	private ConsumerTagStrategy consumerTagStrategy;
+	private @Nullable ConsumerTagStrategy consumerTagStrategy;
 
-	private Long idleEventInterval;
+	private @Nullable Long idleEventInterval;
 
-	private Long failedDeclarationRetryInterval;
+	private @Nullable Long failedDeclarationRetryInterval;
 
-	private ApplicationEventPublisher applicationEventPublisher;
+	private @Nullable ApplicationEventPublisher applicationEventPublisher;
 
-	private Boolean autoStartup;
+	private @Nullable Boolean autoStartup;
 
-	private Integer phase;
+	private @Nullable Integer phase;
 
-	private MessagePostProcessor[] afterReceivePostProcessors;
+	private MessagePostProcessor @Nullable [] afterReceivePostProcessors;
 
-	private ContainerCustomizer<C> containerCustomizer;
+	private @Nullable ContainerCustomizer<C> containerCustomizer;
 
 	private boolean batchListener;
 
-	private BatchingStrategy batchingStrategy;
+	private @Nullable BatchingStrategy batchingStrategy;
 
-	private Boolean deBatchingEnabled;
+	private @Nullable Boolean deBatchingEnabled;
 
-	private MessageAckListener messageAckListener;
+	private @Nullable MessageAckListener messageAckListener;
 
-	private RabbitListenerObservationConvention observationConvention;
+	private @Nullable RabbitListenerObservationConvention observationConvention;
 
-	private Boolean forceStop;
+	private @Nullable Boolean forceStop;
 
 	/**
 	 * @param connectionFactory The connection factory.
@@ -302,9 +302,9 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	}
 
 	/**
-	 * Determine whether or not the container should de-batch batched
+	 * Determine whether the container should de-batch batched
 	 * messages (true) or call the listener with the batch (false). Default: true.
-	 * @param deBatchingEnabled whether or not to disable de-batching of messages.
+	 * @param deBatchingEnabled whether to disable de-batching of messages.
 	 * @since 2.2
 	 * @see AbstractMessageListenerContainer#setDeBatchingEnabled(boolean)
 	 */
@@ -352,7 +352,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	}
 
 	@Override
-	public C createListenerContainer(RabbitListenerEndpoint endpoint) {
+	public C createListenerContainer(@Nullable RabbitListenerEndpoint endpoint) {
 		C instance = createContainerInstance();
 
 		JavaUtils javaUtils =
@@ -364,42 +364,42 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		}
 		Advice[] adviceChain = getAdviceChain();
 		javaUtils
-			.acceptIfNotNull(this.acknowledgeMode, instance::setAcknowledgeMode)
-			.acceptIfNotNull(this.channelTransacted, instance::setChannelTransacted)
-			.acceptIfNotNull(getApplicationContext(), instance::setApplicationContext)
-			.acceptIfNotNull(this.taskExecutor, instance::setTaskExecutor)
-			.acceptIfNotNull(this.transactionManager, instance::setTransactionManager)
-			.acceptIfNotNull(this.prefetchCount, instance::setPrefetchCount)
-			.acceptIfNotNull(this.globalQos, instance::setGlobalQos)
-			.acceptIfNotNull(getDefaultRequeueRejected(), instance::setDefaultRequeueRejected)
-			.acceptIfNotNull(adviceChain, instance::setAdviceChain)
-			.acceptIfNotNull(this.recoveryBackOff, instance::setRecoveryBackOff)
-			.acceptIfNotNull(this.mismatchedQueuesFatal, instance::setMismatchedQueuesFatal)
-			.acceptIfNotNull(this.missingQueuesFatal, instance::setMissingQueuesFatal)
-			.acceptIfNotNull(this.consumerTagStrategy, instance::setConsumerTagStrategy)
-			.acceptIfNotNull(this.idleEventInterval, instance::setIdleEventInterval)
-			.acceptIfNotNull(this.failedDeclarationRetryInterval, instance::setFailedDeclarationRetryInterval)
-			.acceptIfNotNull(this.applicationEventPublisher, instance::setApplicationEventPublisher)
-			.acceptIfNotNull(this.autoStartup, instance::setAutoStartup)
-			.acceptIfNotNull(this.phase, instance::setPhase)
-			.acceptIfNotNull(this.afterReceivePostProcessors, instance::setAfterReceivePostProcessors)
-			.acceptIfNotNull(this.deBatchingEnabled, instance::setDeBatchingEnabled)
-			.acceptIfNotNull(this.messageAckListener, instance::setMessageAckListener)
-			.acceptIfNotNull(this.batchingStrategy, instance::setBatchingStrategy)
-			.acceptIfNotNull(getMicrometerEnabled(), instance::setMicrometerEnabled)
-			.acceptIfNotNull(getObservationEnabled(), instance::setObservationEnabled)
-			.acceptIfNotNull(this.observationConvention, instance::setObservationConvention)
-			.acceptIfNotNull(this.forceStop, instance::setForceStop);
+				.acceptIfNotNull(this.acknowledgeMode, instance::setAcknowledgeMode)
+				.acceptIfNotNull(this.channelTransacted, instance::setChannelTransacted)
+				.acceptIfNotNull(getApplicationContext(), instance::setApplicationContext)
+				.acceptIfNotNull(this.taskExecutor, instance::setTaskExecutor)
+				.acceptIfNotNull(this.transactionManager, instance::setTransactionManager)
+				.acceptIfNotNull(this.prefetchCount, instance::setPrefetchCount)
+				.acceptIfNotNull(this.globalQos, instance::setGlobalQos)
+				.acceptIfNotNull(getDefaultRequeueRejected(), instance::setDefaultRequeueRejected)
+				.acceptIfNotNull(adviceChain, instance::setAdviceChain)
+				.acceptIfNotNull(this.recoveryBackOff, instance::setRecoveryBackOff)
+				.acceptIfNotNull(this.mismatchedQueuesFatal, instance::setMismatchedQueuesFatal)
+				.acceptIfNotNull(this.missingQueuesFatal, instance::setMissingQueuesFatal)
+				.acceptIfNotNull(this.consumerTagStrategy, instance::setConsumerTagStrategy)
+				.acceptIfNotNull(this.idleEventInterval, instance::setIdleEventInterval)
+				.acceptIfNotNull(this.failedDeclarationRetryInterval, instance::setFailedDeclarationRetryInterval)
+				.acceptIfNotNull(this.applicationEventPublisher, instance::setApplicationEventPublisher)
+				.acceptIfNotNull(this.autoStartup, instance::setAutoStartup)
+				.acceptIfNotNull(this.phase, instance::setPhase)
+				.acceptIfNotNull(this.afterReceivePostProcessors, instance::setAfterReceivePostProcessors)
+				.acceptIfNotNull(this.deBatchingEnabled, instance::setDeBatchingEnabled)
+				.acceptIfNotNull(this.messageAckListener, instance::setMessageAckListener)
+				.acceptIfNotNull(this.batchingStrategy, instance::setBatchingStrategy)
+				.acceptIfNotNull(getMicrometerEnabled(), instance::setMicrometerEnabled)
+				.acceptIfNotNull(getObservationEnabled(), instance::setObservationEnabled)
+				.acceptIfNotNull(this.observationConvention, instance::setObservationConvention)
+				.acceptIfNotNull(this.forceStop, instance::setForceStop);
 		if (this.batchListener && this.deBatchingEnabled == null) {
 			// turn off container debatching by default for batch listeners
 			instance.setDeBatchingEnabled(false);
 		}
 		if (endpoint != null) { // endpoint settings overriding default factory settings
 			javaUtils
-				.acceptIfNotNull(endpoint.getTaskExecutor(), instance::setTaskExecutor)
-				.acceptIfNotNull(endpoint.getAckMode(), instance::setAcknowledgeMode)
-				.acceptIfNotNull(endpoint.getBatchingStrategy(), instance::setBatchingStrategy);
-			instance.setListenerId(endpoint.getId());
+					.acceptIfNotNull(endpoint.getTaskExecutor(), instance::setTaskExecutor)
+					.acceptIfNotNull(endpoint.getAckMode(), instance::setAcknowledgeMode)
+					.acceptIfNotNull(endpoint.getBatchingStrategy(), instance::setBatchingStrategy)
+					.acceptIfNotNull(endpoint.getId(), instance::setListenerId);
 			if (endpoint.getBatchListener() == null) {
 				endpoint.setBatchListener(this.batchListener);
 			}
@@ -428,7 +428,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	 * @param instance the container instance to configure.
 	 * @param endpoint the endpoint.
 	 */
-	protected void initializeContainer(C instance, RabbitListenerEndpoint endpoint) {
+	protected void initializeContainer(C instance, @Nullable RabbitListenerEndpoint endpoint) {
 	}
 
 }

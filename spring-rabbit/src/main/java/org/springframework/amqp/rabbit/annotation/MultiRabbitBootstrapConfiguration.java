@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.rabbit.annotation;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.RootBeanDefinition;
@@ -23,7 +25,6 @@ import org.springframework.context.EnvironmentAware;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotationMetadata;
-import org.springframework.lang.Nullable;
 
 /**
  * An {@link ImportBeanDefinitionRegistrar} class that registers
@@ -31,6 +32,7 @@ import org.springframework.lang.Nullable;
  * is enabled.
  *
  * @author Wander Costa
+ * @author Artem Bilan
  *
  * @since 1.4
  *
@@ -41,6 +43,7 @@ import org.springframework.lang.Nullable;
  */
 public class MultiRabbitBootstrapConfiguration implements ImportBeanDefinitionRegistrar, EnvironmentAware {
 
+	@SuppressWarnings("NullAway.Init")
 	private Environment environment;
 
 	@Override

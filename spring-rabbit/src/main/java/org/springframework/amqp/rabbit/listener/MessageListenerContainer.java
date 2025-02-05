@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,11 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.SmartLifecycle;
-import org.springframework.lang.Nullable;
 
 /**
  * Internal abstraction used by the framework representing a message
@@ -32,7 +33,7 @@ import org.springframework.lang.Nullable;
 public interface MessageListenerContainer extends SmartLifecycle, InitializingBean {
 
 	/**
-	 * Setup the message listener to use. Throws an {@link IllegalArgumentException}
+	 * Set up the message listener to use. Throws an {@link IllegalArgumentException}
 	 * if that message listener type is not supported.
 	 * @param messageListener the {@code object} to wrapped to the {@code MessageListener}.
 	 */

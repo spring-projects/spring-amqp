@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.config;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.w3c.dom.Element;
 
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -39,7 +40,7 @@ import org.springframework.util.xml.DomUtils;
  */
 public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitionParser {
 
-	private static final ThreadLocal<Element> CURRENT_ELEMENT = new ThreadLocal<>();
+	private static final ThreadLocal<@Nullable Element> CURRENT_ELEMENT = new ThreadLocal<>();
 
 	private static final String ARGUMENTS_ELEMENT = "exchange-arguments";
 
@@ -89,7 +90,7 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, DELAYED_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, "internal");
 
-		this.parseArguments(element, ARGUMENTS_ELEMENT, parserContext, builder, null);
+		parseArguments(element, ARGUMENTS_ELEMENT, parserContext, builder, null);
 
 		NamespaceUtils.parseDeclarationControls(element, builder);
 		CURRENT_ELEMENT.set(element);
@@ -97,12 +98,14 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 
 	protected void parseBindings(Element element, ParserContext parserContext, BeanDefinitionBuilder builder,
 			String exchangeName) {
+
 		Element bindingsElement = DomUtils.getChildElementByTagName(element, BINDINGS_ELE);
 		doParseBindings(element, parserContext, exchangeName, bindingsElement, this);
 	}
 
 	protected void doParseBindings(Element element, ParserContext parserContext,
-			String exchangeName, Element bindings, AbstractExchangeParser parser) {
+			String exchangeName, @Nullable Element bindings, AbstractExchangeParser parser) {
+
 		if (bindings != null) {
 			for (Element binding : DomUtils.getChildElementsByTagName(bindings, BINDING_ELE)) {
 				BeanDefinitionBuilder bindingBuilder = parser.parseBinding(exchangeName, binding,
@@ -137,7 +140,7 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 	}
 
 	private void parseArguments(Element element, String argumentsElementName, ParserContext parserContext,
-								BeanDefinitionBuilder builder, String propertyName) {
+			BeanDefinitionBuilder builder, @Nullable String propertyName) {
 		Element argumentsElement = DomUtils.getChildElementByTagName(element, argumentsElementName);
 		if (argumentsElement != null) {
 
@@ -145,7 +148,7 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 			Map<?, ?> map = parserContext.getDelegate().parseMapElement(argumentsElement,
 					builder.getRawBeanDefinition());
 			if (StringUtils.hasText(ref)) {
-				if (map != null && !map.isEmpty()) {
+				if (!map.isEmpty()) {
 					parserContext.getReaderContext().error("You cannot have both a 'ref' and a nested map", element);
 				}
 				if (propertyName == null) {

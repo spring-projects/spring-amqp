@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@ package org.springframework.amqp.core;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -28,6 +29,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Mark Pollack
  * @author Gary Russell
+ *
  * @see AmqpAdmin
  */
 public class Queue extends AbstractDeclarable implements Cloneable {
@@ -89,7 +91,7 @@ public class Queue extends AbstractDeclarable implements Cloneable {
 	 * @param arguments the arguments used to declare the queue
 	 */
 	public Queue(String name, boolean durable, boolean exclusive, boolean autoDelete,
-			@Nullable Map<String, Object> arguments) {
+			@Nullable Map<String, @Nullable Object> arguments) {
 
 		super(arguments);
 		Assert.notNull(name, "'name' cannot be null");

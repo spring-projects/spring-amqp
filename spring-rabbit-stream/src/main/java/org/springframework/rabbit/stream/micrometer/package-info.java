@@ -1,6 +1,5 @@
 /**
  * Provides classes for Micrometer support.
  */
-@org.springframework.lang.NonNullApi
-@org.springframework.lang.NonNullFields
+@org.jspecify.annotations.NullMarked
 package org.springframework.rabbit.stream.micrometer;

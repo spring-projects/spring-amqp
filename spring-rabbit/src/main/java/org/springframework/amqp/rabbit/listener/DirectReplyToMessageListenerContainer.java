@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.rabbitmq.client.Channel;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.core.AcknowledgeMode;
@@ -28,7 +29,6 @@ import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -51,6 +51,7 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 
 	private final AtomicInteger consumerCount = new AtomicInteger();
 
+	@SuppressWarnings("this-escape")
 	public DirectReplyToMessageListenerContainer(ConnectionFactory connectionFactory) {
 		super(connectionFactory);
 		super.setQueueNames(Address.AMQ_RABBITMQ_REPLY_TO);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.amqp.core;
 
 import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
 
@@ -61,9 +63,12 @@ public class ConsistentHashExchange extends AbstractExchange {
 	 * longer in use
 	 * @param arguments the arguments used to declare the exchange
 	 */
-	public ConsistentHashExchange(String name, boolean durable, boolean autoDelete, Map<String, Object> arguments) {
+	public ConsistentHashExchange(String name, boolean durable, boolean autoDelete,
+			@Nullable Map<String, @Nullable Object> arguments) {
+
 		super(name, durable, autoDelete, arguments);
-		Assert.isTrue(!(arguments.containsKey("hash-header") && arguments.containsKey("hash-property")),
+		Assert.isTrue(arguments == null ||
+						(!(arguments.containsKey("hash-header") && arguments.containsKey("hash-property"))),
 				"The 'hash-header' and 'hash-property' are mutually exclusive.");
 	}
 

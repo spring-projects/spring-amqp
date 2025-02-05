@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package org.springframework.amqp.rabbit.connection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Instances of this object track pending publisher confirms.
@@ -35,14 +35,13 @@ public class PendingConfirm {
 
 	static final long RETURN_CALLBACK_TIMEOUT = 60;
 
-	@Nullable
-	private final CorrelationData correlationData;
+	private final @Nullable CorrelationData correlationData;
 
 	private final long timestamp;
 
 	private final CountDownLatch latch = new CountDownLatch(1);
 
-	private String cause;
+	private @Nullable String cause;
 
 	private boolean returned;
 
@@ -85,8 +84,7 @@ public class PendingConfirm {
 	 * @return the cause.
 	 * @since 1.4
 	 */
-	@Nullable
-	public String getCause() {
+	public @Nullable String getCause() {
 		return this.cause;
 	}
 
@@ -129,7 +127,8 @@ public class PendingConfirm {
 
 	@Override
 	public String toString() {
-		return "PendingConfirm [correlationData=" + this.correlationData + (this.cause == null ? "" : " cause=" + this.cause) + "]";
+		return "PendingConfirm [correlationData=" + this.correlationData +
+				(this.cause == null ? "" : " cause=" + this.cause) + "]";
 	}
 
 }

@@ -47,6 +47,7 @@ import com.rabbitmq.client.ShutdownSignalException;
 import com.rabbitmq.utility.Utility;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.AmqpException;
@@ -70,7 +71,6 @@ import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.lang.Nullable;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -97,14 +97,14 @@ public class BlockingQueueConsumer {
 
 	private static final int DEFAULT_RETRY_DECLARATION_INTERVAL = 60000;
 
-	private static Log logger = LogFactory.getLog(BlockingQueueConsumer.class);
+	private static final Log logger = LogFactory.getLog(BlockingQueueConsumer.class);
 
 	private final Lock lifecycleLock = new ReentrantLock();
 
 	private final BlockingQueue<Delivery> queue;
 
 	// When this is non-null the connection has been closed (should never happen in normal operation).
-	private volatile ShutdownSignalException shutdown;
+	private volatile @Nullable ShutdownSignalException shutdown;
 
 	private final String[] queues;
 
@@ -112,8 +112,10 @@ public class BlockingQueueConsumer {
 
 	private final boolean transactional;
 
+	@SuppressWarnings("NullAway.Init")
 	private Channel channel;
 
+	@SuppressWarnings("NullAway.Init")
 	private RabbitResourceHolder resourceHolder;
 
 	private final ConcurrentMap<String, InternalConsumer> consumers = new ConcurrentHashMap<>();
@@ -155,15 +157,16 @@ public class BlockingQueueConsumer {
 
 	private long lastRetryDeclaration;
 
-	private ConsumerTagStrategy tagStrategy;
+	private @Nullable ConsumerTagStrategy tagStrategy;
 
+	@SuppressWarnings("NullAway.Init")
 	private BackOffExecution backOffExecution;
 
 	private long shutdownTimeout;
 
 	private boolean locallyTransacted;
 
-	private ApplicationEventPublisher applicationEventPublisher;
+	private @Nullable ApplicationEventPublisher applicationEventPublisher;
 
 	private long consumeDelay;
 
@@ -175,11 +178,12 @@ public class BlockingQueueConsumer {
 
 	private volatile boolean normalCancel;
 
+	@SuppressWarnings("NullAway.Init")
 	volatile Thread thread; // NOSONAR package protected
 
 	volatile boolean declaring; // NOSONAR package protected
 
-	private MessageAckListener messageAckListener;
+	private @Nullable MessageAckListener messageAckListener;
 
 	/**
 	 * Create a consumer. The consumer must not attempt to use
@@ -486,8 +490,9 @@ public class BlockingQueueConsumer {
 	 * Check if we are in shutdown mode and if so throw an exception.
 	 */
 	private void checkShutdown() {
-		if (this.shutdown != null) {
-			throw Utility.fixStackTrace(this.shutdown);
+		ShutdownSignalException shutdownToUse = this.shutdown;
+		if (shutdownToUse != null) {
+			throw Utility.fixStackTrace(shutdownToUse);
 		}
 	}
 
@@ -498,10 +503,10 @@ public class BlockingQueueConsumer {
 	 * @param delivery the delivered message contents.
 	 * @return A message built from the contents.
 	 */
-	@Nullable
-	private Message handle(@Nullable Delivery delivery) {
-		if ((delivery == null && this.shutdown != null)) {
-			throw this.shutdown;
+	private @Nullable Message handle(@Nullable Delivery delivery) {
+		ShutdownSignalException shutdownToUse = this.shutdown;
+		if (delivery == null && shutdownToUse != null) {
+			throw shutdownToUse;
 		}
 		if (delivery == null) {
 			return null;
@@ -614,6 +619,7 @@ public class BlockingQueueConsumer {
 		}
 	}
 
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	public void start() throws AmqpException {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Starting consumer " + this);
@@ -625,7 +631,7 @@ public class BlockingQueueConsumer {
 			this.resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(this.connectionFactory,
 					this.transactional);
 			this.channel = this.resourceHolder.getChannel();
-			ClosingRecoveryListener.addRecoveryListenerIfNecessary(this.channel); // NOSONAR never null here
+			ClosingRecoveryListener.addRecoveryListenerIfNecessary(this.channel);
 		}
 		catch (AmqpAuthenticationException e) {
 			throw new FatalListenerStartupException("Authentication failure", e);
@@ -756,6 +762,7 @@ public class BlockingQueueConsumer {
 						}
 					}
 					catch (TimeoutException e1) {
+						// Ignore
 					}
 					throw new FatalListenerStartupException("Illegal Argument on Queue Declaration", e);
 				}
@@ -806,13 +813,11 @@ public class BlockingQueueConsumer {
 	}
 
 	public void forceCloseAndClearQueue() {
-		if (this.channel != null) {
-			RabbitUtils.setPhysicalCloseRequired(this.channel, true);
-			ConnectionFactoryUtils.releaseResources(this.resourceHolder);
-			this.deliveryTags.clear();
-			this.consumers.clear();
-			this.queue.clear(); // in case we still have a client thread blocked
-		}
+		RabbitUtils.setPhysicalCloseRequired(this.channel, true);
+		ConnectionFactoryUtils.releaseResources(this.resourceHolder);
+		this.deliveryTags.clear();
+		this.consumers.clear();
+		this.queue.clear(); // in case we still have a client thread blocked
 	}
 
 	/**
@@ -927,11 +932,13 @@ public class BlockingQueueConsumer {
 	 * @since 2.4.6
 	 */
 	private void notifyMessageAckListener(boolean success, long deliveryTag, @Nullable Throwable cause) {
-		try {
-			this.messageAckListener.onComplete(success, deliveryTag, cause);
-		}
-		catch (Exception e) {
-			logger.error("An exception occurred in MessageAckListener.", e);
+		if (this.messageAckListener != null) {
+			try {
+				this.messageAckListener.onComplete(success, deliveryTag, cause);
+			}
+			catch (Exception e) {
+				logger.error("An exception occurred in MessageAckListener.", e);
+			}
 		}
 	}
 

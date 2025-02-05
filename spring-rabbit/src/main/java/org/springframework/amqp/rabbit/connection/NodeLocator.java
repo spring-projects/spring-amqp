@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,16 +21,18 @@ import java.net.URISyntaxException;
 import java.util.Map;
 
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.core.log.LogAccessor;
-import org.springframework.lang.Nullable;
 
 /**
  * Used to obtain a connection factory for the queue leader.
  * @param <T> the client type.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.4.8
  */
 public interface NodeLocator<T> {
@@ -42,20 +44,20 @@ public interface NodeLocator<T> {
 	 * @param adminUris an array of admin URIs.
 	 * @param nodeToAddress a map of node names to node addresses (AMQP).
 	 * @param vhost the vhost.
-	 * @param username the user name.
+	 * @param username the username.
 	 * @param password the password.
 	 * @param queue the queue name.
 	 * @param factoryFunction an internal function to find or create the factory.
 	 * @return a connection factory, if the leader node was found; null otherwise.
 	 */
-	@Nullable
-	default ConnectionFactory locate(String[] adminUris, Map<String, String> nodeToAddress, String vhost,
-			String username, String password, String queue, FactoryFinder factoryFunction) {
+	default @Nullable ConnectionFactory locate(String[] adminUris, Map<String, String> nodeToAddress,
+			String vhost, String username, String password, String queue,
+			FactoryFinder factoryFunction) {
 
 		T client = createClient(username, password);
 
-		for (int i = 0; i < adminUris.length; i++) {
-			String adminUri = adminUris[i];
+		for (String uris : adminUris) {
+			String adminUri = uris;
 			if (!adminUri.endsWith("/api/")) {
 				adminUri += "/api/";
 			}
@@ -92,7 +94,7 @@ public interface NodeLocator<T> {
 
 	/**
 	 * Create a client for subsequent use.
-	 * @param userName the user name.
+	 * @param userName the username.
 	 * @param password the password.
 	 * @return the client.
 	 */

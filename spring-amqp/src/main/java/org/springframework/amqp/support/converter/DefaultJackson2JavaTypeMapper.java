@@ -23,9 +23,9 @@ import java.util.Set;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
@@ -91,7 +91,7 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 	 * @param trustedPackages the trusted Java packages for deserialization
 	 * @since 1.6.11
 	 */
-	public void setTrustedPackages(@Nullable String... trustedPackages) {
+	public void setTrustedPackages(String @Nullable ... trustedPackages) {
 		if (trustedPackages != null) {
 			for (String trusted : trustedPackages) {
 				if ("*".equals(trusted)) {
@@ -106,7 +106,7 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 	}
 
 	@Override
-	public void addTrustedPackages(@Nullable String... packages) {
+	public void addTrustedPackages(String @Nullable ... packages) {
 		setTrustedPackages(packages);
 	}
 
@@ -137,10 +137,7 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 		if (inferredType.isContainerType() && inferredType.getContentType().isAbstract()) {
 			return false;
 		}
-		if (inferredType.getKeyType() != null && inferredType.getKeyType().isAbstract()) {
-			return false;
-		}
-		return true;
+		return inferredType.getKeyType() == null || !inferredType.getKeyType().isAbstract();
 	}
 
 	private JavaType fromTypeHeader(MessageProperties properties, String typeIdHeader) {
@@ -161,8 +158,7 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 	}
 
 	@Override
-	@Nullable
-	public JavaType getInferredType(MessageProperties properties) {
+	public @Nullable JavaType getInferredType(MessageProperties properties) {
 		if (this.typePrecedence.equals(TypePrecedence.INFERRED) && hasInferredTypeHeader(properties)) {
 			return fromInferredTypeHeader(properties);
 		}

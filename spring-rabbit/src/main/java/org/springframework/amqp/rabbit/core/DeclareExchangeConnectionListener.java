@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.rabbit.core;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionListener;
@@ -25,6 +27,8 @@ import org.springframework.amqp.rabbit.connection.ConnectionListener;
  * connection is established.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.5.4
  *
  */
@@ -40,16 +44,13 @@ public final class DeclareExchangeConnectionListener implements ConnectionListen
 	}
 
 	@Override
-	public void onCreate(Connection connection) {
+	public void onCreate(@Nullable Connection connection) {
 		try {
 			this.admin.declareExchange(this.exchange);
 		}
 		catch (Exception e) {
+			// Ignoire
 		}
-	}
-
-	@Override
-	public void onClose(Connection connection) {
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
@@ -29,11 +30,10 @@ import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.support.ValueExpression;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
-import org.springframework.expression.common.LiteralExpression;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -72,9 +72,9 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 
 	protected final AmqpTemplate errorTemplate; // NOSONAR
 
-	protected final Expression errorRoutingKeyExpression; // NOSONAR
+	protected final Expression errorRoutingKeyExpression;
 
-	protected final Expression errorExchangeNameExpression; // NOSONAR
+	protected final Expression errorExchangeNameExpression;
 
 	protected final EvaluationContext evaluationContext = new StandardEvaluationContext();
 
@@ -113,7 +113,7 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 	public RepublishMessageRecoverer(AmqpTemplate errorTemplate, @Nullable String errorExchange,
 			@Nullable String errorRoutingKey) {
 
-		this(errorTemplate, new LiteralExpression(errorExchange), new LiteralExpression(errorRoutingKey)); // NOSONAR
+		this(errorTemplate, new ValueExpression<>(errorExchange), new ValueExpression<>(errorRoutingKey));
 	}
 
 	/**
@@ -128,8 +128,8 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 
 		Assert.notNull(errorTemplate, "'errorTemplate' cannot be null");
 		this.errorTemplate = errorTemplate;
-		this.errorExchangeNameExpression = errorExchange != null ? errorExchange : new LiteralExpression(null); // NOSONAR
-		this.errorRoutingKeyExpression = errorRoutingKey != null ? errorRoutingKey : new LiteralExpression(null); // NOSONAR
+		this.errorExchangeNameExpression = errorExchange != null ? errorExchange : new ValueExpression<>(null);
+		this.errorRoutingKeyExpression = errorRoutingKey != null ? errorRoutingKey : new ValueExpression<>(null);
 		if (!(this.errorTemplate instanceof RabbitTemplate)) {
 			this.maxStackTraceLength = Integer.MAX_VALUE;
 		}
@@ -191,9 +191,9 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 	@Override
 	public void recover(Message message, Throwable cause) {
 		MessageProperties messageProperties = message.getMessageProperties();
-		Map<String, Object> headers = messageProperties.getHeaders();
+		Map<String, @Nullable Object> headers = messageProperties.getHeaders();
 		String exceptionMessage = cause.getCause() != null ? cause.getCause().getMessage() : cause.getMessage();
-		String[] processed = processStackTrace(cause, exceptionMessage);
+		@Nullable String[] processed = processStackTrace(cause, exceptionMessage);
 		String stackTraceAsString = processed[0];
 		String truncatedExceptionMessage = processed[1];
 		if (truncatedExceptionMessage != null) {
@@ -247,7 +247,7 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 		}
 	}
 
-	private String[] processStackTrace(Throwable cause, String exceptionMessage) {
+	private @Nullable String[] processStackTrace(Throwable cause, @Nullable String exceptionMessage) {
 		String stackTraceAsString = getStackTraceAsString(cause);
 		if (this.maxStackTraceLength < 0) {
 			int maxStackTraceLen = RabbitUtils
@@ -260,7 +260,7 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 		return truncateIfNecessary(cause, exceptionMessage, stackTraceAsString);
 	}
 
-	private String[] truncateIfNecessary(Throwable cause, String exception, String stackTrace) {
+	private @Nullable String[] truncateIfNecessary(Throwable cause, @Nullable String exception, String stackTrace) {
 		boolean truncated = false;
 		String stackTraceAsString = stackTrace;
 		String exceptionMessage = exception == null ? "" : exception;
@@ -295,7 +295,7 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 				}
 			}
 		}
-		return new String[] { stackTraceAsString, truncated ? truncatedExceptionMessage : null };
+		return new @Nullable String[] {stackTraceAsString, truncated ? truncatedExceptionMessage : null};
 	}
 
 	/**
@@ -304,7 +304,7 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 	 * @param cause The cause.
 	 * @return A {@link Map} of additional headers to add.
 	 */
-	protected Map<? extends String, ?> additionalHeaders(Message message, Throwable cause) {
+	protected @Nullable Map<? extends String, ?> additionalHeaders(Message message, Throwable cause) {
 		return null;
 	}
 
@@ -323,7 +323,7 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 	 * Create a String representation of the stack trace.
 	 * @param cause the throwable.
 	 * @return the String.
-	 * @since  2.4.8
+	 * @since 2.4.8
 	 */
 	protected String getStackTraceAsString(Throwable cause) {
 		StringWriter stringWriter = new StringWriter();

@@ -27,10 +27,10 @@ import java.util.Map;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.LongString;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -88,6 +88,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	}
 
 	@Override
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	public MessageProperties toMessageProperties(BasicProperties source, @Nullable Envelope envelope, String charset) {
 		MessageProperties target = new MessageProperties();
 		Map<String, Object> headers = source.getHeaders();
@@ -156,22 +157,22 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	@Override
 	public BasicProperties fromMessageProperties(final MessageProperties source, final String charset) {
 		BasicProperties.Builder target = new BasicProperties.Builder();
-		Map<String, Object> headers = convertHeadersIfNecessary(source);
+		Map<String, @Nullable Object> headers = convertHeadersIfNecessary(source);
 		target.headers(headers)
-			.timestamp(source.getTimestamp())
-			.messageId(source.getMessageId())
-			.userId(source.getUserId())
-			.appId(source.getAppId())
-			.clusterId(source.getClusterId())
-			.type(source.getType());
+				.timestamp(source.getTimestamp())
+				.messageId(source.getMessageId())
+				.userId(source.getUserId())
+				.appId(source.getAppId())
+				.clusterId(source.getClusterId())
+				.type(source.getType());
 		MessageDeliveryMode deliveryMode = source.getDeliveryMode();
 		if (deliveryMode != null) {
 			target.deliveryMode(MessageDeliveryMode.toInt(deliveryMode));
 		}
 		target.expiration(source.getExpiration())
-			.priority(source.getPriority())
-			.contentType(source.getContentType())
-			.contentEncoding(source.getContentEncoding());
+				.priority(source.getPriority())
+				.contentType(source.getContentType())
+				.contentEncoding(source.getContentEncoding());
 		String correlationId = source.getCorrelationId();
 		if (StringUtils.hasText(correlationId)) {
 			target.correlationId(correlationId);
@@ -183,16 +184,16 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		return target.build();
 	}
 
-	private Map<String, Object> convertHeadersIfNecessary(MessageProperties source) {
-		Map<String, Object> headers = source.getHeaders();
+	private Map<String, @Nullable Object> convertHeadersIfNecessary(MessageProperties source) {
+		Map<String, @Nullable Object> headers = source.getHeaders();
 		long retryCount = source.getRetryCount();
 
-		if (CollectionUtils.isEmpty(headers) && retryCount == 0) {
-			return Collections.emptyMap();
+		if (headers.isEmpty() && retryCount == 0) {
+			return Collections.<String, @Nullable Object>emptyMap();
 		}
-		Map<String, Object> writableHeaders = new HashMap<>();
+		Map<String, @Nullable Object> writableHeaders = new HashMap<>();
 		for (Map.Entry<String, Object> entry : headers.entrySet()) {
-			writableHeaders.put(entry.getKey(), this.convertHeaderValueIfNecessary(entry.getValue()));
+			writableHeaders.put(entry.getKey(), convertHeaderValueIfNecessary(entry.getValue()));
 		}
 		if (retryCount > 0) {
 			writableHeaders.put(MessageProperties.RETRY_COUNT, retryCount);
@@ -207,8 +208,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	 * @param valueArg the value.
 	 * @return the converted value.
 	 */
-	@Nullable // NOSONAR complexity
-	private Object convertHeaderValueIfNecessary(@Nullable Object valueArg) {
+	private @Nullable Object convertHeaderValueIfNecessary(@Nullable Object valueArg) {
 		Object value = valueArg;
 		boolean valid = (value instanceof String) || (value instanceof byte[]) // NOSONAR boolean complexity
 				|| (value instanceof Boolean) || (value instanceof Class)
@@ -220,14 +220,14 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 			value = value.toString();
 		}
 		else if (value instanceof Object[] array) {
-			Object[] writableArray = new Object[array.length];
+			@Nullable Object[] writableArray = new Object[array.length];
 			for (int i = 0; i < writableArray.length; i++) {
 				writableArray[i] = convertHeaderValueIfNecessary(array[i]);
 			}
 			value = writableArray;
 		}
 		else if (value instanceof List<?> values) {
-			List<Object> writableList = new ArrayList<>(values.size());
+			List<@Nullable Object> writableList = new ArrayList<>(values.size());
 			for (Object listValue : values) {
 				writableList.add(convertHeaderValueIfNecessary(listValue));
 			}
@@ -235,10 +235,10 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		}
 		else if (value instanceof Map<?, ?>) {
 			@SuppressWarnings("unchecked")
-			Map<String, Object> originalMap = (Map<String, Object>) value;
-			Map<String, Object> writableMap = new HashMap<>(originalMap.size());
+			Map<String, @Nullable Object> originalMap = (Map<String, @Nullable Object>) value;
+			Map<String, @Nullable Object> writableMap = new HashMap<>(originalMap.size());
 			for (Map.Entry<String, Object> entry : originalMap.entrySet()) {
-				writableMap.put(entry.getKey(), this.convertHeaderValueIfNecessary(entry.getValue()));
+				writableMap.put(entry.getKey(), convertHeaderValueIfNecessary(entry.getValue()));
 			}
 			value = writableMap;
 		}
@@ -292,7 +292,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		if (valueArg instanceof Map<?, ?> originalMap) {
 			Map<String, Object> convertedMap = new HashMap<>();
 			originalMap.forEach(
-				(key, value) -> convertedMap.put((String) key, this.convertLongStringIfNecessary(value, charset)));
+					(key, value) -> convertedMap.put((String) key, this.convertLongStringIfNecessary(value, charset)));
 			return convertedMap;
 		}
 

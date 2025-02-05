@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.core;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collection;
@@ -67,7 +68,6 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
 import org.springframework.amqp.core.ReceiveAndReplyMessageCallback;
-import org.springframework.amqp.core.ReplyToAddressCallback;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.ConfirmType;
 import org.springframework.amqp.rabbit.connection.ChannelListener;
@@ -142,12 +142,12 @@ import static org.mockito.Mockito.verify;
  * @author Artem Bilan
  */
 @SpringJUnitConfig
-@RabbitAvailable({ RabbitTemplateIntegrationTests.ROUTE, RabbitTemplateIntegrationTests.REPLY_QUEUE_NAME,
-	RabbitTemplateIntegrationTests.NO_CORRELATION })
-@LogLevels(classes = { RabbitTemplate.class, DirectMessageListenerContainer.class,
-			DirectReplyToMessageListenerContainer.class,
-			RabbitAdmin.class, RabbitTemplateIntegrationTests.class, BrokerRunning.class,
-			ClosingRecoveryListener.class },
+@RabbitAvailable({RabbitTemplateIntegrationTests.ROUTE, RabbitTemplateIntegrationTests.REPLY_QUEUE_NAME,
+		RabbitTemplateIntegrationTests.NO_CORRELATION})
+@LogLevels(classes = {RabbitTemplate.class, DirectMessageListenerContainer.class,
+		DirectReplyToMessageListenerContainer.class,
+		RabbitAdmin.class, RabbitTemplateIntegrationTests.class, BrokerRunning.class,
+		ClosingRecoveryListener.class},
 		level = "DEBUG")
 @DirtiesContext
 public class RabbitTemplateIntegrationTests {
@@ -393,7 +393,7 @@ public class RabbitTemplateIntegrationTests {
 			// empty - race for consumeOk
 		}
 		assertThat(TestUtils.getPropertyValue(this.connectionFactory, "cachedChannelsNonTransactional", List.class)
-				).hasSize(0);
+		).hasSize(0);
 	}
 
 	@Test
@@ -449,19 +449,19 @@ public class RabbitTemplateIntegrationTests {
 
 	@Test
 	public void testSendAndReceiveWithPostProcessor() throws Exception {
-		final String[] strings = new String[] { "1", "2" };
+		final String[] strings = new String[] {"1", "2"};
 		template.convertAndSend(ROUTE, (Object) "message", message -> {
 			message.getMessageProperties().setContentType("text/other");
 			// message.getMessageProperties().setUserId("foo");
 			MessageProperties props = message.getMessageProperties();
 			props.getHeaders().put("strings", strings);
-			props.getHeaders().put("objects", new Object[] { new Foo(), new Foo() });
+			props.getHeaders().put("objects", new Object[] {new Foo(), new Foo()});
 			props.getHeaders().put("bytes", "abc".getBytes());
 			return message;
 		});
 		template.setAfterReceivePostProcessors(message -> {
 			assertThat(message.getMessageProperties().getHeaders().get("strings")).isEqualTo(Arrays.asList(strings));
-			assertThat(message.getMessageProperties().getHeaders().get("objects")).isEqualTo(Arrays.asList(new String[]{"FooAsAString", "FooAsAString"}));
+			assertThat(message.getMessageProperties().getHeaders().get("objects")).isEqualTo(Arrays.asList(new String[] {"FooAsAString", "FooAsAString"}));
 			assertThat((byte[]) message.getMessageProperties().getHeaders().get("bytes")).isEqualTo("abc".getBytes());
 			return message;
 		});
@@ -1183,9 +1183,9 @@ public class RabbitTemplateIntegrationTests {
 				@Override
 				public void doInTransactionWithoutResult(TransactionStatus status) {
 					template.receiveAndReply((ReceiveAndReplyMessageCallback) message -> message,
-							(ReplyToAddressCallback<Message>) (request, reply) -> {
-						throw new PlannedException();
-					});
+							(request, reply) -> {
+								throw new PlannedException();
+							});
 				}
 			});
 			fail("Expected PlannedException");
@@ -1635,7 +1635,7 @@ public class RabbitTemplateIntegrationTests {
 				catch (AmqpException e) {
 					e.printStackTrace();
 					if (e.getCause() != null
-						&& e.getCause().getClass().equals(InterruptedException.class)) {
+							&& e.getCause().getClass().equals(InterruptedException.class)) {
 						Thread.currentThread().interrupt();
 						return;
 					}
@@ -1646,11 +1646,12 @@ public class RabbitTemplateIntegrationTests {
 				}
 			}
 		});
-		System .out .println("Wait for consumer; then bounce broker; then enter after it's back up");
+		PrintStream sout = System.out;
+		sout.println("Wait for consumer; then bounce broker; then enter after it's back up");
 		System.in.read();
 		for (int i = 0; i < 20; i++) {
 			Properties queueProperties = admin.getQueueProperties(ROUTE);
-			System .out .println(queueProperties);
+			sout.println(queueProperties);
 			Thread.sleep(1000);
 		}
 		exec.shutdownNow();
@@ -1729,6 +1730,7 @@ public class RabbitTemplateIntegrationTests {
 		PlannedException() {
 			super("Planned");
 		}
+
 	}
 
 	@SuppressWarnings("serial")

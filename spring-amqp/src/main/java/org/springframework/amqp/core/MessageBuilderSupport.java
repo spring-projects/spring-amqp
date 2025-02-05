@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.springframework.amqp.core;
 import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.beans.BeanUtils;
 
@@ -321,7 +323,7 @@ public abstract class MessageBuilderSupport<T> {
 	}
 
 	public MessageBuilderSupport<T> copyHeadersIfAbsent(Map<String, Object> headers) {
-		Map<String, Object> existingHeaders = this.properties.getHeaders();
+		Map<String, @Nullable Object> existingHeaders = this.properties.getHeaders();
 		for (Entry<String, Object> entry : headers.entrySet()) {
 			if (!existingHeaders.containsKey(entry.getKey())) {
 				existingHeaders.put(entry.getKey(), entry.getValue());

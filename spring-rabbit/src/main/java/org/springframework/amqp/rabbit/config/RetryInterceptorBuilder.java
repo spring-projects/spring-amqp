@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,10 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import java.util.Objects;
+
 import org.aopalliance.intercept.MethodInterceptor;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.rabbit.retry.MessageKeyGenerator;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
@@ -71,13 +74,13 @@ import org.springframework.util.Assert;
  */
 public abstract class RetryInterceptorBuilder<B extends RetryInterceptorBuilder<B, T>, T extends MethodInterceptor> {
 
-	private RetryOperations retryOperations;
+	private @Nullable RetryOperations retryOperations;
 
 	private final RetryTemplate retryTemplate = new RetryTemplate();
 
 	private final SimpleRetryPolicy simpleRetryPolicy = new SimpleRetryPolicy();
 
-	private MessageRecoverer messageRecoverer;
+	private @Nullable MessageRecoverer messageRecoverer;
 
 	private boolean templateAltered;
 
@@ -198,16 +201,10 @@ public abstract class RetryInterceptorBuilder<B extends RetryInterceptorBuilder<
 		if (this.messageRecoverer != null) {
 			factoryBean.setMessageRecoverer(this.messageRecoverer);
 		}
-		if (this.retryOperations != null) {
-			factoryBean.setRetryOperations(this.retryOperations);
-		}
-		else {
-			factoryBean.setRetryOperations(this.retryTemplate);
-		}
+		factoryBean.setRetryOperations(Objects.requireNonNullElse(this.retryOperations, this.retryTemplate));
 	}
 
 	public abstract T build();
-
 
 	/**
 	 * Builder for a stateful interceptor.
@@ -218,9 +215,9 @@ public abstract class RetryInterceptorBuilder<B extends RetryInterceptorBuilder<
 		private final StatefulRetryOperationsInterceptorFactoryBean factoryBean =
 				new StatefulRetryOperationsInterceptorFactoryBean();
 
-		private MessageKeyGenerator messageKeyGenerator;
+		private @Nullable MessageKeyGenerator messageKeyGenerator;
 
-		private NewMessageIdentifier newMessageIdentifier;
+		private @Nullable NewMessageIdentifier newMessageIdentifier;
 
 		StatefulRetryInterceptorBuilder() {
 		}
@@ -259,7 +256,6 @@ public abstract class RetryInterceptorBuilder<B extends RetryInterceptorBuilder<
 		}
 
 	}
-
 
 	/**
 	 * Builder for a stateless interceptor.

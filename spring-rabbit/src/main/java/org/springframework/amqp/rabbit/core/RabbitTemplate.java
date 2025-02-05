@@ -52,11 +52,11 @@ import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
-import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.AmqpMessageReturnedException;
@@ -112,7 +112,6 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
-import org.springframework.lang.Nullable;
 import org.springframework.retry.RecoveryCallback;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.support.RetryTemplate;
@@ -187,7 +186,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	/*
 	 * Not static as normal since we want this TL to be scoped within the template instance.
 	 */
-	private final ThreadLocal<Channel> dedicatedChannels = new ThreadLocal<>();
+	private final ThreadLocal<@Nullable Channel> dedicatedChannels = new ThreadLocal<>();
 
 	private final AtomicInteger activeTemplateCallbacks = new AtomicInteger();
 
@@ -215,6 +214,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	private final Map<String, Object> consumerArgs = new HashMap<>();
 
+	@SuppressWarnings("NullAway.Init")
 	private ApplicationContext applicationContext;
 
 	private String exchange = DEFAULT_EXCHANGE;
@@ -222,7 +222,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	private String routingKey = DEFAULT_ROUTING_KEY;
 
 	// The default queue name that will be used for synchronous receives.
-	private String defaultReceiveQueue;
+	private @Nullable String defaultReceiveQueue;
 
 	private long receiveTimeout = 0;
 
@@ -234,40 +234,39 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	private String encoding = DEFAULT_ENCODING;
 
-	private String replyAddress;
+	private @Nullable String replyAddress;
 
-	@Nullable
-	private ConfirmCallback confirmCallback;
+	private @Nullable ConfirmCallback confirmCallback;
 
-	private ReturnsCallback returnsCallback;
+	private @Nullable ReturnsCallback returnsCallback;
 
 	private Expression mandatoryExpression = new ValueExpression<>(false);
 
-	private String correlationKey = null;
+	private @Nullable String correlationKey = null;
 
-	private RetryTemplate retryTemplate;
+	private @Nullable RetryTemplate retryTemplate;
 
-	private RecoveryCallback<?> recoveryCallback;
+	private @Nullable RecoveryCallback<?> recoveryCallback;
 
-	private Expression sendConnectionFactorySelectorExpression;
+	private @Nullable Expression sendConnectionFactorySelectorExpression;
 
-	private Expression receiveConnectionFactorySelectorExpression;
+	private @Nullable Expression receiveConnectionFactorySelectorExpression;
 
 	private boolean useDirectReplyToContainer = true;
 
 	private boolean useTemporaryReplyQueues;
 
-	private Collection<MessagePostProcessor> beforePublishPostProcessors;
+	private @Nullable Collection<MessagePostProcessor> beforePublishPostProcessors;
 
-	private Collection<MessagePostProcessor> afterReceivePostProcessors;
+	private @Nullable Collection<MessagePostProcessor> afterReceivePostProcessors;
 
-	private CorrelationDataPostProcessor correlationDataPostProcessor;
+	private @Nullable CorrelationDataPostProcessor correlationDataPostProcessor;
 
-	private Expression userIdExpression;
+	private @Nullable Expression userIdExpression;
 
 	private String beanName = "rabbitTemplate";
 
-	private Executor taskExecutor;
+	private @Nullable Executor taskExecutor;
 
 	private boolean userCorrelationId;
 
@@ -275,14 +274,13 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	private boolean noLocalReplyConsumer;
 
-	private ErrorHandler replyErrorHandler;
+	private @Nullable ErrorHandler replyErrorHandler;
 
 	private boolean useChannelForCorrelation;
 
 	private boolean observationEnabled;
 
-	@Nullable
-	private RabbitTemplateObservationConvention observationConvention;
+	private @Nullable RabbitTemplateObservationConvention observationConvention;
 
 	private volatile boolean usingFastReplyTo;
 
@@ -295,8 +293,9 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	/**
 	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
 	 */
+	@SuppressWarnings("this-escape")
 	public RabbitTemplate() {
-		initDefaultStrategies(); // NOSONAR - intentionally overridable; other assertions will check
+		initDefaultStrategies();
 	}
 
 	/**
@@ -395,8 +394,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @return the queue or null if not configured.
 	 * @since 2.2.22
 	 */
-	@Nullable
-	public String getDefaultReceiveQueue() {
+	public @Nullable String getDefaultReceiveQueue() {
 		return this.defaultReceiveQueue;
 	}
 
@@ -638,8 +636,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @return configured before post {@link MessagePostProcessor}s or {@code null}.
 	 * @since 3.2
 	 */
-	@Nullable
-	public Collection<MessagePostProcessor> getBeforePublishPostProcessors() {
+	public @Nullable Collection<MessagePostProcessor> getBeforePublishPostProcessors() {
 		return this.beforePublishPostProcessors != null
 				? Collections.unmodifiableCollection(this.beforePublishPostProcessors)
 				: null;
@@ -717,8 +714,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @return configured after receive {@link MessagePostProcessor}s or {@code null}.
 	 * @since 2.1.5
 	 */
-	@Nullable
-	public Collection<MessagePostProcessor> getAfterReceivePostProcessors() {
+	public @Nullable Collection<MessagePostProcessor> getAfterReceivePostProcessors() {
 		return this.afterReceivePostProcessors != null
 				? Collections.unmodifiableCollection(this.afterReceivePostProcessors)
 				: null;
@@ -911,8 +907,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @since 1.5
 	 */
 	@Override
-	@Nullable
-	public Collection<String> expectedQueueNames() {
+	public @Nullable Collection<String> expectedQueueNames() {
 		this.isListener = true;
 		Collection<String> replyQueue = null;
 		if (this.replyAddress == null || this.replyAddress.equals(Address.AMQ_RABBITMQ_REPLY_TO)) {
@@ -920,7 +915,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 		else {
 			Address address = new Address(this.replyAddress);
-			if ("".equals(address.getExchangeName())) {
+			if (address.getExchangeName().isEmpty()) {
 				replyQueue = Collections.singletonList(address.getRoutingKey());
 			}
 			else {
@@ -939,14 +934,16 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @return the collection of correlation data for which confirms have
 	 * not been received or null if no such confirms exist.
 	 */
-	@Nullable
-	public Collection<CorrelationData> getUnconfirmed(long age) {
+	public @Nullable Collection<CorrelationData> getUnconfirmed(long age) {
 		Set<CorrelationData> unconfirmed = new HashSet<>();
 		long cutoffTime = System.currentTimeMillis() - age;
 		for (Channel channel : this.publisherConfirmChannels.keySet()) {
 			Collection<PendingConfirm> confirms = ((PublisherCallbackChannel) channel).expire(this, cutoffTime);
 			for (PendingConfirm confirm : confirms) {
-				unconfirmed.add(confirm.getCorrelationData());
+				CorrelationData correlationData = confirm.getCorrelationData();
+				if (correlationData != null) {
+					unconfirmed.add(correlationData);
+				}
 			}
 		}
 		return !unconfirmed.isEmpty() ? unconfirmed : null;
@@ -1063,6 +1060,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * This method is invoked once only - when the first message is sent, from a locked block.
 	 * @return true to use direct reply-to.
 	 */
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	protected boolean useDirectReplyTo() {
 		if (this.useTemporaryReplyQueues) {
 			if (this.replyAddress != null) {
@@ -1074,7 +1072,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 		if (this.replyAddress == null || Address.AMQ_RABBITMQ_REPLY_TO.equals(this.replyAddress)) {
 			try {
-				return execute(channel -> { // NOSONAR - never null
+				return execute(channel -> {
 					channel.queueDeclarePassive(Address.AMQ_RABBITMQ_REPLY_TO);
 					return true;
 				});
@@ -1102,7 +1100,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			return false;
 		}
 		if (logger.isDebugEnabled()) {
-			logger.debug("IO error, deferring directReplyTo detection: " + ex.toString());
+			logger.debug("IO error, deferring directReplyTo detection: " + ex);
 		}
 		return true;
 	}
@@ -1128,8 +1126,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public void send(final String exchange, final String routingKey,
-			final Message message, @Nullable final CorrelationData correlationData)
+	public void send(@Nullable String exchange, @Nullable String routingKey,
+			final Message message, @Nullable CorrelationData correlationData)
 			throws AmqpException {
 
 		execute(channel -> {
@@ -1248,14 +1246,12 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	@Nullable
-	public Message receive() throws AmqpException {
+	public @Nullable Message receive() throws AmqpException {
 		return receive(getRequiredQueue());
 	}
 
 	@Override
-	@Nullable
-	public Message receive(String queueName) {
+	public @Nullable Message receive(String queueName) {
 		if (this.receiveTimeout == 0) {
 			return doReceiveNoWait(queueName);
 		}
@@ -1270,8 +1266,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @return The message, or null if none immediately available.
 	 * @since 1.5
 	 */
-	@Nullable
-	protected Message doReceiveNoWait(final String queueName) {
+	protected @Nullable Message doReceiveNoWait(final String queueName) {
 		Message message = execute(channel -> {
 			GetResponse response = channel.basicGet(queueName, !isChannelTransacted());
 			// Response can be null is the case that there is no message on the queue.
@@ -1296,8 +1291,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	@Nullable
-	public Message receive(long timeoutMillis) throws AmqpException {
+	public @Nullable Message receive(long timeoutMillis) throws AmqpException {
 		String queue = getRequiredQueue();
 		if (timeoutMillis == 0) {
 			return doReceiveNoWait(queue);
@@ -1308,8 +1302,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	@Nullable
-	public Message receive(final String queueName, final long timeoutMillis) {
+	public @Nullable Message receive(final String queueName, final long timeoutMillis) {
 		Message message = execute(channel -> {
 			Delivery delivery = consumeDelivery(channel, queueName, timeoutMillis);
 			if (delivery == null) {
@@ -1335,55 +1328,51 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	@Nullable
-	public Object receiveAndConvert() throws AmqpException {
+	public @Nullable Object receiveAndConvert() throws AmqpException {
 		return receiveAndConvert(getRequiredQueue());
 	}
 
 	@Override
-	@Nullable
-	public Object receiveAndConvert(String queueName) throws AmqpException {
+	public @Nullable Object receiveAndConvert(String queueName) throws AmqpException {
 		return receiveAndConvert(queueName, this.receiveTimeout);
 	}
 
 	@Override
-	@Nullable
-	public Object receiveAndConvert(long timeoutMillis) throws AmqpException {
+	public @Nullable Object receiveAndConvert(long timeoutMillis) throws AmqpException {
 		return receiveAndConvert(getRequiredQueue(), timeoutMillis);
 	}
 
 	@Override
-	@Nullable
-	public Object receiveAndConvert(String queueName, long timeoutMillis) throws AmqpException {
+	public @Nullable Object receiveAndConvert(String queueName, long timeoutMillis) throws AmqpException {
 		Message response = timeoutMillis == 0 ? doReceiveNoWait(queueName) : receive(queueName, timeoutMillis);
 		if (response != null) {
-			return getRequiredMessageConverter().fromMessage(response);
+			return getMessageConverter().fromMessage(response);
 		}
 		return null;
 	}
 
 	@Override
-	@Nullable
-	public <T> T receiveAndConvert(ParameterizedTypeReference<T> type) throws AmqpException {
+	public <T> @Nullable T receiveAndConvert(ParameterizedTypeReference<T> type) throws AmqpException {
 		return receiveAndConvert(getRequiredQueue(), type);
 	}
 
 	@Override
-	@Nullable
-	public <T> T receiveAndConvert(String queueName, ParameterizedTypeReference<T> type) throws AmqpException {
+	public <T> @Nullable T receiveAndConvert(String queueName, ParameterizedTypeReference<T> type)
+			throws AmqpException {
+
 		return receiveAndConvert(queueName, this.receiveTimeout, type);
 	}
 
 	@Override
-	@Nullable
-	public <T> T receiveAndConvert(long timeoutMillis, ParameterizedTypeReference<T> type) throws AmqpException {
+	public <T> @Nullable T receiveAndConvert(long timeoutMillis, ParameterizedTypeReference<T> type)
+			throws AmqpException {
+
 		return receiveAndConvert(getRequiredQueue(), timeoutMillis, type);
 	}
 
 	@Override
 	@SuppressWarnings(UNCHECKED)
-	@Nullable
-	public <T> T receiveAndConvert(String queueName, long timeoutMillis, ParameterizedTypeReference<T> type)
+	public <T> @Nullable T receiveAndConvert(String queueName, long timeoutMillis, ParameterizedTypeReference<T> type)
 			throws AmqpException {
 
 		Message response = timeoutMillis == 0 ? doReceiveNoWait(queueName) : receive(queueName, timeoutMillis);
@@ -1426,7 +1415,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	public <R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback,
 			ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
 
-		return receiveAndReply(this.getRequiredQueue(), callback, replyToAddressCallback);
+		return receiveAndReply(getRequiredQueue(), callback, replyToAddressCallback);
 	}
 
 	@Override
@@ -1490,8 +1479,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		return receiveMessage;
 	}
 
-	@Nullable // NOSONAR complexity
-	private Delivery consumeDelivery(Channel channel, String queueName, long timeoutMillis)
+	private @Nullable Delivery consumeDelivery(Channel channel, String queueName, long timeoutMillis)
 			throws IOException {
 
 		Delivery delivery = null;
@@ -1561,7 +1549,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 		Object receive = receiveMessage;
 		if (!(ReceiveAndReplyMessageCallback.class.isAssignableFrom(callback.getClass()))) {
-			receive = getRequiredMessageConverter().fromMessage(receiveMessage);
+			receive = getMessageConverter().fromMessage(receiveMessage);
 		}
 
 		S reply;
@@ -1613,7 +1601,9 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 					correlation = messageId;
 				}
 			}
-			replyMessageProperties.setCorrelationId((String) correlation);
+			if (correlation != null) {
+				replyMessageProperties.setCorrelationId((String) correlation);
+			}
 		}
 		else {
 			replyMessageProperties.setHeader(this.correlationKey, correlation);
@@ -1629,117 +1619,101 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	@Nullable
-	public Message sendAndReceive(final Message message) throws AmqpException {
+	public @Nullable Message sendAndReceive(final Message message) throws AmqpException {
 		return sendAndReceive(message, null);
 	}
 
-	@Nullable
-	public Message sendAndReceive(final Message message, @Nullable CorrelationData correlationData)
+	public @Nullable Message sendAndReceive(final Message message, @Nullable CorrelationData correlationData)
 			throws AmqpException {
 
 		return doSendAndReceive(this.exchange, this.routingKey, message, correlationData);
 	}
 
 	@Override
-	@Nullable
-	public Message sendAndReceive(final String routingKey, final Message message) throws AmqpException {
+	public @Nullable Message sendAndReceive(final String routingKey, final Message message) throws AmqpException {
 		return sendAndReceive(routingKey, message, null);
 	}
 
-	@Nullable
-	public Message sendAndReceive(final String routingKey, final Message message,
+	public @Nullable Message sendAndReceive(final String routingKey, final Message message,
 			@Nullable CorrelationData correlationData) throws AmqpException {
 
 		return doSendAndReceive(this.exchange, routingKey, message, correlationData);
 	}
 
 	@Override
-	@Nullable
-	public Message sendAndReceive(final String exchange, final String routingKey, final Message message)
+	public @Nullable Message sendAndReceive(final String exchange, final String routingKey, final Message message)
 			throws AmqpException {
 
 		return sendAndReceive(exchange, routingKey, message, null);
 	}
 
-	@Nullable
-	public Message sendAndReceive(final String exchange, final String routingKey, final Message message,
+	public @Nullable Message sendAndReceive(final String exchange, final String routingKey, final Message message,
 			@Nullable CorrelationData correlationData) throws AmqpException {
 
 		return doSendAndReceive(exchange, routingKey, message, correlationData);
 	}
 
 	@Override
-	@Nullable
-	public Object convertSendAndReceive(final Object message) throws AmqpException {
+	public @Nullable Object convertSendAndReceive(final Object message) throws AmqpException {
 		return convertSendAndReceive(message, (CorrelationData) null);
 	}
 
 	@Override
-	@Nullable
-	public Object convertSendAndReceive(final Object message, @Nullable CorrelationData correlationData)
+	public @Nullable Object convertSendAndReceive(final Object message, @Nullable CorrelationData correlationData)
 			throws AmqpException {
 
 		return convertSendAndReceive(this.exchange, this.routingKey, message, null, correlationData);
 	}
 
 	@Override
-	@Nullable
-	public Object convertSendAndReceive(final String routingKey, final Object message) throws AmqpException {
+	public @Nullable Object convertSendAndReceive(final String routingKey, final Object message) throws AmqpException {
 		return convertSendAndReceive(routingKey, message, (CorrelationData) null);
 	}
 
 	@Override
-	@Nullable
-	public Object convertSendAndReceive(final String routingKey, final Object message,
+	public @Nullable Object convertSendAndReceive(final String routingKey, final Object message,
 			@Nullable CorrelationData correlationData) throws AmqpException {
 
 		return convertSendAndReceive(this.exchange, routingKey, message, null, correlationData);
 	}
 
 	@Override
-	@Nullable
-	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message)
+	public @Nullable Object convertSendAndReceive(final String exchange, final String routingKey, final Object message)
 			throws AmqpException {
 
 		return convertSendAndReceive(exchange, routingKey, message, (CorrelationData) null);
 	}
 
 	@Override
-	@Nullable
-	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message,
+	public @Nullable Object convertSendAndReceive(final String exchange, final String routingKey, final Object message,
 			@Nullable CorrelationData correlationData) throws AmqpException {
 
 		return convertSendAndReceive(exchange, routingKey, message, null, correlationData);
 	}
 
 	@Override
-	@Nullable
-	public Object convertSendAndReceive(final Object message, final MessagePostProcessor messagePostProcessor)
+	public @Nullable Object convertSendAndReceive(final Object message, final MessagePostProcessor messagePostProcessor)
 			throws AmqpException {
 
 		return convertSendAndReceive(message, messagePostProcessor, null);
 	}
 
 	@Override
-	@Nullable
-	public Object convertSendAndReceive(final Object message, final MessagePostProcessor messagePostProcessor,
+	public @Nullable Object convertSendAndReceive(final Object message, final MessagePostProcessor messagePostProcessor,
 			@Nullable CorrelationData correlationData) throws AmqpException {
 
 		return convertSendAndReceive(this.exchange, this.routingKey, message, messagePostProcessor, correlationData);
 	}
 
 	@Override
-	@Nullable
-	public Object convertSendAndReceive(final String routingKey, final Object message,
+	public @Nullable Object convertSendAndReceive(final String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor) throws AmqpException {
 
 		return convertSendAndReceive(routingKey, message, messagePostProcessor, null);
 	}
 
 	@Override
-	@Nullable
-	public Object convertSendAndReceive(final String routingKey, final Object message,
+	public @Nullable Object convertSendAndReceive(final String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor, @Nullable CorrelationData correlationData)
 			throws AmqpException {
 
@@ -1747,38 +1721,34 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	@Nullable
-	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message,
+	public @Nullable Object convertSendAndReceive(final String exchange, final String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor) throws AmqpException {
 
 		return convertSendAndReceive(exchange, routingKey, message, messagePostProcessor, null);
 	}
 
 	@Override
-	@Nullable
-	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message,
-			@Nullable final MessagePostProcessor messagePostProcessor,
-			@Nullable final CorrelationData correlationData) throws AmqpException {
+	public @Nullable Object convertSendAndReceive(String exchange, String routingKey, Object message,
+			@Nullable MessagePostProcessor messagePostProcessor,
+			@Nullable CorrelationData correlationData) throws AmqpException {
 
 		Message replyMessage = convertSendAndReceiveRaw(exchange, routingKey, message, messagePostProcessor,
 				correlationData);
 		if (replyMessage == null) {
 			return null;
 		}
-		return this.getRequiredMessageConverter().fromMessage(replyMessage);
+		return getMessageConverter().fromMessage(replyMessage);
 	}
 
 	@Override
-	@Nullable
-	public <T> T convertSendAndReceiveAsType(final Object message, ParameterizedTypeReference<T> responseType)
+	public <T> @Nullable T convertSendAndReceiveAsType(final Object message, ParameterizedTypeReference<T> responseType)
 			throws AmqpException {
 
 		return convertSendAndReceiveAsType(message, (CorrelationData) null, responseType);
 	}
 
 	@Override
-	@Nullable
-	public <T> T convertSendAndReceiveAsType(final Object message, @Nullable CorrelationData correlationData,
+	public <T> @Nullable T convertSendAndReceiveAsType(final Object message, @Nullable CorrelationData correlationData,
 			ParameterizedTypeReference<T> responseType) throws AmqpException {
 
 		return convertSendAndReceiveAsType(this.exchange, this.routingKey, message, null, correlationData,
@@ -1786,16 +1756,14 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	@Nullable
-	public <T> T convertSendAndReceiveAsType(final String routingKey, final Object message,
+	public <T> @Nullable T convertSendAndReceiveAsType(final String routingKey, final Object message,
 			ParameterizedTypeReference<T> responseType) throws AmqpException {
 
 		return convertSendAndReceiveAsType(routingKey, message, (CorrelationData) null, responseType);
 	}
 
 	@Override
-	@Nullable
-	public <T> T convertSendAndReceiveAsType(final String routingKey, final Object message,
+	public <T> @Nullable T convertSendAndReceiveAsType(final String routingKey, final Object message,
 			@Nullable CorrelationData correlationData, ParameterizedTypeReference<T> responseType)
 			throws AmqpException {
 
@@ -1803,16 +1771,14 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	@Nullable
-	public <T> T convertSendAndReceiveAsType(final String exchange, final String routingKey, final Object message,
+	public <T> @Nullable T convertSendAndReceiveAsType(final String exchange, final String routingKey, Object message,
 			ParameterizedTypeReference<T> responseType) throws AmqpException {
 
 		return convertSendAndReceiveAsType(exchange, routingKey, message, (CorrelationData) null, responseType);
 	}
 
 	@Override
-	@Nullable
-	public <T> T convertSendAndReceiveAsType(final Object message,
+	public <T> @Nullable T convertSendAndReceiveAsType(final Object message,
 			@Nullable final MessagePostProcessor messagePostProcessor,
 			ParameterizedTypeReference<T> responseType) throws AmqpException {
 
@@ -1820,9 +1786,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	@Nullable
-	public <T> T convertSendAndReceiveAsType(final Object message,
-			@Nullable final MessagePostProcessor messagePostProcessor,
+	public <T> @Nullable T convertSendAndReceiveAsType(final Object message,
+			@Nullable MessagePostProcessor messagePostProcessor,
 			@Nullable CorrelationData correlationData, ParameterizedTypeReference<T> responseType)
 			throws AmqpException {
 
@@ -1831,8 +1796,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	@Nullable
-	public <T> T convertSendAndReceiveAsType(final String routingKey, final Object message,
+	public <T> @Nullable T convertSendAndReceiveAsType(final String routingKey, final Object message,
 			@Nullable final MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<T> responseType)
 			throws AmqpException {
 
@@ -1840,9 +1804,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	@Nullable
-	public <T> T convertSendAndReceiveAsType(final String routingKey, final Object message,
-			@Nullable final MessagePostProcessor messagePostProcessor, @Nullable CorrelationData correlationData,
+	public <T> @Nullable T convertSendAndReceiveAsType(final String routingKey, final Object message,
+			@Nullable MessagePostProcessor messagePostProcessor, @Nullable CorrelationData correlationData,
 			ParameterizedTypeReference<T> responseType) throws AmqpException {
 
 		return convertSendAndReceiveAsType(this.exchange, routingKey, message, messagePostProcessor, correlationData,
@@ -1850,8 +1813,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	@Nullable
-	public <T> T convertSendAndReceiveAsType(final String exchange, final String routingKey, final Object message,
+	public <T> @Nullable T convertSendAndReceiveAsType(final String exchange, final String routingKey, Object message,
 			final MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<T> responseType)
 			throws AmqpException {
 
@@ -1860,10 +1822,9 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	@Override
 	@SuppressWarnings(UNCHECKED)
-	@Nullable
-	public <T> T convertSendAndReceiveAsType(final String exchange, final String routingKey, final Object message,
-			@Nullable final MessagePostProcessor messagePostProcessor, @Nullable final CorrelationData correlationData,
-			ParameterizedTypeReference<T> responseType) throws AmqpException {
+	public <T> @Nullable T convertSendAndReceiveAsType(@Nullable String exchange, @Nullable String routingKey,
+			Object message, @Nullable MessagePostProcessor messagePostProcessor,
+			@Nullable CorrelationData correlationData, ParameterizedTypeReference<T> responseType) throws AmqpException {
 
 		Message replyMessage = convertSendAndReceiveRaw(exchange, routingKey, message, messagePostProcessor,
 				correlationData);
@@ -1885,10 +1846,9 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @return the reply message or null if a timeout occurs.
 	 * @since 1.6.6
 	 */
-	@Nullable
-	protected Message convertSendAndReceiveRaw(final String exchange, final String routingKey, final Object message,
-			@Nullable final MessagePostProcessor messagePostProcessor,
-			@Nullable final CorrelationData correlationData) {
+	protected @Nullable Message convertSendAndReceiveRaw(@Nullable String exchange, @Nullable String routingKey,
+			Object message, @Nullable MessagePostProcessor messagePostProcessor,
+			@Nullable CorrelationData correlationData) {
 
 		Message requestMessage = convertMessageIfNecessary(message);
 		if (messagePostProcessor != null) {
@@ -1902,7 +1862,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		if (object instanceof Message msg) {
 			return msg;
 		}
-		return getRequiredMessageConverter().toMessage(object, new MessageProperties());
+		return getMessageConverter().toMessage(object, new MessageProperties());
 	}
 
 	/**
@@ -1914,9 +1874,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @param correlationData the correlation data for confirms
 	 * @return the message that is received in reply
 	 */
-	@Nullable
-	protected Message doSendAndReceive(final String exchange, final String routingKey, final Message message,
-			@Nullable CorrelationData correlationData) {
+	protected @Nullable Message doSendAndReceive(@Nullable String exchange, @Nullable String routingKey,
+			Message message, @Nullable CorrelationData correlationData) {
 
 		if (!this.evaluatedFastReplyTo) {
 			this.fastReplyToLock.lock();
@@ -1941,9 +1900,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 	}
 
-	@Nullable
-	protected Message doSendAndReceiveWithTemporary(final String exchange, final String routingKey,
-			final Message message, @Nullable final CorrelationData correlationData) {
+	protected @Nullable Message doSendAndReceiveWithTemporary(@Nullable String exchange, @Nullable String routingKey,
+			final Message message, @Nullable CorrelationData correlationData) {
 
 		return execute(channel -> {
 			final PendingReply pendingReply = new PendingReply();
@@ -2017,20 +1975,18 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		RabbitUtils.cancel(channel, consumer.getConsumerTag());
 	}
 
-	@Nullable
-	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message,
-			@Nullable final CorrelationData correlationData) {
+	protected @Nullable Message doSendAndReceiveWithFixed(@Nullable String exchange, @Nullable String routingKey,
+			Message message, @Nullable CorrelationData correlationData) {
 
 		Assert.state(this.isListener, () -> "RabbitTemplate is not configured as MessageListener - "
 				+ "cannot use a 'replyAddress': " + this.replyAddress);
-		return execute(channel -> {
-			return doSendAndReceiveAsListener(exchange, routingKey, message, correlationData, channel, false);
-		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));
+		return execute(channel ->
+						doSendAndReceiveAsListener(exchange, routingKey, message, correlationData, channel, false),
+				obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));
 	}
 
-	@Nullable
-	private Message doSendAndReceiveWithDirect(String exchange, String routingKey, Message message,
-			@Nullable CorrelationData correlationData) {
+	private @Nullable Message doSendAndReceiveWithDirect(@Nullable String exchange, @Nullable String routingKey,
+			Message message, @Nullable CorrelationData correlationData) {
 
 		ConnectionFactory connectionFactory = obtainTargetConnectionFactory(
 				this.sendConnectionFactorySelectorExpression, message);
@@ -2093,9 +2049,9 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		return container;
 	}
 
-	@Nullable
-	private Message doSendAndReceiveAsListener(final String exchange, final String routingKey, final Message message,
-			@Nullable final CorrelationData correlationData, Channel channel, boolean noCorrelation) throws Exception { // NOSONAR
+	private @Nullable Message doSendAndReceiveAsListener(@Nullable String exchange, @Nullable String routingKey,
+			Message message, @Nullable CorrelationData correlationData, Channel channel, boolean noCorrelation)
+			throws Exception { // NOSONAR
 
 		final PendingReply pendingReply = new PendingReply();
 		String messageTag = null;
@@ -2119,7 +2075,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		if (logger.isDebugEnabled()) {
 			logger.debug("Sending message with tag " + messageTag);
 		}
-		Message reply = null;
+		Message reply;
 		try {
 			reply = exchangeMessages(exchange, routingKey, message, correlationData, channel, pendingReply,
 					messageTag);
@@ -2170,9 +2126,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 	}
 
-	@Nullable
-	private Message exchangeMessages(final String exchange, final String routingKey, final Message message,
-			@Nullable final CorrelationData correlationData, Channel channel, final PendingReply pendingReply,
+	private @Nullable Message exchangeMessages(@Nullable String exchange, @Nullable String routingKey, Message message,
+			@Nullable CorrelationData correlationData, Channel channel, final PendingReply pendingReply,
 			String messageTag) throws InterruptedException {
 
 		Message reply;
@@ -2194,7 +2149,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @param correlationId the correlationId
 	 * @since 2.1.2
 	 */
-	protected void replyTimedOut(String correlationId) {
+	protected void replyTimedOut(@Nullable String correlationId) {
 		// NOSONAR
 	}
 
@@ -2210,14 +2165,12 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	@Nullable
-	public <T> T execute(ChannelCallback<T> action) {
+	public <T> @Nullable T execute(ChannelCallback<T> action) {
 		return execute(action, getConnectionFactory());
 	}
 
 	@SuppressWarnings(UNCHECKED)
-	@Nullable
-	private <T> T execute(final ChannelCallback<T> action, final ConnectionFactory connectionFactory) {
+	private <T> @Nullable T execute(final ChannelCallback<T> action, final ConnectionFactory connectionFactory) {
 		if (this.retryTemplate != null) {
 			try {
 				return this.retryTemplate.execute(
@@ -2236,8 +2189,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 	}
 
-	@Nullable
-	private <T> T doExecute(ChannelCallback<T> action, ConnectionFactory connectionFactory) { // NOSONAR complexity
+	private <T> @Nullable T doExecute(ChannelCallback<T> action, ConnectionFactory connectionFactory) { // NOSONAR complexity
 		Assert.notNull(action, "Callback object must not be null");
 		Channel channel = null;
 		boolean invokeScope = false;
@@ -2261,14 +2213,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			else {
 				connection = ConnectionFactoryUtils.createConnection(connectionFactory,
 						this.usePublisherConnection); // NOSONAR - RabbitUtils closes
-				if (connection == null) {
-					throw new IllegalStateException("Connection factory returned a null connection");
-				}
 				try {
 					channel = connection.createChannel(false);
-					if (channel == null) {
-						throw new IllegalStateException("Connection returned a null channel");
-					}
 				}
 				catch (RuntimeException e) {
 					RabbitUtils.closeConnection(connection);
@@ -2283,7 +2229,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			return invokeAction(action, connectionFactory, channel);
 		}
 		catch (Exception ex) {
-			if (isChannelLocallyTransacted(channel)) {
+			if (isChannelLocallyTransacted(channel) && resourceHolder != null) {
 				resourceHolder.rollbackAll();
 			}
 			throw convertRabbitAccessException(ex);
@@ -2307,8 +2253,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 	}
 
-	@Nullable
-	private <T> T invokeAction(ChannelCallback<T> action, ConnectionFactory connectionFactory, Channel channel)
+	private <T> @Nullable T invokeAction(ChannelCallback<T> action, ConnectionFactory connectionFactory, Channel channel)
 			throws Exception { // NOSONAR see the callback
 
 		if (isPublisherConfirmsOrReturns(connectionFactory)) {
@@ -2323,9 +2268,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	@Nullable
-	public <T> T invoke(OperationsCallback<T> action, @Nullable com.rabbitmq.client.ConfirmCallback acks,
-			@Nullable com.rabbitmq.client.ConfirmCallback nacks) {
+	public <T> @Nullable T invoke(OperationsCallback<T> action, com.rabbitmq.client.@Nullable ConfirmCallback acks,
+			com.rabbitmq.client.@Nullable ConfirmCallback nacks) {
 
 		final Channel currentChannel = this.dedicatedChannels.get();
 		Assert.state(currentChannel == null, () -> "Nested invoke() calls are not supported; channel '" + currentChannel
@@ -2348,15 +2292,9 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			if (this.usePublisherConnection && connectionFactory.getPublisherConnectionFactory() != null) {
 				connectionFactory = connectionFactory.getPublisherConnectionFactory();
 			}
-			connection = connectionFactory.createConnection(); // NOSONAR - RabbitUtils
-			if (connection == null) {
-				throw new IllegalStateException("Connection factory returned a null connection");
-			}
+			connection = connectionFactory.createConnection();
 			try {
 				channel = connection.createChannel(false);
-				if (channel == null) {
-					throw new IllegalStateException("Connection returned a null channel");
-				}
 				if (!connectionFactory.isPublisherConfirms() && !connectionFactory.isSimplePublisherConfirms()) {
 					RabbitUtils.setPhysicalCloseRequired(channel, true);
 				}
@@ -2376,9 +2314,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 	}
 
-	@Nullable
-	private ConfirmListener addConfirmListener(@Nullable com.rabbitmq.client.ConfirmCallback acks,
-			@Nullable com.rabbitmq.client.ConfirmCallback nacks, Channel channel) {
+	private @Nullable ConfirmListener addConfirmListener(com.rabbitmq.client.@Nullable ConfirmCallback acks,
+			com.rabbitmq.client.@Nullable ConfirmCallback nacks, Channel channel) {
 
 		ConfirmListener listener = null;
 		if (acks != null && nacks != null && channel instanceof ChannelProxy proxy
@@ -2391,7 +2328,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	private void cleanUpAfterAction(@Nullable RabbitResourceHolder resourceHolder, @Nullable Connection connection,
 			@Nullable Channel channel, @Nullable ConfirmListener listener) {
 
-		if (listener != null) {
+		if (channel != null && listener != null) {
 			channel.removeConfirmListener(listener);
 		}
 		this.activeTemplateCallbacks.decrementAndGet();
@@ -2451,7 +2388,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @param mandatory The mandatory flag.
 	 * @param correlationData The correlation data.
 	 */
-	public void doSend(Channel channel, String exchangeArg, String routingKeyArg, Message message,
+	public void doSend(Channel channel, @Nullable String exchangeArg, @Nullable String routingKeyArg, Message message,
 			boolean mandatory, @Nullable CorrelationData correlationData) {
 
 		String exch = nullSafeExchange(exchangeArg);
@@ -2499,7 +2436,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		ObservationRegistry registry = getObservationRegistry();
 		Observation observation = RabbitTemplateObservation.TEMPLATE_OBSERVATION.observation(this.observationConvention,
 				DefaultRabbitTemplateObservationConvention.INSTANCE,
-					() -> new RabbitMessageSenderContext(message, this.beanName, exch, rKey), registry);
+				() -> new RabbitMessageSenderContext(message, this.beanName, exch, rKey), registry);
 
 		observation.observe(() -> sendToRabbit(channel, exch, rKey, mandatory, message));
 	}
@@ -2543,11 +2480,13 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 		if ((publisherConfirms || this.confirmCallback != null)
 				&& channel instanceof PublisherCallbackChannel publisherCallbackChannel) {
+
 			long nextPublishSeqNo = channel.getNextPublishSeqNo();
 			if (nextPublishSeqNo > 0) {
-				CorrelationData correlationData = this.correlationDataPostProcessor != null
-						? this.correlationDataPostProcessor.postProcess(message, correlationDataArg)
-						: correlationDataArg;
+				CorrelationData correlationData =
+						this.correlationDataPostProcessor != null
+								? this.correlationDataPostProcessor.postProcess(message, correlationDataArg)
+								: correlationDataArg;
 				message.getMessageProperties().setPublishSequenceNumber(nextPublishSeqNo);
 				publisherCallbackChannel.addPendingConfirm(this, nextPublishSeqNo,
 						new PendingConfirm(correlationData, System.currentTimeMillis()));
@@ -2602,17 +2541,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		return message;
 	}
 
-	private MessageConverter getRequiredMessageConverter() throws IllegalStateException {
-		MessageConverter converter = getMessageConverter();
-		if (converter == null) {
-			throw new AmqpIllegalStateException(
-					"No 'messageConverter' specified. Check configuration of RabbitTemplate.");
-		}
-		return converter;
-	}
-
 	private SmartMessageConverter getRequiredSmartMessageConverter() throws IllegalStateException {
-		MessageConverter converter = getRequiredMessageConverter();
+		MessageConverter converter = getMessageConverter();
 		Assert.state(converter instanceof SmartMessageConverter,
 				"template's message converter must be a SmartMessageConverter");
 		return (SmartMessageConverter) converter;
@@ -2620,9 +2550,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	private String getRequiredQueue() throws IllegalStateException {
 		String name = this.defaultReceiveQueue;
-		if (name == null) {
-			throw new AmqpIllegalStateException("No 'queue' specified. Check configuration of RabbitTemplate.");
-		}
+		Assert.state(name != null, "No 'queue' specified. Check configuration of RabbitTemplate.");
 		return name;
 	}
 
@@ -2642,12 +2570,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	private Address getReplyToAddress(Message request) throws AmqpException {
 		Address replyTo = request.getMessageProperties().getReplyToAddress();
 		if (replyTo == null) {
-			if (this.exchange == null) {
-				throw new AmqpException(
-						"Cannot determine ReplyTo message property value: "
-								+ "Request message does not contain reply-to property, " +
-								"and no default Exchange was set.");
-			}
 			replyTo = new Address(this.exchange, this.routingKey);
 		}
 		return replyTo;
@@ -2679,8 +2601,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	@Override
 	public void handleConfirm(PendingConfirm pendingConfirm, boolean ack) {
 		if (this.confirmCallback != null) {
-			this.confirmCallback
-					.confirm(pendingConfirm.getCorrelationData(), ack, pendingConfirm.getCause()); // NOSONAR never null
+			this.confirmCallback.confirm(pendingConfirm.getCorrelationData(), ack, pendingConfirm.getCause());
 		}
 	}
 
@@ -2835,16 +2756,13 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	private static final class PendingReply {
 
-		@Nullable
-		private volatile String savedReplyTo;
+		private volatile @Nullable String savedReplyTo;
 
-		@Nullable
-		private volatile String savedCorrelation;
+		private volatile @Nullable String savedCorrelation;
 
 		private final CompletableFuture<Message> future = new CompletableFuture<>();
 
-		@Nullable
-		public String getSavedReplyTo() {
+		public @Nullable String getSavedReplyTo() {
 			return this.savedReplyTo;
 		}
 
@@ -2852,8 +2770,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			this.savedReplyTo = savedReplyTo;
 		}
 
-		@Nullable
-		public String getSavedCorrelation() {
+		public @Nullable String getSavedCorrelation() {
 			return this.savedCorrelation;
 		}
 
@@ -2870,8 +2787,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			}
 		}
 
-		@Nullable
-		public Message get(long timeout, TimeUnit unit) throws InterruptedException {
+		public @Nullable Message get(long timeout, TimeUnit unit) throws InterruptedException {
 			try {
 				return this.future.get(timeout, unit);
 			}

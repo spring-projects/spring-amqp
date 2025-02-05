@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 the original author or authors.
+ * Copyright 2021-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,9 @@ package org.springframework.amqp.rabbit.junit;
 import java.io.IOException;
 import java.time.Duration;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -34,7 +37,9 @@ import org.testcontainers.utility.DockerImageName;
 @Testcontainers(disabledWithoutDocker = true)
 public abstract class AbstractTestContainerTests {
 
-	protected static final RabbitMQContainer RABBITMQ;
+	private static final Log LOG = LogFactory.getLog(AbstractTestContainerTests.class);
+
+	protected static final @Nullable RabbitMQContainer RABBITMQ;
 
 	static {
 		if (System.getProperty("spring.rabbit.use.local.server") == null
@@ -57,8 +62,13 @@ public abstract class AbstractTestContainerTests {
 
 	@BeforeAll
 	static void startContainer() throws IOException, InterruptedException {
-		RABBITMQ.start();
-		RABBITMQ.execInContainer("rabbitmq-plugins", "enable", "rabbitmq_stream");
+		if (RABBITMQ != null) {
+			RABBITMQ.start();
+			RABBITMQ.execInContainer("rabbitmq-plugins", "enable", "rabbitmq_stream");
+		}
+		else {
+			LOG.info("The local RabbitMQ broker will be used instead of Testcontainers.");
+		}
 	}
 
 	public static int amqpPort() {
@@ -74,7 +84,7 @@ public abstract class AbstractTestContainerTests {
 	}
 
 	public static String restUri() {
-		return RABBITMQ.getHttpUrl() + "/api/";
+		return RABBITMQ != null ? RABBITMQ.getHttpUrl() + "/api/" : "http://localhost:" + managementPort()  + "/api/";
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2022 the original author or authors.
+ * Copyright 2015-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.core;
 
+import java.io.Serial;
+
 import org.springframework.amqp.AmqpException;
 
 /**
@@ -28,9 +30,10 @@ import org.springframework.amqp.AmqpException;
  */
 public class AmqpMessageReturnedException extends AmqpException {
 
+	@Serial
 	private static final long serialVersionUID = 1866579721126554167L;
 
-	private final ReturnedMessage returned;
+	private final transient ReturnedMessage returned;
 
 	public AmqpMessageReturnedException(String message, ReturnedMessage returned) {
 		super(message);

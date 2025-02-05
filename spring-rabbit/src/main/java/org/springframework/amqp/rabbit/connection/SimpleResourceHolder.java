@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.NamedThreadLocal;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -46,6 +46,7 @@ import org.springframework.util.Assert;
  * @author Artem Bilan
  * @author Gary Russell
  * @author Ngoc Nhan
+ *
  * @since 1.3
  */
 public final class SimpleResourceHolder {
@@ -56,10 +57,10 @@ public final class SimpleResourceHolder {
 
 	private static final Log LOGGER = LogFactory.getLog(SimpleResourceHolder.class);
 
-	private static final ThreadLocal<Map<Object, Object>> RESOURCES =
+	private static final ThreadLocal<@Nullable Map<Object, Object>> RESOURCES =
 			new NamedThreadLocal<>("Simple resources");
 
-	private static final ThreadLocal<Map<Object, Deque<Object>>> STACK =
+	private static final ThreadLocal<@Nullable Map<Object, Deque<@Nullable Object>>> STACK =
 			new NamedThreadLocal<>("Simple resources");
 
 	/**
@@ -92,8 +93,7 @@ public final class SimpleResourceHolder {
 	 * @return a value bound to the current thread (usually the active
 	 * resource object), or <code>null</code> if none
 	 */
-	@Nullable
-	public static Object get(Object key) {
+	public static @Nullable Object get(Object key) {
 		Object value = doGet(key);
 		if (value != null && LOGGER.isTraceEnabled()) {
 			LOGGER.trace("Retrieved value [" + value + FOR_KEY + key + BOUND_TO_THREAD
@@ -107,8 +107,7 @@ public final class SimpleResourceHolder {
 	 * @param actualKey the key.
 	 * @return the resource object.
 	 */
-	@Nullable
-	private static Object doGet(Object actualKey) {
+	private static @Nullable Object doGet(Object actualKey) {
 		Map<Object, Object> map = RESOURCES.get();
 		if (map == null) {
 			return null;
@@ -152,7 +151,7 @@ public final class SimpleResourceHolder {
 			bind(key, value);
 		}
 		else {
-			Map<Object, Deque<Object>> stack = STACK.get();
+			Map<Object, Deque<@Nullable Object>> stack = STACK.get();
 			if (stack == null) {
 				stack = new HashMap<>();
 				STACK.set(stack);
@@ -170,12 +169,11 @@ public final class SimpleResourceHolder {
 	 * @return the popped value.
 	 * @since 2.1.11
 	 */
-	@Nullable
 	public static Object pop(Object key) {
 		Object popped = unbind(key);
-		Map<Object, Deque<Object>> stack = STACK.get();
+		Map<Object, Deque<@Nullable Object>> stack = STACK.get();
 		if (stack != null) {
-			Deque<Object> deque = stack.get(key);
+			Deque<@Nullable Object> deque = stack.get(key);
 			if (deque != null && !deque.isEmpty()) {
 				Object previousValue = deque.pop();
 				if (previousValue != null) {
@@ -207,8 +205,7 @@ public final class SimpleResourceHolder {
 	 * @param key the key to unbind (usually the resource factory)
 	 * @return the previously bound value, or <code>null</code> if none bound
 	 */
-	@Nullable
-	public static Object unbindIfPossible(Object key) {
+	public static @Nullable Object unbindIfPossible(Object key) {
 		Map<Object, Object> map = RESOURCES.get();
 		if (map == null) {
 			return null;

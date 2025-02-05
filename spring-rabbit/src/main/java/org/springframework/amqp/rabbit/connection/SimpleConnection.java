@@ -19,13 +19,12 @@ package org.springframework.amqp.rabbit.connection;
 import java.io.IOException;
 import java.net.InetAddress;
 
-import javax.annotation.Nullable;
-
 import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.BlockedListener;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.impl.NetworkConnection;
 import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpResourceNotAvailableException;
 import org.springframework.amqp.AmqpTimeoutException;
@@ -54,9 +53,9 @@ public class SimpleConnection implements Connection, NetworkConnection {
 	@Nullable
 	private final BackOffExecution backOffExecution;
 
-    public SimpleConnection(com.rabbitmq.client.Connection delegate, int closeTimeout) {
-        this(delegate, closeTimeout, null);
-    }
+	public SimpleConnection(com.rabbitmq.client.Connection delegate, int closeTimeout) {
+		this(delegate, closeTimeout, null);
+	}
 
 	/**
 	 * Construct an instance with the {@link org.springframework.util.backoff.BackOffExecution} arguments.
@@ -66,7 +65,8 @@ public class SimpleConnection implements Connection, NetworkConnection {
 	 * @since 3.1.3
 	 */
 	public SimpleConnection(com.rabbitmq.client.Connection delegate, int closeTimeout,
-	@Nullable BackOffExecution backOffExecution) {
+			@Nullable BackOffExecution backOffExecution) {
+
 		this.delegate = delegate;
 		this.closeTimeout = closeTimeout;
 		this.backOffExecution = backOffExecution;
@@ -135,9 +135,8 @@ public class SimpleConnection implements Connection, NetworkConnection {
 		if (!this.explicitlyClosed && this.delegate instanceof AutorecoveringConnection && !this.delegate.isOpen()) {
 			throw new AutoRecoverConnectionNotCurrentlyOpenException("Auto recovery connection is not currently open");
 		}
-		return this.delegate != null && (this.delegate.isOpen());
+		return this.delegate.isOpen();
 	}
-
 
 	@Override
 	public int getLocalPort() {
@@ -158,7 +157,7 @@ public class SimpleConnection implements Connection, NetworkConnection {
 	}
 
 	@Override
-	public InetAddress getLocalAddress() {
+	public @Nullable InetAddress getLocalAddress() {
 		if (this.delegate instanceof NetworkConnection networkConn) {
 			return networkConn.getLocalAddress();
 		}

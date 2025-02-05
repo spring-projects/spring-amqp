@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.rabbit.core;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 
@@ -25,6 +27,8 @@ import org.springframework.amqp.rabbit.connection.CorrelationData;
  * {@link org.springframework.amqp.core.MessagePostProcessor}s.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.6.7
  *
  */
@@ -37,6 +41,6 @@ public interface CorrelationDataPostProcessor {
 	 * @param correlationData the existing data (if present).
 	 * @return the correlation data.
 	 */
-	CorrelationData postProcess(Message message, CorrelationData correlationData);
+	CorrelationData postProcess(Message message, @Nullable CorrelationData correlationData);
 
 }

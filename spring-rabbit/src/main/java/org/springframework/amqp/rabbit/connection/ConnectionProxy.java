@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Subinterface of {@link Connection} to be implemented by
  * Connection proxies.  Allows access to the underlying target Connection
@@ -28,7 +30,9 @@ public interface ConnectionProxy extends Connection {
 	/**
 	 * Return the target Channel of this proxy.
 	 * <p>This will typically be the native provider Connection
-	 * @return the underlying Connection (never <code>null</code>)
+	 * @return the underlying Connection (if any)
 	 */
+	@Nullable
 	Connection getTargetConnection();
+
 }

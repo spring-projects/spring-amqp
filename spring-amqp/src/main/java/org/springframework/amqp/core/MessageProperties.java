@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.core;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -23,6 +24,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
 
@@ -40,8 +43,7 @@ import org.springframework.util.Assert;
  */
 public class MessageProperties implements Serializable {
 
-	private static final int INT_MASK = 32;
-
+	@Serial
 	private static final long serialVersionUID = 1619000546531112290L;
 
 	public static final String CONTENT_TYPE_BYTES = "application/octet-stream";
@@ -78,66 +80,66 @@ public class MessageProperties implements Serializable {
 	public static final Integer DEFAULT_PRIORITY = 0;
 
 	/**
-     * The maximum value of x-delay header.
-     * @since 3.1.2
-     */
+	 * The maximum value of x-delay header.
+	 * @since 3.1.2
+	 */
 	public static final long X_DELAY_MAX = 0xffffffffL;
 
-	private final Map<String, Object> headers = new HashMap<>();
+	private final HashMap<String, @Nullable Object> headers = new HashMap<>();
 
-	private Date timestamp;
+	private @Nullable Date timestamp;
 
-	private String messageId;
+	private @Nullable String messageId;
 
-	private String userId;
+	private @Nullable String userId;
 
-	private String appId;
+	private @Nullable String appId;
 
-	private String clusterId;
+	private @Nullable String clusterId;
 
-	private String type;
+	private @Nullable String type;
 
-	private String correlationId;
+	private @Nullable String correlationId;
 
-	private String replyTo;
+	private @Nullable String replyTo;
 
 	private String contentType = DEFAULT_CONTENT_TYPE;
 
-	private String contentEncoding;
+	private @Nullable String contentEncoding;
 
 	private long contentLength;
 
 	private boolean contentLengthSet;
 
-	private MessageDeliveryMode deliveryMode = DEFAULT_DELIVERY_MODE;
+	private @Nullable MessageDeliveryMode deliveryMode = DEFAULT_DELIVERY_MODE;
 
-	private String expiration;
+	private @Nullable String expiration;
 
 	private Integer priority = DEFAULT_PRIORITY;
 
-	private Boolean redelivered;
+	private @Nullable Boolean redelivered;
 
-	private String receivedExchange;
+	private @Nullable String receivedExchange;
 
-	private String receivedRoutingKey;
+	private @Nullable String receivedRoutingKey;
 
-	private String receivedUserId;
+	private @Nullable String receivedUserId;
 
 	private long deliveryTag;
 
 	private boolean deliveryTagSet;
 
-	private Integer messageCount;
+	private @Nullable Integer messageCount;
 
 	// Not included in hashCode()
 
-	private String consumerTag;
+	private @Nullable String consumerTag;
 
-	private String consumerQueue;
+	private @Nullable String consumerQueue;
 
-	private Long receivedDelay;
+	private @Nullable Long receivedDelay;
 
-	private MessageDeliveryMode receivedDeliveryMode;
+	private @Nullable MessageDeliveryMode receivedDeliveryMode;
 
 	private long retryCount;
 
@@ -149,11 +151,11 @@ public class MessageProperties implements Serializable {
 
 	private boolean projectionUsed;
 
-	private transient Type inferredArgumentType;
+	private transient @Nullable Type inferredArgumentType;
 
-	private transient Method targetMethod;
+	private transient @Nullable Method targetMethod;
 
-	private transient Object targetBean;
+	private transient @Nullable Object targetBean;
 
 	public void setHeader(String key, Object value) {
 		this.headers.put(key, value);
@@ -176,11 +178,11 @@ public class MessageProperties implements Serializable {
 	 * @since 2.2
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> T getHeader(String headerName) {
+	public <T> @Nullable T getHeader(String headerName) {
 		return (T) this.headers.get(headerName);
 	}
 
-	public Map<String, Object> getHeaders() {
+	public Map<String, @Nullable Object> getHeaders() {
 		return this.headers;
 	}
 
@@ -188,7 +190,7 @@ public class MessageProperties implements Serializable {
 		this.timestamp = timestamp; //NOSONAR
 	}
 
-	public Date getTimestamp() {
+	public @Nullable Date getTimestamp() {
 		return this.timestamp; //NOSONAR
 	}
 
@@ -196,7 +198,7 @@ public class MessageProperties implements Serializable {
 		this.messageId = messageId;
 	}
 
-	public String getMessageId() {
+	public @Nullable String getMessageId() {
 		return this.messageId;
 	}
 
@@ -204,7 +206,7 @@ public class MessageProperties implements Serializable {
 		this.userId = userId;
 	}
 
-	public String getUserId() {
+	public @Nullable String getUserId() {
 		return this.userId;
 	}
 
@@ -213,7 +215,7 @@ public class MessageProperties implements Serializable {
 	 * @return the user id.
 	 * @since 1.6
 	 */
-	public String getReceivedUserId() {
+	public @Nullable String getReceivedUserId() {
 		return this.receivedUserId;
 	}
 
@@ -225,7 +227,7 @@ public class MessageProperties implements Serializable {
 		this.appId = appId;
 	}
 
-	public String getAppId() {
+	public @Nullable String getAppId() {
 		return this.appId;
 	}
 
@@ -233,7 +235,7 @@ public class MessageProperties implements Serializable {
 		this.clusterId = clusterId;
 	}
 
-	public String getClusterId() {
+	public @Nullable String getClusterId() {
 		return this.clusterId;
 	}
 
@@ -241,7 +243,7 @@ public class MessageProperties implements Serializable {
 		this.type = type;
 	}
 
-	public String getType() {
+	public @Nullable String getType() {
 		return this.type;
 	}
 
@@ -249,7 +251,7 @@ public class MessageProperties implements Serializable {
 	 * Set the correlation id.
 	 * @param correlationId the id.
 	 */
-	public void setCorrelationId(String correlationId) {
+	public void setCorrelationId(@Nullable String correlationId) {
 		this.correlationId = correlationId;
 	}
 
@@ -257,23 +259,23 @@ public class MessageProperties implements Serializable {
 	 * Get the correlation id.
 	 * @return the id.
 	 */
-	public String getCorrelationId() {
+	public @Nullable String getCorrelationId() {
 		return this.correlationId;
 	}
 
-	public void setReplyTo(String replyTo) {
+	public void setReplyTo(@Nullable String replyTo) {
 		this.replyTo = replyTo;
 	}
 
-	public String getReplyTo() {
+	public @Nullable String getReplyTo() {
 		return this.replyTo;
 	}
 
-	public void setReplyToAddress(Address replyTo) {
+	public void setReplyToAddress(@Nullable Address replyTo) {
 		this.replyTo = (replyTo != null) ? replyTo.toString() : null;
 	}
 
-	public Address getReplyToAddress() {
+	public @Nullable Address getReplyToAddress() {
 		return (this.replyTo != null) ? new Address(this.replyTo) : null;
 	}
 
@@ -285,11 +287,11 @@ public class MessageProperties implements Serializable {
 		return this.contentType;
 	}
 
-	public void setContentEncoding(String contentEncoding) {
+	public void setContentEncoding(@Nullable String contentEncoding) {
 		this.contentEncoding = contentEncoding;
 	}
 
-	public String getContentEncoding() {
+	public @Nullable String getContentEncoding() {
 		return this.contentEncoding;
 	}
 
@@ -306,15 +308,15 @@ public class MessageProperties implements Serializable {
 		return this.contentLengthSet;
 	}
 
-	public void setDeliveryMode(MessageDeliveryMode deliveryMode) {
+	public void setDeliveryMode(@Nullable MessageDeliveryMode deliveryMode) {
 		this.deliveryMode = deliveryMode;
 	}
 
-	public MessageDeliveryMode getDeliveryMode() {
+	public @Nullable MessageDeliveryMode getDeliveryMode() {
 		return this.deliveryMode;
 	}
 
-	public MessageDeliveryMode getReceivedDeliveryMode() {
+	public @Nullable MessageDeliveryMode getReceivedDeliveryMode() {
 		return this.receivedDeliveryMode;
 	}
 
@@ -338,7 +340,7 @@ public class MessageProperties implements Serializable {
 	 * milliseconds.
 	 * @return the expiration.
 	 */
-	public String getExpiration() {
+	public @Nullable String getExpiration() {
 		return this.expiration;
 	}
 
@@ -354,7 +356,7 @@ public class MessageProperties implements Serializable {
 		this.receivedExchange = receivedExchange;
 	}
 
-	public String getReceivedExchange() {
+	public @Nullable String getReceivedExchange() {
 		return this.receivedExchange;
 	}
 
@@ -362,7 +364,7 @@ public class MessageProperties implements Serializable {
 		this.receivedRoutingKey = receivedRoutingKey;
 	}
 
-	public String getReceivedRoutingKey() {
+	public @Nullable String getReceivedRoutingKey() {
 		return this.receivedRoutingKey;
 	}
 
@@ -373,7 +375,7 @@ public class MessageProperties implements Serializable {
 	 * @since 3.1.2
 	 * @see #getDelayLong()
 	 */
-	public Long getReceivedDelayLong() {
+	public @Nullable Long getReceivedDelayLong() {
 		return this.receivedDelay;
 	}
 
@@ -392,14 +394,14 @@ public class MessageProperties implements Serializable {
 		this.redelivered = redelivered;
 	}
 
-	public Boolean isRedelivered() {
+	public @Nullable Boolean isRedelivered() {
 		return this.redelivered;
 	}
 
 	/*
 	 * Additional accessor because is* is not standard for type Boolean
 	 */
-	public Boolean getRedelivered() {
+	public @Nullable Boolean getRedelivered() {
 		return this.redelivered;
 	}
 
@@ -430,11 +432,11 @@ public class MessageProperties implements Serializable {
 	 * Only applies to messages retrieved via {@code basicGet}.
 	 * @return the count.
 	 */
-	public Integer getMessageCount() {
+	public @Nullable Integer getMessageCount() {
 		return this.messageCount;
 	}
 
-	public String getConsumerTag() {
+	public @Nullable String getConsumerTag() {
 		return this.consumerTag;
 	}
 
@@ -442,7 +444,7 @@ public class MessageProperties implements Serializable {
 		this.consumerTag = consumerTag;
 	}
 
-	public String getConsumerQueue() {
+	public @Nullable String getConsumerQueue() {
 		return this.consumerQueue;
 	}
 
@@ -455,7 +457,7 @@ public class MessageProperties implements Serializable {
 	 * @return the delay.
 	 * @since 3.1.2
 	 */
-	public Long getDelayLong() {
+	public @Nullable Long getDelayLong() {
 		Object delay = this.headers.get(X_DELAY);
 		if (delay instanceof Long delayLong) {
 			return delayLong;
@@ -468,7 +470,7 @@ public class MessageProperties implements Serializable {
 	 * @param delay the delay.
 	 * @since 3.1.2
 	 */
-	public void setDelayLong(Long delay) {
+	public void setDelayLong(@Nullable Long delay) {
 		if (delay == null || delay < 0) {
 			this.headers.remove(X_DELAY);
 			return;
@@ -514,7 +516,7 @@ public class MessageProperties implements Serializable {
 	}
 
 	/**
-	 * Return the publish sequence number if publisher confirms are enabled; set by the template.
+	 * Return the publishing sequence number if publisher confirms are enabled; set by the template.
 	 * @return the sequence number.
 	 * @since 2.1
 	 */
@@ -523,7 +525,7 @@ public class MessageProperties implements Serializable {
 	}
 
 	/**
-	 * Set the publish sequence number, if publisher confirms are enabled; set by the template.
+	 * Set the publishing sequence number, if publisher confirms are enabled; set by the template.
 	 * @param publishSequenceNumber the sequence number.
 	 * @since 2.1
 	 */
@@ -537,7 +539,7 @@ public class MessageProperties implements Serializable {
 	 * @return the type.
 	 * @since 1.6
 	 */
-	public Type getInferredArgumentType() {
+	public @Nullable Type getInferredArgumentType() {
 		return this.inferredArgumentType;
 	}
 
@@ -556,7 +558,7 @@ public class MessageProperties implements Serializable {
 	 * @return the method.
 	 * @since 1.6
 	 */
-	public Method getTargetMethod() {
+	public @Nullable Method getTargetMethod() {
 		return this.targetMethod;
 	}
 
@@ -565,7 +567,7 @@ public class MessageProperties implements Serializable {
 	 * @param targetMethod the target method.
 	 * @since 1.6
 	 */
-	public void setTargetMethod(Method targetMethod) {
+	public void setTargetMethod(@Nullable Method targetMethod) {
 		this.targetMethod = targetMethod;
 	}
 
@@ -574,7 +576,7 @@ public class MessageProperties implements Serializable {
 	 * @return the bean.
 	 * @since 1.6
 	 */
-	public Object getTargetBean() {
+	public @Nullable Object getTargetBean() {
 		return this.targetBean;
 	}
 
@@ -583,7 +585,7 @@ public class MessageProperties implements Serializable {
 	 * @param targetBean the bean.
 	 * @since 1.6
 	 */
-	public void setTargetBean(Object targetBean) {
+	public void setTargetBean(@Nullable Object targetBean) {
 		this.targetBean = targetBean;
 	}
 
@@ -630,7 +632,7 @@ public class MessageProperties implements Serializable {
 	 * @return the header.
 	 */
 	@SuppressWarnings("unchecked")
-	public List<Map<String, ?>> getXDeathHeader() {
+	public @Nullable List<Map<String, ?>> getXDeathHeader() {
 		try {
 			return (List<Map<String, ?>>) this.headers.get("x-death");
 		}
@@ -646,16 +648,16 @@ public class MessageProperties implements Serializable {
 		result = prime * result + ((this.appId == null) ? 0 : this.appId.hashCode());
 		result = prime * result + ((this.clusterId == null) ? 0 : this.clusterId.hashCode());
 		result = prime * result + ((this.contentEncoding == null) ? 0 : this.contentEncoding.hashCode());
-		result = prime * result + (int) (this.contentLength ^ (this.contentLength >>> INT_MASK));
-		result = prime * result + ((this.contentType == null) ? 0 : this.contentType.hashCode());
+		result = prime * result + Long.hashCode(this.contentLength);
+		result = prime * result + this.contentType.hashCode();
 		result = prime * result + ((this.correlationId == null) ? 0 : this.correlationId.hashCode());
 		result = prime * result + ((this.deliveryMode == null) ? 0 : this.deliveryMode.hashCode());
-		result = prime * result + (int) (this.deliveryTag ^ (this.deliveryTag >>> INT_MASK));
+		result = prime * result + Long.hashCode(this.deliveryTag);
 		result = prime * result + ((this.expiration == null) ? 0 : this.expiration.hashCode());
 		result = prime * result + this.headers.hashCode();
 		result = prime * result + ((this.messageCount == null) ? 0 : this.messageCount.hashCode());
 		result = prime * result + ((this.messageId == null) ? 0 : this.messageId.hashCode());
-		result = prime * result + ((this.priority == null) ? 0 : this.priority.hashCode());
+		result = prime * result + this.priority.hashCode();
 		result = prime * result + ((this.receivedExchange == null) ? 0 : this.receivedExchange.hashCode());
 		result = prime * result + ((this.receivedRoutingKey == null) ? 0 : this.receivedRoutingKey.hashCode());
 		result = prime * result + ((this.redelivered == null) ? 0 : this.redelivered.hashCode());
@@ -705,12 +707,7 @@ public class MessageProperties implements Serializable {
 		if (this.contentLength != other.contentLength) {
 			return false;
 		}
-		if (this.contentType == null) {
-			if (other.contentType != null) {
-				return false;
-			}
-		}
-		else if (!this.contentType.equals(other.contentType)) {
+		if (!this.contentType.equals(other.contentType)) {
 			return false;
 		}
 
@@ -756,12 +753,7 @@ public class MessageProperties implements Serializable {
 		else if (!this.messageId.equals(other.messageId)) {
 			return false;
 		}
-		if (this.priority == null) {
-			if (other.priority != null) {
-				return false;
-			}
-		}
-		else if (!this.priority.equals(other.priority)) {
+		if (!this.priority.equals(other.priority)) {
 			return false;
 		}
 		if (this.receivedExchange == null) {
@@ -830,13 +822,13 @@ public class MessageProperties implements Serializable {
 				+ (this.type == null ? "" : ", type=" + this.type)
 				+ (this.correlationId == null ? "" : ", correlationId=" + this.correlationId)
 				+ (this.replyTo == null ? "" : ", replyTo=" + this.replyTo)
-				+ (this.contentType == null ? "" : ", contentType=" + this.contentType)
+				+ ", contentType=" + this.contentType
 				+ (this.contentEncoding == null ? "" : ", contentEncoding=" + this.contentEncoding)
 				+ ", contentLength=" + this.contentLength
 				+ (this.deliveryMode == null ? "" : ", deliveryMode=" + this.deliveryMode)
 				+ (this.receivedDeliveryMode == null ? "" : ", receivedDeliveryMode=" + this.receivedDeliveryMode)
 				+ (this.expiration == null ? "" : ", expiration=" + this.expiration)
-				+ (this.priority == null ? "" : ", priority=" + this.priority)
+				+ ", priority=" + this.priority
 				+ (this.redelivered == null ? "" : ", redelivered=" + this.redelivered)
 				+ (this.receivedExchange == null ? "" : ", receivedExchange=" + this.receivedExchange)
 				+ (this.receivedRoutingKey == null ? "" : ", receivedRoutingKey=" + this.receivedRoutingKey)

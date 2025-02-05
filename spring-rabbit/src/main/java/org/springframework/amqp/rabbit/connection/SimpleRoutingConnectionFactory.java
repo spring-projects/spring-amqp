@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.connection;
 
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * An {@link AbstractRoutingConnectionFactory} implementation which gets a {@code lookupKey}
@@ -25,13 +25,13 @@ import org.springframework.lang.Nullable;
  *
  * @author Artem Bilan
  * @author Gary Russell
+ *
  * @since 1.3
  */
 public class SimpleRoutingConnectionFactory extends AbstractRoutingConnectionFactory {
 
 	@Override
-	@Nullable
-	protected Object determineCurrentLookupKey() {
+	protected @Nullable Object determineCurrentLookupKey() {
 		return SimpleResourceHolder.get(this);
 	}
 

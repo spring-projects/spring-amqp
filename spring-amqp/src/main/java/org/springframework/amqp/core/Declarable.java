@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package org.springframework.amqp.core;
 
 import java.util.Collection;
 
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Classes implementing this interface can be auto-declared
@@ -26,14 +26,15 @@ import org.springframework.lang.Nullable;
  * Registration can be limited to specific {@code AmqpAdmin}s.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.2
  *
  */
 public interface Declarable {
 
 	/**
-	 * Whether or not this object should be automatically declared
-	 * by any {@code AmqpAdmin}.
+	 * Whether this object should be automatically declared by any {@code AmqpAdmin}.
 	 * @return true if the object should be declared.
 	 */
 	boolean shouldDeclare();
@@ -47,7 +48,7 @@ public interface Declarable {
 
 	/**
 	 * Should ignore exceptions (such as mismatched args) when declaring.
-	 * @return true if should ignore.
+	 * @return true if it should ignore.
 	 * @since 1.6
 	 */
 	boolean isIgnoreDeclarationExceptions();

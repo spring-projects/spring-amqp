@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.config;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
 import org.w3c.dom.Element;
 
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
@@ -69,9 +70,9 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 	private static final String EXCLUSIVE = "exclusive";
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({"unchecked", "NullAway"})
 	@Override
-	public BeanDefinition parse(Element element, ParserContext parserContext) {
+	public @Nullable BeanDefinition parse(Element element, ParserContext parserContext) {
 		CompositeComponentDefinition compositeDef = new CompositeComponentDefinition(element.getTagName(),
 				parserContext.extractSource(element));
 		parserContext.pushContainingComponent(compositeDef);
@@ -97,7 +98,7 @@ class ListenerContainerParser implements BeanDefinitionParser {
 				parserContext.getReaderContext().error("Unexpected configuration for bean " + group, element);
 			}
 			containerList = (ManagedList<RuntimeBeanReference>) constructorArgumentValues
-					.getIndexedArgumentValue(0, ManagedList.class).getValue(); // NOSONAR never null
+					.getIndexedArgumentValue(0, ManagedList.class).getValue();
 		}
 
 		List<Element> childElements = DomUtils.getChildElementsByTagName(element, LISTENER_ELEMENT);
@@ -110,7 +111,8 @@ class ListenerContainerParser implements BeanDefinitionParser {
 	}
 
 	private void parseListener(Element listenerEle, Element containerEle, ParserContext parserContext, // NOSONAR complexity
-			ManagedList<RuntimeBeanReference> containerList) {
+			@Nullable ManagedList<RuntimeBeanReference> containerList) {
+
 		RootBeanDefinition listenerDef = new RootBeanDefinition();
 		listenerDef.setSource(parserContext.extractSource(listenerEle));
 
@@ -165,7 +167,7 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 		String childElementId = listenerEle.getAttribute(ID_ATTRIBUTE);
 		String containerBeanName = StringUtils.hasText(childElementId) ? childElementId :
-			BeanDefinitionReaderUtils.generateBeanName(containerDef, parserContext.getRegistry());
+				BeanDefinitionReaderUtils.generateBeanName(containerDef, parserContext.getRegistry());
 
 		if (!NamespaceUtils.isAttributeDefined(listenerEle, QUEUE_NAMES_ATTRIBUTE)
 				&& !NamespaceUtils.isAttributeDefined(listenerEle, QUEUES_ATTRIBUTE)) {

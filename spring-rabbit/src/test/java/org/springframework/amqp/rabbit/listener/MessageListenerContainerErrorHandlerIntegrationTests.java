@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -125,16 +124,10 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
 		template.convertAndSend(QUEUE.getName(), "baz");
 		assertThat(messageReceived.await(10, TimeUnit.SECONDS)).isTrue();
-		Object consumer = TestUtils.getPropertyValue(container, "consumers", Set.class)
-				.iterator().next();
-		Log qLogger = spy(TestUtils.getPropertyValue(consumer, "logger", Log.class));
-		willReturn(true).given(qLogger).isDebugEnabled();
-		new DirectFieldAccessor(consumer).setPropertyValue("logger", qLogger);
 		spiedQLogger.countDown();
 		assertThat(errorHandled.await(10, TimeUnit.SECONDS)).isTrue();
 		container.stop();
 		verify(logger, never()).warn(contains("Consumer raised exception"), any(Throwable.class));
-		verify(qLogger).debug(contains("Rejecting messages (requeue=false)"));
 		((DisposableBean) template.getConnectionFactory()).destroy();
 	}
 
@@ -344,7 +337,9 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 	// Helper classes
 	// ///////////////
 	public static class PojoThrowingExceptionListener {
+
 		private final CountDownLatch latch;
+
 		private final Throwable exception;
 
 		public PojoThrowingExceptionListener(CountDownLatch latch, Throwable exception) {
@@ -362,10 +357,13 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 				latch.countDown();
 			}
 		}
+
 	}
 
 	public static class ThrowingExceptionListener implements MessageListener {
+
 		private final CountDownLatch latch;
+
 		private final RuntimeException exception;
 
 		public ThrowingExceptionListener(CountDownLatch latch, RuntimeException exception) {
@@ -390,10 +388,13 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 				latch.countDown();
 			}
 		}
+
 	}
 
 	public static class ThrowingExceptionChannelAwareListener implements ChannelAwareMessageListener {
+
 		private final CountDownLatch latch;
+
 		private final Exception exception;
 
 		public ThrowingExceptionChannelAwareListener(CountDownLatch latch, Exception exception) {
@@ -418,6 +419,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 				latch.countDown();
 			}
 		}
+
 	}
 
 }

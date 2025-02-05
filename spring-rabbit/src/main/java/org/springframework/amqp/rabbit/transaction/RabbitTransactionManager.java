@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,19 @@
 
 package org.springframework.amqp.rabbit.transaction;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.transaction.InvalidIsolationLevelException;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 import org.springframework.transaction.support.DefaultTransactionStatus;
@@ -32,7 +38,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.util.Assert;
 
 /**
- * {@link org.springframework.transaction.PlatformTransactionManager} implementation for a single Rabbit
+ * {@link PlatformTransactionManager} implementation for a single Rabbit
  * {@link ConnectionFactory}. Binds a Rabbit Channel from the specified ConnectionFactory to the thread, potentially
  * allowing for one thread-bound channel per ConnectionFactory.
  *
@@ -44,13 +50,13 @@ import org.springframework.util.Assert;
  * <p>
  * Application code is required to retrieve the transactional Rabbit resources via
  * {@link ConnectionFactoryUtils#getTransactionalResourceHolder(ConnectionFactory, boolean)} instead of a standard
- * {@link org.springframework.amqp.rabbit.connection.Connection#createChannel(boolean)} call with subsequent
+ * {@link Connection#createChannel(boolean)} call with subsequent
  * Channel creation. Spring's
- * {@link org.springframework.amqp.rabbit.core.RabbitTemplate} will
+ * {@link RabbitTemplate} will
  * autodetect a thread-bound Channel and automatically participate in it.
  *
  * <p>
- * <b>The use of {@link org.springframework.amqp.rabbit.connection.CachingConnectionFactory}
+ * <b>The use of {@link CachingConnectionFactory}
  * as a target for this transaction manager is strongly recommended.</b>
  * CachingConnectionFactory uses a single Rabbit Connection for all Rabbit access in order to avoid the overhead of
  * repeated Connection creation, as well as maintaining a cache of Channels. Each transaction will then share the same
@@ -62,12 +68,13 @@ import org.springframework.util.Assert;
  * which has stronger needs for synchronization.
  *
  * @author Dave Syer
+ * @author Artem Bilan
  */
 @SuppressWarnings("serial")
 public class RabbitTransactionManager extends AbstractPlatformTransactionManager
 		implements ResourceTransactionManager, InitializingBean {
 
-	private ConnectionFactory connectionFactory;
+	private @Nullable ConnectionFactory connectionFactory;
 
 	/**
 	 * Create a new RabbitTransactionManager for bean-style usage.
@@ -81,6 +88,7 @@ public class RabbitTransactionManager extends AbstractPlatformTransactionManager
 	 * @see #setConnectionFactory
 	 * @see #setTransactionSynchronization
 	 */
+	@SuppressWarnings("this-escape")
 	public RabbitTransactionManager() {
 		setTransactionSynchronization(SYNCHRONIZATION_NEVER);
 	}
@@ -104,7 +112,7 @@ public class RabbitTransactionManager extends AbstractPlatformTransactionManager
 	/**
 	 * @return the connectionFactory
 	 */
-	public ConnectionFactory getConnectionFactory() {
+	public @Nullable ConnectionFactory getConnectionFactory() {
 		return this.connectionFactory;
 	}
 
@@ -118,14 +126,16 @@ public class RabbitTransactionManager extends AbstractPlatformTransactionManager
 
 	@Override
 	public Object getResourceFactory() {
-		return getConnectionFactory();
+		ConnectionFactory resourceFactory = getConnectionFactory();
+		Assert.notNull(resourceFactory, "'connectionFactory' cannot be null");
+		return resourceFactory;
 	}
 
 	@Override
 	protected Object doGetTransaction() {
 		RabbitTransactionObject txObject = new RabbitTransactionObject();
 		txObject.setResourceHolder((RabbitResourceHolder) TransactionSynchronizationManager
-				.getResource(getConnectionFactory()));
+				.getResource(getResourceFactory()));
 		return txObject;
 	}
 
@@ -143,18 +153,20 @@ public class RabbitTransactionManager extends AbstractPlatformTransactionManager
 		RabbitTransactionObject txObject = (RabbitTransactionObject) transaction;
 		RabbitResourceHolder resourceHolder = null;
 		try {
-			resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(getConnectionFactory(), true);
+			ConnectionFactory connectionFactoryToUse = getConnectionFactory();
+			Assert.notNull(connectionFactoryToUse, "'connectionFactory' cannot be null");
+			resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactoryToUse, true);
 			if (logger.isDebugEnabled()) {
 				logger.debug("Created AMQP transaction on channel [" + resourceHolder.getChannel() + "]");
 			}
 			// resourceHolder.declareTransactional();
 			txObject.setResourceHolder(resourceHolder);
-			txObject.getResourceHolder().setSynchronizedWithTransaction(true);
+			resourceHolder.setSynchronizedWithTransaction(true);
 			int timeout = determineTimeout(definition);
 			if (timeout != TransactionDefinition.TIMEOUT_DEFAULT) {
-				txObject.getResourceHolder().setTimeoutInSeconds(timeout);
+				resourceHolder.setTimeoutInSeconds(timeout);
 			}
-			TransactionSynchronizationManager.bindResource(getConnectionFactory(), txObject.getResourceHolder());
+			TransactionSynchronizationManager.bindResource(connectionFactoryToUse, resourceHolder);
 		}
 		catch (AmqpException ex) {
 			if (resourceHolder != null) {
@@ -168,41 +180,51 @@ public class RabbitTransactionManager extends AbstractPlatformTransactionManager
 	protected Object doSuspend(Object transaction) {
 		RabbitTransactionObject txObject = (RabbitTransactionObject) transaction;
 		txObject.setResourceHolder(null);
-		return TransactionSynchronizationManager.unbindResource(getConnectionFactory());
+		return TransactionSynchronizationManager.unbindResource(getResourceFactory());
 	}
 
 	@Override
-	protected void doResume(Object transaction, Object suspendedResources) {
+	protected void doResume(@Nullable Object transaction, Object suspendedResources) {
 		RabbitResourceHolder conHolder = (RabbitResourceHolder) suspendedResources;
-		TransactionSynchronizationManager.bindResource(getConnectionFactory(), conHolder);
+		TransactionSynchronizationManager.bindResource(getResourceFactory(), conHolder);
 	}
 
 	@Override
 	protected void doCommit(DefaultTransactionStatus status) {
 		RabbitTransactionObject txObject = (RabbitTransactionObject) status.getTransaction();
 		RabbitResourceHolder resourceHolder = txObject.getResourceHolder();
-		resourceHolder.commitAll();
+		if (resourceHolder != null) {
+			resourceHolder.commitAll();
+		}
 	}
 
 	@Override
 	protected void doRollback(DefaultTransactionStatus status) {
 		RabbitTransactionObject txObject = (RabbitTransactionObject) status.getTransaction();
 		RabbitResourceHolder resourceHolder = txObject.getResourceHolder();
-		resourceHolder.rollbackAll();
+		if (resourceHolder != null) {
+			resourceHolder.rollbackAll();
+		}
 	}
 
 	@Override
 	protected void doSetRollbackOnly(DefaultTransactionStatus status) {
 		RabbitTransactionObject txObject = (RabbitTransactionObject) status.getTransaction();
-		txObject.getResourceHolder().setRollbackOnly();
+		RabbitResourceHolder resourceHolder = txObject.getResourceHolder();
+		if (resourceHolder != null) {
+			resourceHolder.setRollbackOnly();
+		}
 	}
 
 	@Override
 	protected void doCleanupAfterCompletion(Object transaction) {
 		RabbitTransactionObject txObject = (RabbitTransactionObject) transaction;
-		TransactionSynchronizationManager.unbindResource(getConnectionFactory());
-		txObject.getResourceHolder().closeAll();
-		txObject.getResourceHolder().clear();
+		TransactionSynchronizationManager.unbindResource(getResourceFactory());
+		RabbitResourceHolder resourceHolder = txObject.getResourceHolder();
+		if (resourceHolder != null) {
+			resourceHolder.closeAll();
+			resourceHolder.clear();
+		}
 	}
 
 	/**
@@ -212,27 +234,29 @@ public class RabbitTransactionManager extends AbstractPlatformTransactionManager
 	 */
 	private static class RabbitTransactionObject implements SmartTransactionObject {
 
-		private RabbitResourceHolder resourceHolder;
+		private @Nullable RabbitResourceHolder resourceHolder;
 
 		RabbitTransactionObject() {
 		}
 
-		public void setResourceHolder(RabbitResourceHolder resourceHolder) {
+		public void setResourceHolder(@Nullable RabbitResourceHolder resourceHolder) {
 			this.resourceHolder = resourceHolder;
 		}
 
-		public RabbitResourceHolder getResourceHolder() {
+		public @Nullable RabbitResourceHolder getResourceHolder() {
 			return this.resourceHolder;
 		}
 
 		@Override
 		public boolean isRollbackOnly() {
-			return this.resourceHolder.isRollbackOnly();
+			return this.resourceHolder != null && this.resourceHolder.isRollbackOnly();
 		}
 
 		@Override
 		public void flush() {
 			// no-op
 		}
+
 	}
+
 }

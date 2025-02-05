@@ -47,7 +47,7 @@ public interface ChannelProxy extends Channel, RawTargetAccess {
 
 	/**
 	 * Return true if confirms are selected on this channel.
-	 * @return true if confirms selected.
+	 * @return true if {@code confirms} selected.
 	 * @since 2.1
 	 */
 	default boolean isConfirmSelected() {

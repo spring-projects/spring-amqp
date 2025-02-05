@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.Message;
@@ -27,7 +28,6 @@ import org.springframework.amqp.rabbit.retry.MessageBatchRecoverer;
 import org.springframework.amqp.rabbit.retry.MessageKeyGenerator;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbit.retry.NewMessageIdentifier;
-import org.springframework.lang.Nullable;
 import org.springframework.retry.RetryOperations;
 import org.springframework.retry.interceptor.MethodArgumentsKeyGenerator;
 import org.springframework.retry.interceptor.MethodInvocationRecoverer;
@@ -50,6 +50,7 @@ import org.springframework.util.Assert;
  * @author Dave Syer
  * @author Gary Russell
  * @author Ngoc Nhan
+ * @author Artem Bilan
  *
  * @see RetryOperations#execute(org.springframework.retry.RetryCallback, org.springframework.retry.RecoveryCallback,
  * org.springframework.retry.RetryState)
@@ -57,11 +58,11 @@ import org.springframework.util.Assert;
  */
 public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetryOperationsInterceptorFactoryBean {
 
-	private static Log logger = LogFactory.getLog(StatefulRetryOperationsInterceptorFactoryBean.class);
+	private static final Log LOGGER = LogFactory.getLog(StatefulRetryOperationsInterceptorFactoryBean.class);
 
-	private MessageKeyGenerator messageKeyGenerator;
+	private @Nullable MessageKeyGenerator messageKeyGenerator;
 
-	private NewMessageIdentifier newMessageIdentifier;
+	private @Nullable NewMessageIdentifier newMessageIdentifier;
 
 	public void setMessageKeyGenerator(MessageKeyGenerator messageKeyGenerator) {
 		this.messageKeyGenerator = messageKeyGenerator;
@@ -90,8 +91,9 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 	private NewMethodArgumentsIdentifier createNewItemIdentifier() {
 		return args -> {
 			Message message = argToMessage(args);
+			Assert.notNull(message, "The 'args' must not convert to null");
 			if (StatefulRetryOperationsInterceptorFactoryBean.this.newMessageIdentifier == null) {
-				return !message.getMessageProperties().isRedelivered();
+				return Boolean.FALSE.equals(message.getMessageProperties().isRedelivered());
 			}
 
 			return StatefulRetryOperationsInterceptorFactoryBean.this.newMessageIdentifier.isNew(message);
@@ -104,7 +106,7 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 			MessageRecoverer messageRecoverer = getMessageRecoverer();
 			Object arg = args[1];
 			if (messageRecoverer == null) {
-				logger.warn("Message(s) dropped on recovery: " + arg, cause);
+				LOGGER.warn("Message(s) dropped on recovery: " + arg, cause);
 			}
 			else if (arg instanceof Message msg) {
 				messageRecoverer.recover(msg, cause);
@@ -125,7 +127,7 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 			Assert.notNull(message, "The 'args' must not convert to null");
 			if (StatefulRetryOperationsInterceptorFactoryBean.this.messageKeyGenerator == null) {
 				String messageId = message.getMessageProperties().getMessageId();
-				if (messageId == null && message.getMessageProperties().isRedelivered()) {
+				if (messageId == null && Boolean.TRUE.equals(message.getMessageProperties().isRedelivered())) {
 					message.getMessageProperties().setFinalRetryForMessageWithNoId(true);
 				}
 				return messageId;
@@ -134,8 +136,7 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 		};
 	}
 
-	@Nullable
-	private Message argToMessage(Object[] args) {
+	private @Nullable Message argToMessage(Object[] args) {
 		Object arg = args[1];
 		if (arg instanceof Message msg) {
 			return msg;

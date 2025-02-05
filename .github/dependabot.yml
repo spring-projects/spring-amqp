@@ -19,7 +19,6 @@ updates:
           - patch
          patterns: 
          - com.gradle.*
-         - com.github.spotbugs
          - io.spring.*
          - org.ajoberstar.grgit
          - org.antora
@@ -28,6 +27,9 @@ updates:
          - org.hibernate.validator:hibernate-validator
          - org.apache.httpcomponents.client5:httpclient5
          - org.awaitility:awaitility
+         - net.ltgt.errorprone
+         - com.uber.nullaway*
+         - com.google.errorprone*
 
   - package-ecosystem: github-actions
     directory: /
