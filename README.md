@@ -24,9 +24,9 @@ If you encounter out of memory errors during the build, increase available heap 
 
 	GRADLE_OPTS='-XX:MaxPermSize=1024m -Xmx1024m'
 
-To build and install jars into your local Maven cache:
+To build and publish jars to your local Maven repository:
 
-	./gradlew install
+	./gradlew publishToMavenLocal
 
 To build api Javadoc (results will be in `build/api`):
 
