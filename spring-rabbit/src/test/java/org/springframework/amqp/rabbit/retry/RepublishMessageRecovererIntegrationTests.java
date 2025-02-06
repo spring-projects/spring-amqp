@@ -29,11 +29,16 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.event.ContextClosedEvent;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.0.5
  *
  */
@@ -52,6 +57,8 @@ class RepublishMessageRecovererIntegrationTests {
 	void testBigHeader() {
 		CachingConnectionFactory ccf = new CachingConnectionFactory(
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
+		ApplicationContext applicationContext = mock();
+		ccf.setApplicationContext(applicationContext);
 		RabbitTemplate template = new RabbitTemplate(ccf);
 		this.maxHeaderSize = RabbitUtils.getMaxFrame(template.getConnectionFactory())
 				- RepublishMessageRecoverer.DEFAULT_FRAME_MAX_HEADROOM;
@@ -69,7 +76,8 @@ class RepublishMessageRecovererIntegrationTests {
 				"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...";
 		assertThat(trace).contains(truncatedMessage);
 		assertThat((String) received.getMessageProperties().getHeader(RepublishMessageRecoverer.X_EXCEPTION_MESSAGE))
-			.isEqualTo(truncatedMessage);
+				.isEqualTo(truncatedMessage);
+		ccf.onApplicationEvent(new ContextClosedEvent(applicationContext));
 		ccf.destroy();
 	}
 
@@ -77,6 +85,8 @@ class RepublishMessageRecovererIntegrationTests {
 	void testSmallException() {
 		CachingConnectionFactory ccf = new CachingConnectionFactory(
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
+		ApplicationContext applicationContext = mock();
+		ccf.setApplicationContext(applicationContext);
 		RabbitTemplate template = new RabbitTemplate(ccf);
 		this.maxHeaderSize = RabbitUtils.getMaxFrame(template.getConnectionFactory())
 				- RepublishMessageRecoverer.DEFAULT_FRAME_MAX_HEADROOM;
@@ -91,6 +101,7 @@ class RepublishMessageRecovererIntegrationTests {
 		String trace = received.getMessageProperties().getHeaders()
 				.get(RepublishMessageRecoverer.X_EXCEPTION_STACKTRACE).toString();
 		assertThat(trace).isEqualTo(getStackTraceAsString(cause));
+		ccf.onApplicationEvent(new ContextClosedEvent(applicationContext));
 		ccf.destroy();
 	}
 
@@ -99,6 +110,8 @@ class RepublishMessageRecovererIntegrationTests {
 		CachingConnectionFactory ccf = new CachingConnectionFactory(
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
 		RabbitTemplate template = new RabbitTemplate(ccf);
+		ApplicationContext applicationContext = mock();
+		ccf.setApplicationContext(applicationContext);
 		this.maxHeaderSize = RabbitUtils.getMaxFrame(template.getConnectionFactory())
 				- RepublishMessageRecoverer.DEFAULT_FRAME_MAX_HEADROOM;
 		assertThat(this.maxHeaderSize).isGreaterThan(0);
@@ -117,6 +130,7 @@ class RepublishMessageRecovererIntegrationTests {
 				.getHeader(RepublishMessageRecoverer.X_EXCEPTION_MESSAGE).toString();
 		assertThat(trace.length() + exceptionMessage.length()).isEqualTo(this.maxHeaderSize);
 		assertThat(exceptionMessage).endsWith("...");
+		ccf.onApplicationEvent(new ContextClosedEvent(applicationContext));
 		ccf.destroy();
 	}
 
