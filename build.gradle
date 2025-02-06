@@ -183,6 +183,15 @@ configure(javaProjects) { subproject ->
 		options.encoding = 'UTF-8'
 	}
 
+	compileTestKotlin {
+		kotlinOptions {
+			jvmTarget = JavaVersion.VERSION_17
+		}
+		compilerOptions {
+			allWarningsAsErrors = true
+		}
+	}
+
 	eclipse {
 		project {
 			natures += 'org.springframework.ide.eclipse.core.springnature'
@@ -442,12 +451,6 @@ project('spring-rabbit') {
 		testRuntimeOnly 'com.fasterxml.jackson.module:jackson-module-kotlin'
 		testRuntimeOnly("junit:junit:$junit4Version") {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
-		}
-	}
-
-	compileKotlin {
-		compilerOptions {
-			allWarningsAsErrors = true
 		}
 	}
 }
