@@ -170,7 +170,8 @@ public class BlockingQueueConsumer {
 
 	private long consumeDelay;
 
-	private java.util.function.Consumer<String> missingQueuePublisher = str -> { };
+	private java.util.function.Consumer<String> missingQueuePublisher = str -> {
+	};
 
 	private boolean globalQos;
 
@@ -468,12 +469,13 @@ public class BlockingQueueConsumer {
 
 	protected void basicCancel(boolean expected) {
 		this.normalCancel = expected;
+		this.cancelled.set(true);
+		this.abortStarted = System.currentTimeMillis();
+
 		Collection<String> consumerTags = getConsumerTags();
 		if (!CollectionUtils.isEmpty(consumerTags)) {
 			RabbitUtils.closeMessageConsumer(this.channel, consumerTags, this.transactional);
 		}
-		this.cancelled.set(true);
-		this.abortStarted = System.currentTimeMillis();
 	}
 
 	protected boolean hasDelivery() {
@@ -560,12 +562,26 @@ public class BlockingQueueConsumer {
 		if (!this.missingQueues.isEmpty()) {
 			checkMissingQueues();
 		}
-		Message message = handle(this.queue.poll(timeout, TimeUnit.MILLISECONDS));
-		if (message == null && this.cancelled.get()) {
-			this.activeObjectCounter.release(this);
-			throw new ConsumerCancelledException();
+		if (!cancelled()) {
+			Message message = handle(this.queue.poll(timeout, TimeUnit.MILLISECONDS));
+			if (message != null && cancelled()) {
+				this.activeObjectCounter.release(this);
+				ConsumerCancelledException consumerCancelledException = new ConsumerCancelledException();
+				rollbackOnExceptionIfNecessary(consumerCancelledException,
+						message.getMessageProperties().getDeliveryTag());
+				throw consumerCancelledException;
+			}
+			else {
+				return message;
+			}
 		}
-		return message;
+		else {
+			this.deliveryTags.clear();
+			this.activeObjectCounter.release(this);
+			ConsumerCancelledException consumerCancelledException = new ConsumerCancelledException();
+			rollbackOnExceptionIfNecessary(consumerCancelledException);
+			throw consumerCancelledException;
+		}
 	}
 
 	/*
@@ -792,7 +808,7 @@ public class BlockingQueueConsumer {
 			if (this.abortStarted == 0) { // signal handle delivery to use offer
 				this.abortStarted = System.currentTimeMillis();
 			}
-			if (!this.cancelled()) {
+			if (!cancelled()) {
 				try {
 					RabbitUtils.closeMessageConsumer(this.channel, getConsumerTags(), this.transactional);
 				}
@@ -894,22 +910,25 @@ public class BlockingQueueConsumer {
 		/*
 		 * If we have a TX Manager, but no TX, act like we are locally transacted.
 		 */
-		boolean isLocallyTransacted = localTx
-				|| (this.transactional
-				&& TransactionSynchronizationManager.getResource(this.connectionFactory) == null);
+		boolean isLocallyTransacted =
+				localTx ||
+						(this.transactional &&
+								TransactionSynchronizationManager.getResource(this.connectionFactory) == null);
 		try {
 			boolean ackRequired = forceAck || (!this.acknowledgeMode.isAutoAck() && !this.acknowledgeMode.isManual());
 
-			if (ackRequired && (!this.transactional || isLocallyTransacted)) {
-				long deliveryTag = new ArrayList<>(this.deliveryTags).get(this.deliveryTags.size() - 1);
-				try {
-					this.channel.basicAck(deliveryTag, true);
-					notifyMessageAckListener(true, deliveryTag, null);
-				}
-				catch (Exception e) {
-					logger.error("Error acking.", e);
-					notifyMessageAckListener(false, deliveryTag, e);
-				}
+			if (ackRequired && (!this.transactional || (isLocallyTransacted && !cancelled()))) {
+				OptionalLong deliveryTag = this.deliveryTags.stream().mapToLong(l -> l).max();
+				deliveryTag.ifPresent((tag) -> {
+					try {
+						this.channel.basicAck(tag, true);
+						notifyMessageAckListener(true, tag, null);
+					}
+					catch (Exception e) {
+						logger.error("Error acking.", e);
+						notifyMessageAckListener(false, tag, e);
+					}
+				});
 			}
 
 			if (isLocallyTransacted) {
