@@ -113,6 +113,7 @@ public class EnableRabbitReturnTypesTests {
 		public RabbitTemplate template(CachingConnectionFactory cf, Jackson2JsonMessageConverter converter) {
 			RabbitTemplate template = new RabbitTemplate(cf);
 			template.setMessageConverter(converter);
+			template.setReplyTimeout(30_000);
 			return template;
 		}
 
