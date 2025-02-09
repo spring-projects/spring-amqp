@@ -6,7 +6,7 @@ This project provides support for using Spring and Java with [AMQP 0.9.1](https:
 
 # Code of Conduct
 
-Please see our [Code of conduct](https://github.com/spring-projects/.github/blob/master/CODE_OF_CONDUCT.md).
+Please see our [Code of conduct](https://github.com/spring-projects/.github/blob/main/CODE_OF_CONDUCT.md).
 
 # Reporting Security Vulnerabilities
 
