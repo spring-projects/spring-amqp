@@ -43,7 +43,7 @@ public interface AmqpAdmin {
 See also xref:amqp/template.adoc#scoped-operations[Scoped Operations].
 
 The `getQueueProperties()` method returns some limited information about the queue (message count and consumer count).
-The keys for the properties returned are available as constants in the `RabbitTemplate` (`QUEUE_NAME`,
+The keys for the properties returned are available as constants in the `RabbitAdmin` (`QUEUE_NAME`,
 `QUEUE_MESSAGE_COUNT`, and `QUEUE_CONSUMER_COUNT`).
 The xref:amqp/management-rest-api.adoc#management-rest-api[RabbitMQ REST API] provides much more information in the `QueueInfo` object.
 
