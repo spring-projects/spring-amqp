@@ -119,7 +119,9 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 	}
 
 	/**
-	 * Get a name of stream this listener listens to.
+	 * Get a stream name this listener is subscribed to.
+	 * @return the stream name this listener is subscribed to.
+	 * @since 3.2.3
 	 */
 	public String getStreamName() {
 		return this.streamName;
