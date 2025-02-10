@@ -57,6 +57,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Ngoc Nhan
  * @author Artem Bilan
+ * @author David Horak
  *
  * @since 2.4
  *
@@ -115,6 +116,15 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 				codec != null
 						? new DefaultStreamMessageConverter(codec)
 						: new DefaultStreamMessageConverter();
+	}
+
+	/**
+	 * Get a stream name this listener is subscribed to.
+	 * @return the stream name this listener is subscribed to.
+	 * @since 3.2.3
+	 */
+	public String getStreamName() {
+		return this.streamName;
 	}
 
 	/**
