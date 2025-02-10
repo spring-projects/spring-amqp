@@ -19,7 +19,7 @@ https://help.github.com/articles/using-pull-requests/[Using Pull Requests] first
 == Search GitHub (or JIRA) issues first; create one if necessary
 
 Is there already an issue that addresses your concern?
-Search the https://github.com/spring-projects/spring-integration/issues[GitHub issue tracker] (and https://jira.spring.io/browse/AMQP[JIRA issue tracker]) to see if you can find something similar.
+Search the https://github.com/spring-projects/spring-amqp/issues[GitHub issue tracker] (and https://jira.spring.io/browse/AMQP[JIRA issue tracker]) to see if you can find something similar.
 If not, please create a new issue in GitHub before submitting a pull request unless the change is truly trivial, e.g. typo fixes,
 removing compiler warnings, etc.
 
@@ -132,7 +132,7 @@ Please carefully follow the whitespace and formatting conventions already presen
 8. Latin-1 (ISO-8859-1) encoding for Java sources; use `native2ascii` to convert
    if necessary
 
-## Add Apache license header to all new classes
+== Add Apache license header to all new classes
 
 [source, java]
 ----
