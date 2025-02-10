@@ -118,6 +118,13 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 	}
 
 	/**
+	 * Get a name of stream this listener listens to.
+	 */
+	public String getStreamName() {
+		return streamName;
+	}
+
+	/**
 	 * {@inheritDoc}
 	 * Mutually exclusive with {@link #superStream(String, String)}.
 	 */
