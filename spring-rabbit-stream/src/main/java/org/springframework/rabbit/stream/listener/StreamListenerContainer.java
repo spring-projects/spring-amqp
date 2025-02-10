@@ -56,6 +56,9 @@ import org.springframework.util.Assert;
  * @author Gary Russell
  * @author Christian Tzolov
  * @author Ngoc Nhan
+ * @author Artem Bilan
+ * @author David Horak
+ *
  * @since 2.4
  *
  */
@@ -109,6 +112,15 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 		Assert.notNull(environment, "'environment' cannot be null");
 		this.builder = environment.consumerBuilder();
 		this.streamConverter = new DefaultStreamMessageConverter(codec);
+	}
+
+	/**
+	 * Get a stream name this listener is subscribed to.
+	 * @return the stream name this listener is subscribed to.
+	 * @since 3.2.3
+	 */
+	public String getStreamName() {
+		return this.streamName;
 	}
 
 	/**
