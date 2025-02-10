@@ -57,6 +57,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Ngoc Nhan
  * @author Artem Bilan
+ * @author David Horak
  *
  * @since 2.4
  *
@@ -121,7 +122,7 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 	 * Get a name of stream this listener listens to.
 	 */
 	public String getStreamName() {
-		return streamName;
+		return this.streamName;
 	}
 
 	/**
