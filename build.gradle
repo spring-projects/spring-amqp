@@ -68,7 +68,7 @@ ext {
 	mockitoVersion = '5.6.0'
 	rabbitmqStreamVersion = '0.14.0'
 	rabbitmqVersion = '5.19.0'
-	reactorVersion = '2023.0.12'
+	reactorVersion = '2023.0.15'
 	snappyVersion = '1.1.10.7'
 	springDataVersion = '2023.1.12'
 	springRetryVersion = '2.0.10'
