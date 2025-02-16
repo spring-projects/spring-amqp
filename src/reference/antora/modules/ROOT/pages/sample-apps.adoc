@@ -351,4 +351,4 @@ Spring applications, when sending JSON, set the `__TypeId__` header to the fully
 
 The `spring-rabbit-json` sample explores several techniques to convert the JSON from a non-Spring application.
 
-See also xref:amqp/message-converters.adoc#json-message-converter[`Jackson2JsonMessageConverter`] as well as the {spring-amqp-java-docs}/index.html?org/springframework/amqp/support/converter/DefaultClassMapper.html[Javadoc for the `DefaultClassMapper`].
+See also xref:amqp/message-converters.adoc#json-message-converter[`Jackson2JsonMessageConverter`] as well as the javadoc:org.springframework.amqp.support.converter.DefaultClassMapper[Javadoc for the `DefaultClassMapper`].

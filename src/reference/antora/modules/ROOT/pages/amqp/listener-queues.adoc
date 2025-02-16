@@ -8,7 +8,7 @@ Container can be initially configured to listen on zero queues.
 Queues can be added and removed at runtime.
 The `SimpleMessageListenerContainer` recycles (cancels and re-creates) all consumers when any pre-fetched messages have been processed.
 The `DirectMessageListenerContainer` creates/cancels individual consumer(s) for each queue without affecting consumers on other queues.
-See the {spring-amqp-java-docs}/rabbit/listener/AbstractMessageListenerContainer.html[Javadoc] for the `addQueues`, `addQueueNames`, `removeQueues` and `removeQueueNames` methods.
+See the javadoc:org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer[Javadoc] for the `addQueues`, `addQueueNames`, `removeQueues` and `removeQueueNames` methods.
 
 If not all queues are available, the container tries to passively declare (and consume from) the missing queues every 60 seconds.
 
