@@ -469,6 +469,10 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		this.errorHandler = errorHandler;
 	}
 
+	public ErrorHandler getErrorHandler() {
+		return this.errorHandler;
+	}
+
 	/**
 	 * Determine whether the container should de-batch batched
 	 * messages (true) or call the listener with the batch (false). Default: true.
@@ -1165,7 +1169,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		this.messageAckListener = messageAckListener;
 	}
 
-	protected MessageAckListener getMessageAckListener() {
+	public MessageAckListener getMessageAckListener() {
 		return this.messageAckListener;
 	}
 
