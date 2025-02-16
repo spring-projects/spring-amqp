@@ -731,9 +731,9 @@ def generateAttributes() {
 
 	return [
 		'project-version': project.version,
+		'spring-integration-docs': "$springDocs/spring-integration/reference".toString(),
 		'spring-framework-docs': "$springDocs/spring-framework/reference/%s".formatted(generateVersionWithoutPatch(springVersion)),
 		'spring-retry-java-docs': "$springDocs/spring-retry/docs/$springRetryVersion/apidocs".toString(),
-		'spring-integration-docs': "$springDocs/spring-integration/reference".toString(),
 		'javadoc-location-org-springframework-transaction': "$springDocs/spring-framework/docs/$springVersion/javadoc-api".toString(),
 		'javadoc-location-org-springframework-amqp': "$springDocs/spring-amqp/docs/$project.version/api".toString(),
 		'micrometer-docs': "$micrometerDocsPrefix/micrometer/reference/%s".formatted(generateVersionWithoutPatch(micrometerVersion)),
