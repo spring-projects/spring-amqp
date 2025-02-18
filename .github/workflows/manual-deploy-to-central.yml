@@ -1,0 +1,26 @@
+name: Manually Deploy Artifactory Build to Maven Central
+
+on:
+  workflow_dispatch:
+    inputs:
+      buildName:
+        description: 'Artifactory Build Name'
+        required: true
+        type: string
+      buildNumber:
+        description: 'Artifactory Build Number'
+        required: true
+        type: string
+
+jobs:
+  deploy-to-central:
+
+    uses: spring-io/spring-github-workflows/.github/workflows/spring-artifactory-deploy-to-maven-central.yml@main
+    with:
+      buildName: ${{ inputs.buildName }}
+      buildNumber: ${{ inputs.buildNumber }}
+    secrets:
+      JF_ARTIFACTORY_SPRING: ${{ secrets.JF_ARTIFACTORY_SPRING }}
+      OSSRH_S01_TOKEN_USERNAME: ${{ secrets.OSSRH_S01_TOKEN_USERNAME }}
+      OSSRH_S01_TOKEN_PASSWORD: ${{ secrets.OSSRH_S01_TOKEN_PASSWORD }}
+      OSSRH_STAGING_PROFILE_NAME: ${{ secrets.OSSRH_STAGING_PROFILE_NAME }}
