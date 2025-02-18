@@ -1,5 +1,3 @@
-import java.util.regex.Pattern
-
 buildscript {
 	ext.kotlinVersion = '2.1.10'
 	ext.isCI = System.getenv('GITHUB_ACTION')
@@ -732,23 +730,23 @@ def generateAttributes() {
 	return [
 		'project-version': project.version,
 		'spring-integration-docs': "$springDocs/spring-integration/reference".toString(),
-		'spring-framework-docs': "$springDocs/spring-framework/reference/%s".formatted(generateVersionWithoutPatch(springVersion)),
+		'spring-framework-docs': "$springDocs/spring-framework/reference/${generateVersionWithoutPatch(springVersion)}".toString(),
 		'spring-retry-java-docs': "$springDocs/spring-retry/docs/$springRetryVersion/apidocs".toString(),
 		'javadoc-location-org-springframework-transaction': "$springDocs/spring-framework/docs/$springVersion/javadoc-api".toString(),
 		'javadoc-location-org-springframework-amqp': "$springDocs/spring-amqp/docs/$project.version/api".toString(),
-		'micrometer-docs': "$micrometerDocsPrefix/micrometer/reference/%s".formatted(generateVersionWithoutPatch(micrometerVersion)),
-		'micrometer-tracing-docs': "$micrometerDocsPrefix/tracing/reference/%s".formatted(generateVersionWithoutPatch(micrometerTracingVersion))
+		'micrometer-docs': "$micrometerDocsPrefix/micrometer/reference/${generateVersionWithoutPatch(micrometerVersion)}".toString(),
+		'micrometer-tracing-docs': "$micrometerDocsPrefix/tracing/reference/${generateVersionWithoutPatch(micrometerTracingVersion)}".toString()
 	]
 }
 
 static String generateVersionWithoutPatch(String version) {
 
-	def matcher = Pattern.compile("^(\\d+.\\d+).\\d+(-SNAPSHOT)?\$").matcher(version);
-	if(matcher.find()) {
+	def matcher = version =~ /^(\d+.\d+).\d+(-SNAPSHOT)?$/
+	if(matcher) {
 
-		return matcher.group(2) == null
-			? matcher.group(1)
-			: matcher.group(1) + matcher.group(2)
+		return matcher[0][2] == null
+			? matcher[0][1]
+			: matcher[0][1] + matcher[0][2]
 	}
 
 	return version
