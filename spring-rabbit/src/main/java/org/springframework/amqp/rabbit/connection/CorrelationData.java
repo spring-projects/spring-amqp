@@ -130,6 +130,16 @@ public class CorrelationData implements Correlation {
 	 */
 	public record Confirm(boolean ack, @Nullable String reason) {
 
+		@Deprecated(forRemoval = true, since = "4.0")
+		public boolean isAck() {
+			return this.ack;
+		}
+
+		@Deprecated(forRemoval = true, since = "4.0")
+		public @Nullable String getReason() {
+			return this.reason;
+		}
+
 	}
 
 }
