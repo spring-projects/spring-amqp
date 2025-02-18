@@ -462,11 +462,19 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	/**
 	 * Set an ErrorHandler to be invoked in case of any uncaught exceptions thrown while processing a Message. By
 	 * default, a {@link ConditionalRejectingErrorHandler} with its default list of fatal exceptions will be used.
-	 *
 	 * @param errorHandler The error handler.
 	 */
 	public void setErrorHandler(ErrorHandler errorHandler) {
 		this.errorHandler = errorHandler;
+	}
+
+	/**
+	 * Return the {@link ErrorHandler}.
+	 * @return the {@link ErrorHandler}
+	 * @since 3.1.9
+	 */
+	public ErrorHandler getErrorHandler() {
+		return this.errorHandler;
 	}
 
 	/**
@@ -1165,7 +1173,12 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		this.messageAckListener = messageAckListener;
 	}
 
-	protected MessageAckListener getMessageAckListener() {
+	/**
+	 * Return the {@link MessageAckListener}.
+	 * @return the {@link MessageAckListener}
+	 * @since 3.1.9
+	 */
+	public MessageAckListener getMessageAckListener() {
 		return this.messageAckListener;
 	}
 
