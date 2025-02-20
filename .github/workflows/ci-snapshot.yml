@@ -37,12 +37,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: spring-io/spring-github-workflows
-          path: spring-github-workflows
+          path: .github/spring-github-workflows
           show-progress: false
 
       - name: Build and Publish
         timeout-minutes: 30
-        uses: ./spring-github-workflows/.github/actions/spring-artifactory-gradle-build
+        uses: ./.github/spring-github-workflows/.github/actions/spring-artifactory-gradle-build
         with:
           gradleTasks: ${{ github.event_name == 'schedule' && '--rerun-tasks' || '' }}
           artifactoryUsername: ${{ secrets.ARTIFACTORY_USERNAME }}
