@@ -84,9 +84,7 @@ antora {
 }
 
 tasks.named('generateAntoraYml') {
-	asciidocAttributes = project.provider({
-		return ['project-version': project.version]
-	})
+	asciidocAttributes = project.provider( { generateAttributes() } )
 	baseAntoraYmlFile = file('src/reference/antora/antora.yml')
 }
 
@@ -723,4 +721,25 @@ publishing {
 			artifact distZip
 		}
 	}
+}
+
+def generateAttributes() {
+	def springDocs = "https://docs.spring.io"
+	def micrometerDocsPrefix = "https://docs.micrometer.io"
+
+	return [
+		'project-version': project.version,
+		'spring-integration-docs': "$springDocs/spring-integration/reference".toString(),
+		'spring-framework-docs': "$springDocs/spring-framework/reference/${generateVersionWithoutPatch(springVersion)}".toString(),
+		'spring-retry-java-docs': "$springDocs/spring-retry/docs/$springRetryVersion/apidocs".toString(),
+		'javadoc-location-org-springframework-transaction': "$springDocs/spring-framework/docs/$springVersion/javadoc-api".toString(),
+		'javadoc-location-org-springframework-amqp': "$springDocs/spring-amqp/docs/$project.version/api".toString(),
+		'micrometer-docs': "$micrometerDocsPrefix/micrometer/reference/${generateVersionWithoutPatch(micrometerVersion)}".toString(),
+		'micrometer-tracing-docs': "$micrometerDocsPrefix/tracing/reference/${generateVersionWithoutPatch(micrometerTracingVersion)}".toString()
+	]
+}
+
+static String generateVersionWithoutPatch(String version) {
+
+	return version.split('\\.')[0,1].join('.') + (version.endsWith('-SNAPSHOT') ? '-SNAPSHOT' : '')
 }

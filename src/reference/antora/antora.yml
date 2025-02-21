@@ -15,16 +15,7 @@ asciidoc:
   attributes:
     attribute-missing: 'warn'
     chomp: 'all'
-    spring-docs: 'https://docs.spring.io'
-    spring-framework-docs: '{spring-docs}/spring-framework/reference'
-    spring-integration-docs: '{spring-docs}/spring-integration/reference'
-    spring-amqp-java-docs: '{spring-docs}/spring-amqp/docs/current/api/org/springframework/amqp'
-    spring-framework-java-docs: '{spring-docs}/spring/docs/current/javadoc-api/org/springframework'
-    spring-retry-java-docs: '{spring-docs}/spring-retry/docs/api/current/'
     # External projects URLs and related attributes
-    micrometer-docs: 'https://docs.micrometer.io'
-    micrometer-tracing-docs: '{micrometer-docs}/tracing/reference/'
-    micrometer-micrometer-docs: '{micrometer-docs}/micrometer/reference/'
     rabbitmq-stream-docs: 'https://rabbitmq.github.io/rabbitmq-stream-java-client/stable/htmlsingle'
     rabbitmq-github: 'https://github.com/rabbitmq'
     rabbitmq-server-github: '{rabbitmq-github}/rabbitmq-server/tree/main/deps'
