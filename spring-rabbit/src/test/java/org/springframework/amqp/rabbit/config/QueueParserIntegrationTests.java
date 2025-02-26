@@ -38,6 +38,8 @@ import static org.awaitility.Awaitility.await;
  * @author Dave Syer
  * @author Gary Russell
  * @author Gunnar Hillert
+ * @author Artem Bilan
+ *
  * @since 1.0
  *
  */
@@ -47,15 +49,14 @@ public final class QueueParserIntegrationTests {
 	private DefaultListableBeanFactory beanFactory;
 
 	@BeforeEach
-	public void setUpDefaultBeanFactory() throws Exception {
+	public void setUpDefaultBeanFactory() {
 		beanFactory = new DefaultListableBeanFactory();
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
 		reader.loadBeanDefinitions(new ClassPathResource(getClass().getSimpleName() + "-context.xml", getClass()));
 	}
 
 	@Test
-	public void testArgumentsQueue() throws Exception {
-
+	public void testArgumentsQueue() {
 		Queue queue = beanFactory.getBean("arguments", Queue.class);
 		assertThat(queue).isNotNull();
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory(
@@ -67,9 +68,9 @@ public final class QueueParserIntegrationTests {
 
 		assertThat(queue.getArguments().get("x-message-ttl")).isEqualTo(100L);
 		template.convertAndSend(queue.getName(), "message");
-		await().with().pollInterval(Duration.ofMillis(50))
+		await().with().pollInterval(Duration.ofMillis(500))
 				.until(() -> rabbitAdmin.getQueueProperties("arguments")
-						.get(RabbitAdmin.QUEUE_MESSAGE_COUNT).equals(0));
+						.get(RabbitAdmin.QUEUE_MESSAGE_COUNT).equals(0L));
 		connectionFactory.destroy();
 		RabbitAvailableCondition.getBrokerRunning().deleteQueues("arguments");
 	}
