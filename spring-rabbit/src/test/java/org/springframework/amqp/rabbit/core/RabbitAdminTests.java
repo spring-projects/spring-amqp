@@ -163,7 +163,7 @@ public class RabbitAdminTests extends NeedsManagementTests {
 		}
 	}
 
-	private int messageCount(RabbitAdmin rabbitAdmin, String queueName) {
+	private long messageCount(RabbitAdmin rabbitAdmin, String queueName) {
 		QueueInformation info = rabbitAdmin.getQueueInfo(queueName);
 		assertThat(info).isNotNull();
 		return info.getMessageCount();

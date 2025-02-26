@@ -119,7 +119,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 */
 	public static final Object QUEUE_CONSUMER_COUNT = "QUEUE_CONSUMER_COUNT";
 
-	private static final String DELAYED_MESSAGE_EXCHANGE = "x-delayed-message";
+	public static final String DELAYED_MESSAGE_EXCHANGE = "x-delayed-message";
 
 	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR

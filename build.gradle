@@ -59,6 +59,7 @@ ext {
 	micrometerVersion = '1.15.0-SNAPSHOT'
 	micrometerTracingVersion = '1.5.0-SNAPSHOT'
 	mockitoVersion = '5.15.2'
+	rabbitmqAmqpClientVersion = '0.4.0'
 	rabbitmqStreamVersion = '0.22.0'
 	rabbitmqVersion = '5.24.0'
 	reactorVersion = '2024.0.3'
@@ -465,6 +466,28 @@ project('spring-rabbit-stream') {
 		testImplementation 'org.testcontainers:junit-jupiter'
 		testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl'
 		testImplementation 'org.springframework:spring-webflux'
+		testImplementation 'io.micrometer:micrometer-observation-test'
+		testImplementation 'io.micrometer:micrometer-tracing-bridge-brave'
+		testImplementation 'io.micrometer:micrometer-tracing-test'
+		testImplementation 'io.micrometer:micrometer-tracing-integration-test'
+	}
+}
+
+project('spring-rabbitmq-client') {
+	description = 'Spring RabbitMQ Client for AMQP 1.0'
+
+	dependencies {
+		api project(':spring-rabbit')
+		api "com.rabbitmq.client:amqp-client:$rabbitmqAmqpClientVersion"
+		api 'io.micrometer:micrometer-observation'
+
+		testApi project(':spring-rabbit-junit')
+
+		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind'
+
+		testImplementation 'org.testcontainers:rabbitmq'
+		testImplementation 'org.testcontainers:junit-jupiter'
+		testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl'
 		testImplementation 'io.micrometer:micrometer-observation-test'
 		testImplementation 'io.micrometer:micrometer-tracing-bridge-brave'
 		testImplementation 'io.micrometer:micrometer-tracing-test'

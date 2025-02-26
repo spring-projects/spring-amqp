@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 the original author or authors.
+ * Copyright 2019-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ package org.springframework.amqp.core;
  *
  * @author Gary Russell
  * @author Ngoc Nhan
+ * @author Artem Bilan
+ *
  * @since 2.2
  *
  */
@@ -28,11 +30,13 @@ public class QueueInformation {
 
 	private final String name;
 
-	private final int messageCount;
+	private final long messageCount;
 
 	private final int consumerCount;
 
-	public QueueInformation(String name, int messageCount, int consumerCount) {
+	private String type = "classic";
+
+	public QueueInformation(String name, long messageCount, int consumerCount) {
 		this.name = name;
 		this.messageCount = messageCount;
 		this.consumerCount = consumerCount;
@@ -42,7 +46,7 @@ public class QueueInformation {
 		return this.name;
 	}
 
-	public int getMessageCount() {
+	public long getMessageCount() {
 		return this.messageCount;
 	}
 
@@ -50,11 +54,30 @@ public class QueueInformation {
 		return this.consumerCount;
 	}
 
+	/**
+	 * Return a queue type.
+	 * {@code classic} by default since AMQP 0.9.1 protocol does not return this info in {@code DeclareOk} reply.
+	 * @return a queue type
+	 * @since 4.0
+	 */
+	public String getType() {
+		return this.type;
+	}
+
+	/**
+	 * Set a queue type.
+	 * @param type the queue type: {@code quorum}, {@code classic} or {@code stream}
+	 * @since 4.0
+	 */
+	public void setType(String type) {
+		this.type = type;
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((this.name == null) ? 0 : this.name.hashCode());
+		result = prime * result + this.name.hashCode();
 		return result;
 	}
 
@@ -70,9 +93,6 @@ public class QueueInformation {
 			return false;
 		}
 		QueueInformation other = (QueueInformation) obj;
-		if (this.name == null) {
-			return other.name == null;
-		}
 		return this.name.equals(other.name);
 	}
 

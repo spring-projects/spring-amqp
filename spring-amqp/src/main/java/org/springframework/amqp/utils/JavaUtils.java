@@ -44,9 +44,9 @@ public final class JavaUtils {
 	}
 
 	/**
-	 * Invoke {@link Consumer#accept(Object)} with the value if the condition is true.
+	 * Invoke {@link Consumer#accept(Object)} with the value if it is not null and the condition is true.
 	 * @param condition the condition.
-	 * @param value the value.
+	 * @param value the value. Skipped if null.
 	 * @param consumer the consumer.
 	 * @param <T> the value type.
 	 * @return this.
