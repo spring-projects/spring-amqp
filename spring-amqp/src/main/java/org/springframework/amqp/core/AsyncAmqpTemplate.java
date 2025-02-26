@@ -27,10 +27,78 @@ import org.springframework.core.ParameterizedTypeReference;
  * receive operations using {@link CompletableFuture}s.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.0
  *
  */
 public interface AsyncAmqpTemplate {
+
+	default CompletableFuture<Boolean> send(Message message) {
+		throw new UnsupportedOperationException();
+	}
+
+	default CompletableFuture<Boolean> send(String queue, Message message) {
+		throw new UnsupportedOperationException();
+	}
+
+	default CompletableFuture<Boolean> send(String exchange, @Nullable String routingKey, Message message) {
+		throw new UnsupportedOperationException();
+	}
+
+	default CompletableFuture<Boolean> convertAndSend(Object message) {
+		throw new UnsupportedOperationException();
+	}
+
+	default CompletableFuture<Boolean> convertAndSend(String queue, Object message) {
+		throw new UnsupportedOperationException();
+	}
+
+	default CompletableFuture<Boolean> convertAndSend(String exchange, @Nullable String routingKey, Object message) {
+		throw new UnsupportedOperationException();
+	}
+
+	default CompletableFuture<Boolean> convertAndSend(Object message,
+			@Nullable MessagePostProcessor messagePostProcessor) {
+
+		throw new UnsupportedOperationException();
+	}
+
+	default CompletableFuture<Boolean> convertAndSend(String queue, Object message,
+			@Nullable MessagePostProcessor messagePostProcessor) {
+
+		throw new UnsupportedOperationException();
+	}
+
+	default CompletableFuture<Boolean> convertAndSend(String exchange, @Nullable String routingKey, Object message,
+			@Nullable MessagePostProcessor messagePostProcessor) {
+
+		throw new UnsupportedOperationException();
+	}
+
+	default CompletableFuture<Message> receive() {
+		throw new UnsupportedOperationException();
+	}
+
+	default CompletableFuture<Message> receive(String queueName) {
+		throw new UnsupportedOperationException();
+	}
+
+	default CompletableFuture<Object> receiveAndConvert() {
+		throw new UnsupportedOperationException();
+	}
+
+	default CompletableFuture<Object> receiveAndConvert(String queueName) {
+		throw new UnsupportedOperationException();
+	}
+
+	default <T> CompletableFuture<T> receiveAndConvert(ParameterizedTypeReference<T> type) {
+		throw new UnsupportedOperationException();
+	}
+
+	default <T> CompletableFuture<T> receiveAndConvert(String queueName, ParameterizedTypeReference<T> type) {
+		throw new UnsupportedOperationException();
+	}
 
 	/**
 	 * Send a message to the default exchange with the default routing key. If the message

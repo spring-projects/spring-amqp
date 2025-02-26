@@ -44,12 +44,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RabbitAmqpAdminTests extends RabbitAmqpTestBase {
 
 	@Autowired
-	RabbitAmqpTemplate template;
-
-	@Autowired
-	RabbitAmqpAdmin admin;
-
-	@Autowired
 	@Qualifier("ds")
 	Declarables declarables;
 

@@ -21,6 +21,7 @@ import com.rabbitmq.client.amqp.Environment;
 import com.rabbitmq.client.amqp.impl.AmqpEnvironmentBuilder;
 
 import org.springframework.amqp.rabbit.junit.AbstractTestContainerTests;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.annotation.DirtiesContext;
@@ -36,6 +37,18 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 @SpringJUnitConfig
 @DirtiesContext
 abstract class RabbitAmqpTestBase extends AbstractTestContainerTests {
+
+	@Autowired
+	protected Environment environment;
+
+	@Autowired
+	protected Connection connection;
+
+	@Autowired
+	protected RabbitAmqpAdmin admin;
+
+	@Autowired
+	protected RabbitAmqpTemplate template;
 
 	@Configuration
 	public static class AmqpCommonConfig {

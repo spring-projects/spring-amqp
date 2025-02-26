@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -33,6 +34,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 /**
  * @author Artem Bilan
@@ -56,6 +58,17 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 	@AfterEach
 	void tearDown() {
 		this.rabbitAmqpTemplate.destroy();
+	}
+
+	@Test
+	void illegalStateOnNoDefaults() {
+		assertThatIllegalStateException()
+				.isThrownBy(() -> this.template.send(new Message(new byte[0])))
+				.withMessage("For send with defaults, an 'exchange' (and optional 'key') or 'queue' must be provided");
+
+		assertThatIllegalStateException()
+				.isThrownBy(() -> this.template.convertAndSend(new byte[0]))
+				.withMessage("For send with defaults, an 'exchange' (and optional 'key') or 'queue' must be provided");
 	}
 
 	@Test

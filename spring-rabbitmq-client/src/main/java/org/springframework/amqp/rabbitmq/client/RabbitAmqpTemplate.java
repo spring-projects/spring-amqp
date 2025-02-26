@@ -156,7 +156,10 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, InitializingBean, 
 	 * @param message to publish
 	 * @return the {@link CompletableFuture} as an async result of the message publication.
 	 */
+	@Override
 	public CompletableFuture<Boolean> send(Message message) {
+		Assert.state(this.defaultExchange != null || this.defaultQueue != null,
+				"For send with defaults, an 'exchange' (and optional 'key') or 'queue' must be provided");
 		return doSend(this.defaultExchange, this.defaultRoutingKey, this.defaultQueue, message);
 	}
 
@@ -166,10 +169,12 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, InitializingBean, 
 	 * @param message to publish
 	 * @return the {@link CompletableFuture} as an async result of the message publication.
 	 */
+	@Override
 	public CompletableFuture<Boolean> send(String queue, Message message) {
 		return doSend(null, null, queue, message);
 	}
 
+	@Override
 	public CompletableFuture<Boolean> send(String exchange, @Nullable String routingKey, Message message) {
 		return doSend(exchange, routingKey != null ? routingKey : this.defaultRoutingKey, null, message);
 	}
@@ -226,30 +231,38 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, InitializingBean, 
 	 * @param message to publish
 	 * @return the {@link CompletableFuture} as an async result of the message publication.
 	 */
+	@Override
 	public CompletableFuture<Boolean> convertAndSend(Object message) {
+		Assert.state(this.defaultExchange != null || this.defaultQueue != null,
+				"For send with defaults, an 'exchange' (and optional 'key') or 'queue' must be provided");
 		return doConvertAndSend(this.defaultExchange, this.defaultRoutingKey, this.defaultQueue, message, null);
 	}
 
+	@Override
 	public CompletableFuture<Boolean> convertAndSend(String queue, Object message) {
 		return doConvertAndSend(null, null, queue, message, null);
 	}
 
+	@Override
 	public CompletableFuture<Boolean> convertAndSend(String exchange, @Nullable String routingKey, Object message) {
 		return doConvertAndSend(exchange, routingKey != null ? routingKey : this.defaultRoutingKey, null, message, null);
 	}
 
+	@Override
 	public CompletableFuture<Boolean> convertAndSend(Object message,
 			@Nullable MessagePostProcessor messagePostProcessor) {
 
 		return doConvertAndSend(null, null, null, message, messagePostProcessor);
 	}
 
+	@Override
 	public CompletableFuture<Boolean> convertAndSend(String queue, Object message,
 			@Nullable MessagePostProcessor messagePostProcessor) {
 
 		return doConvertAndSend(null, null, queue, message, messagePostProcessor);
 	}
 
+	@Override
 	public CompletableFuture<Boolean> convertAndSend(String exchange, @Nullable String routingKey, Object message,
 			@Nullable MessagePostProcessor messagePostProcessor) {
 
@@ -269,11 +282,13 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, InitializingBean, 
 		return doSend(exchange, routingKey, queue, message);
 	}
 
+	@Override
 	public CompletableFuture<Message> receive() {
 		return receive(getRequiredQueue());
 	}
 
 	@SuppressWarnings("try")
+	@Override
 	public CompletableFuture<Message> receive(String queueName) {
 		CompletableFuture<Message> messageFuture = new CompletableFuture<>();
 
@@ -293,10 +308,12 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, InitializingBean, 
 				.whenComplete((message, exception) -> consumer.close());
 	}
 
+	@Override
 	public CompletableFuture<Object> receiveAndConvert() {
 		return receiveAndConvert(getRequiredQueue());
 	}
 
+	@Override
 	public CompletableFuture<Object> receiveAndConvert(String queueName) {
 		return receive(queueName)
 				.thenApply(this.messageConverter::fromMessage);
@@ -309,6 +326,7 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, InitializingBean, 
 	 * @param type the type to covert received result.
 	 * @return the CompletableFuture with a result.
 	 */
+	@Override
 	public <T> CompletableFuture<T> receiveAndConvert(ParameterizedTypeReference<T> type) {
 		return receiveAndConvert(getRequiredQueue(), type);
 	}
@@ -322,6 +340,7 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, InitializingBean, 
 	 * @return the CompletableFuture with a result.
 	 */
 	@SuppressWarnings("unchecked")
+	@Override
 	public <T> CompletableFuture<T> receiveAndConvert(String queueName, ParameterizedTypeReference<T> type) {
 		SmartMessageConverter smartMessageConverter = getRequiredSmartMessageConverter();
 		return receive(queueName)
