@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2022 the original author or authors.
+ * Copyright 2018-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,10 @@
 package org.springframework.amqp.rabbit.listener.support;
 
 import org.apache.commons.logging.Log;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
+import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.ImmediateRequeueAmqpException;
 import org.springframework.amqp.rabbit.listener.exception.MessageRejectedWhileStoppingException;
 
@@ -59,7 +61,11 @@ public final class ContainerUtils {
 				shouldRequeue = true;
 				break;
 			}
-			t = t.getCause();
+			Throwable cause = t.getCause();
+			if (cause == t) {
+				break;
+			}
+			t = cause;
 		}
 		if (logger.isDebugEnabled()) {
 			logger.debug("Rejecting messages (requeue=" + shouldRequeue + ")");
@@ -75,8 +81,41 @@ public final class ContainerUtils {
 	 * @since 2.2
 	 */
 	public static boolean isRejectManual(Throwable ex) {
-		return ex instanceof AmqpRejectAndDontRequeueException aradrex
-				&& aradrex.isRejectManual();
+		AmqpRejectAndDontRequeueException amqpRejectAndDontRequeueException =
+				findInCause(ex, AmqpRejectAndDontRequeueException.class);
+		return amqpRejectAndDontRequeueException != null && amqpRejectAndDontRequeueException.isRejectManual();
+	}
+
+	/**
+	 * Return true for {@link ImmediateAcknowledgeAmqpException}.
+	 * @param ex the exception to traverse.
+	 * @return true if an {@link ImmediateAcknowledgeAmqpException} is present in the cause chain.
+	 * @since 4.0
+	 */
+	public static boolean isImmediateAcknowledge(Throwable ex) {
+		return findInCause(ex, ImmediateAcknowledgeAmqpException.class) != null;
+	}
+
+	/**
+	 * Return true for {@link AmqpRejectAndDontRequeueException}.
+	 * @param ex the exception to traverse.
+	 * @return true if an {@link AmqpRejectAndDontRequeueException} is present in the cause chain.
+	 * @since 4.0
+	 */
+	public static boolean isAmqpReject(Throwable ex) {
+		return findInCause(ex, AmqpRejectAndDontRequeueException.class) != null;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T extends Throwable> @Nullable T findInCause(Throwable throwable, Class<T> exceptionToFind) {
+		if (exceptionToFind.isAssignableFrom(throwable.getClass())) {
+			return (T) throwable;
+		}
+		Throwable cause = throwable.getCause();
+		if (cause == null || cause == throwable) {
+			return null;
+		}
+		return findInCause(cause, exceptionToFind);
 	}
 
 }

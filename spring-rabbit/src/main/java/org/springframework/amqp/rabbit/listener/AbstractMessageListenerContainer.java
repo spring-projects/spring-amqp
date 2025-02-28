@@ -752,7 +752,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * to be sent to the dead letter exchange. Setting to false causes all rejections to not
 	 * be requeued. When true, the default can be overridden by the listener throwing an
 	 * {@link AmqpRejectAndDontRequeueException}. Default true.
-	 * @param defaultRequeueRejected true to reject by default.
+	 * @param defaultRequeueRejected true to requeue by default.
 	 */
 	public void setDefaultRequeueRejected(boolean defaultRequeueRejected) {
 		this.defaultRequeueRejected = defaultRequeueRejected;

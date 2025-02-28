@@ -157,6 +157,8 @@ public class MessageProperties implements Serializable {
 
 	private transient @Nullable Object targetBean;
 
+	private transient @Nullable AmqpAcknowledgment amqpAcknowledgment;
+
 	public void setHeader(String key, Object value) {
 		this.headers.put(key, value);
 	}
@@ -639,6 +641,25 @@ public class MessageProperties implements Serializable {
 		catch (@SuppressWarnings("unused") Exception e) {
 			return null;
 		}
+	}
+
+	/**
+	 * Return the {@link AmqpAcknowledgment} for consumer if any.
+	 * @return the {@link AmqpAcknowledgment} for consumer if any.
+	 * @since 4.0
+	 */
+	public @Nullable AmqpAcknowledgment getAmqpAcknowledgment() {
+		return this.amqpAcknowledgment;
+	}
+
+	/**
+	 * Set an {@link AmqpAcknowledgment} for manual acks in the target message processor.
+	 * This is only in-application a consumer side logic.
+	 * @param amqpAcknowledgment the {@link AmqpAcknowledgment} to use in the application.
+	 * @since 4.0
+	 */
+	public void setAmqpAcknowledgment(AmqpAcknowledgment amqpAcknowledgment) {
+		this.amqpAcknowledgment = amqpAcknowledgment;
 	}
 
 	@Override // NOSONAR complexity

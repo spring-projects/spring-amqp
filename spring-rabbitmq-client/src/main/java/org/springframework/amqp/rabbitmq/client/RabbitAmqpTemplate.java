@@ -16,11 +16,7 @@
 
 package org.springframework.amqp.rabbitmq.client;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Date;
-import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -182,38 +178,20 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, InitializingBean, 
 	private CompletableFuture<Boolean> doSend(@Nullable String exchange, @Nullable String routingKey,
 			@Nullable String queue, Message message) {
 
-		MessageProperties messageProperties = message.getMessageProperties();
-
-		com.rabbitmq.client.amqp.Message amqpMessage =
-				this.publisher.message(message.getBody())
-						.contentEncoding(messageProperties.getContentEncoding())
-						.contentType(messageProperties.getContentType())
-						.messageId(messageProperties.getMessageId())
-						.correlationId(messageProperties.getCorrelationId())
-						.priority(messageProperties.getPriority().byteValue())
-						.replyTo(messageProperties.getReplyTo());
-
+		com.rabbitmq.client.amqp.Message amqpMessage = this.publisher.message();
 		com.rabbitmq.client.amqp.Message.MessageAddressBuilder address = amqpMessage.toAddress();
-
-		Map<String, @Nullable Object> headers = messageProperties.getHeaders();
-		if (!headers.isEmpty()) {
-			headers.forEach((key, val) -> mapProp(key, val, amqpMessage));
-		}
-
 		JavaUtils.INSTANCE
-				.acceptIfNotNull(messageProperties.getUserId(),
-						(userId) -> amqpMessage.userId(userId.getBytes(StandardCharsets.UTF_8)))
-				.acceptIfNotNull(messageProperties.getTimestamp(),
-						(timestamp) -> amqpMessage.creationTime(timestamp.getTime()))
-				.acceptIfNotNull(messageProperties.getExpiration(),
-						(expiration) -> amqpMessage.absoluteExpiryTime(Long.parseLong(expiration)))
 				.acceptIfNotNull(exchange, address::exchange)
 				.acceptIfNotNull(routingKey, address::key)
 				.acceptIfNotNull(queue, address::queue);
 
+		amqpMessage = address.message();
+
+		RabbitAmqpUtils.toAmqpMessage(message, amqpMessage);
+
 		CompletableFuture<Boolean> publishResult = new CompletableFuture<>();
 
-		this.publisher.publish(address.message(),
+		this.publisher.publish(amqpMessage,
 				(context) -> {
 					switch (context.status()) {
 						case ACCEPTED -> publishResult.complete(true);
@@ -299,7 +277,7 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, InitializingBean, 
 						.priority(10)
 						.messageHandler((context, message) -> {
 							context.accept();
-							messageFuture.complete(fromAmqpMessage(message));
+							messageFuture.complete(RabbitAmqpUtils.fromAmqpMessage(message, null));
 						})
 						.build();
 
@@ -450,64 +428,6 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, InitializingBean, 
 	@Override
 	public <C> CompletableFuture<C> convertSendAndReceiveAsType(String exchange, String routingKey, Object object, @Nullable MessagePostProcessor messagePostProcessor, @Nullable ParameterizedTypeReference<C> responseType) {
 		throw new UnsupportedOperationException();
-	}
-
-	private static void mapProp(String key, @Nullable Object val, com.rabbitmq.client.amqp.Message amqpMessage) {
-		if (val == null) {
-			return;
-		}
-		if (val instanceof String string) {
-			amqpMessage.property(key, string);
-		}
-		else if (val instanceof Long longValue) {
-			amqpMessage.property(key, longValue);
-		}
-		else if (val instanceof Integer intValue) {
-			amqpMessage.property(key, intValue);
-		}
-		else if (val instanceof Short shortValue) {
-			amqpMessage.property(key, shortValue);
-		}
-		else if (val instanceof Byte byteValue) {
-			amqpMessage.property(key, byteValue);
-		}
-		else if (val instanceof Double doubleValue) {
-			amqpMessage.property(key, doubleValue);
-		}
-		else if (val instanceof Float floatValue) {
-			amqpMessage.property(key, floatValue);
-		}
-		else if (val instanceof Character character) {
-			amqpMessage.property(key, character);
-		}
-		else if (val instanceof UUID uuid) {
-			amqpMessage.property(key, uuid);
-		}
-		else if (val instanceof byte[] bytes) {
-			amqpMessage.property(key, bytes);
-		}
-		else if (val instanceof Boolean booleanValue) {
-			amqpMessage.property(key, booleanValue);
-		}
-	}
-
-	private static Message fromAmqpMessage(com.rabbitmq.client.amqp.Message amqpMessage) {
-		MessageProperties messageProperties = new MessageProperties();
-
-		JavaUtils.INSTANCE
-				.acceptIfNotNull(amqpMessage.messageIdAsString(), messageProperties::setMessageId)
-				.acceptIfNotNull(amqpMessage.userId(),
-						(usr) -> messageProperties.setUserId(new String(usr, StandardCharsets.UTF_8)))
-				.acceptIfNotNull(amqpMessage.correlationIdAsString(), messageProperties::setCorrelationId)
-				.acceptIfNotNull(amqpMessage.contentType(), messageProperties::setContentType)
-				.acceptIfNotNull(amqpMessage.contentEncoding(), messageProperties::setContentEncoding)
-				.acceptIfNotNull(amqpMessage.absoluteExpiryTime(),
-						(exp) -> messageProperties.setExpiration(Long.toString(exp)))
-				.acceptIfNotNull(amqpMessage.creationTime(), (time) -> messageProperties.setTimestamp(new Date(time)));
-
-		amqpMessage.forEachProperty(messageProperties::setHeader);
-
-		return new Message(amqpMessage.body(), messageProperties);
 	}
 
 }
