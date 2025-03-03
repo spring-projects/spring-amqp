@@ -64,15 +64,6 @@ public class RabbitAmqpAdminTests extends RabbitAmqpTestBase {
 		assertThat(template.receiveAndConvert("q3")).succeedsWithin(Duration.ofSeconds(10)).isEqualTo("test4");
 		assertThat(template.receiveAndConvert("q4")).succeedsWithin(Duration.ofSeconds(10)).isEqualTo("test5");
 
-		admin.deleteQueue("q1");
-		admin.deleteQueue("q2");
-		admin.deleteQueue("q3");
-		admin.deleteQueue("q4");
-		admin.deleteExchange("e1");
-		admin.deleteExchange("e2");
-		admin.deleteExchange("e3");
-		admin.deleteExchange("e4");
-
 		assertThat(declarables.getDeclarablesByType(Queue.class))
 				.hasSize(1)
 				.extracting(Queue::getName)
@@ -92,12 +83,12 @@ public class RabbitAmqpAdminTests extends RabbitAmqpTestBase {
 
 		@Bean
 		DirectExchange e1() {
-			return new DirectExchange("e1", false, false);
+			return new DirectExchange("e1");
 		}
 
 		@Bean
 		Queue q1() {
-			return new Queue("q1", false, false, false);
+			return new Queue("q1");
 		}
 
 		@Bean
@@ -108,15 +99,15 @@ public class RabbitAmqpAdminTests extends RabbitAmqpTestBase {
 		@Bean
 		Declarables es() {
 			return new Declarables(
-					new DirectExchange("e2", false, false),
-					new DirectExchange("e3", false, false));
+					new DirectExchange("e2"),
+					new DirectExchange("e3"));
 		}
 
 		@Bean
 		Declarables qs() {
 			return new Declarables(
-					new Queue("q2", false, false, false),
-					new Queue("q3", false, false, false));
+					new Queue("q2"),
+					new Queue("q3"));
 		}
 
 		@Bean
@@ -129,8 +120,8 @@ public class RabbitAmqpAdminTests extends RabbitAmqpTestBase {
 		@Bean
 		Declarables ds() {
 			return new Declarables(
-					new DirectExchange("e4", false, false),
-					new Queue("q4", false, false, false),
+					new DirectExchange("e4"),
+					new Queue("q4"),
 					new Binding("q4", Binding.DestinationType.QUEUE, "e4", "k4", null));
 		}
 

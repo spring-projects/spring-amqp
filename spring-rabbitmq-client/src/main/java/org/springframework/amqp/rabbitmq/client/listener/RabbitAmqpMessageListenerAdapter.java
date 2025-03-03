@@ -53,8 +53,8 @@ public class RabbitAmqpMessageListenerAdapter extends MessagingMessageListenerAd
 
 	@Override
 	public void onAmqpMessage(com.rabbitmq.client.amqp.Message amqpMessage, Consumer.@Nullable Context context) {
+		org.springframework.amqp.core.Message springMessage = RabbitAmqpUtils.fromAmqpMessage(amqpMessage, context);
 		try {
-			org.springframework.amqp.core.Message springMessage = RabbitAmqpUtils.fromAmqpMessage(amqpMessage, context);
 			org.springframework.messaging.Message<?> messagingMessage = toMessagingMessage(springMessage);
 			InvocationResult result = getHandlerAdapter()
 					.invoke(messagingMessage,
@@ -65,7 +65,7 @@ public class RabbitAmqpMessageListenerAdapter extends MessagingMessageListenerAd
 			}
 		}
 		catch (Exception ex) {
-			throw new ListenerExecutionFailedException("Failed to invoke listener", ex);
+			throw new ListenerExecutionFailedException("Failed to invoke listener", ex, springMessage);
 		}
 	}
 

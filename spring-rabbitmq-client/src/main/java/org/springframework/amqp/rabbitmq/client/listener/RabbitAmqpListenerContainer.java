@@ -256,24 +256,25 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer {
 			}
 		}
 		catch (Exception ex) {
-			if (!handleSpecialErrors(ex, context)) {
-				try {
-					this.errorHandler.handleError(ex);
-					// If error handler does not re-throw an exception, treat it as a successful processing result.
+			try {
+				this.errorHandler.handleError(ex);
+				// If error handler does not re-throw an exception, re-check original error.
+				// If it is not special, treat the error handler outcome as a successful processing result.
+				if (!handleSpecialErrors(ex, context)) {
 					context.accept();
 				}
-				catch (Exception rethrow) {
-					if (!handleSpecialErrors(rethrow, context)) {
-						if (this.defaultRequeue) {
-							context.requeue();
-						}
-						else {
-							context.discard();
-						}
-						LOG.error(rethrow, () ->
-								"The 'errorHandler' has thrown an exception. The '" + amqpMessage + "' is "
-										+ (this.defaultRequeue ? "re-queued." : "discarded."));
+			}
+			catch (Exception rethrow) {
+				if (!handleSpecialErrors(rethrow, context)) {
+					if (this.defaultRequeue) {
+						context.requeue();
 					}
+					else {
+						context.discard();
+					}
+					LOG.error(rethrow, () ->
+							"The 'errorHandler' has thrown an exception. The '" + amqpMessage + "' is "
+									+ (this.defaultRequeue ? "re-queued." : "discarded."));
 				}
 			}
 		}
@@ -321,9 +322,9 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer {
 			CompletableFuture<Void>[] completableFutures =
 					this.queueToConsumers.values().stream()
 							.flatMap(List::stream)
-							.peek(Consumer::pause)
 							.map((consumer) ->
 									CompletableFuture.supplyAsync(() -> {
+										consumer.pause();
 										try (consumer) {
 											while (consumer.unsettledMessageCount() > 0) {
 												Thread.sleep(100);

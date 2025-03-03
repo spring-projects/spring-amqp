@@ -102,12 +102,12 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 
 		@Bean
 		DirectExchange e1() {
-			return new DirectExchange("e1", false, false);
+			return new DirectExchange("e1");
 		}
 
 		@Bean
 		Queue q1() {
-			return new Queue("q1", false, false, false);
+			return new Queue("q1");
 		}
 
 		@Bean

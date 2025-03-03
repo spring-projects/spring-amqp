@@ -176,13 +176,13 @@ public class RabbitAmqpAdmin
 	 */
 	@Override
 	public void initialize() {
-		redeclareBeanDeclarables();
+		declareDeclarableBeans();
 	}
 
 	/**
 	 * Process bean declarables.
 	 */
-	private void redeclareBeanDeclarables() {
+	private void declareDeclarableBeans() {
 		if (this.applicationContext == null) {
 			LOG.debug("no ApplicationContext has been set, cannot auto-declare Exchanges, Queues, and Bindings");
 			return;
