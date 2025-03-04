@@ -17,15 +17,22 @@
 package org.springframework.amqp.rabbitmq.client.listener;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 import com.rabbitmq.client.amqp.Consumer;
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.amqp.core.AmqpAcknowledgment;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.listener.adapter.InvocationResult;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbitmq.client.RabbitAmqpUtils;
+import org.springframework.messaging.support.GenericMessage;
 
 /**
  * A {@link MessagingMessageListenerAdapter} extension for the {@link RabbitAmqpMessageListener}.
@@ -45,15 +52,26 @@ import org.springframework.amqp.rabbitmq.client.RabbitAmqpUtils;
 public class RabbitAmqpMessageListenerAdapter extends MessagingMessageListenerAdapter
 		implements RabbitAmqpMessageListener {
 
-	public RabbitAmqpMessageListenerAdapter(@Nullable Object bean, @Nullable Method method, boolean returnExceptions,
-			@Nullable RabbitListenerErrorHandler errorHandler) {
+	private @Nullable Collection<MessagePostProcessor> afterReceivePostProcessors;
 
-		super(bean, method, returnExceptions, errorHandler);
+	public RabbitAmqpMessageListenerAdapter(@Nullable Object bean, @Nullable Method method, boolean returnExceptions,
+			@Nullable RabbitListenerErrorHandler errorHandler, boolean batch) {
+
+		super(bean, method, returnExceptions, errorHandler, batch);
+	}
+
+	public void setAfterReceivePostProcessors(Collection<MessagePostProcessor> afterReceivePostProcessors) {
+		this.afterReceivePostProcessors = new ArrayList<>(afterReceivePostProcessors);
 	}
 
 	@Override
 	public void onAmqpMessage(com.rabbitmq.client.amqp.Message amqpMessage, Consumer.@Nullable Context context) {
 		org.springframework.amqp.core.Message springMessage = RabbitAmqpUtils.fromAmqpMessage(amqpMessage, context);
+		if (this.afterReceivePostProcessors != null) {
+			for (MessagePostProcessor processor : this.afterReceivePostProcessors) {
+				springMessage = processor.postProcessMessage(springMessage);
+			}
+		}
 		try {
 			org.springframework.messaging.Message<?> messagingMessage = toMessagingMessage(springMessage);
 			InvocationResult result = getHandlerAdapter()
@@ -66,6 +84,48 @@ public class RabbitAmqpMessageListenerAdapter extends MessagingMessageListenerAd
 		}
 		catch (Exception ex) {
 			throw new ListenerExecutionFailedException("Failed to invoke listener", ex, springMessage);
+		}
+	}
+
+	@Override
+	public void onMessageBatch(List<Message> messages) {
+		AmqpAcknowledgment amqpAcknowledgment =
+				messages.stream()
+						.findAny()
+						.map((message) -> message.getMessageProperties().getAmqpAcknowledgment())
+						.orElse(null);
+
+		org.springframework.messaging.Message<?> converted;
+		if (this.messagingMessageConverter.isAmqpMessageList()) {
+			converted = new GenericMessage<>(messages);
+		}
+		else {
+			List<? extends org.springframework.messaging.Message<?>> messagingMessages =
+					messages.stream()
+							.map(this::toMessagingMessage)
+							.toList();
+
+			if (this.messagingMessageConverter.isMessageList()) {
+				converted = new GenericMessage<>(messagingMessages);
+			}
+			else {
+				List<Object> payloads = new ArrayList<>();
+				for (org.springframework.messaging.Message<?> message : messagingMessages) {
+					payloads.add(message.getPayload());
+				}
+				converted = new GenericMessage<>(payloads);
+			}
+		}
+		try {
+			InvocationResult result = getHandlerAdapter()
+					.invoke(converted, amqpAcknowledgment);
+			if (result.getReturnValue() != null) {
+				logger.warn("Replies are not currently supported with RabbitMQ AMQP 1.0 listeners");
+			}
+		}
+		catch (Exception ex) {
+			throw new ListenerExecutionFailedException("Failed to invoke listener", ex,
+					messages.toArray(new Message[0]));
 		}
 	}
 

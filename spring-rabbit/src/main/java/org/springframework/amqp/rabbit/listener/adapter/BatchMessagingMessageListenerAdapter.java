@@ -49,8 +49,6 @@ import org.springframework.util.Assert;
 public class BatchMessagingMessageListenerAdapter extends MessagingMessageListenerAdapter
 		implements ChannelAwareBatchMessageListener {
 
-	private final MessagingMessageConverterAdapter converterAdapter;
-
 	private final BatchingStrategy batchingStrategy;
 
 	@SuppressWarnings("this-escape")
@@ -58,14 +56,13 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 			@Nullable RabbitListenerErrorHandler errorHandler, @Nullable BatchingStrategy batchingStrategy) {
 
 		super(bean, method, returnExceptions, errorHandler, true);
-		this.converterAdapter = (MessagingMessageConverterAdapter) getMessagingMessageConverter();
 		this.batchingStrategy = batchingStrategy == null ? new SimpleBatchingStrategy(0, 0, 0L) : batchingStrategy;
 	}
 
 	@Override
 	public void onMessageBatch(List<org.springframework.amqp.core.Message> messages, @Nullable Channel channel) {
 		Message<?> converted;
-		if (this.converterAdapter.isAmqpMessageList()) {
+		if (this.messagingMessageConverter.isAmqpMessageList()) {
 			converted = new GenericMessage<>(messages);
 		}
 		else {
@@ -87,7 +84,7 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 					}
 				}
 			}
-			if (this.converterAdapter.isMessageList()) {
+			if (this.messagingMessageConverter.isMessageList()) {
 				converted = new GenericMessage<>(messagingMessages);
 			}
 			else {
@@ -178,7 +175,7 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 	protected Message<?> toMessagingMessage(org.springframework.amqp.core.Message amqpMessage) {
 		if (this.batchingStrategy.canDebatch(amqpMessage.getMessageProperties())) {
 
-			if (this.converterAdapter.isMessageList()) {
+			if (this.messagingMessageConverter.isMessageList()) {
 				List<Message<?>> messages = new ArrayList<>();
 				this.batchingStrategy.deBatch(amqpMessage, fragment -> messages.add(super.toMessagingMessage(fragment)));
 				return new GenericMessage<>(messages);
@@ -186,9 +183,9 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 			else {
 				List<Object> list = new ArrayList<>();
 				this.batchingStrategy.deBatch(amqpMessage, fragment ->
-						list.add(this.converterAdapter.extractPayload(fragment)));
+						list.add(this.messagingMessageConverter.extractPayload(fragment)));
 				return MessageBuilder.withPayload(list)
-						.copyHeaders(this.converterAdapter
+						.copyHeaders(this.messagingMessageConverter
 								.getHeaderMapper()
 								.toHeaders(amqpMessage.getMessageProperties()))
 						.build();

@@ -20,8 +20,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import com.rabbitmq.client.amqp.Connection;
 import com.rabbitmq.client.amqp.Consumer;
@@ -42,10 +44,13 @@ import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbitmq.client.RabbitAmqpTestBase;
 import org.springframework.amqp.rabbitmq.client.config.RabbitAmqpListenerContainerFactory;
 import org.springframework.amqp.support.converter.MessageConversionException;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.util.MultiValueMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -93,6 +98,53 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 		assertThat(this.template.receive("dlq1")).succeedsWithin(10, TimeUnit.SECONDS);
 	}
 
+	@Test
+	@SuppressWarnings("unchecked")
+	void verifyBatchConsumedAfterScheduledTimeout() {
+		List<String> testDataList =
+				List.of("batchData1", "batchData2", "batchData3", "batchData4", "batchData5");
+
+		for (String testData : testDataList) {
+			this.template.convertAndSend("q3", testData);
+		}
+
+		assertThat(this.config.batchReceived).succeedsWithin(10, TimeUnit.SECONDS)
+				.asInstanceOf(InstanceOfAssertFactories.LIST)
+				.hasSize(5)
+				.containsAll(testDataList);
+
+		assertThat(this.config.batchReceivedOnThread).startsWith("batch-consumer-scheduler-");
+
+		MessageListenerContainer testBatchListener =
+				this.rabbitListenerEndpointRegistry.getListenerContainer("testBatchListener");
+
+		MultiValueMap<String, Consumer> queueToConsumers =
+				TestUtils.getPropertyValue(testBatchListener, "queueToConsumers", MultiValueMap.class);
+		Consumer consumer = queueToConsumers.get("q3").get(0);
+
+		assertThat(consumer.unsettledMessageCount()).isEqualTo(0L);
+
+		this.config.batchReceived = new CompletableFuture<>();
+
+		testDataList =
+				IntStream.range(6, 16)
+						.boxed()
+						.map(Object::toString)
+						.map("batchData"::concat)
+						.toList();
+
+		for (String testData : testDataList) {
+			this.template.convertAndSend("q3", testData);
+		}
+
+		assertThat(this.config.batchReceived).succeedsWithin(10, TimeUnit.SECONDS)
+				.asInstanceOf(InstanceOfAssertFactories.LIST)
+				.hasSize(10)
+				.containsAll(testDataList);
+
+		assertThat(this.config.batchReceivedOnThread).startsWith("dispatching-rabbitmq-amqp-");
+	}
+
 	@Configuration
 	@EnableRabbit
 	static class Config {
@@ -120,6 +172,11 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 		@Bean
 		Queue q2() {
 			return QueueBuilder.durable("q2").deadLetterExchange("dlx1").build();
+		}
+
+		@Bean
+		Queue q3() {
+			return new Queue("q3");
 		}
 
 		@Bean(RabbitListenerAnnotationBeanPostProcessor.DEFAULT_RABBIT_LISTENER_CONTAINER_FACTORY_BEAN_NAME)
@@ -156,6 +213,38 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 			finally {
 				this.consumeIsDone.countDown();
 			}
+		}
+
+		@Bean
+		ThreadPoolTaskScheduler taskScheduler() {
+			ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
+			threadPoolTaskScheduler.setPoolSize(2);
+			threadPoolTaskScheduler.setThreadNamePrefix("batch-consumer-scheduler-");
+			return threadPoolTaskScheduler;
+		}
+
+		@Bean
+		RabbitAmqpListenerContainerFactory batchRabbitAmqpListenerContainerFactory(Connection connection,
+				ThreadPoolTaskScheduler taskScheduler) {
+
+			RabbitAmqpListenerContainerFactory rabbitAmqpListenerContainerFactory =
+					new RabbitAmqpListenerContainerFactory(connection);
+			rabbitAmqpListenerContainerFactory.setTaskScheduler(taskScheduler);
+			rabbitAmqpListenerContainerFactory.setBatchSize(10);
+			rabbitAmqpListenerContainerFactory.setBatchReceiveTimeout(1000L);
+			return rabbitAmqpListenerContainerFactory;
+		}
+
+		CompletableFuture<List<String>> batchReceived = new CompletableFuture<>();
+
+		volatile String batchReceivedOnThread;
+
+		@RabbitListener(queues = "q3",
+				containerFactory = "batchRabbitAmqpListenerContainerFactory",
+				id = "testBatchListener")
+		void processBatchFromQ3(List<String> data) {
+			this.batchReceivedOnThread = Thread.currentThread().getName();
+			this.batchReceived.complete(data);
 		}
 
 	}

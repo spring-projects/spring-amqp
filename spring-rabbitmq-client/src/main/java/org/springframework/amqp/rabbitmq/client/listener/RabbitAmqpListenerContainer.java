@@ -17,9 +17,14 @@
 package org.springframework.amqp.rabbitmq.client.listener;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -36,13 +41,19 @@ import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AmqpAcknowledgment;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.listener.ConditionalRejectingErrorHandler;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.support.ContainerUtils;
 import org.springframework.amqp.rabbitmq.client.RabbitAmqpUtils;
+import org.springframework.amqp.support.postprocessor.MessagePostProcessorUtils;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
+import org.springframework.beans.factory.BeanNameAware;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.core.log.LogAccessor;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.util.Assert;
 import org.springframework.util.ErrorHandler;
 import org.springframework.util.LinkedMultiValueMap;
@@ -57,7 +68,7 @@ import org.springframework.util.ObjectUtils;
  * @since 4.0
  *
  */
-public class RabbitAmqpListenerContainer implements MessageListenerContainer {
+public class RabbitAmqpListenerContainer implements MessageListenerContainer, BeanNameAware, DisposableBean {
 
 	private static final LogAccessor LOG = new LogAccessor(LogFactory.getLog(RabbitAmqpListenerContainer.class));
 
@@ -85,13 +96,27 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer {
 
 	private @Nullable MessageListener messageListener;
 
+	private @Nullable MessageListener proxy;
+
 	private ErrorHandler errorHandler = new ConditionalRejectingErrorHandler();
 
+	private @Nullable Collection<MessagePostProcessor> afterReceivePostProcessors;
+
 	private boolean autoStartup = true;
+
+	private String beanName = "not.a.Spring.bean";
 
 	private @Nullable String listenerId;
 
 	private Duration gracefulShutdownPeriod = Duration.ofSeconds(30);
+
+	private int batchSize;
+
+	private Duration batchReceiveDuration = Duration.ofSeconds(30);
+
+	private @Nullable TaskScheduler taskScheduler;
+
+	private boolean internalTaskScheduler = true;
 
 	/**
 	 * Construct an instance using the provided connection.
@@ -116,6 +141,39 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer {
 
 	public void setStateListeners(Resource.StateListener... stateListeners) {
 		this.stateListeners = Arrays.copyOf(stateListeners, stateListeners.length);
+	}
+
+	/**
+	 * Set {@link MessagePostProcessor}s that will be applied after message reception, before
+	 * invoking the {@link MessageListener}. Often used to decompress data.  Processors are invoked in order,
+	 * depending on {@code PriorityOrder}, {@code Order} and finally unordered.
+	 * @param afterReceivePostProcessors the post processor.
+	 */
+	public void setAfterReceivePostProcessors(MessagePostProcessor... afterReceivePostProcessors) {
+		this.afterReceivePostProcessors = MessagePostProcessorUtils.sort(Arrays.asList(afterReceivePostProcessors));
+	}
+
+	public void setBatchSize(int batchSize) {
+		Assert.isTrue(batchSize > 1, "'batchSize' must be greater than 1");
+		this.batchSize = batchSize;
+	}
+
+	public void setBatchReceiveTimeout(long batchReceiveTimeout) {
+		this.batchReceiveDuration = Duration.ofMillis(batchReceiveTimeout);
+	}
+
+	/**
+	 * Set a {@link TaskScheduler} for monitoring batch releases.
+	 * @param taskScheduler the {@link TaskScheduler} to use.
+	 */
+	public void setTaskScheduler(TaskScheduler taskScheduler) {
+		this.taskScheduler = taskScheduler;
+		this.internalTaskScheduler = false;
+	}
+
+	@Override
+	public void setBeanName(String name) {
+		this.beanName = name;
 	}
 
 	@Override
@@ -185,22 +243,31 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer {
 		this.listenerId = id;
 	}
 
+	/**
+	 * The 'id' attribute of the listener.
+	 * @return the id (or the container bean name if no id set).
+	 */
+	public String getListenerId() {
+		return this.listenerId != null ? this.listenerId : this.beanName;
+	}
+
 	@Override
 	public void setupMessageListener(MessageListener messageListener) {
 		this.messageListener = messageListener;
+		this.proxy = this.messageListener;
 		if (!ObjectUtils.isEmpty(this.adviceChain)) {
 			ProxyFactory factory = new ProxyFactory(messageListener);
 			for (Advice advice : this.adviceChain) {
 				factory.addAdvisor(new DefaultPointcutAdvisor(advice));
 			}
 			factory.setInterfaces(messageListener.getClass().getInterfaces());
-			this.messageListener = (MessageListener) factory.getProxy(getClass().getClassLoader());
+			this.proxy = (MessageListener) factory.getProxy(getClass().getClassLoader());
 		}
 	}
 
 	@Override
 	public @Nullable Object getMessageListener() {
-		return this.messageListener;
+		return this.proxy;
 	}
 
 	@Override
@@ -209,6 +276,18 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer {
 		Assert.state(this.messageListener != null, "The 'messageListener' must be provided.");
 
 		this.messageListener.containerAckMode(this.autoSettle ? AcknowledgeMode.AUTO : AcknowledgeMode.MANUAL);
+		if (this.messageListener instanceof RabbitAmqpMessageListenerAdapter adapter
+				&& this.afterReceivePostProcessors != null) {
+
+			adapter.setAfterReceivePostProcessors(this.afterReceivePostProcessors);
+		}
+
+		if (this.batchSize > 1 && this.internalTaskScheduler) {
+			ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
+			threadPoolTaskScheduler.setThreadNamePrefix(getListenerId() + "-consumerMonitor-");
+			threadPoolTaskScheduler.afterPropertiesSet();
+			this.taskScheduler = threadPoolTaskScheduler;
+		}
 	}
 
 	@Override
@@ -236,7 +315,7 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer {
 										.priority(this.priority)
 										.initialCredits(this.initialCredits)
 										.listeners(this.stateListeners)
-										.messageHandler(this::invokeListener)
+										.messageHandler(new ConsumerMessageHandler())
 										.build();
 						this.queueToConsumers.add(queue, consumer);
 					}
@@ -256,39 +335,65 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer {
 			}
 		}
 		catch (Exception ex) {
-			try {
-				this.errorHandler.handleError(ex);
-				// If error handler does not re-throw an exception, re-check original error.
-				// If it is not special, treat the error handler outcome as a successful processing result.
-				if (!handleSpecialErrors(ex, context)) {
-					context.accept();
-				}
-			}
-			catch (Exception rethrow) {
-				if (!handleSpecialErrors(rethrow, context)) {
-					if (this.defaultRequeue) {
-						context.requeue();
-					}
-					else {
-						context.discard();
-					}
-					LOG.error(rethrow, () ->
-							"The 'errorHandler' has thrown an exception. The '" + amqpMessage + "' is "
-									+ (this.defaultRequeue ? "re-queued." : "discarded."));
-				}
-			}
+			handleListenerError(ex, context, amqpMessage);
 		}
 	}
 
 	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	private void doInvokeListener(Consumer.Context context, com.rabbitmq.client.amqp.Message amqpMessage) {
 		Consumer.@Nullable Context contextToUse = this.autoSettle ? null : context;
-		if (this.messageListener instanceof RabbitAmqpMessageListener amqpMessageListener) {
+		if (this.proxy instanceof RabbitAmqpMessageListener amqpMessageListener) {
 			amqpMessageListener.onAmqpMessage(amqpMessage, contextToUse);
 		}
 		else {
 			Message message = RabbitAmqpUtils.fromAmqpMessage(amqpMessage, contextToUse);
-			this.messageListener.onMessage(message);
+			this.proxy.onMessage(message);
+		}
+	}
+
+	private void invokeBatchListener(Consumer.Context context, List<com.rabbitmq.client.amqp.Message> batch) {
+		Consumer.@Nullable Context contextToUse = this.autoSettle ? null : context;
+		List<Message> messages =
+				batch.stream()
+						.map((amqpMessage) -> RabbitAmqpUtils.fromAmqpMessage(amqpMessage, contextToUse))
+						.toList();
+		try {
+			doInvokeBatchListener(messages);
+			if (this.autoSettle) {
+				context.accept();
+			}
+		}
+		catch (Exception ex) {
+			handleListenerError(ex, context, batch);
+		}
+	}
+
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
+	private void doInvokeBatchListener(List<Message> messages) {
+		this.proxy.onMessageBatch(messages);
+	}
+
+	private void handleListenerError(Exception ex, Consumer.Context context, Object messageOrBatch) {
+		try {
+			this.errorHandler.handleError(ex);
+			// If error handler does not re-throw an exception, re-check original error.
+			// If it is not special, treat the error handler outcome as a successful processing result.
+			if (!handleSpecialErrors(ex, context)) {
+				context.accept();
+			}
+		}
+		catch (Exception rethrow) {
+			if (!handleSpecialErrors(rethrow, context)) {
+				if (this.defaultRequeue) {
+					context.requeue();
+				}
+				else {
+					context.discard();
+				}
+				LOG.error(rethrow, () ->
+						"The 'errorHandler' has thrown an exception. The '" + messageOrBatch + "' is "
+								+ (this.defaultRequeue ? "re-queued." : "discarded."));
+			}
 		}
 	}
 
@@ -388,6 +493,81 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer {
 		if (consumers != null) {
 			consumers.forEach(Consumer::unpause);
 		}
+	}
+
+	@Override
+	public void destroy() {
+		if (this.internalTaskScheduler && this.taskScheduler != null) {
+			((ThreadPoolTaskScheduler) this.taskScheduler).shutdown();
+		}
+	}
+
+	private class ConsumerMessageHandler implements Consumer.MessageHandler {
+
+		private volatile @Nullable ConsumerBatch consumerBatch;
+
+		ConsumerMessageHandler() {
+		}
+
+		@Override
+		public void handle(Consumer.Context context, com.rabbitmq.client.amqp.Message message) {
+			if (RabbitAmqpListenerContainer.this.batchSize > 1) {
+				ConsumerBatch currentBatch = this.consumerBatch;
+				if (currentBatch == null || currentBatch.batchReleaseFuture == null) {
+					currentBatch = new ConsumerBatch(context.batch(RabbitAmqpListenerContainer.this.batchSize));
+					this.consumerBatch = currentBatch;
+				}
+				currentBatch.add(context, message);
+				if (currentBatch.batchContext.size() == RabbitAmqpListenerContainer.this.batchSize) {
+					currentBatch.release();
+					this.consumerBatch = null;
+				}
+			}
+			else {
+				invokeListener(context, message);
+			}
+		}
+
+		private class ConsumerBatch {
+
+			private final List<com.rabbitmq.client.amqp.Message> batch = new ArrayList<>();
+
+			private final Consumer.BatchContext batchContext;
+
+			private volatile @Nullable ScheduledFuture<?> batchReleaseFuture;
+
+			ConsumerBatch(Consumer.BatchContext batchContext) {
+				this.batchContext = batchContext;
+			}
+
+			void add(Consumer.Context context, com.rabbitmq.client.amqp.Message message) {
+				this.batchContext.add(context);
+				this.batch.add(message);
+				if (this.batchReleaseFuture == null) {
+					this.batchReleaseFuture =
+							Objects.requireNonNull(RabbitAmqpListenerContainer.this.taskScheduler)
+									.schedule(this::releaseInternal,
+											Instant.now().plus(RabbitAmqpListenerContainer.this.batchReceiveDuration));
+				}
+			}
+
+			void release() {
+				ScheduledFuture<?> currentBatchReleaseFuture = this.batchReleaseFuture;
+				if (currentBatchReleaseFuture != null) {
+					currentBatchReleaseFuture.cancel(true);
+					releaseInternal();
+				}
+			}
+
+			private void releaseInternal() {
+				if (this.batchReleaseFuture != null) {
+					this.batchReleaseFuture = null;
+					invokeBatchListener(this.batchContext, this.batch);
+				}
+			}
+
+		}
+
 	}
 
 }

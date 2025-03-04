@@ -69,11 +69,11 @@ import org.springframework.util.TypeUtils;
  */
 public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageListener {
 
-	private final MessagingMessageConverterAdapter messagingMessageConverter;
+	protected final MessagingMessageConverterAdapter messagingMessageConverter;
 
-	private final boolean returnExceptions;
+	protected final boolean returnExceptions;
 
-	private final @Nullable RabbitListenerErrorHandler errorHandler;
+	protected final @Nullable RabbitListenerErrorHandler errorHandler;
 
 	private @Nullable HandlerAdapter handlerAdapter;
 
@@ -364,15 +364,15 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			}
 		}
 
-		protected boolean isMessageList() {
+		public boolean isMessageList() {
 			return this.isMessageList;
 		}
 
-		protected boolean isAmqpMessageList() {
+		public boolean isAmqpMessageList() {
 			return this.isAmqpMessageList;
 		}
 
-		protected @Nullable Method getMethod() {
+		public @Nullable Method getMethod() {
 			return this.method;
 		}
 
