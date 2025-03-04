@@ -19,12 +19,12 @@ package org.springframework.amqp.rabbitmq.client;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
-import com.rabbitmq.client.amqp.Connection;
 import com.rabbitmq.client.amqp.Consumer;
 import com.rabbitmq.client.amqp.Environment;
 import com.rabbitmq.client.amqp.Publisher;
-import com.rabbitmq.client.amqp.PublisherBuilder;
 import com.rabbitmq.client.amqp.Resource;
 import org.jspecify.annotations.Nullable;
 
@@ -42,7 +42,6 @@ import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.support.converter.SmartMessageConverter;
 import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.Assert;
 
@@ -54,14 +53,13 @@ import org.springframework.util.Assert;
  *
  * @since 4.0
  */
-public class RabbitAmqpTemplate implements AsyncAmqpTemplate, InitializingBean, DisposableBean {
+public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 
-	private final Connection connection;
+	private final AmqpConnectionFactory connectionFactory;
 
-	private final PublisherBuilder publisherBuilder;
+	private final Lock instanceLock = new ReentrantLock();
 
-	@SuppressWarnings("NullAway.Init")
-	private Publisher publisher;
+	private @Nullable Object publisher;
 
 	private MessageConverter messageConverter = new SimpleMessageConverter();
 
@@ -73,17 +71,20 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, InitializingBean, 
 
 	private @Nullable String defaultReceiveQueue;
 
-	public RabbitAmqpTemplate(Connection amqpConnection) {
-		this.connection = amqpConnection;
-		this.publisherBuilder = amqpConnection.publisherBuilder();
+	private Resource.StateListener @Nullable [] stateListeners;
+
+	private Duration publishTimeout = Duration.ofSeconds(60);
+
+	public RabbitAmqpTemplate(AmqpConnectionFactory connectionFactory) {
+		this.connectionFactory = connectionFactory;
 	}
 
 	public void setListeners(Resource.StateListener... listeners) {
-		this.publisherBuilder.listeners(listeners);
+		this.stateListeners = listeners;
 	}
 
 	public void setPublishTimeout(Duration timeout) {
-		this.publisherBuilder.publishTimeout(timeout);
+		this.publishTimeout = timeout;
 	}
 
 	/**
@@ -100,15 +101,15 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, InitializingBean, 
 	/**
 	 * Set a default routing key.
 	 * Mutually exclusive with {@link #setQueue(String)}.
-	 * @param key the default routing key.
+	 * @param routingKey the default routing key.
 	 */
-	public void setKey(String key) {
-		this.defaultRoutingKey = key;
+	public void setRoutingKey(String routingKey) {
+		this.defaultRoutingKey = routingKey;
 	}
 
 	/**
 	 * Set default queue for publishing.
-	 * Mutually exclusive with {@link #setExchange(String)} and {@link #setKey(String)}.
+	 * Mutually exclusive with {@link #setExchange(String)} and {@link #setRoutingKey(String)}.
 	 * @param queue the default queue.
 	 */
 	public void setQueue(String queue) {
@@ -137,14 +138,36 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, InitializingBean, 
 		return name;
 	}
 
-	@Override
-	public void afterPropertiesSet() {
-		this.publisher = this.publisherBuilder.build();
+	private Publisher getPublisher() {
+		Object publisherToReturn = this.publisher;
+		if (publisherToReturn == null) {
+			this.instanceLock.lock();
+			try {
+				publisherToReturn = this.publisher;
+				if (publisherToReturn == null) {
+					publisherToReturn =
+							this.connectionFactory.getConnection()
+									.publisherBuilder()
+									.listeners(this.stateListeners)
+									.publishTimeout(this.publishTimeout)
+									.build();
+					this.publisher = publisherToReturn;
+				}
+			}
+			finally {
+				this.instanceLock.unlock();
+			}
+		}
+		return (Publisher) publisherToReturn;
 	}
 
 	@Override
 	public void destroy() {
-		this.publisher.close();
+		Object publisherToClose = this.publisher;
+		if (publisherToClose != null) {
+			((Publisher) publisherToClose).close();
+			this.publisher = null;
+		}
 	}
 
 	/**
@@ -178,7 +201,7 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, InitializingBean, 
 	private CompletableFuture<Boolean> doSend(@Nullable String exchange, @Nullable String routingKey,
 			@Nullable String queue, Message message) {
 
-		com.rabbitmq.client.amqp.Message amqpMessage = this.publisher.message();
+		com.rabbitmq.client.amqp.Message amqpMessage = getPublisher().message();
 		com.rabbitmq.client.amqp.Message.MessageAddressBuilder address = amqpMessage.toAddress();
 		JavaUtils.INSTANCE
 				.acceptIfNotNull(exchange, address::exchange)
@@ -191,7 +214,7 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, InitializingBean, 
 
 		CompletableFuture<Boolean> publishResult = new CompletableFuture<>();
 
-		this.publisher.publish(amqpMessage,
+		getPublisher().publish(amqpMessage,
 				(context) -> {
 					switch (context.status()) {
 						case ACCEPTED -> publishResult.complete(true);
@@ -271,7 +294,8 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, InitializingBean, 
 		CompletableFuture<Message> messageFuture = new CompletableFuture<>();
 
 		Consumer consumer =
-				this.connection.consumerBuilder()
+				this.connectionFactory.getConnection()
+						.consumerBuilder()
 						.queue(queueName)
 						.initialCredits(1)
 						.priority(10)

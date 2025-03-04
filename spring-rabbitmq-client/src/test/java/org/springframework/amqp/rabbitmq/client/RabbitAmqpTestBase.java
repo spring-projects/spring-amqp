@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-import com.rabbitmq.client.amqp.Connection;
 import com.rabbitmq.client.amqp.Environment;
 import com.rabbitmq.client.amqp.impl.AmqpEnvironmentBuilder;
 
@@ -51,7 +50,7 @@ public abstract class RabbitAmqpTestBase extends AbstractTestContainerTests {
 	protected Environment environment;
 
 	@Autowired
-	protected Connection connection;
+	protected AmqpConnectionFactory connectionFactory;
 
 	@Autowired
 	protected RabbitAmqpAdmin admin;
@@ -81,18 +80,18 @@ public abstract class RabbitAmqpTestBase extends AbstractTestContainerTests {
 		}
 
 		@Bean
-		AmqpConnectionFactoryBean connection(Environment environment) {
-			return new AmqpConnectionFactoryBean(environment);
+		AmqpConnectionFactory connectionFactory(Environment environment) {
+			return new SingleAmqpConnectionFactory(environment);
 		}
 
 		@Bean
-		RabbitAmqpAdmin admin(Connection connection) {
-			return new RabbitAmqpAdmin(connection);
+		RabbitAmqpAdmin admin(AmqpConnectionFactory connectionFactory) {
+			return new RabbitAmqpAdmin(connectionFactory);
 		}
 
 		@Bean
-		RabbitAmqpTemplate rabbitTemplate(Connection connection) {
-			return new RabbitAmqpTemplate(connection);
+		RabbitAmqpTemplate rabbitTemplate(AmqpConnectionFactory connectionFactory) {
+			return new RabbitAmqpTemplate(connectionFactory);
 		}
 
 		volatile boolean running;

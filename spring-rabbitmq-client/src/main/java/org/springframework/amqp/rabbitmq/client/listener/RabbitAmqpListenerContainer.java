@@ -45,6 +45,7 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.listener.ConditionalRejectingErrorHandler;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.support.ContainerUtils;
+import org.springframework.amqp.rabbitmq.client.AmqpConnectionFactory;
 import org.springframework.amqp.rabbitmq.client.RabbitAmqpUtils;
 import org.springframework.amqp.support.postprocessor.MessagePostProcessorUtils;
 import org.springframework.aop.framework.ProxyFactory;
@@ -74,7 +75,7 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer, Be
 
 	private final Lock lock = new ReentrantLock();
 
-	private final Connection connection;
+	private final AmqpConnectionFactory connectionFactory;
 
 	private final MultiValueMap<String, Consumer> queueToConsumers = new LinkedMultiValueMap<>();
 
@@ -119,11 +120,11 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer, Be
 	private boolean internalTaskScheduler = true;
 
 	/**
-	 * Construct an instance using the provided connection.
-	 * @param connection to use.
+	 * Construct an instance based on the provided {@link AmqpConnectionFactory}.
+	 * @param connectionFactory to use.
 	 */
-	public RabbitAmqpListenerContainer(Connection connection) {
-		this.connection = connection;
+	public RabbitAmqpListenerContainer(AmqpConnectionFactory connectionFactory) {
+		this.connectionFactory = connectionFactory;
 	}
 
 	@Override
@@ -307,10 +308,11 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer, Be
 		this.lock.lock();
 		try {
 			if (this.queueToConsumers.isEmpty()) {
+				Connection connection = this.connectionFactory.getConnection();
 				for (String queue : this.queues) {
 					for (int i = 0; i < this.consumersPerQueue; i++) {
 						Consumer consumer =
-								this.connection.consumerBuilder()
+								connection.consumerBuilder()
 										.queue(queue)
 										.priority(this.priority)
 										.initialCredits(this.initialCredits)

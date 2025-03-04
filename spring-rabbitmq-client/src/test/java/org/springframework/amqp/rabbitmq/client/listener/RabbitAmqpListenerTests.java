@@ -25,7 +25,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
-import com.rabbitmq.client.amqp.Connection;
 import com.rabbitmq.client.amqp.Consumer;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
@@ -41,6 +40,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.annotation.RabbitListenerAnnotationBeanPostProcessor;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
+import org.springframework.amqp.rabbitmq.client.AmqpConnectionFactory;
 import org.springframework.amqp.rabbitmq.client.RabbitAmqpTestBase;
 import org.springframework.amqp.rabbitmq.client.config.RabbitAmqpListenerContainerFactory;
 import org.springframework.amqp.support.converter.MessageConversionException;
@@ -180,8 +180,8 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 		}
 
 		@Bean(RabbitListenerAnnotationBeanPostProcessor.DEFAULT_RABBIT_LISTENER_CONTAINER_FACTORY_BEAN_NAME)
-		RabbitAmqpListenerContainerFactory rabbitAmqpListenerContainerFactory(Connection connection) {
-			return new RabbitAmqpListenerContainerFactory(connection);
+		RabbitAmqpListenerContainerFactory rabbitAmqpListenerContainerFactory(AmqpConnectionFactory connectionFactory) {
+			return new RabbitAmqpListenerContainerFactory(connectionFactory);
 		}
 
 		List<String> received = Collections.synchronizedList(new ArrayList<>());
@@ -224,11 +224,11 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 		}
 
 		@Bean
-		RabbitAmqpListenerContainerFactory batchRabbitAmqpListenerContainerFactory(Connection connection,
-				ThreadPoolTaskScheduler taskScheduler) {
+		RabbitAmqpListenerContainerFactory batchRabbitAmqpListenerContainerFactory(
+				AmqpConnectionFactory connectionFactory, ThreadPoolTaskScheduler taskScheduler) {
 
 			RabbitAmqpListenerContainerFactory rabbitAmqpListenerContainerFactory =
-					new RabbitAmqpListenerContainerFactory(connection);
+					new RabbitAmqpListenerContainerFactory(connectionFactory);
 			rabbitAmqpListenerContainerFactory.setTaskScheduler(taskScheduler);
 			rabbitAmqpListenerContainerFactory.setBatchSize(10);
 			rabbitAmqpListenerContainerFactory.setBatchReceiveTimeout(1000L);

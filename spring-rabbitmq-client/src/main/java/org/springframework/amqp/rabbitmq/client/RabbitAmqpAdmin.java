@@ -25,7 +25,6 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.rabbitmq.client.amqp.AmqpException;
-import com.rabbitmq.client.amqp.Connection;
 import com.rabbitmq.client.amqp.Management;
 import org.jspecify.annotations.Nullable;
 
@@ -67,7 +66,7 @@ public class RabbitAmqpAdmin
 
 	public static final String QUEUE_TYPE = "QUEUE_TYPE";
 
-	private final Connection amqpConnection;
+	private final AmqpConnectionFactory connectionFactory;
 
 	private TaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();
 
@@ -88,8 +87,8 @@ public class RabbitAmqpAdmin
 
 	private volatile boolean running = false;
 
-	public RabbitAmqpAdmin(Connection amqpConnection) {
-		this.amqpConnection = amqpConnection;
+	public RabbitAmqpAdmin(AmqpConnectionFactory connectionFactory) {
+		this.connectionFactory = connectionFactory;
 	}
 
 	@Override
@@ -231,7 +230,7 @@ public class RabbitAmqpAdmin
 			return;
 		}
 
-		try (Management management = this.amqpConnection.management()) {
+		try (Management management = getManagement()) {
 			exchanges.forEach((exchange) -> doDeclareExchange(management, exchange));
 			queues.forEach((queue) -> doDeclareQueue(management, queue));
 			bindings.forEach((binding) -> doDeclareBinding(management, binding));
@@ -273,7 +272,7 @@ public class RabbitAmqpAdmin
 
 	@Override
 	public void declareExchange(Exchange exchange) {
-		try (Management management = this.amqpConnection.management()) {
+		try (Management management = getManagement()) {
 			doDeclareExchange(management, exchange);
 		}
 	}
@@ -307,7 +306,7 @@ public class RabbitAmqpAdmin
 			return false;
 		}
 
-		try (Management management = this.amqpConnection.management()) {
+		try (Management management = getManagement()) {
 			management.exchangeDelete(exchangeName);
 		}
 		return true;
@@ -315,7 +314,7 @@ public class RabbitAmqpAdmin
 
 	@Override
 	public @Nullable Queue declareQueue() {
-		try (Management management = this.amqpConnection.management()) {
+		try (Management management = getManagement()) {
 			return doDeclareQueue(management);
 		}
 	}
@@ -340,7 +339,7 @@ public class RabbitAmqpAdmin
 
 	@Override
 	public @Nullable String declareQueue(Queue queue) {
-		try (Management management = this.amqpConnection.management()) {
+		try (Management management = getManagement()) {
 			return doDeclareQueue(management, queue);
 		}
 	}
@@ -378,7 +377,7 @@ public class RabbitAmqpAdmin
 	@ManagedOperation(description =
 			"Delete a queue from the broker if unused and empty (when corresponding arguments are true")
 	public void deleteQueue(String queueName, boolean unused, boolean empty) {
-		try (Management management = this.amqpConnection.management()) {
+		try (Management management = getManagement()) {
 			Management.QueueInfo queueInfo = management.queueInfo(queueName);
 			if ((!unused || queueInfo.consumerCount() == 0)
 					&& (!empty || queueInfo.messageCount() == 0)) {
@@ -402,7 +401,7 @@ public class RabbitAmqpAdmin
 	@Override
 	@ManagedOperation(description = "Purge a queue and return the number of messages purged")
 	public int purgeQueue(String queueName) {
-		try (Management management = this.amqpConnection.management()) {
+		try (Management management = getManagement()) {
 			management.queuePurge(queueName);
 		}
 		return 0;
@@ -410,7 +409,7 @@ public class RabbitAmqpAdmin
 
 	@Override
 	public void declareBinding(Binding binding) {
-		try (Management management = this.amqpConnection.management()) {
+		try (Management management = getManagement()) {
 			doDeclareBinding(management, binding);
 		}
 	}
@@ -441,7 +440,7 @@ public class RabbitAmqpAdmin
 			return;
 		}
 
-		try (Management management = this.amqpConnection.management()) {
+		try (Management management = getManagement()) {
 			Management.UnbindSpecification unbindSpecification =
 					management.unbind()
 							.sourceExchange(binding.getExchange())
@@ -481,13 +480,17 @@ public class RabbitAmqpAdmin
 
 	@Override
 	public @Nullable QueueInformation getQueueInfo(String queueName) {
-		try (Management management = this.amqpConnection.management()) {
+		try (Management management = getManagement()) {
 			Management.QueueInfo queueInfo = management.queueInfo(queueName);
 			QueueInformation queueInformation =
 					new QueueInformation(queueInfo.name(), queueInfo.messageCount(), queueInfo.consumerCount());
 			queueInformation.setType(queueInfo.type().name().toLowerCase());
 			return queueInformation;
 		}
+	}
+
+	private Management getManagement() {
+		return this.connectionFactory.getConnection().management();
 	}
 
 	private <T extends Throwable> void logOrRethrowDeclarationException(@Nullable Declarable element,
@@ -565,6 +568,5 @@ public class RabbitAmqpAdmin
 			});
 		});
 	}
-
 
 }

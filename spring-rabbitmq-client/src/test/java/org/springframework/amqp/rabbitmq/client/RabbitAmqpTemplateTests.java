@@ -18,7 +18,6 @@ package org.springframework.amqp.rabbitmq.client;
 
 import java.time.Duration;
 
-import com.rabbitmq.client.amqp.Connection;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +27,6 @@ import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
@@ -44,15 +42,11 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 @ContextConfiguration
 public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 
-	@Autowired
-	Connection connection;
-
 	RabbitAmqpTemplate rabbitAmqpTemplate;
 
 	@BeforeEach
 	void setUp() {
-		this.rabbitAmqpTemplate = new RabbitAmqpTemplate(this.connection);
-		this.rabbitAmqpTemplate.afterPropertiesSet();
+		this.rabbitAmqpTemplate = new RabbitAmqpTemplate(this.connectionFactory);
 	}
 
 	@AfterEach
@@ -74,7 +68,7 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 	@Test
 	void defaultExchangeAndRoutingKey() {
 		this.rabbitAmqpTemplate.setExchange("e1");
-		this.rabbitAmqpTemplate.setKey("k1");
+		this.rabbitAmqpTemplate.setRoutingKey("k1");
 
 		assertThat(this.rabbitAmqpTemplate.convertAndSend("test1"))
 				.succeedsWithin(Duration.ofSeconds(10));

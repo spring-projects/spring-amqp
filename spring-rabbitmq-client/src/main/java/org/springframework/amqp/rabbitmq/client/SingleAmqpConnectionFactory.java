@@ -17,6 +17,8 @@
 package org.springframework.amqp.rabbitmq.client;
 
 import java.time.Duration;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
 import javax.net.ssl.SSLContext;
@@ -32,118 +34,132 @@ import com.rabbitmq.client.amqp.OAuth2Settings;
 import com.rabbitmq.client.amqp.Resource;
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.beans.factory.config.AbstractFactoryBean;
+import org.springframework.beans.factory.DisposableBean;
 
 /**
- * The {@link AbstractFactoryBean} for RabbitMQ AMQP 1.0 {@link Connection}.
- * A Spring-friendly wrapper around {@link Environment#connectionBuilder()};
+ * The {@link AmqpConnectionFactory} implementation to hold a single, shared {@link Connection} instance.
  *
  * @author Artem Bilan
  *
  * @since 4.0
  */
-public class AmqpConnectionFactoryBean extends AbstractFactoryBean<Connection> {
+public class SingleAmqpConnectionFactory implements AmqpConnectionFactory, DisposableBean {
 
 	private final ConnectionBuilder connectionBuilder;
 
-	public AmqpConnectionFactoryBean(Environment amqpEnvironment) {
+	private final Lock instanceLock = new ReentrantLock();
+
+	private volatile @Nullable Connection connection;
+
+	public SingleAmqpConnectionFactory(Environment amqpEnvironment) {
 		this.connectionBuilder = amqpEnvironment.connectionBuilder();
 	}
 
-	public AmqpConnectionFactoryBean setHost(String host) {
+	public SingleAmqpConnectionFactory setHost(String host) {
 		this.connectionBuilder.host(host);
 		return this;
 	}
 
-	public AmqpConnectionFactoryBean setPort(int port) {
+	public SingleAmqpConnectionFactory setPort(int port) {
 		this.connectionBuilder.port(port);
 		return this;
 	}
 
-	public AmqpConnectionFactoryBean setUsername(String username) {
+	public SingleAmqpConnectionFactory setUsername(String username) {
 		this.connectionBuilder.username(username);
 		return this;
 	}
 
-	public AmqpConnectionFactoryBean setPassword(String password) {
+	public SingleAmqpConnectionFactory setPassword(String password) {
 		this.connectionBuilder.password(password);
 		return this;
 	}
 
-	public AmqpConnectionFactoryBean setVirtualHost(String virtualHost) {
+	public SingleAmqpConnectionFactory setVirtualHost(String virtualHost) {
 		this.connectionBuilder.virtualHost(virtualHost);
 		return this;
 	}
 
-	public AmqpConnectionFactoryBean setUri(String uri) {
+	public SingleAmqpConnectionFactory setUri(String uri) {
 		this.connectionBuilder.uri(uri);
 		return this;
 	}
 
-	public AmqpConnectionFactoryBean setUris(String... uris) {
+	public SingleAmqpConnectionFactory setUris(String... uris) {
 		this.connectionBuilder.uris(uris);
 		return this;
 	}
 
-	public AmqpConnectionFactoryBean setIdleTimeout(Duration idleTimeout) {
+	public SingleAmqpConnectionFactory setIdleTimeout(Duration idleTimeout) {
 		this.connectionBuilder.idleTimeout(idleTimeout);
 		return this;
 	}
 
-	public AmqpConnectionFactoryBean setAddressSelector(AddressSelector addressSelector) {
+	public SingleAmqpConnectionFactory setAddressSelector(AddressSelector addressSelector) {
 		this.connectionBuilder.addressSelector(addressSelector);
 		return this;
 	}
 
-	public AmqpConnectionFactoryBean setCredentialsProvider(CredentialsProvider credentialsProvider) {
+	public SingleAmqpConnectionFactory setCredentialsProvider(CredentialsProvider credentialsProvider) {
 		this.connectionBuilder.credentialsProvider(credentialsProvider);
 		return this;
 	}
 
-	public AmqpConnectionFactoryBean setSaslMechanism(SaslMechanism saslMechanism) {
+	public SingleAmqpConnectionFactory setSaslMechanism(SaslMechanism saslMechanism) {
 		this.connectionBuilder.saslMechanism(saslMechanism.name());
 		return this;
 	}
 
-	public AmqpConnectionFactoryBean setTls(Consumer<Tls> tlsCustomizer) {
+	public SingleAmqpConnectionFactory setTls(Consumer<Tls> tlsCustomizer) {
 		tlsCustomizer.accept(new Tls(this.connectionBuilder.tls()));
 		return this;
 	}
 
-	public AmqpConnectionFactoryBean setAffinity(Consumer<Affinity> affinityCustomizer) {
+	public SingleAmqpConnectionFactory setAffinity(Consumer<Affinity> affinityCustomizer) {
 		affinityCustomizer.accept(new Affinity(this.connectionBuilder.affinity()));
 		return this;
 	}
 
-	public AmqpConnectionFactoryBean setOAuth2(Consumer<OAuth2> oauth2Customizer) {
+	public SingleAmqpConnectionFactory setOAuth2(Consumer<OAuth2> oauth2Customizer) {
 		oauth2Customizer.accept(new OAuth2(this.connectionBuilder.oauth2()));
 		return this;
 	}
 
-	public AmqpConnectionFactoryBean setRecovery(Consumer<Recovery> recoveryCustomizer) {
+	public SingleAmqpConnectionFactory setRecovery(Consumer<Recovery> recoveryCustomizer) {
 		recoveryCustomizer.accept(new Recovery(this.connectionBuilder.recovery()));
 		return this;
 	}
 
-	public AmqpConnectionFactoryBean setListeners(Resource.StateListener... listeners) {
+	public SingleAmqpConnectionFactory setListeners(Resource.StateListener... listeners) {
 		this.connectionBuilder.listeners(listeners);
 		return this;
 	}
 
 	@Override
-	public @Nullable Class<?> getObjectType() {
-		return Connection.class;
+	public Connection getConnection() {
+		Connection connectionToReturn = this.connection;
+		if (connectionToReturn == null) {
+			this.instanceLock.lock();
+			try {
+				connectionToReturn = this.connection;
+				if (connectionToReturn == null) {
+					connectionToReturn = this.connectionBuilder.build();
+					this.connection = connectionToReturn;
+				}
+			}
+			finally {
+				this.instanceLock.unlock();
+			}
+		}
+		return connectionToReturn;
 	}
 
 	@Override
-	protected Connection createInstance() {
-		return this.connectionBuilder.build();
-	}
-
-	@Override
-	protected void destroyInstance(@Nullable Connection instance) {
-		if (instance != null) {
-			instance.close();
+	public void destroy() {
+		Connection connectionToClose = this.connection;
+		if (connectionToClose != null) {
+			connectionToClose.close();
+			this.connection = null;
 		}
 	}
 

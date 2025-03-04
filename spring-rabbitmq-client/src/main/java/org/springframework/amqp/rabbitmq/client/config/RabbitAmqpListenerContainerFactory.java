@@ -18,7 +18,6 @@ package org.springframework.amqp.rabbitmq.client.config;
 
 import java.util.Arrays;
 
-import com.rabbitmq.client.amqp.Connection;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.MessageListener;
@@ -27,6 +26,7 @@ import org.springframework.amqp.rabbit.config.BaseRabbitListenerContainerFactory
 import org.springframework.amqp.rabbit.config.ContainerCustomizer;
 import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
+import org.springframework.amqp.rabbitmq.client.AmqpConnectionFactory;
 import org.springframework.amqp.rabbitmq.client.listener.RabbitAmqpListenerContainer;
 import org.springframework.amqp.rabbitmq.client.listener.RabbitAmqpMessageListenerAdapter;
 import org.springframework.amqp.utils.JavaUtils;
@@ -45,7 +45,7 @@ import org.springframework.scheduling.TaskScheduler;
 public class RabbitAmqpListenerContainerFactory
 		extends BaseRabbitListenerContainerFactory<RabbitAmqpListenerContainer> {
 
-	private final Connection connection;
+	private final AmqpConnectionFactory connectionFactory;
 
 	private @Nullable ContainerCustomizer<RabbitAmqpListenerContainer> containerCustomizer;
 
@@ -58,11 +58,11 @@ public class RabbitAmqpListenerContainerFactory
 	private @Nullable TaskScheduler taskScheduler;
 
 	/**
-	 * Construct an instance using the provided amqpConnection.
-	 * @param amqpConnection the connection.
+	 * Construct an instance using the provided {@link AmqpConnectionFactory}.
+	 * @param connectionFactory the connection.
 	 */
-	public RabbitAmqpListenerContainerFactory(Connection amqpConnection) {
-		this.connection = amqpConnection;
+	public RabbitAmqpListenerContainerFactory(AmqpConnectionFactory connectionFactory) {
+		this.connectionFactory = connectionFactory;
 	}
 
 	/**
@@ -154,7 +154,7 @@ public class RabbitAmqpListenerContainerFactory
 	}
 
 	protected RabbitAmqpListenerContainer createContainerInstance() {
-		return new RabbitAmqpListenerContainer(this.connection);
+		return new RabbitAmqpListenerContainer(this.connectionFactory);
 	}
 
 }
