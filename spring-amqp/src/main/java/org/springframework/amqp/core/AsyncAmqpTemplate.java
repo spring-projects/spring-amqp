@@ -109,11 +109,11 @@ public interface AsyncAmqpTemplate {
 	 * The request message must have a {@code replyTo} property.
 	 * The request {@code messageId} property is used for correlation.
 	 * The callback might not produce a reply with the meaning nothing to answer.
+	 * @param <R> the request body type.
+	 * @param <S> the response body type
 	 * @param queueName the queue to consume request.
 	 * @param callback an application callback to handle request and produce reply.
 	 * @return the completion status: true if no errors and reply has been produced.
-	 * @param <R> the request body type.
-	 * @param <S> the response body type
 	 */
 	default <R, S> CompletableFuture<Boolean> receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback) {
 		throw new UnsupportedOperationException();
