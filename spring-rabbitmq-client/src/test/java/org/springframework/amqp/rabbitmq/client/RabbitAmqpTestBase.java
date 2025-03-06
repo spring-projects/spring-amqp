@@ -23,10 +23,13 @@ import java.util.stream.Stream;
 import com.rabbitmq.client.amqp.Environment;
 import com.rabbitmq.client.amqp.impl.AmqpEnvironmentBuilder;
 
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Declarable;
 import org.springframework.amqp.core.Declarables;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.junit.AbstractTestContainerTests;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.Lifecycle;
@@ -92,6 +95,21 @@ public abstract class RabbitAmqpTestBase extends AbstractTestContainerTests {
 		@Bean
 		RabbitAmqpTemplate rabbitTemplate(AmqpConnectionFactory connectionFactory) {
 			return new RabbitAmqpTemplate(connectionFactory);
+		}
+
+		@Bean
+		TopicExchange dlx1() {
+			return new TopicExchange("dlx1");
+		}
+
+		@Bean
+		Queue dlq1() {
+			return new Queue("dlq1");
+		}
+
+		@Bean
+		Binding dlq1Binding() {
+			return BindingBuilder.bind(dlq1()).to(dlx1()).with("#");
 		}
 
 		volatile boolean running;

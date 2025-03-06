@@ -464,7 +464,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 	@Override
 	public <C> RabbitConverterFuture<C> convertSendAndReceiveAsType(Object object,
-			MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<C> responseType) {
+			@Nullable MessagePostProcessor messagePostProcessor, @Nullable ParameterizedTypeReference<C> responseType) {
 
 		return convertSendAndReceiveAsType(this.template.getExchange(), this.template.getRoutingKey(), object,
 				messagePostProcessor, responseType);

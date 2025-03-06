@@ -30,11 +30,8 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.AmqpAcknowledgment;
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
-import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.annotation.RabbitListenerAnnotationBeanPostProcessor;
@@ -148,21 +145,6 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 	@Configuration
 	@EnableRabbit
 	static class Config {
-
-		@Bean
-		TopicExchange dlx1() {
-			return new TopicExchange("dlx1");
-		}
-
-		@Bean
-		Queue dlq1() {
-			return new Queue("dlq1");
-		}
-
-		@Bean
-		Binding dlq1Binding() {
-			return BindingBuilder.bind(dlq1()).to(dlx1()).with("#");
-		}
 
 		@Bean
 		Queue q1() {

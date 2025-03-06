@@ -53,7 +53,8 @@ public final class RabbitAmqpUtils {
 				.acceptIfNotNull(amqpMessage.contentEncoding(), messageProperties::setContentEncoding)
 				.acceptIfNotNull(amqpMessage.absoluteExpiryTime(),
 						(exp) -> messageProperties.setExpiration(Long.toString(exp)))
-				.acceptIfNotNull(amqpMessage.creationTime(), (time) -> messageProperties.setTimestamp(new Date(time)));
+				.acceptIfNotNull(amqpMessage.creationTime(), (time) -> messageProperties.setTimestamp(new Date(time)))
+				.acceptIfNotNull(amqpMessage.replyTo(), messageProperties::setReplyTo);
 
 		amqpMessage.forEachProperty(messageProperties::setHeader);
 

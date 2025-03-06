@@ -7,6 +7,7 @@
 	</Appenders>
 	<Loggers>
 		<Logger name="org.springframework.amqp.rabbit" level="info"/>
+		<Logger name="com.rabbitmq.client.amqp" level="warn"/>
 		<Root level="warn">
 			<AppenderRef ref="STDOUT" />
 		</Root>

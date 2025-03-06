@@ -16,20 +16,31 @@
 
 package org.springframework.amqp.rabbitmq.client;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
@@ -58,11 +69,13 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 	void illegalStateOnNoDefaults() {
 		assertThatIllegalStateException()
 				.isThrownBy(() -> this.template.send(new Message(new byte[0])))
-				.withMessage("For send with defaults, an 'exchange' (and optional 'key') or 'queue' must be provided");
+				.withMessage(
+						"For send with defaults, an 'exchange' (and optional 'routingKey') or 'queue' must be provided");
 
 		assertThatIllegalStateException()
 				.isThrownBy(() -> this.template.convertAndSend(new byte[0]))
-				.withMessage("For send with defaults, an 'exchange' (and optional 'key') or 'queue' must be provided");
+				.withMessage(
+						"For send with defaults, an 'exchange' (and optional 'routingKey') or 'queue' must be provided");
 	}
 
 	@Test
@@ -81,7 +94,7 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 	@Test
 	void defaultQueues() {
 		this.rabbitAmqpTemplate.setQueue("q1");
-		this.rabbitAmqpTemplate.setDefaultReceiveQueue("q1");
+		this.rabbitAmqpTemplate.setReceiveQueue("q1");
 
 		assertThat(this.rabbitAmqpTemplate.convertAndSend("test2"))
 				.succeedsWithin(Duration.ofSeconds(10));
@@ -89,6 +102,65 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 		assertThat(this.rabbitAmqpTemplate.receiveAndConvert())
 				.succeedsWithin(Duration.ofSeconds(10))
 				.isEqualTo("test2");
+	}
+
+	@Test
+	void verifyRpc() {
+		String testRequest = "rpc-request";
+		String testReply = "rpc-reply";
+
+		CompletableFuture<Object> rpcClientResult = this.template.convertSendAndReceive("e1", "k1", testRequest);
+
+		AtomicReference<String> receivedRequest = new AtomicReference<>();
+		CompletableFuture<Boolean> rpcServerResult =
+				this.rabbitAmqpTemplate.<String, String>receiveAndReply("q1",
+						payload -> {
+							receivedRequest.set(payload);
+							return testReply;
+						});
+
+		assertThat(rpcServerResult).succeedsWithin(Duration.ofSeconds(10)).isEqualTo(true);
+		assertThat(rpcClientResult).succeedsWithin(Duration.ofSeconds(10)).isEqualTo(testReply);
+		assertThat(receivedRequest.get()).isEqualTo(testRequest);
+
+		this.template.send("q1",
+				MessageBuilder.withBody("non-rpc-request".getBytes(StandardCharsets.UTF_8))
+						.setMessageId(UUID.randomUUID().toString())
+						.setContentType(MimeTypeUtils.TEXT_PLAIN_VALUE)
+						.build());
+
+		rpcServerResult = this.rabbitAmqpTemplate.<String, String>receiveAndReply("q1", payload -> "reply-attempt");
+
+		assertThat(rpcServerResult).failsWithin(Duration.ofSeconds(10))
+				.withThrowableOfType(ExecutionException.class)
+				.withCauseInstanceOf(AmqpIllegalStateException.class)
+				.withRootCauseInstanceOf(IllegalArgumentException.class)
+				.withMessageContaining("Failed to process RPC request: (Body:'non-rpc-request'")
+				.withStackTraceContaining("The 'reply-to' property has to be set on request. Used for reply publishing.");
+
+		rpcClientResult = this.template.convertSendAndReceive("q1", testRequest);
+		rpcServerResult = this.rabbitAmqpTemplate.<String, String>receiveAndReply("q1", payload -> null);
+
+		assertThat(rpcServerResult).succeedsWithin(Duration.ofSeconds(10)).isEqualTo(false);
+		assertThat(rpcClientResult).failsWithin(Duration.ofSeconds(2))
+				.withThrowableThat()
+				.isInstanceOf(TimeoutException.class);
+
+		this.template.convertSendAndReceive("q1", new byte[0]);
+
+		rpcServerResult = this.rabbitAmqpTemplate.<String, String>receiveAndReply("q1", payload -> payload);
+		assertThat(rpcServerResult).failsWithin(Duration.ofSeconds(10))
+				.withThrowableOfType(ExecutionException.class)
+				.withCauseInstanceOf(AmqpIllegalStateException.class)
+				.withRootCauseInstanceOf(ClassCastException.class)
+				.withMessageContaining("Failed to process RPC request: (Body:'[B")
+				.withStackTraceContaining("class [B cannot be cast to class java.lang.String");
+
+		assertThat(this.template.receiveAndConvert("dlq1")).succeedsWithin(10, TimeUnit.SECONDS)
+				.isEqualTo("non-rpc-request");
+
+		assertThat(this.template.receiveAndConvert("dlq1")).succeedsWithin(10, TimeUnit.SECONDS)
+				.isEqualTo(new byte[0]);
 	}
 
 	@Configuration
@@ -101,7 +173,7 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 
 		@Bean
 		Queue q1() {
-			return new Queue("q1");
+			return QueueBuilder.durable("q1").deadLetterExchange("dlx1").build();
 		}
 
 		@Bean

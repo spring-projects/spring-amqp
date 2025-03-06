@@ -92,11 +92,30 @@ public interface AsyncAmqpTemplate {
 		throw new UnsupportedOperationException();
 	}
 
-	default <T> CompletableFuture<T> receiveAndConvert(ParameterizedTypeReference<T> type) {
+	default <T> CompletableFuture<T> receiveAndConvert(@Nullable ParameterizedTypeReference<T> type) {
 		throw new UnsupportedOperationException();
 	}
 
-	default <T> CompletableFuture<T> receiveAndConvert(String queueName, ParameterizedTypeReference<T> type) {
+	default <T> CompletableFuture<T> receiveAndConvert(String queueName, @Nullable ParameterizedTypeReference<T> type) {
+		throw new UnsupportedOperationException();
+	}
+
+	default <R, S> CompletableFuture<Boolean> receiveAndReply(ReceiveAndReplyCallback<R, S> callback) {
+		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * Perform a server-side RPC functionality.
+	 * The request message must have a {@code replyTo} property.
+	 * The request {@code messageId} property is used for correlation.
+	 * The callback might not produce a reply with the meaning nothing to answer.
+	 * @param queueName the queue to consume request.
+	 * @param callback an application callback to handle request and produce reply.
+	 * @return the completion status: true if no errors and reply has been produced.
+	 * @param <R> the request body type.
+	 * @param <S> the response body type
+	 */
+	default <R, S> CompletableFuture<Boolean> receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -240,8 +259,9 @@ public interface AsyncAmqpTemplate {
 	 * @param <C> the expected result type.
 	 * @return the {@link CompletableFuture}.
 	 */
-	<C> CompletableFuture<C> convertSendAndReceiveAsType(Object object, MessagePostProcessor messagePostProcessor,
-			ParameterizedTypeReference<C> responseType);
+	<C> CompletableFuture<C> convertSendAndReceiveAsType(Object object,
+			@Nullable MessagePostProcessor messagePostProcessor,
+			@Nullable ParameterizedTypeReference<C> responseType);
 
 	/**
 	 * Convert the object to a message and send it to the default exchange with the
