@@ -89,7 +89,9 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 
 		assertThat(this.config.consumeIsDone.await(10, TimeUnit.SECONDS)).isTrue();
 
-		assertThat(this.config.received).containsAll(testDataList);
+		synchronized (this.config.received) {
+			assertThat(this.config.received).containsAll(testDataList);
+		}
 
 		assertThat(this.template.receive("dlq1")).succeedsWithin(10, TimeUnit.SECONDS);
 		assertThat(this.template.receive("dlq1")).succeedsWithin(10, TimeUnit.SECONDS);
@@ -166,7 +168,7 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 			return new RabbitAmqpListenerContainerFactory(connectionFactory);
 		}
 
-		List<String> received = Collections.synchronizedList(new ArrayList<>());
+		final List<String> received = Collections.synchronizedList(new ArrayList<>());
 
 		CountDownLatch consumeIsDone = new CountDownLatch(10);
 
