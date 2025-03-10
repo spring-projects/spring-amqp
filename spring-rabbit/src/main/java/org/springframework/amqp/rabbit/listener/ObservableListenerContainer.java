@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,14 @@ import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 3.0.5
  *
  */
@@ -36,7 +39,7 @@ public abstract class ObservableListenerContainer extends RabbitAccessor
 		implements MessageListenerContainer, ApplicationContextAware, BeanNameAware, DisposableBean {
 
 	private static final boolean MICROMETER_PRESENT = ClassUtils.isPresent(
-				"io.micrometer.core.instrument.MeterRegistry", AbstractMessageListenerContainer.class.getClassLoader());
+			"io.micrometer.core.instrument.MeterRegistry", AbstractMessageListenerContainer.class.getClassLoader());
 
 	private ApplicationContext applicationContext;
 
@@ -117,6 +120,11 @@ public abstract class ObservableListenerContainer extends RabbitAccessor
 		if (this.observationEnabled) {
 			obtainObservationRegistry(this.applicationContext);
 		}
+	}
+
+	protected boolean isApplicationContextClosed() {
+		return this.applicationContext instanceof ConfigurableApplicationContext configurableCtx
+				&& configurableCtx.isClosed();
 	}
 
 	@Override
