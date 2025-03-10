@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbitmq.client;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import com.rabbitmq.client.amqp.Consumer;
@@ -72,8 +73,12 @@ public final class RabbitAmqpUtils {
 	}
 
 	/**
-	 * Convert {@link com.rabbitmq.client.amqp.Message} into {@link Message}.
-	 * @param amqpMessage the {@link com.rabbitmq.client.amqp.Message} convert from.
+	 * Convert {@link Message} into {@link com.rabbitmq.client.amqp.Message}.
+	 * The {@link MessageProperties#getReplyTo()} is set into {@link com.rabbitmq.client.amqp.Message#to(String)}.
+	 * The {@link com.rabbitmq.client.amqp.Message#correlationId(long)} is set to
+	 * {@link MessageProperties#getCorrelationId()} if present, or to {@link MessageProperties#getMessageId()}.
+	 * @param message the {@link Message} convert from.
+	 * @param amqpMessage the {@link com.rabbitmq.client.amqp.Message} convert into.
 	 */
 	public static void toAmqpMessage(Message message, com.rabbitmq.client.amqp.Message amqpMessage) {
 		MessageProperties messageProperties = message.getMessageProperties();
@@ -83,9 +88,11 @@ public final class RabbitAmqpUtils {
 				.contentEncoding(messageProperties.getContentEncoding())
 				.contentType(messageProperties.getContentType())
 				.messageId(messageProperties.getMessageId())
-				.correlationId(messageProperties.getCorrelationId())
+				.correlationId(
+						Objects.requireNonNullElse(
+								messageProperties.getCorrelationId(), messageProperties.getMessageId()))
 				.priority(messageProperties.getPriority().byteValue())
-				.replyTo(messageProperties.getReplyTo());
+				.to(messageProperties.getReplyTo());
 
 		Map<String, @Nullable Object> headers = messageProperties.getHeaders();
 		if (!headers.isEmpty()) {

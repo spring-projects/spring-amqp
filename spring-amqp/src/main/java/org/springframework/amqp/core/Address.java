@@ -23,8 +23,8 @@ import java.util.regex.Pattern;
 import org.springframework.util.StringUtils;
 
 /**
- * Represents an address for publication of an AMQP message. The AMQP 0-8 and 0-9
- * specifications have an unstructured string that is used as a "reply to" address.
+ * Represents an address for publication of an AMQP message. The AMQP 0.9
+ * specification has an unstructured string that is used as a "reply to" address.
  * There are however conventions in use and this class makes it easier to
  * follow these conventions, which can be easily summarised as:
  *
@@ -33,7 +33,10 @@ import org.springframework.util.StringUtils;
  * </pre>
  *
  * Here we also the exchange name to default to empty
- * (so just a routing key will work if you know the queue name).
+ * (so just a routing key will work as a queue name).
+ * <p>
+ * For AMQP 1.0, only routing key is treated as target destination.
+ *
  *
  * @author Mark Pollack
  * @author Mark Fisher
@@ -58,11 +61,11 @@ public class Address {
 
 	/**
 	 * Create an Address instance from a structured String with the form
-	 *
 	 * <pre class="code">
 	 * (exchange)/(routingKey)
 	 * </pre>
 	 * .
+	 * If exchange is parsed to empty string, then routing key is treated as a queue name.
 	 * @param address a structured string.
 	 */
 	public Address(String address) {
@@ -120,9 +123,9 @@ public class Address {
 
 	@Override
 	public int hashCode() {
-		int result = this.exchangeName != null ? this.exchangeName.hashCode() : 0;
+		int result = this.exchangeName.hashCode();
 		int prime = 31; // NOSONAR magic #
-		result = prime * result + (this.routingKey != null ? this.routingKey.hashCode() : 0);
+		result = prime * result + this.routingKey.hashCode();
 		return result;
 	}
 

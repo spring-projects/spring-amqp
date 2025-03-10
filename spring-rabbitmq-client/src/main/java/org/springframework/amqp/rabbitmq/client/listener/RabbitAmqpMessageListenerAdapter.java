@@ -120,7 +120,7 @@ public class RabbitAmqpMessageListenerAdapter extends MessagingMessageListenerAd
 			InvocationResult result = getHandlerAdapter()
 					.invoke(converted, amqpAcknowledgment);
 			if (result.getReturnValue() != null) {
-				logger.warn("Replies are not currently supported with RabbitMQ AMQP 1.0 listeners");
+				logger.warn("Replies for batches are not currently supported with RabbitMQ AMQP 1.0 listeners");
 			}
 		}
 		catch (Exception ex) {
