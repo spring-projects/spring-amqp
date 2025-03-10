@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,16 @@ import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 3.0.5
  *
  */
@@ -36,7 +41,7 @@ public abstract class ObservableListenerContainer extends RabbitAccessor
 		implements MessageListenerContainer, ApplicationContextAware, BeanNameAware, DisposableBean {
 
 	private static final boolean MICROMETER_PRESENT = ClassUtils.isPresent(
-				"io.micrometer.core.instrument.MeterRegistry", AbstractMessageListenerContainer.class.getClassLoader());
+			"io.micrometer.core.instrument.MeterRegistry", AbstractMessageListenerContainer.class.getClassLoader());
 
 	private ApplicationContext applicationContext;
 
@@ -52,6 +57,8 @@ public abstract class ObservableListenerContainer extends RabbitAccessor
 
 	private String listenerId;
 
+	private volatile boolean contextClosed;
+
 	@Nullable
 	protected final ApplicationContext getApplicationContext() {
 		return this.applicationContext;
@@ -60,6 +67,9 @@ public abstract class ObservableListenerContainer extends RabbitAccessor
 	@Override
 	public final void setApplicationContext(ApplicationContext applicationContext) {
 		this.applicationContext = applicationContext;
+		if (applicationContext instanceof ConfigurableApplicationContext configurableApplicationContext) {
+			configurableApplicationContext.addApplicationListener(new ApplicationClosedListener());
+		}
 	}
 
 	protected MicrometerHolder getMicrometerHolder() {
@@ -119,6 +129,10 @@ public abstract class ObservableListenerContainer extends RabbitAccessor
 		}
 	}
 
+	protected boolean isApplicationContextClosed() {
+		return this.contextClosed;
+	}
+
 	@Override
 	public void setBeanName(String beanName) {
 		this.beanName = beanName;
@@ -150,6 +164,17 @@ public abstract class ObservableListenerContainer extends RabbitAccessor
 		if (this.micrometerHolder != null) {
 			this.micrometerHolder.destroy();
 		}
+	}
+
+	private final class ApplicationClosedListener implements ApplicationListener<ContextClosedEvent> {
+
+		@Override
+		public void onApplicationEvent(ContextClosedEvent event) {
+			if (event.getApplicationContext().equals(ObservableListenerContainer.this.applicationContext)) {
+				ObservableListenerContainer.this.contextClosed = true;
+			}
+		}
+
 	}
 
 }
