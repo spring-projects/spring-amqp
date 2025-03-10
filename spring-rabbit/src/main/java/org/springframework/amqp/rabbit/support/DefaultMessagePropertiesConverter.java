@@ -33,6 +33,7 @@ import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.util.NumberUtils;
 
 /**
  * Default implementation of the {@link MessagePropertiesConverter} strategy.
@@ -147,7 +148,13 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		if (target.getRetryCount() == 0) {
 			List<Map<String, ?>> xDeathHeader = target.getXDeathHeader();
 			if (!CollectionUtils.isEmpty(xDeathHeader)) {
-				target.setRetryCount((long) xDeathHeader.get(0).get("count"));
+				Object countValue = xDeathHeader.get(0).get("count");
+
+				if(countValue != null) {
+					target.setRetryCount(
+							NumberUtils.convertNumberToTargetClass((Number) countValue, Long.class));
+				}
+
 			}
 		}
 
