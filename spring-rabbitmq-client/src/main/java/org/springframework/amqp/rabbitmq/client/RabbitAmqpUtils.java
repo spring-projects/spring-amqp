@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbitmq.client;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 import com.rabbitmq.client.amqp.Consumer;
@@ -88,11 +87,7 @@ public final class RabbitAmqpUtils {
 				.contentEncoding(messageProperties.getContentEncoding())
 				.contentType(messageProperties.getContentType())
 				.messageId(messageProperties.getMessageId())
-				.correlationId(
-						Objects.requireNonNullElse(
-								messageProperties.getCorrelationId(), messageProperties.getMessageId()))
-				.priority(messageProperties.getPriority().byteValue())
-				.to(messageProperties.getReplyTo());
+				.priority(messageProperties.getPriority().byteValue());
 
 		Map<String, @Nullable Object> headers = messageProperties.getHeaders();
 		if (!headers.isEmpty()) {
@@ -100,8 +95,11 @@ public final class RabbitAmqpUtils {
 		}
 
 		JavaUtils.INSTANCE
+				.acceptOrElseIfNotNull(messageProperties.getCorrelationId(),
+						messageProperties.getMessageId(), amqpMessage::correlationId)
 				.acceptIfNotNull(messageProperties.getUserId(),
 						(userId) -> amqpMessage.userId(userId.getBytes(StandardCharsets.UTF_8)))
+				.acceptIfNotNull(messageProperties.getReplyTo(), amqpMessage::to)
 				.acceptIfNotNull(messageProperties.getTimestamp(),
 						(timestamp) -> amqpMessage.creationTime(timestamp.getTime()))
 				.acceptIfNotNull(messageProperties.getExpiration(),

@@ -136,4 +136,24 @@ public final class JavaUtils {
 		return this;
 	}
 
+
+	/**
+	 * Invoke {@link Consumer#accept(Object)} with the value or alternative if one of them is not null.
+	 * @param value the value.
+	 * @param alternative the other value if the {@code value} argument is null.
+	 * @param consumer the consumer.
+	 * @param <T> the value type.
+	 * @return this.
+	 * @since 4.0
+	 */
+	public <T> JavaUtils acceptOrElseIfNotNull(@Nullable T value, @Nullable T alternative, Consumer<T> consumer) {
+		if (value != null) {
+			consumer.accept(value);
+		}
+		else if (alternative != null) {
+			consumer.accept(alternative);
+		}
+		return this;
+	}
+
 }
