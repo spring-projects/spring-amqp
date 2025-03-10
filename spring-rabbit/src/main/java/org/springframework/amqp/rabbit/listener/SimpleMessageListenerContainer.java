@@ -1601,7 +1601,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		private void logConsumerException(Throwable t) {
 			if (logger.isDebugEnabled()
 					|| !(t instanceof AmqpConnectException || t instanceof ConsumerCancelledException)) {
-				logger.debug(
+				// It has to be WARN independently of condition.
+				// The meaning is: log WARN for all exception when DEBUG enabled, or all others, but mentioned
+				logger.warn(
 						"Consumer raised exception, processing can restart if the connection factory supports it",
 						t);
 			}
