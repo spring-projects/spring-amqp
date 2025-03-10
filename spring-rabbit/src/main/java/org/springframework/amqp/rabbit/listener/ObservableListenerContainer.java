@@ -26,6 +26,7 @@ import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.util.ClassUtils;
 
 /**
@@ -119,6 +120,12 @@ public abstract class ObservableListenerContainer extends RabbitAccessor
 		if (this.observationEnabled) {
 			obtainObservationRegistry(this.applicationContext);
 		}
+	}
+
+
+	protected boolean isApplicationContextClosed() {
+		return this.applicationContext instanceof ConfigurableApplicationContext configurableCtx
+				&& configurableCtx.isClosed();
 	}
 
 	@Override

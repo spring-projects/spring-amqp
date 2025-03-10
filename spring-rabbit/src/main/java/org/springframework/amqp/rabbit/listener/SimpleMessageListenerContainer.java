@@ -64,6 +64,7 @@ import org.springframework.amqp.rabbit.support.ListenerContainerAware;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.support.ConsumerTagStrategy;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.log.LogMessage;
 import org.springframework.jmx.export.annotation.ManagedMetric;
 import org.springframework.jmx.support.MetricType;
@@ -807,7 +808,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
-
 	/**
 	 * Start up to delta consumers, limited by {@link #setMaxConcurrentConsumers(int)}.
 	 * @param delta the consumers to add.
@@ -874,7 +874,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			this.consumersLock.unlock();
 		}
 	}
-
 
 	private void considerStoppingAConsumer(BlockingQueueConsumer consumer) {
 		this.consumersLock.lock();
@@ -1272,7 +1271,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		private boolean failedExclusive;
 
-
 		AsyncMessageProcessingConsumer(BlockingQueueConsumer consumer) {
 			this.consumer = consumer;
 			this.start = new CountDownLatch(1);
@@ -1556,8 +1554,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				try {
 					this.consumer.stop();
 					SimpleMessageListenerContainer.this.cancellationLock.release(this.consumer);
-					if (getApplicationEventPublisher() != null) {
-						getApplicationEventPublisher().publishEvent(
+					ApplicationEventPublisher applicationEventPublisher = getApplicationEventPublisher();
+					if (applicationEventPublisher != null && !isApplicationContextClosed()) {
+						applicationEventPublisher.publishEvent(
 								new AsyncConsumerStoppedEvent(SimpleMessageListenerContainer.this, this.consumer));
 					}
 				}
