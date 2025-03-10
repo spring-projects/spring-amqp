@@ -105,6 +105,21 @@ public class DefaultMessagePropertiesConverterTests {
 	}
 
 	@Test
+	public void testToMessagePropertiesXDeathCount() {
+		Map<String, Object> headers = new HashMap<String, Object>();
+
+		headers.put("x-death", List.of(Map.of("count", Integer.valueOf(2))));
+
+		BasicProperties source = new BasicProperties.Builder()
+				.headers(headers)
+				.build();
+
+		MessageProperties messageProperties = messagePropertiesConverter.toMessageProperties(source, envelope, "UTF-8");
+
+		assertThat(messageProperties.getRetryCount()).isEqualTo(2);
+	}
+
+	@Test
 	public void testLongLongString() {
 		Map<String, Object> headers = new HashMap<String, Object>();
 		headers.put("longString", longString);
