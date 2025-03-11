@@ -170,7 +170,7 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 
 		final List<String> received = Collections.synchronizedList(new ArrayList<>());
 
-		CountDownLatch consumeIsDone = new CountDownLatch(10);
+		CountDownLatch consumeIsDone = new CountDownLatch(11);
 
 		@RabbitListener(queues = {"q1", "q2"},
 				ackMode = "#{T(org.springframework.amqp.core.AcknowledgeMode).MANUAL}",
