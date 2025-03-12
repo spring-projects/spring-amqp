@@ -44,6 +44,7 @@ import org.springframework.util.StringUtils;
  * @author Artem Bilan
  * @author Ngoc Nhan
  * @author Johan Kaving
+ * @author Raul Avila
  *
  * @since 1.0
  */
@@ -147,7 +148,11 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		if (target.getRetryCount() == 0) {
 			List<Map<String, ?>> xDeathHeader = target.getXDeathHeader();
 			if (!CollectionUtils.isEmpty(xDeathHeader)) {
-				target.setRetryCount((long) xDeathHeader.get(0).get("count"));
+				Object value = xDeathHeader.get(0).get("count");
+
+				if (value instanceof Number numberValue) {
+					target.setRetryCount(numberValue.longValue());
+				}
 			}
 		}
 
