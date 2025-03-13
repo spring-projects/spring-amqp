@@ -1,0 +1,8 @@
+[[amqp-client]]
+= RabbitMQ AMQP 1.0 Support
+
+Version 4.0 introduces `spring-rabbitmq-client` module for https://www.rabbitmq.com/client-libraries/amqp-client-libraries[AMQP 1.0] protocol support on RabbitMQ.
+
+This artifact is based on the {rabbitmq-github}/rabbitmq-amqp-java-client[com.rabbitmq.client:amqp-client] library and therefore can work only with RabbitMQ and its AMQP 1.0 protocol support.
+It cannot be used for any arbitrary AMQP 1.0 broker.
+For that purpose a https://qpid.apache.org/components/jms/index.html[JMS bridge] and respective {spring-framework-docs}/integration/jms.html[Spring JMS] integration is recommended so far.

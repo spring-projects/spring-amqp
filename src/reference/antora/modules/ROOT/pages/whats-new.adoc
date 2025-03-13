@@ -2,20 +2,24 @@
 = What's New
 :page-section-summary-toc: 1
 
-[[changes-in-3-2-since-3-1]]
-== Changes in 3.2 Since 3.1
+[[changes-in-4-2-since-3-2]]
+== Changes in 4.0 Since 3.2
 
-[[spring-framework-6-2]]
-=== Spring Framework 6.1
+[[spring-framework-7-0]]
+=== Spring Framework 7.0
 
-This version requires Spring Framework 6.2.
+This version requires Spring Framework 7.0.
 
-[[x32-consistent-hash-exchange]]
-=== Consistent Hash Exchange
+[[x40-null-away]]
+=== Null-safety
 
-The convenient `ConsistentHashExchange` and respective `ExchangeBuilder.consistentHashExchange()` API has been introduced.
+As many other Spring portfolio projects, Spring AMQP has been migrated to https://jspecify.dev/docs/start-here[JSpecify] annotations to declare the nullness of API.
+The https://github.com/uber/NullAway[NullAway] Gradle plugin is used to check the consistency of null-safety declarations.
 
-[[x32-retry-count-header]]
-=== The `retry_count` header
+[[x40-rabbitmq-amqp-client]]
+=== The `spring-rabbitmq-client` module
 
-The `retry_count` header should be used now instead of relying on server side increment for the `x-death.count` property.
+The new `spring-rabbitmq-client` module (with same artifact name) is introduced.
+This is an implementation of AMQP 1.0 protocol specific to RabbitMQ since `4.0` and based on the `com.rabbitmq.client:amqp-client` library.
+
+See xref:rabbitmq-amqp-client.adoc[] for more information.

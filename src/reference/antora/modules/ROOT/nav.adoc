@@ -57,6 +57,7 @@
 *** xref:amqp/multi-rabbit.adoc[]
 *** xref:amqp/debugging.adoc[]
 ** xref:stream.adoc[]
+** xref:rabbitmq-amqp-client.adoc[]
 ** xref:logging.adoc[]
 ** xref:sample-apps.adoc[]
 ** xref:testing.adoc[]

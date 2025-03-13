@@ -1,0 +1,17 @@
+[[changes-in-3-2-since-3-1]]
+= Changes in 3.2 Since 3.1
+
+[[spring-framework-6-2]]
+== Spring Framework 6.1
+
+This version requires Spring Framework 6.2.
+
+[[x32-consistent-hash-exchange]]
+== Consistent Hash Exchange
+
+The convenient `ConsistentHashExchange` and respective `ExchangeBuilder.consistentHashExchange()` API has been introduced.
+
+[[x32-retry-count-header]]
+== The `retry_count` header
+
+The `retry_count` header should be used now instead of relying on server side increment for the `x-death.count` property.
