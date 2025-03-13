@@ -481,6 +481,7 @@ project('spring-rabbitmq-client') {
 		api "com.rabbitmq.client:amqp-client:$rabbitmqAmqpClientVersion"
 
 		testApi project(':spring-rabbit-junit')
+		testApi 'io.projectreactor:reactor-core'
 
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind'
 

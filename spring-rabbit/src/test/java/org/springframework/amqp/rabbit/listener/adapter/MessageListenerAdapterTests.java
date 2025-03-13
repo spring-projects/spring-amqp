@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.rabbitmq.client.Channel;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
@@ -33,7 +34,6 @@ import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.SendRetryContextAccessor;
-import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.retry.RetryPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
@@ -67,8 +67,15 @@ public class MessageListenerAdapterTests {
 	public void init() {
 		this.messageProperties = new MessageProperties();
 		this.messageProperties.setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN);
-		this.adapter = new MessageListenerAdapter();
-		this.adapter.setMessageConverter(new SimpleMessageConverter());
+		this.adapter = new MessageListenerAdapter() {
+
+			@Override
+			protected void doHandleResult(InvocationResult resultArg, Message request, @Nullable Channel channel,
+					@Nullable Object source) {
+
+			}
+
+		};
 	}
 
 	@Test
@@ -77,7 +84,7 @@ public class MessageListenerAdapterTests {
 
 			@Override
 			protected Object[] buildListenerArguments(Object extractedMessage, Channel channel, Message message) {
-				return new Object[] { extractedMessage, channel, message };
+				return new Object[] {extractedMessage, channel, message};
 			}
 
 		}
@@ -131,7 +138,15 @@ public class MessageListenerAdapterTests {
 			}
 
 		}
-		this.adapter = new MessageListenerAdapter(new Delegate(), "myPojoMessageMethod");
+		this.adapter = new MessageListenerAdapter(new Delegate(), "myPojoMessageMethod") {
+
+			@Override
+			protected void doHandleResult(InvocationResult resultArg, Message request, @Nullable Channel channel,
+					@Nullable Object source) {
+
+			}
+
+		};
 		this.adapter.onMessage(new Message("foo".getBytes(), messageProperties), null);
 		assertThat(called.get()).isTrue();
 	}
@@ -146,7 +161,7 @@ public class MessageListenerAdapterTests {
 
 	@Test
 	public void testMappedListenerMethod() throws Exception {
-		Map<String, String> map = new HashMap<String, String>();
+		Map<String, String> map = new HashMap<>();
 		map.put("foo", "handle");
 		map.put("bar", "notDefinedOnInterface");
 		this.adapter.setDefaultListenerMethod("anotherHandle");
@@ -186,6 +201,7 @@ public class MessageListenerAdapterTests {
 
 	@Test
 	public void testReplyRetry() throws Exception {
+		this.adapter = new MessageListenerAdapter();
 		this.adapter.setDefaultListenerMethod("handle");
 		this.adapter.setDelegate(this.simpleService);
 		RetryPolicy retryPolicy = new SimpleRetryPolicy(2);
@@ -210,7 +226,7 @@ public class MessageListenerAdapterTests {
 		this.adapter.onMessage(message, channel);
 		assertThat(this.simpleService.called).isEqualTo("handle");
 		assertThat(replyMessage.get()).isNotNull();
-		assertThat(new String(replyMessage.get().getBody())).isEqualTo("processedfoo");
+		assertThat(new String(replyMessage.get().getBody())).isEqualTo("processed foo");
 		assertThat(replyAddress.get()).isNotNull();
 		assertThat(replyAddress.get().getExchangeName()).isEqualTo("foo");
 		assertThat(replyAddress.get().getRoutingKey()).isEqualTo("bar");
@@ -224,7 +240,7 @@ public class MessageListenerAdapterTests {
 			@SuppressWarnings("unused")
 			public CompletableFuture<String> myPojoMessageMethod(String input) {
 				CompletableFuture<String> future = new CompletableFuture<>();
-				future.complete("processed" + input);
+				future.complete("processed " + input);
 				return future;
 			}
 
@@ -270,18 +286,18 @@ public class MessageListenerAdapterTests {
 		@Override
 		public String handle(String input) {
 			called = "handle";
-			return "processed" + input;
+			return "processed " + input;
 		}
 
 		@Override
 		public String anotherHandle(String input) {
 			called = "anotherHandle";
-			return "processed" + input;
+			return "processed " + input;
 		}
 
 		public String notDefinedOnInterface(String input) {
 			called = "notDefinedOnInterface";
-			return "processed" + input;
+			return "processed " + input;
 		}
 
 	}

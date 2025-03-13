@@ -28,8 +28,12 @@ import java.util.stream.IntStream;
 import com.rabbitmq.client.amqp.Consumer;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
 
 import org.springframework.amqp.core.AmqpAcknowledgment;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
@@ -45,6 +49,7 @@ import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.MultiValueMap;
@@ -144,6 +149,32 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 		assertThat(this.config.batchReceivedOnThread).startsWith("dispatching-rabbitmq-amqp-");
 	}
 
+	@Test
+	void verifyBasicRequestReply() {
+		CompletableFuture<String> replyFuture = this.template.convertSendAndReceive("requestQueue", "test data");
+		assertThat(replyFuture).succeedsWithin(10, TimeUnit.SECONDS).isEqualTo("TEST DATA");
+	}
+
+	@Test
+	void verifyFutureReturnRequestReply() {
+		CompletableFuture<String> replyFuture = this.template.convertSendAndReceive("requestQueue2", "TEST DATA2");
+		assertThat(replyFuture).succeedsWithin(10, TimeUnit.SECONDS).isEqualTo("test data2");
+	}
+
+	@Test
+	void verifyMonoReturnRequestReply() {
+		CompletableFuture<String> replyFuture = this.template.convertSendAndReceive("requestQueue3", "test data3");
+		assertThat(replyFuture).succeedsWithin(10, TimeUnit.SECONDS).isEqualTo("Mono test data3");
+	}
+
+	@Test
+	void verifyReplyOnAnotherQueue() {
+		this.template.convertAndSend("requestQueue4", "test data4");
+		CompletableFuture<Object> replyFuture = this.template.receiveAndConvert("q4");
+		assertThat(replyFuture).succeedsWithin(10, TimeUnit.SECONDS)
+				.isEqualTo("Reply for 'test data4' via 'e1' and 'k4'");
+	}
+
 	@Configuration
 	@EnableRabbit
 	static class Config {
@@ -161,6 +192,21 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 		@Bean
 		Queue q3() {
 			return new Queue("q3");
+		}
+
+		@Bean
+		DirectExchange e1() {
+			return new DirectExchange("e1");
+		}
+
+		@Bean
+		Queue q4() {
+			return new Queue("q4");
+		}
+
+		@Bean
+		Binding b4() {
+			return BindingBuilder.bind(q4()).to(e1()).with("k4");
 		}
 
 		@Bean(RabbitListenerAnnotationBeanPostProcessor.DEFAULT_RABBIT_LISTENER_CONTAINER_FACTORY_BEAN_NAME)
@@ -229,6 +275,29 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 		void processBatchFromQ3(List<String> data) {
 			this.batchReceivedOnThread = Thread.currentThread().getName();
 			this.batchReceived.complete(data);
+		}
+
+		@RabbitListener(queuesToDeclare = @org.springframework.amqp.rabbit.annotation.Queue("requestQueue"))
+		String toUpperCaseRpc(String data) {
+			return data.toUpperCase();
+		}
+
+		@RabbitListener(queuesToDeclare = @org.springframework.amqp.rabbit.annotation.Queue("requestQueue2"))
+		CompletableFuture<String> toLowerCaseFutureRpc(String data) {
+			return CompletableFuture.completedFuture(data)
+					.thenApply(String::toLowerCase);
+		}
+
+		@RabbitListener(queuesToDeclare = @org.springframework.amqp.rabbit.annotation.Queue("requestQueue3"))
+		Mono<String> monoRpc(String data) {
+			return Mono.just(data)
+					.map(value -> "Mono " + value);
+		}
+
+		@RabbitListener(queuesToDeclare = @org.springframework.amqp.rabbit.annotation.Queue("requestQueue4"))
+		@SendTo("e1/k4")
+		String replyViaSendTo(String data) {
+			return "Reply for '%s' via 'e1' and 'k4'".formatted(data);
 		}
 
 	}

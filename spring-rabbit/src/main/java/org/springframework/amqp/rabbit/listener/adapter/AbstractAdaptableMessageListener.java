@@ -216,6 +216,10 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 				beforeSendReplyPostProcessors.length);
 	}
 
+	public MessagePostProcessor @Nullable [] getBeforeSendReplyPostProcessors() {
+		return this.beforeSendReplyPostProcessors;
+	}
+
 	/**
 	 * Set a {@link RetryTemplate} to use when sending replies.
 	 * @param retryTemplate the template.
@@ -369,7 +373,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	/**
 	 * Handle the given result object returned from the listener method, sending a
 	 * response message back.
-	 * @param resultArg the result object to handle (never <code>null</code>)
+	 * @param resultArg the result object to handle
 	 * @param request the original request message
 	 * @param channel the Rabbit channel to operate on (maybe <code>null</code>)
 	 * @param source the source data for the method invocation - e.g.
@@ -383,7 +387,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	protected void handleResult(@Nullable InvocationResult resultArg, Message request,
 			@Nullable Channel channel, @Nullable Object source) {
 
-		if (channel != null && resultArg != null) {
+		if (resultArg != null) {
 			if (resultArg.getReturnValue() instanceof CompletableFuture<?> completable) {
 				if (!this.isManualAck) {
 					this.logger.warn("Container AcknowledgeMode must be MANUAL for a Future<?> return type; "
@@ -413,13 +417,9 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 				doHandleResult(resultArg, request, channel, source);
 			}
 		}
-		else if (this.logger.isWarnEnabled()) {
-			this.logger.warn("Listener method returned result [" + resultArg
-					+ "]: not generating response message for it because no Rabbit Channel given");
-		}
 	}
 
-	private void asyncSuccess(InvocationResult resultArg, Message request, Channel channel,
+	private void asyncSuccess(InvocationResult resultArg, Message request, @Nullable Channel channel,
 			@Nullable Object source, @Nullable Object deferredResult) {
 
 		if (deferredResult == null) {
@@ -458,8 +458,9 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 		}
 	}
 
-	protected void asyncFailure(Message request, Channel channel, Throwable t, @Nullable Object source) {
+	protected void asyncFailure(Message request, @Nullable Channel channel, Throwable t, @Nullable Object source) {
 		this.logger.error("Future, Mono, or suspend function was completed with an exception for " + request, t);
+		Assert.notNull(channel, "'channel' must not be null.");
 		try {
 			channel.basicNack(request.getMessageProperties().getDeliveryTag(), false,
 					ContainerUtils.shouldRequeue(this.defaultRequeueRejected, t, this.logger));
@@ -469,7 +470,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 		}
 	}
 
-	protected void doHandleResult(InvocationResult resultArg, Message request, Channel channel,
+	protected void doHandleResult(InvocationResult resultArg, Message request, @Nullable Channel channel,
 			@Nullable Object source) {
 
 		if (this.logger.isDebugEnabled()) {
@@ -500,12 +501,13 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	/**
 	 * Build a Rabbit message to be sent as response based on the given result object.
 	 * @param channel the Rabbit Channel to operate on.
+	 *                Can be null if implementation does not support AMQP 0.9.1.
 	 * @param result the content of the message, as returned from the listener method.
 	 * @param genericType the generic type to populate type headers.
 	 * @return the Rabbit <code>Message</code> (never <code>null</code>).
 	 * @see #setMessageConverter
 	 */
-	protected Message buildMessage(Channel channel, @Nullable Object result, @Nullable Type genericType) {
+	protected Message buildMessage(@Nullable Channel channel, @Nullable Object result, @Nullable Type genericType) {
 		MessageConverter converter = getMessageConverter();
 		if (converter != null && !(result instanceof Message)) {
 			return convert(result, genericType, converter);
@@ -633,7 +635,8 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	 * @see #postProcessResponse(Message, Message)
 	 * @see #setReplyPostProcessor(ReplyPostProcessor)
 	 */
-	protected void sendResponse(Channel channel, Address replyTo, Message messageIn) {
+	protected void sendResponse(@Nullable Channel channel, Address replyTo, Message messageIn) {
+		Assert.notNull(channel, "'channel' must not be null.");
 		Message message = messageIn;
 		if (this.beforeSendReplyPostProcessors != null) {
 			for (MessagePostProcessor postProcessor : this.beforeSendReplyPostProcessors) {

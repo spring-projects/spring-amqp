@@ -99,6 +99,8 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer, Be
 
 	private @Nullable MessageListener proxy;
 
+	private boolean asyncReplies;
+
 	private ErrorHandler errorHandler = new ConditionalRejectingErrorHandler();
 
 	private @Nullable Collection<MessagePostProcessor> afterReceivePostProcessors;
@@ -255,6 +257,10 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer, Be
 	@Override
 	public void setupMessageListener(MessageListener messageListener) {
 		this.messageListener = messageListener;
+		this.asyncReplies = messageListener.isAsyncReplies();
+		if (this.messageListener instanceof RabbitAmqpMessageListenerAdapter rabbitAmqpMessageListenerAdapter) {
+			rabbitAmqpMessageListenerAdapter.setConnectionFactory(this.connectionFactory);
+		}
 		this.proxy = this.messageListener;
 		if (!ObjectUtils.isEmpty(this.adviceChain)) {
 			ProxyFactory factory = new ProxyFactory(messageListener);
@@ -275,6 +281,11 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer, Be
 	public void afterPropertiesSet() {
 		Assert.state(this.queues != null, "At least one queue has to be provided for consuming.");
 		Assert.state(this.messageListener != null, "The 'messageListener' must be provided.");
+
+		if (this.asyncReplies && this.autoSettle) {
+			LOG.info("Enforce MANUAL settlement for async replies.");
+			this.autoSettle = false;
+		}
 
 		this.messageListener.containerAckMode(this.autoSettle ? AcknowledgeMode.AUTO : AcknowledgeMode.MANUAL);
 		if (this.messageListener instanceof RabbitAmqpMessageListenerAdapter adapter

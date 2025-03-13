@@ -169,7 +169,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	}
 
 	@Override
-	protected void asyncFailure(org.springframework.amqp.core.Message request, Channel channel, Throwable t,
+	protected void asyncFailure(org.springframework.amqp.core.Message request, @Nullable Channel channel, Throwable t,
 			@Nullable Object source) {
 
 		try {
@@ -183,7 +183,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		super.asyncFailure(request, channel, t, source);
 	}
 
-	private void handleException(org.springframework.amqp.core.Message amqpMessage, @Nullable Channel channel,
+	protected void handleException(org.springframework.amqp.core.Message amqpMessage, @Nullable Channel channel,
 			@Nullable Message<?> message, ListenerExecutionFailedException e) throws Exception { // NOSONAR
 
 		if (this.errorHandler != null) {
@@ -307,7 +307,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	 * @see #setMessageConverter
 	 */
 	@Override
-	protected org.springframework.amqp.core.Message buildMessage(Channel channel, @Nullable Object result,
+	protected org.springframework.amqp.core.Message buildMessage(@Nullable Channel channel, @Nullable Object result,
 			@Nullable Type genericType) {
 
 		MessageConverter converter = getMessageConverter();
