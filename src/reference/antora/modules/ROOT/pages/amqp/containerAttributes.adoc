@@ -276,7 +276,7 @@ a|
 
 |The number of retry attempts when passive queue declaration fails.
 Passive queue declaration occurs when the consumer starts or, when consuming from multiple queues, when not all queues were available during initialization.
-When none of the configured queues can be passively declared (for any reason) after the retries are exhausted, the container behavior is controlled by the 'missingQueuesFatal` property, described earlier.
+When none of the configured queues can be passively declared (for any reason) after the retries are exhausted, the container behavior is controlled by the `missingQueuesFatal` property, described earlier.
 Default: Three retries (for a total of four attempts).
 
 a|image::tickmark.png[]
