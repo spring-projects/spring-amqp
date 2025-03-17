@@ -8,7 +8,32 @@ The `com.rabbitmq.http.client.Client` is a standard, immediate, and, therefore, 
 It is based on the {spring-framework-docs}/web.html[Spring Web] module and its `RestTemplate` implementation.
 On the other hand, the `com.rabbitmq.http.client.ReactorNettyClient` is a reactive, non-blocking implementation based on the https://projectreactor.io/docs/netty/release/reference/docs/index.html[Reactor Netty] project.
 
-The hop dependency (`com.rabbitmq:http-client`) is now also `optional`.
+Also, the https://www.rabbitmq.com/docs/management#http-api-endpoints[management REST API] can be used with any HTTP client.
+The next example demonstrates how to get a queue information using {spring-framework-docs}/web/webflux-webclient.html[WebClient]:
 
-See their Javadoc for more information.
+[source,java]
+----
+	public Map<String, Object> queueInfo(String queueName) throws URISyntaxException {
+		WebClient client = createClient("admin", "admin");
+		URI uri = queueUri(queueName);
+		return client.get()
+				.uri(uri)
+				.accept(MediaType.APPLICATION_JSON)
+				.retrieve()
+				.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
+				})
+				.block(Duration.ofSeconds(10));
+	}
 
+	private URI queueUri(String queue) throws URISyntaxException {
+		URI uri = new URI("http://localhost:15672/api/")
+				.resolve("/api/queues/" + UriUtils.encodePathSegment("/", StandardCharsets.UTF_8) + "/" + queue);
+		return uri;
+	}
+
+	private WebClient createClient(String adminUser, String adminPassword) {
+		return WebClient.builder()
+				.filter(ExchangeFilterFunctions.basicAuthentication(adminUser, adminPassword))
+				.build();
+	}
+----
