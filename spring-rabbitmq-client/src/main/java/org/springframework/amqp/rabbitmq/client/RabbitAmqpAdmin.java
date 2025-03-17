@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbitmq.client;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
@@ -281,13 +280,10 @@ public class RabbitAmqpAdmin
 		Management.ExchangeSpecification exchangeSpecification =
 				management.exchange(exchange.getName())
 						.type(exchange.isDelayed() ? RabbitAdmin.DELAYED_MESSAGE_EXCHANGE : exchange.getType())
-//						.durable(exchange.isDurable())
 //						.internal(exchange.isInternal())
+						.arguments(exchange.getArguments())
 						.autoDelete(exchange.isAutoDelete());
-		Map<String, Object> arguments = exchange.getArguments();
-		if (arguments != null) {
-			arguments.forEach(exchangeSpecification::argument);
-		}
+
 		if (exchange.isDelayed()) {
 			exchangeSpecification.argument("x-delayed-type", exchange.getType());
 		}
@@ -326,9 +322,9 @@ public class RabbitAmqpAdmin
 							.autoDelete(true)
 							.exclusive(true)
 							.classic()
-							//						.durable(false)
 							.queue()
 							.declare();
+
 			return new Queue(queueInfo.name(), false, true, true);
 		}
 		catch (AmqpException ex) {
@@ -349,11 +345,9 @@ public class RabbitAmqpAdmin
 				management.queue(queue.getName())
 						.autoDelete(queue.isAutoDelete())
 						.exclusive(queue.isExclusive())
+						.arguments(queue.getArguments())
 						.classic()
-//						.durable(queue.isDurable())
 						.queue();
-
-		queue.getArguments().forEach(queueSpecification::argument);
 
 		try {
 			String actualName = queueSpecification.declare().name();

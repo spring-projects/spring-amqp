@@ -18,8 +18,6 @@ package org.springframework.amqp.core;
 
 import java.util.Map;
 
-import org.jspecify.annotations.Nullable;
-
 /**
  * Interface for all exchanges.
  *
@@ -63,7 +61,6 @@ public interface Exchange extends Declarable {
 	 *
 	 * @return the arguments.
 	 */
-	@Nullable
 	Map<String, Object> getArguments();
 
 	/**
