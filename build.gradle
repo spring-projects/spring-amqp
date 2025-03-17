@@ -43,7 +43,7 @@ ext {
 
 	assertjVersion = '3.27.3'
 	assertkVersion = '0.28.1'
-	awaitilityVersion = '4.2.2'
+	awaitilityVersion = '4.3.0'
 	commonsHttpClientVersion = '5.4.2'
 	commonsPoolVersion = '2.12.1'
 	hamcrestVersion = '3.0'
@@ -56,16 +56,16 @@ ext {
 	log4jVersion = '2.24.3'
 	logbackVersion = '1.5.17'
 	micrometerDocsVersion = '1.0.4'
-	micrometerVersion = '1.15.0-M3'
-	micrometerTracingVersion = '1.5.0-M3'
-	mockitoVersion = '5.15.2'
-	rabbitmqAmqpClientVersion = '0.4.0'
+	micrometerVersion = '1.15.0-SNAPSHOT'
+	micrometerTracingVersion = '1.5.0-SNAPSHOT'
+	mockitoVersion = '5.16.1'
+	rabbitmqAmqpClientVersion = '0.5.0-SNAPSHOT'
 	rabbitmqStreamVersion = '0.22.0'
 	rabbitmqVersion = '5.25.0'
-	reactorVersion = '2024.0.4'
-	springDataVersion = '2025.1.0-M1'
+	reactorVersion = '2025.0.0-SNAPSHOT'
+	springDataVersion = '2025.1.0-SNAPSHOT'
 	springRetryVersion = '2.0.11'
-	springVersion = '7.0.0-M3'
+	springVersion = '7.0.0-SNAPSHOT'
 	testcontainersVersion = '1.20.6'
 
 	javaProjects = subprojects - project(':spring-amqp-bom')
@@ -136,6 +136,7 @@ allprojects {
 		maven { url 'https://repo.spring.io/milestone' }
 		if (version.endsWith('-SNAPSHOT')) {
 			maven { url 'https://repo.spring.io/snapshot' }
+			maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
 		}
 //		maven { url 'https://repo.spring.io/libs-staging-local' }
 	}
@@ -317,7 +318,7 @@ configure(javaProjects) { subproject ->
 
 	checkstyle {
 		configDirectory.set(rootProject.file('src/checkstyle'))
-		toolVersion = '10.21.1'
+		toolVersion = '10.21.4'
 	}
 
 	jar {
