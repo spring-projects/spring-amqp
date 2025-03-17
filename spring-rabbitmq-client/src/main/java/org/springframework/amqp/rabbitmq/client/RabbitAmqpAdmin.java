@@ -402,9 +402,8 @@ public class RabbitAmqpAdmin
 	@ManagedOperation(description = "Purge a queue and return the number of messages purged")
 	public int purgeQueue(String queueName) {
 		try (Management management = getManagement()) {
-			management.queuePurge(queueName);
+			return (int) management.queuePurge(queueName).messageCount();
 		}
-		return 0;
 	}
 
 	@Override
