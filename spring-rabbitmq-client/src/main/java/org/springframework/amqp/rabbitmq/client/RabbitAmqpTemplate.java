@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -321,6 +322,8 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 	public CompletableFuture<Message> receive(String queueName) {
 		CompletableFuture<Message> messageFuture = new CompletableFuture<>();
 
+		AtomicBoolean messageReceived = new AtomicBoolean();
+
 		Consumer consumer =
 				this.connectionFactory.getConnection()
 						.consumerBuilder()
@@ -328,8 +331,10 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 						.initialCredits(1)
 						.priority(10)
 						.messageHandler((context, message) -> {
-							context.accept();
-							messageFuture.complete(RabbitAmqpUtils.fromAmqpMessage(message, null));
+							if (messageReceived.compareAndSet(false, true)) {
+								context.accept();
+								messageFuture.complete(RabbitAmqpUtils.fromAmqpMessage(message, null));
+							}
 						})
 						.build();
 
