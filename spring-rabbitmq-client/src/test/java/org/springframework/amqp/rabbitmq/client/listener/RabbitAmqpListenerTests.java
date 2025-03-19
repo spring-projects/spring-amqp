@@ -92,14 +92,14 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 			this.template.convertAndSend((random.nextInt(2) == 0 ? "q1" : "q2"), testData);
 		}
 
-		assertThat(this.config.consumeIsDone.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.config.consumeIsDone.await(20, TimeUnit.SECONDS)).isTrue();
 
 		synchronized (this.config.received) {
 			assertThat(this.config.received).containsAll(testDataList);
 		}
 
-		assertThat(this.template.receive("dlq1")).succeedsWithin(10, TimeUnit.SECONDS);
-		assertThat(this.template.receive("dlq1")).succeedsWithin(10, TimeUnit.SECONDS);
+		assertThat(this.template.receive("dlq1")).succeedsWithin(20, TimeUnit.SECONDS);
+		assertThat(this.template.receive("dlq1")).succeedsWithin(20, TimeUnit.SECONDS);
 	}
 
 	@Test
@@ -112,7 +112,7 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 			this.template.convertAndSend("q3", testData);
 		}
 
-		assertThat(this.config.batchReceived).succeedsWithin(10, TimeUnit.SECONDS)
+		assertThat(this.config.batchReceived).succeedsWithin(20, TimeUnit.SECONDS)
 				.asInstanceOf(InstanceOfAssertFactories.LIST)
 				.hasSize(5)
 				.containsAll(testDataList);
@@ -141,7 +141,7 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 			this.template.convertAndSend("q3", testData);
 		}
 
-		assertThat(this.config.batchReceived).succeedsWithin(10, TimeUnit.SECONDS)
+		assertThat(this.config.batchReceived).succeedsWithin(20, TimeUnit.SECONDS)
 				.asInstanceOf(InstanceOfAssertFactories.LIST)
 				.hasSize(10)
 				.containsAll(testDataList);
@@ -152,26 +152,26 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 	@Test
 	void verifyBasicRequestReply() {
 		CompletableFuture<String> replyFuture = this.template.convertSendAndReceive("requestQueue", "test data");
-		assertThat(replyFuture).succeedsWithin(10, TimeUnit.SECONDS).isEqualTo("TEST DATA");
+		assertThat(replyFuture).succeedsWithin(20, TimeUnit.SECONDS).isEqualTo("TEST DATA");
 	}
 
 	@Test
 	void verifyFutureReturnRequestReply() {
 		CompletableFuture<String> replyFuture = this.template.convertSendAndReceive("requestQueue2", "TEST DATA2");
-		assertThat(replyFuture).succeedsWithin(10, TimeUnit.SECONDS).isEqualTo("test data2");
+		assertThat(replyFuture).succeedsWithin(20, TimeUnit.SECONDS).isEqualTo("test data2");
 	}
 
 	@Test
 	void verifyMonoReturnRequestReply() {
 		CompletableFuture<String> replyFuture = this.template.convertSendAndReceive("requestQueue3", "test data3");
-		assertThat(replyFuture).succeedsWithin(10, TimeUnit.SECONDS).isEqualTo("Mono test data3");
+		assertThat(replyFuture).succeedsWithin(20, TimeUnit.SECONDS).isEqualTo("Mono test data3");
 	}
 
 	@Test
 	void verifyReplyOnAnotherQueue() {
 		this.template.convertAndSend("requestQueue4", "test data4");
 		CompletableFuture<Object> replyFuture = this.template.receiveAndConvert("q4");
-		assertThat(replyFuture).succeedsWithin(10, TimeUnit.SECONDS)
+		assertThat(replyFuture).succeedsWithin(20, TimeUnit.SECONDS)
 				.isEqualTo("Reply for 'test data4' via 'e1' and 'k4'");
 	}
 

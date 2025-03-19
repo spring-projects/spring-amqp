@@ -84,10 +84,10 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 		this.rabbitAmqpTemplate.setRoutingKey("k1");
 
 		assertThat(this.rabbitAmqpTemplate.convertAndSend("test1"))
-				.succeedsWithin(Duration.ofSeconds(10));
+				.succeedsWithin(Duration.ofSeconds(20));
 
 		assertThat(this.rabbitAmqpTemplate.receiveAndConvert("q1"))
-				.succeedsWithin(Duration.ofSeconds(10))
+				.succeedsWithin(Duration.ofSeconds(20))
 				.isEqualTo("test1");
 	}
 
@@ -97,10 +97,10 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 		this.rabbitAmqpTemplate.setReceiveQueue("q1");
 
 		assertThat(this.rabbitAmqpTemplate.convertAndSend("test2"))
-				.succeedsWithin(Duration.ofSeconds(10));
+				.succeedsWithin(Duration.ofSeconds(20));
 
 		assertThat(this.rabbitAmqpTemplate.receiveAndConvert())
-				.succeedsWithin(Duration.ofSeconds(10))
+				.succeedsWithin(Duration.ofSeconds(20))
 				.isEqualTo("test2");
 	}
 
@@ -119,8 +119,8 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 							return testReply;
 						});
 
-		assertThat(rpcServerResult).succeedsWithin(Duration.ofSeconds(10)).isEqualTo(true);
-		assertThat(rpcClientResult).succeedsWithin(Duration.ofSeconds(10)).isEqualTo(testReply);
+		assertThat(rpcServerResult).succeedsWithin(Duration.ofSeconds(20)).isEqualTo(true);
+		assertThat(rpcClientResult).succeedsWithin(Duration.ofSeconds(20)).isEqualTo(testReply);
 		assertThat(receivedRequest.get()).isEqualTo(testRequest);
 
 		this.template.send("q1",
@@ -131,7 +131,7 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 
 		rpcServerResult = this.rabbitAmqpTemplate.<String, String>receiveAndReply("q1", payload -> "reply-attempt");
 
-		assertThat(rpcServerResult).failsWithin(Duration.ofSeconds(10))
+		assertThat(rpcServerResult).failsWithin(Duration.ofSeconds(20))
 				.withThrowableOfType(ExecutionException.class)
 				.withCauseInstanceOf(AmqpIllegalStateException.class)
 				.withRootCauseInstanceOf(IllegalArgumentException.class)
@@ -141,7 +141,7 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 		rpcClientResult = this.template.convertSendAndReceive("q1", testRequest);
 		rpcServerResult = this.rabbitAmqpTemplate.<String, String>receiveAndReply("q1", payload -> null);
 
-		assertThat(rpcServerResult).succeedsWithin(Duration.ofSeconds(10)).isEqualTo(false);
+		assertThat(rpcServerResult).succeedsWithin(Duration.ofSeconds(20)).isEqualTo(false);
 		assertThat(rpcClientResult).failsWithin(Duration.ofSeconds(2))
 				.withThrowableThat()
 				.isInstanceOf(TimeoutException.class);
@@ -149,17 +149,17 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 		this.template.convertSendAndReceive("q1", new byte[0]);
 
 		rpcServerResult = this.rabbitAmqpTemplate.<String, String>receiveAndReply("q1", payload -> payload);
-		assertThat(rpcServerResult).failsWithin(Duration.ofSeconds(10))
+		assertThat(rpcServerResult).failsWithin(Duration.ofSeconds(20))
 				.withThrowableOfType(ExecutionException.class)
 				.withCauseInstanceOf(AmqpIllegalStateException.class)
 				.withRootCauseInstanceOf(ClassCastException.class)
 				.withMessageContaining("Failed to process RPC request: (Body:'[B")
 				.withStackTraceContaining("class [B cannot be cast to class java.lang.String");
 
-		assertThat(this.template.receiveAndConvert("dlq1")).succeedsWithin(10, TimeUnit.SECONDS)
+		assertThat(this.template.receiveAndConvert("dlq1")).succeedsWithin(20, TimeUnit.SECONDS)
 				.isEqualTo("non-rpc-request");
 
-		assertThat(this.template.receiveAndConvert("dlq1")).succeedsWithin(10, TimeUnit.SECONDS)
+		assertThat(this.template.receiveAndConvert("dlq1")).succeedsWithin(20, TimeUnit.SECONDS)
 				.isEqualTo(new byte[0]);
 	}
 

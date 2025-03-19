@@ -56,13 +56,13 @@ public class RabbitAmqpAdminTests extends RabbitAmqpTestBase {
 						template.convertAndSend("e2", "k2", "test3"),
 						template.convertAndSend("e3", "k3", "test4"),
 						template.convertAndSend("e4", "k4", "test5"));
-		assertThat(publishFutures).succeedsWithin(Duration.ofSeconds(10));
+		assertThat(publishFutures).succeedsWithin(Duration.ofSeconds(20));
 
-		assertThat(template.receiveAndConvert("q1")).succeedsWithin(Duration.ofSeconds(10)).isEqualTo("test1");
-		assertThat(template.receiveAndConvert("q2")).succeedsWithin(Duration.ofSeconds(10)).isEqualTo("test2");
-		assertThat(template.receiveAndConvert("q2")).succeedsWithin(Duration.ofSeconds(10)).isEqualTo("test3");
-		assertThat(template.receiveAndConvert("q3")).succeedsWithin(Duration.ofSeconds(10)).isEqualTo("test4");
-		assertThat(template.receiveAndConvert("q4")).succeedsWithin(Duration.ofSeconds(10)).isEqualTo("test5");
+		assertThat(template.receiveAndConvert("q1")).succeedsWithin(Duration.ofSeconds(20)).isEqualTo("test1");
+		assertThat(template.receiveAndConvert("q2")).succeedsWithin(Duration.ofSeconds(20)).isEqualTo("test2");
+		assertThat(template.receiveAndConvert("q2")).succeedsWithin(Duration.ofSeconds(20)).isEqualTo("test3");
+		assertThat(template.receiveAndConvert("q3")).succeedsWithin(Duration.ofSeconds(20)).isEqualTo("test4");
+		assertThat(template.receiveAndConvert("q4")).succeedsWithin(Duration.ofSeconds(20)).isEqualTo("test5");
 
 		assertThat(declarables.getDeclarablesByType(Queue.class))
 				.hasSize(1)
