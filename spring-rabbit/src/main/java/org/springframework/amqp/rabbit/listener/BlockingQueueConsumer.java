@@ -540,10 +540,7 @@ public class BlockingQueueConsumer {
 	 */
 	@Nullable
 	public Message nextMessage() throws InterruptedException, ShutdownSignalException {
-		if (logger.isTraceEnabled()) {
-			logger.trace("Retrieving delivery for " + this);
-		}
-		return handle(this.queue.take());
+		return nextMessage(-1);
 	}
 
 	/**
@@ -562,26 +559,35 @@ public class BlockingQueueConsumer {
 		if (!this.missingQueues.isEmpty()) {
 			checkMissingQueues();
 		}
-		if (!cancelled()) {
-			Message message = handle(this.queue.poll(timeout, TimeUnit.MILLISECONDS));
-			if (message != null && cancelled()) {
-				this.activeObjectCounter.release(this);
-				ConsumerCancelledException consumerCancelledException = new ConsumerCancelledException();
-				rollbackOnExceptionIfNecessary(consumerCancelledException,
-						message.getMessageProperties().getDeliveryTag());
-				throw consumerCancelledException;
+
+		if (this.transactional && cancelled()) {
+			throw consumerCancelledException(null);
+		}
+		else {
+			Message message = handle(timeout < 0 ? this.queue.take() : this.queue.poll(timeout, TimeUnit.MILLISECONDS));
+			if (cancelled() && (message == null || this.transactional)) {
+				Long deliveryTagToNack = null;
+				if (message != null) {
+					deliveryTagToNack = message.getMessageProperties().getDeliveryTag();
+				}
+				throw consumerCancelledException(deliveryTagToNack);
 			}
 			else {
 				return message;
 			}
 		}
+	}
+
+	private ConsumerCancelledException consumerCancelledException(@Nullable Long deliveryTagToNack) {
+		this.activeObjectCounter.release(this);
+		ConsumerCancelledException consumerCancelledException = new ConsumerCancelledException();
+		if (deliveryTagToNack != null) {
+			rollbackOnExceptionIfNecessary(consumerCancelledException, deliveryTagToNack);
+		}
 		else {
 			this.deliveryTags.clear();
-			this.activeObjectCounter.release(this);
-			ConsumerCancelledException consumerCancelledException = new ConsumerCancelledException();
-			rollbackOnExceptionIfNecessary(consumerCancelledException);
-			throw consumerCancelledException;
 		}
+		return consumerCancelledException;
 	}
 
 	/*
