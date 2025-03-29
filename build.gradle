@@ -44,7 +44,7 @@ ext {
 	assertjVersion = '3.27.3'
 	assertkVersion = '0.28.1'
 	awaitilityVersion = '4.3.0'
-	commonsHttpClientVersion = '5.4.2'
+	commonsHttpClientVersion = '5.4.3'
 	commonsPoolVersion = '2.12.1'
 	hamcrestVersion = '3.0'
 	hibernateValidationVersion = '8.0.2.Final'
@@ -225,7 +225,7 @@ configure(javaProjects) { subproject ->
 		testImplementation 'org.jetbrains.kotlin:kotlin-reflect'
 		testImplementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 
-		errorprone 'com.uber.nullaway:nullaway:0.12.4'
+		errorprone 'com.uber.nullaway:nullaway:0.12.6'
 		errorprone 'com.google.errorprone:error_prone_core:2.36.0'
 	}
 
