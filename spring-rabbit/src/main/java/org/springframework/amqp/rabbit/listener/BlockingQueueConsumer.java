@@ -464,18 +464,19 @@ public class BlockingQueueConsumer {
 	}
 
 	protected void basicCancel() {
-		basicCancel(false);
+		basicCancel(true);
 	}
 
 	protected void basicCancel(boolean expected) {
 		this.normalCancel = expected;
+		getConsumerTags()
+				.forEach(consumerTag -> {
+					if (this.channel.isOpen()) {
+						RabbitUtils.cancel(this.channel, consumerTag);
+					}
+				});
 		this.cancelled.set(true);
 		this.abortStarted = System.currentTimeMillis();
-
-		Collection<String> consumerTags = getConsumerTags();
-		if (!CollectionUtils.isEmpty(consumerTags)) {
-			RabbitUtils.closeMessageConsumer(this.channel, consumerTags, this.transactional);
-		}
 	}
 
 	protected boolean hasDelivery() {
@@ -559,35 +560,12 @@ public class BlockingQueueConsumer {
 		if (!this.missingQueues.isEmpty()) {
 			checkMissingQueues();
 		}
-
-		if (this.transactional && cancelled()) {
-			throw consumerCancelledException(null);
+		Message message = handle(timeout < 0 ? this.queue.take() : this.queue.poll(timeout, TimeUnit.MILLISECONDS));
+		if (message == null && this.cancelled.get()) {
+			this.activeObjectCounter.release(this);
+			throw new ConsumerCancelledException();
 		}
-		else {
-			Message message = handle(timeout < 0 ? this.queue.take() : this.queue.poll(timeout, TimeUnit.MILLISECONDS));
-			if (cancelled() && (message == null || this.transactional)) {
-				Long deliveryTagToNack = null;
-				if (message != null) {
-					deliveryTagToNack = message.getMessageProperties().getDeliveryTag();
-				}
-				throw consumerCancelledException(deliveryTagToNack);
-			}
-			else {
-				return message;
-			}
-		}
-	}
-
-	private ConsumerCancelledException consumerCancelledException(@Nullable Long deliveryTagToNack) {
-		this.activeObjectCounter.release(this);
-		ConsumerCancelledException consumerCancelledException = new ConsumerCancelledException();
-		if (deliveryTagToNack != null) {
-			rollbackOnExceptionIfNecessary(consumerCancelledException, deliveryTagToNack);
-		}
-		else {
-			this.deliveryTags.clear();
-		}
-		return consumerCancelledException;
+		return message;
 	}
 
 	/*
@@ -815,13 +793,21 @@ public class BlockingQueueConsumer {
 				this.abortStarted = System.currentTimeMillis();
 			}
 			if (!cancelled()) {
-				try {
-					RabbitUtils.closeMessageConsumer(this.channel, getConsumerTags(), this.transactional);
+				basicCancel(true);
+			}
+			try {
+				if (this.transactional) {
+					/*
+					 * Re-queue in-flight messages if any
+					 * (after the consumer is cancelled to prevent the broker from simply sending them back to us).
+					 * Does not require a tx.commit.
+					 */
+					this.channel.basicRecover(true);
 				}
-				catch (Exception e) {
-					if (logger.isDebugEnabled()) {
-						logger.debug("Error closing consumer " + this, e);
-					}
+			}
+			catch (Exception e) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Error closing consumer " + this, e);
 				}
 			}
 			if (logger.isDebugEnabled()) {
