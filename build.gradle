@@ -754,6 +754,7 @@ def generateAttributes() {
 		'spring-retry-java-docs': "$springDocs/spring-retry/docs/$springRetryVersion/apidocs".toString(),
 		'javadoc-location-org-springframework-transaction': "$springDocs/spring-framework/docs/$springVersion/javadoc-api".toString(),
 		'javadoc-location-org-springframework-amqp': "$springDocs/spring-amqp/docs/$project.version/api".toString(),
+		'javadoc-location-org-springframework-retry': "{spring-retry-java-docs}",
 		'micrometer-docs': "$micrometerDocsPrefix/micrometer/reference/${generateVersionWithoutPatch(micrometerVersion)}".toString(),
 		'micrometer-tracing-docs': "$micrometerDocsPrefix/tracing/reference/${generateVersionWithoutPatch(micrometerTracingVersion)}".toString()
 	]

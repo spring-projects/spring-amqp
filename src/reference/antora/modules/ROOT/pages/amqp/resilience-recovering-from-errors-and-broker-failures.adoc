@@ -55,7 +55,7 @@ You can do this manually, or you could look at using Spring Retry to handle the 
 
 Spring Retry provides a couple of AOP interceptors and a great deal of flexibility to specify the parameters of the retry (number of attempts, exception types, backoff algorithm, and others).
 Spring AMQP also provides some convenience factory beans for creating Spring Retry interceptors in a convenient form for AMQP use cases, with strongly typed callback interfaces that you can use to implement custom recovery logic.
-See the Javadoc and properties of `StatefulRetryOperationsInterceptor` and `StatelessRetryOperationsInterceptor` for more detail.
+See the Javadoc and properties of javadoc:org.springframework.retry.interceptor.StatefulRetryOperationsInterceptor[] and javadoc:org.springframework.retry.interceptor.RetryOperationsInterceptor[] for more detail.
 Stateless retry is appropriate if there is no transaction or if a transaction is started inside the retry callback.
 Note that stateless retry is simpler to configure and analyze than stateful retry, but it is not usually appropriate if there is an ongoing transaction that must be rolled back or definitely is going to roll back.
 A dropped connection in the middle of a transaction should have the same effect as a rollback.
