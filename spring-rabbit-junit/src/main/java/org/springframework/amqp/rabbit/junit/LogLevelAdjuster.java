@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,16 +32,19 @@ import org.springframework.amqp.rabbit.junit.JUnitUtils.LevelsContainer;
  * A JUnit method &#064;Rule that changes the logger level for a set of classes
  * while a test method is running. Useful for performance or scalability tests
  * where we don't want to generate a large log in a tight inner loop.
- *
+ * <p>
  * As well as adjusting Log4j, this also adjusts loggers for logback. The amqp-client
- * library now uses slf4j. Since we have logback on the CP (for the appender)
+ * library now uses Slf4J. Since we have logback on the CP (for the appender)
  * we can't add the slf4j-log4j bridge as well.
  *
  * @author Dave Syer
  * @author Artem Bilan
  * @author Gary Russell
  *
+ * @deprecated since 4.0 in favor of JUnit 5 {@link LogLevels}.
+ *
  */
+@Deprecated(since = "4.0", forRemoval = true)
 public class LogLevelAdjuster implements MethodRule {
 
 	private final List<Class<?>> classes;

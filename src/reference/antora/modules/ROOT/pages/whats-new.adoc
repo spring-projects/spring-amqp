@@ -23,3 +23,9 @@ The new `spring-rabbitmq-client` module (with same artifact name) is introduced.
 This is an implementation of AMQP 1.0 protocol specific to RabbitMQ since `4.0` and based on the `com.rabbitmq.client:amqp-client` library.
 
 See xref:rabbitmq-amqp-client.adoc[] for more information.
+
+[[x40-junit4-deprecation]]
+=== Deprecation of JUnit 4 utilities
+
+The latest JUnit 4 release was `4.13.2` in February 2021 and the next JUnit 6 will be based on JAva 17.
+There is no need to keep out-dated utilities and recommendation is to migrate to respective tools for JUnit 5.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 the original author or authors.
+ * Copyright 2017-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * the value that {@link Boolean#parseBoolean(String)} evaluates to {@code true}.
  *
  * @author Gary Russell
- * @since 2.0.2
+ * @author Artem Bilan
  *
+ * @since 2.0.2
  */
 @ExtendWith(LongRunningIntegrationTestCondition.class)
 @Target({ ElementType.TYPE })
@@ -40,10 +41,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 public @interface LongRunning {
 
 	/**
-	 * The name of the variable/property used to determine whether long running tests
+	 * The name of the variable/property used to determine whether long-running tests
 	 * should run.
 	 * @return the name of the variable/property.
 	 */
-	String value() default LongRunningIntegrationTest.RUN_LONG_INTEGRATION_TESTS;
+	String value() default LongRunningIntegrationTestCondition.RUN_LONG_INTEGRATION_TESTS;
 
 }

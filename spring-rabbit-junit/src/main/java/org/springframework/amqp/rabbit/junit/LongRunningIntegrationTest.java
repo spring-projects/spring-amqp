@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2019 the original author or authors.
+ * Copyright 2013-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,19 +24,23 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 /**
- * Rule to prevent long running tests from running on every build; set environment
+ * Rule to prevent long-running tests from running on every build; set environment
  * variable RUN_LONG_INTEGRATION_TESTS on a CI nightly build to ensure coverage.
  *
  * @author Gary Russell
  * @author Artem Bilan
+ *
  * @since 1.2.1
  *
+ * @deprecated since 4.0 in favor of JUnit 5 {@link LongRunning}.
  */
+@Deprecated(since = "4.0", forRemoval = true)
 public class LongRunningIntegrationTest extends TestWatcher {
 
 	private static final Log logger = LogFactory.getLog(LongRunningIntegrationTest.class); // NOSONAR - lower case
 
-	public static final String RUN_LONG_INTEGRATION_TESTS = "RUN_LONG_INTEGRATION_TESTS";
+	public static final String RUN_LONG_INTEGRATION_TESTS =
+			LongRunningIntegrationTestCondition.RUN_LONG_INTEGRATION_TESTS;
 
 	private boolean shouldRun = false;
 
@@ -56,7 +60,7 @@ public class LongRunningIntegrationTest extends TestWatcher {
 	@Override
 	public Statement apply(Statement base, Description description) {
 		if (!this.shouldRun) {
-			logger.info("Skipping long running test " + description.toString());
+			logger.info("Skipping long running test " + description);
 		}
 		Assume.assumeTrue(this.shouldRun);
 		return super.apply(base, description);

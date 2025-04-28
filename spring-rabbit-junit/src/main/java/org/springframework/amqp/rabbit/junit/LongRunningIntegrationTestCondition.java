@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,14 +28,19 @@ import org.springframework.core.annotation.MergedAnnotations;
 import org.springframework.util.StringUtils;
 
 /**
- * {@link ExecutionCondition} to skip long running tests unless an environment
+ * {@link ExecutionCondition} to skip long-running tests unless an environment
  * variable or property is set.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.0.2
+ *
  * @see LongRunning
  */
 public class LongRunningIntegrationTestCondition implements ExecutionCondition {
+
+	public static final String RUN_LONG_INTEGRATION_TESTS = "RUN_LONG_INTEGRATION_TESTS";
 
 	private static final ConditionEvaluationResult ENABLED = ConditionEvaluationResult.enabled(
 			"@LongRunning is not present");
@@ -50,7 +55,7 @@ public class LongRunningIntegrationTestCondition implements ExecutionCondition {
 			LongRunning longRunning = mergedAnnotation.synthesize();
 			String property = longRunning.value();
 			if (!StringUtils.hasText(property)) {
-				property = LongRunningIntegrationTest.RUN_LONG_INTEGRATION_TESTS;
+				property = RUN_LONG_INTEGRATION_TESTS;
 			}
 			return JUnitUtils.parseBooleanProperty(property)
 					? ConditionEvaluationResult.enabled("Long running tests must run")

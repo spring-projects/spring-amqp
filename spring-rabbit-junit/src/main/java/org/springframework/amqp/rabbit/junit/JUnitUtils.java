@@ -131,11 +131,6 @@ public final class JUnitUtils {
 				((Logger) LogManager.getLogger(key)).setLevel(value);
 			}
 		});
-		container.oldLevels.forEach((key, value) -> {
-			if (!key.equals(BrokerRunning.class)) {
-				((Logger) LogManager.getLogger(key)).setLevel(value);
-			}
-		});
 //		container.oldLbLevels.forEach((key, value) ->
 //				((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(key)).setLevel(value));
 	}

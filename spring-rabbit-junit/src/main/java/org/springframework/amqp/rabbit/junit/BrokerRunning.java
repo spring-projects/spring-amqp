@@ -62,7 +62,9 @@ import static org.junit.Assume.assumeNoException;
  *
  * @since 1.7
  *
+ * @deprecated since 4.0 in favor of JUnit 5 {@link RabbitAvailable}.
  */
+@Deprecated(since = "4.0", forRemoval = true)
 public final class BrokerRunning extends TestWatcher {
 
 	private static final Log LOGGER = LogFactory.getLog(BrokerRunningSupport.class);

@@ -48,7 +48,6 @@ import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerRunningSupport;
 import org.springframework.amqp.rabbit.junit.LogLevels;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
@@ -89,15 +88,15 @@ import static org.mockito.Mockito.verify;
  * @since 2.0
  *
  */
-@RabbitAvailable(queues = { DirectMessageListenerContainerIntegrationTests.Q1,
+@RabbitAvailable(queues = {DirectMessageListenerContainerIntegrationTests.Q1,
 		DirectMessageListenerContainerIntegrationTests.Q2,
 		DirectMessageListenerContainerIntegrationTests.Q3,
 		DirectMessageListenerContainerIntegrationTests.EQ1,
 		DirectMessageListenerContainerIntegrationTests.EQ2,
-		DirectMessageListenerContainerIntegrationTests.DLQ1 })
-@LogLevels(classes = { CachingConnectionFactory.class, DirectReplyToMessageListenerContainer.class,
-			DirectMessageListenerContainer.class, DirectMessageListenerContainerIntegrationTests.class,
-			BrokerRunning.class }, level = "DEBUG")
+		DirectMessageListenerContainerIntegrationTests.DLQ1})
+@LogLevels(classes = {CachingConnectionFactory.class, DirectReplyToMessageListenerContainer.class,
+		DirectMessageListenerContainer.class, DirectMessageListenerContainerIntegrationTests.class},
+		level = "DEBUG")
 public class DirectMessageListenerContainerIntegrationTests {
 
 	public static final String Q1 = "testQ1.DirectMessageListenerContainerIntegrationTests";
@@ -309,7 +308,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.setConsumerTagStrategy(new Tag());
 		container.afterPropertiesSet();
 		container.setQueues(new Queue(Q1));
-		assertThat(container.getQueueNames()).isEqualTo(new String[]{Q1});
+		assertThat(container.getQueueNames()).isEqualTo(new String[] {Q1});
 		container.start();
 		container.addQueues(new Queue(Q2));
 		assertThat(consumersOnQueue(Q1, 2)).isTrue();
@@ -392,7 +391,8 @@ public class DirectMessageListenerContainerIntegrationTests {
 				latch2.countDown();
 			}
 		});
-		container.setMessageListener(m -> { });
+		container.setMessageListener(m -> {
+		});
 		container.setIdleEventInterval(50L);
 		container.setBeanName("events");
 		container.setConsumerTagStrategy(new Tag());
@@ -563,7 +563,8 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.setQueueNames(Q1, Q2);
 		container.setConsumersPerQueue(2);
 		container.setConsumersPerQueue(2);
-		container.setMessageListener(m -> { });
+		container.setMessageListener(m -> {
+		});
 		container.setFailedDeclarationRetryInterval(500);
 		container.setBeanName("deleteQauto=" + autoDeclare);
 		container.setConsumerTagStrategy(new Tag());
@@ -650,7 +651,8 @@ public class DirectMessageListenerContainerIntegrationTests {
 		});
 
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
-		container.setMessageListener(m -> { });
+		container.setMessageListener(m -> {
+		});
 		container.setQueueNames(Q1);
 		container.setBeanName("stopAfterDestroyBeforeStart");
 		container.afterPropertiesSet();
@@ -741,6 +743,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		final CountDownLatch latch = new CountDownLatch(1);
 		container.setQueueNames(Q1);
 		container.setMessageListener(new MessageListener() {
+
 			@Override
 			public void onMessage(Message message) {
 			}
@@ -777,6 +780,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		final CountDownLatch latch = new CountDownLatch(1);
 		container.setQueueNames(Q1);
 		container.setMessageListener(new MessageListener() {
+
 			@Override
 			public void onMessage(Message message) {
 				cf.resetConnection();
@@ -914,4 +918,5 @@ public class DirectMessageListenerContainerIntegrationTests {
 		}
 
 	}
+
 }

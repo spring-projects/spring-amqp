@@ -79,7 +79,6 @@ import org.springframework.amqp.rabbit.connection.ConnectionListener;
 import org.springframework.amqp.rabbit.connection.PublisherCallbackChannelImpl;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.rabbit.junit.LogLevels;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
@@ -146,8 +145,7 @@ import static org.mockito.Mockito.verify;
 		RabbitTemplateIntegrationTests.NO_CORRELATION})
 @LogLevels(classes = {RabbitTemplate.class, DirectMessageListenerContainer.class,
 		DirectReplyToMessageListenerContainer.class,
-		RabbitAdmin.class, RabbitTemplateIntegrationTests.class, BrokerRunning.class,
-		ClosingRecoveryListener.class},
+		RabbitAdmin.class, RabbitTemplateIntegrationTests.class, ClosingRecoveryListener.class},
 		level = "DEBUG")
 @DirtiesContext
 public class RabbitTemplateIntegrationTests {

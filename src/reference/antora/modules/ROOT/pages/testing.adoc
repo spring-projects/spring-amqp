@@ -17,7 +17,7 @@ Please use https://jira.spring.io/browse/AMQP[JIRA] or https://github.com/spring
 == @SpringRabbitTest
 
 Use this annotation to add infrastructure beans to the Spring test `ApplicationContext`.
-This is not necessary when using, for example `@SpringBootTest` since Spring Boot's auto configuration will add the beans.
+This is not necessary when using, for example `@SpringBootTest` since Spring Boot's auto-configuration will add the beans.
 
 Beans that are registered are:
 
@@ -58,8 +58,6 @@ public class MyRabbitTests {
 
 }
 ----
-
-With JUnit4, replace `@SpringJUnitConfig` with `@RunWith(SpringRunnner.class)`.
 
 [[mockito-answer]]
 == Mockito `Answer<?>` Implementations
@@ -170,6 +168,7 @@ public class Listener {
 
 }
 
+@SpringJUnitConfig
 public class MyTests {
 
     @Autowired
@@ -206,7 +205,7 @@ public class MyTests {
 <1> Inject the harness into the test case so we can get access to the spy.
 
 <2> Get a reference to the spy so we can verify it was invoked as expected.
-Since this is a send and receive operation, there is no need to suspend the test thread because it was already
+Since this is a `send` and `receive` operation, there is no need to suspend the test thread because it was already
 suspended in the `RabbitTemplate` waiting for the reply.
 
 <3> In this case, we're only using a send operation so we need a latch to wait for the asynchronous call to the listener
@@ -248,6 +247,7 @@ public class Listener {
 
 }
 
+@SpringJUnitConfig
 public class MyTests {
 
     @Autowired
@@ -317,7 +317,7 @@ The following test case uses the template:
 
 [source, java]
 ----
-@RunWith(SpringRunner.class)
+@SpringJUnitConfig
 public class TestRabbitTemplateTests {
 
     @Autowired
@@ -351,131 +351,117 @@ public class TestRabbitTemplateTests {
     public void testSendAndReceive() {
         assertThat(this.template.convertSendAndReceive("baz", "hello"), equalTo("baz:hello"));
     }
+
+}
 ----
 
 [source, java]
 ----
-    @Configuration
-    @EnableRabbit
-    public static class Config {
+@Configuration
+@EnableRabbit
+public static class Config {
 
-        public String fooIn = "";
+    public String fooIn = "";
 
-        public String barIn = "";
+    public String barIn = "";
 
-        public String smlc1In = "smlc1:";
+    public String smlc1In = "smlc1:";
 
-        @Bean
-        public TestRabbitTemplate template() throws IOException {
-            return new TestRabbitTemplate(connectionFactory());
-        }
+    @Bean
+    public TestRabbitTemplate template() throws IOException {
+        return new TestRabbitTemplate(connectionFactory());
+    }
 
-        @Bean
-        public ConnectionFactory connectionFactory() throws IOException {
-            ConnectionFactory factory = mock(ConnectionFactory.class);
-            Connection connection = mock(Connection.class);
-            Channel channel = mock(Channel.class);
-            willReturn(connection).given(factory).createConnection();
-            willReturn(channel).given(connection).createChannel(anyBoolean());
-            given(channel.isOpen()).willReturn(true);
-            return factory;
-        }
+    @Bean
+    public ConnectionFactory connectionFactory() throws IOException {
+        ConnectionFactory factory = mock(ConnectionFactory.class);
+        Connection connection = mock(Connection.class);
+        Channel channel = mock(Channel.class);
+        willReturn(connection).given(factory).createConnection();
+        willReturn(channel).given(connection).createChannel(anyBoolean());
+        given(channel.isOpen()).willReturn(true);
+        return factory;
+    }
 
-        @Bean
-        public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() throws IOException {
-            SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
-            factory.setConnectionFactory(connectionFactory());
-            return factory;
-        }
+    @Bean
+    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() throws IOException {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory());
+        return factory;
+    }
 
-        @RabbitListener(queues = "foo")
-        public void foo(String in) {
-            this.fooIn += "foo:" + in;
-        }
+    @RabbitListener(queues = "foo")
+    public void foo(String in) {
+        this.fooIn += "foo:" + in;
+    }
 
-        @RabbitListener(queues = "bar")
-        public void bar(String in) {
-            this.barIn += "bar:" + in;
-        }
+    @RabbitListener(queues = "bar")
+    public void bar(String in) {
+        this.barIn += "bar:" + in;
+    }
 
-        @RabbitListener(queues = "baz")
-        public String baz(String in) {
-            return "baz:" + in;
-        }
+    @RabbitListener(queues = "baz")
+    public String baz(String in) {
+        return "baz:" + in;
+    }
 
-        @Bean
-        public SimpleMessageListenerContainer smlc1() throws IOException {
-            SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
-            container.setQueueNames("foo", "bar");
-            container.setMessageListener(new MessageListenerAdapter(new Object() {
+    @Bean
+    public SimpleMessageListenerContainer smlc1() throws IOException {
+        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
+        container.setQueueNames("foo", "bar");
+        container.setMessageListener(new MessageListenerAdapter(new Object() {
 
-                @SuppressWarnings("unused")
-                public void handleMessage(String in) {
-                    smlc1In += in;
-                }
+            @SuppressWarnings("unused")
+            public void handleMessage(String in) {
+                smlc1In += in;
+            }
 
-            }));
-            return container;
-        }
-
+        }));
+        return container;
     }
 
 }
 ----
 
-[[junit-rules]]
-== JUnit4 `@Rules`
+[[junit5-conditions]]
+== JUnit5 Conditions
 
-Spring AMQP version 1.7 and later provide an additional jar called `spring-rabbit-junit`.
-This jar contains a couple of utility `@Rule` instances for use when running JUnit4 tests.
-See xref:testing.adoc#junit5-conditions[JUnit5 Conditions] for JUnit5 testing.
+Version 2.0.2 introduced support for JUnit5.
 
-[[using-brokerrunning]]
-=== Using `BrokerRunning`
+[[using-the-rabbitavailable-annotation]]
+=== Using the `@RabbitAvailable` Annotation
 
-`BrokerRunning` provides a mechanism to let tests succeed when a broker is not running (on `localhost`, by default).
+The custom JUnit 5 `@RabbitAvailable` annotation is processed by the `RabbitAvailableCondition`.
 
-It also has utility methods to initialize and empty queues and delete queues and exchanges.
+The annotation has three properties:
 
-The following example shows its usage:
+* `queues`: An array of queues that are declared (and purged) before each test and deleted when all tests are complete.
+* `management`: Set this to `true` if your tests also require the management plugin installed on the broker.
+* `purgeAfterEach`: (Since version 2.2) when `true` (default), the `queues` will be purged between tests.
 
-[source, java]
-----
-
-@ClassRule
-public static BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues("foo", "bar");
-
-@AfterClass
-public static void tearDown() {
-    brokerRunning.removeTestQueues("some.other.queue.too") // removes foo, bar as well
-}
-----
-
-There are several `isRunning...` static methods, such as `isBrokerAndManagementRunning()`, which verifies the broker has the management plugin enabled.
-
-[[brokerRunning-configure]]
-==== Configuring the Rule
+It is used to check whether the broker is available and skip the tests if not.
 
 There are times when you want tests to fail if there is no broker, such as a nightly CI build.
-To disable the rule at runtime, set an environment variable called `RABBITMQ_SERVER_REQUIRED` to `true`.
+To disable the `BrokerRunningSupport` at runtime, set an environment variable called `RABBITMQ_SERVER_REQUIRED` to `true`.
 
-You can override the broker properties, such as hostname with either setters or environment variables:
+You can override the broker properties, such as hostname with either setters or environment variables.
 
 The following example shows how to override properties with setters:
 
 [source, java]
 ----
 
-@ClassRule
-public static BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues("foo", "bar");
+@RabbitAvailable
+...
 
-static {
-    brokerRunning.setHostName("10.0.0.1")
+@BeforeAll
+static void setup() {
+    RabbitAvailableCondition.getBrokerRunning().setHostName("10.0.0.1");
 }
 
-@AfterClass
-public static void tearDown() {
-    brokerRunning.removeTestQueues("some.other.queue.too") // removes foo, bar as well
+@AfterAll
+static void tearDown() {
+    RabbitAvailableCondition.getBrokerRunning().removeTestQueues("some.other.queue.too");
 }
 ----
 
@@ -496,66 +482,30 @@ These environment variables override the default settings (`localhost:5672` for 
 
 Changing the host name affects both the `amqp` and `management` REST API connection (unless the admin uri is explicitly set).
 
-`BrokerRunning` also provides a `static` method called `setEnvironmentVariableOverrides` that lets you can pass in a map containing these variables.
+`BrokerRunningSupport` also provides a `static` method called `setEnvironmentVariableOverrides` that lets you can pass in a map containing these variables.
 They override system environment variables.
 This might be useful if you wish to use different configuration for tests in multiple test suites.
 IMPORTANT: The method must be called before invoking any of the `isRunning()` static methods that create the rule instance.
 Variable values are applied to all instances created after this invocation.
 Invoke `clearEnvironmentVariableOverrides()` to reset the rule to use defaults (including any actual environment variables).
 
-In your test cases, you can use the `brokerRunning` when creating the connection factory; `getConnectionFactory()` returns the rule's RabbitMQ `ConnectionFactory`.
+In your test cases, you can use the `RabbitAvailableCondition.getBrokerRunning()` when creating the connection factory; `getConnectionFactory()` returns the rule's RabbitMQ `ConnectionFactory`.
 The following example shows how to do so:
 
 [source, java]
 ----
 @Bean
 public CachingConnectionFactory rabbitConnectionFactory() {
-    return new CachingConnectionFactory(brokerRunning.getConnectionFactory());
+    return new CachingConnectionFactory(RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
 }
 ----
 
-[[using-longrunningintegrationtest]]
-=== Using `LongRunningIntegrationTest`
-
-`LongRunningIntegrationTest` is a rule that disables long running tests.
-You might want to use this on a developer system but ensure that the rule is disabled on, for example, nightly CI builds.
-
-The following example shows its usage:
-
-[source, java]
-----
-@Rule
-public LongRunningIntegrationTest longTests = new LongRunningIntegrationTest();
-----
-
-To disable the rule at runtime, set an environment variable called `RUN_LONG_INTEGRATION_TESTS` to `true`.
-
-[[junit5-conditions]]
-== JUnit5 Conditions
-
-Version 2.0.2 introduced support for JUnit5.
-
-[[using-the-rabbitavailable-annotation]]
-=== Using the `@RabbitAvailable` Annotation
-
-This class-level annotation is similar to the `BrokerRunning` `@Rule` discussed in <<junit-rules>>.
-It is processed by the `RabbitAvailableCondition`.
-
-The annotation has three properties:
-
-* `queues`: An array of queues that are declared (and purged) before each test and deleted when all tests are complete.
-* `management`: Set this to `true` if your tests also require the management plugin installed on the broker.
-* `purgeAfterEach`: (Since version 2.2) when `true` (default), the `queues` will be purged between tests.
-
-It is used to check whether the broker is available and skip the tests if not.
-As discussed in xref:testing.adoc#brokerRunning-configure[Configuring the Rule], the environment variable called `RABBITMQ_SERVER_REQUIRED`, if `true`, causes the tests to fail fast if there is no broker.
-You can configure the condition by using environment variables as discussed in xref:testing.adoc#brokerRunning-configure[Configuring the Rule].
 
 In addition, the `RabbitAvailableCondition` supports argument resolution for parameterized test constructors and methods.
 Two argument types are supported:
 
-* `BrokerRunningSupport`: The instance (before 2.2, this was a JUnit 4 `BrokerRunning` instance)
-* `ConnectionFactory`: The `BrokerRunningSupport` instance's RabbitMQ connection factory
+* `BrokerRunningSupport`: the instance
+* `ConnectionFactory`: the `BrokerRunningSupport` instance's RabbitMQ connection factory
 
 The following example shows both:
 
@@ -609,9 +559,6 @@ public class RabbitAvailableCTORInjectionTests {
 ----
 
 When you use a Spring annotation application context within a test class, you can get a reference to the condition's connection factory through a static method called `RabbitAvailableCondition.getBrokerRunning()`.
-
-IMPORTANT: Starting with version 2.2, `getBrokerRunning()` returns a `BrokerRunningSupport` object; previously, the JUnit 4 `BrokerRunnning` instance was returned.
-The new class has the same API as `BrokerRunning`.
 
 The following test comes from the framework and demonstrates the usage:
 
@@ -680,7 +627,7 @@ public class RabbitTemplateMPPIntegrationTests {
 [[using-the-longrunning-annotation]]
 === Using the `@LongRunning` Annotation
 
-Similar to the `LongRunningIntegrationTest` JUnit4 `@Rule`, this annotation causes tests to be skipped unless an environment variable (or system property) is set to `true`.
+The `@LongRunning` annotation causes tests to be skipped unless an environment variable (or system property) is set to `true`.
 The following example shows how to use it:
 
 [source, java]

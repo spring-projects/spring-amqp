@@ -50,7 +50,6 @@ ext {
 	hibernateValidationVersion = '8.0.2.Final'
 	jacksonBomVersion = '2.18.3'
 	jaywayJsonPathVersion = '2.9.0'
-	junit4Version = '4.13.2'
 	junitJupiterVersion = '5.12.2'
 	kotlinCoroutinesVersion = '1.10.2'
 	log4jVersion = '2.24.3'
@@ -442,9 +441,6 @@ project('spring-rabbit') {
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind'
 		testRuntimeOnly 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
 		testRuntimeOnly 'com.fasterxml.jackson.module:jackson-module-kotlin'
-		testRuntimeOnly("junit:junit:$junit4Version") {
-			exclude group: 'org.hamcrest', module: 'hamcrest-core'
-		}
 	}
 }
 
@@ -503,9 +499,6 @@ project('spring-rabbit-junit') {
 		api 'org.junit.jupiter:junit-jupiter-api'
 		api "org.assertj:assertj-core:$assertjVersion"
 
-		optionalApi("junit:junit:$junit4Version") {
-			exclude group: 'org.hamcrest', module: 'hamcrest-core'
-		}
 		optionalApi 'org.testcontainers:rabbitmq'
 		optionalApi 'org.testcontainers:junit-jupiter'
 		optionalApi "ch.qos.logback:logback-classic:$logbackVersion"
