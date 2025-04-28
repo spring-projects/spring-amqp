@@ -67,7 +67,7 @@ See xref:amqp/receiving-messages/async-consumer.adoc#lc-auto-delete[`auto-delete
 [[rabbittemplate:-mandatory-and-connectionfactoryselector-expressions]]
 == `RabbitTemplate`: `mandatory` and `connectionFactorySelector` Expressions
 
-The `mandatoryExpression`, `sendConnectionFactorySelectorExpression`, and `receiveConnectionFactorySelectorExpression` SpEL Expression`s properties have been added to `RabbitTemplate`.
+The `mandatoryExpression`, `sendConnectionFactorySelectorExpression`, and `receiveConnectionFactorySelectorExpression` SpEL Expression properties have been added to `RabbitTemplate`.
 The `mandatoryExpression` is used to evaluate a `mandatory` boolean value against each request message when a `ReturnCallback` is in use.
 See xref:amqp/template.adoc#template-confirms[Correlated Publisher Confirms and Returns].
 The `sendConnectionFactorySelectorExpression` and `receiveConnectionFactorySelectorExpression` are used when an `AbstractRoutingConnectionFactory` is provided, to determine the `lookupKey` for the target `ConnectionFactory` at runtime on each AMQP protocol interaction operation.
