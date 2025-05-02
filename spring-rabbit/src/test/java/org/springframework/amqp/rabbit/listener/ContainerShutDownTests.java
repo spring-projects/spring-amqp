@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
@@ -138,6 +139,28 @@ public class ContainerShutDownTests {
 		finally {
 			cf.destroy();
 		}
+	}
+
+	@Test
+	void directMessageListenerContainerShutdownsItsSchedulerOnStopWithCallback() {
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer();
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		container.setConnectionFactory(cf);
+		container.setQueueNames("test.shutdown");
+		container.setMessageListener(m -> {
+		});
+
+		container.start();
+
+		ScheduledExecutorService scheduledExecutorService =
+				TestUtils.getPropertyValue(container, "taskScheduler.scheduledExecutor", ScheduledExecutorService.class);
+
+		container.stop(() -> {
+		});
+
+		cf.destroy();
+
+		assertThat(scheduledExecutorService.isShutdown()).isTrue();
 	}
 
 }
