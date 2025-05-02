@@ -425,12 +425,22 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	@Override
-	protected void doStop() {
-		super.doStop();
+	public void stop(Runnable callback) {
+		super.stop(callback);
+		cleanUpTaskScheduler();
+	}
+
+	private void cleanUpTaskScheduler() {
 		if (!this.taskSchedulerSet && this.taskScheduler != null) {
 			((ThreadPoolTaskScheduler) this.taskScheduler).shutdown();
 			this.taskScheduler = null;
 		}
+	}
+
+	@Override
+	protected void doStop() {
+		super.doStop();
+		cleanUpTaskScheduler();
 	}
 
 	protected void actualStart() {
@@ -973,6 +983,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	protected void consumerRemoved(SimpleConsumer consumer) {
 		// default empty
+	}
+
+	@Override
+	public void destroy() {
+		super.destroy();
+		cleanUpTaskScheduler();
 	}
 
 	/**
