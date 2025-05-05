@@ -224,13 +224,13 @@ Essentially, any `x-*` headers are ignored from the client.
 To mitigate this new behavior of the RabbitMQ broker, Spring AMQP has introduced a `retry_count` header starting with version 3.2.
 When this header is absent and a server side DLX is in action, the `x-death.count` property is mapped to this header.
 When the failed message is re-published manually for retries, the `retry_count` header value has to be incremented manually.
-See `MessageProperties.incrementRetryCount()` JavaDocs for more information.
+See javadoc:org.springframework.amqp.core.MessageProperties#incrementRetryCount()[Javadoc] for more information.
 
 The following example summarise an algorithm for manual retry over the broker:
 
 [source,java]
 ----
-@RabbitListener(queueNames = "some_queue")
+@RabbitListener(queues = "some_queue")
 public void rePublish(Message message) {
     try {
     // Process message
@@ -243,7 +243,7 @@ public void rePublish(Message message) {
         }
         else {
             throw new ImmediateAcknowledgeAmqpException("Failed after 4 attempts");
-		}
+        }
     }
 }
 ----
