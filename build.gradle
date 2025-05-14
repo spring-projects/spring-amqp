@@ -48,7 +48,7 @@ ext {
 	commonsPoolVersion = '2.12.1'
 	hamcrestVersion = '3.0'
 	hibernateValidationVersion = '8.0.2.Final'
-	jacksonBomVersion = '2.18.4'
+	jacksonBomVersion = '2.19.0'
 	jaywayJsonPathVersion = '2.9.0'
 	junitJupiterVersion = '5.12.2'
 	kotlinCoroutinesVersion = '1.10.2'
