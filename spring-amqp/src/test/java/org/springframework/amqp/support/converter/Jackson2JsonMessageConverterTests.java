@@ -43,7 +43,6 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Mark Pollack
@@ -154,14 +153,14 @@ public class Jackson2JsonMessageConverterTests {
 
 	@Test
 	public void testAmqp330StringArray() {
-		String[] testData = { "test" };
+		String[] testData = {"test"};
 		Message message = converter.toMessage(testData, new MessageProperties());
 		assertThat((Object[]) converter.fromMessage(message)).isEqualTo(testData);
 	}
 
 	@Test
 	public void testAmqp330ObjectArray() {
-		SimpleTrade[] testData = { trade };
+		SimpleTrade[] testData = {trade};
 		Message message = converter.toMessage(testData, new MessageProperties());
 		assertThat((Object[]) converter.fromMessage(message)).isEqualTo(testData);
 	}
@@ -229,7 +228,9 @@ public class Jackson2JsonMessageConverterTests {
 		byte[] bytes = "[ {\"name\" : \"foo\" } ]".getBytes();
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setContentType("application/json");
-		messageProperties.setInferredArgumentType((new ParameterizedTypeReference<List<Foo>>() { }).getType());
+		messageProperties.setInferredArgumentType((new ParameterizedTypeReference<List<Foo>>() {
+
+		}).getType());
 		Message message = new Message(bytes, messageProperties);
 		Object foo = this.converter.fromMessage(message);
 		assertThat(foo).isInstanceOf(List.class);
@@ -242,7 +243,9 @@ public class Jackson2JsonMessageConverterTests {
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setContentType("application/json");
 		messageProperties.setInferredArgumentType(
-				(new ParameterizedTypeReference<Map<String, List<Bar>>>() {	}).getType());
+				(new ParameterizedTypeReference<Map<String, List<Bar>>>() {
+
+				}).getType());
 		Message message = new Message(bytes, messageProperties);
 		Object foo = this.converter.fromMessage(message);
 		assertThat(foo).isInstanceOf(LinkedHashMap.class);
@@ -260,7 +263,9 @@ public class Jackson2JsonMessageConverterTests {
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setContentType("application/json");
 		messageProperties.setInferredArgumentType(
-				(new ParameterizedTypeReference<Map<String, Map<String, Bar>>>() { }).getType());
+				(new ParameterizedTypeReference<Map<String, Map<String, Bar>>>() {
+
+				}).getType());
 		Message message = new Message(bytes, messageProperties);
 		Object foo = this.converter.fromMessage(message);
 		assertThat(foo).isInstanceOf(LinkedHashMap.class);
@@ -458,8 +463,7 @@ public class Jackson2JsonMessageConverterTests {
 		assertThat(message2.getBody().length).isNotEqualTo(bodyLength8);
 		converter.setDefaultCharset("UTF-8");
 
-		assertThatExceptionOfType(MessageConversionException.class).isThrownBy(
-				() -> converter.fromMessage(message2));
+		assertThat(converter.fromMessage(message2)).isEqualTo(trade);
 	}
 
 	public List<Foo> fooLister() {
