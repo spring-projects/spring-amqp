@@ -312,8 +312,10 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 		Object content = null;
 		MessageProperties properties = message.getMessageProperties();
 		String contentType = properties.getContentType();
-		if (this.assumeSupportedContentType && contentType.equals(MessageProperties.DEFAULT_CONTENT_TYPE)
-				|| contentType.contains(this.supportedContentType.getSubtype())) {
+		if (this.assumeSupportedContentType &&
+				(contentType == null ||
+						contentType.equals(MessageProperties.DEFAULT_CONTENT_TYPE) ||
+						contentType.contains(this.supportedContentType.getSubtype()))) {
 
 			String encoding = determineEncoding(properties, contentType);
 			content = doFromMessage(message, conversionHint, properties, encoding);
