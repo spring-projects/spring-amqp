@@ -278,7 +278,7 @@ public ConnectionFactory rabbitConnectionFactory(ConnectionNameStrategy cns) {
 The property must exist in the application context's `Environment`.
 
 NOTE: When using Spring Boot and its autoconfigured connection factory, you need only declare the `ConnectionNameStrategy` `@Bean`.
-Boot auto-detects the bean and wires it into the factory.
+Spring Boot auto-detects the bean and wires it into the factory.
 
 [[blocked-connections-and-resource-constraints]]
 == Blocked Connections and Resource Constraints
@@ -332,8 +332,11 @@ Other setters delegate to the underlying factory.
 Previously, you had to configure the SSL options programmatically.
 The following example shows how to configure a `RabbitConnectionFactoryBean`:
 
+[tabs]
+======
+Java::
++
 [source,java,role=primary]
-.Java
 ----
 @Bean
 RabbitConnectionFactoryBean rabbitConnectionFactory() {
@@ -351,34 +354,40 @@ CachingConnectionFactory connectionFactory(ConnectionFactory rabbitConnectionFac
     return ccf;
 }
 ----
-[source,properties,role=secondary]
-.Boot application.properties
-----
-spring.rabbitmq.ssl.enabled:true
-spring.rabbitmq.ssl.keyStore=...
-spring.rabbitmq.ssl.keyStoreType=jks
-spring.rabbitmq.ssl.keyStorePassword=...
-spring.rabbitmq.ssl.trustStore=...
-spring.rabbitmq.ssl.trustStoreType=jks
-spring.rabbitmq.ssl.trustStorePassword=...
-spring.rabbitmq.host=...
-...
-----
+XML::
++
 [source,xml,role=secondary]
-.XML
 ----
-<rabbit:connection-factory id="rabbitConnectionFactory"
-    connection-factory="clientConnectionFactory"
-    host="${host}"
-    port="${port}"
-    virtual-host="${vhost}"
-    username="${username}" password="${password}" />
-
-<bean id="clientConnectionFactory"
+<bean id="rabbitConnectionFactory"
         class="org.springframework.amqp.rabbit.connection.RabbitConnectionFactoryBean">
     <property name="useSSL" value="true" />
     <property name="sslPropertiesLocation" value="classpath:secrets/rabbitSSL.properties"/>
 </bean>
+
+<rabbit:connection-factory id="connectionFactory"
+    connection-factory="rabbitConnectionFactory"
+    host="${host}"
+    port="${port}"
+    virtual-host="${vhost}"
+    username="${username}" password="${password}" />
+----
+======
+
+Spring Boot application file (`.yaml` or `.properties`)
+
+[configprops%novalidate,yaml]
+----
+spring:
+  rabbitmq:
+    host: ...
+    ssl:
+      keyStoreType: jks
+      trustStoreType: jks
+      keyStore: ...
+      trustStore: ...
+      trustStorePassword: ...
+      keyStorePassword: ...
+      enabled: true
 ----
 
 See the https://www.rabbitmq.com/ssl.html[RabbitMQ Documentation] for information about configuring SSL.
@@ -622,7 +631,7 @@ To add `WebFlux` to the class path:
 compile 'org.springframework.amqp:spring-rabbit'
 ----
 
-You can also use other REST technology by implementing `LocalizedQueueConnectionFactory.NodeLocator` and overriding its `createClient, ``restCall`, and optionally, `close` methods.
+You can also use other REST technology by implementing javadoc:org.springframework.amqp.rabbit.connection.LocalizedQueueConnectionFactory#setNodeLocator(org.springframework.amqp.rabbit.connection.NodeLocator)[LocalizedQueueConnectionFactory#setNodeLocator] and overriding its `createClient`, `restCall`, and optionally, `close` methods.
 
 [source, java]
 ----
@@ -634,9 +643,9 @@ lqcf.setNodeLocator(new NodeLocator<MyClient>() {
     }
 
     @Override
-    public HashMap<String, Object> restCall(MyClient client, URI uri) {
+    public Map<String, Object> restCall(MyClient client, String baseUri, String vhost, String queue) throws URISyntaxException {
         ...
-    });
+    }
 
 });
 ----
