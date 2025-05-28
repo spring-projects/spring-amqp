@@ -24,6 +24,7 @@ asciidoc:
     - '@asciidoctor/tabs'
     - '@springio/asciidoctor-extensions'
     - '@springio/asciidoctor-extensions/javadoc-extension'
+    - '@springio/asciidoctor-extensions/configuration-properties-extension'
   sourcemap: true
 urls:
   latest_version_segment: ''
