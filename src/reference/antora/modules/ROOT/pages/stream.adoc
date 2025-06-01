@@ -8,7 +8,10 @@ Version 2.4 introduces initial support for the {rabbitmq-github}/rabbitmq-stream
 
 Add the `spring-rabbit-stream` dependency to your project:
 
-.maven
+[tabs]
+======
+Maven::
++
 [source,xml,subs="+attributes"]
 ----
 <dependency>
@@ -18,11 +21,13 @@ Add the `spring-rabbit-stream` dependency to your project:
 </dependency>
 ----
 
-.gradle
+Gradle::
++
 [source,groovy,subs="+attributes"]
 ----
 compile 'org.springframework.amqp:spring-rabbit-stream:{project-version}'
 ----
+======
 
 You can provision the queues as normal, using a `RabbitAdmin` bean, using the `QueueBuilder.stream()` method to designate the queue type.
 For example:
@@ -97,7 +102,7 @@ public void setMessageConverter(MessageConverter messageConverter) {
 public void setStreamConverter(StreamMessageConverter streamConverter) {
 }
 
-public synchronized void setProducerCustomizer(ProducerCustomizer producerCustomizer) {
+public void setProducerCustomizer(ProducerCustomizer producerCustomizer) {
 }
 ----
 

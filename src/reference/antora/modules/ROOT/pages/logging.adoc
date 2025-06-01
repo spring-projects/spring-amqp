@@ -315,8 +315,12 @@ You can add custom client properties by adding either string properties or more 
 
 Each appender supports adding client properties to the RabbitMQ connection.
 
-The following example shows how to add a custom client property for logback:
+The following example shows how to add a custom client property:
 
+[tabs]
+======
+logback::
++
 [source, xml]
 ----
 <appender name="AMQP" ...>
@@ -326,7 +330,8 @@ The following example shows how to add a custom client property for logback:
 </appender>
 ----
 
-.log4j2
+log4j2::
++
 [source, xml]
 ----
 <Appenders>
@@ -338,6 +343,7 @@ The following example shows how to add a custom client property for logback:
     </RabbitMQ>
 </Appenders>
 ----
+======
 
 The properties are a comma-delimited list of `key:value` pairs.
 Keys and values cannot contain commas or colons.

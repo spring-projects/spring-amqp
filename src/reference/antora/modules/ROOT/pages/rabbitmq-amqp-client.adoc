@@ -9,7 +9,10 @@ For that purpose a https://qpid.apache.org/components/jms/index.html[JMS bridge]
 
 This dependency has to be added to the project to be able to interact with RabbitMQ AMQP 1.0 support:
 
-.maven
+[tabs]
+======
+Maven::
++
 [source,xml,subs="+attributes"]
 ----
 <dependency>
@@ -19,11 +22,13 @@ This dependency has to be added to the project to be able to interact with Rabbi
 </dependency>
 ----
 
-.gradle
+Gradle::
++
 [source,groovy,subs="+attributes"]
 ----
 compile 'org.springframework.amqp:spring-rabbitmq-client:{project-version}'
 ----
+======
 
 The `spring-rabbit` (for AMQP 0.9.1 protocol) comes as a transitive dependency for reusing some common API in this new client, for example, exceptions, the `@RabbitListener` support.
 It is not necessary to use both functionality in the target project, but RabbitMQ allows both AMQP 0.9.1 and 1.0 co-exists.
