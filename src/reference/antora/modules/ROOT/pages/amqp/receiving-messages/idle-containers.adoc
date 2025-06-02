@@ -25,7 +25,7 @@ The following example shows how to do so in XML and in Java (for both a `SimpleM
 [source, java]
 ----
 @Bean
-public SimpleMessageListenerContainer(ConnectionFactory connectionFactory) {
+public SimpleMessageListenerContainer smlc(ConnectionFactory connectionFactory) {
     SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
     ...
     container.setIdleEventInterval(60000L);
