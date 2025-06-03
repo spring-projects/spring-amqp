@@ -19,7 +19,7 @@ plugins {
 	id 'io.spring.dependency-management' version '1.1.7' apply false
 	id 'org.antora' version '1.0.0'
 	id 'io.spring.antora.generate-antora-yml' version '0.0.1'
-	id 'io.freefair.aggregate-javadoc' version '8.11'
+	id 'io.freefair.aggregate-javadoc' version '8.13.1'
 	id 'io.spring.nullability' version '0.0.1' apply false
 }
 
@@ -50,22 +50,22 @@ ext {
 	hibernateValidationVersion = '8.0.2.Final'
 	jacksonBomVersion = '2.19.0'
 	jaywayJsonPathVersion = '2.9.0'
-	junitJupiterVersion = '5.12.2'
+	junitJupiterVersion = '5.13.0'
 	kotlinCoroutinesVersion = '1.10.2'
 	log4jVersion = '2.24.3'
 	logbackVersion = '1.5.18'
 	micrometerDocsVersion = '1.0.4'
-	micrometerVersion = '1.15.0-SNAPSHOT'
-	micrometerTracingVersion = '1.5.0-SNAPSHOT'
-	mockitoVersion = '5.16.1'
-	rabbitmqAmqpClientVersion = '0.5.0'
-	rabbitmqStreamVersion = '0.22.0'
+	micrometerVersion = '1.15.1-SNAPSHOT'
+	micrometerTracingVersion = '1.5.1-SNAPSHOT'
+	mockitoVersion = '5.18.0'
+	rabbitmqAmqpClientVersion = '0.6.0'
+	rabbitmqStreamVersion = '1.1.0'
 	rabbitmqVersion = '5.25.0'
 	reactorVersion = '2025.0.0-SNAPSHOT'
 	springDataVersion = '2025.1.0-SNAPSHOT'
 	springRetryVersion = '2.0.12'
 	springVersion = '7.0.0-SNAPSHOT'
-	testcontainersVersion = '1.20.6'
+	testcontainersVersion = '1.21.1'
 
 	javaProjects = subprojects - project(':spring-amqp-bom')
 }
@@ -75,11 +75,11 @@ antora {
 	playbook = file('src/reference/antora/antora-playbook.yml')
 	options = ['to-dir': project.layout.buildDirectory.dir('site').get().toString(), clean: true, fetch: !project.gradle.startParameter.offline, stacktrace: true]
 	dependencies = [
-			'@antora/atlas-extension'         : '1.0.0-alpha.2',
-			'@antora/collector-extension'     : '1.0.0-beta.3',
+			'@antora/atlas-extension'         : '0.0.2',
+			'@antora/collector-extension'     : '1.0.1',
 			'@asciidoctor/tabs'               : '1.0.0-beta.6',
-			'@springio/antora-extensions'     : '1.14.2',
-			'@springio/asciidoctor-extensions': '1.0.0-alpha.14',
+			'@springio/antora-extensions'     : '1.14.4',
+			'@springio/asciidoctor-extensions': '1.0.0-alpha.17',
 	]
 }
 
@@ -304,7 +304,7 @@ configure(javaProjects) { subproject ->
 
 	checkstyle {
 		configDirectory.set(rootProject.file('src/checkstyle'))
-		toolVersion = '10.21.4'
+		toolVersion = '10.25.0'
 	}
 
 	jar {

@@ -99,7 +99,7 @@
 			<property name="scope" value="package"/>
 		</module>
 		<module name="JavadocVariable">
-			<property name="scope" value="public"/>
+			<property name="accessModifiers" value="public"/>
 			<property name="ignoreNamePattern" value="[A-Z_0-9]*"/>
 		</module>
 		<module name="JavadocStyle">
