@@ -18,7 +18,7 @@ updates:
         update-types:
           - patch
         patterns:
-          - com.gradle.*
+          - org.gradle.*
           - io.spring.*
           - org.ajoberstar.grgit
           - org.antora
@@ -27,9 +27,7 @@ updates:
           - org.hibernate.validator:hibernate-validator
           - org.apache.httpcomponents.client5:httpclient5
           - org.awaitility:awaitility
-          - net.ltgt.errorprone
-          - com.uber.nullaway*
-          - com.google.errorprone*
+          - io.freefair.aggregate-javadoc
 
   - package-ecosystem: github-actions
     directory: /
@@ -62,10 +60,11 @@ updates:
         update-types:
           - patch
         patterns:
-          - com.gradle.*
+          - org.gradle.*
           - com.github.spotbugs
           - io.spring.*
           - org.ajoberstar.grgit
+          - io.freefair.aggregate-javadoc
           - org.antora
           - io.micrometer:micrometer-docs-generator
           - com.willowtreeapps.assertk:assertk-jvm
@@ -104,10 +103,11 @@ updates:
         update-types:
           - patch
         patterns:
-          - com.gradle.*
+          - org.gradle.*
           - com.github.spotbugs
           - io.spring.*
           - org.ajoberstar.grgit
+          - io.freefair.aggregate-javadoc
           - org.antora
           - io.micrometer:micrometer-docs-generator
           - com.willowtreeapps.assertk:assertk-jvm
