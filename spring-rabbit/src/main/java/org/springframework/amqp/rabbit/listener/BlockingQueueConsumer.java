@@ -884,7 +884,7 @@ public class BlockingQueueConsumer {
 
 	/**
 	 * Perform a commit or message acknowledgement, as appropriate.
-	 * NOTE: This method was never been intended tobe public.
+	 * NOTE: This method was never intended to be public.
 	 * @param localTx Whether the channel is locally transacted.
 	 * @return true if at least one delivery tag exists.
 	 * @deprecated in favor of {@link #commitIfNecessary(boolean, boolean)}
@@ -917,7 +917,7 @@ public class BlockingQueueConsumer {
 		try {
 			boolean ackRequired = forceAck || (!this.acknowledgeMode.isAutoAck() && !this.acknowledgeMode.isManual());
 
-			if (ackRequired && (!this.transactional || (isLocallyTransacted && !cancelled()))) {
+			if (ackRequired && (!this.transactional || isLocallyTransacted)) {
 				OptionalLong deliveryTag = this.deliveryTags.stream().mapToLong(l -> l).max();
 				deliveryTag.ifPresent((tag) -> {
 					try {
