@@ -50,7 +50,7 @@ ext {
 	hibernateValidationVersion = '8.0.2.Final'
 	jacksonBomVersion = '2.19.0'
 	jaywayJsonPathVersion = '2.9.0'
-	junitJupiterVersion = '5.13.0'
+	junitJupiterVersion = '5.13.1'
 	kotlinCoroutinesVersion = '1.10.2'
 	log4jVersion = '2.24.3'
 	logbackVersion = '1.5.18'
