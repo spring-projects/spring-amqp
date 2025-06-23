@@ -17,11 +17,10 @@ updates:
        development-dependencies:
          update-types:
           - patch
-         patterns: 
-         - com.gradle.*
+         patterns:
+         - org.gradle.*
          - com.github.spotbugs
          - io.spring.*
-         - org.ajoberstar.grgit
          - org.antora
          - io.micrometer:micrometer-docs-generator
          - com.willowtreeapps.assertk:assertk-jvm
