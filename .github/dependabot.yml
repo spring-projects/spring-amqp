@@ -20,7 +20,6 @@ updates:
         patterns:
           - org.gradle.*
           - io.spring.*
-          - org.ajoberstar.grgit
           - org.antora
           - io.micrometer:micrometer-docs-generator
           - com.willowtreeapps.assertk:assertk-jvm
@@ -63,7 +62,6 @@ updates:
           - org.gradle.*
           - com.github.spotbugs
           - io.spring.*
-          - org.ajoberstar.grgit
           - io.freefair.aggregate-javadoc
           - org.antora
           - io.micrometer:micrometer-docs-generator
@@ -74,52 +72,6 @@ updates:
 
   - package-ecosystem: github-actions
     target-branch: 3.2.x
-    directory: /
-    schedule:
-      interval: weekly
-      day: saturday
-    labels:
-      - 'type: task'
-    groups:
-      development-dependencies:
-        patterns:
-          - '*'
-
-  - package-ecosystem: gradle
-    target-branch: 3.1.x
-    directory: /
-    schedule:
-      interval: monthly
-    ignore:
-      - dependency-name: '*'
-        update-types:
-          - version-update:semver-major
-          - version-update:semver-minor
-    open-pull-requests-limit: 10
-    labels:
-      - 'type: dependency-upgrade'
-    groups:
-      development-dependencies:
-        update-types:
-          - patch
-        patterns:
-          - org.gradle.*
-          - com.github.spotbugs
-          - io.spring.*
-          - org.ajoberstar.grgit
-          - io.freefair.aggregate-javadoc
-          - org.antora
-          - io.micrometer:micrometer-docs-generator
-          - com.willowtreeapps.assertk:assertk-jvm
-          - org.hibernate.validator:hibernate-validator
-          - org.apache.httpcomponents.client5:httpclient5
-          - org.awaitility:awaitility
-          - org.xerial.snappy:snappy-java
-          - org.lz4:lz4-java
-          - com.github.luben:zstd-jni
-
-  - package-ecosystem: github-actions
-    target-branch: 3.1.x
     directory: /
     schedule:
       interval: weekly
