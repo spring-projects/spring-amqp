@@ -133,31 +133,35 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	}
 
 	@Override
-	public void send(String exchange, String routingKey, Message<?> message) throws MessagingException {
+	public void send(@Nullable String exchange, @Nullable String routingKey, Message<?> message)
+			throws MessagingException {
+
 		doSend(exchange, routingKey, message);
 	}
 
 	@Override
-	public void convertAndSend(String exchange, String routingKey, Object payload) throws MessagingException {
+	public void convertAndSend(@Nullable String exchange, @Nullable String routingKey, Object payload)
+			throws MessagingException {
+
 		convertAndSend(exchange, routingKey, payload, (Map<String, Object>) null);
 	}
 
 	@Override
-	public void convertAndSend(String exchange, String routingKey, Object payload,
+	public void convertAndSend(@Nullable String exchange, @Nullable String routingKey, Object payload,
 			@Nullable Map<String, Object> headers) throws MessagingException {
 
 		convertAndSend(exchange, routingKey, payload, headers, null);
 	}
 
 	@Override
-	public void convertAndSend(String exchange, String routingKey, Object payload,
+	public void convertAndSend(@Nullable String exchange, @Nullable String routingKey, Object payload,
 			@Nullable MessagePostProcessor postProcessor) throws MessagingException {
 
 		convertAndSend(exchange, routingKey, payload, null, postProcessor);
 	}
 
 	@Override
-	public void convertAndSend(String exchange, String routingKey, Object payload,
+	public void convertAndSend(@Nullable String exchange, @Nullable String routingKey, Object payload,
 			@Nullable Map<String, Object> headers, @Nullable MessagePostProcessor postProcessor)
 			throws MessagingException {
 
@@ -166,28 +170,28 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	}
 
 	@Override
-	public @Nullable Message<?> sendAndReceive(String exchange, String routingKey, Message<?> requestMessage)
-			throws MessagingException {
+	public @Nullable Message<?> sendAndReceive(@Nullable String exchange, @Nullable String routingKey,
+			Message<?> requestMessage) throws MessagingException {
 
 		return doSendAndReceive(exchange, routingKey, requestMessage);
 	}
 
 	@Override
-	public <T> @Nullable T convertSendAndReceive(String exchange, String routingKey, Object request,
+	public <T> @Nullable T convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey, Object request,
 			Class<T> targetClass) throws MessagingException {
 
 		return convertSendAndReceive(exchange, routingKey, request, null, targetClass);
 	}
 
 	@Override
-	public <T> @Nullable T convertSendAndReceive(String exchange, String routingKey, Object request,
+	public <T> @Nullable T convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey, Object request,
 			@Nullable Map<String, Object> headers, Class<T> targetClass) throws MessagingException {
 
 		return convertSendAndReceive(exchange, routingKey, request, headers, targetClass, null);
 	}
 
 	@Override
-	public <T> @Nullable T convertSendAndReceive(String exchange, String routingKey, Object request,
+	public <T> @Nullable T convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey, Object request,
 			Class<T> targetClass, @Nullable MessagePostProcessor requestPostProcessor) throws MessagingException {
 
 		return convertSendAndReceive(exchange, routingKey, request, null, targetClass, requestPostProcessor);
@@ -195,7 +199,7 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T> @Nullable T convertSendAndReceive(String exchange, String routingKey, Object request,
+	public <T> @Nullable T convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey, Object request,
 			@Nullable Map<String, Object> headers,
 			Class<T> targetClass, @Nullable MessagePostProcessor requestPostProcessor) throws MessagingException {
 
@@ -205,7 +209,7 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	}
 
 	@Override
-	protected void doSend(String destination, Message<?> message) {
+	protected void doSend(@Nullable String destination, Message<?> message) {
 		try {
 			Object correlation = message.getHeaders().get(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION);
 			if (correlation instanceof CorrelationData corrData) {
@@ -220,7 +224,7 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 		}
 	}
 
-	protected void doSend(String exchange, String routingKey, Message<?> message) {
+	protected void doSend(@Nullable String exchange, @Nullable String routingKey, Message<?> message) {
 		try {
 			Object correlation = message.getHeaders().get(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION);
 			if (correlation instanceof CorrelationData corrData) {
@@ -268,7 +272,7 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	}
 
 	@Override
-	protected @Nullable Message<?> doSendAndReceive(String destination, Message<?> requestMessage) {
+	protected @Nullable Message<?> doSendAndReceive(@Nullable String destination, Message<?> requestMessage) {
 		try {
 			org.springframework.amqp.core.Message amqpMessage = this.rabbitTemplate.sendAndReceive(
 					destination, createMessage(requestMessage));
@@ -279,7 +283,8 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 		}
 	}
 
-	protected @Nullable Message<?> doSendAndReceive(String exchange, String routingKey, Message<?> requestMessage) {
+	protected @Nullable Message<?> doSendAndReceive(@Nullable String exchange, @Nullable String routingKey,
+			Message<?> requestMessage) {
 		try {
 			org.springframework.amqp.core.Message amqpMessage = this.rabbitTemplate.sendAndReceive(
 					exchange, routingKey, createMessage(requestMessage));

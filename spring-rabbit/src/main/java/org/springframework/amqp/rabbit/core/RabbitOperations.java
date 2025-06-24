@@ -45,7 +45,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * {@link ChannelCallback#doInRabbit(com.rabbitmq.client.Channel)}.
 	 * @throws AmqpException if one occurs.
 	 */
-	<T> @Nullable T execute(ChannelCallback<T> action) throws AmqpException;
+	<T> @Nullable T execute(ChannelCallback<? extends @Nullable T> action) throws AmqpException;
 
 	/**
 	 * Invoke the callback and run all operations on the template argument in a dedicated
@@ -57,7 +57,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @throws AmqpException if one occurs.
 	 * @since 2.0
 	 */
-	default <T> @Nullable T invoke(OperationsCallback<T> action) throws AmqpException {
+	default <T> @Nullable T invoke(OperationsCallback<? extends @Nullable T> action) throws AmqpException {
 		return invoke(action, null, null);
 	}
 
@@ -71,8 +71,8 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @return the result of the action method.
 	 * @since 2.1
 	 */
-	<T> @Nullable T invoke(OperationsCallback<T> action, com.rabbitmq.client.@Nullable ConfirmCallback acks,
-			com.rabbitmq.client.@Nullable ConfirmCallback nacks);
+	<T> @Nullable T invoke(OperationsCallback<? extends @Nullable T> action,
+			com.rabbitmq.client.@Nullable ConfirmCallback acks, com.rabbitmq.client.@Nullable ConfirmCallback nacks);
 
 	/**
 	 * Delegate to the underlying dedicated channel to wait for confirms. The connection
@@ -100,7 +100,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	void waitForConfirmsOrDie(long timeout) throws AmqpException;
 
 	/**
-	 * Return the connection factory for this operations.
+	 * Return the connection factory for these operations.
 	 * @return the connection factory.
 	 * @since 2.0
 	 */

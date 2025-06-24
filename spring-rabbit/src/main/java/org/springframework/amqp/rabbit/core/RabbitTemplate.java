@@ -113,7 +113,6 @@ import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.retry.RecoveryCallback;
-import org.springframework.retry.RetryCallback;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.ErrorHandler;
@@ -1111,17 +1110,17 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public void send(String routingKey, Message message) throws AmqpException {
+	public void send(@Nullable String routingKey, Message message) throws AmqpException {
 		send(this.exchange, routingKey, message);
 	}
 
 	@Override
-	public void send(String routingKey, Message message, CorrelationData correlationData) throws AmqpException {
+	public void send(@Nullable String routingKey, Message message, CorrelationData correlationData) throws AmqpException {
 		send(this.exchange, routingKey, message, correlationData);
 	}
 
 	@Override
-	public void send(final String exchange, final String routingKey, final Message message) throws AmqpException {
+	public void send(@Nullable String exchange, @Nullable String routingKey, final Message message) throws AmqpException {
 		send(exchange, routingKey, message, null);
 	}
 
@@ -1630,24 +1629,24 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public @Nullable Message sendAndReceive(final String routingKey, final Message message) throws AmqpException {
+	public @Nullable Message sendAndReceive(@Nullable String routingKey, final Message message) throws AmqpException {
 		return sendAndReceive(routingKey, message, null);
 	}
 
-	public @Nullable Message sendAndReceive(final String routingKey, final Message message,
+	public @Nullable Message sendAndReceive(@Nullable String routingKey, Message message,
 			@Nullable CorrelationData correlationData) throws AmqpException {
 
 		return doSendAndReceive(this.exchange, routingKey, message, correlationData);
 	}
 
 	@Override
-	public @Nullable Message sendAndReceive(final String exchange, final String routingKey, final Message message)
+	public @Nullable Message sendAndReceive(@Nullable String exchange, @Nullable String routingKey, Message message)
 			throws AmqpException {
 
 		return sendAndReceive(exchange, routingKey, message, null);
 	}
 
-	public @Nullable Message sendAndReceive(final String exchange, final String routingKey, final Message message,
+	public @Nullable Message sendAndReceive(@Nullable String exchange, @Nullable String routingKey, Message message,
 			@Nullable CorrelationData correlationData) throws AmqpException {
 
 		return doSendAndReceive(exchange, routingKey, message, correlationData);
@@ -2165,16 +2164,18 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public <T> @Nullable T execute(ChannelCallback<T> action) {
+	public <T> @Nullable T execute(ChannelCallback<? extends @Nullable T> action) {
 		return execute(action, getConnectionFactory());
 	}
 
 	@SuppressWarnings(UNCHECKED)
-	private <T> @Nullable T execute(final ChannelCallback<T> action, final ConnectionFactory connectionFactory) {
+	private <T> @Nullable T execute(ChannelCallback<? extends @Nullable T> action,
+			ConnectionFactory connectionFactory) {
+
 		if (this.retryTemplate != null) {
 			try {
 				return this.retryTemplate.execute(
-						(RetryCallback<T, Exception>) context -> doExecute(action, connectionFactory),
+						context -> doExecute(action, connectionFactory),
 						(RecoveryCallback<T>) this.recoveryCallback);
 			}
 			catch (RuntimeException e) { // NOSONAR catch and rethrow needed to avoid next catch
@@ -2189,7 +2190,9 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 	}
 
-	private <T> @Nullable T doExecute(ChannelCallback<T> action, ConnectionFactory connectionFactory) { // NOSONAR complexity
+	private <T> @Nullable T doExecute(ChannelCallback<? extends @Nullable T> action,
+			ConnectionFactory connectionFactory) {
+
 		Assert.notNull(action, "Callback object must not be null");
 		Channel channel = null;
 		boolean invokeScope = false;
@@ -2211,8 +2214,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				}
 			}
 			else {
-				connection = ConnectionFactoryUtils.createConnection(connectionFactory,
-						this.usePublisherConnection); // NOSONAR - RabbitUtils closes
+				connection = ConnectionFactoryUtils.createConnection(connectionFactory, this.usePublisherConnection);
 				try {
 					channel = connection.createChannel(false);
 				}
@@ -2253,8 +2255,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 	}
 
-	private <T> @Nullable T invokeAction(ChannelCallback<T> action, ConnectionFactory connectionFactory, Channel channel)
-			throws Exception { // NOSONAR see the callback
+	private <T> @Nullable T invokeAction(ChannelCallback<? extends @Nullable T> action,
+			ConnectionFactory connectionFactory, Channel channel) throws Exception {
 
 		if (isPublisherConfirmsOrReturns(connectionFactory)) {
 			addListener(channel);
@@ -2268,8 +2270,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public <T> @Nullable T invoke(OperationsCallback<T> action, com.rabbitmq.client.@Nullable ConfirmCallback acks,
-			com.rabbitmq.client.@Nullable ConfirmCallback nacks) {
+	public <T> @Nullable T invoke(OperationsCallback<? extends @Nullable T> action,
+			com.rabbitmq.client.@Nullable ConfirmCallback acks, com.rabbitmq.client.@Nullable ConfirmCallback nacks) {
 
 		final Channel currentChannel = this.dedicatedChannels.get();
 		Assert.state(currentChannel == null, () -> "Nested invoke() calls are not supported; channel '" + currentChannel
