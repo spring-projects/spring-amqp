@@ -115,7 +115,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @throws AmqpException if there is a problem
 	 * @since 2.3
 	 */
-	default void send(String routingKey, Message message, CorrelationData correlationData)
+	default void send(@Nullable String routingKey, Message message, @Nullable CorrelationData correlationData)
 			throws AmqpException {
 
 		throw new UnsupportedOperationException("This implementation does not support this method");
@@ -130,13 +130,13 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @param correlationData data to correlate publisher confirms.
 	 * @throws AmqpException if there is a problem
 	 */
-	void send(String exchange, String routingKey, Message message, @Nullable CorrelationData correlationData)
+	void send(@Nullable String exchange, @Nullable String routingKey, Message message,
+			@Nullable CorrelationData correlationData)
 			throws AmqpException;
 
 	/**
 	 * Convert a Java object to an Amqp {@link Message} and send it to a default exchange
 	 * with a default routing key.
-	 *
 	 * @param message a message to send
 	 * @param correlationData data to correlate publisher confirms.
 	 * @throws AmqpException if there is a problem
@@ -152,19 +152,20 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @param correlationData data to correlate publisher confirms.
 	 * @throws AmqpException if there is a problem
 	 */
-	void convertAndSend(String routingKey, Object message, CorrelationData correlationData) throws AmqpException;
+	void convertAndSend(@Nullable String routingKey, Object message, @Nullable CorrelationData correlationData)
+			throws AmqpException;
 
 	/**
 	 * Convert a Java object to an Amqp {@link Message} and send it to a specific exchange
 	 * with a specific routing key.
-	 *
 	 * @param exchange the name of the exchange
 	 * @param routingKey the routing key
 	 * @param message a message to send
 	 * @param correlationData data to correlate publisher confirms.
 	 * @throws AmqpException if there is a problem
 	 */
-	void convertAndSend(String exchange, String routingKey, Object message, CorrelationData correlationData)
+	void convertAndSend(@Nullable String exchange, @Nullable String routingKey, Object message,
+			@Nullable CorrelationData correlationData)
 			throws AmqpException;
 
 	/**
@@ -176,7 +177,8 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @param correlationData data to correlate publisher confirms.
 	 * @throws AmqpException if there is a problem
 	 */
-	void convertAndSend(Object message, MessagePostProcessor messagePostProcessor, CorrelationData correlationData)
+	void convertAndSend(Object message, MessagePostProcessor messagePostProcessor,
+			@Nullable CorrelationData correlationData)
 			throws AmqpException;
 
 	/**
@@ -189,13 +191,13 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @param correlationData data to correlate publisher confirms.
 	 * @throws AmqpException if there is a problem
 	 */
-	void convertAndSend(String routingKey, Object message, MessagePostProcessor messagePostProcessor,
-			CorrelationData correlationData) throws AmqpException;
+	void convertAndSend(@Nullable String routingKey, Object message, MessagePostProcessor messagePostProcessor,
+			@Nullable CorrelationData correlationData)
+			throws AmqpException;
 
 	/**
 	 * Convert a Java object to an Amqp {@link Message} and send it to a specific exchange
 	 * with a specific routing key.
-	 *
 	 * @param exchange the name of the exchange
 	 * @param routingKey the routing key
 	 * @param message a message to send
@@ -203,22 +205,22 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @param correlationData data to correlate publisher confirms.
 	 * @throws AmqpException if there is a problem
 	 */
-	void convertAndSend(String exchange, String routingKey, Object message, MessagePostProcessor messagePostProcessor,
-			@Nullable CorrelationData correlationData) throws AmqpException;
+	void convertAndSend(@Nullable String exchange, @Nullable String routingKey, Object message,
+			MessagePostProcessor messagePostProcessor, @Nullable CorrelationData correlationData)
+			throws AmqpException;
 
 	/**
 	 * Basic RPC pattern with conversion. Send a Java object converted to a message to a
 	 * default exchange with a default routing key and attempt to receive a response,
 	 * converting that to a Java object. Implementations will normally set the reply-to
 	 * header to an exclusive queue and wait up for some time limited by a timeout.
-	 *
 	 * @param message a message to send.
 	 * @param correlationData data to correlate publisher confirms.
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
 	@Nullable
-	Object convertSendAndReceive(Object message, CorrelationData correlationData) throws AmqpException;
+	Object convertSendAndReceive(Object message, @Nullable CorrelationData correlationData) throws AmqpException;
 
 	/**
 	 * Basic RPC pattern with conversion. Send a Java object converted to a message to a
@@ -233,7 +235,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @throws AmqpException if there is a problem
 	 */
 	@Nullable
-	Object convertSendAndReceive(String routingKey, Object message, CorrelationData correlationData)
+	Object convertSendAndReceive(@Nullable String routingKey, Object message, @Nullable CorrelationData correlationData)
 			throws AmqpException;
 
 	/**
@@ -241,7 +243,6 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * specific exchange with a specific routing key and attempt to receive a response,
 	 * converting that to a Java object. Implementations will normally set the reply-to
 	 * header to an exclusive queue and wait up for some time limited by a timeout.
-	 *
 	 * @param exchange the name of the exchange
 	 * @param routingKey the routing key
 	 * @param message a message to send
@@ -250,15 +251,14 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @throws AmqpException if there is a problem
 	 */
 	@Nullable
-	Object convertSendAndReceive(String exchange, String routingKey, Object message,
-			CorrelationData correlationData) throws AmqpException;
+	Object convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey, Object message,
+			@Nullable CorrelationData correlationData) throws AmqpException;
 
 	/**
 	 * Basic RPC pattern with conversion. Send a Java object converted to a message to a
 	 * default exchange with a default routing key and attempt to receive a response,
 	 * converting that to a Java object. Implementations will normally set the reply-to
 	 * header to an exclusive queue and wait up for some time limited by a timeout.
-	 *
 	 * @param message a message to send
 	 * @param messagePostProcessor a processor to apply to the message before it is sent
 	 * @param correlationData data to correlate publisher confirms.
@@ -274,7 +274,6 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * default exchange with a specific routing key and attempt to receive a response,
 	 * converting that to a Java object. Implementations will normally set the reply-to
 	 * header to an exclusive queue and wait up for some time limited by a timeout.
-	 *
 	 * @param routingKey the routing key
 	 * @param message a message to send
 	 * @param messagePostProcessor a processor to apply to the message before it is sent
@@ -283,15 +282,15 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @throws AmqpException if there is a problem
 	 */
 	@Nullable
-	Object convertSendAndReceive(String routingKey, Object message,
-			MessagePostProcessor messagePostProcessor, @Nullable CorrelationData correlationData) throws AmqpException;
+	Object convertSendAndReceive(@Nullable String routingKey, Object message,
+			MessagePostProcessor messagePostProcessor, @Nullable CorrelationData correlationData)
+			throws AmqpException;
 
 	/**
 	 * Basic RPC pattern with conversion. Send a Java object converted to a message to a
 	 * specific exchange with a specific routing key and attempt to receive a response,
 	 * converting that to a Java object. Implementations will normally set the reply-to
 	 * header to an exclusive queue and wait up for some time limited by a timeout.
-	 *
 	 * @param exchange the name of the exchange
 	 * @param routingKey the routing key
 	 * @param message a message to send
@@ -301,7 +300,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @throws AmqpException if there is a problem
 	 */
 	@Nullable
-	Object convertSendAndReceive(String exchange, String routingKey, Object message,
+	Object convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey, Object message,
 			@Nullable MessagePostProcessor messagePostProcessor, @Nullable CorrelationData correlationData)
 			throws AmqpException;
 
@@ -339,7 +338,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
-	<T> @Nullable T convertSendAndReceiveAsType(String routingKey, Object message,
+	<T> @Nullable T convertSendAndReceiveAsType(@Nullable String routingKey, Object message,
 			@Nullable CorrelationData correlationData, ParameterizedTypeReference<T> responseType) throws AmqpException;
 
 	/**
@@ -359,7 +358,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
-	default <T> @Nullable T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
+	default <T> @Nullable T convertSendAndReceiveAsType(@Nullable String exchange, @Nullable String routingKey, Object message,
 			@Nullable CorrelationData correlationData, ParameterizedTypeReference<T> responseType)
 			throws AmqpException {
 
@@ -402,7 +401,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
-	<T> @Nullable T convertSendAndReceiveAsType(String routingKey, Object message,
+	<T> @Nullable T convertSendAndReceiveAsType(@Nullable String routingKey, Object message,
 			@Nullable MessagePostProcessor messagePostProcessor, @Nullable CorrelationData correlationData,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;
 
@@ -424,7 +423,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
-	<T> @Nullable T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
+	<T> @Nullable T convertSendAndReceiveAsType(@Nullable String exchange, @Nullable String routingKey, Object message,
 			@Nullable MessagePostProcessor messagePostProcessor,
 			@Nullable CorrelationData correlationData,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;

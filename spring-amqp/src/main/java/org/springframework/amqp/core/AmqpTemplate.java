@@ -87,7 +87,7 @@ public interface AmqpTemplate {
 	 * @param message a message to send
 	 * @throws AmqpException if there is a problem
 	 */
-	void convertAndSend(String routingKey, Object message) throws AmqpException;
+	void convertAndSend(@Nullable String routingKey, Object message) throws AmqpException;
 
 	/**
 	 * Convert a Java object to an Amqp {@link Message} and send it to a specific exchange
@@ -98,7 +98,7 @@ public interface AmqpTemplate {
 	 * @param message a message to send
 	 * @throws AmqpException if there is a problem
 	 */
-	void convertAndSend(String exchange, String routingKey, Object message) throws AmqpException;
+	void convertAndSend(@Nullable String exchange, @Nullable String routingKey, Object message) throws AmqpException;
 
 	/**
 	 * Convert a Java object to an Amqp {@link Message} and send it to a default exchange
@@ -119,7 +119,7 @@ public interface AmqpTemplate {
 	 * @param messagePostProcessor a processor to apply to the message before it is sent
 	 * @throws AmqpException if there is a problem
 	 */
-	void convertAndSend(String routingKey, Object message, MessagePostProcessor messagePostProcessor)
+	void convertAndSend(@Nullable String routingKey, Object message, MessagePostProcessor messagePostProcessor)
 			throws AmqpException;
 
 	/**
@@ -132,8 +132,8 @@ public interface AmqpTemplate {
 	 * @param messagePostProcessor a processor to apply to the message before it is sent
 	 * @throws AmqpException if there is a problem
 	 */
-	void convertAndSend(String exchange, String routingKey, Object message, MessagePostProcessor messagePostProcessor)
-			throws AmqpException;
+	void convertAndSend(@Nullable String exchange, @Nullable String routingKey, Object message,
+			MessagePostProcessor messagePostProcessor) throws AmqpException;
 
 	// receive methods for messages
 

@@ -1115,12 +1115,16 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public void send(@Nullable String routingKey, Message message, CorrelationData correlationData) throws AmqpException {
+	public void send(@Nullable String routingKey, Message message, @Nullable CorrelationData correlationData)
+			throws AmqpException {
+
 		send(this.exchange, routingKey, message, correlationData);
 	}
 
 	@Override
-	public void send(@Nullable String exchange, @Nullable String routingKey, final Message message) throws AmqpException {
+	public void send(@Nullable String exchange, @Nullable String routingKey, final Message message)
+			throws AmqpException {
+
 		send(exchange, routingKey, message, null);
 	}
 
@@ -1175,24 +1179,25 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public void convertAndSend(String routingKey, final Object object) throws AmqpException {
+	public void convertAndSend(@Nullable String routingKey, final Object object) throws AmqpException {
 		convertAndSend(this.exchange, routingKey, object, (CorrelationData) null);
 	}
 
 	@Override
-	public void convertAndSend(String routingKey, final Object object, CorrelationData correlationData)
+	public void convertAndSend(@Nullable String routingKey, final Object object,
+			@Nullable CorrelationData correlationData)
 			throws AmqpException {
 
 		convertAndSend(this.exchange, routingKey, object, correlationData);
 	}
 
 	@Override
-	public void convertAndSend(String exchange, String routingKey, final Object object) throws AmqpException {
+	public void convertAndSend(@Nullable String exchange, @Nullable String routingKey, final Object object) throws AmqpException {
 		convertAndSend(exchange, routingKey, object, (CorrelationData) null);
 	}
 
 	@Override
-	public void convertAndSend(String exchange, String routingKey, final Object object,
+	public void convertAndSend(@Nullable String exchange, @Nullable String routingKey, final Object object,
 			@Nullable CorrelationData correlationData) throws AmqpException {
 
 		send(exchange, routingKey, convertMessageIfNecessary(object), correlationData);
@@ -1204,7 +1209,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public void convertAndSend(String routingKey, Object message, MessagePostProcessor messagePostProcessor)
+	public void convertAndSend(@Nullable String routingKey, Object message, MessagePostProcessor messagePostProcessor)
 			throws AmqpException {
 
 		convertAndSend(this.exchange, routingKey, message, messagePostProcessor, null);
@@ -1212,29 +1217,29 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	@Override
 	public void convertAndSend(Object message, MessagePostProcessor messagePostProcessor,
-			CorrelationData correlationData)
+			@Nullable CorrelationData correlationData)
 			throws AmqpException {
 
 		convertAndSend(this.exchange, this.routingKey, message, messagePostProcessor, correlationData);
 	}
 
 	@Override
-	public void convertAndSend(String routingKey, Object message, MessagePostProcessor messagePostProcessor,
-			CorrelationData correlationData)
+	public void convertAndSend(@Nullable String routingKey, Object message, MessagePostProcessor messagePostProcessor,
+			@Nullable CorrelationData correlationData)
 			throws AmqpException {
 
 		convertAndSend(this.exchange, routingKey, message, messagePostProcessor, correlationData);
 	}
 
 	@Override
-	public void convertAndSend(String exchange, String routingKey, final Object message,
+	public void convertAndSend(@Nullable String exchange, @Nullable String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor) throws AmqpException {
 
 		convertAndSend(exchange, routingKey, message, messagePostProcessor, null);
 	}
 
 	@Override
-	public void convertAndSend(String exchange, String routingKey, final Object message,
+	public void convertAndSend(@Nullable String exchange, @Nullable String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor,
 			@Nullable CorrelationData correlationData) throws AmqpException {
 
@@ -1665,26 +1670,26 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public @Nullable Object convertSendAndReceive(final String routingKey, final Object message) throws AmqpException {
+	public @Nullable Object convertSendAndReceive(@Nullable String routingKey, final Object message) throws AmqpException {
 		return convertSendAndReceive(routingKey, message, (CorrelationData) null);
 	}
 
 	@Override
-	public @Nullable Object convertSendAndReceive(final String routingKey, final Object message,
+	public @Nullable Object convertSendAndReceive(@Nullable String routingKey, final Object message,
 			@Nullable CorrelationData correlationData) throws AmqpException {
 
 		return convertSendAndReceive(this.exchange, routingKey, message, null, correlationData);
 	}
 
 	@Override
-	public @Nullable Object convertSendAndReceive(final String exchange, final String routingKey, final Object message)
+	public @Nullable Object convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey, Object message)
 			throws AmqpException {
 
 		return convertSendAndReceive(exchange, routingKey, message, (CorrelationData) null);
 	}
 
 	@Override
-	public @Nullable Object convertSendAndReceive(final String exchange, final String routingKey, final Object message,
+	public @Nullable Object convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey, Object message,
 			@Nullable CorrelationData correlationData) throws AmqpException {
 
 		return convertSendAndReceive(exchange, routingKey, message, null, correlationData);
@@ -1705,14 +1710,14 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public @Nullable Object convertSendAndReceive(final String routingKey, final Object message,
+	public @Nullable Object convertSendAndReceive(@Nullable String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor) throws AmqpException {
 
 		return convertSendAndReceive(routingKey, message, messagePostProcessor, null);
 	}
 
 	@Override
-	public @Nullable Object convertSendAndReceive(final String routingKey, final Object message,
+	public @Nullable Object convertSendAndReceive(@Nullable String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor, @Nullable CorrelationData correlationData)
 			throws AmqpException {
 
@@ -1720,14 +1725,14 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public @Nullable Object convertSendAndReceive(final String exchange, final String routingKey, final Object message,
+	public @Nullable Object convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey, Object message,
 			final MessagePostProcessor messagePostProcessor) throws AmqpException {
 
 		return convertSendAndReceive(exchange, routingKey, message, messagePostProcessor, null);
 	}
 
 	@Override
-	public @Nullable Object convertSendAndReceive(String exchange, String routingKey, Object message,
+	public @Nullable Object convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey, Object message,
 			@Nullable MessagePostProcessor messagePostProcessor,
 			@Nullable CorrelationData correlationData) throws AmqpException {
 
@@ -1755,14 +1760,14 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public <T> @Nullable T convertSendAndReceiveAsType(final String routingKey, final Object message,
+	public <T> @Nullable T convertSendAndReceiveAsType(@Nullable String routingKey, final Object message,
 			ParameterizedTypeReference<T> responseType) throws AmqpException {
 
 		return convertSendAndReceiveAsType(routingKey, message, (CorrelationData) null, responseType);
 	}
 
 	@Override
-	public <T> @Nullable T convertSendAndReceiveAsType(final String routingKey, final Object message,
+	public <T> @Nullable T convertSendAndReceiveAsType(@Nullable String routingKey, final Object message,
 			@Nullable CorrelationData correlationData, ParameterizedTypeReference<T> responseType)
 			throws AmqpException {
 
@@ -1770,7 +1775,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public <T> @Nullable T convertSendAndReceiveAsType(final String exchange, final String routingKey, Object message,
+	public <T> @Nullable T convertSendAndReceiveAsType(@Nullable String exchange, @Nullable String routingKey, Object message,
 			ParameterizedTypeReference<T> responseType) throws AmqpException {
 
 		return convertSendAndReceiveAsType(exchange, routingKey, message, (CorrelationData) null, responseType);
@@ -1795,7 +1800,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public <T> @Nullable T convertSendAndReceiveAsType(final String routingKey, final Object message,
+	public <T> @Nullable T convertSendAndReceiveAsType(@Nullable String routingKey, final Object message,
 			@Nullable final MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<T> responseType)
 			throws AmqpException {
 
@@ -1803,7 +1808,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public <T> @Nullable T convertSendAndReceiveAsType(final String routingKey, final Object message,
+	public <T> @Nullable T convertSendAndReceiveAsType(@Nullable String routingKey, final Object message,
 			@Nullable MessagePostProcessor messagePostProcessor, @Nullable CorrelationData correlationData,
 			ParameterizedTypeReference<T> responseType) throws AmqpException {
 
