@@ -46,7 +46,7 @@ public class AmqpRejectAndDontRequeueException extends AmqpException {
 	 * Construct an instance with the supplied argument.
 	 * @param cause the cause.
 	 */
-	public AmqpRejectAndDontRequeueException(Throwable cause) {
+	public AmqpRejectAndDontRequeueException(@Nullable Throwable cause) {
 		this(null, false, cause);
 	}
 
@@ -55,7 +55,7 @@ public class AmqpRejectAndDontRequeueException extends AmqpException {
 	 * @param message A message describing the problem.
 	 * @param cause the cause.
 	 */
-	public AmqpRejectAndDontRequeueException(String message, Throwable cause) {
+	public AmqpRejectAndDontRequeueException(String message, @Nullable Throwable cause) {
 		this(message, false, cause);
 	}
 

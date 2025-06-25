@@ -17,6 +17,7 @@
 package org.springframework.rabbit.stream.retry;
 
 import com.rabbitmq.stream.MessageHandler.Context;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
@@ -33,7 +34,7 @@ import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 public interface StreamMessageRecoverer extends MessageRecoverer {
 
 	@Override
-	default void recover(Message message, Throwable cause) {
+	default void recover(Message message, @Nullable Throwable cause) {
 	}
 
 	/**

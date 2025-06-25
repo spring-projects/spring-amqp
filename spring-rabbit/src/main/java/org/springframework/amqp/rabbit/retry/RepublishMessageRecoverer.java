@@ -189,18 +189,20 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 	}
 
 	@Override
-	public void recover(Message message, Throwable cause) {
+	public void recover(Message message, @Nullable Throwable cause) {
 		MessageProperties messageProperties = message.getMessageProperties();
 		Map<String, @Nullable Object> headers = messageProperties.getHeaders();
-		String exceptionMessage = cause.getCause() != null ? cause.getCause().getMessage() : cause.getMessage();
-		@Nullable String[] processed = processStackTrace(cause, exceptionMessage);
-		String stackTraceAsString = processed[0];
-		String truncatedExceptionMessage = processed[1];
-		if (truncatedExceptionMessage != null) {
-			exceptionMessage = truncatedExceptionMessage;
+		if (cause != null) {
+			String exceptionMessage = cause.getCause() != null ? cause.getCause().getMessage() : cause.getMessage();
+			@Nullable String[] processed = processStackTrace(cause, exceptionMessage);
+			String stackTraceAsString = processed[0];
+			String truncatedExceptionMessage = processed[1];
+			if (truncatedExceptionMessage != null) {
+				exceptionMessage = truncatedExceptionMessage;
+			}
+			headers.put(X_EXCEPTION_STACKTRACE, stackTraceAsString);
+			headers.put(X_EXCEPTION_MESSAGE, exceptionMessage);
 		}
-		headers.put(X_EXCEPTION_STACKTRACE, stackTraceAsString);
-		headers.put(X_EXCEPTION_MESSAGE, exceptionMessage);
 		headers.put(X_ORIGINAL_EXCHANGE, messageProperties.getReceivedExchange());
 		headers.put(X_ORIGINAL_ROUTING_KEY, messageProperties.getReceivedRoutingKey());
 		Map<? extends String, ?> additionalHeaders = additionalHeaders(message, cause);
@@ -304,7 +306,7 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 	 * @param cause The cause.
 	 * @return A {@link Map} of additional headers to add.
 	 */
-	protected @Nullable Map<? extends String, ?> additionalHeaders(Message message, Throwable cause) {
+	protected @Nullable Map<? extends String, ?> additionalHeaders(Message message, @Nullable Throwable cause) {
 		return null;
 	}
 

@@ -20,6 +20,7 @@ import java.util.function.Supplier;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
@@ -69,7 +70,7 @@ public class RejectAndDontRequeueRecoverer implements MessageRecoverer {
 	}
 
 	@Override
-	public void recover(Message message, Throwable cause) {
+	public void recover(Message message, @Nullable Throwable cause) {
 		if (this.logger.isWarnEnabled()) {
 			this.logger.warn("Retries exhausted for message " + message, cause);
 		}

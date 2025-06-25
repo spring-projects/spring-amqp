@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.retry;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.ImmediateRequeueAmqpException;
 import org.springframework.amqp.core.Message;
@@ -36,11 +37,16 @@ public class ImmediateRequeueMessageRecoverer implements MessageRecoverer {
 	protected Log logger = LogFactory.getLog(ImmediateRequeueMessageRecoverer.class); // NOSONAR protected
 
 	@Override
-	public void recover(Message message, Throwable cause) {
+	public void recover(Message message, @Nullable Throwable cause) {
 		if (this.logger.isWarnEnabled()) {
 			this.logger.warn("Retries exhausted for message " + message + "; requeuing...", cause);
 		}
-		throw new ImmediateRequeueAmqpException(cause);
+		if (cause != null) {
+			throw new ImmediateRequeueAmqpException(cause);
+		}
+		else {
+			throw new ImmediateRequeueAmqpException("Re-queueing for message: " + message);
+		}
 	}
 
 }

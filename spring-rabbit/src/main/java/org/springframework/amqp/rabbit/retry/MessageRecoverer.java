@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.rabbit.retry;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.core.Message;
 
 /**
@@ -24,6 +26,7 @@ import org.springframework.amqp.core.Message;
  *
  * @author Dave Syer
  * @author Gary Russell
+ * @author Artem Bilan
  *
  */
 @FunctionalInterface
@@ -35,6 +38,6 @@ public interface MessageRecoverer {
 	 * @param message the message to recover
 	 * @param cause the cause of the error
 	 */
-	void recover(Message message, Throwable cause);
+	void recover(Message message, @Nullable Throwable cause);
 
 }
