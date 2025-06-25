@@ -376,12 +376,12 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	}
 
 	@Override
-	public RabbitMessageFuture sendAndReceive(String routingKey, Message message) {
+	public RabbitMessageFuture sendAndReceive(@Nullable String routingKey, Message message) {
 		return sendAndReceive(this.template.getExchange(), routingKey, message);
 	}
 
 	@Override
-	public RabbitMessageFuture sendAndReceive(String exchange, String routingKey, Message message) {
+	public RabbitMessageFuture sendAndReceive(@Nullable String exchange, @Nullable String routingKey, Message message) {
 		String correlationId = getOrSetCorrelationIdAndSetReplyTo(message, null);
 		RabbitMessageFuture future = new RabbitMessageFuture(correlationId, message, this::canceler,
 				this::timeoutTask);
@@ -410,32 +410,35 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	}
 
 	@Override
-	public <C> RabbitConverterFuture<C> convertSendAndReceive(String routingKey, Object object) {
+	public <C> RabbitConverterFuture<C> convertSendAndReceive(@Nullable String routingKey, Object object) {
 		return convertSendAndReceive(this.template.getExchange(), routingKey, object, null);
 	}
 
 	@Override
-	public <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object) {
+	public <C> RabbitConverterFuture<C> convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey,
+			Object object) {
+
 		return convertSendAndReceive(exchange, routingKey, object, null);
 	}
 
 	@Override
 	public <C> RabbitConverterFuture<C> convertSendAndReceive(Object object,
 			MessagePostProcessor messagePostProcessor) {
+
 		return convertSendAndReceive(this.template.getExchange(), this.template.getRoutingKey(), object,
 				messagePostProcessor);
 	}
 
 	@Override
-	public <C> RabbitConverterFuture<C> convertSendAndReceive(String routingKey, Object object,
+	public <C> RabbitConverterFuture<C> convertSendAndReceive(@Nullable String routingKey, Object object,
 			MessagePostProcessor messagePostProcessor) {
 
 		return convertSendAndReceive(this.template.getExchange(), routingKey, object, messagePostProcessor);
 	}
 
 	@Override
-	public <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object,
-			@Nullable MessagePostProcessor messagePostProcessor) {
+	public <C> RabbitConverterFuture<C> convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey,
+			Object object, @Nullable MessagePostProcessor messagePostProcessor) {
 
 		return convertSendAndReceive(exchange, routingKey, object, messagePostProcessor, null);
 	}
@@ -449,15 +452,15 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	}
 
 	@Override
-	public <C> RabbitConverterFuture<C> convertSendAndReceiveAsType(String routingKey, Object object,
+	public <C> RabbitConverterFuture<C> convertSendAndReceiveAsType(@Nullable String routingKey, Object object,
 			ParameterizedTypeReference<C> responseType) {
 
 		return convertSendAndReceiveAsType(this.template.getExchange(), routingKey, object, null, responseType);
 	}
 
 	@Override
-	public <C> RabbitConverterFuture<C> convertSendAndReceiveAsType(String exchange, String routingKey, Object object,
-			ParameterizedTypeReference<C> responseType) {
+	public <C> RabbitConverterFuture<C> convertSendAndReceiveAsType(@Nullable String exchange,
+			@Nullable String routingKey, Object object, ParameterizedTypeReference<C> responseType) {
 
 		return convertSendAndReceiveAsType(exchange, routingKey, object, null, responseType);
 	}
@@ -471,7 +474,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	}
 
 	@Override
-	public <C> RabbitConverterFuture<C> convertSendAndReceiveAsType(String routingKey, Object object,
+	public <C> RabbitConverterFuture<C> convertSendAndReceiveAsType(@Nullable String routingKey, Object object,
 			@Nullable MessagePostProcessor messagePostProcessor, @Nullable ParameterizedTypeReference<C> responseType) {
 
 		return convertSendAndReceiveAsType(this.template.getExchange(), routingKey, object, messagePostProcessor,
@@ -479,16 +482,18 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	}
 
 	@Override
-	public <C> RabbitConverterFuture<C> convertSendAndReceiveAsType(String exchange, String routingKey, Object object,
-			@Nullable MessagePostProcessor messagePostProcessor, @Nullable ParameterizedTypeReference<C> responseType) {
+	public <C> RabbitConverterFuture<C> convertSendAndReceiveAsType(@Nullable String exchange,
+			@Nullable String routingKey, Object object, @Nullable MessagePostProcessor messagePostProcessor,
+			@Nullable ParameterizedTypeReference<C> responseType) {
 
 		Assert.state(this.template.getMessageConverter() instanceof SmartMessageConverter,
 				"template's message converter must be a SmartMessageConverter");
 		return convertSendAndReceive(exchange, routingKey, object, messagePostProcessor, responseType);
 	}
 
-	private <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object,
-			@Nullable MessagePostProcessor messagePostProcessor, @Nullable ParameterizedTypeReference<C> responseType) {
+	private <C> RabbitConverterFuture<C> convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey,
+			Object object, @Nullable MessagePostProcessor messagePostProcessor,
+			@Nullable ParameterizedTypeReference<C> responseType) {
 
 		AsyncCorrelationData<C> correlationData = new AsyncCorrelationData<>(messagePostProcessor, responseType,
 				this.enableConfirms);
@@ -510,7 +515,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 		return future;
 	}
 
-	private void sendDirect(Channel channel, String exchange, String routingKey, Message message,
+	private void sendDirect(Channel channel, @Nullable String exchange, @Nullable String routingKey, Message message,
 			@Nullable CorrelationData correlationData) {
 
 		message.getMessageProperties().setReplyTo(Address.AMQ_RABBITMQ_REPLY_TO);
