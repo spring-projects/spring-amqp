@@ -95,8 +95,9 @@ Here are some ways for you to get involved in the community:
 * Github is for social coding: if you want to write code, we encourage contributions through pull requests from [forks of this repository](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo).
 If you want to contribute code this way, please reference the specific Github issue you are addressing.
 
-Before we accept a non-trivial patch or pull request we will need you to sign the [contributor's agreement](https://cla.pivotal.io/sign/spring).
-Signing the contributor's agreement does not grant anyone commit rights to the main repository, but it does mean that we can accept your contributions, and you will get an author credit if we do.
+All commits must include a _Signed-off-by_ trailer at the end of each commit message to indicate that the contributor agrees to the Developer Certificate of Origin.
+For additional details, please refer to the blog post [Hello DCO, Goodbye CLA: Simplifying Contributions to Spring](https://spring.io/blog/2025/01/06/hello-dco-goodbye-cla-simplifying-contributions-to-spring).
+The DCO does not grant anyone commit rights to the main repository, but it does mean that we can accept your contributions, and you will get an author credit if we do.
 Active contributors might be asked to join the core team, and given the ability to merge pull requests.
 
 ## Code Conventions and Housekeeping
