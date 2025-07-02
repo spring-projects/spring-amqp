@@ -33,7 +33,10 @@ import org.springframework.messaging.core.MessageSendingOperations;
  * routing key to use.
  *
  * @author Stephane Nicoll
+ * @author Artem Bilan
+ *
  * @since 1.4
+ *
  * @see org.springframework.amqp.rabbit.core.RabbitTemplate
  */
 public interface RabbitMessageOperations extends MessageSendingOperations<String>,
@@ -46,7 +49,7 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * @param message the message to send
 	 * @throws MessagingException a messaging exception.
 	 */
-	void send(String exchange, String routingKey, Message<?> message) throws MessagingException;
+	void send(@Nullable String exchange, @Nullable String routingKey, Message<?> message) throws MessagingException;
 
 	/**
 	 * Convert the given Object to serialized form, possibly using a
@@ -58,7 +61,11 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * @param payload the Object to use as payload
 	 * @throws MessagingException a messaging exception.
 	 */
-	void convertAndSend(String exchange, String routingKey, Object payload) throws MessagingException;
+	default void convertAndSend(@Nullable String exchange, @Nullable String routingKey, Object payload)
+			throws MessagingException {
+
+		convertAndSend(exchange, routingKey, payload, null, null);
+	}
 
 	/**
 	 * Convert the given Object to serialized form, possibly using a
@@ -71,8 +78,11 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * @param headers headers for the message to send
 	 * @throws MessagingException a messaging exception.
 	 */
-	void convertAndSend(String exchange, String routingKey, Object payload, Map<String, Object> headers)
-			throws MessagingException;
+	default void convertAndSend(@Nullable String exchange, @Nullable String routingKey, Object payload,
+			@Nullable Map<String, Object> headers) throws MessagingException {
+
+		convertAndSend(exchange, routingKey, payload, headers, null);
+	}
 
 	/**
 	 * Convert the given Object to serialized form, possibly using a
@@ -86,8 +96,11 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * @param postProcessor the post processor to apply to the message
 	 * @throws MessagingException a messaging exception.
 	 */
-	void convertAndSend(String exchange, String routingKey, Object payload, MessagePostProcessor postProcessor)
-			throws MessagingException;
+	default void convertAndSend(@Nullable String exchange, @Nullable String routingKey, Object payload,
+			@Nullable MessagePostProcessor postProcessor) throws MessagingException {
+
+		convertAndSend(exchange, routingKey, payload, null, postProcessor);
+	}
 
 	/**
 	 * Convert the given Object to serialized form, possibly using a
@@ -102,8 +115,9 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * @param postProcessor the post processor to apply to the message
 	 * @throws MessagingException a messaging exception.
 	 */
-	void convertAndSend(String exchange, String routingKey, Object payload,
-			@Nullable Map<String, Object> headers, @Nullable MessagePostProcessor postProcessor) throws MessagingException;
+	void convertAndSend(@Nullable String exchange, @Nullable String routingKey, Object payload,
+			@Nullable Map<String, Object> headers, @Nullable MessagePostProcessor postProcessor)
+			throws MessagingException;
 
 	/**
 	 * Send a request message to a specific exchange with a specific routing key and
@@ -116,7 +130,8 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * @throws MessagingException a messaging exception.
 	 */
 	@Nullable
-	Message<?> sendAndReceive(String exchange, String routingKey, Message<?> requestMessage) throws MessagingException;
+	Message<?> sendAndReceive(@Nullable String exchange, @Nullable String routingKey, Message<?> requestMessage)
+			throws MessagingException;
 
 	/**
 	 * Convert the given request Object to serialized form, possibly using a
@@ -132,8 +147,11 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * could not be received, for example due to a timeout
 	 * @throws MessagingException a messaging exception.
 	 */
-	<T> @Nullable T convertSendAndReceive(String exchange, String routingKey, Object request, Class<T> targetClass)
-			throws MessagingException;
+	default <T> @Nullable T convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey,
+			Object request, Class<T> targetClass) throws MessagingException {
+
+		return convertSendAndReceive(exchange, routingKey, request, null, targetClass);
+	}
 
 	/**
 	 * Convert the given request Object to serialized form, possibly using a
@@ -151,8 +169,11 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * could not be received, for example due to a timeout
 	 * @throws MessagingException a messaging exception.
 	 */
-	<T> @Nullable T convertSendAndReceive(String exchange, String routingKey, Object request,
-			@Nullable Map<String, Object> headers, Class<T> targetClass) throws MessagingException;
+	default <T> @Nullable T convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey,
+			Object request, @Nullable Map<String, Object> headers, Class<T> targetClass) throws MessagingException {
+
+		return convertSendAndReceive(exchange, routingKey, request, headers, targetClass, null);
+	}
 
 	/**
 	 * Convert the given request Object to serialized form, possibly using a
@@ -170,8 +191,12 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * could not be received, for example due to a timeout
 	 * @throws MessagingException a messaging exception.
 	 */
-	<T> @Nullable T convertSendAndReceive(String exchange, String routingKey, Object request, Class<T> targetClass,
-			@Nullable MessagePostProcessor requestPostProcessor) throws MessagingException;
+	default <T> @Nullable T convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey,
+			Object request, Class<T> targetClass, @Nullable MessagePostProcessor requestPostProcessor)
+			throws MessagingException {
+
+		return convertSendAndReceive(exchange, routingKey, request, null, targetClass, requestPostProcessor);
+	}
 
 	/**
 	 * Convert the given request Object to serialized form, possibly using a
@@ -191,7 +216,7 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * could not be received, for example due to a timeout
 	 * @throws MessagingException a messaging exception.
 	 */
-	<T> @Nullable T convertSendAndReceive(String exchange, String routingKey, Object request,
+	<T> @Nullable T convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey, Object request,
 			@Nullable Map<String, Object> headers, Class<T> targetClass,
 			@Nullable MessagePostProcessor requestPostProcessor) throws MessagingException;
 

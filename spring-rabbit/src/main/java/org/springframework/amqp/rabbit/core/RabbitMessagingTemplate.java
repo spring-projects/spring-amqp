@@ -38,6 +38,8 @@ import org.springframework.util.Assert;
  *
  * @author Stephane Nicoll
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.4
  */
 public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
@@ -140,27 +142,6 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	}
 
 	@Override
-	public void convertAndSend(@Nullable String exchange, @Nullable String routingKey, Object payload)
-			throws MessagingException {
-
-		convertAndSend(exchange, routingKey, payload, (Map<String, Object>) null);
-	}
-
-	@Override
-	public void convertAndSend(@Nullable String exchange, @Nullable String routingKey, Object payload,
-			@Nullable Map<String, Object> headers) throws MessagingException {
-
-		convertAndSend(exchange, routingKey, payload, headers, null);
-	}
-
-	@Override
-	public void convertAndSend(@Nullable String exchange, @Nullable String routingKey, Object payload,
-			@Nullable MessagePostProcessor postProcessor) throws MessagingException {
-
-		convertAndSend(exchange, routingKey, payload, null, postProcessor);
-	}
-
-	@Override
 	public void convertAndSend(@Nullable String exchange, @Nullable String routingKey, Object payload,
 			@Nullable Map<String, Object> headers, @Nullable MessagePostProcessor postProcessor)
 			throws MessagingException {
@@ -174,27 +155,6 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 			Message<?> requestMessage) throws MessagingException {
 
 		return doSendAndReceive(exchange, routingKey, requestMessage);
-	}
-
-	@Override
-	public <T> @Nullable T convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey, Object request,
-			Class<T> targetClass) throws MessagingException {
-
-		return convertSendAndReceive(exchange, routingKey, request, null, targetClass);
-	}
-
-	@Override
-	public <T> @Nullable T convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey, Object request,
-			@Nullable Map<String, Object> headers, Class<T> targetClass) throws MessagingException {
-
-		return convertSendAndReceive(exchange, routingKey, request, headers, targetClass, null);
-	}
-
-	@Override
-	public <T> @Nullable T convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey, Object request,
-			Class<T> targetClass, @Nullable MessagePostProcessor requestPostProcessor) throws MessagingException {
-
-		return convertSendAndReceive(exchange, routingKey, request, null, targetClass, requestPostProcessor);
 	}
 
 	@SuppressWarnings("unchecked")
