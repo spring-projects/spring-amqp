@@ -222,9 +222,9 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 	}
 
 	/**
-	 * Set an observation convention; used to add additional key/values to observations.
+	 * Set a custom {@link RabbitStreamTemplateObservationConvention}.
 	 * @param observationConvention the convention.
-	 * @since 4.0
+	 * @since 3.2.6
 	 */
 	public void setObservationConvention(RabbitStreamTemplateObservationConvention observationConvention) {
 		this.observationConvention = observationConvention;
