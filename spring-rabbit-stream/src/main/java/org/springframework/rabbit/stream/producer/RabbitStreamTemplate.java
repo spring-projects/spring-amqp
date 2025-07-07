@@ -221,6 +221,14 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 		this.observationEnabled = observationEnabled;
 	}
 
+	/**
+	 * Set a custom {@link RabbitStreamTemplateObservationConvention}.
+	 * @param observationConvention the convention.
+	 * @since 3.2.6
+	 */
+	public void setObservationConvention(RabbitStreamTemplateObservationConvention observationConvention) {
+		this.observationConvention = observationConvention;
+	}
 
 	@Override
 	public MessageConverter messageConverter() {
