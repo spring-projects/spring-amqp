@@ -75,7 +75,7 @@ See `setReplyErrorHandler` on the `RabbitTemplate`.
 == Message Conversion
 
 We introduced a new `Jackson2XmlMessageConverter` to support converting messages from and to XML format.
-See xref:amqp/message-converters.adoc#jackson2xml[`Jackson2XmlMessageConverter`] for more information.
+See xref:amqp/message-converters.adoc#jackson-xml[`Jackson2XmlMessageConverter`] for more information.
 
 [[management-rest-api]]
 == Management REST API

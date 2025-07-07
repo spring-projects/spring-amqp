@@ -89,10 +89,10 @@ import org.springframework.amqp.rabbit.test.MessageTestUtils;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.DefaultClassMapper;
-import org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper;
-import org.springframework.amqp.support.converter.Jackson2JavaTypeMapper.TypePrecedence;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
-import org.springframework.amqp.support.converter.Jackson2XmlMessageConverter;
+import org.springframework.amqp.support.converter.DefaultJacksonJavaTypeMapper;
+import org.springframework.amqp.support.converter.JacksonJavaTypeMapper;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
+import org.springframework.amqp.support.converter.JacksonXmlMessageConverter;
 import org.springframework.amqp.support.converter.RemoteInvocationAwareMessageConverterAdapter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.test.TestUtils;
@@ -621,13 +621,13 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
 		Foo1 foo1 = new Foo1();
 		foo1.setBar("bar");
-		Jackson2JsonMessageConverter converter = ctx.getBean(Jackson2JsonMessageConverter.class);
-		converter.setTypePrecedence(TypePrecedence.TYPE_ID);
+		JacksonJsonMessageConverter converter = ctx.getBean(JacksonJsonMessageConverter.class);
+		converter.setTypePrecedence(JacksonJavaTypeMapper.TypePrecedence.TYPE_ID);
 		Object returned = template.convertSendAndReceive("test.converted", foo1);
 		assertThat(returned).isInstanceOf(Foo2.class);
 		assertThat(((Foo2) returned).getBar()).isEqualTo("bar");
 		assertThat(TestUtils.getPropertyValue(ctx.getBean("foo1To2Converter"), "converted", Boolean.class)).isTrue();
-		converter.setTypePrecedence(TypePrecedence.INFERRED);
+		converter.setTypePrecedence(JacksonJavaTypeMapper.TypePrecedence.INFERRED);
 
 		// No type info in message
 		template.setMessageConverter(new SimpleMessageConverter());
@@ -720,10 +720,10 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		assertThat(returned).isInstanceOf(byte[].class);
 		assertThat(new String((byte[]) returned)).isEqualTo("\"SomeUsernameSomeName\"");
 
-		Jackson2JsonMessageConverter jsonConverter = ctx.getBean(Jackson2JsonMessageConverter.class);
+		JacksonJsonMessageConverter jsonConverter = ctx.getBean(JacksonJsonMessageConverter.class);
 
-		DefaultJackson2JavaTypeMapper mapper = TestUtils.getPropertyValue(jsonConverter, "javaTypeMapper",
-				DefaultJackson2JavaTypeMapper.class);
+		DefaultJacksonJavaTypeMapper mapper = TestUtils.getPropertyValue(jsonConverter, "javaTypeMapper",
+				DefaultJacksonJavaTypeMapper.class);
 		Mockito.verify(mapper).setBeanClassLoader(ctx.getClassLoader());
 
 		ctx.close();
@@ -736,13 +736,13 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
 		Foo1 foo1 = new Foo1();
 		foo1.setBar("bar");
-		Jackson2XmlMessageConverter converter = ctx.getBean(Jackson2XmlMessageConverter.class);
-		converter.setTypePrecedence(TypePrecedence.TYPE_ID);
+		JacksonXmlMessageConverter converter = ctx.getBean(JacksonXmlMessageConverter.class);
+		converter.setTypePrecedence(JacksonJavaTypeMapper.TypePrecedence.TYPE_ID);
 		Object returned = template.convertSendAndReceive("test.converted", foo1);
 		assertThat(returned).isInstanceOf(Foo2.class);
 		assertThat(((Foo2) returned).getBar()).isEqualTo("bar");
 		assertThat(TestUtils.getPropertyValue(ctx.getBean("foo1To2Converter"), "converted", Boolean.class)).isTrue();
-		converter.setTypePrecedence(TypePrecedence.INFERRED);
+		converter.setTypePrecedence(JacksonJavaTypeMapper.TypePrecedence.INFERRED);
 
 		// No type info in message
 		template.setMessageConverter(new SimpleMessageConverter());
@@ -811,10 +811,10 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		assertThat(returned).isInstanceOf(byte[].class);
 		assertThat(new String((byte[]) returned)).isEqualTo("<String>GenericMessageLinkedHashMap</String>");
 
-		Jackson2XmlMessageConverter xmlConverter = ctx.getBean(Jackson2XmlMessageConverter.class);
+		JacksonXmlMessageConverter xmlConverter = ctx.getBean(JacksonXmlMessageConverter.class);
 
-		DefaultJackson2JavaTypeMapper mapper = TestUtils.getPropertyValue(xmlConverter, "javaTypeMapper",
-				DefaultJackson2JavaTypeMapper.class);
+		DefaultJacksonJavaTypeMapper mapper = TestUtils.getPropertyValue(xmlConverter, "javaTypeMapper",
+				DefaultJacksonJavaTypeMapper.class);
 		Mockito.verify(mapper).setBeanClassLoader(ctx.getClassLoader());
 
 		ctx.close();
@@ -1726,7 +1726,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 			factory.setConnectionFactory(rabbitConnectionFactory());
 			factory.setErrorHandler(errorHandler());
 			factory.setConsumerTagStrategy(consumerTagStrategy());
-			Jackson2JsonMessageConverter messageConverter = new Jackson2JsonMessageConverter();
+			JacksonJsonMessageConverter messageConverter = new JacksonJsonMessageConverter();
 			DefaultClassMapper classMapper = new DefaultClassMapper();
 			Map<String, Class<?>> idClassMapping = new HashMap<>();
 			idClassMapping.put(
@@ -1745,7 +1745,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 			factory.setConnectionFactory(rabbitConnectionFactory());
 			factory.setErrorHandler(errorHandler());
 			factory.setConsumerTagStrategy(consumerTagStrategy());
-			Jackson2JsonMessageConverter messageConverter = new Jackson2JsonMessageConverter();
+			JacksonJsonMessageConverter messageConverter = new JacksonJsonMessageConverter();
 			factory.setMessageConverter(messageConverter);
 			factory.setReceiveTimeout(10L);
 			factory.setConcurrentConsumers(2);
@@ -1763,7 +1763,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 			factory.setConnectionFactory(rabbitConnectionFactory());
 			factory.setErrorHandler(errorHandler());
 			factory.setConsumerTagStrategy(consumerTagStrategy());
-			Jackson2JsonMessageConverter messageConverter = new Jackson2JsonMessageConverter();
+			JacksonJsonMessageConverter messageConverter = new JacksonJsonMessageConverter();
 			messageConverter.getJavaTypeMapper().addTrustedPackages("*");
 			factory.setMessageConverter(messageConverter);
 			factory.setReceiveTimeout(10L);
@@ -1979,7 +1979,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		@Bean
 		public RabbitTemplate jsonRabbitTemplate() {
 			RabbitTemplate rabbitTemplate = new RabbitTemplate(rabbitConnectionFactory());
-			rabbitTemplate.setMessageConverter(new Jackson2JsonMessageConverter());
+			rabbitTemplate.setMessageConverter(new JacksonJsonMessageConverter());
 			return rabbitTemplate;
 		}
 
@@ -2262,10 +2262,10 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		}
 
 		@Bean
-		public Jackson2JsonMessageConverter jsonConverter() {
-			Jackson2JsonMessageConverter jackson2JsonMessageConverter = new Jackson2JsonMessageConverter();
-			DefaultJackson2JavaTypeMapper mapper = Mockito.spy(TestUtils.getPropertyValue(jackson2JsonMessageConverter,
-					"javaTypeMapper", DefaultJackson2JavaTypeMapper.class));
+		public JacksonJsonMessageConverter jsonConverter() {
+			JacksonJsonMessageConverter jackson2JsonMessageConverter = new JacksonJsonMessageConverter();
+			DefaultJacksonJavaTypeMapper mapper = Mockito.spy(TestUtils.getPropertyValue(jackson2JsonMessageConverter,
+					"javaTypeMapper", DefaultJacksonJavaTypeMapper.class));
 			new DirectFieldAccessor(jackson2JsonMessageConverter).setPropertyValue("javaTypeMapper", mapper);
 			jackson2JsonMessageConverter.setUseProjectionForInterfaces(true);
 			return jackson2JsonMessageConverter;
@@ -2350,10 +2350,10 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		}
 
 		@Bean
-		public Jackson2XmlMessageConverter xmlConverter() {
-			Jackson2XmlMessageConverter jackson2XmlMessageConverter = new Jackson2XmlMessageConverter();
-			DefaultJackson2JavaTypeMapper mapper = Mockito.spy(TestUtils.getPropertyValue(jackson2XmlMessageConverter,
-					"javaTypeMapper", DefaultJackson2JavaTypeMapper.class));
+		public JacksonXmlMessageConverter xmlConverter() {
+			JacksonXmlMessageConverter jackson2XmlMessageConverter = new JacksonXmlMessageConverter();
+			DefaultJacksonJavaTypeMapper mapper = Mockito.spy(TestUtils.getPropertyValue(jackson2XmlMessageConverter,
+					"javaTypeMapper", DefaultJacksonJavaTypeMapper.class));
 			new DirectFieldAccessor(jackson2XmlMessageConverter).setPropertyValue("javaTypeMapper", mapper);
 			return jackson2XmlMessageConverter;
 		}

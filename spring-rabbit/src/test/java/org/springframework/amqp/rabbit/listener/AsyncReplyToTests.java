@@ -16,11 +16,9 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import com.rabbitmq.client.Channel;
 import org.junit.jupiter.api.Test;
@@ -38,7 +36,7 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -47,58 +45,62 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.2.21
  *
  */
 @SpringJUnitConfig
-@RabbitAvailable(queues = { "async1", "async2" })
+@RabbitAvailable(queues = {"async1", "async2"})
 @DirtiesContext
 public class AsyncReplyToTests {
 
 	@Test
 	void ackSingleWhenFatalSMLC(@Autowired Config config, @Autowired RabbitListenerEndpointRegistry registry,
-			@Autowired RabbitTemplate template, @Autowired RabbitAdmin admin) throws IOException, InterruptedException {
+			@Autowired RabbitTemplate template, @Autowired RabbitAdmin admin) throws InterruptedException {
 
 		template.send("async1", MessageBuilder.withBody("\"foo\"".getBytes()).andProperties(
-				MessagePropertiesBuilder.newInstance()
-						.setContentType("application/json")
-						.setReplyTo("nowhere")
-						.build())
+						MessagePropertiesBuilder.newInstance()
+								.setContentType("application/json")
+								.setReplyTo("nowhere")
+								.build())
 				.build());
 		template.send("async1", MessageBuilder.withBody("junk".getBytes()).andProperties(
-				MessagePropertiesBuilder.newInstance()
-						.setContentType("application/json")
-						.setReplyTo("nowhere")
-						.build())
+						MessagePropertiesBuilder.newInstance()
+								.setContentType("application/json")
+								.setReplyTo("nowhere")
+								.build())
 				.build());
 		assertThat(config.smlcLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		registry.getListenerContainer("smlc").stop();
-		assertThat(admin.getQueueInfo("async1").getMessageCount()).isEqualTo(1);
+		await().untilAsserted(() -> assertThat(admin.getQueueInfo("async1").getMessageCount()).isEqualTo(1));
 	}
 
-	 @Test
-	 void ackSingleWhenFatalDMLC(@Autowired Config config, @Autowired RabbitListenerEndpointRegistry registry,
-			@Autowired RabbitTemplate template, @Autowired RabbitAdmin admin) throws IOException, InterruptedException {
+	@Test
+	void ackSingleWhenFatalDMLC(@Autowired Config config, @Autowired RabbitListenerEndpointRegistry registry,
+			@Autowired RabbitTemplate template, @Autowired RabbitAdmin admin) throws InterruptedException {
 
 		template.send("async2", MessageBuilder.withBody("\"foo\"".getBytes()).andProperties(
-				MessagePropertiesBuilder.newInstance()
-						.setContentType("application/json")
-						.setReplyTo("nowhere")
-						.build())
+						MessagePropertiesBuilder.newInstance()
+								.setContentType("application/json")
+								.setReplyTo("nowhere")
+								.build())
 				.build());
 		template.send("async2", MessageBuilder.withBody("junk".getBytes()).andProperties(
-				MessagePropertiesBuilder.newInstance()
-						.setContentType("application/json")
-						.setReplyTo("nowhere")
-						.build())
+						MessagePropertiesBuilder.newInstance()
+								.setContentType("application/json")
+								.setReplyTo("nowhere")
+								.build())
 				.build());
 		assertThat(config.dmlcLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		registry.getListenerContainer("dmlc").stop();
-		assertThat(admin.getQueueInfo("async2").getMessageCount()).isEqualTo(0);
-	 }
+
+		await().untilAsserted(() -> assertThat(admin.getQueueInfo("async2").getMessageCount()).isEqualTo(0));
+	}
 
 	@Configuration
 	@EnableRabbit
@@ -122,11 +124,11 @@ public class AsyncReplyToTests {
 
 		@Bean
 		MessageConverter converter() {
-			return new Jackson2JsonMessageConverter();
+			return new JacksonJsonMessageConverter();
 		}
 
 		@Bean
-		ConnectionFactory cf() throws IOException, TimeoutException {
+		ConnectionFactory cf() {
 			return new CachingConnectionFactory(RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
 		}
 
@@ -177,4 +179,5 @@ public class AsyncReplyToTests {
 		}
 
 	}
+
 }

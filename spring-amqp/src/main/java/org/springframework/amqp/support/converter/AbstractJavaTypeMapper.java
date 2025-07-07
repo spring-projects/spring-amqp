@@ -37,7 +37,10 @@ import org.springframework.util.ClassUtils;
  * @author Gary Russell
  * @author Ngoc Nhan
  * @author Artem Bilan
+ *
+ * @deprecated since 4.0 in favor of {@link DefaultJacksonJavaTypeMapper} for Jackson 3.
  */
+@Deprecated(forRemoval = true, since = "4.0")
 public abstract class AbstractJavaTypeMapper implements BeanClassLoaderAware {
 
 	public static final String DEFAULT_CLASSID_FIELD_NAME = "__TypeId__";

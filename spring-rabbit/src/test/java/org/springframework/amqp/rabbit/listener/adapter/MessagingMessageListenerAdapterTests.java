@@ -18,7 +18,6 @@ package org.springframework.amqp.rabbit.listener.adapter;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +34,7 @@ import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.test.MessageTestUtils;
 import org.springframework.amqp.support.AmqpHeaders;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
@@ -67,7 +66,6 @@ public class MessagingMessageListenerAdapterTests {
 	private final DefaultMessageHandlerMethodFactory factory = new DefaultMessageHandlerMethodFactory();
 
 	private final SampleBean sample = new SampleBean();
-
 
 	@BeforeEach
 	public void setup() {
@@ -187,7 +185,7 @@ public class MessagingMessageListenerAdapterTests {
 		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage("\"foo\"");
 		Channel channel = mock(Channel.class);
 		MessagingMessageListenerAdapter listener = getSimpleInstance("withGenericMessageAnyType", Message.class);
-		listener.setMessageConverter(new Jackson2JsonMessageConverter());
+		listener.setMessageConverter(new JacksonJsonMessageConverter());
 		message.getMessageProperties().setContentType("application/json");
 		listener.onMessage(message, channel);
 		assertThat(this.sample.payload.getClass()).isEqualTo(String.class);
@@ -211,19 +209,18 @@ public class MessagingMessageListenerAdapterTests {
 		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage("{ \"foo\" : \"bar\" }");
 		Channel channel = mock(Channel.class);
 		MessagingMessageListenerAdapter listener = getSimpleInstance("withGenericMessageFooType", Message.class);
-		listener.setMessageConverter(new Jackson2JsonMessageConverter());
+		listener.setMessageConverter(new JacksonJsonMessageConverter());
 		message.getMessageProperties().setContentType("application/json");
 		listener.onMessage(message, channel);
 		assertThat(this.sample.payload.getClass()).isEqualTo(Foo.class);
 	}
-
 
 	@Test
 	public void genericMessageTest3() throws Exception {
 		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage("{ \"foo\" : \"bar\" }");
 		Channel channel = mock(Channel.class);
 		MessagingMessageListenerAdapter listener = getSimpleInstance("withNonGenericMessage", Message.class);
-		listener.setMessageConverter(new Jackson2JsonMessageConverter());
+		listener.setMessageConverter(new JacksonJsonMessageConverter());
 		message.getMessageProperties().setContentType("application/json");
 		listener.onMessage(message, channel);
 		assertThat(this.sample.payload.getClass()).isEqualTo(LinkedHashMap.class);
@@ -236,10 +233,10 @@ public class MessagingMessageListenerAdapterTests {
 		message1.getMessageProperties().setContentType("application/json");
 		Channel channel = mock(Channel.class);
 		BatchMessagingMessageListenerAdapter listener = getBatchInstance("withAmqpMessageBatch");
-		listener.setMessageConverter(new Jackson2JsonMessageConverter());
+		listener.setMessageConverter(new JacksonJsonMessageConverter());
 
 		// when
-		listener.onMessageBatch(Arrays.asList(message1), channel);
+		listener.onMessageBatch(List.of(message1), channel);
 
 		// then
 		assertThat(this.sample.batchPayloads.get(0).getClass()).isEqualTo(String.class);
@@ -252,10 +249,10 @@ public class MessagingMessageListenerAdapterTests {
 		message1.getMessageProperties().setContentType("application/json");
 		Channel channel = mock(Channel.class);
 		BatchMessagingMessageListenerAdapter listener = getBatchInstance("withTypedMessageBatch");
-		listener.setMessageConverter(new Jackson2JsonMessageConverter());
+		listener.setMessageConverter(new JacksonJsonMessageConverter());
 
 		// when
-		listener.onMessageBatch(Arrays.asList(message1), channel);
+		listener.onMessageBatch(List.of(message1), channel);
 
 		// then
 		assertThat(this.sample.batchPayloads.get(0).getClass()).isEqualTo(Foo.class);
@@ -268,10 +265,10 @@ public class MessagingMessageListenerAdapterTests {
 		message1.getMessageProperties().setContentType("application/json");
 		Channel channel = mock(Channel.class);
 		BatchMessagingMessageListenerAdapter listener = getBatchInstance("withFooBatch");
-		listener.setMessageConverter(new Jackson2JsonMessageConverter());
+		listener.setMessageConverter(new JacksonJsonMessageConverter());
 
 		// when
-		listener.onMessageBatch(Arrays.asList(message1), channel);
+		listener.onMessageBatch(List.of(message1), channel);
 
 		// then
 		assertThat(this.sample.batchPayloads.get(0).getClass()).isEqualTo(Foo.class);
@@ -419,6 +416,7 @@ public class MessagingMessageListenerAdapterTests {
 	private static class SampleBean {
 
 		private Object payload;
+
 		private List<Object> batchPayloads;
 
 		SampleBean() {

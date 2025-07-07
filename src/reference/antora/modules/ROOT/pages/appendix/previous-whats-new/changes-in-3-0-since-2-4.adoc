@@ -47,7 +47,7 @@ When setting the container factory `consumerBatchEnabled` to `true`, the `batchL
 See xref:amqp/receiving-messages/batch.adoc[@RabbitListener with Batching] for more information.
 
 `MessageConverter` s can now return `Optional.empty()` for a null value; this is currently implemented by the `Jackson2JsonMessageConverter`.
-See xref:amqp/message-converters.adoc#Jackson2JsonMessageConverter-from-message[Converting from a `Message`] for more information
+See xref:amqp/message-converters.adoc#JacksonJsonMessageConverter-from-message[Converting from a `Message`] for more information
 
 You can now configure a `ReplyPostProcessor` via the container factory rather than via a property on `@RabbitListener`.
 See xref:amqp/receiving-messages/async-annotation-driven/reply.adoc[Reply Management] for more information.

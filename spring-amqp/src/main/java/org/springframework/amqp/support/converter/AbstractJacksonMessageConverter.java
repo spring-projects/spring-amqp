@@ -23,11 +23,12 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectMapper;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -39,23 +40,13 @@ import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 
 /**
- * Abstract Jackson2 message converter.
+ * Abstract Jackson 3 message converter.
  *
- * @author Mark Pollack
- * @author James Carr
- * @author Dave Syer
- * @author Sam Nelson
- * @author Andreas Asplund
  * @author Artem Bilan
- * @author Mohammad Hewedy
- * @author Gary Russell
  *
- * @since 2.1
- *
- * @deprecated since 4.0 in favor of {@link AbstractJacksonMessageConverter} for Jackson 3.
+ * @since 4.0
  */
-@Deprecated(forRemoval = true, since = "4.0")
-public abstract class AbstractJackson2MessageConverter extends AbstractMessageConverter
+public abstract class AbstractJacksonMessageConverter extends AbstractMessageConverter
 		implements BeanClassLoaderAware, SmartMessageConverter {
 
 	/**
@@ -86,11 +77,11 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 
 	private @Nullable ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
 
-	private Jackson2JavaTypeMapper javaTypeMapper = new DefaultJackson2JavaTypeMapper();
+	private JacksonJavaTypeMapper javaTypeMapper = new DefaultJacksonJavaTypeMapper();
 
 	private boolean useProjectionForInterfaces;
 
-	private @Nullable ProjectingMessageConverter projectingConverter;
+	private @Nullable JacksonProjectingMessageConverter projectingConverter;
 
 	private boolean charsetIsUtf8 = true;
 
@@ -109,9 +100,9 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	 * passed to Jackson which can dynamically determine the encoding; otherwise the
 	 * contentEncoding or default charset is used.
 	 * @param trustedPackages the trusted Java packages for deserialization
-	 * @see DefaultJackson2JavaTypeMapper#setTrustedPackages(String...)
+	 * @see DefaultJacksonJavaTypeMapper#setTrustedPackages(String...)
 	 */
-	protected AbstractJackson2MessageConverter(ObjectMapper objectMapper, MimeType contentType,
+	protected AbstractJacksonMessageConverter(ObjectMapper objectMapper, MimeType contentType,
 			String... trustedPackages) {
 
 		Assert.notNull(objectMapper, "'objectMapper' must not be null");
@@ -119,7 +110,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 		this.objectMapper = objectMapper;
 		this.supportedContentType = contentType;
 		this.supportedCTCharset = this.supportedContentType.getParameter("charset");
-		((DefaultJackson2JavaTypeMapper) this.javaTypeMapper).setTrustedPackages(trustedPackages);
+		((DefaultJacksonJavaTypeMapper) this.javaTypeMapper).setTrustedPackages(trustedPackages);
 	}
 
 	/**
@@ -129,7 +120,6 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	 * Jackson which can dynamically determine the encoding; otherwise the contentEncoding
 	 * or default charset is used.
 	 * @return the supportedContentType
-	 * @since 2.4.3
 	 */
 	protected MimeType getSupportedContentType() {
 		return this.supportedContentType;
@@ -142,7 +132,6 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	 * Jackson which can dynamically determine the encoding; otherwise the contentEncoding
 	 * or default charset is used.
 	 * @param supportedContentType the supportedContentType to set.
-	 * @since 2.4.3
 	 */
 	public void setSupportedContentType(MimeType supportedContentType) {
 		Assert.notNull(supportedContentType, "'supportedContentType' cannot be null");
@@ -154,7 +143,6 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	 * When true, if jackson decodes the body as {@code null} convert to {@link Optional#empty()}
 	 * instead of returning the original body. Default false.
 	 * @param nullAsOptionalEmpty true to return empty.
-	 * @since 2.4.7
 	 */
 	public void setNullAsOptionalEmpty(boolean nullAsOptionalEmpty) {
 		this.nullAsOptionalEmpty = nullAsOptionalEmpty;
@@ -190,7 +178,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	public void setBeanClassLoader(ClassLoader classLoader) {
 		this.classLoader = classLoader;
 		if (!this.typeMapperSet) {
-			((DefaultJackson2JavaTypeMapper) this.javaTypeMapper).setBeanClassLoader(classLoader);
+			((DefaultJacksonJavaTypeMapper) this.javaTypeMapper).setBeanClassLoader(classLoader);
 		}
 	}
 
@@ -198,7 +186,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 		return this.classLoader;
 	}
 
-	public Jackson2JavaTypeMapper getJavaTypeMapper() {
+	public JacksonJavaTypeMapper getJavaTypeMapper() {
 		return this.javaTypeMapper;
 	}
 
@@ -206,13 +194,13 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	 * Whether an explicit java type mapper has been provided.
 	 * @return false if the default type mapper is being used.
 	 * @since 2.2
-	 * @see #setJavaTypeMapper(Jackson2JavaTypeMapper)
+	 * @see #setJavaTypeMapper(JacksonJavaTypeMapper)
 	 */
 	public boolean isTypeMapperSet() {
 		return this.typeMapperSet;
 	}
 
-	public void setJavaTypeMapper(Jackson2JavaTypeMapper javaTypeMapper) {
+	public void setJavaTypeMapper(JacksonJavaTypeMapper javaTypeMapper) {
 		Assert.notNull(javaTypeMapper, "'javaTypeMapper' cannot be null");
 		this.javaTypeMapper = javaTypeMapper;
 		this.typeMapperSet = true;
@@ -221,9 +209,9 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	/**
 	 * Return the type precedence.
 	 * @return the precedence.
-	 * @see #setTypePrecedence(Jackson2JavaTypeMapper.TypePrecedence)
+	 * @see #setTypePrecedence(JacksonJavaTypeMapper.TypePrecedence)
 	 */
-	public Jackson2JavaTypeMapper.TypePrecedence getTypePrecedence() {
+	public JacksonJavaTypeMapper.TypePrecedence getTypePrecedence() {
 		return this.javaTypeMapper.getTypePrecedence();
 	}
 
@@ -239,16 +227,16 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	 * associated headers provided by the sender.
 	 * <p> If you wish to force the use of the  {@code __TypeId__} and associated headers
 	 * (such as when the actual type is a subclass of the method argument type),
-	 * set the precedence to {@link Jackson2JavaTypeMapper.TypePrecedence#TYPE_ID}.
+	 * set the precedence to {@link JacksonJavaTypeMapper.TypePrecedence#TYPE_ID}.
 	 * @param typePrecedence the precedence.
-	 * @see DefaultJackson2JavaTypeMapper#setTypePrecedence(Jackson2JavaTypeMapper.TypePrecedence)
+	 * @see DefaultJacksonJavaTypeMapper#setTypePrecedence(JacksonJavaTypeMapper.TypePrecedence)
 	 */
-	public void setTypePrecedence(Jackson2JavaTypeMapper.TypePrecedence typePrecedence) {
+	public void setTypePrecedence(JacksonJavaTypeMapper.TypePrecedence typePrecedence) {
 		if (this.typeMapperSet) {
 			throw new IllegalStateException("When providing your own type mapper, you should set the precedence on it");
 		}
-		if (this.javaTypeMapper instanceof DefaultJackson2JavaTypeMapper defaultJackson2JavaTypeMapper) {
-			defaultJackson2JavaTypeMapper.setTypePrecedence(typePrecedence);
+		if (this.javaTypeMapper instanceof DefaultJacksonJavaTypeMapper defaultJacksonJavaTypeMapper) {
+			defaultJacksonJavaTypeMapper.setTypePrecedence(typePrecedence);
 		}
 		else {
 			throw new IllegalStateException("Type precedence is available with the DefaultJackson2JavaTypeMapper");
@@ -261,7 +249,6 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	 * a custom deserializer has been configured on the {@link ObjectMapper}. If the attempt fails,
 	 * fall back to headers.
 	 * @param alwaysAttemptConversion true to attempt.
-	 * @since 2.2.8
 	 */
 	public void setAlwaysConvertToInferredType(boolean alwaysAttemptConversion) {
 		this.alwaysConvertToInferredType = alwaysAttemptConversion;
@@ -275,7 +262,6 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	 * Set to true to use Spring Data projection to create the object if the inferred
 	 * parameter type is an interface.
 	 * @param useProjectionForInterfaces true to use projection.
-	 * @since 2.2
 	 */
 	public void setUseProjectionForInterfaces(boolean useProjectionForInterfaces) {
 		this.useProjectionForInterfaces = useProjectionForInterfaces;
@@ -283,7 +269,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 			if (!ClassUtils.isPresent("org.springframework.data.projection.ProjectionFactory", this.classLoader)) {
 				throw new IllegalStateException("'spring-data-commons' is required to use Projection Interfaces");
 			}
-			this.projectingConverter = new ProjectingMessageConverter(this.objectMapper);
+			this.projectingConverter = new JacksonProjectingMessageConverter(this.objectMapper);
 		}
 	}
 
@@ -294,7 +280,6 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	 * condition exists.
 	 * @param assumeSupportedContentType set false to not assume the content type is
 	 * supported.
-	 * @since 2.2
 	 */
 	public void setAssumeSupportedContentType(boolean assumeSupportedContentType) {
 		this.assumeSupportedContentType = assumeSupportedContentType;
@@ -357,7 +342,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 		try {
 			return convertContent(message, conversionHint, properties, encoding);
 		}
-		catch (IOException ex) {
+		catch (IOException | JacksonException ex) {
 			throw new MessageConversionException("Failed to convert Message content", ex);
 		}
 	}
@@ -451,8 +436,8 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 				bytes = jsonString.getBytes(encoding);
 			}
 		}
-		catch (IOException e) {
-			throw new MessageConversionException("Failed to convert Message content", e);
+		catch (IOException | JacksonException ex) {
+			throw new MessageConversionException("Failed to convert Message content", ex);
 		}
 		messageProperties.setContentType(this.supportedContentType.toString());
 		if (this.supportedCTCharset == null) {

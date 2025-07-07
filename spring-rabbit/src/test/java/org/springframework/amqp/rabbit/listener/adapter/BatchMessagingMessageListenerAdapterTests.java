@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Message;
@@ -37,7 +36,7 @@ import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -50,7 +49,8 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 /**
  * @author Gary Russell
- * @author heng zhang
+ * @author Heng Zhang
+ * @author Artem Bilan
  *
  * @since 3.0
  *
@@ -70,7 +70,7 @@ public class BatchMessagingMessageListenerAdapterTests {
 		Method badMethod = getClass().getDeclaredMethod("listen", String.class);
 		assertThatIllegalStateException().isThrownBy(() ->
 				new BatchMessagingMessageListenerAdapter(this, badMethod, false, null, null)
-			).withMessageStartingWith("Mis-configuration");
+		).withMessageStartingWith("Mis-configuration");
 	}
 
 	public void listen(String in) {
@@ -79,10 +79,9 @@ public class BatchMessagingMessageListenerAdapterTests {
 	public void listen(List<String> in) {
 	}
 
-
 	@Test
 	public void errorMsgConvert(@Autowired BatchMessagingMessageListenerAdapterTests.Config config,
-						  @Autowired RabbitTemplate template) throws Exception {
+			@Autowired RabbitTemplate template) throws Exception {
 
 		Message message = MessageBuilder.withBody("""
 						{
@@ -111,12 +110,12 @@ public class BatchMessagingMessageListenerAdapterTests {
 		assertThat(config.countDownLatch.await(config.count * 1000L, TimeUnit.SECONDS)).isTrue();
 	}
 
-
-
 	@Configuration
 	@EnableRabbit
 	public static class Config {
+
 		volatile int count = 5;
+
 		volatile CountDownLatch countDownLatch = new CountDownLatch(count);
 
 		@RabbitListener(
@@ -145,8 +144,7 @@ public class BatchMessagingMessageListenerAdapterTests {
 			factory.setBatchSize(3);
 			factory.setConsumerBatchEnabled(true);
 
-			Jackson2JsonMessageConverter jackson2JsonMessageConverter = new Jackson2JsonMessageConverter(new ObjectMapper());
-			factory.setMessageConverter(jackson2JsonMessageConverter);
+			factory.setMessageConverter(new JacksonJsonMessageConverter());
 
 			return factory;
 		}
@@ -156,10 +154,12 @@ public class BatchMessagingMessageListenerAdapterTests {
 			return new RabbitTemplate(cf);
 		}
 
-
 	}
+
 	public static class Model {
+
 		String name;
+
 		String age;
 
 		public String getName() {
@@ -177,6 +177,7 @@ public class BatchMessagingMessageListenerAdapterTests {
 		public void setAge(String age) {
 			this.age = age;
 		}
+
 	}
 
 }
