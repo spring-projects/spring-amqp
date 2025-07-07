@@ -19,11 +19,11 @@ package org.springframework.rabbit.stream.micrometer;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import com.rabbitmq.stream.Environment;
 import com.rabbitmq.stream.Message;
 import com.rabbitmq.stream.OffsetSpecification;
+import io.micrometer.common.KeyValues;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.tracing.Span.Kind;
 import io.micrometer.tracing.exporter.FinishedSpan;
@@ -50,14 +50,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Ngoc Nhan
  * @since 3.0.5
  *
  */
 @Testcontainers(disabledWithoutDocker = true)
 public class TracingTests extends SampleTestRunner {
-
-	private static final AbstractTestContainerTests atct = new AbstractTestContainerTests() {
-	};
 
 	@Override
 	public SampleTestRunnerConsumer yourCode() throws Exception {
@@ -77,12 +75,14 @@ public class TracingTests extends SampleTestRunner {
 					.hasSize(3);
 			List<FinishedSpan> producerSpans = finishedSpans.stream()
 					.filter(span -> span.getKind().equals(Kind.PRODUCER))
-					.collect(Collectors.toList());
+					.toList();
 			List<FinishedSpan> consumerSpans = finishedSpans.stream()
 					.filter(span -> span.getKind().equals(Kind.CONSUMER))
-					.collect(Collectors.toList());
+					.toList();
 			SpanAssert.assertThat(producerSpans.get(0))
 					.hasTag("spring.rabbit.stream.template.name", "streamTemplate1");
+			SpanAssert.assertThat(producerSpans.get(0))
+					.hasTag("messaging.destination.name", "trace.stream.queue1");
 			SpanAssert.assertThat(producerSpans.get(0))
 					.hasRemoteServiceNameEqualTo("RabbitMQ Stream");
 			SpanAssert.assertThat(consumerSpans.get(0))
@@ -188,6 +188,13 @@ public class TracingTests extends SampleTestRunner {
 			RabbitStreamTemplate template = new RabbitStreamTemplate(env, "trace.stream.queue1");
 			template.setProducerCustomizer((name, builder) -> builder.name("test"));
 			template.setObservationEnabled(true);
+			template.setObservationConvention(new RabbitStreamTemplateObservation.DefaultRabbitStreamTemplateObservationConvention() {
+				@Override
+				public KeyValues getLowCardinalityKeyValues(RabbitStreamMessageSenderContext context) {
+					return super.getLowCardinalityKeyValues(context)
+						.and("messaging.destination.name", context.getDestination());
+				}
+			});
 			return template;
 		}
 
