@@ -20,12 +20,14 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
-import org.springframework.retry.RetryContext;
+import org.springframework.core.AttributeAccessor;
 
 /**
  * Type safe accessor for retried message sending.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.0.6
  *
  */
@@ -50,7 +52,7 @@ public final class SendRetryContextAccessor {
 	 * @return the message.
 	 * @see #MESSAGE
 	 */
-	public static @Nullable Message getMessage(RetryContext context) {
+	public static @Nullable Message getMessage(AttributeAccessor context) {
 		return (Message) context.getAttribute(MESSAGE);
 	}
 
@@ -60,7 +62,7 @@ public final class SendRetryContextAccessor {
 	 * @return the address.
 	 * @see #ADDRESS
 	 */
-	public static @Nullable Address getAddress(RetryContext context) {
+	public static @Nullable Address getAddress(AttributeAccessor context) {
 		return (Address) context.getAttribute(ADDRESS);
 	}
 

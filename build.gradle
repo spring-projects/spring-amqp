@@ -300,9 +300,6 @@ project('spring-amqp') {
 
 	dependencies {
 		api 'org.springframework:spring-core'
-		api("org.springframework.retry:spring-retry:$springRetryVersion") {
-			exclude group: 'org.springframework'
-		}
 		optionalApi 'org.springframework:spring-messaging'
 		optionalApi 'org.springframework:spring-oxm'
 		optionalApi 'org.springframework:spring-context'
@@ -357,6 +354,9 @@ project('spring-rabbit') {
 		api 'org.springframework:spring-messaging'
 		api 'org.springframework:spring-tx'
 		api 'io.micrometer:micrometer-observation'
+		api("org.springframework.retry:spring-retry:$springRetryVersion") {
+			exclude group: 'org.springframework'
+		}
 
 		optionalApi 'org.springframework:spring-aop'
 		optionalApi 'org.springframework:spring-webflux'
