@@ -16,8 +16,6 @@
 
 package org.springframework.amqp.rabbit.retry;
 
-import java.time.Duration;
-
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.retry.RetryException;
