@@ -338,6 +338,7 @@ public class RabbitAdminTests extends NeedsManagementTests {
 	}
 
 	@Test
+	@SuppressWarnings("removal")
 	public void testRetry() throws Exception {
 		com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection connection = mock(com.rabbitmq.client.Connection.class);

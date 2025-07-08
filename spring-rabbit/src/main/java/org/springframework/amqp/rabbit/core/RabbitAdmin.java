@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.core;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -54,20 +55,22 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.retry.SpringRetryTemplateAdapter;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
+import org.springframework.core.retry.RetryException;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.jmx.export.annotation.ManagedOperation;
 import org.springframework.jmx.export.annotation.ManagedResource;
-import org.springframework.retry.backoff.ExponentialBackOffPolicy;
-import org.springframework.retry.policy.SimpleRetryPolicy;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
+import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -90,9 +93,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	private static final int DECLARE_MAX_ATTEMPTS = 5;
 
-	private static final int DECLARE_INITIAL_RETRY_INTERVAL = 1000;
+	private static final Duration DECLARE_INITIAL_RETRY_DELAY = Duration.ofSeconds(1);
 
-	private static final int DECLARE_MAX_RETRY_INTERVAL = 5000;
+	private static final Duration DECLARE_MAX_RETRY_DELAY = Duration.ofSeconds(5);
 
 	private static final double DECLARE_RETRY_MULTIPLIER = 2.0;
 
@@ -547,9 +550,34 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 * of 5 seconds. To disable retry, set the argument to {@code null}. Note that this
 	 * retry is at the macro level - all declarations will be retried within the scope of
 	 * this template. If you supplied a {@link RabbitTemplate} that is configured with a
-	 * {@link RetryTemplate}, its template will retry each individual declaration.
+	 * {@link org.springframework.retry.support.RetryTemplate},
+	 * its template will retry each individual declaration.
 	 * @param retryTemplate the retry template.
 	 * @since 1.7.8
+	 * @deprecated since 4.0 in favor of
+	 */
+	@Deprecated(since = "4.0", forRemoval = true)
+	public void setRetryTemplate(org.springframework.retry.support.@Nullable RetryTemplate retryTemplate) {
+		if (retryTemplate != null) {
+			setRetryTemplate(new SpringRetryTemplateAdapter(retryTemplate));
+		}
+		else {
+			this.retryDisabled = true;
+		}
+	}
+
+	/**
+	 * Set a retry template for auto declarations. There is a race condition with
+	 * auto-delete, exclusive queues in that the queue might still exist for a short time,
+	 * preventing the redeclaration. The default retry configuration will try 5 times with
+	 * an exponential backOff starting at 1 second a multiplier of 2.0 and a max interval
+	 * of 5 seconds. To disable retry, set the argument to {@code null}. Note that this
+	 * retry is at the macro level - all declarations will be retried within the scope of
+	 * this template. If you supplied a {@link RabbitTemplate} that is configured with a
+	 * {@link RetryTemplate},
+	 * its template will retry each individual declaration.
+	 * @param retryTemplate the retry template.
+	 * @since 4.0
 	 */
 	public void setRetryTemplate(@Nullable RetryTemplate retryTemplate) {
 		this.retryTemplate = retryTemplate;
@@ -592,13 +620,14 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			}
 
 			if (this.retryTemplate == null && !this.retryDisabled) {
-				this.retryTemplate = new RetryTemplate();
-				this.retryTemplate.setRetryPolicy(new SimpleRetryPolicy(DECLARE_MAX_ATTEMPTS));
-				ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
-				backOffPolicy.setInitialInterval(DECLARE_INITIAL_RETRY_INTERVAL);
-				backOffPolicy.setMultiplier(DECLARE_RETRY_MULTIPLIER);
-				backOffPolicy.setMaxInterval(DECLARE_MAX_RETRY_INTERVAL);
-				this.retryTemplate.setBackOffPolicy(backOffPolicy);
+				RetryPolicy retryPolicy =
+						RetryPolicy.builder()
+								.maxAttempts(DECLARE_MAX_ATTEMPTS)
+								.delay(DECLARE_INITIAL_RETRY_DELAY)
+								.multiplier(DECLARE_RETRY_MULTIPLIER)
+								.maxDelay(DECLARE_MAX_RETRY_DELAY)
+								.build();
+				this.retryTemplate = new RetryTemplate(retryPolicy);
 			}
 			if (this.connectionFactory instanceof CachingConnectionFactory ccf &&
 					ccf.getCacheMode() == CacheMode.CONNECTION) {
@@ -623,7 +652,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 					 * declared for every connection. If anyone has a problem with it: use auto-startup="false".
 					 */
 					if (this.retryTemplate != null) {
-						this.retryTemplate.execute(c -> {
+						this.retryTemplate.execute(() -> {
 							initialize();
 							return null;
 						});
@@ -631,6 +660,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 					else {
 						initialize();
 					}
+				}
+				catch (RetryException ex) {
+					ReflectionUtils.rethrowRuntimeException(ex.getCause());
 				}
 				finally {
 					initializing.compareAndSet(true, false);

@@ -48,6 +48,7 @@ import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.retry.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -339,7 +340,7 @@ public class RabbitAdminIntegrationTests extends NeedsManagementTests {
 		context.getBeanFactory().registerSingleton("bar", queue);
 		Binding binding = new Binding(queueName, DestinationType.QUEUE, exchange.getName(), "test.routingKey", null);
 		context.getBeanFactory().registerSingleton("baz", binding);
-		this.rabbitAdmin.setRetryTemplate(null);
+		this.rabbitAdmin.setRetryTemplate((RetryTemplate) null);
 		this.rabbitAdmin.afterPropertiesSet();
 
 		try {
@@ -368,7 +369,7 @@ public class RabbitAdminIntegrationTests extends NeedsManagementTests {
 	}
 
 	@Test
-	public void testDeclareDelayedExchange() throws Exception {
+	public void testDeclareDelayedExchange() {
 		DirectExchange exchange = new DirectExchange("test.delayed.exchange");
 		exchange.setDelayed(true);
 		Queue queue = new Queue(UUID.randomUUID().toString(), true, false, false);

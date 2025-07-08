@@ -37,6 +37,7 @@ import org.springframework.context.ApplicationContextException;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.retry.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -47,7 +48,7 @@ import static org.awaitility.Awaitility.await;
  * @since 1.6
  *
  */
-@RabbitAvailable(queues = { ContainerInitializationTests.TEST_MISMATCH, ContainerInitializationTests.TEST_MISMATCH2 })
+@RabbitAvailable(queues = {ContainerInitializationTests.TEST_MISMATCH, ContainerInitializationTests.TEST_MISMATCH2})
 public class ContainerInitializationTests {
 
 	public static final String TEST_MISMATCH = "test.mismatch";
@@ -129,7 +130,7 @@ public class ContainerInitializationTests {
 				mismatchLatch.countDown();
 			}
 		});
-		return new CountDownLatch[] { cancelLatch, mismatchLatch, preventContainerRedeclareQueueLatch };
+		return new CountDownLatch[] {cancelLatch, mismatchLatch, preventContainerRedeclareQueueLatch};
 	}
 
 	@Configuration
@@ -169,7 +170,7 @@ public class ContainerInitializationTests {
 		@Bean
 		public RabbitAdmin admin() {
 			RabbitAdmin admin = new RabbitAdmin(connectionFactory());
-			admin.setRetryTemplate(null);
+			admin.setRetryTemplate((RetryTemplate) null);
 			return admin;
 		}
 
@@ -188,7 +189,6 @@ public class ContainerInitializationTests {
 
 	@Configuration
 	static class Config3 extends Config2 {
-
 
 		@Override
 		public SimpleMessageListenerContainer container() {
