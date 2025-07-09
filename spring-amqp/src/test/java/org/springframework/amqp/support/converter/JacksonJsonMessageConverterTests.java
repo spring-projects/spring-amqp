@@ -299,18 +299,18 @@ public class JacksonJsonMessageConverterTests {
 		byte[] bytes = "{\"name\" : \"foo\" }".getBytes();
 		MessageProperties messageProperties = new MessageProperties();
 		Message message = new Message(bytes, messageProperties);
-		JacksonJsonMessageConverter j2Converter = new JacksonJsonMessageConverter();
+		JacksonJsonMessageConverter jsonMessageConverter = new JacksonJsonMessageConverter();
 		DefaultClassMapper classMapper = new DefaultClassMapper();
 		classMapper.setDefaultType(Foo.class);
-		j2Converter.setClassMapper(classMapper);
-		Object foo = j2Converter.fromMessage(message);
+		jsonMessageConverter.setClassMapper(classMapper);
+		Object foo = jsonMessageConverter.fromMessage(message);
 		assertThat(foo).isInstanceOf(Foo.class);
 
-		foo = j2Converter.fromMessage(message);
+		foo = jsonMessageConverter.fromMessage(message);
 		assertThat(foo).isInstanceOf(Foo.class);
 
-		j2Converter.setAssumeSupportedContentType(false);
-		foo = j2Converter.fromMessage(message);
+		jsonMessageConverter.setAssumeSupportedContentType(false);
+		foo = jsonMessageConverter.fromMessage(message);
 		assertThat(foo).isSameAs(bytes);
 	}
 
@@ -322,9 +322,9 @@ public class JacksonJsonMessageConverterTests {
 		messageProperties.setInferredArgumentType(Baz.class);
 		Message message = new Message(bytes, messageProperties);
 		ObjectMapper mapper = JsonMapper.builder().addModule(new BazModule()).build();
-		JacksonJsonMessageConverter j2Converter = new JacksonJsonMessageConverter(mapper);
-		j2Converter.setAlwaysConvertToInferredType(true);
-		Baz baz = (Baz) j2Converter.fromMessage(message);
+		JacksonJsonMessageConverter messageConverter = new JacksonJsonMessageConverter(mapper);
+		messageConverter.setAlwaysConvertToInferredType(true);
+		Baz baz = (Baz) messageConverter.fromMessage(message);
 		assertThat(((Qux) baz).getField()).isEqualTo("foo");
 	}
 
@@ -335,8 +335,8 @@ public class JacksonJsonMessageConverterTests {
 		messageProperties.setHeader("__TypeId__", Buz.class.getName());
 		messageProperties.setInferredArgumentType(Baz.class);
 		Message message = new Message(bytes, messageProperties);
-		JacksonJsonMessageConverter j2Converter = new JacksonJsonMessageConverter();
-		Fiz buz = (Fiz) j2Converter.fromMessage(message);
+		JacksonJsonMessageConverter jsonMessageConverter = new JacksonJsonMessageConverter();
+		Fiz buz = (Fiz) jsonMessageConverter.fromMessage(message);
 		assertThat(((Buz) buz).getField()).isEqualTo("foo");
 	}
 
@@ -348,10 +348,10 @@ public class JacksonJsonMessageConverterTests {
 		messageProperties.setInferredArgumentType(getClass().getDeclaredMethod("bazLister").getGenericReturnType());
 		Message message = new Message(bytes, messageProperties);
 		ObjectMapper mapper = JsonMapper.builder().addModule(new BazModule()).build();
-		JacksonJsonMessageConverter j2Converter = new JacksonJsonMessageConverter(mapper);
-		j2Converter.setAlwaysConvertToInferredType(true);
+		JacksonJsonMessageConverter jsonMessageConverter = new JacksonJsonMessageConverter(mapper);
+		jsonMessageConverter.setAlwaysConvertToInferredType(true);
 		@SuppressWarnings("unchecked")
-		List<Baz> bazs = (List<Baz>) j2Converter.fromMessage(message);
+		List<Baz> bazs = (List<Baz>) jsonMessageConverter.fromMessage(message);
 		assertThat(bazs).hasSize(1);
 		assertThat(((Qux) bazs.get(0)).getField()).isEqualTo("foo");
 	}
@@ -365,9 +365,9 @@ public class JacksonJsonMessageConverterTests {
 		messageProperties.setHeader("__ContentTypeId__", Buz.class.getName());
 		Message message = new Message(bytes, messageProperties);
 		ObjectMapper mapper = JsonMapper.builder().addModule(new BazModule()).build();
-		JacksonJsonMessageConverter j2Converter = new JacksonJsonMessageConverter(mapper);
+		JacksonJsonMessageConverter jsonMessageConverter = new JacksonJsonMessageConverter(mapper);
 		@SuppressWarnings("unchecked")
-		List<Fiz> buzs = (List<Fiz>) j2Converter.fromMessage(message);
+		List<Fiz> buzs = (List<Fiz>) jsonMessageConverter.fromMessage(message);
 		assertThat(buzs).hasSize(1);
 		assertThat(((Buz) buzs.get(0)).getField()).isEqualTo("foo");
 	}
@@ -380,9 +380,9 @@ public class JacksonJsonMessageConverterTests {
 		messageProperties.setHeader("__TypeId__", List.class.getName());
 		messageProperties.setHeader("__ContentTypeId__", Object.class.getName());
 		Message message = new Message(bytes, messageProperties);
-		JacksonJsonMessageConverter j2Converter = new JacksonJsonMessageConverter();
+		JacksonJsonMessageConverter jsonMessageConverter = new JacksonJsonMessageConverter();
 		@SuppressWarnings("unchecked")
-		List<Foo> foos = (List<Foo>) j2Converter.fromMessage(message);
+		List<Foo> foos = (List<Foo>) jsonMessageConverter.fromMessage(message);
 		assertThat(foos).hasSize(1);
 		assertThat(foos.get(0).getName()).isEqualTo("bar");
 	}
@@ -396,10 +396,10 @@ public class JacksonJsonMessageConverterTests {
 		messageProperties.setHeader("__KeyTypeId__", String.class.getName());
 		messageProperties.setHeader("__ContentTypeId__", Object.class.getName());
 		Message message = new Message(bytes, messageProperties);
-		JacksonJsonMessageConverter j2Converter = new JacksonJsonMessageConverter();
+		JacksonJsonMessageConverter jsonMessageConverter = new JacksonJsonMessageConverter();
 
 		@SuppressWarnings("unchecked")
-		Map<String, Qux> foos = (Map<String, Qux>) j2Converter.fromMessage(message);
+		Map<String, Qux> foos = (Map<String, Qux>) jsonMessageConverter.fromMessage(message);
 		assertThat(foos).hasSize(1);
 		assertThat(foos.keySet().iterator().next()).isEqualTo("test");
 		assertThat(foos.values().iterator().next().getField()).isEqualTo("baz");

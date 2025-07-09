@@ -34,7 +34,6 @@ public interface JacksonJavaTypeMapper extends ClassMapper {
 	/**
 	 * The precedence for type conversion - inferred from the method parameter or message
 	 * headers. Only applies if both exist.
-	 * @since 1.6
 	 */
 	enum TypePrecedence {
 		INFERRED, TYPE_ID
@@ -57,14 +56,12 @@ public interface JacksonJavaTypeMapper extends ClassMapper {
 	/**
 	 * Get the type precedence.
 	 * @return the precedence.
-	 * @since 1.6
 	 */
 	TypePrecedence getTypePrecedence();
 
 	/**
 	 * Add trusted packages.
 	 * @param packages the packages.
-	 * @since 2.1
 	 */
 	default void addTrustedPackages(String... packages) {
 		// no op
@@ -75,7 +72,6 @@ public interface JacksonJavaTypeMapper extends ClassMapper {
 	 * header is present.
 	 * @param properties the message properties.
 	 * @return the type.
-	 * @since 2.2
 	 */
 	@Nullable
 	JavaType getInferredType(MessageProperties properties);

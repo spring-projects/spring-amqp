@@ -193,7 +193,6 @@ public abstract class AbstractJacksonMessageConverter extends AbstractMessageCon
 	/**
 	 * Whether an explicit java type mapper has been provided.
 	 * @return false if the default type mapper is being used.
-	 * @since 2.2
 	 * @see #setJavaTypeMapper(JacksonJavaTypeMapper)
 	 */
 	public boolean isTypeMapperSet() {

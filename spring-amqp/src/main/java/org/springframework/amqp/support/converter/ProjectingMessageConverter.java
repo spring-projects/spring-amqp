@@ -35,9 +35,12 @@ import org.springframework.util.Assert;
  * interfaces.
  *
  * @author Gary Russell
+ *
  * @since 2.2
  *
+ * @deprecated since 4.0 in favor of {@link JacksonProjectingMessageConverter}.
  */
+@Deprecated(since = "4.0", forRemoval = true)
 public class ProjectingMessageConverter {
 
 	private final ProjectionFactory projectionFactory;

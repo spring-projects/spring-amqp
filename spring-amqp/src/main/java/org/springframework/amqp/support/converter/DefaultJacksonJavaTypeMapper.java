@@ -143,7 +143,6 @@ public class DefaultJacksonJavaTypeMapper implements JacksonJavaTypeMapper, Bean
 	/**
 	 * Return the precedence.
 	 * @return the precedence.
-	 * @since 1.6.
 	 * @see #setTypePrecedence(TypePrecedence)
 	 */
 	@Override
@@ -166,9 +165,7 @@ public class DefaultJacksonJavaTypeMapper implements JacksonJavaTypeMapper, Bean
 	 * If you wish to force the use of the  {@code __TypeId__} and associated headers
 	 * (such as when the actual type is a subclass of the method argument type),
 	 * set the precedence to {@link TypePrecedence#TYPE_ID}.
-	 *
 	 * @param typePrecedence the precedence.
-	 * @since 1.6
 	 */
 	public void setTypePrecedence(TypePrecedence typePrecedence) {
 		Assert.notNull(typePrecedence, "'typePrecedence' cannot be null");
@@ -179,7 +176,6 @@ public class DefaultJacksonJavaTypeMapper implements JacksonJavaTypeMapper, Bean
 	 * Specify a set of packages to trust during deserialization.
 	 * The asterisk ({@code *}) means trust all.
 	 * @param trustedPackages the trusted Java packages for deserialization
-	 * @since 1.6.11
 	 */
 	public void setTrustedPackages(String @Nullable ... trustedPackages) {
 		if (trustedPackages != null) {
