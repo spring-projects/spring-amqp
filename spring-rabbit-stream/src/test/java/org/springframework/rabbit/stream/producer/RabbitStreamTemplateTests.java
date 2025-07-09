@@ -124,6 +124,7 @@ public class RabbitStreamTemplateTests {
 		Producer producer = mock(Producer.class);
 		given(pb.build()).willReturn(producer);
 		try (RabbitStreamTemplate template = new RabbitStreamTemplate(env, "foo")) {
+			assertThat(template.getStreamName()).isEqualTo("foo");
 			SimpleMessageConverter messageConverter = new SimpleMessageConverter();
 			template.setMessageConverter(messageConverter);
 			assertThat(template.messageConverter()).isSameAs(messageConverter);

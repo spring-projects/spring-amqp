@@ -230,6 +230,14 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 		this.observationConvention = observationConvention;
 	}
 
+	/**
+	 * @return the stream name
+	 * @since 3.2.6
+	 */
+	public String getStreamName() {
+		return this.streamName;
+	}
+
 	@Override
 	public MessageConverter messageConverter() {
 		return this.messageConverter;
