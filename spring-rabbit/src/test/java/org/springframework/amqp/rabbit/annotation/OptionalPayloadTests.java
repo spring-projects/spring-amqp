@@ -35,7 +35,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -47,11 +47,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.8
  *
  */
 @SpringJUnitConfig
-@RabbitAvailable(queues = { "op.1", "op.2" })
+@RabbitAvailable(queues = {"op.1", "op.2"})
 @DirtiesContext
 public class OptionalPayloadTests {
 
@@ -107,8 +109,8 @@ public class OptionalPayloadTests {
 		}
 
 		@Bean
-		Jackson2JsonMessageConverter converter() {
-			Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
+		JacksonJsonMessageConverter converter() {
+			JacksonJsonMessageConverter converter = new JacksonJsonMessageConverter();
 			converter.setNullAsOptionalEmpty(true);
 			return converter;
 		}

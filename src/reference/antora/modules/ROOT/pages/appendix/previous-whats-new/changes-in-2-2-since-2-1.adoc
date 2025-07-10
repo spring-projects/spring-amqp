@@ -57,10 +57,10 @@ Spring Data Projection interfaces are now supported by the `Jackson2JsonMessageC
 See xref:amqp/message-converters.adoc#data-projection[Using Spring Data Projection Interfaces] for more information.
 
 The `Jackson2JsonMessageConverter` now assumes the content is JSON if there is no `contentType` property, or it is the default (`application/octet-string`).
-See xref:amqp/message-converters.adoc#Jackson2JsonMessageConverter-from-message[Converting from a `Message`] for more information.
+See xref:amqp/message-converters.adoc#JacksonJsonMessageConverter-from-message[Converting from a `Message`] for more information.
 
 Similarly. the `Jackson2XmlMessageConverter` now assumes the content is XML if there is no `contentType` property, or it is the default (`application/octet-string`).
-See xref:amqp/message-converters.adoc#jackson2xml[`Jackson2XmlMessageConverter`] for more information.
+See xref:amqp/message-converters.adoc#jackson-xml[`Jackson2XmlMessageConverter`] for more information.
 
 When a `@RabbitListener` method returns a result, the bean and `Method` are now available in the reply message properties.
 This allows configuration of a `beforeSendReplyMessagePostProcessor` to, for example, set a header in the reply to indicate which method was invoked on the server.

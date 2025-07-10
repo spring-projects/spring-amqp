@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.annotation;
 
 import java.util.concurrent.TimeUnit;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
@@ -30,7 +31,7 @@ import org.springframework.amqp.rabbit.junit.LogLevels;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -44,15 +45,17 @@ import static org.awaitility.Awaitility.await;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.0
  *
  */
 @SpringJUnitConfig
 @DirtiesContext
-@RabbitAvailable(queues = { ComplexTypeJsonIntegrationTests.TEST_QUEUE, ComplexTypeJsonIntegrationTests.TEST_QUEUE2 })
-@LogLevels(classes = { RabbitTemplate.class,
+@RabbitAvailable(queues = {ComplexTypeJsonIntegrationTests.TEST_QUEUE, ComplexTypeJsonIntegrationTests.TEST_QUEUE2})
+@LogLevels(classes = {RabbitTemplate.class,
 		MessagingMessageListenerAdapter.class,
-		SimpleMessageListenerContainer.class })
+		SimpleMessageListenerContainer.class})
 public class ComplexTypeJsonIntegrationTests {
 
 	public static final String TEST_QUEUE = "test.complex.send.and.receive";
@@ -68,8 +71,8 @@ public class ComplexTypeJsonIntegrationTests {
 	private static Foo<Bar<Baz, Qux>> makeAFoo() {
 		Foo<Bar<Baz, Qux>> foo = new Foo<>();
 		Bar<Baz, Qux> bar = new Bar<>();
-		bar.setaField(new Baz("foo"));
-		bar.setbField(new Qux(42));
+		bar.setAField(new Baz("foo"));
+		bar.setBField(new Qux(42));
 		foo.setField(bar);
 		return foo;
 	}
@@ -78,22 +81,34 @@ public class ComplexTypeJsonIntegrationTests {
 	 * Covers all flavors of convertSendAndReceiveAsType
 	 */
 	@Test
-	public void testSendAndReceive() throws Exception {
+	public void testSendAndReceive() {
 		verifyFooBarBazQux(this.rabbitTemplate.convertSendAndReceiveAsType("foo",
-				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { }));
+				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() {
+
+				}));
 		verifyFooBarBazQux(this.rabbitTemplate.convertSendAndReceiveAsType("foo",
 				m -> m,
-				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { }));
+				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() {
+
+				}));
 		verifyFooBarBazQux(this.rabbitTemplate.convertSendAndReceiveAsType(TEST_QUEUE, "foo",
-				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { }));
+				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() {
+
+				}));
 		verifyFooBarBazQux(this.rabbitTemplate.convertSendAndReceiveAsType(TEST_QUEUE, "foo",
 				m -> m,
-				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { }));
+				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() {
+
+				}));
 		verifyFooBarBazQux(this.rabbitTemplate.convertSendAndReceiveAsType("", TEST_QUEUE, "foo",
-				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { }));
+				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() {
+
+				}));
 		verifyFooBarBazQux(this.rabbitTemplate.convertSendAndReceiveAsType("", TEST_QUEUE, "foo",
 				m -> m,
-				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { }));
+				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() {
+
+				}));
 	}
 
 	@Test
@@ -103,17 +118,21 @@ public class ComplexTypeJsonIntegrationTests {
 			return m;
 		});
 		verifyFooBarBazQux(
-			this.rabbitTemplate.receiveAndConvert(10_000, new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { }));
+				this.rabbitTemplate.receiveAndConvert(10_000, new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() {
+
+				}));
 	}
 
 	@Test
-	public void testReceiveNoWait() throws Exception {
+	public void testReceiveNoWait() {
 		this.rabbitTemplate.convertAndSend(TEST_QUEUE2, makeAFoo(), m -> {
 			m.getMessageProperties().getHeaders().remove("__TypeId__");
 			return m;
 		});
 		Foo<Bar<Baz, Qux>> foo = await().until(
-				() -> this.rabbitTemplate.receiveAndConvert(new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { }),
+				() -> this.rabbitTemplate.receiveAndConvert(new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() {
+
+				}),
 				msg -> msg != null);
 		verifyFooBarBazQux(foo);
 	}
@@ -121,33 +140,45 @@ public class ComplexTypeJsonIntegrationTests {
 	@Test
 	public void testAsyncSendAndReceive() throws Exception {
 		verifyFooBarBazQux(this.asyncTemplate.convertSendAndReceiveAsType("foo",
-				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { }));
+				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() {
+
+				}));
 		verifyFooBarBazQux(this.asyncTemplate.convertSendAndReceiveAsType("foo",
 				m -> m,
-				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { }));
+				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() {
+
+				}));
 		verifyFooBarBazQux(this.asyncTemplate.convertSendAndReceiveAsType(TEST_QUEUE, "foo",
-				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { }));
+				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() {
+
+				}));
 		verifyFooBarBazQux(this.asyncTemplate.convertSendAndReceiveAsType(TEST_QUEUE, "foo",
 				m -> m,
-				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { }));
+				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() {
+
+				}));
 		verifyFooBarBazQux(this.asyncTemplate.convertSendAndReceiveAsType("", TEST_QUEUE, "foo",
-				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { }));
+				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() {
+
+				}));
 		verifyFooBarBazQux(this.asyncTemplate.convertSendAndReceiveAsType("", TEST_QUEUE, "foo",
 				m -> m,
-				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { }));
+				new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() {
+
+				}));
 	}
 
 	private void verifyFooBarBazQux(RabbitConverterFuture<Foo<Bar<Baz, Qux>>> future) throws Exception {
 		verifyFooBarBazQux(future.get(10, TimeUnit.SECONDS));
 	}
 
-	private void verifyFooBarBazQux(Foo<?> foo) {
+	private void verifyFooBarBazQux(@Nullable Foo<?> foo) {
 		assertThat(foo).isNotNull();
 		Bar<?, ?> bar;
 		assertThat(foo.getField()).isInstanceOf(Bar.class);
 		bar = (Bar<?, ?>) foo.getField();
-		assertThat(bar.getaField()).isInstanceOf(Baz.class);
-		assertThat(bar.getbField()).isInstanceOf(Qux.class);
+		assertThat(bar.getAField()).isInstanceOf(Baz.class);
+		assertThat(bar.getBField()).isInstanceOf(Qux.class);
 	}
 
 	@Configuration
@@ -175,7 +206,7 @@ public class ComplexTypeJsonIntegrationTests {
 
 		@Bean
 		public MessageConverter jsonMessageConverter() {
-			return new Jackson2JsonMessageConverter();
+			return new JacksonJsonMessageConverter();
 		}
 
 		@Bean
@@ -221,25 +252,25 @@ public class ComplexTypeJsonIntegrationTests {
 
 	}
 
-	public static class Bar<A, B>  {
+	public static class Bar<A, B> {
 
 		private A aField;
 
 		private B bField;
 
-		public A getaField() {
-			return this.aField;
+		public A getAField() {
+			return aField;
 		}
 
-		public void setaField(A aField) {
+		public void setAField(A aField) {
 			this.aField = aField;
 		}
 
-		public B getbField() {
-			return this.bField;
+		public B getBField() {
+			return bField;
 		}
 
-		public void setbField(B bField) {
+		public void setBField(B bField) {
 			this.bField = bField;
 		}
 
@@ -254,7 +285,7 @@ public class ComplexTypeJsonIntegrationTests {
 
 		private String baz;
 
-		Baz() {
+		public Baz() {
 		}
 
 		public Baz(String string) {
@@ -280,7 +311,7 @@ public class ComplexTypeJsonIntegrationTests {
 
 		private Integer qux;
 
-		Qux() {
+		public Qux() {
 		}
 
 		public Qux(int i) {

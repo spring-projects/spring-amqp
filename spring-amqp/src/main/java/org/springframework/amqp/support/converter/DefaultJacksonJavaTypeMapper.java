@@ -17,31 +17,30 @@
 package org.springframework.amqp.support.converter;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.type.TypeFactory;
 
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 /**
- * Jackson 2 type mapper.
- * @author Mark Pollack
- * @author Sam Nelson
- * @author Andreas Asplund
- * @author Artem Bilan
- * @author Gary Russell
- * @author Ngoc Nhan
+ * Jackson 3 type mapper.
  *
- * @deprecated since 4.0 in favor of {@link DefaultJacksonJavaTypeMapper} for Jackson 3.
+ * @author Artem Bilan
+ *
+ * @since 4.0
  */
-@Deprecated(forRemoval = true, since = "4.0")
-public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implements Jackson2JavaTypeMapper {
+public class DefaultJacksonJavaTypeMapper implements JacksonJavaTypeMapper, BeanClassLoaderAware {
 
 	private static final List<String> TRUSTED_PACKAGES =
 			Arrays.asList(
@@ -53,11 +52,98 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 
 	private volatile TypePrecedence typePrecedence = TypePrecedence.INFERRED;
 
+	public static final String DEFAULT_CLASSID_FIELD_NAME = "__TypeId__";
+
+	public static final String DEFAULT_CONTENT_CLASSID_FIELD_NAME = "__ContentTypeId__";
+
+	public static final String DEFAULT_KEY_CLASSID_FIELD_NAME = "__KeyTypeId__";
+
+	private final Map<String, Class<?>> idClassMapping = new HashMap<>();
+
+	private final Map<Class<?>, String> classIdMapping = new HashMap<>();
+
+	private @Nullable ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
+
+	private TypeFactory typeFactory = TypeFactory.createDefaultInstance();
+
+	public String getClassIdFieldName() {
+		return DEFAULT_CLASSID_FIELD_NAME;
+	}
+
+	public String getContentClassIdFieldName() {
+		return DEFAULT_CONTENT_CLASSID_FIELD_NAME;
+	}
+
+	public String getKeyClassIdFieldName() {
+		return DEFAULT_KEY_CLASSID_FIELD_NAME;
+	}
+
+	public void setIdClassMapping(Map<String, Class<?>> idClassMapping) {
+		this.idClassMapping.putAll(idClassMapping);
+		createReverseMap();
+	}
+
+	@Override
+	public void setBeanClassLoader(ClassLoader classLoader) {
+		this.classLoader = classLoader;
+		this.typeFactory = this.typeFactory.withClassLoader(classLoader);
+	}
+
+	protected @Nullable ClassLoader getClassLoader() {
+		return this.classLoader;
+	}
+
+	protected void addHeader(MessageProperties properties, String headerName, Class<?> clazz) {
+		if (this.classIdMapping.containsKey(clazz)) {
+			properties.getHeaders().put(headerName, this.classIdMapping.get(clazz));
+		}
+		else {
+			properties.getHeaders().put(headerName, clazz.getName());
+		}
+	}
+
+	protected String retrieveHeader(MessageProperties properties, String headerName) {
+		String classId = retrieveHeaderAsString(properties, headerName);
+		if (classId == null) {
+			throw new MessageConversionException(
+					"failed to convert Message content. Could not resolve " + headerName + " in header");
+		}
+		return classId;
+	}
+
+	protected @Nullable String retrieveHeaderAsString(MessageProperties properties, String headerName) {
+		Map<String, @Nullable Object> headers = properties.getHeaders();
+		Object classIdFieldNameValue = headers.get(headerName);
+		return classIdFieldNameValue != null
+				? classIdFieldNameValue.toString()
+				: null;
+	}
+
+	private void createReverseMap() {
+		this.classIdMapping.clear();
+		for (Map.Entry<String, Class<?>> entry : this.idClassMapping.entrySet()) {
+			String id = entry.getKey();
+			Class<?> clazz = entry.getValue();
+			this.classIdMapping.put(clazz, id);
+		}
+	}
+
+	public Map<String, Class<?>> getIdClassMapping() {
+		return Collections.unmodifiableMap(this.idClassMapping);
+	}
+
+	protected boolean hasInferredTypeHeader(MessageProperties properties) {
+		return properties.getInferredArgumentType() != null;
+	}
+
+	protected JavaType fromInferredTypeHeader(MessageProperties properties) {
+		return this.typeFactory.constructType(properties.getInferredArgumentType());
+	}
+
 	/**
 	 * Return the precedence.
 	 * @return the precedence.
-	 * @since 1.6.
-	 * @see #setTypePrecedence(Jackson2JavaTypeMapper.TypePrecedence)
+	 * @see #setTypePrecedence(TypePrecedence)
 	 */
 	@Override
 	public TypePrecedence getTypePrecedence() {
@@ -78,10 +164,8 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 	 * <p>
 	 * If you wish to force the use of the  {@code __TypeId__} and associated headers
 	 * (such as when the actual type is a subclass of the method argument type),
-	 * set the precedence to {@link Jackson2JavaTypeMapper.TypePrecedence#TYPE_ID}.
-	 *
+	 * set the precedence to {@link TypePrecedence#TYPE_ID}.
 	 * @param typePrecedence the precedence.
-	 * @since 1.6
 	 */
 	public void setTypePrecedence(TypePrecedence typePrecedence) {
 		Assert.notNull(typePrecedence, "'typePrecedence' cannot be null");
@@ -92,7 +176,6 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 	 * Specify a set of packages to trust during deserialization.
 	 * The asterisk ({@code *}) means trust all.
 	 * @param trustedPackages the trusted Java packages for deserialization
-	 * @since 1.6.11
 	 */
 	public void setTrustedPackages(String @Nullable ... trustedPackages) {
 		if (trustedPackages != null) {
@@ -130,7 +213,7 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 			return fromInferredTypeHeader(properties);
 		}
 
-		return TypeFactory.defaultInstance().constructType(Object.class);
+		return this.typeFactory.constructType(Object.class);
 	}
 
 	private boolean canConvert(JavaType inferredType) {
@@ -151,13 +234,11 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 
 		JavaType contentClassType = getClassIdType(retrieveHeader(properties, getContentClassIdFieldName()));
 		if (classType.getKeyType() == null) {
-			return TypeFactory.defaultInstance()
-					.constructCollectionLikeType(classType.getRawClass(), contentClassType);
+			return this.typeFactory.constructCollectionLikeType(classType.getRawClass(), contentClassType);
 		}
 
 		JavaType keyClassType = getClassIdType(retrieveHeader(properties, getKeyClassIdFieldName()));
-		return TypeFactory.defaultInstance()
-				.constructMapLikeType(classType.getRawClass(), keyClassType, contentClassType);
+		return this.typeFactory.constructMapLikeType(classType.getRawClass(), keyClassType, contentClassType);
 	}
 
 	@Override
@@ -170,7 +251,7 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 
 	private JavaType getClassIdType(String classId) {
 		if (getIdClassMapping().containsKey(classId)) {
-			return TypeFactory.defaultInstance().constructType(getIdClassMapping().get(classId));
+			return this.typeFactory.constructType(getIdClassMapping().get(classId));
 		}
 		else {
 			try {
@@ -181,8 +262,7 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 							"If the serialization is only done by a trusted source, you can also enable trust all (*).");
 				}
 				else {
-					return TypeFactory.defaultInstance()
-							.constructType(ClassUtils.forName(classId, getClassLoader()));
+					return this.typeFactory.constructType(ClassUtils.forName(classId, getClassLoader()));
 				}
 			}
 			catch (ClassNotFoundException e) {
@@ -222,7 +302,7 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 
 	@Override
 	public void fromClass(Class<?> clazz, MessageProperties properties) {
-		fromJavaType(TypeFactory.defaultInstance().constructType(clazz), properties);
+		fromJavaType(this.typeFactory.constructType(clazz), properties);
 
 	}
 

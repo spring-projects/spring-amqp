@@ -31,7 +31,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.BatchingRabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -52,7 +52,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringJUnitConfig
 @DirtiesContext
-@RabbitAvailable(queues = { "json.batch.1", "json.batch.2" })
+@RabbitAvailable(queues = {"json.batch.1", "json.batch.2"})
 public class EnableRabbitBatchJsonIntegrationTests {
 
 	@Autowired
@@ -109,8 +109,8 @@ public class EnableRabbitBatchJsonIntegrationTests {
 		}
 
 		@Bean
-		public Jackson2JsonMessageConverter converter() {
-			return new Jackson2JsonMessageConverter();
+		public JacksonJsonMessageConverter converter() {
+			return new JacksonJsonMessageConverter();
 		}
 
 		@Bean

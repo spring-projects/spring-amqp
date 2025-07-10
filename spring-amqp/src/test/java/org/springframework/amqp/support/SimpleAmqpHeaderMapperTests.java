@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.util.MimeTypeUtils;
 
@@ -39,6 +39,7 @@ import static org.assertj.core.api.Assertions.fail;
  * @author Gary Russell
  * @author Oleg Zhurakousky
  * @author Raylax Grey
+ * @author Artem Bilan
  */
 public class SimpleAmqpHeaderMapperTests {
 
@@ -117,11 +118,10 @@ public class SimpleAmqpHeaderMapperTests {
 		assertThat(amqpProperties.getDelayLong()).isEqualTo(Long.valueOf(MessageProperties.X_DELAY_MAX));
 
 		assertThatThrownBy(() -> amqpProperties.setDelayLong(MessageProperties.X_DELAY_MAX + 1))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("Delay cannot exceed");
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("Delay cannot exceed");
 
 	}
-
 
 	@Test
 	public void fromHeadersWithContentTypeAsMediaType() {
@@ -195,7 +195,7 @@ public class SimpleAmqpHeaderMapperTests {
 	@Test // INT-2090
 	public void jsonTypeIdNotOverwritten() {
 		SimpleAmqpHeaderMapper headerMapper = new SimpleAmqpHeaderMapper();
-		Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
+		JacksonJsonMessageConverter converter = new JacksonJsonMessageConverter();
 		MessageProperties amqpProperties = new MessageProperties();
 		converter.toMessage("123", amqpProperties);
 		Map<String, Object> headerMap = new HashMap<>();

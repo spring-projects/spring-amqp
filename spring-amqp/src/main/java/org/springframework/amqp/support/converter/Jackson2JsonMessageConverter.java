@@ -34,7 +34,10 @@ import org.springframework.util.MimeTypeUtils;
  * @author Artem Bilan
  * @author Arlo Louis O'Keeffe
  * @author Mohammad Hewedy
+ *
+ * @deprecated since 4.0 in favor of {@link JacksonJsonMessageConverter} for Jackson 3.
  */
+@Deprecated(forRemoval = true, since = "4.0")
 public class Jackson2JsonMessageConverter extends AbstractJackson2MessageConverter {
 
 	/**

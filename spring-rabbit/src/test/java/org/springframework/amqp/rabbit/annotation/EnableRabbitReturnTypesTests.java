@@ -32,7 +32,7 @@ import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.support.converter.ContentTypeDelegatingMessageConverter;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,13 +46,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.2
  *
  */
 @SpringJUnitConfig
 @DirtiesContext
-@RabbitAvailable(queues = { "EnableRabbitReturnTypesTests.1", "EnableRabbitReturnTypesTests.2",
-		"EnableRabbitReturnTypesTests.3", "EnableRabbitReturnTypesTests.4", "EnableRabbitReturnTypesTests.5" })
+@RabbitAvailable(queues = {"EnableRabbitReturnTypesTests.1", "EnableRabbitReturnTypesTests.2",
+		"EnableRabbitReturnTypesTests.3", "EnableRabbitReturnTypesTests.4", "EnableRabbitReturnTypesTests.5"})
 public class EnableRabbitReturnTypesTests {
 
 	@Test
@@ -100,7 +102,7 @@ public class EnableRabbitReturnTypesTests {
 
 		@Bean
 		public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(CachingConnectionFactory cf,
-				Jackson2JsonMessageConverter converter) {
+				JacksonJsonMessageConverter converter) {
 
 			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 			factory.setConnectionFactory(cf);
@@ -110,7 +112,7 @@ public class EnableRabbitReturnTypesTests {
 		}
 
 		@Bean
-		public RabbitTemplate template(CachingConnectionFactory cf, Jackson2JsonMessageConverter converter) {
+		public RabbitTemplate template(CachingConnectionFactory cf, JacksonJsonMessageConverter converter) {
 			RabbitTemplate template = new RabbitTemplate(cf);
 			template.setMessageConverter(converter);
 			template.setReplyTimeout(30_000);
@@ -128,8 +130,8 @@ public class EnableRabbitReturnTypesTests {
 		}
 
 		@Bean
-		public Jackson2JsonMessageConverter converter() {
-			return new Jackson2JsonMessageConverter();
+		public JacksonJsonMessageConverter converter() {
+			return new JacksonJsonMessageConverter();
 		}
 
 		@Bean

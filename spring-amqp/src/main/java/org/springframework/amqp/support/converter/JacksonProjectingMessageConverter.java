@@ -19,8 +19,13 @@ package org.springframework.amqp.support.converter;
 import java.io.ByteArrayInputStream;
 import java.lang.reflect.Type;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
+import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.TypeRef;
+import com.jayway.jsonpath.spi.mapper.MappingException;
+import com.jayway.jsonpath.spi.mapper.MappingProvider;
+import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectMapper;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.core.ResolvableType;
@@ -33,21 +38,20 @@ import org.springframework.util.Assert;
 /**
  * Uses a Spring Data {@link ProjectionFactory} to bind incoming messages to projection
  * interfaces.
+ * Based on Jackson 3.
  *
- * @author Gary Russell
+ * @author Artem Bilan
  *
- * @since 2.2
+ * @since 4.0
  *
- * @deprecated since 4.0 in favor of {@link JacksonProjectingMessageConverter}.
  */
-@Deprecated(since = "4.0", forRemoval = true)
-public class ProjectingMessageConverter {
+public class JacksonProjectingMessageConverter {
 
 	private final ProjectionFactory projectionFactory;
 
-	public ProjectingMessageConverter(ObjectMapper mapper) {
+	public JacksonProjectingMessageConverter(ObjectMapper mapper) {
 		Assert.notNull(mapper, "'mapper' cannot be null");
-		JacksonMappingProvider provider = new JacksonMappingProvider(mapper);
+		MappingProvider provider = new Jackson3MappingProvider(mapper);
 		MethodInterceptorFactory interceptorFactory = new JsonProjectingMethodInterceptorFactory(provider);
 
 		SpelAwareProxyProjectionFactory factory = new SpelAwareProxyProjectionFactory();
@@ -59,6 +63,43 @@ public class ProjectingMessageConverter {
 	public Object convert(Message message, Type type) {
 		return this.projectionFactory.createProjection(ResolvableType.forType(type).resolve(Object.class),
 				new ByteArrayInputStream(message.getBody()));
+	}
+
+	/**
+	 * A {@link MappingProvider} implementation for Jackson 3.
+	 * Until respective implementation is there in json-path library.
+	 * @param objectMapper Jackson 3 {@link ObjectMapper}
+	 */
+	private record Jackson3MappingProvider(ObjectMapper objectMapper) implements MappingProvider {
+
+		@Override
+		public <T> @Nullable T map(@Nullable Object source, Class<T> targetType, Configuration configuration) {
+			if (source == null) {
+				return null;
+			}
+			try {
+				return this.objectMapper.convertValue(source, targetType);
+			}
+			catch (Exception ex) {
+				throw new MappingException(ex);
+			}
+		}
+
+		@Override
+		public <T> @Nullable T map(@Nullable Object source, final TypeRef<T> targetType, Configuration configuration) {
+			if (source == null) {
+				return null;
+			}
+			JavaType type = this.objectMapper.constructType(targetType.getType());
+
+			try {
+				return this.objectMapper.convertValue(source, type);
+			}
+			catch (Exception ex) {
+				throw new MappingException(ex);
+			}
+		}
+
 	}
 
 }

@@ -44,7 +44,7 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +58,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.1
  *
  */
@@ -152,7 +154,7 @@ public class AsyncListenerTests {
 
 		@Bean
 		public MessageConverter converter() {
-			return new Jackson2JsonMessageConverter();
+			return new JacksonJsonMessageConverter();
 		}
 
 		@Bean

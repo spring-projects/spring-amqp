@@ -16,29 +16,26 @@
 
 package org.springframework.amqp.support.converter;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.dataformat.xml.XmlMapper;
 
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.util.MimeTypeUtils;
 
 /**
- * XML converter that uses the Jackson 2 Xml library.
+ * XML converter that uses the Jackson 3 XML mapper.
  *
- * @author Mohammad Hewedy
+ * @author Artem Bilan
  *
- * @since 2.1
- *
- * @deprecated since 4.0 in favor of {@link JacksonXmlMessageConverter} for Jackson 3.
+ * @since 4.0
  */
-@Deprecated(forRemoval = true, since = "4.0")
-public class Jackson2XmlMessageConverter extends AbstractJackson2MessageConverter {
+public class JacksonXmlMessageConverter extends AbstractJacksonMessageConverter {
 
 	/**
 	 * Construct with an internal {@link XmlMapper} instance
 	 * and trusted packed to all ({@code *}).
 	 */
-	public Jackson2XmlMessageConverter() {
+	public JacksonXmlMessageConverter() {
 		this("*");
 	}
 
@@ -47,11 +44,13 @@ public class Jackson2XmlMessageConverter extends AbstractJackson2MessageConverte
 	 * The {@link DeserializationFeature#FAIL_ON_UNKNOWN_PROPERTIES} is set to false on
 	 * the {@link XmlMapper}.
 	 * @param trustedPackages the trusted Java packages for deserialization
-	 * @see DefaultJackson2JavaTypeMapper#setTrustedPackages(String...)
+	 * @see DefaultJacksonJavaTypeMapper#setTrustedPackages(String...)
 	 */
-	public Jackson2XmlMessageConverter(String... trustedPackages) {
-		this(new XmlMapper(), trustedPackages);
-		this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	public JacksonXmlMessageConverter(String... trustedPackages) {
+		this(XmlMapper.xmlBuilder()
+						.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+						.build(),
+				trustedPackages);
 	}
 
 	/**
@@ -59,7 +58,7 @@ public class Jackson2XmlMessageConverter extends AbstractJackson2MessageConverte
 	 * and trusted packed to all ({@code *}).
 	 * @param xmlMapper the {@link XmlMapper} to use.
 	 */
-	public Jackson2XmlMessageConverter(XmlMapper xmlMapper) {
+	public JacksonXmlMessageConverter(XmlMapper xmlMapper) {
 		this(xmlMapper, "*");
 	}
 
@@ -67,9 +66,9 @@ public class Jackson2XmlMessageConverter extends AbstractJackson2MessageConverte
 	 * Construct with the provided {@link XmlMapper} instance.
 	 * @param xmlMapper the {@link XmlMapper} to use.
 	 * @param trustedPackages the trusted Java packages for deserialization
-	 * @see DefaultJackson2JavaTypeMapper#setTrustedPackages(String...)
+	 * @see DefaultJacksonJavaTypeMapper#setTrustedPackages(String...)
 	 */
-	public Jackson2XmlMessageConverter(XmlMapper xmlMapper, String... trustedPackages) {
+	public JacksonXmlMessageConverter(XmlMapper xmlMapper, String... trustedPackages) {
 		super(xmlMapper, MimeTypeUtils.parseMimeType(MessageProperties.CONTENT_TYPE_XML), trustedPackages);
 	}
 

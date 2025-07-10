@@ -203,7 +203,7 @@ That involves a private `replyTo` queue that is sent by the client within the or
 The server's core configuration is in the `RabbitServerConfiguration` class within the `org.springframework.amqp.rabbit.stocks.config.server` package.
 It extends the `AbstractStockAppRabbitConfiguration`.
 That is where the resources common to the server and client are defined, including the market data topic exchange (whose name is 'app.stock.marketdata') and the queue that the server exposes for stock trades (whose name is 'app.stock.request').
-In that common configuration file, you also see that a `Jackson2JsonMessageConverter` is configured on the `RabbitTemplate`.
+In that common configuration file, you also see that a `JacksonJsonMessageConverter` is configured on the `RabbitTemplate`.
 
 The server-specific configuration consists of two things.
 First, it configures the market data exchange on the `RabbitTemplate` so that it does not need to provide that exchange name with every call to send a `Message`.

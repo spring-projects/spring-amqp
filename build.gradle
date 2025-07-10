@@ -40,6 +40,7 @@ ext {
 	hamcrestVersion = '3.0'
 	hibernateValidationVersion = '8.0.2.Final'
 	jacksonBomVersion = '2.19.1'
+	jackson3Version = '3.0.0-rc5'
 	jaywayJsonPathVersion = '2.9.0'
 	junitJupiterVersion = '5.13.3'
 	kotlinCoroutinesVersion = '1.10.2'
@@ -110,6 +111,7 @@ allprojects {
 
 		imports {
 			mavenBom "com.fasterxml.jackson:jackson-bom:$jacksonBomVersion"
+			mavenBom "tools.jackson:jackson-bom:$jackson3Version"
 			mavenBom "org.junit:junit-bom:$junitJupiterVersion"
 			mavenBom "org.springframework:spring-framework-bom:$springVersion"
 			mavenBom "io.projectreactor:reactor-bom:$reactorVersion"
@@ -303,6 +305,7 @@ project('spring-amqp') {
 		optionalApi 'org.springframework:spring-messaging'
 		optionalApi 'org.springframework:spring-oxm'
 		optionalApi 'org.springframework:spring-context'
+
 		optionalApi 'com.fasterxml.jackson.core:jackson-core'
 		optionalApi 'com.fasterxml.jackson.core:jackson-databind'
 		optionalApi 'com.fasterxml.jackson.core:jackson-annotations'
@@ -312,6 +315,14 @@ project('spring-amqp') {
 		optionalApi 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 		optionalApi 'com.fasterxml.jackson.datatype:jackson-datatype-joda'
 		optionalApi 'com.fasterxml.jackson.module:jackson-module-kotlin'
+
+		optionalApi 'tools.jackson.core:jackson-databind'
+		optionalApi 'tools.jackson.datatype:jackson-datatype-joda'
+		optionalApi 'tools.jackson.dataformat:jackson-dataformat-xml'
+		optionalApi('tools.jackson.module:jackson-module-kotlin') {
+			exclude group: 'org.jetbrains.kotlin'
+		}
+
 		// Spring Data projection message binding support
 		optionalApi 'org.springframework.data:spring-data-commons'
 		optionalApi "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
@@ -387,6 +398,9 @@ project('spring-rabbit') {
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind'
 		testRuntimeOnly 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
 		testRuntimeOnly 'com.fasterxml.jackson.module:jackson-module-kotlin'
+
+		testRuntimeOnly 'tools.jackson.core:jackson-databind'
+		testRuntimeOnly 'tools.jackson.dataformat:jackson-dataformat-xml'
 	}
 }
 
@@ -404,6 +418,8 @@ project('spring-rabbit-stream') {
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind'
 		testRuntimeOnly 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
 		testRuntimeOnly 'com.fasterxml.jackson.module:jackson-module-kotlin'
+
+		testRuntimeOnly 'tools.jackson.core:jackson-databind'
 
 		testImplementation 'org.testcontainers:rabbitmq'
 		testImplementation 'org.testcontainers:junit-jupiter'
@@ -427,6 +443,8 @@ project('spring-rabbitmq-client') {
 		testApi 'io.projectreactor:reactor-core'
 
 		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind'
+
+		testRuntimeOnly 'tools.jackson.core:jackson-databind'
 
 		testImplementation 'org.testcontainers:rabbitmq'
 		testImplementation 'org.testcontainers:junit-jupiter'

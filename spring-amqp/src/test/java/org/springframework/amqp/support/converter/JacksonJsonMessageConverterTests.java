@@ -16,22 +16,22 @@
 
 package org.springframework.amqp.support.converter;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ser.BeanSerializerFactory;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -54,20 +54,20 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringJUnitConfig
 @DirtiesContext
-public class Jackson2JsonMessageConverterTests {
+public class JacksonJsonMessageConverterTests {
 
-	public static final String TRUSTED_PACKAGE = Jackson2JsonMessageConverterTests.class.getPackage().getName();
+	public static final String TRUSTED_PACKAGE = JacksonJsonMessageConverterTests.class.getPackage().getName();
 
-	private Jackson2JsonMessageConverter converter;
+	private JacksonJsonMessageConverter converter;
 
 	private SimpleTrade trade;
 
 	@Autowired
-	private Jackson2JsonMessageConverter jsonConverterWithDefaultType;
+	private JacksonJsonMessageConverter jsonConverterWithDefaultType;
 
 	@BeforeEach
 	public void before() {
-		converter = new Jackson2JsonMessageConverter(TRUSTED_PACKAGE);
+		converter = new JacksonJsonMessageConverter(TRUSTED_PACKAGE);
 		trade = new SimpleTrade();
 		trade.setAccountName("Acct1");
 		trade.setBuyRequest(true);
@@ -89,11 +89,13 @@ public class Jackson2JsonMessageConverterTests {
 
 	@Test
 	public void simpleTradeOverrideMapper() {
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.setSerializerFactory(BeanSerializerFactory.instance);
-		converter = new Jackson2JsonMessageConverter(mapper);
+		ObjectMapper mapper =
+				JsonMapper.builder()
+						.serializerFactory(BeanSerializerFactory.instance)
+						.build();
+		converter = new JacksonJsonMessageConverter(mapper);
 
-		((DefaultJackson2JavaTypeMapper) this.converter.getJavaTypeMapper())
+		((DefaultJacksonJavaTypeMapper) this.converter.getJavaTypeMapper())
 				.setTrustedPackages(TRUSTED_PACKAGE);
 
 		Message message = converter.toMessage(trade, new MessageProperties());
@@ -116,7 +118,7 @@ public class Jackson2JsonMessageConverterTests {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void hashtable() {
-		Hashtable<String, String> hashtable = new Hashtable<String, String>();
+		Hashtable<String, String> hashtable = new Hashtable<>();
 		hashtable.put("TICKER", "VMW");
 		hashtable.put("PRICE", "103.2");
 
@@ -171,7 +173,7 @@ public class Jackson2JsonMessageConverterTests {
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setContentType("application/json");
 		Message message = new Message(bytes, messageProperties);
-		Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
+		JacksonJsonMessageConverter converter = new JacksonJsonMessageConverter();
 		DefaultClassMapper classMapper = new DefaultClassMapper();
 		classMapper.setDefaultType(Foo.class);
 		converter.setClassMapper(classMapper);
@@ -279,7 +281,7 @@ public class Jackson2JsonMessageConverterTests {
 
 	@Test
 	public void testProjection() {
-		Jackson2JsonMessageConverter conv = new Jackson2JsonMessageConverter();
+		JacksonJsonMessageConverter conv = new JacksonJsonMessageConverter();
 		conv.setUseProjectionForInterfaces(true);
 		MessageProperties properties = new MessageProperties();
 		properties.setInferredArgumentType(Sample.class);
@@ -297,18 +299,18 @@ public class Jackson2JsonMessageConverterTests {
 		byte[] bytes = "{\"name\" : \"foo\" }".getBytes();
 		MessageProperties messageProperties = new MessageProperties();
 		Message message = new Message(bytes, messageProperties);
-		Jackson2JsonMessageConverter j2Converter = new Jackson2JsonMessageConverter();
+		JacksonJsonMessageConverter jsonMessageConverter = new JacksonJsonMessageConverter();
 		DefaultClassMapper classMapper = new DefaultClassMapper();
 		classMapper.setDefaultType(Foo.class);
-		j2Converter.setClassMapper(classMapper);
-		Object foo = j2Converter.fromMessage(message);
+		jsonMessageConverter.setClassMapper(classMapper);
+		Object foo = jsonMessageConverter.fromMessage(message);
 		assertThat(foo).isInstanceOf(Foo.class);
 
-		foo = j2Converter.fromMessage(message);
+		foo = jsonMessageConverter.fromMessage(message);
 		assertThat(foo).isInstanceOf(Foo.class);
 
-		j2Converter.setAssumeSupportedContentType(false);
-		foo = j2Converter.fromMessage(message);
+		jsonMessageConverter.setAssumeSupportedContentType(false);
+		foo = jsonMessageConverter.fromMessage(message);
 		assertThat(foo).isSameAs(bytes);
 	}
 
@@ -319,11 +321,10 @@ public class Jackson2JsonMessageConverterTests {
 		messageProperties.setHeader("__TypeId__", String.class.getName());
 		messageProperties.setInferredArgumentType(Baz.class);
 		Message message = new Message(bytes, messageProperties);
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.registerModule(new BazModule());
-		Jackson2JsonMessageConverter j2Converter = new Jackson2JsonMessageConverter(mapper);
-		j2Converter.setAlwaysConvertToInferredType(true);
-		Baz baz = (Baz) j2Converter.fromMessage(message);
+		ObjectMapper mapper = JsonMapper.builder().addModule(new BazModule()).build();
+		JacksonJsonMessageConverter messageConverter = new JacksonJsonMessageConverter(mapper);
+		messageConverter.setAlwaysConvertToInferredType(true);
+		Baz baz = (Baz) messageConverter.fromMessage(message);
 		assertThat(((Qux) baz).getField()).isEqualTo("foo");
 	}
 
@@ -334,8 +335,8 @@ public class Jackson2JsonMessageConverterTests {
 		messageProperties.setHeader("__TypeId__", Buz.class.getName());
 		messageProperties.setInferredArgumentType(Baz.class);
 		Message message = new Message(bytes, messageProperties);
-		Jackson2JsonMessageConverter j2Converter = new Jackson2JsonMessageConverter();
-		Fiz buz = (Fiz) j2Converter.fromMessage(message);
+		JacksonJsonMessageConverter jsonMessageConverter = new JacksonJsonMessageConverter();
+		Fiz buz = (Fiz) jsonMessageConverter.fromMessage(message);
 		assertThat(((Buz) buz).getField()).isEqualTo("foo");
 	}
 
@@ -346,12 +347,11 @@ public class Jackson2JsonMessageConverterTests {
 		messageProperties.setHeader("__TypeId__", String.class.getName());
 		messageProperties.setInferredArgumentType(getClass().getDeclaredMethod("bazLister").getGenericReturnType());
 		Message message = new Message(bytes, messageProperties);
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.registerModule(new BazModule());
-		Jackson2JsonMessageConverter j2Converter = new Jackson2JsonMessageConverter(mapper);
-		j2Converter.setAlwaysConvertToInferredType(true);
+		ObjectMapper mapper = JsonMapper.builder().addModule(new BazModule()).build();
+		JacksonJsonMessageConverter jsonMessageConverter = new JacksonJsonMessageConverter(mapper);
+		jsonMessageConverter.setAlwaysConvertToInferredType(true);
 		@SuppressWarnings("unchecked")
-		List<Baz> bazs = (List<Baz>) j2Converter.fromMessage(message);
+		List<Baz> bazs = (List<Baz>) jsonMessageConverter.fromMessage(message);
 		assertThat(bazs).hasSize(1);
 		assertThat(((Qux) bazs.get(0)).getField()).isEqualTo("foo");
 	}
@@ -364,11 +364,10 @@ public class Jackson2JsonMessageConverterTests {
 		messageProperties.setHeader("__TypeId__", List.class.getName());
 		messageProperties.setHeader("__ContentTypeId__", Buz.class.getName());
 		Message message = new Message(bytes, messageProperties);
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.registerModule(new BazModule());
-		Jackson2JsonMessageConverter j2Converter = new Jackson2JsonMessageConverter(mapper);
+		ObjectMapper mapper = JsonMapper.builder().addModule(new BazModule()).build();
+		JacksonJsonMessageConverter jsonMessageConverter = new JacksonJsonMessageConverter(mapper);
 		@SuppressWarnings("unchecked")
-		List<Fiz> buzs = (List<Fiz>) j2Converter.fromMessage(message);
+		List<Fiz> buzs = (List<Fiz>) jsonMessageConverter.fromMessage(message);
 		assertThat(buzs).hasSize(1);
 		assertThat(((Buz) buzs.get(0)).getField()).isEqualTo("foo");
 	}
@@ -381,9 +380,9 @@ public class Jackson2JsonMessageConverterTests {
 		messageProperties.setHeader("__TypeId__", List.class.getName());
 		messageProperties.setHeader("__ContentTypeId__", Object.class.getName());
 		Message message = new Message(bytes, messageProperties);
-		Jackson2JsonMessageConverter j2Converter = new Jackson2JsonMessageConverter();
+		JacksonJsonMessageConverter jsonMessageConverter = new JacksonJsonMessageConverter();
 		@SuppressWarnings("unchecked")
-		List<Foo> foos = (List<Foo>) j2Converter.fromMessage(message);
+		List<Foo> foos = (List<Foo>) jsonMessageConverter.fromMessage(message);
 		assertThat(foos).hasSize(1);
 		assertThat(foos.get(0).getName()).isEqualTo("bar");
 	}
@@ -397,10 +396,10 @@ public class Jackson2JsonMessageConverterTests {
 		messageProperties.setHeader("__KeyTypeId__", String.class.getName());
 		messageProperties.setHeader("__ContentTypeId__", Object.class.getName());
 		Message message = new Message(bytes, messageProperties);
-		Jackson2JsonMessageConverter j2Converter = new Jackson2JsonMessageConverter();
+		JacksonJsonMessageConverter jsonMessageConverter = new JacksonJsonMessageConverter();
 
 		@SuppressWarnings("unchecked")
-		Map<String, Qux> foos = (Map<String, Qux>) j2Converter.fromMessage(message);
+		Map<String, Qux> foos = (Map<String, Qux>) jsonMessageConverter.fromMessage(message);
 		assertThat(foos).hasSize(1);
 		assertThat(foos.keySet().iterator().next()).isEqualTo("test");
 		assertThat(foos.values().iterator().next().getField()).isEqualTo("baz");
@@ -409,7 +408,7 @@ public class Jackson2JsonMessageConverterTests {
 	@Test
 	void charsetInContentType() {
 		trade.setUserName("John Doe ∫");
-		Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
+		JacksonJsonMessageConverter converter = new JacksonJsonMessageConverter();
 		String utf8 = "application/json;charset=utf-8";
 		converter.setSupportedContentType(MimeTypeUtils.parseMimeType(utf8));
 		Message message = converter.toMessage(trade, new MessageProperties());
@@ -444,7 +443,7 @@ public class Jackson2JsonMessageConverterTests {
 	@Test
 	void noConfigForCharsetInContentType() {
 		trade.setUserName("John Doe ∫");
-		Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
+		JacksonJsonMessageConverter converter = new JacksonJsonMessageConverter();
 		Message message = converter.toMessage(trade, new MessageProperties());
 		int bodyLength8 = message.getBody().length;
 		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
@@ -640,14 +639,11 @@ public class Jackson2JsonMessageConverterTests {
 		}
 
 		@Override
-		public Baz deserialize(JsonParser p, DeserializationContext ctxt)
-				throws IOException, JsonProcessingException {
-
-			p.nextFieldName();
-			String field = p.nextTextValue();
+		public Baz deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
+			p.nextName();
+			String field = p.nextStringValue();
 			p.nextToken();
 			return new Qux(field);
-
 		}
 
 	}
