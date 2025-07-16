@@ -883,9 +883,9 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 					assertThat(ex.getCause().getMessage()).isEqualTo("from error handler");
 					assertThat(ex.getCause().getCause().getMessage()).isEqualTo("return this");
-					EnableRabbitConfig config = this.context.getBean(EnableRabbitConfig.class);
-					assertThat(config.errorHandlerChannel).isNotNull();
 				});
+		EnableRabbitConfig config = this.context.getBean(EnableRabbitConfig.class);
+		assertThat(config.errorHandlerChannel).isNotNull();
 	}
 
 	@Test
