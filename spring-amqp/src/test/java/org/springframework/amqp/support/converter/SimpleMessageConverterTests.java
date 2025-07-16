@@ -27,12 +27,13 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.fail;
 
 /**
  * @author Mark Fisher
  * @author Gary Russell
+ * @author Ngoc Nhan
  */
 public class SimpleMessageConverterTests extends AllowedListDeserializingMessageConverterTests {
 
@@ -158,13 +159,9 @@ public class SimpleMessageConverterTests extends AllowedListDeserializingMessage
 		class Foo {
 
 		}
-		try {
-			new SimpleMessageConverter().toMessage(new Foo(), new MessageProperties());
-			fail("Expected exception");
-		}
-		catch (IllegalArgumentException e) {
-			assertThat(e.getMessage()).contains("SimpleMessageConverter only supports String, byte[] and Serializable payloads, received:");
-		}
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> new SimpleMessageConverter().toMessage(new Foo(), new MessageProperties()))
+				.withMessageContaining("SimpleMessageConverter only supports String, byte[] and Serializable payloads, received:");
 	}
 
 }

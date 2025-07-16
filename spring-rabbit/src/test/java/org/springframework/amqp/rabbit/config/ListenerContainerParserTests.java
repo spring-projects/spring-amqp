@@ -44,12 +44,13 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Mark Fisher
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Ngoc Nhan
  */
 public class ListenerContainerParserTests {
 
@@ -224,14 +225,11 @@ public class ListenerContainerParserTests {
 
 	@Test
 	public void testIncompatibleTxAtts() {
-		try {
-			new ClassPathXmlApplicationContext(getClass().getSimpleName() + "-fail-context.xml", getClass()).close();
-			fail("Parse exception expected");
-		}
-		catch (BeanDefinitionParsingException e) {
-			assertThat(e.getMessage().startsWith(
-					"Configuration problem: Listener Container - cannot set channel-transacted with acknowledge='NONE'")).isTrue();
-		}
+
+		String path = getClass().getSimpleName() + "-fail-context.xml";
+		assertThatExceptionOfType(BeanDefinitionParsingException.class)
+				.isThrownBy(() -> new ClassPathXmlApplicationContext(path, getClass()).close())
+				.withMessageStartingWith("Configuration problem: Listener Container - cannot set channel-transacted with acknowledge='NONE'");
 	}
 
 	@Test

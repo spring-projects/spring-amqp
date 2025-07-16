@@ -56,9 +56,9 @@ import org.springframework.validation.Validator;
 import org.springframework.validation.annotation.Validated;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -68,6 +68,7 @@ import static org.mockito.Mockito.verify;
  * @author Stephane Nicoll
  * @author Artem Bilan
  * @author Gary Russell
+ * @author Ngoc Nhan
  */
 public class MethodRabbitListenerEndpointTests {
 
@@ -254,16 +255,10 @@ public class MethodRabbitListenerEndpointTests {
 
 		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage(body, new MessageProperties());
 
-		try {
-			processAndReply(listener, message, "fooQueue", "", false, null);
-			fail("Should have fail. Not converter and the reply is not a message");
-		}
-		catch (ReplyFailureException ex) {
-			Throwable cause = ex.getCause();
-			assertThat(cause).isNotNull();
-			assertThat(cause.getClass()).isEqualTo(MessageConversionException.class);
-			assertThat(ex.getMessage().contains("foo")).isTrue(); // exception holds the content of the reply
-		}
+		assertThatExceptionOfType(ReplyFailureException.class)
+				.isThrownBy(() -> processAndReply(listener, message, "fooQueue", "", false, null))
+				.withCauseInstanceOf(MessageConversionException.class)
+				.withMessageContaining("foo");
 		assertDefaultListenerMethodInvocation();
 	}
 

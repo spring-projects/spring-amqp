@@ -36,10 +36,10 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.fail;
 
 /**
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 2.0.5
  *
  */
@@ -86,14 +86,13 @@ class RepublishMessageRecovererWithConfirmsIntegrationTests {
 		template.setMandatory(true);
 		RepublishMessageRecovererWithConfirms recoverer = new RepublishMessageRecovererWithConfirms(template, "",
 				"bad.route", ConfirmType.CORRELATED);
-		try {
-			recoverer.recover(MessageBuilder.withBody("foo".getBytes()).build(), new RuntimeException());
-			fail("Expected exception");
-		}
-		catch (AmqpMessageReturnedException ex) {
-			assertThat(ex.getReturnedMessage().getBody()).isEqualTo("foo".getBytes());
-			assertThat(ex.getReplyText()).isEqualTo("NO_ROUTE");
-		}
+		assertThatExceptionOfType(AmqpMessageReturnedException.class)
+				.isThrownBy(() -> recoverer.recover(MessageBuilder.withBody("foo".getBytes()).build(), new RuntimeException()))
+				.satisfies(ex -> {
+
+					assertThat(ex.getReturnedMessage().getBody()).isEqualTo("foo".getBytes());
+					assertThat(ex.getReplyText()).isEqualTo("NO_ROUTE");
+				});
 		ccf.destroy();
 	}
 

@@ -27,12 +27,13 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author David Syer
  * @author Gunnar Hillert
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 1.0
  *
  */
@@ -87,16 +88,11 @@ public class RabbitTransactionManagerIntegrationTests {
 		// Makes receive (and send in principle) transactional
 		template.setChannelTransacted(true);
 		template.convertAndSend(ROUTE, "message");
-		try {
-			transactionTemplate.execute(status -> {
-				template.receiveAndConvert(ROUTE);
-				throw new PlannedException();
-			});
-			fail("Expected PlannedException");
-		}
-		catch (PlannedException e) {
-			// Expected
-		}
+		assertThatExceptionOfType(PlannedException.class)
+				.isThrownBy(() -> transactionTemplate.execute(status -> {
+					template.receiveAndConvert(ROUTE);
+					throw new PlannedException();
+				}));
 		String result = (String) template.receiveAndConvert(ROUTE);
 		assertThat(result).isEqualTo("message");
 		result = (String) template.receiveAndConvert(ROUTE);
@@ -119,16 +115,11 @@ public class RabbitTransactionManagerIntegrationTests {
 	@Test
 	public void testSendInTransactionWithRollback() throws Exception {
 		template.setChannelTransacted(true);
-		try {
-			transactionTemplate.execute(status -> {
-				template.convertAndSend(ROUTE, "message");
-				throw new PlannedException();
-			});
-			fail("Expected PlannedException");
-		}
-		catch (PlannedException e) {
-			// Expected
-		}
+		assertThatExceptionOfType(PlannedException.class)
+				.isThrownBy(() -> transactionTemplate.execute(status -> {
+					template.convertAndSend(ROUTE, "message");
+					throw new PlannedException();
+				}));
 		String result = (String) template.receiveAndConvert(ROUTE);
 		assertThat(result).isEqualTo(null);
 	}

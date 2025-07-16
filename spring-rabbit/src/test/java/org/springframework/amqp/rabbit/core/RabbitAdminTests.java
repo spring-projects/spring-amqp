@@ -67,9 +67,9 @@ import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatException;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -92,6 +92,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Artem Yakshin
+ * @author Ngoc Nhan
  *
  * @since 1.4.1
  *
@@ -102,13 +103,8 @@ public class RabbitAdminTests extends NeedsManagementTests {
 	@Test
 	public void testSettingOfNullConnectionFactory() {
 		ConnectionFactory connectionFactory = null;
-		try {
-			new RabbitAdmin(connectionFactory);
-			fail("should have thrown IllegalArgumentException when ConnectionFactory is null.");
-		}
-		catch (IllegalArgumentException e) {
-			assertThat(e.getMessage()).isEqualTo("ConnectionFactory must not be null");
-		}
+		assertThatIllegalArgumentException().isThrownBy(() -> new RabbitAdmin(connectionFactory))
+				.withMessage("ConnectionFactory must not be null");
 	}
 
 	@Test
@@ -266,13 +262,7 @@ public class RabbitAdminTests extends NeedsManagementTests {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
 		RabbitAdmin admin = new RabbitAdmin(cf);
 		String longName = new String(new byte[300]).replace('\u0000', 'x');
-		try {
-			admin.declareQueue(new Queue(longName));
-			fail("expected exception");
-		}
-		catch (@SuppressWarnings("unused") Exception e) {
-			// NOSONAR
-		}
+		assertThatException().isThrownBy(() -> admin.declareQueue(new Queue(longName)));
 		String goodName = "foobar";
 		admin.declareQueue(new Queue(goodName));
 		assertThat(admin.getQueueProperties(longName)).isNull();
