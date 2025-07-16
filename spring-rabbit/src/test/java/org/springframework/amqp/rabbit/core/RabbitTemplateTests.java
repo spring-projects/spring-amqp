@@ -85,7 +85,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -104,6 +103,7 @@ import static org.mockito.Mockito.verify;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Mohammad Hewedy
+ * @author Ngoc Nhan
  * @since 1.0.1
  *
  */
@@ -492,13 +492,10 @@ public class RabbitTemplateTests {
 			}
 			listener.get().shutdownCompleted(new ShutdownSignalException(true, false, null, null));
 		});
-		try {
-			template.doSendAndReceiveWithTemporary("foo", "bar", input, null);
-			fail("Expected exception");
-		}
-		catch (AmqpException e) {
-			assertThat(e.getCause()).isInstanceOf(ShutdownSignalException.class);
-		}
+
+		assertThatExceptionOfType(AmqpException.class)
+				.isThrownBy(() -> template.doSendAndReceiveWithTemporary("foo", "bar", input, null))
+				.withCauseInstanceOf(ShutdownSignalException.class);
 		exec.shutdownNow();
 	}
 

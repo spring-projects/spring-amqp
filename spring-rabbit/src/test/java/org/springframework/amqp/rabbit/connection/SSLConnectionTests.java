@@ -37,7 +37,7 @@ import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.core.io.ClassPathResource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatException;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -50,6 +50,7 @@ import static org.mockito.Mockito.verify;
  * @author Gary Russell
  * @author Heath Abelson
  * @author Hareendran
+ * @author Ngoc Nhan
  *
  * @since 1.4.4
  *
@@ -221,16 +222,9 @@ public class SSLConnectionTests {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
 		fb.setSslPropertiesLocation(new ClassPathResource("ssl.properties"));
 		fb.afterPropertiesSet();
-		try {
-			fb.setUpSSL();
-			//Here we make sure the exception is thrown because setUpSSL() will fail.
-			// But we only care about having it load the props
-			fail("setupSSL should fail");
-		}
-		catch (Exception e) {
-			assertThat(fb.getKeyStoreType()).isEqualTo("foo");
-			assertThat(fb.getTrustStoreType()).isEqualTo("bar");
-		}
+		assertThatException().isThrownBy(fb::setUpSSL);
+		assertThat(fb.getKeyStoreType()).isEqualTo("foo");
+		assertThat(fb.getTrustStoreType()).isEqualTo("bar");
 	}
 
 	@Test
@@ -249,16 +243,9 @@ public class SSLConnectionTests {
 		fb.afterPropertiesSet();
 		fb.setKeyStoreType("alice");
 		fb.setTrustStoreType("bob");
-		try {
-			fb.setUpSSL();
-			// Here we make sure the exception is thrown because setUpSSL() will fail.
-			//But we only care about having it load the props
-			fail("setupSSL should fail");
-		}
-		catch (Exception e) {
-			assertThat(fb.getKeyStoreType()).isEqualTo("alice");
-			assertThat(fb.getTrustStoreType()).isEqualTo("bob");
-		}
+		assertThatException().isThrownBy(fb::setUpSSL);
+		assertThat(fb.getKeyStoreType()).isEqualTo("alice");
+		assertThat(fb.getTrustStoreType()).isEqualTo("bob");
 	}
 
 	@Test

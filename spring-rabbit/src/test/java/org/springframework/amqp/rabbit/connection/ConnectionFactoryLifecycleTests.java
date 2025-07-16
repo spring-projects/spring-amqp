@@ -40,11 +40,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Ngoc Nhan
  *
  * @since 1.5.3
  *
@@ -60,13 +61,9 @@ public class ConnectionFactoryLifecycleTests {
 		context.close();
 		assertThat(myLifecycle.isRunning()).isFalse();
 		assertThat(TestUtils.getPropertyValue(cf, "stopped", Boolean.class)).isTrue();
-		try {
-			cf.createConnection();
-			fail("Expected exception");
-		}
-		catch (AmqpApplicationContextClosedException e) {
-			assertThat(e.getMessage()).contains("The ApplicationContext is closed");
-		}
+		assertThatExceptionOfType(AmqpApplicationContextClosedException.class)
+				.isThrownBy(cf::createConnection)
+				.withMessageContaining("The ApplicationContext is closed");
 	}
 
 	@Test

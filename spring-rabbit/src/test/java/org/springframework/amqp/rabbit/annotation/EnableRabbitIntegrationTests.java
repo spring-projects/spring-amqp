@@ -143,7 +143,7 @@ import org.springframework.validation.Validator;
 import org.springframework.validation.annotation.Validated;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatException;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.willAnswer;
@@ -158,6 +158,7 @@ import static org.mockito.Mockito.verify;
  * @author Artem Bilan
  * @author Gary Russell
  * @author Mohammad Hewedy
+ * @author Ngoc Nhan
  *
  * @since 1.4
  */
@@ -861,13 +862,10 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 	@DirtiesContext
 	public void returnExceptionWithRethrowAdapter() {
 		this.rabbitTemplate.setMessageConverter(new RemoteInvocationAwareMessageConverterAdapter());
-		try {
-			this.rabbitTemplate.convertSendAndReceive("test.return.exceptions", "foo");
-			fail("ExpectedException");
-		}
-		catch (Exception e) {
-			assertThat(e.getCause().getMessage()).isEqualTo("return this");
-		}
+		assertThatException()
+				.isThrownBy(() -> this.rabbitTemplate.convertSendAndReceive("test.return.exceptions", "foo"))
+				.havingCause()
+				.withMessage("return this");
 	}
 
 	@Test
@@ -879,16 +877,15 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 	@DirtiesContext
 	public void listenerErrorHandlerException() {
 		this.rabbitTemplate.setMessageConverter(new RemoteInvocationAwareMessageConverterAdapter());
-		try {
-			this.rabbitTemplate.convertSendAndReceive("test.pojo.errors2", "foo");
-			fail("ExpectedException");
-		}
-		catch (Exception e) {
-			assertThat(e.getCause().getMessage()).isEqualTo("from error handler");
-			assertThat(e.getCause().getCause().getMessage()).isEqualTo("return this");
-			EnableRabbitConfig config = this.context.getBean(EnableRabbitConfig.class);
-			assertThat(config.errorHandlerChannel).isNotNull();
-		}
+		assertThatException()
+				.isThrownBy(() -> this.rabbitTemplate.convertSendAndReceive("test.pojo.errors2", "foo"))
+				.satisfies(ex -> {
+
+					assertThat(ex.getCause().getMessage()).isEqualTo("from error handler");
+					assertThat(ex.getCause().getCause().getMessage()).isEqualTo("return this");
+				});
+		EnableRabbitConfig config = this.context.getBean(EnableRabbitConfig.class);
+		assertThat(config.errorHandlerChannel).isNotNull();
 	}
 
 	@Test

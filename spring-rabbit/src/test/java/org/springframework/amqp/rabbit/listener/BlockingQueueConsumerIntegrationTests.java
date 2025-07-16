@@ -36,12 +36,13 @@ import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Dave Syer
  * @author Gunnar Hillert
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 1.0
  *
  */
@@ -98,13 +99,9 @@ public class BlockingQueueConsumerIntegrationTests {
 		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
 				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
 				AcknowledgeMode.AUTO, true, 1, longName, "foobar");
-		try {
-			blockingQueueConsumer.start();
-			fail("expected exception");
-		}
-		catch (FatalListenerStartupException e) {
-			assertThat(e.getCause()).isInstanceOf(IllegalArgumentException.class);
-		}
+		assertThatExceptionOfType(FatalListenerStartupException.class)
+				.isThrownBy(blockingQueueConsumer::start)
+				.withCauseInstanceOf(IllegalArgumentException.class);
 		connectionFactory.destroy();
 	}
 

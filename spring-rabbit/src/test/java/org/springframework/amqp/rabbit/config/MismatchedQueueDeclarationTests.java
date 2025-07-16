@@ -31,11 +31,12 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.env.StandardEnvironment;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatException;
 
 /**
  * @author Gary Russell
  * @author Gunnar Hillert
+ * @author Ngoc Nhan
  * @since 1.2
  *
  */
@@ -85,14 +86,11 @@ public class MismatchedQueueDeclarationTests {
 		env.addActiveProfile("ttl");
 		context.setEnvironment(env);
 		context.refresh();
-		channel = this.connectionFactory.createConnection().createChannel(false);
-		try {
-			context.getBean(CachingConnectionFactory.class).createConnection();
-			fail("Expected exception - basic admin fails with mismatched declarations");
-		}
-		catch (Exception e) {
-			assertThat(e.getCause().getCause().getMessage().contains("inequivalent arg 'x-message-ttl'")).isTrue();
-		}
+		this.connectionFactory.createConnection().createChannel(false);
+		assertThatException().isThrownBy(context.getBean(CachingConnectionFactory.class)::createConnection)
+				.satisfies(ex -> {
+					assertThat(ex.getCause().getCause().getMessage()).contains("inequivalent arg 'x-message-ttl'");
+				});
 		assertThat(this.admin.getQueueProperties("mismatch.foo")).isNotNull();
 		assertThat(this.admin.getQueueProperties("mismatch.bar")).isNull();
 		context.close();

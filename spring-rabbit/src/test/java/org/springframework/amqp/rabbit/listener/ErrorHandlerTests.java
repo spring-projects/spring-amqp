@@ -31,7 +31,7 @@ import org.springframework.messaging.MessageHandlingException;
 import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
 import org.springframework.messaging.handler.annotation.support.MethodArgumentTypeMismatchException;
 
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.willDoNothing;
@@ -41,6 +41,7 @@ import static org.mockito.Mockito.spy;
 /**
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Ngoc Nhan
  *
  * @since 1.6
  *
@@ -56,67 +57,40 @@ public class ErrorHandlerTests {
 		handler.handleError(new ListenerExecutionFailedException("intended", new RuntimeException(),
 				new org.springframework.amqp.core.Message("".getBytes(), new MessageProperties())));
 
-		try {
-			handler.handleError(new ListenerExecutionFailedException("intended", new MessageConversionException(""),
-					new org.springframework.amqp.core.Message("".getBytes(), new MessageProperties())));
-			fail("Expected exception");
-		}
-		catch (AmqpRejectAndDontRequeueException e) {
-		}
+		assertThatExceptionOfType(AmqpRejectAndDontRequeueException.class)
+				.isThrownBy(() -> handler.handleError(new ListenerExecutionFailedException("intended",
+						new MessageConversionException(""),
+						new org.springframework.amqp.core.Message("".getBytes(), new MessageProperties()))));
 
-		try {
-			handler.handleError(new ListenerExecutionFailedException("intended",
-					new org.springframework.messaging.converter.MessageConversionException(""),
-					new org.springframework.amqp.core.Message("".getBytes(), new MessageProperties())));
-			fail("Expected exception");
-		}
-		catch (AmqpRejectAndDontRequeueException e) {
-		}
+		assertThatExceptionOfType(AmqpRejectAndDontRequeueException.class)
+				.isThrownBy(() -> handler.handleError(new ListenerExecutionFailedException("intended",
+						new org.springframework.messaging.converter.MessageConversionException(""),
+						new org.springframework.amqp.core.Message("".getBytes(), new MessageProperties()))));
 
 		Message<?> message = mock(Message.class);
 		MethodParameter mp = new MethodParameter(Foo.class.getMethod("foo", String.class), 0);
-		try {
-			handler.handleError(new ListenerExecutionFailedException("intended",
-					new MethodArgumentNotValidException(message, mp),
-					new org.springframework.amqp.core.Message("".getBytes(), new MessageProperties())));
-			fail("Expected exception");
-		}
-		catch (AmqpRejectAndDontRequeueException e) {
-		}
+		assertThatExceptionOfType(AmqpRejectAndDontRequeueException.class)
+				.isThrownBy(() -> handler.handleError(new ListenerExecutionFailedException("intended",
+						new MethodArgumentNotValidException(message, mp),
+						new org.springframework.amqp.core.Message("".getBytes(), new MessageProperties()))));
 
-		try {
-			handler.handleError(new ListenerExecutionFailedException("intended",
-					new MethodArgumentTypeMismatchException(message, mp, ""),
-					new org.springframework.amqp.core.Message("".getBytes(), new MessageProperties())));
-			fail("Expected exception");
-		}
-		catch (AmqpRejectAndDontRequeueException e) {
-		}
+		assertThatExceptionOfType(AmqpRejectAndDontRequeueException.class)
+				.isThrownBy(() -> handler.handleError(new ListenerExecutionFailedException("intended",
+						new MethodArgumentTypeMismatchException(message, mp, ""),
+						new org.springframework.amqp.core.Message("".getBytes(), new MessageProperties()))));
 	}
 
 	@Test
 	public void testSimple() {
 		Throwable cause = new ClassCastException();
-		try {
-			doTest(cause);
-			fail("Expected exception");
-		}
-		catch (AmqpRejectAndDontRequeueException e) {
-			// noop
-		}
+		assertThatExceptionOfType(AmqpRejectAndDontRequeueException.class).isThrownBy(() -> doTest(cause));
 	}
 
 	@Test
 	public void testMessagingException() {
 		Throwable cause = new MessageHandlingException(null, "test",
 				new MessageHandlingException(null, "test", new ClassCastException()));
-		try {
-			doTest(cause);
-			fail("Expected exception");
-		}
-		catch (AmqpRejectAndDontRequeueException e) {
-			// noop
-		}
+		assertThatExceptionOfType(AmqpRejectAndDontRequeueException.class).isThrownBy(() -> doTest(cause));
 	}
 
 	private void doTest(Throwable cause) {
@@ -124,7 +98,7 @@ public class ErrorHandlerTests {
 		handler.handleError(
 				new ListenerExecutionFailedException("test", cause,
 						new org.springframework.amqp.core.Message(new byte[0],
-				new MessageProperties())));
+								new MessageProperties())));
 	}
 
 	private static final class Foo {
