@@ -1225,7 +1225,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				else {
 					if (e instanceof org.springframework.amqp.rabbit.listener.exception.MessageRejectedWhileStoppingException) {
 						this.logger.info("Listener rejected message while stopping (requeued)", e);
-					} else {
+					}
+					else {
 						this.logger.error("Failed to invoke listener", e);
 					}
 					if (this.transactionManager != null) {
