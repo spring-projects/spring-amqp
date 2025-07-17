@@ -1223,7 +1223,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					handleAck(deliveryTag, channelLocallyTransacted);
 				}
 				else {
-					this.logger.error("Failed to invoke listener", e);
+					if (e instanceof org.springframework.amqp.rabbit.listener.exception.MessageRejectedWhileStoppingException) {
+						this.logger.info("Listener rejected message while stopping (requeued)", e);
+					}
+					else {
+						this.logger.error("Failed to invoke listener", e);
+					}
 					if (this.transactionManager != null) {
 						if (this.transactionAttribute.rollbackOn(e)) {
 							RabbitResourceHolder resourceHolder =
