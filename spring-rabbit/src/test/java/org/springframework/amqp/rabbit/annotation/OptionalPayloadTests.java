@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.annotation;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
@@ -83,7 +84,10 @@ public class OptionalPayloadTests {
 						.build())
 				.build());
 		assertThat(listener.latch.await(10, TimeUnit.SECONDS)).isTrue();
-		assertThat(listener.deOptionaled).containsExactlyInAnyOrder("foo", null, "bar", "baz");
+
+		synchronized (listener.deOptionaled) {
+			assertThat(listener.deOptionaled).containsExactlyInAnyOrder("foo", null, "bar", "baz");
+		}
 	}
 
 	@Configuration
@@ -126,7 +130,7 @@ public class OptionalPayloadTests {
 
 		final CountDownLatch latch = new CountDownLatch(4);
 
-		List<String> deOptionaled = new ArrayList<>();
+		final List<String> deOptionaled = Collections.synchronizedList(new ArrayList<>());
 
 		@RabbitListener(queues = "op.1")
 		void listen(@Payload(required = false) String payload) {
