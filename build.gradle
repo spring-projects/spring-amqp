@@ -40,7 +40,7 @@ ext {
 	hamcrestVersion = '3.0'
 	hibernateValidationVersion = '8.0.2.Final'
 	jacksonBomVersion = '2.19.2'
-	jackson3Version = '3.0.0-rc5'
+	jackson3Version = '3.0.0-rc6'
 	jaywayJsonPathVersion = '2.9.0'
 	junitJupiterVersion = '5.13.3'
 	kotlinCoroutinesVersion = '1.10.2'
