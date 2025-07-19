@@ -47,7 +47,7 @@ ext {
 	log4jVersion = '2.24.3'
 	logbackVersion = '1.5.18'
 	micrometerDocsVersion = '1.0.4'
-	micrometerVersion = '1.15.1-SNAPSHOT'
+	micrometerVersion = '1.15.3-SNAPSHOT'
 	micrometerTracingVersion = '1.5.2-SNAPSHOT'
 	mockitoVersion = '5.18.0'
 	rabbitmqAmqpClientVersion = '0.6.0'
