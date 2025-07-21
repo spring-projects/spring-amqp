@@ -32,6 +32,7 @@ import org.springframework.util.MimeTypeUtils;
  * @deprecated since 4.0 in favor of {@link JacksonXmlMessageConverter} for Jackson 3.
  */
 @Deprecated(forRemoval = true, since = "4.0")
+@SuppressWarnings("removal")
 public class Jackson2XmlMessageConverter extends AbstractJackson2MessageConverter {
 
 	/**

@@ -16,11 +16,15 @@
 
 package org.springframework.amqp.rabbit.support.micrometer;
 
+import java.util.Objects;
+
 import io.micrometer.common.KeyValues;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.observation.Observation.Context;
 import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.docs.ObservationDocumentation;
+
+import org.springframework.amqp.core.MessageProperties;
 
 /**
  * Spring Rabbit Observation for listeners.
@@ -124,12 +128,13 @@ public enum RabbitListenerObservation implements ObservationDocumentation {
 
 		@Override
 		public KeyValues getLowCardinalityKeyValues(RabbitMessageReceiverContext context) {
-			final var messageProperties = context.getCarrier().getMessageProperties();
+			MessageProperties messageProperties = context.getCarrier().getMessageProperties();
+			String consumerQueue = Objects.requireNonNullElse(messageProperties.getConsumerQueue(), "");
 			return KeyValues.of(
 					RabbitListenerObservation.ListenerLowCardinalityTags.LISTENER_ID.asString(),
 					context.getListenerId(),
 					RabbitListenerObservation.ListenerLowCardinalityTags.DESTINATION_NAME.asString(),
-					messageProperties.getConsumerQueue());
+					consumerQueue);
 		}
 
 		@Override

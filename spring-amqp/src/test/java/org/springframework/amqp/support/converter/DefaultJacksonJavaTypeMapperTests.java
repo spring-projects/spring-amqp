@@ -20,15 +20,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.type.CollectionType;
-import com.fasterxml.jackson.databind.type.MapType;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.type.CollectionType;
+import tools.jackson.databind.type.MapType;
+import tools.jackson.databind.type.TypeFactory;
 
 import org.springframework.amqp.core.MessageProperties;
 
@@ -45,10 +45,10 @@ import static org.mockito.BDDMockito.given;
  */
 
 @ExtendWith(MockitoExtension.class)
-public class DefaultJackson2JavaTypeMapperTests {
+public class DefaultJacksonJavaTypeMapperTests {
 
 	@Spy
-	DefaultJackson2JavaTypeMapper javaTypeMapper = new DefaultJackson2JavaTypeMapper();
+	DefaultJacksonJavaTypeMapper javaTypeMapper = new DefaultJacksonJavaTypeMapper();
 
 	private final MessageProperties properties = new MessageProperties();
 
@@ -76,7 +76,7 @@ public class DefaultJackson2JavaTypeMapperTests {
 
 		JavaType javaType = javaTypeMapper.toJavaType(properties);
 
-		assertThat(javaType).isEqualTo(TypeFactory.defaultInstance().constructType(String.class));
+		assertThat(javaType).isEqualTo(TypeFactory.createDefaultInstance().constructType(String.class));
 	}
 
 	@Test
@@ -86,12 +86,12 @@ public class DefaultJackson2JavaTypeMapperTests {
 
 		JavaType javaType = javaTypeMapper.toJavaType(properties);
 
-		assertThat(TypeFactory.defaultInstance().constructType(SimpleTrade.class)).isEqualTo(javaType);
+		assertThat(TypeFactory.createDefaultInstance().constructType(SimpleTrade.class)).isEqualTo(javaType);
 	}
 
 	@Test
 	public void fromJavaTypeShouldPopulateWithJavaTypeNameByDefault() {
-		javaTypeMapper.fromJavaType(TypeFactory.defaultInstance().constructType(SimpleTrade.class), properties);
+		javaTypeMapper.fromJavaType(TypeFactory.createDefaultInstance().constructType(SimpleTrade.class), properties);
 
 		String className = (String) properties.getHeaders().get(javaTypeMapper.getClassIdFieldName());
 		assertThat(className).isEqualTo(SimpleTrade.class.getName());
@@ -101,7 +101,7 @@ public class DefaultJackson2JavaTypeMapperTests {
 	public void shouldUseSpecialNameForClassIfPresent() {
 		javaTypeMapper.setIdClassMapping(map("daytrade", SimpleTrade.class));
 
-		javaTypeMapper.fromJavaType(TypeFactory.defaultInstance().constructType(SimpleTrade.class), properties);
+		javaTypeMapper.fromJavaType(TypeFactory.createDefaultInstance().constructType(SimpleTrade.class), properties);
 
 		String className = (String) properties.getHeaders().get(javaTypeMapper.getClassIdFieldName());
 		assertThat(className).isEqualTo("daytrade");
@@ -130,7 +130,8 @@ public class DefaultJackson2JavaTypeMapperTests {
 
 		JavaType javaType = javaTypeMapper.toJavaType(properties);
 
-		assertThat((CollectionType) javaType).isEqualTo(TypeFactory.defaultInstance().constructCollectionType(ArrayList.class, String.class));
+		assertThat((CollectionType) javaType)
+				.isEqualTo(TypeFactory.createDefaultInstance().constructCollectionType(ArrayList.class, String.class));
 	}
 
 	@Test
@@ -145,15 +146,16 @@ public class DefaultJackson2JavaTypeMapperTests {
 
 		JavaType javaType = javaTypeMapper.toJavaType(properties);
 
-		assertThat((CollectionType) javaType).isEqualTo(TypeFactory.defaultInstance().constructCollectionType(containerClass,
-				TypeFactory.defaultInstance().constructType(SimpleTrade.class)));
+		assertThat((CollectionType) javaType)
+				.isEqualTo(TypeFactory.createDefaultInstance().constructCollectionType(containerClass,
+						TypeFactory.createDefaultInstance().constructType(SimpleTrade.class)));
 	}
 
 	@Test
 	public void fromJavaTypeShouldPopulateWithContentTypeJavaTypeNameByDefault() {
 
-		javaTypeMapper.fromJavaType(TypeFactory.defaultInstance().constructCollectionType(containerClass,
-				TypeFactory.defaultInstance().constructType(SimpleTrade.class)), properties);
+		javaTypeMapper.fromJavaType(TypeFactory.createDefaultInstance().constructCollectionType(containerClass,
+				TypeFactory.createDefaultInstance().constructType(SimpleTrade.class)), properties);
 
 		String className = (String) properties.getHeaders().get(javaTypeMapper.getClassIdFieldName());
 		String contentClassName = (String) properties.getHeaders().get(javaTypeMapper.getContentClassIdFieldName());
@@ -187,7 +189,9 @@ public class DefaultJackson2JavaTypeMapperTests {
 
 		JavaType javaType = javaTypeMapper.toJavaType(properties);
 
-		assertThat((MapType) javaType).isEqualTo(TypeFactory.defaultInstance().constructMapType(HashMap.class, Integer.class, String.class));
+		assertThat((MapType) javaType)
+				.isEqualTo(TypeFactory.createDefaultInstance()
+						.constructMapType(HashMap.class, Integer.class, String.class));
 	}
 
 	@Test
@@ -203,17 +207,17 @@ public class DefaultJackson2JavaTypeMapperTests {
 
 		JavaType javaType = javaTypeMapper.toJavaType(properties);
 
-		assertThat((MapType) javaType).isEqualTo(TypeFactory.defaultInstance().constructMapType(mapClass,
-				TypeFactory.defaultInstance().constructType(SimpleTrade.class),
-				TypeFactory.defaultInstance().constructType(String.class)));
+		assertThat((MapType) javaType).isEqualTo(TypeFactory.createDefaultInstance().constructMapType(mapClass,
+				TypeFactory.createDefaultInstance().constructType(SimpleTrade.class),
+				TypeFactory.createDefaultInstance().constructType(String.class)));
 	}
 
 	@Test
 	public void fromJavaTypeShouldPopulateWithKeyTypeAndContentJavaTypeNameByDefault() {
 
-		javaTypeMapper.fromJavaType(TypeFactory.defaultInstance().constructMapType(mapClass,
-				TypeFactory.defaultInstance().constructType(SimpleTrade.class),
-				TypeFactory.defaultInstance().constructType(String.class)), properties);
+		javaTypeMapper.fromJavaType(TypeFactory.createDefaultInstance().constructMapType(mapClass,
+				TypeFactory.createDefaultInstance().constructType(SimpleTrade.class),
+				TypeFactory.createDefaultInstance().constructType(String.class)), properties);
 
 		String className = (String) properties.getHeaders().get(javaTypeMapper.getClassIdFieldName());
 		String contentClassName = (String) properties.getHeaders().get(javaTypeMapper.getContentClassIdFieldName());
@@ -243,8 +247,9 @@ public class DefaultJackson2JavaTypeMapperTests {
 	}
 
 	private Map<String, Class<?>> map(String string, Class<?> clazz) {
-		Map<String, Class<?>> map = new HashMap<String, Class<?>>();
+		Map<String, Class<?>> map = new HashMap<>();
 		map.put(string, clazz);
 		return map;
 	}
+
 }

@@ -41,6 +41,7 @@ import org.springframework.util.ClassUtils;
  * @deprecated since 4.0 in favor of {@link DefaultJacksonJavaTypeMapper} for Jackson 3.
  */
 @Deprecated(forRemoval = true, since = "4.0")
+@SuppressWarnings("removal")
 public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implements Jackson2JavaTypeMapper {
 
 	private static final List<String> TRUSTED_PACKAGES =

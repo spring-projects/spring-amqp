@@ -45,6 +45,11 @@ public class RabbitMessageReceiverContext extends ReceiverContext<Message> {
 		setRemoteServiceName("RabbitMQ");
 	}
 
+	@Override
+	public Message getCarrier() {
+		return this.message;
+	}
+
 	public String getListenerId() {
 		return this.listenerId;
 	}

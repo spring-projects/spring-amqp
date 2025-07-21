@@ -22,10 +22,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.dataformat.xml.XmlMapper;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -44,20 +43,20 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringJUnitConfig
 @DirtiesContext
-public class Jackson2XmlMessageConverterTests {
+public class JacksonXmlMessageConverterTests {
 
-	public static final String TRUSTED_PACKAGE = Jackson2XmlMessageConverterTests.class.getPackage().getName();
+	public static final String TRUSTED_PACKAGE = JacksonXmlMessageConverterTests.class.getPackage().getName();
 
-	private Jackson2XmlMessageConverter converter;
+	private JacksonXmlMessageConverter converter;
 
 	private SimpleTrade trade;
 
 	@Autowired
-	private Jackson2XmlMessageConverter xmlConverterWithDefaultType;
+	private JacksonXmlMessageConverter xmlConverterWithDefaultType;
 
 	@BeforeEach
 	public void before() {
-		converter = new Jackson2XmlMessageConverter(TRUSTED_PACKAGE);
+		converter = new JacksonXmlMessageConverter(TRUSTED_PACKAGE);
 		trade = new SimpleTrade();
 		trade.setAccountName("Acct1");
 		trade.setBuyRequest(true);
@@ -80,10 +79,9 @@ public class Jackson2XmlMessageConverterTests {
 	@Test
 	public void simpleTradeOverrideMapper() {
 		XmlMapper mapper = new XmlMapper();
-		mapper.setSerializerFactory(BeanSerializerFactory.instance);
-		converter = new Jackson2XmlMessageConverter(mapper);
+		converter = new JacksonXmlMessageConverter(mapper);
 
-		((DefaultJackson2JavaTypeMapper) this.converter.getJavaTypeMapper())
+		((DefaultJacksonJavaTypeMapper) this.converter.getJavaTypeMapper())
 				.setTrustedPackages(TRUSTED_PACKAGE);
 
 		Message message = converter.toMessage(trade, new MessageProperties());
@@ -106,7 +104,7 @@ public class Jackson2XmlMessageConverterTests {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void hashtable() {
-		Hashtable<String, String> hashtable = new Hashtable<String, String>();
+		Hashtable<String, String> hashtable = new Hashtable<>();
 		hashtable.put("TICKER", "VMW");
 		hashtable.put("PRICE", "103.2");
 
@@ -143,7 +141,7 @@ public class Jackson2XmlMessageConverterTests {
 
 	@Test
 	public void testAmqp330StringArray() {
-		String[] testData = { "test" };
+		String[] testData = {"test"};
 		Message message = converter.toMessage(testData, new MessageProperties());
 
 		assertThat(testData).containsExactly((String[]) converter.fromMessage(message));
@@ -151,7 +149,7 @@ public class Jackson2XmlMessageConverterTests {
 
 	@Test
 	public void testAmqp330ObjectArray() {
-		SimpleTrade[] testData = { trade };
+		SimpleTrade[] testData = {trade};
 		Message message = converter.toMessage(testData, new MessageProperties());
 		assertThat(testData).containsExactly((SimpleTrade[]) converter.fromMessage(message));
 	}
@@ -162,7 +160,7 @@ public class Jackson2XmlMessageConverterTests {
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setContentType("application/xml");
 		Message message = new Message(bytes, messageProperties);
-		Jackson2XmlMessageConverter converter = new Jackson2XmlMessageConverter();
+		JacksonXmlMessageConverter converter = new JacksonXmlMessageConverter();
 		DefaultClassMapper classMapper = new DefaultClassMapper();
 		classMapper.setDefaultType(Foo.class);
 		converter.setClassMapper(classMapper);

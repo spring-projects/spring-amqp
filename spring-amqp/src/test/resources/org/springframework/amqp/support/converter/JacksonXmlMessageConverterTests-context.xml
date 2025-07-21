@@ -3,12 +3,12 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd">
 
-	<bean id="xmlConverterWithDefaultType" class="org.springframework.amqp.support.converter.Jackson2XmlMessageConverter">
+	<bean id="xmlConverterWithDefaultType" class="org.springframework.amqp.support.converter.JacksonXmlMessageConverter">
 		<property name="classMapper">
 			<bean class="org.springframework.amqp.support.converter.DefaultClassMapper">
 				<property name="defaultType"
-					value="org.springframework.amqp.support.converter.Jackson2XmlMessageConverterTests$Foo" />
-				<property name="trustedPackages" value="#{T (org.springframework.amqp.support.converter.Jackson2XmlMessageConverterTests).TRUSTED_PACKAGE}"/>
+					value="org.springframework.amqp.support.converter.JacksonXmlMessageConverterTests$Foo" />
+				<property name="trustedPackages" value="#{T (org.springframework.amqp.support.converter.JacksonXmlMessageConverterTests).TRUSTED_PACKAGE}"/>
 			</bean>
 		</property>
 	</bean>

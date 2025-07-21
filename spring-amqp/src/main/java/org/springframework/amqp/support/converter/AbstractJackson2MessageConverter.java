@@ -55,6 +55,7 @@ import org.springframework.util.MimeTypeUtils;
  * @deprecated since 4.0 in favor of {@link AbstractJacksonMessageConverter} for Jackson 3.
  */
 @Deprecated(forRemoval = true, since = "4.0")
+@SuppressWarnings("removal")
 public abstract class AbstractJackson2MessageConverter extends AbstractMessageConverter
 		implements BeanClassLoaderAware, SmartMessageConverter {
 
