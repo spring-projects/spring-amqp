@@ -355,7 +355,7 @@ The following example shows how to configure a `MarshallingMessageConverter`:
     <property name="connectionFactory" ref="rabbitConnectionFactory"/>
     <property name="messageConverter">
         <bean class="org.springframework.amqp.support.converter.MarshallingMessageConverter">
-            <constructor-arg ref="someImplemenationOfMarshallerAndUnmarshaller"/>
+            <constructor-arg ref="someImplementationOfMarshallerAndUnmarshaller"/>
         </bean>
     </property>
 </bean>
