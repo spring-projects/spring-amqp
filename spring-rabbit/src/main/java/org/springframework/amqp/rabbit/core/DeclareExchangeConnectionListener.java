@@ -49,7 +49,7 @@ public final class DeclareExchangeConnectionListener implements ConnectionListen
 			this.admin.declareExchange(this.exchange);
 		}
 		catch (Exception e) {
-			// Ignoire
+			// Ignore
 		}
 	}
 
