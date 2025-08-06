@@ -718,6 +718,43 @@ public class SimpleMessageListenerContainerTests {
 		assertThat(start.getCount()).isEqualTo(0L);
 	}
 
+	@Test
+	@SuppressWarnings("unchecked")
+	void testShutdownWithPendingReplies() {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel = mock(Channel.class);
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(false)).willReturn(channel);
+		given(channel.isOpen()).willReturn(true);
+
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setQueueNames("foo");
+		container.setMessageListener(mock(MessageListener.class));
+
+		long shutdownTimeout = 2000L;
+		long checkInterval = 500L;
+		container.setShutdownTimeout(shutdownTimeout);
+		container.setPendingReplyCheckInterval(checkInterval);
+		container.setPendingReplyProvider(template::getPendingReplyCount);
+
+		Map<String, Object> replyHolder = (Map<String, Object>) ReflectionTestUtils.getField(template, "replyHolder");
+		assertThat(replyHolder).isNotNull();
+		replyHolder.put("foo", new CompletableFuture<Message>());
+
+		assertThat(template.getPendingReplyCount()).isEqualTo(1);
+
+		container.start();
+
+		long startTime = System.currentTimeMillis();
+		container.stop();
+		long stopDuration = System.currentTimeMillis() - startTime;
+
+		assertThat(stopDuration).isGreaterThanOrEqualTo(shutdownTimeout - 500);
+		assertThat(template.getPendingReplyCount()).isEqualTo(1);
+	}
+
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,
 			final boolean cancel, final CountDownLatch latch) {
 		return invocation -> {
@@ -801,40 +838,4 @@ public class SimpleMessageListenerContainerTests {
 
 	}
 
-	@Test
-	@SuppressWarnings("unchecked")
-	void testShutdownWithPendingReplies() {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
-		Connection connection = mock(Connection.class);
-		Channel channel = mock(Channel.class);
-		given(connectionFactory.createConnection()).willReturn(connection);
-		given(connection.createChannel(false)).willReturn(channel);
-		given(channel.isOpen()).willReturn(true);
-
-		RabbitTemplate template = new RabbitTemplate(connectionFactory);
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
-		container.setQueueNames("foo");
-		container.setMessageListener(mock(MessageListener.class));
-
-		long shutdownTimeout = 2000L;
-		long checkInterval = 500L;
-		container.setShutdownTimeout(shutdownTimeout);
-		container.setPendingReplyCheckInterval(checkInterval);
-		container.setPendingReplyProvider(template::getPendingReplyCount);
-
-		Map<String, Object> replyHolder = (Map<String, Object>) ReflectionTestUtils.getField(template, "replyHolder");
-		assertThat(replyHolder).isNotNull();
-		replyHolder.put("foo", new CompletableFuture<Message>());
-
-		assertThat(template.getPendingReplyCount()).isEqualTo(1);
-
-		container.start();
-
-		long startTime = System.currentTimeMillis();
-		container.stop();
-		long stopDuration = System.currentTimeMillis() - startTime;
-
-		assertThat(stopDuration).isGreaterThanOrEqualTo(shutdownTimeout - 500);
-		assertThat(template.getPendingReplyCount()).isEqualTo(1);
-	}
 }
