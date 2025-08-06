@@ -961,6 +961,17 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	/**
+	 * Return the number of pending replies in flight.
+	 * Used to defer shutdown of a listener container if pending replies are present.
+	 * @return the number of pending replies.
+	 * @since 4.0
+	 * @see org.springframework.amqp.rabbit.listener.api.PendingReplyProvider
+	 */
+	public int getPendingReplyCount() {
+		return this.replyHolder.size();
+	}
+
+	/**
 	 * When using receive methods with a non-zero timeout, a
 	 * {@link com.rabbitmq.client.Consumer} is created to receive the message. Use this
 	 * property to add arguments to the consumer (e.g. {@code x-priority}).

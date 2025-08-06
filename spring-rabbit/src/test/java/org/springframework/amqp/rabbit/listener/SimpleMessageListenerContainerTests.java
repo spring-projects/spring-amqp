@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -62,6 +63,7 @@ import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.aop.support.AopUtils;
@@ -799,4 +801,40 @@ public class SimpleMessageListenerContainerTests {
 
 	}
 
+	@Test
+	@SuppressWarnings("unchecked")
+	void testShutdownWithPendingReplies() {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel = mock(Channel.class);
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(false)).willReturn(channel);
+		given(channel.isOpen()).willReturn(true);
+
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setQueueNames("foo");
+		container.setMessageListener(mock(MessageListener.class));
+
+		long shutdownTimeout = 2000L;
+		long checkInterval = 500L;
+		container.setShutdownTimeout(shutdownTimeout);
+		container.setPendingReplyCheckInterval(checkInterval);
+		container.setPendingReplyProvider(template::getPendingReplyCount);
+
+		Map<String, Object> replyHolder = (Map<String, Object>) ReflectionTestUtils.getField(template, "replyHolder");
+		assertThat(replyHolder).isNotNull();
+		replyHolder.put("foo", new CompletableFuture<Message>());
+
+		assertThat(template.getPendingReplyCount()).isEqualTo(1);
+
+		container.start();
+
+		long startTime = System.currentTimeMillis();
+		container.stop();
+		long stopDuration = System.currentTimeMillis() - startTime;
+
+		assertThat(stopDuration).isGreaterThanOrEqualTo(shutdownTimeout - 500);
+		assertThat(template.getPendingReplyCount()).isEqualTo(1);
+	}
 }
