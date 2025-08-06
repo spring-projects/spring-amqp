@@ -84,6 +84,7 @@ import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
+import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.Delivery;
@@ -188,6 +189,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	private final ThreadLocal<@Nullable Channel> dedicatedChannels = new ThreadLocal<>();
 
 	private final AtomicInteger activeTemplateCallbacks = new AtomicInteger();
+
+	private final ActiveObjectCounter<Object> pendingRepliesCounter = new ActiveObjectCounter<>();
 
 	private final ConcurrentMap<Channel, RabbitTemplate> publisherConfirmChannels = new ConcurrentHashMap<>();
 
@@ -958,17 +961,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				.stream()
 				.mapToInt(channel -> ((PublisherCallbackChannel) channel).getPendingConfirmsCount(this))
 				.sum();
-	}
-
-	/**
-	 * Return the number of pending replies in flight.
-	 * Used to defer shutdown of a listener container if pending replies are present.
-	 * @return the number of pending replies.
-	 * @since 4.0
-	 * @see org.springframework.amqp.rabbit.listener.api.PendingReplyProvider
-	 */
-	public int getPendingReplyCount() {
-		return this.replyHolder.size();
 	}
 
 	/**
@@ -2082,6 +2074,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			messageTag = String.valueOf(this.messageTagProvider.incrementAndGet());
 		}
 		saveAndSetProperties(message, pendingReply, messageTag);
+		this.pendingRepliesCounter.add(pendingReply);
 		this.replyHolder.put(messageTag, pendingReply);
 		if (noCorrelation) {
 			this.replyHolder.put(channel, pendingReply);
@@ -2161,11 +2154,19 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	/**
 	 * Subclasses can implement this to be notified that a reply has timed out.
+	 * The default implementation also releases the counter for pending replies.
+	 * Subclasses should call {@code super.replyTimedOut(correlationId)} if they
+	 * override this method and wish to maintain this behavior.
 	 * @param correlationId the correlationId
 	 * @since 2.1.2
 	 */
 	protected void replyTimedOut(@Nullable String correlationId) {
-		// NOSONAR
+		if (correlationId != null) {
+			Object pending = this.replyHolder.get(correlationId);
+			if (pending != null) {
+				this.pendingRepliesCounter.release(pending);
+			}
+		}
 	}
 
 	/**
@@ -2678,6 +2679,11 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
+	public ActiveObjectCounter<Object> getPendingReplyCounter() {
+		return this.pendingRepliesCounter;
+	}
+
+	@Override
 	public void onMessage(Message message, @Nullable Channel channel) {
 		if (logger.isTraceEnabled()) {
 			logger.trace("Message received " + message);
@@ -2707,6 +2713,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		else {
 			restoreProperties(message, pendingReply);
 			pendingReply.reply(message);
+			this.pendingRepliesCounter.release(pendingReply);
 		}
 	}
 

@@ -56,7 +56,6 @@ import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.RoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SimpleResourceHolder;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareBatchMessageListener;
-import org.springframework.amqp.rabbit.listener.api.PendingReplyProvider;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
@@ -130,10 +129,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private long receiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
 
 	private long batchReceiveTimeout;
-
-	private long pendingReplyCheckInterval = 200L;
-
-	private @Nullable PendingReplyProvider pendingReplyProvider;
 
 	private @Nullable Set<BlockingQueueConsumer> consumers;
 
@@ -360,28 +355,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	public void setBatchReceiveTimeout(long batchReceiveTimeout) {
 		Assert.isTrue(batchReceiveTimeout >= 0, "'batchReceiveTimeout' must be >= 0");
 		this.batchReceiveTimeout = batchReceiveTimeout;
-	}
-
-	/**
-	 * Set the interval for checking for pending replies during shutdown.
-	 * Default is 200ms.
-	 * @param pendingReplyCheckInterval the interval in milliseconds.
-	 * @since 4.0
-	 */
-	public void setPendingReplyCheckInterval(long pendingReplyCheckInterval) {
-		this.pendingReplyCheckInterval = pendingReplyCheckInterval;
-	}
-
-	/**
-	 * Set a provider for the number of pending replies.
-	 * When set, the container will wait for pending replies during shutdown,
-	 * up to the {@link #setShutdownTimeout(long) shutdownTimeout}.
-	 * @param pendingReplyProvider the pending reply provider.
-	 * @since 4.0
-	 * @see org.springframework.amqp.rabbit.core.RabbitTemplate#getPendingReplyCount()
-	 */
-	public void setPendingReplyProvider(PendingReplyProvider pendingReplyProvider) {
-		this.pendingReplyProvider = pendingReplyProvider;
 	}
 
 	/**
@@ -679,8 +652,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	@Override
 	protected void shutdownAndWaitOrCallback(@Nullable Runnable callback) {
-		waitForPendingReplies();
-
 		Thread thread = this.containerStoppingForAbort.get();
 		if (thread != null && !thread.equals(Thread.currentThread())) {
 			logger.info("Shutdown ignored - container is stopping due to an aborted consumer");
@@ -721,6 +692,24 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		Runnable awaitShutdown = () -> {
 			logger.info("Waiting for workers to finish.");
 			try {
+				ActiveObjectCounter<Object> replyCounter = null;
+				Object listener = getMessageListener();
+				if (listener instanceof ListenerContainerAware) {
+					replyCounter = ((ListenerContainerAware) listener).getPendingReplyCounter();
+				}
+
+				if (replyCounter != null) {
+					if (logger.isInfoEnabled()) {
+						logger.info("Waiting for pending replies: " + replyCounter.getCount());
+					}
+					if (!replyCounter.await(getShutdownTimeout(), TimeUnit.MILLISECONDS)) {
+						if (logger.isWarnEnabled()) {
+							logger.warn("Shutdown timeout expired, but " + replyCounter.getCount()
+									+ " pending replies still remain.");
+						}
+					}
+				}
+
 				boolean finished = this.cancellationLock.await(getShutdownTimeout(), TimeUnit.MILLISECONDS);
 				if (finished) {
 					logger.info("Successfully waited for workers to finish.");
@@ -758,39 +747,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		else {
 			getTaskExecutor().execute(awaitShutdown);
-		}
-	}
-
-	/**
-	 * Wait for pending replies if a pending reply provider is configured.
-	 */
-	private void waitForPendingReplies() {
-		PendingReplyProvider provider = this.pendingReplyProvider;
-		if (provider != null && getShutdownTimeout() > 0) {
-			long deadline = System.currentTimeMillis() + getShutdownTimeout();
-			try {
-				while (isRunning() && System.currentTimeMillis() < deadline) {
-					int pendingCount = provider.getPendingReplyCount();
-					if (pendingCount <= 0) {
-						if (logger.isInfoEnabled()) {
-							logger.info("No pending replies detected, proceeding with shutdown.");
-						}
-						return;
-					}
-					if (logger.isInfoEnabled()) {
-						logger.info("Waiting for " + pendingCount + " pending replies before final shutdown...");
-					}
-					Thread.sleep(this.pendingReplyCheckInterval);
-				}
-				int remaining = provider.getPendingReplyCount();
-				if (remaining > 0) {
-					logger.warn("Shutdown timeout expired, but " + remaining + " pending replies still remain.");
-				}
-			}
-			catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				logger.warn("Interrupted while waiting for pending replies.");
-			}
 		}
 	}
 

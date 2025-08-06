@@ -39,4 +39,13 @@ public interface ListenerContainerAware {
 	@Nullable
 	Collection<String> expectedQueueNames();
 
+	/**
+	 * Return a counter for pending replies, if any.
+	 * @return the counter, or null.
+	 * @since 4.0
+	 */
+	@Nullable
+	default ActiveObjectCounter<Object> getPendingReplyCounter() {
+		return null;
+	}
 }
