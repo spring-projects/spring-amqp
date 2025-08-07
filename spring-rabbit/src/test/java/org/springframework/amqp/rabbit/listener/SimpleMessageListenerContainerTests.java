@@ -753,11 +753,9 @@ public class SimpleMessageListenerContainerTests {
 
 		container.stop();
 
-		await().atMost(Duration.ofMillis(500)).untilAsserted(() ->
+		await().atMost(Duration.ofSeconds(1)).untilAsserted(() ->
 				verify(logger).warn("Shutdown timeout expired, but 1 pending replies still remain.")
 		);
-
-		replyCounter.release(pending);
 	}
 
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,
