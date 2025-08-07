@@ -62,7 +62,9 @@ import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.DirectFieldAccessor;
@@ -102,6 +104,7 @@ import static org.mockito.Mockito.verify;
  * @author Yansong Ren
  * @author Tim Bourquin
  * @author Jeonggi Kim
+ * @author Jeongjun Min
  */
 public class SimpleMessageListenerContainerTests {
 
@@ -714,6 +717,45 @@ public class SimpleMessageListenerContainerTests {
 		CountDownLatch start = TestUtils.getPropertyValue(lastTask, "start", CountDownLatch.class);
 
 		assertThat(start.getCount()).isEqualTo(0L);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void testShutdownWithPendingReplies() {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel = mock(Channel.class);
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(false)).willReturn(channel);
+		given(channel.isOpen()).willReturn(true);
+
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setQueueNames("shutdown.test.queue");
+		container.setMessageListener(template);
+
+		template.setReplyAddress(container.getQueueNames()[0]);
+
+		long shutdownTimeout = 500L;
+		container.setShutdownTimeout(shutdownTimeout);
+
+		ActiveObjectCounter<Object> replyCounter = template.getPendingReplyCounter();
+		assertThat(replyCounter).isNotNull();
+
+		Object pending = new Object();
+		replyCounter.add(pending);
+		assertThat(replyCounter.getCount()).isEqualTo(1);
+
+		Log logger = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
+		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
+
+		container.start();
+
+		container.stop();
+
+		await().atMost(Duration.ofSeconds(1)).untilAsserted(() ->
+				verify(logger).warn("Shutdown timeout expired, but 1 pending replies still remain.")
+		);
 	}
 
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,

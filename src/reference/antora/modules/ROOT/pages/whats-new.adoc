@@ -37,3 +37,8 @@ The Jackson 2 has been deprecated for removal in whole Spring portfolio.
 Respective new classes have been introduced to support Jackson 3.
 
 See xref:amqp/message-converters.adoc[] for more information.
+
+[[x40-smlc-changes]]
+=== MessageListenerContainer Changes
+
+The `SimpleMessageListenerContainer` now awaits at most `shutdownTimeout` for pending replies from the provided `RabbitTemplate` listener on its shutdown.

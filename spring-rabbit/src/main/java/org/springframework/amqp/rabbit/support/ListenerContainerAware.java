@@ -25,6 +25,7 @@ import org.jspecify.annotations.Nullable;
  * interface can have configuration verified during initialization.
  *
  * @author Gary Russell
+ * @author Jeongjun Min
  * @since 1.5
  *
  */
@@ -39,4 +40,12 @@ public interface ListenerContainerAware {
 	@Nullable
 	Collection<String> expectedQueueNames();
 
+	/**
+	 * Return a counter for pending replies, if any.
+	 * @return the counter, or null.
+	 * @since 4.0
+	 */
+	default @Nullable ActiveObjectCounter<Object> getPendingReplyCounter() {
+		return null;
+	}
 }
