@@ -736,26 +736,28 @@ public class SimpleMessageListenerContainerTests {
 
 		template.setReplyAddress(container.getQueueNames()[0]);
 
-		long shutdownTimeout = 2000L;
+		long shutdownTimeout = 500L;
 		container.setShutdownTimeout(shutdownTimeout);
 
-		ActiveObjectCounter<Object> replyCounter =
-				(ActiveObjectCounter<Object>) ReflectionTestUtils.getField(template, "pendingRepliesCounter");
+		ActiveObjectCounter<Object> replyCounter = template.getPendingReplyCounter();
 		assertThat(replyCounter).isNotNull();
 
 		Object pending = new Object();
 		replyCounter.add(pending);
 		assertThat(replyCounter.getCount()).isEqualTo(1);
 
+		Log logger = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
+		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
+
 		container.start();
 
-		long startTime = System.currentTimeMillis();
 		container.stop();
-		long stopDuration = System.currentTimeMillis() - startTime;
+
+		await().atMost(Duration.ofMillis(500)).untilAsserted(() ->
+				verify(logger).warn("Shutdown timeout expired, but 1 pending replies still remain.")
+		);
 
 		replyCounter.release(pending);
-
-		assertThat(stopDuration).isGreaterThanOrEqualTo(shutdownTimeout - 500);
 	}
 
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,
