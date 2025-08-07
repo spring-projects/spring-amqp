@@ -87,6 +87,7 @@ import org.springframework.util.backoff.BackOffExecution;
  * @author Jeonggi Kim
  * @author Java4ye
  * @author Thomas Badie
+ * @author Jeongjun Min
  *
  * @since 1.0
  */
@@ -692,22 +693,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		Runnable awaitShutdown = () -> {
 			logger.info("Waiting for workers to finish.");
 			try {
-				ActiveObjectCounter<Object> replyCounter = null;
-				Object listener = getMessageListener();
-				if (listener instanceof ListenerContainerAware) {
-					replyCounter = ((ListenerContainerAware) listener).getPendingReplyCounter();
-				}
-
-				if (replyCounter != null) {
-					if (logger.isInfoEnabled()) {
-						logger.info("Waiting for pending replies: " + replyCounter.getCount());
-					}
-					if (!replyCounter.await(getShutdownTimeout(), TimeUnit.MILLISECONDS)) {
-						if (logger.isWarnEnabled()) {
-							logger.warn("Shutdown timeout expired, but " + replyCounter.getCount()
-									+ " pending replies still remain.");
-						}
-					}
+				if (getMessageListener() instanceof ListenerContainerAware listenerContainerAware) {
+					awaitPendingReplies(listenerContainerAware);
 				}
 
 				boolean finished = this.cancellationLock.await(getShutdownTimeout(), TimeUnit.MILLISECONDS);
@@ -753,6 +740,22 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private void runCallbackIfNotNull(@Nullable Runnable callback) {
 		if (callback != null) {
 			callback.run();
+		}
+	}
+
+	private void awaitPendingReplies(ListenerContainerAware listener) throws InterruptedException {
+		ActiveObjectCounter<Object> replyCounter = listener.getPendingReplyCounter();
+
+		if (replyCounter != null && replyCounter.getCount() > 0) {
+			if (logger.isInfoEnabled()) {
+				logger.info("Waiting for pending replies: " + replyCounter.getCount());
+			}
+			if (!replyCounter.await(getShutdownTimeout(), TimeUnit.MILLISECONDS)) {
+				if (logger.isWarnEnabled()) {
+					logger.warn("Shutdown timeout expired, but " + replyCounter.getCount()
+							+ " pending replies still remain.");
+				}
+			}
 		}
 	}
 

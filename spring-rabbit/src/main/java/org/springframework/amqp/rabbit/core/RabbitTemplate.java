@@ -159,6 +159,7 @@ import org.springframework.util.StringUtils;
  * @author Alexey Platonov
  * @author Leonardo Ferreira
  * @author Ngoc Nhan
+ * @author Jeongjun Min
  *
  * @since 1.0
  */

@@ -25,6 +25,7 @@ import org.jspecify.annotations.Nullable;
  * interface can have configuration verified during initialization.
  *
  * @author Gary Russell
+ * @author Jeongjun Min
  * @since 1.5
  *
  */
@@ -44,8 +45,7 @@ public interface ListenerContainerAware {
 	 * @return the counter, or null.
 	 * @since 4.0
 	 */
-	@Nullable
-	default ActiveObjectCounter<Object> getPendingReplyCounter() {
+	default @Nullable ActiveObjectCounter<Object> getPendingReplyCounter() {
 		return null;
 	}
 }

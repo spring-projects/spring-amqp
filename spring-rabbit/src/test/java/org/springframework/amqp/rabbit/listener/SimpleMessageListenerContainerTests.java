@@ -104,6 +104,7 @@ import static org.mockito.Mockito.verify;
  * @author Yansong Ren
  * @author Tim Bourquin
  * @author Jeonggi Kim
+ * @author Jeongjun Min
  */
 public class SimpleMessageListenerContainerTests {
 
