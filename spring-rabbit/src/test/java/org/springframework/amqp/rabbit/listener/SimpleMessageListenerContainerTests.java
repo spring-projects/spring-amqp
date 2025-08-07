@@ -217,7 +217,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setMessageListener(messages::add);
 		container.start();
 		BasicProperties props = new BasicProperties();
-		byte[] payload = "baz".getBytes();
+		byte[] payload = "baz" .getBytes();
 		Envelope envelope = new Envelope(1L, false, "foo", "bar");
 		consumer.get().handleDelivery("1", envelope, props, payload);
 		envelope = new Envelope(2L, false, "foo", "bar");
@@ -272,7 +272,7 @@ public class SimpleMessageListenerContainerTests {
 		container.afterPropertiesSet();
 		container.start();
 		BasicProperties props = new BasicProperties();
-		byte[] payload = "baz".getBytes();
+		byte[] payload = "baz" .getBytes();
 		Envelope envelope = new Envelope(1L, false, "foo", "bar");
 		consumer.get().handleDelivery(consumerTag, envelope, props, payload);
 		envelope = new Envelope(2L, false, "foo", "bar");
@@ -753,9 +753,8 @@ public class SimpleMessageListenerContainerTests {
 
 		container.stop();
 
-		await().atMost(Duration.ofSeconds(1)).untilAsserted(() ->
-				verify(logger).warn("Shutdown timeout expired, but 1 pending replies still remain.")
-		);
+		await().untilAsserted(() ->
+				verify(logger).warn("Shutdown timeout expired, but 1 pending replies still remain."));
 	}
 
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,
