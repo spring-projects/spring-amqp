@@ -720,7 +720,6 @@ public class SimpleMessageListenerContainerTests {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	void testShutdownWithPendingReplies() {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 		Connection connection = mock(Connection.class);
@@ -742,19 +741,19 @@ public class SimpleMessageListenerContainerTests {
 		ActiveObjectCounter<Object> replyCounter = template.getPendingReplyCounter();
 		assertThat(replyCounter).isNotNull();
 
-		Object pending = new Object();
-		replyCounter.add(pending);
-		assertThat(replyCounter.getCount()).isEqualTo(1);
+		var spyReplyCounter = spy(replyCounter);
+		new DirectFieldAccessor(template).setPropertyValue("pendingRepliesCounter", spyReplyCounter);
 
-		Log logger = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
-		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
+		replyCounter.add(new Object());
 
 		container.start();
 
 		container.stop();
 
 		await().untilAsserted(() ->
-				verify(logger).warn("Shutdown timeout expired, but 1 pending replies still remain."));
+				assertThat(verify(spyReplyCounter).await(shutdownTimeout, TimeUnit.MILLISECONDS)).isFalse());
+
+		assertThat(replyCounter.getCount()).isEqualTo(1);
 	}
 
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,
