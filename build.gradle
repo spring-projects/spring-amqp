@@ -32,7 +32,7 @@ ext {
 	linkScmConnection = 'git://github.com/spring-projects/spring-amqp.git'
 	linkScmDevConnection = 'git@github.com:spring-projects/spring-amqp.git'
 
-	assertjVersion = '3.27.3'
+	assertjVersion = '3.27.4'
 	assertkVersion = '0.28.1'
 	awaitilityVersion = '4.3.0'
 	commonsHttpClientVersion = '5.4.4'
