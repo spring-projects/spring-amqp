@@ -157,6 +157,9 @@ configure(javaProjects) { subproject ->
 	apply from: "${rootProject.projectDir}/gradle/publish-maven.gradle"
 
 	java {
+		toolchain {
+			languageVersion = JavaLanguageVersion.of(17)
+		}
 		withJavadocJar()
 		withSourcesJar()
 		registerFeature('optional') {
