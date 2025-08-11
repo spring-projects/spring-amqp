@@ -36,14 +36,16 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.support.ContainerUtils;
+import org.springframework.amqp.rabbit.retry.MessageRecoveryCallback;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
-import org.springframework.amqp.support.SendRetryContextAccessor;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.context.expression.MapAccessor;
+import org.springframework.core.retry.RetryException;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.expression.BeanResolver;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ParserContext;
@@ -51,8 +53,6 @@ import org.springframework.expression.common.TemplateParserContext;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.expression.spel.support.StandardTypeConverter;
-import org.springframework.retry.RecoveryCallback;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
@@ -109,7 +109,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 
 	private @Nullable RetryTemplate retryTemplate;
 
-	private @Nullable RecoveryCallback<?> recoveryCallback;
+	private @Nullable MessageRecoveryCallback recoveryCallback;
 
 	private boolean isManualAck;
 
@@ -224,19 +224,19 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	 * Set a {@link RetryTemplate} to use when sending replies.
 	 * @param retryTemplate the template.
 	 * @since 2.0.6
-	 * @see #setRecoveryCallback(RecoveryCallback)
+	 * @see #setRecoveryCallback(MessageRecoveryCallback)
 	 */
 	public void setRetryTemplate(RetryTemplate retryTemplate) {
 		this.retryTemplate = retryTemplate;
 	}
 
 	/**
-	 * Set a {@link RecoveryCallback} to invoke when retries are exhausted.
+	 * Set a {@link MessageRecoveryCallback} to invoke when retries are exhausted.
 	 * @param recoveryCallback the recovery callback.
-	 * @since 2.0.6
+	 * @since 4.0
 	 * @see #setRetryTemplate(RetryTemplate)
 	 */
-	public void setRecoveryCallback(RecoveryCallback<?> recoveryCallback) {
+	public void setRecoveryCallback(MessageRecoveryCallback recoveryCallback) {
 		this.recoveryCallback = recoveryCallback;
 	}
 
@@ -653,20 +653,20 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 			}
 			else {
 				final Message messageToSend = message;
-				this.retryTemplate.execute(ctx -> {
-					doPublish(channel, replyTo, messageToSend);
-					return null;
-				}, ctx -> {
-					if (this.recoveryCallback != null) {
-						ctx.setAttribute(SendRetryContextAccessor.MESSAGE, messageToSend);
-						ctx.setAttribute(SendRetryContextAccessor.ADDRESS, replyTo);
-						this.recoveryCallback.recover(ctx);
+				try {
+					this.retryTemplate.execute(() -> {
+						doPublish(channel, replyTo, messageToSend);
 						return null;
+					});
+				}
+				catch (RetryException ex) {
+					if (this.recoveryCallback != null) {
+						this.recoveryCallback.recover(messageToSend, replyTo, ex.getCause());
 					}
 					else {
-						throw RabbitExceptionTranslator.convertRabbitAccessException(ctx.getLastThrowable());
+						throw RabbitExceptionTranslator.convertRabbitAccessException(ex.getCause());
 					}
-				});
+				}
 			}
 		}
 		catch (Exception ex) {

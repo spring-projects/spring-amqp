@@ -45,6 +45,7 @@ import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
+import org.springframework.amqp.rabbit.config.StatelessRetryOperationsInterceptor;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -62,7 +63,6 @@ import org.springframework.rabbit.stream.producer.RabbitStreamTemplate;
 import org.springframework.rabbit.stream.retry.StreamRetryOperationsInterceptorFactoryBean;
 import org.springframework.rabbit.stream.support.StreamAdmin;
 import org.springframework.rabbit.stream.support.StreamMessageProperties;
-import org.springframework.retry.interceptor.RetryOperationsInterceptor;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunctions;
@@ -306,7 +306,7 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 		@Bean
 		@DependsOn("sfb")
 		RabbitListenerContainerFactory<StreamListenerContainer> nativeFactory(Environment env,
-				RetryOperationsInterceptor retry) {
+				StatelessRetryOperationsInterceptor retry) {
 
 			StreamRabbitListenerContainerFactory factory = new StreamRabbitListenerContainerFactory(env);
 			factory.setNativeListener(true);
@@ -323,8 +323,7 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 		}
 
 		@Bean
-		RabbitListenerContainerFactory<StreamListenerContainer> nativeObsFactory(Environment env,
-				RetryOperationsInterceptor retry) {
+		RabbitListenerContainerFactory<StreamListenerContainer> nativeObsFactory(Environment env) {
 
 			StreamRabbitListenerContainerFactory factory = new StreamRabbitListenerContainerFactory(env);
 			factory.setNativeListener(true);

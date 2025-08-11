@@ -51,10 +51,10 @@
 				type="java.lang.Class"/>
 	</bean>
 
-	<bean id="retrier" class="org.springframework.retry.support.RetryTemplate"/>
+	<bean id="retrier" class="org.springframework.core.retry.RetryTemplate"/>
 
 	<bean id="recoverer" class="org.mockito.Mockito" factory-method="mock">
-		<constructor-arg value="org.springframework.retry.RecoveryCallback" type="java.lang.Class"/>
+		<constructor-arg value="org.springframework.amqp.rabbit.core.RabbitTemplate.RecoveryCallback" type="java.lang.Class"/>
 	</bean>
 
 </beans>

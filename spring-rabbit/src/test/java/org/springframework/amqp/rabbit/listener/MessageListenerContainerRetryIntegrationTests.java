@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -43,8 +44,7 @@ import org.springframework.amqp.rabbit.retry.MessageBatchRecoverer;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.retry.policy.MapRetryContextCache;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryPolicy;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -69,8 +69,6 @@ public class MessageListenerContainerRetryIntegrationTests {
 	private static Log logger = LogFactory.getLog(MessageListenerContainerRetryIntegrationTests.class);
 
 	private static Queue queue = new Queue(TEST_QUEUE);
-
-	private RetryTemplate retryTemplate;
 
 	private MessageConverter messageConverter;
 
@@ -160,9 +158,6 @@ public class MessageListenerContainerRetryIntegrationTests {
 		// There will be no key for these messages so they cannot be recovered...
 		converter.setCreateMessageIds(false);
 		this.messageConverter = converter;
-		// Beware of context cache busting if retry policy fails...
-		this.retryTemplate = new RetryTemplate();
-		this.retryTemplate.setRetryContextCache(new MapRetryContextCache(1));
 		// The container should have shutdown, so there are now no active consumers
 		assertThatThrownBy(() -> doTestStatefulRetry(messageCount, txSize, failFrequency, concurrentConsumers))
 			.hasMessageContaining("expected: 1")
@@ -215,10 +210,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 				latch.countDown();
 			});
 		}
-		if (retryTemplate == null) {
-			retryTemplate = new RetryTemplate();
-		}
-		factory.setRetryOperations(retryTemplate);
+		factory.setRetryPolicy(RetryPolicy.builder().maxAttempts(2).delay(Duration.ofMillis(100)).build());
 		return factory.getObject();
 	}
 

@@ -16,30 +16,17 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import java.util.List;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.rabbit.retry.MessageBatchRecoverer;
 import org.springframework.amqp.rabbit.retry.MessageKeyGenerator;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbit.retry.NewMessageIdentifier;
-import org.springframework.retry.RetryOperations;
-import org.springframework.retry.interceptor.MethodArgumentsKeyGenerator;
-import org.springframework.retry.interceptor.MethodInvocationRecoverer;
-import org.springframework.retry.interceptor.NewMethodArgumentsIdentifier;
-import org.springframework.retry.interceptor.StatefulRetryOperationsInterceptor;
-import org.springframework.retry.support.RetryTemplate;
-import org.springframework.util.Assert;
+import org.springframework.core.retry.RetryPolicy;
 
 /**
  * Convenient factory bean for creating a stateful retry interceptor for use in a message listener container, giving you
  * a large amount of control over the behaviour of a container when a listener fails. To control the number of retry
- * attempt or the backoff in between attempts, supply a customized {@link RetryTemplate}. Stateful retry is appropriate
+ * attempt or the backoff in between attempts, supply a customized {@link RetryPolicy}. Stateful retry is appropriate
  * if your listener is using a transactional resource that needs to be rollback on an exception (e.g. a stateful
  * connection to a back end server). JPA is the canonical example. The semantics of stateful retry mean that a listener
  * exception is propagated to the container, so that it can force a rollback. When the message is redelivered it has to
@@ -52,13 +39,9 @@ import org.springframework.util.Assert;
  * @author Ngoc Nhan
  * @author Artem Bilan
  *
- * @see RetryOperations#execute(org.springframework.retry.RetryCallback, org.springframework.retry.RecoveryCallback,
- * org.springframework.retry.RetryState)
- *
+ * @see RetryPolicy#shouldRetry(Throwable)
  */
 public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetryOperationsInterceptorFactoryBean {
-
-	private static final Log LOGGER = LogFactory.getLog(StatefulRetryOperationsInterceptorFactoryBean.class);
 
 	private @Nullable MessageKeyGenerator messageKeyGenerator;
 
@@ -74,77 +57,28 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 
 	@Override
 	public StatefulRetryOperationsInterceptor getObject() {
+		return new StatefulRetryOperationsInterceptor(getMessageKeyGenerator(),
+				getNewMessageIdentifier(), getRetryPolicy(), getMessageRecoverer());
+	}
 
-		StatefulRetryOperationsInterceptor retryInterceptor = new StatefulRetryOperationsInterceptor();
-		RetryOperations retryTemplate = getRetryOperations();
-		if (retryTemplate == null) {
-			retryTemplate = new RetryTemplate();
+	private NewMessageIdentifier getNewMessageIdentifier() {
+		if (this.newMessageIdentifier != null) {
+			return this.newMessageIdentifier;
 		}
-		retryInterceptor.setRetryOperations(retryTemplate);
-		retryInterceptor.setNewItemIdentifier(createNewItemIdentifier());
-		retryInterceptor.setRecoverer(createRecoverer());
-		retryInterceptor.setKeyGenerator(createKeyGenerator());
-		return retryInterceptor;
-
+		return (message) -> Boolean.FALSE.equals(message.getMessageProperties().isRedelivered());
 	}
 
-	private NewMethodArgumentsIdentifier createNewItemIdentifier() {
-		return args -> {
-			Message message = argToMessage(args);
-			Assert.notNull(message, "The 'args' must not convert to null");
-			if (StatefulRetryOperationsInterceptorFactoryBean.this.newMessageIdentifier == null) {
-				return Boolean.FALSE.equals(message.getMessageProperties().isRedelivered());
-			}
-
-			return StatefulRetryOperationsInterceptorFactoryBean.this.newMessageIdentifier.isNew(message);
-		};
-	}
-
-	@SuppressWarnings("unchecked")
-	private MethodInvocationRecoverer<?> createRecoverer() {
-		return (args, cause) -> {
-			MessageRecoverer messageRecoverer = getMessageRecoverer();
-			Object arg = args[1];
-			if (messageRecoverer == null) {
-				LOGGER.warn("Message(s) dropped on recovery: " + arg, cause);
-			}
-			else if (arg instanceof Message msg) {
-				messageRecoverer.recover(msg, cause);
-			}
-			else if (arg instanceof List && messageRecoverer instanceof MessageBatchRecoverer recoverer) {
-				recoverer.recover((List<Message>) arg, cause);
-			}
-			// This is actually a normal outcome. It means the recovery was successful, but we don't want to consume
-			// any more messages until the acks and commits are sent for this (problematic) message...
-			throw new ImmediateAcknowledgeAmqpException("Recovered message forces ack (if ack mode requires it): "
-					+ arg, cause);
-		};
-	}
-
-	private MethodArgumentsKeyGenerator createKeyGenerator() {
-		return args -> {
-			Message message = argToMessage(args);
-			Assert.notNull(message, "The 'args' must not convert to null");
-			if (StatefulRetryOperationsInterceptorFactoryBean.this.messageKeyGenerator == null) {
-				String messageId = message.getMessageProperties().getMessageId();
-				if (messageId == null && Boolean.TRUE.equals(message.getMessageProperties().isRedelivered())) {
-					message.getMessageProperties().setFinalRetryForMessageWithNoId(true);
-				}
-				return messageId;
-			}
-			return StatefulRetryOperationsInterceptorFactoryBean.this.messageKeyGenerator.getKey(message);
-		};
-	}
-
-	private @Nullable Message argToMessage(Object[] args) {
-		Object arg = args[1];
-		if (arg instanceof Message msg) {
-			return msg;
+	private MessageKeyGenerator getMessageKeyGenerator() {
+		if (this.messageKeyGenerator != null) {
+			return this.messageKeyGenerator;
 		}
-		if (arg instanceof List<?> list) {
-			return (Message) list.get(0);
-		}
-		return null;
+		return (message) -> {
+			String messageId = message.getMessageProperties().getMessageId();
+			if (messageId == null && Boolean.TRUE.equals(message.getMessageProperties().isRedelivered())) {
+				message.getMessageProperties().setFinalRetryForMessageWithNoId(true);
+			}
+			return messageId;
+		};
 	}
 
 	@Override

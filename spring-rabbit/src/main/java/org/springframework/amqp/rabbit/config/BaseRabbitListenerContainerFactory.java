@@ -29,12 +29,12 @@ import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.adapter.AbstractAdaptableMessageListener;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
+import org.springframework.amqp.rabbit.retry.MessageRecoveryCallback;
 import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.retry.RecoveryCallback;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
@@ -58,7 +58,7 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 
 	private @Nullable RetryTemplate retryTemplate;
 
-	private @Nullable RecoveryCallback<?> recoveryCallback;
+	private @Nullable MessageRecoveryCallback recoveryCallback;
 
 	private Advice @Nullable [] adviceChain;
 
@@ -108,7 +108,7 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	 * Set a {@link RetryTemplate} to use when sending replies; added to each message
 	 * listener adapter.
 	 * @param retryTemplate the template.
-	 * @see #setReplyRecoveryCallback(RecoveryCallback)
+	 * @see #setReplyRecoveryCallback(MessageRecoveryCallback)
 	 * @see AbstractAdaptableMessageListener#setRetryTemplate(RetryTemplate)
 	 */
 	public void setRetryTemplate(RetryTemplate retryTemplate) {
@@ -116,14 +116,14 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	}
 
 	/**
-	 * Set a {@link RecoveryCallback} to invoke when retries are exhausted. Added to each
-	 * message listener adapter. Only used if a {@link #setRetryTemplate(RetryTemplate)
+	 * Set a {@link MessageRecoveryCallback} to invoke when retries are exhausted. Added to
+	 * each message listener adapter. Only used if a {@link #setRetryTemplate(RetryTemplate)
 	 * retryTemplate} is provided.
 	 * @param recoveryCallback the recovery callback.
 	 * @see #setRetryTemplate(RetryTemplate)
-	 * @see AbstractAdaptableMessageListener#setRecoveryCallback(RecoveryCallback)
+	 * @see AbstractAdaptableMessageListener#setRecoveryCallback(MessageRecoveryCallback)
 	 */
-	public void setReplyRecoveryCallback(RecoveryCallback<?> recoveryCallback) {
+	public void setReplyRecoveryCallback(MessageRecoveryCallback recoveryCallback) {
 		this.recoveryCallback = recoveryCallback;
 	}
 

@@ -70,9 +70,9 @@ import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
@@ -239,7 +239,7 @@ public class RabbitTemplateTests {
 		catch (AmqpAuthenticationException e) {
 			assertThat(e.getMessage()).contains("foo");
 		}
-		assertThat(count.get()).isEqualTo(3);
+		assertThat(count.get()).isEqualTo(4);
 	}
 
 	@Test
@@ -329,7 +329,7 @@ public class RabbitTemplateTests {
 			return null;
 		});
 		template.convertAndSend("foo", "bar", "baz");
-		assertThat(count.get()).isEqualTo(3);
+		assertThat(count.get()).isEqualTo(4);
 		assertThat(recoverInvoked.get()).isTrue();
 	}
 

@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.core;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -63,8 +64,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.retry.backoff.NoBackOffPolicy;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
@@ -341,7 +342,7 @@ public class RabbitAdminTests extends NeedsManagementTests {
 		CachingConnectionFactory ccf = new CachingConnectionFactory(rabbitConnectionFactory);
 		RabbitAdmin admin = new RabbitAdmin(ccf);
 		RetryTemplate rtt = new RetryTemplate();
-		rtt.setBackOffPolicy(new NoBackOffPolicy());
+		rtt.setRetryPolicy(RetryPolicy.builder().maxAttempts(2).delay(Duration.ZERO).build());
 		admin.setRetryTemplate(rtt);
 		GenericApplicationContext ctx = new GenericApplicationContext();
 		ctx.getBeanFactory().registerSingleton("foo", new AnonymousQueue());
