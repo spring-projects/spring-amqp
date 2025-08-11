@@ -28,7 +28,7 @@ import org.springframework.amqp.AmqpException;
  * not necessary to use it; in fact, you may recover faster when relying on Spring AMQP's
  * recovery, especially on the producer side, when a
  * {@link org.springframework.amqp.rabbit.core.RabbitTemplate} has a
- * {@link org.springframework.retry.support.RetryTemplate}.
+ * {@link org.springframework.core.retry.RetryTemplate}.
  * <p>
  * If you get this exception, consider disabling the client auto recovery. Spring AMQP
  * disables it by default, unless you configure the underlying rabbit connection factory

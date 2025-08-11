@@ -21,40 +21,21 @@ See also xref:amqp/request-reply.adoc#async-template[Async Rabbit Template].
 == Adding Retry Capabilities
 
 Starting with version 1.3, you can now configure the `RabbitTemplate` to use a `RetryTemplate` to help with handling problems with broker connectivity.
-See the https://github.com/spring-projects/spring-retry[spring-retry] project for complete information.
+See the {spring-framework-javadoc}/org/springframework/core/retry/package-summary.html[Core Retry] support in Spring Framework for more information.
 The following is only one example that uses an exponential back off policy and the default `SimpleRetryPolicy`, which makes three tries before throwing the exception to the caller.
-
-The following example uses the XML namespace:
-
-[source,xml]
-----
-<rabbit:template id="template" connection-factory="connectionFactory" retry-template="retryTemplate"/>
-
-<bean id="retryTemplate" class="org.springframework.retry.support.RetryTemplate">
-    <property name="backOffPolicy">
-        <bean class="org.springframework.retry.backoff.ExponentialBackOffPolicy">
-            <property name="initialInterval" value="500" />
-            <property name="multiplier" value="10.0" />
-            <property name="maxInterval" value="10000" />
-        </bean>
-    </property>
-</bean>
-----
 
 The following example uses the `@Configuration` annotation in Java:
 
 [source,java]
 ----
-@Bean
 public RabbitTemplate rabbitTemplate() {
     RabbitTemplate template = new RabbitTemplate(connectionFactory());
-    RetryTemplate retryTemplate = new RetryTemplate();
-    ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
-    backOffPolicy.setInitialInterval(500);
-    backOffPolicy.setMultiplier(10.0);
-    backOffPolicy.setMaxInterval(10000);
-    retryTemplate.setBackOffPolicy(backOffPolicy);
-    template.setRetryTemplate(retryTemplate);
+    RetryPolicy retryPolicy = RetryPolicy.builder()
+            .delay(Duration.ofMillis(500))
+            .multiplier(2.0)
+            .maxDelay(Duration.ofSeconds(10))
+            .build();
+    template.setRetryTemplate(new RetryTemplate(retryPolicy));
     return template;
 }
 ----

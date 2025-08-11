@@ -110,11 +110,12 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.context.expression.MapAccessor;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.retry.RetryException;
+import org.springframework.core.retry.RetryTemplate;
+import org.springframework.core.retry.Retryable;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
-import org.springframework.retry.RecoveryCallback;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.ErrorHandler;
 import org.springframework.util.StringUtils;
@@ -249,7 +250,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	private @Nullable RetryTemplate retryTemplate;
 
-	private @Nullable RecoveryCallback<?> recoveryCallback;
+	private @Nullable RecoveryCallback recoveryCallback;
 
 	private @Nullable Expression sendConnectionFactorySelectorExpression;
 
@@ -617,14 +618,14 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	/**
-	 * Add a {@link RecoveryCallback} which is used for the {@code retryTemplate.execute}.
-	 * If {@link #retryTemplate} isn't provided {@link #recoveryCallback} is ignored.
-	 * {@link RecoveryCallback} should produce result compatible with
-	 * {@link #execute(ChannelCallback)} return type.
-	 * @param recoveryCallback The retry recoveryCallback.
-	 * @since 1.4
+	 * Add a {@linkplain RecoveryCallback recovery callback} that is used when an
+	 * {@link RetryTemplate#execute(Retryable) execution} has exhausted its retry policy.
+	 * The given callback should produce result compatible with the return type produced
+	 * by {@link #execute(ChannelCallback)}.
+	 * @param recoveryCallback The recovery callback
+	 * @since 4.0
 	 */
-	public void setRecoveryCallback(RecoveryCallback<?> recoveryCallback) {
+	public void setRecoveryCallback(RecoveryCallback recoveryCallback) {
 		this.recoveryCallback = recoveryCallback;
 	}
 
@@ -2192,15 +2193,14 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 		if (this.retryTemplate != null) {
 			try {
-				return this.retryTemplate.execute(
-						context -> doExecute(action, connectionFactory),
-						(RecoveryCallback<T>) this.recoveryCallback);
+				return this.retryTemplate.execute(() -> doExecute(action, connectionFactory));
 			}
-			catch (RuntimeException e) { // NOSONAR catch and rethrow needed to avoid next catch
-				throw e;
-			}
-			catch (Exception e) {
-				throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+			catch (RetryException ex) {
+				Throwable lastException = ex.getCause();
+				if (this.recoveryCallback != null) {
+					return (T) this.recoveryCallback.recover(lastException);
+				}
+				throw RabbitExceptionTranslator.convertRabbitAccessException(lastException);
 			}
 		}
 		else {
@@ -2886,6 +2886,24 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		 * @param returned the returned message and metadata.
 		 */
 		void returnedMessage(ReturnedMessage returned);
+
+	}
+
+	/**
+	 * Callback to recover a request that has exhausted its retry policy.
+	 *
+	 * @author Stephane Nicoll
+	 */
+	@FunctionalInterface
+	public interface RecoveryCallback {
+
+		/**
+		 * Recover the exception that was thrown during the last attempt.
+		 * @param lastException the exception of the last attempt
+		 * @return Object that can be used to replace the result {@link RabbitTemplate#execute(ChannelCallback)}
+		 */
+		@Nullable
+		Object recover(Throwable lastException);
 
 	}
 

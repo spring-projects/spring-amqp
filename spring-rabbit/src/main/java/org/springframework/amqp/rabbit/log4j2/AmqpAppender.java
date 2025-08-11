@@ -81,9 +81,8 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.retry.RetryPolicy;
-import org.springframework.retry.policy.SimpleRetryPolicy;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -182,8 +181,7 @@ public class AmqpAppender extends AbstractAppender {
 		}
 		else if (this.manager.maxSenderRetries > 0) {
 			RetryTemplate retryTemplate = new RetryTemplate();
-			RetryPolicy retryPolicy = new SimpleRetryPolicy(this.manager.maxSenderRetries);
-			retryTemplate.setRetryPolicy(retryPolicy);
+			retryTemplate.setRetryPolicy(RetryPolicy.withMaxAttempts(2));
 			this.rabbitTemplate.setRetryTemplate(retryTemplate);
 		}
 	}

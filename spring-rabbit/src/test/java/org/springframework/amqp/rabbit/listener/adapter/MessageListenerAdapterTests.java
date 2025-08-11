@@ -33,11 +33,9 @@ import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.support.SendRetryContextAccessor;
 import org.springframework.aop.framework.ProxyFactory;
-import org.springframework.retry.RetryPolicy;
-import org.springframework.retry.policy.SimpleRetryPolicy;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -204,17 +202,17 @@ public class MessageListenerAdapterTests {
 		this.adapter = new MessageListenerAdapter();
 		this.adapter.setDefaultListenerMethod("handle");
 		this.adapter.setDelegate(this.simpleService);
-		RetryPolicy retryPolicy = new SimpleRetryPolicy(2);
+		RetryPolicy retryPolicy = RetryPolicy.builder().maxAttempts(2).build();
 		RetryTemplate retryTemplate = new RetryTemplate();
 		retryTemplate.setRetryPolicy(retryPolicy);
 		this.adapter.setRetryTemplate(retryTemplate);
 		AtomicReference<Message> replyMessage = new AtomicReference<>();
 		AtomicReference<Address> replyAddress = new AtomicReference<>();
 		AtomicReference<Throwable> throwable = new AtomicReference<>();
-		this.adapter.setRecoveryCallback(ctx -> {
-			replyMessage.set(SendRetryContextAccessor.getMessage(ctx));
-			replyAddress.set(SendRetryContextAccessor.getAddress(ctx));
-			throwable.set(ctx.getLastThrowable());
+		this.adapter.setRecoveryCallback((msg, replyTo, cause) -> {
+			replyMessage.set(msg);
+			replyAddress.set(replyTo);
+			throwable.set(cause);
 			return null;
 		});
 		this.messageProperties.setReplyTo("foo/bar");

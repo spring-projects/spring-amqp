@@ -18,49 +18,49 @@ package org.springframework.rabbit.stream.retry;
 
 import com.rabbitmq.stream.Message;
 import com.rabbitmq.stream.MessageHandler.Context;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.rabbit.config.StatelessRetryOperationsInterceptorFactoryBean;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
+import org.springframework.core.retry.RetryOperations;
 import org.springframework.rabbit.stream.listener.StreamListenerContainer;
-import org.springframework.retry.RetryOperations;
-import org.springframework.retry.interceptor.MethodInvocationRecoverer;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.util.Assert;
 
 /**
  * Convenient factory bean for creating a stateless retry interceptor for use in a
  * {@link StreamListenerContainer} when consuming native stream messages, giving you a
  * large amount of control over the behavior of a container when a listener fails. To
  * control the number of retry attempt or the backoff in between attempts, supply a
- * customized {@link RetryTemplate}. Stateless retry is appropriate if your listener can
+ * customized {@link RetryOperations}. Stateless retry is appropriate if your listener can
  * be called repeatedly between failures with no side effects. The semantics of stateless
  * retry mean that a listener exception is not propagated to the container until the retry
  * attempts are exhausted. When the retry attempts are exhausted it can be processed using
  * a {@link StreamMessageRecoverer} if one is provided.
  *
  * @author Gary Russell
- *
- * @see RetryOperations#execute(org.springframework.retry.RetryCallback,org.springframework.retry.RecoveryCallback)
  */
 public class StreamRetryOperationsInterceptorFactoryBean extends StatelessRetryOperationsInterceptorFactoryBean {
 
 	@Override
-	protected MethodInvocationRecoverer<?> createRecoverer() {
-		return (args, cause) -> {
-			StreamMessageRecoverer messageRecoverer = (StreamMessageRecoverer) getMessageRecoverer();
-			Object arg = args[0];
-			if (arg instanceof org.springframework.amqp.core.Message) {
-				return super.recover(args, cause);
+	protected @Nullable Object recover(@Nullable Object[] args, Throwable cause) {
+		StreamMessageRecoverer messageRecoverer = (StreamMessageRecoverer) getMessageRecoverer();
+		Object arg = args[0];
+		if (arg instanceof org.springframework.amqp.core.Message) {
+			return super.recover(args, cause);
+		}
+		else {
+			if (messageRecoverer == null) {
+				this.logger.warn("Message(s) dropped on recovery: " + arg, cause);
 			}
 			else {
-				if (messageRecoverer == null) {
-					this.logger.warn("Message(s) dropped on recovery: " + arg, cause);
-				}
-				else {
-					messageRecoverer.recover((Message) arg, (Context) args[1], cause);
-				}
-				return null;
+				Message message = (Message) arg;
+				Context context = (Context) args[1];
+				Assert.notNull(message, "Message must not be null");
+				Assert.notNull(context, "Context must not be null");
+				messageRecoverer.recover(message, context, cause);
 			}
-		};
+			return null;
+		}
 	}
 
 	/**

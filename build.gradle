@@ -55,7 +55,6 @@ ext {
 	rabbitmqVersion = '5.26.0'
 	reactorVersion = '2025.0.0-M6'
 	springDataVersion = '2025.1.0-SNAPSHOT'
-	springRetryVersion = '2.0.12'
 	springVersion = '7.0.0-SNAPSHOT'
 	testcontainersVersion = '1.21.3'
 
@@ -365,7 +364,6 @@ project('spring-rabbit') {
 		api 'org.springframework:spring-messaging'
 		api 'org.springframework:spring-tx'
 		api 'io.micrometer:micrometer-observation'
-		api "org.springframework.retry:spring-retry:$springRetryVersion"
 
 		optionalApi 'org.springframework:spring-aop'
 		optionalApi 'org.springframework:spring-webflux'
@@ -708,10 +706,9 @@ def generateAttributes() {
 		'project-version': project.version,
 		'spring-integration-docs': "$springDocs/spring-integration/reference".toString(),
 		'spring-framework-docs': "$springDocs/spring-framework/reference/${generateVersionWithoutPatch(springVersion)}".toString(),
-		'spring-retry-java-docs': "$springDocs/spring-retry/docs/$springRetryVersion/apidocs".toString(),
+		'spring-framework-javadoc': "$springDocs/spring-framework/docs/$springVersion/javadoc-api".toString(),
 		'javadoc-location-org-springframework-transaction': "$springDocs/spring-framework/docs/$springVersion/javadoc-api".toString(),
 		'javadoc-location-org-springframework-amqp': "$springDocs/spring-amqp/docs/$project.version/api".toString(),
-		'javadoc-location-org-springframework-retry': "{spring-retry-java-docs}",
 		'micrometer-docs': "$micrometerDocsPrefix/micrometer/reference/${generateVersionWithoutPatch(micrometerVersion)}".toString(),
 		'micrometer-tracing-docs': "$micrometerDocsPrefix/tracing/reference/${generateVersionWithoutPatch(micrometerTracingVersion)}".toString()
 	]

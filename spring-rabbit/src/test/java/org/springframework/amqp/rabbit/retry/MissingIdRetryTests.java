@@ -16,22 +16,22 @@
 
 package org.springframework.amqp.rabbit.retry;
 
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.aopalliance.aop.Advice;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.rabbit.config.StatefulRetryOperationsInterceptor;
 import org.springframework.amqp.rabbit.config.StatefulRetryOperationsInterceptorFactoryBean;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -41,39 +41,25 @@ import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.rabbit.listener.BlockingQueueConsumer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
-import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.policy.MapRetryContextCache;
-import org.springframework.retry.policy.RetryContextCache;
-import org.springframework.retry.policy.SimpleRetryPolicy;
-import org.springframework.retry.support.RetrySynchronizationManager;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.atMost;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 /**
  * @author Gary Russell
  * @author Arnaud Cogoluègnes
  * @since 1.1.2
- *
  */
 @RabbitAvailable
-@LogLevels(classes = {BlockingQueueConsumer.class,
+@LogLevels(classes = { BlockingQueueConsumer.class,
 		MissingIdRetryTests.class,
-		RetryTemplate.class, SimpleRetryPolicy.class})
+		RetryTemplate.class })
 public class MissingIdRetryTests {
-
-	private final Log logger = LogFactory.getLog(MissingIdRetryTests.class);
 
 	private volatile CountDownLatch latch;
 
@@ -84,7 +70,6 @@ public class MissingIdRetryTests {
 		RabbitAvailableCondition.getBrokerRunning().deleteExchanges("retry.test.exchange");
 	}
 
-	@SuppressWarnings("rawtypes")
 	@Test
 	public void testWithNoId() throws Exception {
 		// 2 messages; each retried once by missing id interceptor
@@ -100,24 +85,16 @@ public class MissingIdRetryTests {
 
 		StatefulRetryOperationsInterceptorFactoryBean fb = new StatefulRetryOperationsInterceptorFactoryBean();
 
-		// use an external template so we can share his cache
-		RetryTemplate retryTemplate = new RetryTemplate();
-		RetryContextCache cache = spy(new MapRetryContextCache());
-		retryTemplate.setRetryContextCache(cache);
-		fb.setRetryOperations(retryTemplate);
-
 		Advice retryInterceptor = fb.getObject();
 		container.setAdviceChain(retryInterceptor);
 		container.start();
+		Map<String, Object> cache = getCache(retryInterceptor);
 
 		template.convertAndSend("retry.test.exchange", "retry.test.binding", "Hello, world!");
 		template.convertAndSend("retry.test.exchange", "retry.test.binding", "Hello, world!");
 		try {
 			assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
-			Map map = (Map) new DirectFieldAccessor(cache).getPropertyValue("map");
-			await().until(() -> map.size() == 0);
-			verify(cache, never()).put(any(), any(RetryContext.class));
-			verify(cache, never()).remove(any());
+			assertThat(cache).isEmpty();
 		}
 		finally {
 			container.stop();
@@ -125,10 +102,10 @@ public class MissingIdRetryTests {
 		}
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Test
 	public void testWithId() throws Exception {
 		// 2 messages; each retried twice by retry interceptor
+		RetryPolicy retryPolicy = RetryPolicy.builder().maxAttempts(2).delay(Duration.ZERO).build();
 		this.latch = new CountDownLatch(6);
 		ConfigurableApplicationContext ctx = new ClassPathXmlApplicationContext("retry-context.xml", this.getClass());
 		RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
@@ -140,18 +117,13 @@ public class MissingIdRetryTests {
 		container.setQueueNames("retry.test.queue");
 
 		StatefulRetryOperationsInterceptorFactoryBean fb = new StatefulRetryOperationsInterceptorFactoryBean();
-
-		// use an external template so we can share his cache
-		RetryTemplate retryTemplate = new RetryTemplate();
-		RetryContextCache cache = spy(new MapRetryContextCache());
-		retryTemplate.setRetryContextCache(cache);
-		fb.setRetryOperations(retryTemplate);
-		fb.setMessageRecoverer(new RejectAndDontRequeueRecoverer(() ->
-			"Don't requeue after " + RetrySynchronizationManager.getContext().getRetryCount() + " attempts"));
+		fb.setRetryPolicy(retryPolicy);
+		fb.setMessageRecoverer(new RejectAndDontRequeueRecoverer(() -> "Don't requeue"));
 
 		Advice retryInterceptor = fb.getObject();
 		container.setAdviceChain(retryInterceptor);
 		container.start();
+		Map<String, Object> cache = getCache(retryInterceptor);
 
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setContentType("text/plain");
@@ -161,18 +133,7 @@ public class MissingIdRetryTests {
 		template.send("retry.test.exchange", "retry.test.binding", message);
 		try {
 			assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
-			Map map = (Map) new DirectFieldAccessor(cache).getPropertyValue("map");
-			await().until(() -> map.size() == 0);
-			ArgumentCaptor putCaptor = ArgumentCaptor.forClass(Object.class);
-			ArgumentCaptor getCaptor = ArgumentCaptor.forClass(Object.class);
-			ArgumentCaptor removeCaptor = ArgumentCaptor.forClass(Object.class);
-			verify(cache, times(6)).put(putCaptor.capture(), any(RetryContext.class));
-			verify(cache, times(6)).get(getCaptor.capture());
-			verify(cache, atLeast(2)).remove(removeCaptor.capture());
-			verify(cache, atMost(4)).remove(removeCaptor.capture());
-			logger.debug("puts:" + putCaptor.getAllValues());
-			logger.debug("gets:" + putCaptor.getAllValues());
-			logger.debug("removes:" + removeCaptor.getAllValues());
+			await().atMost(Duration.ofSeconds(3)).until(cache::isEmpty);
 		}
 		finally {
 			container.stop();
@@ -180,9 +141,9 @@ public class MissingIdRetryTests {
 		}
 	}
 
-	@SuppressWarnings({ "rawtypes", "resource", "unchecked" })
 	@Test
 	public void testWithIdAndSuccess() throws Exception {
+		RetryPolicy retryPolicy = RetryPolicy.builder().maxAttempts(2).delay(Duration.ZERO).build();
 		// 2 messages; each retried twice by retry interceptor
 		this.latch = new CountDownLatch(6);
 		ConfigurableApplicationContext ctx = new ClassPathXmlApplicationContext("retry-context.xml", this.getClass());
@@ -202,17 +163,13 @@ public class MissingIdRetryTests {
 		container.setReceiveTimeout(10);
 
 		StatefulRetryOperationsInterceptorFactoryBean fb = new StatefulRetryOperationsInterceptorFactoryBean();
-
-		// use an external template so we can share his cache
-		RetryTemplate retryTemplate = new RetryTemplate();
-		RetryContextCache cache = spy(new MapRetryContextCache());
-		retryTemplate.setRetryContextCache(cache);
-		fb.setRetryOperations(retryTemplate);
+		fb.setRetryPolicy(retryPolicy);
 		fb.setMessageRecoverer(new RejectAndDontRequeueRecoverer());
 
-		Advice retryInterceptor = fb.getObject();
+		StatefulRetryOperationsInterceptor retryInterceptor = fb.getObject();
 		container.setAdviceChain(retryInterceptor);
 		container.start();
+		Map<String, Object> cache = getCache(retryInterceptor);
 
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setContentType("text/plain");
@@ -223,23 +180,17 @@ public class MissingIdRetryTests {
 		template.send("retry.test.exchange", "retry.test.binding", message);
 		try {
 			assertThat(cdl.await(30, TimeUnit.SECONDS)).isTrue();
-			Map map = (Map) new DirectFieldAccessor(cache).getPropertyValue("map");
-			await().until(map::isEmpty);
-			ArgumentCaptor putCaptor = ArgumentCaptor.forClass(Object.class);
-			ArgumentCaptor getCaptor = ArgumentCaptor.forClass(Object.class);
-			ArgumentCaptor removeCaptor = ArgumentCaptor.forClass(Object.class);
-			verify(cache, times(2)).put(putCaptor.capture(), any(RetryContext.class));
-			verify(cache, times(2)).get(getCaptor.capture());
-			verify(cache, atLeast(2)).remove(removeCaptor.capture());
-			verify(cache, atMost(4)).remove(removeCaptor.capture());
-			logger.debug("puts:" + putCaptor.getAllValues());
-			logger.debug("gets:" + putCaptor.getAllValues());
-			logger.debug("removes:" + removeCaptor.getAllValues());
+			await().atMost(Duration.ofSeconds(3)).until(cache::isEmpty);
 		}
 		finally {
 			container.stop();
 			ctx.close();
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> getCache(Advice retryInterceptor) {
+		return (Map<String, Object>) Objects.requireNonNull(ReflectionTestUtils.getField(retryInterceptor, "cache"));
 	}
 
 	public class POJO {

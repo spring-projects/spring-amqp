@@ -21,7 +21,7 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.beans.factory.FactoryBean;
-import org.springframework.retry.RetryOperations;
+import org.springframework.core.retry.RetryPolicy;
 
 /**
  * Convenient base class for interceptor factories.
@@ -33,18 +33,18 @@ public abstract class AbstractRetryOperationsInterceptorFactoryBean implements F
 
 	private @Nullable MessageRecoverer messageRecoverer;
 
-	private @Nullable RetryOperations retryTemplate;
+	private @Nullable RetryPolicy retryPolicy;
 
-	public void setRetryOperations(RetryOperations retryTemplate) {
-		this.retryTemplate = retryTemplate;
+	public void setRetryPolicy(RetryPolicy retryPolicy) {
+		this.retryPolicy = retryPolicy;
 	}
 
 	public void setMessageRecoverer(MessageRecoverer messageRecoverer) {
 		this.messageRecoverer = messageRecoverer;
 	}
 
-	protected @Nullable RetryOperations getRetryOperations() {
-		return this.retryTemplate;
+	protected @Nullable RetryPolicy getRetryPolicy() {
+		return this.retryPolicy;
 	}
 
 	protected @Nullable MessageRecoverer getMessageRecoverer() {

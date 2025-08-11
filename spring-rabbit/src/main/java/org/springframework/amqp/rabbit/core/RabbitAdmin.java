@@ -55,7 +55,6 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.retry.SpringRetryTemplateAdapter;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
@@ -540,30 +539,6 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 */
 	public void setRedeclareManualDeclarations(boolean redeclareManualDeclarations) {
 		this.redeclareManualDeclarations = redeclareManualDeclarations;
-	}
-
-	/**
-	 * Set a retry template for auto declarations. There is a race condition with
-	 * auto-delete, exclusive queues in that the queue might still exist for a short time,
-	 * preventing the redeclaration. The default retry configuration will try 5 times with
-	 * an exponential backOff starting at 1 second a multiplier of 2.0 and a max interval
-	 * of 5 seconds. To disable retry, set the argument to {@code null}. Note that this
-	 * retry is at the macro level - all declarations will be retried within the scope of
-	 * this template. If you supplied a {@link RabbitTemplate} that is configured with a
-	 * {@link org.springframework.retry.support.RetryTemplate},
-	 * its template will retry each individual declaration.
-	 * @param retryTemplate the retry template.
-	 * @since 1.7.8
-	 * @deprecated since 4.0 in favor of
-	 */
-	@Deprecated(since = "4.0", forRemoval = true)
-	public void setRetryTemplate(org.springframework.retry.support.@Nullable RetryTemplate retryTemplate) {
-		if (retryTemplate != null) {
-			setRetryTemplate(new SpringRetryTemplateAdapter(retryTemplate));
-		}
-		else {
-			this.retryDisabled = true;
-		}
 	}
 
 	/**
