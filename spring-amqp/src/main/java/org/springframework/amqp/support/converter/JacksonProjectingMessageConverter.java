@@ -25,7 +25,7 @@ import com.jayway.jsonpath.spi.mapper.MappingException;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JavaType;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.core.ResolvableType;
@@ -49,7 +49,7 @@ public class JacksonProjectingMessageConverter {
 
 	private final ProjectionFactory projectionFactory;
 
-	public JacksonProjectingMessageConverter(ObjectMapper mapper) {
+	public JacksonProjectingMessageConverter(JsonMapper mapper) {
 		Assert.notNull(mapper, "'mapper' cannot be null");
 		MappingProvider provider = new Jackson3MappingProvider(mapper);
 		MethodInterceptorFactory interceptorFactory = new JsonProjectingMethodInterceptorFactory(provider);
@@ -68,9 +68,9 @@ public class JacksonProjectingMessageConverter {
 	/**
 	 * A {@link MappingProvider} implementation for Jackson 3.
 	 * Until respective implementation is there in json-path library.
-	 * @param objectMapper Jackson 3 {@link ObjectMapper}
+	 * @param jsonMapper Jackson 3 {@link JsonMapper}
 	 */
-	private record Jackson3MappingProvider(ObjectMapper objectMapper) implements MappingProvider {
+	private record Jackson3MappingProvider(JsonMapper jsonMapper) implements MappingProvider {
 
 		@Override
 		public <T> @Nullable T map(@Nullable Object source, Class<T> targetType, Configuration configuration) {
@@ -78,7 +78,7 @@ public class JacksonProjectingMessageConverter {
 				return null;
 			}
 			try {
-				return this.objectMapper.convertValue(source, targetType);
+				return this.jsonMapper.convertValue(source, targetType);
 			}
 			catch (Exception ex) {
 				throw new MappingException(ex);
@@ -90,10 +90,10 @@ public class JacksonProjectingMessageConverter {
 			if (source == null) {
 				return null;
 			}
-			JavaType type = this.objectMapper.constructType(targetType.getType());
+			JavaType type = this.jsonMapper.constructType(targetType.getType());
 
 			try {
-				return this.objectMapper.convertValue(source, type);
+				return this.jsonMapper.convertValue(source, type);
 			}
 			catch (Exception ex) {
 				throw new MappingException(ex);

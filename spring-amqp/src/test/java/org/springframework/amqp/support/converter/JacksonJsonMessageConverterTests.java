@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonParser;
 import tools.jackson.databind.DeserializationContext;
-import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.deser.std.StdDeserializer;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.module.SimpleModule;
@@ -89,7 +88,7 @@ public class JacksonJsonMessageConverterTests {
 
 	@Test
 	public void simpleTradeOverrideMapper() {
-		ObjectMapper mapper =
+		JsonMapper mapper =
 				JsonMapper.builder()
 						.serializerFactory(BeanSerializerFactory.instance)
 						.build();
@@ -321,7 +320,7 @@ public class JacksonJsonMessageConverterTests {
 		messageProperties.setHeader("__TypeId__", String.class.getName());
 		messageProperties.setInferredArgumentType(Baz.class);
 		Message message = new Message(bytes, messageProperties);
-		ObjectMapper mapper = JsonMapper.builder().addModule(new BazModule()).build();
+		JsonMapper mapper = JsonMapper.builder().addModule(new BazModule()).build();
 		JacksonJsonMessageConverter messageConverter = new JacksonJsonMessageConverter(mapper);
 		messageConverter.setAlwaysConvertToInferredType(true);
 		Baz baz = (Baz) messageConverter.fromMessage(message);
@@ -347,7 +346,7 @@ public class JacksonJsonMessageConverterTests {
 		messageProperties.setHeader("__TypeId__", String.class.getName());
 		messageProperties.setInferredArgumentType(getClass().getDeclaredMethod("bazLister").getGenericReturnType());
 		Message message = new Message(bytes, messageProperties);
-		ObjectMapper mapper = JsonMapper.builder().addModule(new BazModule()).build();
+		JsonMapper mapper = JsonMapper.builder().addModule(new BazModule()).build();
 		JacksonJsonMessageConverter jsonMessageConverter = new JacksonJsonMessageConverter(mapper);
 		jsonMessageConverter.setAlwaysConvertToInferredType(true);
 		@SuppressWarnings("unchecked")
@@ -364,7 +363,7 @@ public class JacksonJsonMessageConverterTests {
 		messageProperties.setHeader("__TypeId__", List.class.getName());
 		messageProperties.setHeader("__ContentTypeId__", Buz.class.getName());
 		Message message = new Message(bytes, messageProperties);
-		ObjectMapper mapper = JsonMapper.builder().addModule(new BazModule()).build();
+		JsonMapper mapper = JsonMapper.builder().addModule(new BazModule()).build();
 		JacksonJsonMessageConverter jsonMessageConverter = new JacksonJsonMessageConverter(mapper);
 		@SuppressWarnings("unchecked")
 		List<Fiz> buzs = (List<Fiz>) jsonMessageConverter.fromMessage(message);

@@ -72,4 +72,9 @@ public class JacksonXmlMessageConverter extends AbstractJacksonMessageConverter 
 		super(xmlMapper, MimeTypeUtils.parseMimeType(MessageProperties.CONTENT_TYPE_XML), trustedPackages);
 	}
 
+	@Override
+	public void setUseProjectionForInterfaces(boolean useProjectionForInterfaces) {
+		throw new UnsupportedOperationException("This converter does not support useProjectionForInterfaces");
+	}
+
 }

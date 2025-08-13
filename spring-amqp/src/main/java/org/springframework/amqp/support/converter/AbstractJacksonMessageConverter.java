@@ -29,6 +29,7 @@ import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JavaType;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -268,7 +269,7 @@ public abstract class AbstractJacksonMessageConverter extends AbstractMessageCon
 			if (!ClassUtils.isPresent("org.springframework.data.projection.ProjectionFactory", this.classLoader)) {
 				throw new IllegalStateException("'spring-data-commons' is required to use Projection Interfaces");
 			}
-			this.projectingConverter = new JacksonProjectingMessageConverter(this.objectMapper);
+			this.projectingConverter = new JacksonProjectingMessageConverter((JsonMapper) this.objectMapper);
 		}
 	}
 

@@ -18,7 +18,6 @@ package org.springframework.amqp.support.converter;
 
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.MapperFeature;
-import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.amqp.core.MessageProperties;
@@ -34,16 +33,16 @@ import org.springframework.util.MimeTypeUtils;
 public class JacksonJsonMessageConverter extends AbstractJacksonMessageConverter {
 
 	/**
-	 * Construct with an internal {@link ObjectMapper} instance and trusted packed to all ({@code *}).
+	 * Construct with an internal {@link JsonMapper} instance and trusted packed to all ({@code *}).
 	 */
 	public JacksonJsonMessageConverter() {
 		this("*");
 	}
 
 	/**
-	 * Construct with an internal {@link ObjectMapper} instance.
+	 * Construct with an internal {@link JsonMapper} instance.
 	 * The {@link DeserializationFeature#FAIL_ON_UNKNOWN_PROPERTIES}
-	 * and {@link MapperFeature#DEFAULT_VIEW_INCLUSION} are set to false on the {@link ObjectMapper}.
+	 * and {@link MapperFeature#DEFAULT_VIEW_INCLUSION} are set to false on the {@link JsonMapper}.
 	 * @param trustedPackages the trusted Java packages for deserialization
 	 * @see DefaultJacksonJavaTypeMapper#setTrustedPackages(String...)
 	 */
@@ -57,21 +56,21 @@ public class JacksonJsonMessageConverter extends AbstractJacksonMessageConverter
 	}
 
 	/**
-	 * Construct with the provided {@link ObjectMapper} instance and trusted packed to all ({@code *}).
-	 * @param jsonObjectMapper the {@link ObjectMapper} to use.
+	 * Construct with the provided {@link JsonMapper} instance and trusted packed to all ({@code *}).
+	 * @param jsonMapper the {@link JsonMapper} to use.
 	 */
-	public JacksonJsonMessageConverter(ObjectMapper jsonObjectMapper) {
-		this(jsonObjectMapper, "*");
+	public JacksonJsonMessageConverter(JsonMapper jsonMapper) {
+		this(jsonMapper, "*");
 	}
 
 	/**
-	 * Construct with the provided {@link ObjectMapper} instance.
-	 * @param jsonObjectMapper the {@link ObjectMapper} to use.
+	 * Construct with the provided {@link JsonMapper} instance.
+	 * @param jsonMapper the {@link JsonMapper} to use.
 	 * @param trustedPackages the trusted Java packages for deserialization
 	 * @see DefaultJacksonJavaTypeMapper#setTrustedPackages(String...)
 	 */
-	public JacksonJsonMessageConverter(ObjectMapper jsonObjectMapper, String... trustedPackages) {
-		super(jsonObjectMapper, MimeTypeUtils.parseMimeType(MessageProperties.CONTENT_TYPE_JSON), trustedPackages);
+	public JacksonJsonMessageConverter(JsonMapper jsonMapper, String... trustedPackages) {
+		super(jsonMapper, MimeTypeUtils.parseMimeType(MessageProperties.CONTENT_TYPE_JSON), trustedPackages);
 	}
 
 }
