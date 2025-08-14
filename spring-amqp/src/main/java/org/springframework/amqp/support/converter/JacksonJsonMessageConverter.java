@@ -16,11 +16,17 @@
 
 package org.springframework.amqp.support.converter;
 
+import java.io.IOException;
+
+import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JavaType;
 import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.MimeTypeUtils;
 
 /**
@@ -31,6 +37,8 @@ import org.springframework.util.MimeTypeUtils;
  * @since 4.0
  */
 public class JacksonJsonMessageConverter extends AbstractJacksonMessageConverter {
+
+	private @Nullable JacksonProjectingMessageConverter projectingConverter;
 
 	/**
 	 * Construct with an internal {@link JsonMapper} instance and trusted packed to all ({@code *}).
@@ -71,6 +79,46 @@ public class JacksonJsonMessageConverter extends AbstractJacksonMessageConverter
 	 */
 	public JacksonJsonMessageConverter(JsonMapper jsonMapper, String... trustedPackages) {
 		super(jsonMapper, MimeTypeUtils.parseMimeType(MessageProperties.CONTENT_TYPE_JSON), trustedPackages);
+	}
+
+	/**
+	 * Set to true to use Spring Data projection to create the object if the inferred
+	 * parameter type is an interface.
+	 * @param useProjectionForInterfaces true to use projection.
+	 */
+	public void setUseProjectionForInterfaces(boolean useProjectionForInterfaces) {
+		if (useProjectionForInterfaces) {
+			if (!ClassUtils.isPresent("org.springframework.data.projection.ProjectionFactory", getClassLoader())) {
+				throw new IllegalStateException("'spring-data-commons' is required to use Projection Interfaces");
+			}
+			this.projectingConverter = new JacksonProjectingMessageConverter((JsonMapper) this.objectMapper);
+		}
+	}
+
+	protected boolean isUseProjectionForInterfaces() {
+		return this.projectingConverter != null;
+	}
+
+	@Override
+	protected Object convertContent(Message message, @Nullable Object conversionHint, MessageProperties properties,
+			@Nullable String encoding) throws IOException {
+
+		Object content = null;
+
+		JavaType inferredType = getJavaTypeMapper().getInferredType(properties);
+		if (inferredType != null && this.projectingConverter != null && inferredType.isInterface()
+				&& !inferredType.getRawClass().getPackage().getName().startsWith("java.util")) { // List etc
+
+			content = this.projectingConverter.convert(message, inferredType.getRawClass());
+			properties.setProjectionUsed(true);
+		}
+
+		if (content == null) {
+			return super.convertContent(message, conversionHint, properties, encoding);
+		}
+		else {
+			return content;
+		}
 	}
 
 }

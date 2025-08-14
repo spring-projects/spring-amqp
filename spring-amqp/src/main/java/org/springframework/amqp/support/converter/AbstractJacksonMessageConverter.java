@@ -29,7 +29,6 @@ import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JavaType;
 import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -79,10 +78,6 @@ public abstract class AbstractJacksonMessageConverter extends AbstractMessageCon
 	private @Nullable ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
 
 	private JacksonJavaTypeMapper javaTypeMapper = new DefaultJacksonJavaTypeMapper();
-
-	private boolean useProjectionForInterfaces;
-
-	private @Nullable JacksonProjectingMessageConverter projectingConverter;
 
 	private boolean charsetIsUtf8 = true;
 
@@ -254,25 +249,6 @@ public abstract class AbstractJacksonMessageConverter extends AbstractMessageCon
 		this.alwaysConvertToInferredType = alwaysAttemptConversion;
 	}
 
-	protected boolean isUseProjectionForInterfaces() {
-		return this.useProjectionForInterfaces;
-	}
-
-	/**
-	 * Set to true to use Spring Data projection to create the object if the inferred
-	 * parameter type is an interface.
-	 * @param useProjectionForInterfaces true to use projection.
-	 */
-	public void setUseProjectionForInterfaces(boolean useProjectionForInterfaces) {
-		this.useProjectionForInterfaces = useProjectionForInterfaces;
-		if (useProjectionForInterfaces) {
-			if (!ClassUtils.isPresent("org.springframework.data.projection.ProjectionFactory", this.classLoader)) {
-				throw new IllegalStateException("'spring-data-commons' is required to use Projection Interfaces");
-			}
-			this.projectingConverter = new JacksonProjectingMessageConverter((JsonMapper) this.objectMapper);
-		}
-	}
-
 	/**
 	 * By default, the supported content type is assumed when there is no contentType
 	 * property, or it is set to the default ('application/octet-stream'). Set to 'false'
@@ -336,7 +312,7 @@ public abstract class AbstractJacksonMessageConverter extends AbstractMessageCon
 		return encoding;
 	}
 
-	private Object doFromMessage(Message message, @Nullable Object conversionHint, MessageProperties properties,
+	protected Object doFromMessage(Message message, @Nullable Object conversionHint, MessageProperties properties,
 			@Nullable String encoding) {
 
 		try {
@@ -347,18 +323,12 @@ public abstract class AbstractJacksonMessageConverter extends AbstractMessageCon
 		}
 	}
 
-	@SuppressWarnings("NullAway") // Dataflow analysis limitation
-	private Object convertContent(Message message, @Nullable Object conversionHint, MessageProperties properties,
+	protected Object convertContent(Message message, @Nullable Object conversionHint, MessageProperties properties,
 			@Nullable String encoding) throws IOException {
 
 		Object content = null;
 		JavaType inferredType = this.javaTypeMapper.getInferredType(properties);
-		if (inferredType != null && this.useProjectionForInterfaces && inferredType.isInterface()
-				&& !inferredType.getRawClass().getPackage().getName().startsWith("java.util")) { // List etc
-			content = this.projectingConverter.convert(message, inferredType.getRawClass());
-			properties.setProjectionUsed(true);
-		}
-		else if (inferredType != null && this.alwaysConvertToInferredType) {
+		if (inferredType != null && this.alwaysConvertToInferredType) {
 			content = tryConvertType(message, encoding, inferredType);
 		}
 		if (content == null) {
