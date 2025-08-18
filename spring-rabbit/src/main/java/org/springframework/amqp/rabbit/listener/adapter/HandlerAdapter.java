@@ -21,6 +21,7 @@ import java.lang.reflect.Type;
 import java.util.concurrent.CompletableFuture;
 
 import org.springframework.lang.Nullable;
+import org.springframework.core.KotlinDetector;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 
@@ -30,6 +31,8 @@ import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
  * underlying handler.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.5
  *
  */
@@ -48,9 +51,11 @@ public class HandlerAdapter {
 	public HandlerAdapter(InvocableHandlerMethod invokerHandlerMethod) {
 		this.invokerHandlerMethod = invokerHandlerMethod;
 		this.delegatingHandler = null;
+		Method method = invokerHandlerMethod.getMethod();
 		this.asyncReplies = (AbstractAdaptableMessageListener.monoPresent
-				&& MonoHandler.isMono(invokerHandlerMethod.getMethod().getReturnType()))
-			|| CompletableFuture.class.isAssignableFrom(invokerHandlerMethod.getMethod().getReturnType());
+				&& MonoHandler.isMono(method.getReturnType()))
+				|| CompletableFuture.class.isAssignableFrom(method.getReturnType())
+				|| KotlinDetector.isSuspendingFunction(method);
 	}
 
 	/**
