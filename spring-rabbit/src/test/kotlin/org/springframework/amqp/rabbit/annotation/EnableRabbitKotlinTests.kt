@@ -74,7 +74,7 @@ class EnableRabbitKotlinTests {
 		assertThat(result).isEqualTo("TEST")
 		var listenerContainer = registry.getListenerContainer("single") as AbstractMessageListenerContainer
 		assertThat(listenerContainer.acknowledgeMode).isEqualTo(AcknowledgeMode.MANUAL)
-		val listener = listenerContainer?.messageListener
+		val listener = listenerContainer.messageListener
 		assertThat(listener).isNotNull()
 		listener?.let { nonNullableListener ->
 			assertThat(
