@@ -30,6 +30,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.amqp.rabbit.junit.RabbitAvailable
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition
+import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler
 import org.springframework.amqp.utils.test.TestUtils
@@ -44,7 +45,6 @@ import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Kotlin Annotated listener tests.
@@ -63,17 +63,24 @@ class EnableRabbitKotlinTests {
 	@Autowired
 	private lateinit var config: Config
 
+	@Autowired
+	private lateinit var registry: RabbitListenerEndpointRegistry
+
 	@Test
-	fun `send and wait for consume`(@Autowired registry: RabbitListenerEndpointRegistry) {
+	fun `send and wait for consume`() {
 		val template = RabbitTemplate(this.config.cf())
 		template.setReplyTimeout(10_000)
 		val result = template.convertSendAndReceive("kotlinQueue", "test")
 		assertThat(result).isEqualTo("TEST")
-		val listener = registry.getListenerContainer("single")?.messageListener
+		var listenerContainer = registry.getListenerContainer("single") as AbstractMessageListenerContainer
+		assertThat(listenerContainer.acknowledgeMode).isEqualTo(AcknowledgeMode.MANUAL)
+		val listener = listenerContainer?.messageListener
 		assertThat(listener).isNotNull()
 		listener?.let { nonNullableListener ->
-			assertThat(TestUtils.getPropertyValue(nonNullableListener, "messagingMessageConverter.inferredArgumentType")
-				.toString())
+			assertThat(
+				TestUtils.getPropertyValue(nonNullableListener, "messagingMessageConverter.inferredArgumentType")
+					.toString()
+			)
 				.isEqualTo("class java.lang.String")
 		}
 	}
@@ -86,6 +93,9 @@ class EnableRabbitKotlinTests {
 		assertThat(this.config.batchReceived.await(10, TimeUnit.SECONDS)).isTrue()
 		assertThat(this.config.batch[0]).isInstanceOf(Message::class.java)
 		assertThat(this.config.batch.map { m -> String(m.body) }).containsOnly("test1", "test2")
+
+		var listenerContainer = registry.getListenerContainer("batch") as AbstractMessageListenerContainer
+		assertThat(listenerContainer.acknowledgeMode).isEqualTo(AcknowledgeMode.MANUAL)
 	}
 
 	@Test
@@ -95,6 +105,9 @@ class EnableRabbitKotlinTests {
 		assertThat(this.config.ehLatch.await(10, TimeUnit.SECONDS)).isTrue()
 		val reply = template.receiveAndConvert("kotlinReplyQueue", 10_000)
 		assertThat(reply).isEqualTo("error processed")
+
+		var listenerContainer = registry.getListenerContainer("multi") as AbstractMessageListenerContainer
+		assertThat(listenerContainer.acknowledgeMode).isEqualTo(AcknowledgeMode.AUTO)
 	}
 
 	@Configuration
@@ -102,7 +115,7 @@ class EnableRabbitKotlinTests {
 	class Config {
 
 		@RabbitListener(id = "single", queues = ["kotlinQueue"])
-		suspend fun handle(@Suppress("UNUSED_PARAMETER") data: String) : String? {
+		suspend fun handle(@Suppress("UNUSED_PARAMETER") data: String): String? {
 			return data.uppercase()
 		}
 
@@ -110,8 +123,10 @@ class EnableRabbitKotlinTests {
 
 		lateinit var batch: List<Message>
 
-		@RabbitListener(id = "batch", queues = ["kotlinBatchQueue"],
-				containerFactory = "batchRabbitListenerContainerFactory")
+		@RabbitListener(
+			id = "batch", queues = ["kotlinBatchQueue"],
+			containerFactory = "batchRabbitListenerContainerFactory"
+		)
 		suspend fun receiveBatch(messages: List<Message>) {
 			batch = messages
 			batchReceived.countDown()
@@ -119,21 +134,19 @@ class EnableRabbitKotlinTests {
 
 		@Bean
 		fun rabbitListenerContainerFactory(cf: CachingConnectionFactory) =
-				SimpleRabbitListenerContainerFactory().also {
-					it.setAcknowledgeMode(AcknowledgeMode.MANUAL)
-					it.setReceiveTimeout(10)
-					it.setConnectionFactory(cf)
-				}
+			SimpleRabbitListenerContainerFactory().also {
+				it.setReceiveTimeout(10)
+				it.setConnectionFactory(cf)
+			}
 
 		@Bean
 		fun batchRabbitListenerContainerFactory(cf: CachingConnectionFactory) =
-				SimpleRabbitListenerContainerFactory().also {
-					it.setAcknowledgeMode(AcknowledgeMode.MANUAL)
-					it.setConsumerBatchEnabled(true)
-					it.setDeBatchingEnabled(true)
-					it.setBatchSize(3)
-					it.setConnectionFactory(cf)
-				}
+			SimpleRabbitListenerContainerFactory().also {
+				it.setConsumerBatchEnabled(true)
+				it.setDeBatchingEnabled(true)
+				it.setBatchSize(3)
+				it.setConnectionFactory(cf)
+			}
 
 		@Bean
 		fun cf() = CachingConnectionFactory(RabbitAvailableCondition.getBrokerRunning().connectionFactory)
