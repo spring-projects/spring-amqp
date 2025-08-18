@@ -53,4 +53,4 @@ jobs:
           sed -i "1,/springAmqpVersion.*/s/springAmqpVersion.*/springAmqpVersion='${{ inputs.releaseVersion }}'/" build.gradle  
 
       - name: Verify Spring Integration AMQP module against staged release
-        run: gradle :spring-integration-amqp:check --init-script staging-repo-init.gradle
+        run: ./gradlew :spring-integration-amqp:check --init-script staging-repo-init.gradle
