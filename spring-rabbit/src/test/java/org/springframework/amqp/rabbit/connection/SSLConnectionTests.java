@@ -44,8 +44,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-
-
 /**
  * @author Gary Russell
  * @author Heath Abelson
@@ -63,7 +61,7 @@ public class SSLConnectionTests {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
 		fb.setUseSSL(true);
 		fb.setSslPropertiesLocation(new ClassPathResource("ssl.properties"));
-		fb.setClientProperties(Collections.<String, Object>singletonMap("foo", "bar"));
+		fb.setClientProperties(Collections.singletonMap("foo", "bar"));
 		fb.afterPropertiesSet();
 		ConnectionFactory cf = fb.getObject();
 		assertThat(cf.getClientProperties().get("foo")).isEqualTo("bar");
@@ -138,8 +136,6 @@ public class SSLConnectionTests {
 		verify(rabbitCf).useSslProtocol("TLSv1.1");
 	}
 
-
-
 	@Test
 	public void testUseSslProtocolWithProtocolShouldNotBeCalled() throws Exception {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
@@ -151,7 +147,6 @@ public class SSLConnectionTests {
 		fb.getObject();
 		verify(rabbitCf, never()).useSslProtocol("TLSv1.2");
 	}
-
 
 	@Test
 	public void testKSTS() throws Exception {
@@ -260,6 +255,5 @@ public class SSLConnectionTests {
 		assertThat(TestUtils.getPropertyValue(fb.getRabbitConnectionFactory(), "credentialsRefreshService"))
 				.isSameAs(service);
 	}
-
 
 }
