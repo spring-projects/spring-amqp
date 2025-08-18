@@ -81,6 +81,7 @@ class EnableRabbitKotlinTests {
 					.toString()
 			)
 				.isEqualTo("class java.lang.String")
+		}
 	}
 
 	@Test
