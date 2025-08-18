@@ -20,6 +20,7 @@ import assertk.assertThat
 import assertk.assertions.containsOnly
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
+import assertk.assertions.isNotNull
 import assertk.assertions.isTrue
 import org.junit.jupiter.api.Test
 import org.springframework.amqp.core.AcknowledgeMode
