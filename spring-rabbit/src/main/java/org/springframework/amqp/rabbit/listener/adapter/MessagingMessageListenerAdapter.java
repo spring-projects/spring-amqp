@@ -163,14 +163,18 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	protected void asyncFailure(org.springframework.amqp.core.Message request, Channel channel, Throwable t,
 			Object source) {
 
+		Throwable throwableToHandle = t;
+
 		try {
 			handleException(request, channel, (Message<?>) source,
-					new ListenerExecutionFailedException("Async Fail", t, request));
+					new ListenerExecutionFailedException("Async Fail", throwableToHandle, request));
 			return;
 		}
 		catch (Exception ex) {
+			throwableToHandle = ex;
 		}
-		super.asyncFailure(request, channel, t, source);
+
+		super.asyncFailure(request, channel, throwableToHandle, source);
 	}
 
 	private void handleException(org.springframework.amqp.core.Message amqpMessage, Channel channel,

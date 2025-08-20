@@ -23,10 +23,13 @@ import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
 import assertk.assertions.isTrue
 import org.junit.jupiter.api.Test
+import org.springframework.amqp.AmqpRejectAndDontRequeueException
 import org.springframework.amqp.core.AcknowledgeMode
 import org.springframework.amqp.core.Message
+import org.springframework.amqp.core.QueueBuilder
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory
+import org.springframework.amqp.rabbit.core.RabbitAdmin
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.amqp.rabbit.junit.RabbitAvailable
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition
@@ -56,7 +59,7 @@ import java.util.concurrent.TimeUnit
  *
  */
 @SpringJUnitConfig
-@RabbitAvailable(queues = ["kotlinQueue", "kotlinBatchQueue", "kotlinQueue1", "kotlinReplyQueue"])
+@RabbitAvailable(queues = ["kotlinDLQ", "kotlinBatchQueue", "kotlinQueue1", "kotlinReplyQueue"])
 @DirtiesContext
 class EnableRabbitKotlinTests {
 
@@ -67,7 +70,7 @@ class EnableRabbitKotlinTests {
 	private lateinit var registry: RabbitListenerEndpointRegistry
 
 	@Test
-	fun `send and wait for consume`() {
+	fun `send and wait for consume and DLQ on error`() {
 		val template = RabbitTemplate(this.config.cf())
 		template.setReplyTimeout(10_000)
 		val result = template.convertSendAndReceive("kotlinQueue", "test")
@@ -83,6 +86,11 @@ class EnableRabbitKotlinTests {
 			)
 				.isEqualTo("class java.lang.String")
 		}
+
+		template.convertAndSend("kotlinQueue", "junk")
+
+		var dlqResult = template.receiveAndConvert("kotlinDLQ", 30_000)
+		assertThat(dlqResult).isEqualTo("junk")
 	}
 
 	@Test
@@ -114,9 +122,25 @@ class EnableRabbitKotlinTests {
 	@EnableRabbit
 	class Config {
 
-		@RabbitListener(id = "single", queues = ["kotlinQueue"])
-		suspend fun handle(@Suppress("UNUSED_PARAMETER") data: String): String? {
-			return data.uppercase()
+		@Bean
+		fun kotlinQueue() =
+			QueueBuilder.durable("kotlinQueue")
+				.deadLetterExchange("")
+				.deadLetterRoutingKey("kotlinDLQ")
+				.build()
+
+		@RabbitListener(id = "single", queues = ["kotlinQueue"], errorHandler = "dontRequeueErrorHandler")
+		suspend fun handle(data: String): String? {
+			if ("junk" == data) {
+				throw IllegalArgumentException("Illegal data: $data")
+			} else {
+				return data.uppercase()
+			}
+		}
+
+		@Bean
+		fun dontRequeueErrorHandler() = RabbitListenerErrorHandler { _, _, _, ex ->
+			throw AmqpRejectAndDontRequeueException(ex)
 		}
 
 		val batchReceived = CountDownLatch(1)
@@ -131,6 +155,9 @@ class EnableRabbitKotlinTests {
 			batch = messages
 			batchReceived.countDown()
 		}
+
+		@Bean
+		fun rabbitAdmin(cf: CachingConnectionFactory) = RabbitAdmin(cf)
 
 		@Bean
 		fun rabbitListenerContainerFactory(cf: CachingConnectionFactory) =
