@@ -112,6 +112,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private final ActiveObjectCounter<BlockingQueueConsumer> cancellationLock = new ActiveObjectCounter<>();
 
+	private final List<Thread> processorThreadsToInterrupt = new ArrayList<>();
+
 	private long startConsumerMinInterval = DEFAULT_START_CONSUMER_MIN_INTERVAL;
 
 	private long stopConsumerMinInterval = DEFAULT_STOP_CONSUMER_MIN_INTERVAL;
@@ -694,6 +696,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				else {
 					logger.info("Workers not finished.");
 					if (isForceCloseChannel() || this.stopNow.get()) {
+						this.processorThreadsToInterrupt.forEach(Thread::interrupt);
 						canceledConsumers.forEach(consumer -> {
 							if (logger.isWarnEnabled()) {
 								logger.warn("Closing channel for unresponsive consumer: " + consumer);
@@ -1320,6 +1323,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 			try {
 				initialize();
+				SimpleMessageListenerContainer.this.processorThreadsToInterrupt.add(Thread.currentThread());
 				while (isActive(this.consumer) || this.consumer.hasDelivery() || !this.consumer.cancelled()) {
 					mainLoop();
 				}
@@ -1398,6 +1402,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			finally {
+				SimpleMessageListenerContainer.this.processorThreadsToInterrupt.remove(Thread.currentThread());
 				SimpleMessageListenerContainer.this.cancellationLock.release(this.consumer);
 				if (getTransactionManager() != null) {
 					ConsumerChannelRegistry.unRegisterConsumerChannel();

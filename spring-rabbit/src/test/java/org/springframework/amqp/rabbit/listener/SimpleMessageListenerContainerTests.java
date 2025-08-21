@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Consumer;
+import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.PossibleAuthenticationFailureException;
 import org.aopalliance.intercept.MethodInterceptor;
@@ -847,6 +848,50 @@ public class SimpleMessageListenerContainerTests {
 		verify(listener).containerAckMode(AcknowledgeMode.AUTO);
 		verify(listener).isAsyncReplies();
 		verifyNoMoreInteractions(listener);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void listenerIsInterruptedOnUnsuccessfulShutdown() throws Exception {
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		Channel channel = mock();
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(false)).willReturn(channel);
+		willAnswer(invocation -> "1")
+				.given(channel)
+				.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
+						any(Consumer.class));
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setQueueNames("some_queue");
+
+		CountDownLatch handlingLatch = new CountDownLatch(1);
+		CountDownLatch interruptedLatch = new CountDownLatch(1);
+		container.setMessageListener(message -> {
+			handlingLatch.countDown();
+			try {
+				Thread.sleep(2000L);
+			}
+			catch (InterruptedException e) {
+				interruptedLatch.countDown();
+			}
+		});
+		container.setShutdownTimeout(200L);
+		container.start();
+
+		Set<BlockingQueueConsumer> consumers = TestUtils.getPropertyValue(container, "consumers", Set.class);
+		BlockingQueueConsumer blockingQueueConsumer = consumers.iterator().next();
+
+		Map<String, DefaultConsumer> internalConsumers =
+				TestUtils.getPropertyValue(blockingQueueConsumer, "consumers", Map.class);
+		internalConsumers.values().iterator().next()
+				.handleDelivery("1", new Envelope(1, false, "", ""), new BasicProperties(), new byte[] {1});
+
+		assertThat(handlingLatch.await(10, TimeUnit.SECONDS)).isTrue();
+
+		container.stop();
+
+		assertThat(interruptedLatch.await(10, TimeUnit.SECONDS)).isTrue();
 	}
 
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,
