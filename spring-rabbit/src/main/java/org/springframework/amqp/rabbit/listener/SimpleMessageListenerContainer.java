@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.listener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -115,7 +116,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private final ActiveObjectCounter<BlockingQueueConsumer> cancellationLock = new ActiveObjectCounter<>();
 
-	private final List<Thread> processorThreadsToInterrupt = new ArrayList<>();
+	private final List<Thread> processorThreadsToInterrupt = Collections.synchronizedList(new ArrayList<>());
 
 	private long startConsumerMinInterval = DEFAULT_START_CONSUMER_MIN_INTERVAL;
 
@@ -706,7 +707,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				else {
 					logger.info("Workers not finished.");
 					if (isForceCloseChannel() || this.stopNow.get()) {
-						this.processorThreadsToInterrupt.forEach(Thread::interrupt);
+						synchronized (this.processorThreadsToInterrupt) {
+							this.processorThreadsToInterrupt.forEach(Thread::interrupt);
+						}
 						canceledConsumers.forEach(consumer -> {
 							if (logger.isWarnEnabled()) {
 								logger.warn("Closing channel for unresponsive consumer: " + consumer);
