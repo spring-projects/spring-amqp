@@ -24,10 +24,13 @@ import org.springframework.amqp.core.Message;
 import org.springframework.rabbit.stream.support.StreamMessageProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.withinPercentage;
 import static org.mockito.Mockito.mock;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.4
  *
  */
@@ -45,7 +48,7 @@ public class DefaultStreamMessageConverterTests {
 		smp.setContentType("application/json");
 		smp.setContentEncoding("UTF-8");
 		smp.setExpiration("42");
-		smp.setCreationTime(43L);
+		smp.setCreationTime(System.currentTimeMillis());
 		smp.setGroupId("groupId");
 		smp.setGroupSequence(44L);
 		smp.setReplyToGroupId("replyGroupId");
@@ -62,8 +65,8 @@ public class DefaultStreamMessageConverterTests {
 		assertThat(props.getCorrelationIdAsString()).isEqualTo("correlation");
 		assertThat(props.getContentType()).isEqualTo("application/json");
 		assertThat(props.getContentEncoding()).isEqualTo("UTF-8");
-		assertThat(props.getAbsoluteExpiryTime()).isEqualTo(42L);
-		assertThat(props.getCreationTime()).isEqualTo(43L);
+		assertThat(props.getAbsoluteExpiryTime()).isCloseTo(System.currentTimeMillis() + 42, withinPercentage(5));
+		assertThat(props.getCreationTime()).isCloseTo(System.currentTimeMillis(), withinPercentage(5));
 		assertThat(props.getGroupId()).isEqualTo("groupId");
 		assertThat(props.getGroupSequence()).isEqualTo(44L);
 		assertThat(props.getReplyToGroupId()).isEqualTo("replyGroupId");

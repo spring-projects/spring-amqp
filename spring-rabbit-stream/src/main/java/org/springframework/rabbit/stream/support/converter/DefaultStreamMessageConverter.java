@@ -28,6 +28,7 @@ import com.rabbitmq.stream.MessageBuilder.ApplicationPropertiesBuilder;
 import com.rabbitmq.stream.MessageBuilder.PropertiesBuilder;
 import com.rabbitmq.stream.Properties;
 import com.rabbitmq.stream.codec.WrapperMessageBuilder;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -36,12 +37,15 @@ import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.rabbit.stream.support.StreamMessageProperties;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * Default {@link StreamMessageConverter}.
  *
  * @author Gary Russell
  * @author Ngoc Nhan
+ * @author Artem Bilan
+ *
  * @since 2.4
  *
  */
@@ -92,30 +96,37 @@ public class DefaultStreamMessageConverter implements StreamMessageConverter {
 		Assert.isInstanceOf(StreamMessageProperties.class, props);
 		StreamMessageProperties mProps = (StreamMessageProperties) props;
 		JavaUtils.INSTANCE
-				.acceptIfNotNull(mProps.getMessageId(), propsBuilder::messageId) // TODO different types
+				.acceptIfNotNull(mProps.getMessageId(), propsBuilder::messageId)
 				.acceptIfNotNull(mProps.getUserId(), usr -> propsBuilder.userId(usr.getBytes(this.charset)))
 				.acceptIfNotNull(mProps.getTo(), propsBuilder::to)
 				.acceptIfNotNull(mProps.getSubject(), propsBuilder::subject)
 				.acceptIfNotNull(mProps.getReplyTo(), propsBuilder::replyTo)
-				.acceptIfNotNull(mProps.getCorrelationId(), propsBuilder::correlationId) // TODO different types
+				.acceptIfNotNull(mProps.getCorrelationId(), propsBuilder::correlationId)
 				.acceptIfNotNull(mProps.getContentType(), propsBuilder::contentType)
 				.acceptIfNotNull(mProps.getContentEncoding(), propsBuilder::contentEncoding)
-				.acceptIfNotNull(mProps.getExpiration(), exp -> propsBuilder.absoluteExpiryTime(Long.parseLong(exp)))
 				.acceptIfNotNull(mProps.getCreationTime(), propsBuilder::creationTime)
 				.acceptIfNotNull(mProps.getGroupId(), propsBuilder::groupId)
 				.acceptIfNotNull(mProps.getGroupSequence(), propsBuilder::groupSequence)
 				.acceptIfNotNull(mProps.getReplyToGroupId(), propsBuilder::replyToGroupId);
 		ApplicationPropertiesBuilder appPropsBuilder = builder.applicationProperties();
-		if (!mProps.getHeaders().isEmpty()) {
-			mProps.getHeaders().forEach((key, val) -> {
-				mapProp(key, val, appPropsBuilder);
-			});
+
+		long creationTime = mProps.getCreationTime();
+		if (creationTime <= 0) {
+			creationTime = System.currentTimeMillis();
 		}
+		propsBuilder.creationTime(creationTime);
+
+		String expiration = mProps.getExpiration();
+		if (StringUtils.hasText(expiration)) {
+			propsBuilder.absoluteExpiryTime(creationTime + Long.parseLong(expiration));
+		}
+
+		mProps.getHeaders().forEach((key, val) -> mapProp(key, val, appPropsBuilder));
 		builder.addData(message.getBody());
 		return builder.build();
 	}
 
-	private void mapProp(String key, Object val, ApplicationPropertiesBuilder builder) { // NOSONAR - complexity
+	private void mapProp(String key, @Nullable Object val, ApplicationPropertiesBuilder builder) {
 		if (val instanceof String string) {
 			builder.entry(key, string);
 		}
@@ -155,19 +166,28 @@ public class DefaultStreamMessageConverter implements StreamMessageConverter {
 		if (properties != null) {
 			JavaUtils.INSTANCE
 					.acceptIfNotNull(properties.getMessageIdAsString(), mProps::setMessageId)
-					.acceptIfNotNull(properties.getUserId(), usr -> mProps.setUserId(new String(usr, this.charset)))
+					.acceptIfNotNull(properties.getUserId(),
+							usr -> mProps.setUserId(new String(usr, this.charset)))
 					.acceptIfNotNull(properties.getTo(), mProps::setTo)
 					.acceptIfNotNull(properties.getSubject(), mProps::setSubject)
 					.acceptIfNotNull(properties.getReplyTo(), mProps::setReplyTo)
 					.acceptIfNotNull(properties.getCorrelationIdAsString(), mProps::setCorrelationId)
 					.acceptIfNotNull(properties.getContentType(), mProps::setContentType)
 					.acceptIfNotNull(properties.getContentEncoding(), mProps::setContentEncoding)
-					.acceptIfNotNull(properties.getAbsoluteExpiryTime(),
-							exp -> mProps.setExpiration(Long.toString(exp)))
-					.acceptIfNotNull(properties.getCreationTime(), mProps::setCreationTime)
 					.acceptIfNotNull(properties.getGroupId(), mProps::setGroupId)
 					.acceptIfNotNull(properties.getGroupSequence(), mProps::setGroupSequence)
 					.acceptIfNotNull(properties.getReplyToGroupId(), mProps::setReplyToGroupId);
+
+			long creationTime = properties.getCreationTime();
+			if (creationTime <= 0) {
+				creationTime = System.currentTimeMillis();
+			}
+			mProps.setCreationTime(creationTime);
+
+			long absoluteExpiryTime = properties.getAbsoluteExpiryTime();
+			if (absoluteExpiryTime > creationTime) {
+				mProps.setExpiration(Long.toString(absoluteExpiryTime - creationTime));
+			}
 		}
 		Map<String, Object> applicationProperties = streamMessage.getApplicationProperties();
 		if (applicationProperties != null) {
