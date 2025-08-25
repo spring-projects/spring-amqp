@@ -27,6 +27,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.utils.JavaUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * The utilities for RabbitMQ AMQP 1.0 protocol API.
@@ -51,10 +52,18 @@ public final class RabbitAmqpUtils {
 				.acceptIfNotNull(amqpMessage.correlationIdAsString(), messageProperties::setCorrelationId)
 				.acceptIfNotNull(amqpMessage.contentType(), messageProperties::setContentType)
 				.acceptIfNotNull(amqpMessage.contentEncoding(), messageProperties::setContentEncoding)
-				.acceptIfNotNull(amqpMessage.absoluteExpiryTime(),
-						(exp) -> messageProperties.setExpiration(Long.toString(exp)))
-				.acceptIfNotNull(amqpMessage.creationTime(), (time) -> messageProperties.setTimestamp(new Date(time)))
 				.acceptIfNotNull(amqpMessage.replyTo(), messageProperties::setReplyTo);
+
+		long creationTime = amqpMessage.creationTime();
+		if (creationTime <= 0) {
+			creationTime = System.currentTimeMillis();
+		}
+		messageProperties.setTimestamp(new Date(creationTime));
+
+		long absoluteExpiryTime = amqpMessage.absoluteExpiryTime();
+		if (absoluteExpiryTime > creationTime) {
+			messageProperties.setExpiration(Long.toString(absoluteExpiryTime - creationTime));
+		}
 
 		amqpMessage.forEachProperty(messageProperties::setHeader);
 
@@ -90,20 +99,21 @@ public final class RabbitAmqpUtils {
 				.priority(messageProperties.getPriority().byteValue());
 
 		Map<String, @Nullable Object> headers = messageProperties.getHeaders();
-		if (!headers.isEmpty()) {
-			headers.forEach((key, val) -> mapProp(key, val, amqpMessage));
-		}
+		headers.forEach((key, val) -> mapProp(key, val, amqpMessage));
 
 		JavaUtils.INSTANCE
 				.acceptOrElseIfNotNull(messageProperties.getCorrelationId(),
 						messageProperties.getMessageId(), amqpMessage::correlationId)
+				.acceptOrElseIfNotNull(messageProperties.getTimestamp(),
+						new Date(), (timestamp) -> amqpMessage.creationTime(timestamp.getTime()))
 				.acceptIfNotNull(messageProperties.getUserId(),
 						(userId) -> amqpMessage.userId(userId.getBytes(StandardCharsets.UTF_8)))
-				.acceptIfNotNull(messageProperties.getReplyTo(), amqpMessage::to)
-				.acceptIfNotNull(messageProperties.getTimestamp(),
-						(timestamp) -> amqpMessage.creationTime(timestamp.getTime()))
-				.acceptIfNotNull(messageProperties.getExpiration(),
-						(expiration) -> amqpMessage.absoluteExpiryTime(Long.parseLong(expiration)));
+				.acceptIfNotNull(messageProperties.getReplyTo(), amqpMessage::to);
+
+		String expiration = messageProperties.getExpiration();
+		if (StringUtils.hasText(expiration)) {
+			amqpMessage.absoluteExpiryTime(amqpMessage.creationTime() + Long.parseLong(expiration));
+		}
 	}
 
 	private static void mapProp(String key, @Nullable Object val, com.rabbitmq.client.amqp.Message amqpMessage) {
