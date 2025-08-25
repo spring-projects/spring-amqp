@@ -28,7 +28,6 @@ import com.rabbitmq.stream.MessageBuilder.ApplicationPropertiesBuilder;
 import com.rabbitmq.stream.MessageBuilder.PropertiesBuilder;
 import com.rabbitmq.stream.Properties;
 import com.rabbitmq.stream.codec.WrapperMessageBuilder;
-import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
