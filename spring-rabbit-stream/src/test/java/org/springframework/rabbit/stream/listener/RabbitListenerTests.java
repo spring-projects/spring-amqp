@@ -74,6 +74,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Stephane Nicoll
+ *
  * @since 2.4
  *
  */
@@ -147,6 +149,7 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 				.accept(MediaType.APPLICATION_JSON)
 				.retrieve()
 				.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
+
 				})
 				.block(Duration.ofSeconds(10));
 	}
@@ -233,20 +236,13 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 				}
 
 				private void clean(Environment env) {
-					try {
-						env.deleteStream("test.stream.queue1");
-					}
-					catch (Exception e) {
-					}
-					try {
-						env.deleteStream("test.stream.queue2");
-					}
-					catch (Exception e) {
-					}
-					try {
-						env.deleteStream("stream.created.over.amqp");
-					}
-					catch (Exception e) {
+					String[] streamsToDelete = {"test.stream.queue1", "test.stream.queue2", "stream.created.over.amqp"};
+					for (String streamToDelete : streamsToDelete) {
+						try {
+							env.deleteStream(streamToDelete);
+						}
+						catch (Exception e) {
+						}
 					}
 				}
 
@@ -274,11 +270,10 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 		RabbitListenerContainerFactory<StreamListenerContainer> observableFactory(Environment env) {
 			StreamRabbitListenerContainerFactory factory = new StreamRabbitListenerContainerFactory(env);
 			factory.setObservationEnabled(true);
-			factory.setConsumerCustomizer((id, builder) -> {
-				builder.name(id)
-						.offset(OffsetSpecification.first())
-						.manualTrackingStrategy();
-			});
+			factory.setConsumerCustomizer((id, builder) ->
+					builder.name(id)
+							.offset(OffsetSpecification.first())
+							.manualTrackingStrategy());
 			return factory;
 		}
 
@@ -328,11 +323,10 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 			StreamRabbitListenerContainerFactory factory = new StreamRabbitListenerContainerFactory(env);
 			factory.setNativeListener(true);
 			factory.setObservationEnabled(true);
-			factory.setConsumerCustomizer((id, builder) -> {
-				builder.name(id)
-						.offset(OffsetSpecification.first())
-						.manualTrackingStrategy();
-			});
+			factory.setConsumerCustomizer((id, builder) ->
+					builder.name(id)
+							.offset(OffsetSpecification.first())
+							.manualTrackingStrategy());
 			return factory;
 		}
 

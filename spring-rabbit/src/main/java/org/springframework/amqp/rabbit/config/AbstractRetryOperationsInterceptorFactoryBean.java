@@ -27,6 +27,7 @@ import org.springframework.core.retry.RetryPolicy;
  * Convenient base class for interceptor factories.
  *
  * @author Dave Syer
+ * @author Stephane Nicoll
  *
  */
 public abstract class AbstractRetryOperationsInterceptorFactoryBean implements FactoryBean<Advice> {
@@ -49,10 +50,6 @@ public abstract class AbstractRetryOperationsInterceptorFactoryBean implements F
 
 	protected @Nullable MessageRecoverer getMessageRecoverer() {
 		return this.messageRecoverer;
-	}
-
-	public boolean isSingleton() {
-		return true;
 	}
 
 }

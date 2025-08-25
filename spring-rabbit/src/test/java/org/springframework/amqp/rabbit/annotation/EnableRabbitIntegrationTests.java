@@ -45,7 +45,6 @@ import jakarta.validation.Valid;
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -53,7 +52,6 @@ import org.mockito.Mockito;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.AcknowledgeMode;
-import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.Message;
@@ -86,7 +84,7 @@ import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
-import org.springframework.amqp.rabbit.retry.MessageRecoveryCallback;
+import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.test.MessageTestUtils;
 import org.springframework.amqp.support.AmqpHeaders;
@@ -168,7 +166,7 @@ import static org.mockito.Mockito.verify;
 @SpringJUnitConfig(EnableRabbitIntegrationTests.EnableRabbitConfig.class)
 @DirtiesContext
 @TestPropertySource(properties = "spring.application.name=testConnectionName")
-@RabbitAvailable(queues = { "test.manual.container", "test.no.listener.yet",
+@RabbitAvailable(queues = {"test.manual.container", "test.no.listener.yet",
 		"test.simple", "test.header", "test.message", "test.reply", "test.sendTo", "test.sendTo.reply",
 		"test.sendTo.spel", "test.sendTo.reply.spel", "test.sendTo.runtimespel", "test.sendTo.reply.runtimespel",
 		"test.sendTo.runtimespelsource", "test.sendTo.runtimespelsource.reply",
@@ -184,7 +182,7 @@ import static org.mockito.Mockito.verify;
 		"amqp656dlq", "test.simple.declare", "test.return.exceptions", "test.pojo.errors", "test.pojo.errors2",
 		"test.messaging.message", "test.amqp.message", "test.bytes.to.string", "test.projection",
 		"test.custom.argument", "test.arg.validation",
-		"manual.acks.1", "manual.acks.2", "erit.batch.1", "erit.batch.2", "erit.batch.3", "erit.mp.arg" },
+		"manual.acks.1", "manual.acks.2", "erit.batch.1", "erit.batch.2", "erit.batch.3", "erit.mp.arg"},
 		purgeAfterEach = false)
 public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
@@ -354,7 +352,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 	}
 
 	@Test
-	@LogLevels(classes = { DirectMessageListenerContainer.class, RabbitTemplate.class })
+	@LogLevels(classes = {DirectMessageListenerContainer.class, RabbitTemplate.class})
 	public void simpleDirectEndpointWithConcurrency() {
 		String reply = (String) rabbitTemplate.convertSendAndReceive("test.simple.direct2", "foo");
 		assertThat(reply).startsWith("FOOfoo");
@@ -943,7 +941,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 	@Test
 	public void messagingMessageReturned() throws InterruptedException {
 		Message message = org.springframework.amqp.core.MessageBuilder.withBody("\"messaging\"".getBytes())
-			.andProperties(MessagePropertiesBuilder.newInstance().setContentType("application/json").build()).build();
+				.andProperties(MessagePropertiesBuilder.newInstance().setContentType("application/json").build()).build();
 		message = this.rabbitTemplate.sendAndReceive("test.messaging.message", message);
 		assertThat(message).isNotNull();
 		assertThat(new String(message.getBody())).isEqualTo("{\"field\":\"MESSAGING\"}");
@@ -986,9 +984,9 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 	@Test
 	public void testManualOverride() {
 		assertThat(TestUtils.getPropertyValue(this.registry.getListenerContainer("manual.acks.1"), "acknowledgeMode"))
-			.isEqualTo(AcknowledgeMode.MANUAL);
+				.isEqualTo(AcknowledgeMode.MANUAL);
 		assertThat(TestUtils.getPropertyValue(this.registry.getListenerContainer("manual.acks.2"), "acknowledgeMode"))
-			.isEqualTo(AcknowledgeMode.MANUAL);
+				.isEqualTo(AcknowledgeMode.MANUAL);
 	}
 
 	@Test
@@ -1163,7 +1161,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 				@QueueBinding(
 						value = @Queue,
 						exchange = @Exchange(value = "auto.exch", autoDelete = "true"),
-						key = "auto.anon.rk") }
+						key = "auto.anon.rk")}
 		)
 		public String handleWithDeclareAnon(String foo) {
 			return foo.toUpperCase();
@@ -1195,9 +1193,9 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 			return foo.toUpperCase() + foo + Thread.currentThread().getName();
 		}
 
-		@RabbitListener(queues = { "#{'test.comma.1,test.comma.2'.split(',')}",
+		@RabbitListener(queues = {"#{'test.comma.1,test.comma.2'.split(',')}",
 				"test,with,commas",
-				"#{commaQueues}" },
+				"#{commaQueues}"},
 				group = "commas")
 		public String multiQueuesConfig(String foo) {
 			return foo.toUpperCase() + foo;
@@ -1312,7 +1310,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 				@QueueBinding(
 						value = @Queue,
 						exchange = @Exchange(value = "auto.internal", autoDelete = "true", internal = "true"),
-						key = "auto.internal.rk") }
+						key = "auto.internal.rk")}
 		)
 		public String handleWithInternalExchange(String foo) {
 			return foo.toUpperCase();
@@ -1323,7 +1321,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 						value = @Queue,
 						exchange = @Exchange(value = "auto.internal", autoDelete = "true",
 								ignoreDeclarationExceptions = "true"),
-						key = "auto.internal.rk") }
+						key = "auto.internal.rk")}
 		)
 		public String handleWithInternalExchangeIgnore(String foo) {
 			return foo.toUpperCase();
@@ -1337,7 +1335,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 										@Argument(name = "x-dead-letter-exchange", value = ""),
 										@Argument(name = "x-dead-letter-routing-key", value = "amqp656dlq"),
 										@Argument(name = "test-empty", value = ""),
-										@Argument(name = "test-null", value = "") }),
+										@Argument(name = "test-null", value = "")}),
 						exchange = @Exchange(value = "amq.topic", type = "topic"),
 						key = "foo"))
 		public String handleWithDeadLetterDefaultExchange(String foo) {
@@ -1507,7 +1505,6 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 			return "bar=" + this.bar;
 		}
 
-
 	}
 
 	public static class CustomMethodArgument {
@@ -1659,7 +1656,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 				return m;
 			});
 			factory.setRetryTemplate(new RetryTemplate());
-			factory.setReplyRecoveryCallback(new NullMessageRecoveryCallback());
+			factory.setReplyRecoveryCallback(new NoOpMessageRecoveryCallback());
 			return factory;
 		}
 
@@ -1671,7 +1668,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 			factory.setConsumerTagStrategy(consumerTagStrategy());
 			factory.setReceiveTimeout(10L);
 			factory.setRetryTemplate(new RetryTemplate());
-			factory.setReplyRecoveryCallback(new NullMessageRecoveryCallback());
+			factory.setReplyRecoveryCallback(new NoOpMessageRecoveryCallback());
 			factory.setChannelTransacted(true);
 			return factory;
 		}
@@ -1797,6 +1794,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		@Override
 		public void configureRabbitListeners(RabbitListenerEndpointRegistrar registrar) {
 			registrar.setValidator(new Validator() {
+
 				@Override
 				public boolean supports(Class<?> clazz) {
 					return ValidatedClass.class.isAssignableFrom(clazz);
@@ -1815,22 +1813,22 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 				}
 			});
 			registrar.setCustomMethodArgumentResolvers(
-				new HandlerMethodArgumentResolver() {
+					new HandlerMethodArgumentResolver() {
 
-					@Override
-					public boolean supportsParameter(MethodParameter parameter) {
-						return CustomMethodArgument.class.isAssignableFrom(parameter.getParameterType());
+						@Override
+						public boolean supportsParameter(MethodParameter parameter) {
+							return CustomMethodArgument.class.isAssignableFrom(parameter.getParameterType());
+						}
+
+						@Override
+						public Object resolveArgument(MethodParameter parameter, org.springframework.messaging.Message<?> message) {
+							return new CustomMethodArgument(
+									(String) message.getPayload(),
+									message.getHeaders().get("customHeader", String.class)
+							);
+						}
+
 					}
-
-					@Override
-					public Object resolveArgument(MethodParameter parameter, org.springframework.messaging.Message<?> message) {
-						return new CustomMethodArgument(
-								(String) message.getPayload(),
-								message.getHeaders().get("customHeader", String.class)
-						);
-					}
-
-				}
 			);
 		}
 
@@ -1913,7 +1911,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 			return (msg, channel, springMsg, ex) -> {
 				String payload = ((Bar) springMsg.getPayload()).field.toUpperCase();
 				return payload + payload + " " + ex.getCause().getMessage();
- 			};
+			};
 		}
 
 		@Bean
@@ -2128,12 +2126,13 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 	@RabbitListener(bindings = @QueueBinding
 			(value = @Queue,
-			 exchange = @Exchange(value = "multi.json.exch", autoDelete = "true"),
-			 key = "multi.json.valid.rk"), containerFactory = "simpleJsonListenerContainerFactory",
-			 returnExceptions = "true")
+					exchange = @Exchange(value = "multi.json.exch", autoDelete = "true"),
+					key = "multi.json.valid.rk"), containerFactory = "simpleJsonListenerContainerFactory",
+			returnExceptions = "true")
 	static class MultiListenerValidatedJsonBean {
 
 		final CountDownLatch latch = new CountDownLatch(1);
+
 		volatile ValidatedClass validatedObject;
 
 		@RabbitHandler
@@ -2141,6 +2140,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 			this.validatedObject = validatedObject;
 			latch.countDown();
 		}
+
 	}
 
 	interface TxClassLevel {
@@ -2180,7 +2180,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 	}
 
-	@Target({ ElementType.TYPE, ElementType.METHOD, ElementType.ANNOTATION_TYPE })
+	@Target({ElementType.TYPE, ElementType.METHOD, ElementType.ANNOTATION_TYPE})
 	@Retention(RetentionPolicy.RUNTIME)
 	@RabbitListener(bindings = @QueueBinding(
 			value = @Queue,
@@ -2488,6 +2488,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		public String projection(Sample in) {
 			return in.getUsername() + in.getName();
 		}
+
 	}
 
 	@SuppressWarnings("serial")
@@ -2520,7 +2521,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 		public void setValidated(boolean validated) {
 			this.validated = validated;
-			if (validated) { // don't count the json deserialization call
+			if (validated) { // don't count the JSON deserialization call
 				this.valCount++;
 			}
 		}
@@ -2536,12 +2537,13 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 	}
 
-	private static final class NullMessageRecoveryCallback implements MessageRecoveryCallback {
+	private static final class NoOpMessageRecoveryCallback implements MessageRecoverer {
 
 		@Override
-		public @Nullable Object recover(Message message, Address replyTo, @Nullable Throwable cause) {
-			return null;
+		public void recover(Message message, Throwable cause) {
+
 		}
+
 	}
 
 }

@@ -33,6 +33,8 @@ import org.springframework.core.retry.RetryTemplate;
  *
  * @author Juergen Hoeller
  * @author Stephane Nicoll
+ *
+ * @since 4.0
  */
 public final class StatelessRetryOperationsInterceptor implements MethodInterceptor {
 

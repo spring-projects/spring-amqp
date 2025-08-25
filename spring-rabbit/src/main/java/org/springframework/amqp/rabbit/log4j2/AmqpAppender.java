@@ -96,6 +96,7 @@ import org.springframework.util.StringUtils;
  * @author Nicolas Ristock
  * @author Eugene Gusev
  * @author Francesco Scipioni
+ * @author Stephane Nicoll
  *
  * @since 1.6
  */
@@ -133,7 +134,7 @@ public class AmqpAppender extends AbstractAppender {
 	private final RabbitTemplate rabbitTemplate = new RabbitTemplate();
 
 	/**
-	 * Where LoggingEvents are queued to send.
+	 * Where LoggingEvents are queued to {@code send} operation.
 	 */
 	private final BlockingQueue<Event> events;
 
@@ -180,9 +181,7 @@ public class AmqpAppender extends AbstractAppender {
 			}
 		}
 		else if (this.manager.maxSenderRetries > 0) {
-			RetryTemplate retryTemplate = new RetryTemplate();
-			retryTemplate.setRetryPolicy(RetryPolicy.withMaxAttempts(2));
-			this.rabbitTemplate.setRetryTemplate(retryTemplate);
+			this.rabbitTemplate.setRetryTemplate(new RetryTemplate(RetryPolicy.withMaxAttempts(2)));
 		}
 	}
 
@@ -199,7 +198,6 @@ public class AmqpAppender extends AbstractAppender {
 
 	/**
 	 * Subclasses may modify the final message before sending.
-	 *
 	 * @param message The message.
 	 * @param event The event.
 	 * @return The modified message.
@@ -215,9 +213,9 @@ public class AmqpAppender extends AbstractAppender {
 
 		MessageProperties amqpProps = new MessageProperties();
 		JavaUtils.INSTANCE
-			.acceptIfNotNull(this.manager.deliveryMode, amqpProps::setDeliveryMode)
-			.acceptIfNotNull(this.manager.contentType, amqpProps::setContentType)
-			.acceptIfNotNull(this.manager.contentEncoding, amqpProps::setContentEncoding);
+				.acceptIfNotNull(this.manager.deliveryMode, amqpProps::setDeliveryMode)
+				.acceptIfNotNull(this.manager.contentType, amqpProps::setContentType)
+				.acceptIfNotNull(this.manager.contentEncoding, amqpProps::setContentEncoding);
 		amqpProps.setHeader(CATEGORY_NAME, name);
 		amqpProps.setHeader(THREAD_NAME, logEvent.getThreadName());
 		amqpProps.setHeader(CATEGORY_LEVEL, level.toString());
@@ -325,7 +323,7 @@ public class AmqpAppender extends AbstractAppender {
 		@Override
 		public void run() {
 			try {
-				// We leave the loop when thread is interrupted by the ExecutorService.shutdownNow()
+				// We leave the loop when the thread is interrupted by the ExecutorService.shutdownNow()
 				while (true) {
 					final Event event = AmqpAppender.this.events.take();
 					sendEvent(event, event.getProperties());
@@ -398,7 +396,7 @@ public class AmqpAppender extends AbstractAppender {
 		private String routingKeyPattern = "%c.%p";
 
 		/**
-		 * Log4J Layout to use to generate routing key.
+		 * Log4J Layout to use to generate a routing key.
 		 */
 		@SuppressWarnings("NullAway.Init")
 		private Layout<String> routingKeyLayout;
@@ -472,7 +470,7 @@ public class AmqpAppender extends AbstractAppender {
 		private @Nullable String sslAlgorithm;
 
 		/**
-		 * Location of resource containing keystore and truststore information.
+		 * Location of a resource containing keystore and truststore information.
 		 */
 		private @Nullable String sslPropertiesLocation;
 
@@ -596,7 +594,7 @@ public class AmqpAppender extends AbstractAppender {
 					this.connectionFactory.setAddresses(this.addresses);
 				}
 				ConnectionFactoryConfigurationUtils.updateClientConnectionProperties(this.connectionFactory,
-							this.clientConnectionProperties);
+						this.clientConnectionProperties);
 				setUpExchangeDeclaration();
 				this.senderPool = Executors.newCachedThreadPool();
 				return true;
@@ -623,7 +621,7 @@ public class AmqpAppender extends AbstractAppender {
 		}
 
 		/**
-		 * Configure the {@link RabbitConnectionFactoryBean}. Sub-classes may override to
+		 * Configure the {@link RabbitConnectionFactoryBean}. Subclasses may override to
 		 * customize the configuration of the bean.
 		 *
 		 * @param factoryBean the {@link RabbitConnectionFactoryBean}.
@@ -1059,43 +1057,43 @@ public class AmqpAppender extends AbstractAppender {
 			}
 			AmqpManager manager = new AmqpManager(this.configuration.getLoggerContext(), this.name);
 			JavaUtils.INSTANCE
-				.acceptIfNotNull(this.uri, value -> manager.uri = value)
-				.acceptIfNotNull(this.host, value -> manager.host = value)
-				.acceptIfNotNull(this.port, value -> manager.port = Integers.parseInt(value))
-				.acceptIfNotNull(this.addresses, value -> manager.addresses = value)
-				.acceptIfNotNull(this.user, value -> manager.username = value)
-				.acceptIfNotNull(this.password, value -> manager.password = value)
-				.acceptIfNotNull(this.virtualHost, value -> manager.virtualHost = value)
-				.acceptIfNotNull(this.useSsl, value -> manager.useSsl = value)
-				.acceptIfNotNull(this.verifyHostname, value -> manager.verifyHostname = value)
-				.acceptIfNotNull(this.sslAlgorithm, value -> manager.sslAlgorithm = value)
-				.acceptIfNotNull(this.sslPropertiesLocation, value -> manager.sslPropertiesLocation = value)
-				.acceptIfNotNull(this.keyStore, value -> manager.keyStore = value)
-				.acceptIfNotNull(this.keyStorePassphrase, value -> manager.keyStorePassphrase = value)
-				.acceptIfNotNull(this.keyStoreType, value -> manager.keyStoreType = value)
-				.acceptIfNotNull(this.trustStore, value -> manager.trustStore = value)
-				.acceptIfNotNull(this.trustStorePassphrase, value -> manager.trustStorePassphrase = value)
-				.acceptIfNotNull(this.trustStoreType, value -> manager.trustStoreType = value)
-				.acceptIfNotNull(this.saslConfig, value -> manager.saslConfig = value)
-				.acceptIfNotNull(this.senderPoolSize, value -> manager.senderPoolSize = value)
-				.acceptIfNotNull(this.maxSenderRetries, value -> manager.maxSenderRetries = value)
-				.acceptIfNotNull(this.applicationId, value -> manager.applicationId = value)
-				.acceptIfNotNull(this.routingKeyPattern, value -> manager.routingKeyPattern = value)
-				.acceptIfNotNull(this.generateId, value -> manager.generateId = value)
-				.acceptIfNotNull(this.deliveryMode,
-						value -> manager.deliveryMode = MessageDeliveryMode.valueOf(this.deliveryMode))
-				.acceptIfNotNull(this.exchange, value -> manager.exchangeName = value)
-				.acceptIfNotNull(this.exchangeType, value -> manager.exchangeType = value)
-				.acceptIfNotNull(this.declareExchange, value -> manager.declareExchange = value)
-				.acceptIfNotNull(this.durable, value -> manager.durable = value)
-				.acceptIfNotNull(this.autoDelete, value -> manager.autoDelete = value)
-				.acceptIfNotNull(this.contentType, value -> manager.contentType = value)
-				.acceptIfNotNull(this.contentEncoding, value -> manager.contentEncoding = value)
-				.acceptIfNotNull(this.connectionName, value -> manager.connectionName = value)
-				.acceptIfNotNull(this.clientConnectionProperties, value -> manager.clientConnectionProperties = value)
-				.acceptIfNotNull(this.charset, value -> manager.charset = value)
-				.acceptIfNotNull(this.async, value -> manager.async = value)
-				.acceptIfNotNull(this.addMdcAsHeaders, value -> manager.addMdcAsHeaders = value);
+					.acceptIfNotNull(this.uri, value -> manager.uri = value)
+					.acceptIfNotNull(this.host, value -> manager.host = value)
+					.acceptIfNotNull(this.port, value -> manager.port = Integers.parseInt(value))
+					.acceptIfNotNull(this.addresses, value -> manager.addresses = value)
+					.acceptIfNotNull(this.user, value -> manager.username = value)
+					.acceptIfNotNull(this.password, value -> manager.password = value)
+					.acceptIfNotNull(this.virtualHost, value -> manager.virtualHost = value)
+					.acceptIfNotNull(this.useSsl, value -> manager.useSsl = value)
+					.acceptIfNotNull(this.verifyHostname, value -> manager.verifyHostname = value)
+					.acceptIfNotNull(this.sslAlgorithm, value -> manager.sslAlgorithm = value)
+					.acceptIfNotNull(this.sslPropertiesLocation, value -> manager.sslPropertiesLocation = value)
+					.acceptIfNotNull(this.keyStore, value -> manager.keyStore = value)
+					.acceptIfNotNull(this.keyStorePassphrase, value -> manager.keyStorePassphrase = value)
+					.acceptIfNotNull(this.keyStoreType, value -> manager.keyStoreType = value)
+					.acceptIfNotNull(this.trustStore, value -> manager.trustStore = value)
+					.acceptIfNotNull(this.trustStorePassphrase, value -> manager.trustStorePassphrase = value)
+					.acceptIfNotNull(this.trustStoreType, value -> manager.trustStoreType = value)
+					.acceptIfNotNull(this.saslConfig, value -> manager.saslConfig = value)
+					.acceptIfNotNull(this.senderPoolSize, value -> manager.senderPoolSize = value)
+					.acceptIfNotNull(this.maxSenderRetries, value -> manager.maxSenderRetries = value)
+					.acceptIfNotNull(this.applicationId, value -> manager.applicationId = value)
+					.acceptIfNotNull(this.routingKeyPattern, value -> manager.routingKeyPattern = value)
+					.acceptIfNotNull(this.generateId, value -> manager.generateId = value)
+					.acceptIfNotNull(this.deliveryMode,
+							value -> manager.deliveryMode = MessageDeliveryMode.valueOf(this.deliveryMode))
+					.acceptIfNotNull(this.exchange, value -> manager.exchangeName = value)
+					.acceptIfNotNull(this.exchangeType, value -> manager.exchangeType = value)
+					.acceptIfNotNull(this.declareExchange, value -> manager.declareExchange = value)
+					.acceptIfNotNull(this.durable, value -> manager.durable = value)
+					.acceptIfNotNull(this.autoDelete, value -> manager.autoDelete = value)
+					.acceptIfNotNull(this.contentType, value -> manager.contentType = value)
+					.acceptIfNotNull(this.contentEncoding, value -> manager.contentEncoding = value)
+					.acceptIfNotNull(this.connectionName, value -> manager.connectionName = value)
+					.acceptIfNotNull(this.clientConnectionProperties, value -> manager.clientConnectionProperties = value)
+					.acceptIfNotNull(this.charset, value -> manager.charset = value)
+					.acceptIfNotNull(this.async, value -> manager.async = value)
+					.acceptIfNotNull(this.addMdcAsHeaders, value -> manager.addMdcAsHeaders = value);
 
 			BlockingQueue<Event> eventQueue;
 			if (this.blockingQueueFactory == null) {
@@ -1115,15 +1113,14 @@ public class AmqpAppender extends AbstractAppender {
 		}
 
 		/**
-		 * Subclasses can extend Builder, use same logic but need to modify class instance.
-		 *
+		 * Subclasses can extend Builder, use the same logic but need to modify class instance.
 		 * @param name The Appender name.
 		 * @param filter The Filter to associate with the Appender.
 		 * @param layout The layout to use to format the event.
-		 * @param ignoreExceptions If true, exceptions will be logged and suppressed. If false errors will be logged and
-		 *            then passed to the application.
+		 * @param ignoreExceptions If true, exceptions will be logged and suppressed.
+		 * If {@code false} errors will be logged and then passed to the application.
 		 * @param manager Manager class for the appender.
-		 * @param eventQueue Where LoggingEvents are queued to send.
+		 * @param eventQueue Where LoggingEvents are queued to {@code send} operation.
 		 * @return {@link AmqpAppender}
 		 */
 		protected AmqpAppender buildInstance(String name, @Nullable Filter filter, Layout<? extends Serializable> layout,

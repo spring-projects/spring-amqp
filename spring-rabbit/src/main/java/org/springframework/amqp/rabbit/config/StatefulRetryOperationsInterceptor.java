@@ -42,6 +42,8 @@ import org.springframework.util.backoff.BackOffExecution;
  *
  * @author Juergen Hoeller
  * @author Stephane Nicoll
+ *
+ * @since 4.0
  */
 public final class StatefulRetryOperationsInterceptor implements MethodInterceptor {
 
@@ -60,6 +62,7 @@ public final class StatefulRetryOperationsInterceptor implements MethodIntercept
 	StatefulRetryOperationsInterceptor(MessageKeyGenerator messageKeyGenerator,
 			NewMessageIdentifier newMessageIdentifier, @Nullable RetryPolicy retryPolicy,
 			@Nullable MessageRecoverer messageRecoverer) {
+
 		this.messageKeyGenerator = messageKeyGenerator;
 		this.newMessageIdentifier = newMessageIdentifier;
 		this.retryPolicy = (retryPolicy != null) ? retryPolicy : RetryPolicy.builder().build();
@@ -71,7 +74,7 @@ public final class StatefulRetryOperationsInterceptor implements MethodIntercept
 		@Nullable Object[] args = invocation.getArguments();
 		Message message = argToMessage(args);
 		Object key = this.messageKeyGenerator.getKey(message);
-		if (key == null) { // state cannot be managed without a key
+		if (key == null) { // Means no retry for this message anymore.
 			return invocation.proceed();
 		}
 		RetryState retryState = this.cache.get(key);

@@ -36,7 +36,7 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.support.ContainerUtils;
-import org.springframework.amqp.rabbit.retry.MessageRecoveryCallback;
+import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
@@ -109,7 +109,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 
 	private @Nullable RetryTemplate retryTemplate;
 
-	private @Nullable MessageRecoveryCallback recoveryCallback;
+	private @Nullable MessageRecoverer recoveryCallback;
 
 	private boolean isManualAck;
 
@@ -136,7 +136,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	}
 
 	/**
-	 * The encoding to use when inter-converting between byte arrays and Strings in
+	 * The encoding to use when interconverting between byte arrays and Strings in
 	 * message properties.
 	 * @param encoding the encoding to set.
 	 */
@@ -145,7 +145,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	}
 
 	/**
-	 * The encoding to use when inter-converting between byte arrays and Strings in
+	 * The encoding to use when interconverting between byte arrays and Strings in
 	 * message properties.
 	 * @return encoding the encoding.
 	 */
@@ -206,8 +206,8 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	}
 
 	/**
-	 * Set post processors that will be applied before sending replies.
-	 * @param beforeSendReplyPostProcessors the post processors.
+	 * Set post-processors that will be applied before sending replies.
+	 * @param beforeSendReplyPostProcessors the post-processors.
 	 * @since 2.0.3
 	 */
 	public void setBeforeSendReplyPostProcessors(MessagePostProcessor... beforeSendReplyPostProcessors) {
@@ -224,19 +224,19 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	 * Set a {@link RetryTemplate} to use when sending replies.
 	 * @param retryTemplate the template.
 	 * @since 2.0.6
-	 * @see #setRecoveryCallback(MessageRecoveryCallback)
+	 * @see #setRecoveryCallback(MessageRecoverer)
 	 */
 	public void setRetryTemplate(RetryTemplate retryTemplate) {
 		this.retryTemplate = retryTemplate;
 	}
 
 	/**
-	 * Set a {@link MessageRecoveryCallback} to invoke when retries are exhausted.
+	 * Set a {@link MessageRecoverer} to invoke when retries are exhausted.
 	 * @param recoveryCallback the recovery callback.
 	 * @since 4.0
 	 * @see #setRetryTemplate(RetryTemplate)
 	 */
-	public void setRecoveryCallback(MessageRecoveryCallback recoveryCallback) {
+	public void setRecoveryCallback(MessageRecoverer recoveryCallback) {
 		this.recoveryCallback = recoveryCallback;
 	}
 
@@ -258,7 +258,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	 * Set a {@link ReplyPostProcessor} to post process a response message before it is
 	 * sent. It is called after {@link #postProcessResponse(Message, Message)} which sets
 	 * up the correlationId header.
-	 * @param replyPostProcessor the post processor.
+	 * @param replyPostProcessor the post-processor.
 	 * @since 2.2.5
 	 */
 	public void setReplyPostProcessor(ReplyPostProcessor replyPostProcessor) {
@@ -477,6 +477,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 			this.logger.debug("Listener method returned result [" + resultArg
 					+ "] - generating response message for it");
 		}
+		Address replyTo = null;
 		try {
 			Message response = buildMessage(channel, resultArg.getReturnValue(), resultArg.getReturnType());
 			MessageProperties props = response.getMessageProperties();
@@ -486,11 +487,11 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 			if (this.replyPostProcessor != null) {
 				response = this.replyPostProcessor.apply(request, response);
 			}
-			Address replyTo = getReplyToAddress(request, source, resultArg);
+			replyTo = getReplyToAddress(request, source, resultArg);
 			sendResponse(channel, replyTo, response);
 		}
 		catch (Exception ex) {
-			throw new ReplyFailureException("Failed to send reply with payload '" + resultArg + "'", ex);
+			throw new ReplyFailureException("Failed to send reply with payload '" + resultArg + "'", replyTo, ex);
 		}
 	}
 
@@ -499,7 +500,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	}
 
 	/**
-	 * Build a Rabbit message to be sent as response based on the given result object.
+	 * Build a Rabbit message to be sent as a response based on the given result object.
 	 * @param channel the Rabbit Channel to operate on.
 	 *                Can be null if implementation does not support AMQP 0.9.1.
 	 * @param result the content of the message, as returned from the listener method.
@@ -524,7 +525,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	}
 
 	/**
-	 * Convert to a message, with reply content type based on settings.
+	 * Convert to a message with a reply content type based on settings.
 	 * @param result the result.
 	 * @param genericType the type.
 	 * @param converter the converter.
@@ -661,7 +662,10 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 				}
 				catch (RetryException ex) {
 					if (this.recoveryCallback != null) {
-						this.recoveryCallback.recover(messageToSend, replyTo, ex.getCause());
+						this.recoveryCallback.recover(messageToSend,
+								new ReplyFailureException(
+										"Failed to produce reply as '" + messageToSend + "' during retry", replyTo,
+										ex.getCause()));
 					}
 					else {
 						throw RabbitExceptionTranslator.convertRabbitAccessException(ex.getCause());
@@ -692,32 +696,11 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 
 	/**
 	 * Root object for reply expression evaluation.
+	 * @param request the request message.
+	 * @param source the source data (e.g. {@code o.s.messaging.Message<?>}).
+	 * @param result the result.
 	 */
-	public static final class ReplyExpressionRoot {
-
-		private final Message request;
-
-		private final @Nullable Object source;
-
-		private final @Nullable Object result;
-
-		protected ReplyExpressionRoot(Message request, @Nullable Object source, @Nullable Object result) {
-			this.request = request;
-			this.source = source;
-			this.result = result;
-		}
-
-		public Message getRequest() {
-			return this.request;
-		}
-
-		public @Nullable Object getSource() {
-			return this.source;
-		}
-
-		public @Nullable Object getResult() {
-			return this.result;
-		}
+	public record ReplyExpressionRoot(Message request, @Nullable Object source, @Nullable Object result) {
 
 	}
 

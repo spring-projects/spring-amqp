@@ -16,8 +16,6 @@
 
 package org.springframework.amqp.rabbit.retry;
 
-import org.jspecify.annotations.Nullable;
-
 import org.springframework.amqp.core.Message;
 
 /**
@@ -33,11 +31,10 @@ import org.springframework.amqp.core.Message;
 public interface MessageRecoverer {
 
 	/**
-	 * Callback for message that was consumed but failed all retry attempts.
-	 *
+	 * Callback for a message that was consumed but failed all retry attempts.
 	 * @param message the message to recover
 	 * @param cause the cause of the error
 	 */
-	void recover(Message message, @Nullable Throwable cause);
+	void recover(Message message, Throwable cause);
 
 }

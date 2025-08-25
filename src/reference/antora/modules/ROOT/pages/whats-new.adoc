@@ -28,12 +28,12 @@ See xref:rabbitmq-amqp-client.adoc[] for more information.
 === Deprecation of JUnit 4 utilities
 
 The latest JUnit 4 release was `4.13.2` in February 2021 and the next JUnit 6 will be based on Java 17.
-There is no need to keep out-dated utilities and recommendation is to migrate to respective tools for JUnit 5.
+There is no need to keep outdated utilities, and the recommendation is to migrate to respective tools for JUnit Jupiter.
 
 [[x40-jackson3-support]]
 === The Jackson 3 Support
 
-The Jackson 2 has been deprecated for removal in whole Spring portfolio.
+The Jackson 2 has been deprecated for removal in the whole Spring portfolio.
 Respective new classes have been introduced to support Jackson 3.
 
 See xref:amqp/message-converters.adoc[] for more information.
@@ -42,3 +42,13 @@ See xref:amqp/message-converters.adoc[] for more information.
 === MessageListenerContainer Changes
 
 The `SimpleMessageListenerContainer` now awaits at most `shutdownTimeout` for pending replies from the provided `RabbitTemplate` listener on its shutdown.
+
+[[x40-spring-retry-migration]]
+=== Migration to Spring Core Retry
+
+The Spring Retry API and usage in the project have been replaced with similar API from `spring-core` module.
+The respective `org.springframework.retry:spring-retry` dependency has been removed.
+This is a breaking change, but reasonable for the current new major generation of the whole Spring portfolio.
+See new convenient classes: `StatelessRetryOperationsInterceptor` and `StatefulRetryOperationsInterceptor`.
+The `SendRetryContextAccessor` was removed in favor of the `MessageRecoverer` contract.
+The `replyTo` address of the failure could be obtained from the `ReplyFailureException` propagated after retry exhausted into the mentioned `MessageRecoverer`.

@@ -207,13 +207,10 @@ public class MessageListenerAdapterTests {
 		retryTemplate.setRetryPolicy(retryPolicy);
 		this.adapter.setRetryTemplate(retryTemplate);
 		AtomicReference<Message> replyMessage = new AtomicReference<>();
-		AtomicReference<Address> replyAddress = new AtomicReference<>();
 		AtomicReference<Throwable> throwable = new AtomicReference<>();
-		this.adapter.setRecoveryCallback((msg, replyTo, cause) -> {
+		this.adapter.setRecoveryCallback((msg, cause) -> {
 			replyMessage.set(msg);
-			replyAddress.set(replyTo);
 			throwable.set(cause);
-			return null;
 		});
 		this.messageProperties.setReplyTo("foo/bar");
 		Channel channel = mock(Channel.class);
@@ -225,10 +222,11 @@ public class MessageListenerAdapterTests {
 		assertThat(this.simpleService.called).isEqualTo("handle");
 		assertThat(replyMessage.get()).isNotNull();
 		assertThat(new String(replyMessage.get().getBody())).isEqualTo("processed foo");
-		assertThat(replyAddress.get()).isNotNull();
-		assertThat(replyAddress.get().getExchangeName()).isEqualTo("foo");
-		assertThat(replyAddress.get().getRoutingKey()).isEqualTo("bar");
-		assertThat(throwable.get()).isSameAs(ex);
+		assertThat(throwable.get())
+				.isInstanceOf(ReplyFailureException.class)
+				.hasRootCause(ex)
+				.extracting("replyTo")
+				.isEqualTo(new Address("foo", "bar"));
 	}
 
 	@Test

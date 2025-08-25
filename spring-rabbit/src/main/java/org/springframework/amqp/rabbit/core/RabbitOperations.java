@@ -66,7 +66,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * If callbacks are needed, both callbacks must be supplied.
 	 * @param action the callback.
 	 * @param acks a confirm callback for acks.
-	 * @param nacks a confirm callback for nacks.
+	 * @param nacks a {@code confirm} callback for nacks.
 	 * @param <T> the return type.
 	 * @return the result of the action method.
 	 * @since 2.1
@@ -75,8 +75,8 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 			com.rabbitmq.client.@Nullable ConfirmCallback acks, com.rabbitmq.client.@Nullable ConfirmCallback nacks);
 
 	/**
-	 * Delegate to the underlying dedicated channel to wait for confirms. The connection
-	 * factory must be configured for publisher confirms and this method must be called
+	 * Delegate to the underlying dedicated channel to wait for {@code confirms}. The connection
+	 * factory must be configured for publisher {@code confirms} and this method must be called
 	 * within the scope of an {@link #invoke(OperationsCallback)} operation.
 	 * Requires {@code CachingConnectionFactory#setPublisherConfirms(true)}.
 	 * @param timeout the timeout

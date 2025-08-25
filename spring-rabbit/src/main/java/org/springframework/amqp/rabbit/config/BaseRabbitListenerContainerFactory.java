@@ -29,7 +29,7 @@ import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.adapter.AbstractAdaptableMessageListener;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
-import org.springframework.amqp.rabbit.retry.MessageRecoveryCallback;
+import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -45,6 +45,7 @@ import org.springframework.util.Assert;
  * @author Gary Russell
  * @author Ngoc Nhan
  * @author Artem Bilan
+ * @author Stephane Nicoll
  *
  * @since 2.4
  *
@@ -58,7 +59,7 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 
 	private @Nullable RetryTemplate retryTemplate;
 
-	private @Nullable MessageRecoveryCallback recoveryCallback;
+	private @Nullable MessageRecoverer recoveryCallback;
 
 	private Advice @Nullable [] adviceChain;
 
@@ -93,9 +94,9 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	}
 
 	/**
-	 * Set post processors that will be applied before sending replies; added to each
+	 * Set post-processors that will be applied before sending replies; added to each
 	 * message listener adapter.
-	 * @param postProcessors the post processors.
+	 * @param postProcessors the post-processors.
 	 * @see AbstractAdaptableMessageListener#setBeforeSendReplyPostProcessors(MessagePostProcessor...)
 	 */
 	public void setBeforeSendReplyPostProcessors(MessagePostProcessor... postProcessors) {
@@ -108,7 +109,7 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	 * Set a {@link RetryTemplate} to use when sending replies; added to each message
 	 * listener adapter.
 	 * @param retryTemplate the template.
-	 * @see #setReplyRecoveryCallback(MessageRecoveryCallback)
+	 * @see #setReplyRecoveryCallback(MessageRecoverer)
 	 * @see AbstractAdaptableMessageListener#setRetryTemplate(RetryTemplate)
 	 */
 	public void setRetryTemplate(RetryTemplate retryTemplate) {
@@ -116,22 +117,22 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	}
 
 	/**
-	 * Set a {@link MessageRecoveryCallback} to invoke when retries are exhausted. Added to
+	 * Set a {@link MessageRecoverer} to invoke when retries are exhausted. Added to
 	 * each message listener adapter. Only used if a {@link #setRetryTemplate(RetryTemplate)
 	 * retryTemplate} is provided.
 	 * @param recoveryCallback the recovery callback.
 	 * @see #setRetryTemplate(RetryTemplate)
-	 * @see AbstractAdaptableMessageListener#setRecoveryCallback(MessageRecoveryCallback)
+	 * @see AbstractAdaptableMessageListener#setRecoveryCallback(MessageRecoverer)
 	 */
-	public void setReplyRecoveryCallback(MessageRecoveryCallback recoveryCallback) {
+	public void setReplyRecoveryCallback(MessageRecoverer recoveryCallback) {
 		this.recoveryCallback = recoveryCallback;
 	}
 
 	/**
-	 * Set a function to provide a reply post processor; it will be used if there is no
+	 * Set a function to provide a reply post-processor; it will be used if there is no
 	 * replyPostProcessor on the rabbit listener annotation. The input parameter is the
 	 * listener id.
-	 * @param replyPostProcessorProvider the post processor.
+	 * @param replyPostProcessorProvider the post-processor.
 	 * @since 3.0
 	 */
 	public void setReplyPostProcessorProvider(

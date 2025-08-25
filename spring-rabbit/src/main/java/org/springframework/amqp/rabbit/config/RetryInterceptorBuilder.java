@@ -62,6 +62,7 @@ import org.springframework.util.Assert;
  * @author James Carr
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Stephane Nicoll
  *
  * @since 1.3
  *
@@ -100,13 +101,14 @@ public abstract class RetryInterceptorBuilder<B extends RetryInterceptorBuilder<
 	}
 
 	/**
-	 * Apply the retry policy - cannot be used if a custom retry template has been provided, or if retry
+	 * Apply the retry policy - cannot be used if a custom retry template has been provided or if the retry
 	 * policy has been customized already.
 	 * @param policy The policy.
 	 * @return this.
 	 */
 	public B retryPolicy(RetryPolicy policy) {
-		Assert.isTrue(!this.templateAltered, "cannot set the retry policy if max attempts or back off policy or options changed");
+		Assert.isTrue(!this.templateAltered,
+				"cannot set the retry policy if max attempts or back off policy or options changed");
 		this.retryPolicy = policy;
 		this.retryPolicySet = true;
 		this.templateAltered = true;
@@ -135,7 +137,7 @@ public abstract class RetryInterceptorBuilder<B extends RetryInterceptorBuilder<
 	}
 
 	/**
-	 * Apply the backoff options. Cannot be used if a custom retry operations, or back off policy has been set.
+	 * Apply the backoff options. Cannot be used if a custom retry operations or back off policy has been set.
 	 * @param initialInterval The initial interval.
 	 * @param multiplier The multiplier.
 	 * @param maxInterval The max interval.
@@ -185,8 +187,8 @@ public abstract class RetryInterceptorBuilder<B extends RetryInterceptorBuilder<
 		}
 
 		/**
-		 * Stateful retry requires messages to be identifiable. Default is to use the message id header; use a custom
-		 * implementation if the message id is not present or not reliable.
+		 * Stateful retry requires messages to be identifiable. The default is to use the message id header;
+		 * use a custom implementation if the message id is not present or not reliable.
 		 * @param messageKeyGenerator The key generator.
 		 * @return this.
 		 */
@@ -196,7 +198,7 @@ public abstract class RetryInterceptorBuilder<B extends RetryInterceptorBuilder<
 		}
 
 		/**
-		 * Apply a custom new message identifier. Default is to use the redelivered header.
+		 * Apply a custom new message identifier. The default is to use the redelivered header.
 		 * @param newMessageIdentifier The new message identifier.
 		 * @return this.
 		 */

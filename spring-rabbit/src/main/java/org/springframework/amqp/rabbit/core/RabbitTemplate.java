@@ -127,7 +127,8 @@ import org.springframework.util.StringUtils;
  *
  * <p>
  * The default settings are for non-transactional messaging, which reduces the amount of data exchanged with the broker.
- * To use a new transaction for every send or receive set the {@link #setChannelTransacted(boolean) channelTransacted}
+ * To use a new transaction for every {@code send} or {@code receive} operation set the
+ * {@link #setChannelTransacted(boolean) channelTransacted}
  * flag. To extend the transaction over multiple invocations (more efficient), you can use a Spring transaction to
  * bracket the calls (with <code>channelTransacted=true</code> as well).
  * </p>
@@ -145,8 +146,9 @@ import org.springframework.util.StringUtils;
  * The "send" methods all have overloaded versions that allow you to explicitly target an exchange and a routing key, or
  * you can set default values to be used in all send operations. The plain "receive" methods allow you to explicitly
  * target a queue to receive from, or you can set a default value for the template that applies to all explicit
- * receives. The convenience methods for send <b>and</b> receive use the sender defaults if no exchange or routing key
- * is specified, but they always use a temporary queue for the receive leg, so the default queue is ignored.
+ * {@code receive} operation. The convenience methods for {@code send} <b>and</b> {@code receive} operation
+ * use the sender defaults if no exchange or routing key is specified, but they always use a temporary queue
+ * for the {@code receive} operation leg, so the default queue is ignored.
  * </p>
  *
  * @author Mark Pollack
@@ -161,6 +163,7 @@ import org.springframework.util.StringUtils;
  * @author Leonardo Ferreira
  * @author Ngoc Nhan
  * @author Jeongjun Min
+ * @author Stephane Nicoll
  *
  * @since 1.0
  */
@@ -311,7 +314,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	/**
-	 * Set up the default strategies. Subclasses can override if necessary.
+	 * Set up the default strategies. Subclasses can override this method if necessary.
 	 */
 	protected void initDefaultStrategies() {
 		setMessageConverter(new SimpleMessageConverter());
@@ -386,7 +389,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	/**
 	 * The name of the default queue to receive messages from when none is specified explicitly.
-	 * @param queue the default queue name to use for receive
+	 * @param queue the default queue name to use for {@code receive} operation.
 	 * @since 2.1.2
 	 */
 	public void setDefaultReceiveQueue(String queue) {
@@ -433,10 +436,10 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	/**
-	 * Specify the receive timeout in milliseconds when using {@code receive()} methods (for {@code sendAndReceive()}
-	 * methods, refer to {@link #setReplyTimeout(long) replyTimeout}. By default, the value is zero, which
-	 * means the {@code receive()} methods will return {@code null} immediately if there is no message
-	 * available. Set to less than zero to wait for a message indefinitely.
+	 * Specify the {@code receive} operation timeout in milliseconds when using {@code receive()}
+	 * methods (for {@code sendAndReceive()} methods, refer to {@link #setReplyTimeout(long) replyTimeout}.
+	 * By default, the value is zero, which means the {@code receive()} methods will return {@code null}
+	 * immediately if there is no message available. Set to less than zero to wait for a message indefinitely.
 	 * @param receiveTimeout the timeout.
 	 * @since 1.5
 	 */
@@ -474,8 +477,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	/**
 	 * Set the {@link MessagePropertiesConverter} for this template. This converter is used to convert between raw byte
-	 * content in the message headers and plain Java objects. In particular there are limitations when dealing with very
-	 * long string headers, which hopefully are rare in practice, but if you need to use long headers you might need to
+	 * content in the message headers and plain Java objects. In particular, there are limitations when dealing with very
+	 * long string headers, which hopefully are rare in practice, but if you need to use long headers, you might need to
 	 * inject a special converter here.
 	 * @param messagePropertiesConverter The message properties converter.
 	 */
@@ -558,11 +561,11 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * {@link ConnectionFactory} from {@link AbstractRoutingConnectionFactory}
 	 * directly.
 	 * <p>
-	 * If this expression is evaluated to {@code null}, we fallback to the normal
+	 * If this expression is evaluated to {@code null}, we fall back to the normal
 	 * {@link AbstractRoutingConnectionFactory} logic.
 	 * <p>
 	 * If there is no target {@link ConnectionFactory} with the evaluated {@code lookupKey},
-	 * we fallback to the normal {@link AbstractRoutingConnectionFactory} logic
+	 * we fall back to the normal {@link AbstractRoutingConnectionFactory} logic
 	 * only if its property {@code lenientFallback == true}.
 	 * <p>
 	 *  This expression is used for {@code send} operations.
@@ -582,11 +585,11 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * {@link ConnectionFactory} from {@link AbstractRoutingConnectionFactory}
 	 * directly.
 	 * <p>
-	 * If this expression is evaluated to {@code null}, we fallback to the normal
+	 * If this expression is evaluated to {@code null}, we fall back to the normal
 	 * {@link AbstractRoutingConnectionFactory} logic.
 	 * <p>
 	 * If there is no target {@link ConnectionFactory} with the evaluated {@code lookupKey},
-	 * we fallback to the normal {@link AbstractRoutingConnectionFactory} logic
+	 * we fall back to the normal {@link AbstractRoutingConnectionFactory} logic
 	 * only if its property {@code lenientFallback == true}.
 	 * <p>
 	 *  This expression is used for {@code receive} operations.
@@ -598,7 +601,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	/**
-	 * If set to 'correlationId' (default) the correlationId property
+	 * If set to 'correlationId' (default), the correlationId property
 	 * will be used; otherwise the supplied key will be used.
 	 * @param correlationKey the correlationKey to set
 	 */
@@ -620,7 +623,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	/**
 	 * Add a {@linkplain RecoveryCallback recovery callback} that is used when an
 	 * {@link RetryTemplate#execute(Retryable) execution} has exhausted its retry policy.
-	 * The given callback should produce result compatible with the return type produced
+	 * The given callback should produce a result compatible with the return type produced
 	 * by {@link #execute(ChannelCallback)}.
 	 * @param recoveryCallback The recovery callback
 	 * @since 4.0
@@ -652,7 +655,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * {@link BasicProperties} from {@link MessageProperties}. May be used for operations
 	 * such as compression. Processors are invoked in order, depending on {@code PriorityOrder},
 	 * {@code Order} and finally unordered.
-	 * @param beforePublishPostProcessors the post processor.
+	 * @param beforePublishPostProcessors the post-processor.
 	 * @since 1.4.2
 	 * @see #addBeforePublishPostProcessors(MessagePostProcessor...)
 	 */
@@ -671,7 +674,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * <p>
 	 * In contrast to {@link #setBeforePublishPostProcessors(MessagePostProcessor...)}, this
 	 * method does not override the previously added beforePublishPostProcessors.
-	 * @param beforePublishPostProcessors the post processor.
+	 * @param beforePublishPostProcessors the post-processor.
 	 * @since 2.1.4
 	 */
 	public void addBeforePublishPostProcessors(MessagePostProcessor... beforePublishPostProcessors) {
@@ -686,7 +689,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	/**
 	 * Remove the provided {@link MessagePostProcessor} from the {@link #beforePublishPostProcessors} list.
 	 * @param beforePublishPostProcessor the MessagePostProcessor to remove.
-	 * @return the boolean if the provided post processor has been removed.
+	 * @return the boolean if the provided post-processor has been removed.
 	 * @since 2.1.4
 	 * @see #addBeforePublishPostProcessors(MessagePostProcessor...)
 	 */
@@ -703,7 +706,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * and before any message conversion is performed.
 	 * May be used for operations such as decompression. Processors are invoked in order,
 	 * depending on {@code PriorityOrder}, {@code Order} and finally unordered.
-	 * @param afterReceivePostProcessors the post processor.
+	 * @param afterReceivePostProcessors the post-processor.
 	 * @since 1.5
 	 * @see #addAfterReceivePostProcessors(MessagePostProcessor...)
 	 */
@@ -732,7 +735,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * <p>
 	 * In contrast to {@link #setAfterReceivePostProcessors(MessagePostProcessor...)}, this
 	 * method does not override the previously added afterReceivePostProcessors.
-	 * @param afterReceivePostProcessors the post processor.
+	 * @param afterReceivePostProcessors the post-processor.
 	 * @since 2.1.4
 	 */
 	public void addAfterReceivePostProcessors(MessagePostProcessor... afterReceivePostProcessors) {
@@ -747,7 +750,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	/**
 	 * Remove the provided {@link MessagePostProcessor} from the {@link #afterReceivePostProcessors} list.
 	 * @param afterReceivePostProcessor the MessagePostProcessor to remove.
-	 * @return the boolean if the provided post processor has been removed.
+	 * @return the boolean if the provided post-processor has been removed.
 	 * @since 2.1.4
 	 * @see #addAfterReceivePostProcessors(MessagePostProcessor...)
 	 */
@@ -762,7 +765,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	/**
 	 * Set a {@link CorrelationDataPostProcessor} to be invoked before publishing a message.
 	 * Correlation data is used to correlate publisher confirms.
-	 * @param correlationDataPostProcessor the post processor.
+	 * @param correlationDataPostProcessor the post-processor.
 	 * @since 1.6.7
 	 * @see #setConfirmCallback(ConfirmCallback)
 	 */
@@ -789,7 +792,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * Set whether to use a {@link DirectReplyToMessageListenerContainer} when
 	 * direct reply-to is available and being used. When false, a new consumer is created
 	 * for each request (the mechanism used in versions prior to 2.0). Default true.
-	 * @param useDirectReplyToContainer set to false to use a consumer per request.
+	 * @param useDirectReplyToContainer set to {@code false} to use a consumer per request.
 	 * @since 2.0
 	 * @see #setUseTemporaryReplyQueues(boolean)
 	 */
@@ -799,7 +802,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	/**
 	 * Set an expression to be evaluated to set the userId message property if it
-	 * evaluates to a non-null value and the property is not already set in the
+	 * evaluates to a non-null value and the property is not yet set in the
 	 * message to be sent.
 	 * See <a href="https://www.rabbitmq.com/validated-user-id.html">validated-user-id</a>
 	 * @param userIdExpression the expression.
@@ -811,7 +814,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	/**
 	 * Set an expression to be evaluated to set the userId message property if it
-	 * evaluates to a non-null value and the property is not already set in the
+	 * evaluates to a non-null value and the property is not yet set in the
 	 * message to be sent.
 	 * See <a href="https://www.rabbitmq.com/validated-user-id.html">validated-user-id</a>
 	 * @param userIdExpression the expression.
@@ -838,7 +841,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	/**
 	 * Set to true to use correlation id provided by the message instead of generating
 	 * the correlation id for request/reply scenarios. The correlation id must be unique
-	 * for all in-process requests to avoid cross talk.
+	 * for all in-process requests to avoid cross-talk.
 	 * <p>
 	 * <b>Users must therefore take create care to ensure uniqueness.</b>
 	 * @param userCorrelationId true to use user correlation data.
@@ -905,7 +908,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	/**
-	 * Invoked by the container during startup so it can verify the queue is correctly
+	 * Invoked by the container during startup, so it can verify the queue is correctly
 	 * configured (if a simple reply queue name is used instead of exchange/routingKey).
 	 * @return the queue name, if configured.
 	 * @since 1.5
@@ -1197,7 +1200,9 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public void convertAndSend(@Nullable String exchange, @Nullable String routingKey, final Object object) throws AmqpException {
+	public void convertAndSend(@Nullable String exchange, @Nullable String routingKey, final Object object)
+			throws AmqpException {
+
 		convertAndSend(exchange, routingKey, object, (CorrelationData) null);
 	}
 
@@ -1675,7 +1680,9 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public @Nullable Object convertSendAndReceive(@Nullable String routingKey, final Object message) throws AmqpException {
+	public @Nullable Object convertSendAndReceive(@Nullable String routingKey, final Object message)
+			throws AmqpException {
+
 		return convertSendAndReceive(routingKey, message, (CorrelationData) null);
 	}
 
@@ -1687,8 +1694,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public @Nullable Object convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey, Object message)
-			throws AmqpException {
+	public @Nullable Object convertSendAndReceive(@Nullable String exchange, @Nullable String routingKey,
+			Object message) throws AmqpException {
 
 		return convertSendAndReceive(exchange, routingKey, message, (CorrelationData) null);
 	}
@@ -1780,8 +1787,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public <T> @Nullable T convertSendAndReceiveAsType(@Nullable String exchange, @Nullable String routingKey, Object message,
-			ParameterizedTypeReference<T> responseType) throws AmqpException {
+	public <T> @Nullable T convertSendAndReceiveAsType(@Nullable String exchange, @Nullable String routingKey,
+			Object message, ParameterizedTypeReference<T> responseType) throws AmqpException {
 
 		return convertSendAndReceiveAsType(exchange, routingKey, message, (CorrelationData) null, responseType);
 	}
@@ -1880,7 +1887,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @param exchange the exchange name
 	 * @param routingKey the routing key
 	 * @param message the message to send
-	 * @param correlationData the correlation data for confirms
+	 * @param correlationData the correlation data for {@code confirms}
 	 * @return the message that is received in reply
 	 */
 	protected @Nullable Message doSendAndReceive(@Nullable String exchange, @Nullable String routingKey,
@@ -2891,8 +2898,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	/**
 	 * Callback to recover a request that has exhausted its retry policy.
-	 *
-	 * @author Stephane Nicoll
 	 */
 	@FunctionalInterface
 	public interface RecoveryCallback {

@@ -25,6 +25,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.aopalliance.aop.Advice;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -53,6 +54,8 @@ import static org.awaitility.Awaitility.await;
 /**
  * @author Gary Russell
  * @author Arnaud Cogoluègnes
+ * @author Stephane Nicoll
+ *
  * @since 1.1.2
  */
 @RabbitAvailable
@@ -150,7 +153,7 @@ public class MissingIdRetryTests {
 		RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
 		ConnectionFactory connectionFactory = ctx.getBean(ConnectionFactory.class);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
-		final Set<String> processed = new HashSet<>();
+		final Set<@Nullable String> processed = new HashSet<>();
 		final CountDownLatch cdl = new CountDownLatch(4);
 		container.setMessageListener(m -> {
 			cdl.countDown();
@@ -189,7 +192,7 @@ public class MissingIdRetryTests {
 	}
 
 	@SuppressWarnings("unchecked")
-	private Map<String, Object> getCache(Advice retryInterceptor) {
+	private static Map<String, Object> getCache(Advice retryInterceptor) {
 		return (Map<String, Object>) Objects.requireNonNull(ReflectionTestUtils.getField(retryInterceptor, "cache"));
 	}
 

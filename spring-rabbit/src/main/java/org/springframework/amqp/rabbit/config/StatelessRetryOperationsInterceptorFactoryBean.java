@@ -32,7 +32,7 @@ import org.springframework.core.retry.Retryable;
 /**
  * Convenient factory bean for creating a stateless retry interceptor for use in a message listener container, giving
  * you a large amount of control over the behaviour of a container when a listener fails. To control the number of retry
- * attempt or the backoff in between attempts, supply a customized {@link RetryPolicy}. Stateless retry is appropriate
+ * attempts or the backoff in between attempts, supply a customized {@link RetryPolicy}. Stateless retry is appropriate
  * if your listener can be called repeatedly between failures with no side effects. The semantics of stateless retry
  * mean that a listener exception is not propagated to the container until the retry attempts are exhausted. When the
  * retry attempts are exhausted it can be processed using a {@link MessageRecoverer} if one is provided, in the same
@@ -41,6 +41,7 @@ import org.springframework.core.retry.Retryable;
  *
  * @author Dave Syer
  * @author Gary Russell
+ * @author Stephane Nicoll
  *
  * @see RetryOperations#execute(Retryable)
  */

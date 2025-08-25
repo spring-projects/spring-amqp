@@ -30,7 +30,7 @@ import org.springframework.util.Assert;
  * Convenient factory bean for creating a stateless retry interceptor for use in a
  * {@link StreamListenerContainer} when consuming native stream messages, giving you a
  * large amount of control over the behavior of a container when a listener fails. To
- * control the number of retry attempt or the backoff in between attempts, supply a
+ * control the number of retry attempts or the backoff in between attempts, supply a
  * customized {@link RetryOperations}. Stateless retry is appropriate if your listener can
  * be called repeatedly between failures with no side effects. The semantics of stateless
  * retry mean that a listener exception is not propagated to the container until the retry
@@ -38,6 +38,7 @@ import org.springframework.util.Assert;
  * a {@link StreamMessageRecoverer} if one is provided.
  *
  * @author Gary Russell
+ * @author Stephane Nicoll
  */
 public class StreamRetryOperationsInterceptorFactoryBean extends StatelessRetryOperationsInterceptorFactoryBean {
 
