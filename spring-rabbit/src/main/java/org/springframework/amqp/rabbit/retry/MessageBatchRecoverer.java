@@ -18,8 +18,6 @@ package org.springframework.amqp.rabbit.retry;
 
 import java.util.List;
 
-import org.jspecify.annotations.Nullable;
-
 import org.springframework.amqp.core.Message;
 
 /**
@@ -37,15 +35,15 @@ import org.springframework.amqp.core.Message;
 public interface MessageBatchRecoverer extends MessageRecoverer {
 
 	@Override
-	default void recover(Message message, @Nullable Throwable cause) {
+	default void recover(Message message, Throwable cause) {
 		throw new IllegalStateException("MessageBatchRecoverer configured with a non-batch listener");
 	}
 
 	/**
-	 * Callback for message batch that was consumed but failed all retry attempts.
+	 * Callback for a message batch that was consumed but failed all retry attempts.
 	 * @param messages the messages to recover
 	 * @param cause the cause of the error
 	 */
-	void recover(List<Message> messages, @Nullable Throwable cause);
+	void recover(List<Message> messages, Throwable cause);
 
 }
