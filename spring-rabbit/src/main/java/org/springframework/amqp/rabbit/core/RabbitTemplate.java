@@ -50,7 +50,6 @@ import com.rabbitmq.client.GetResponse;
 import com.rabbitmq.client.Return;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
-import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import org.jspecify.annotations.Nullable;
 
@@ -2455,17 +2454,20 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	protected void observeTheSend(Channel channel, Message message, boolean mandatory, String exch, String rKey) {
-
 		if (!this.observationRegistryObtained && this.observationEnabled) {
 			obtainObservationRegistry(this.applicationContext);
 			this.observationRegistryObtained = true;
 		}
 		ObservationRegistry registry = getObservationRegistry();
-		Observation observation = RabbitTemplateObservation.TEMPLATE_OBSERVATION.observation(this.observationConvention,
-				DefaultRabbitTemplateObservationConvention.INSTANCE,
-				() -> new RabbitMessageSenderContext(message, this.beanName, exch, rKey), registry);
-
-		observation.observe(() -> sendToRabbit(channel, exch, rKey, mandatory, message));
+		if (registry.isNoop()) {
+			sendToRabbit(channel, exch, rKey, mandatory, message);
+		}
+		else {
+			RabbitTemplateObservation.TEMPLATE_OBSERVATION.observation(this.observationConvention,
+							DefaultRabbitTemplateObservationConvention.INSTANCE,
+							() -> new RabbitMessageSenderContext(message, this.beanName, exch, rKey), registry)
+					.observe(() -> sendToRabbit(channel, exch, rKey, mandatory, message));
+		}
 	}
 
 	/**

@@ -323,15 +323,19 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 			if (micrometerHolder != null) {
 				sample = micrometerHolder.start();
 			}
-			Observation observation =
-					RabbitStreamListenerObservation.STREAM_LISTENER_OBSERVATION.observation(this.observationConvention,
-							DefaultRabbitStreamListenerObservationConvention.INSTANCE,
-							() -> new RabbitStreamMessageReceiverContext(message, getListenerId(), this.streamName),
-							registry);
+			Observation observation = null;
+			if (!registry.isNoop()) {
+				observation =
+						RabbitStreamListenerObservation.STREAM_LISTENER_OBSERVATION.observation(this.observationConvention,
+								DefaultRabbitStreamListenerObservationConvention.INSTANCE,
+								() -> new RabbitStreamMessageReceiverContext(message, getListenerId(), this.streamName),
+								registry);
+			}
+
 			Object finalSample = sample;
 			StreamMessageListener streamListenerToUse = this.streamListener;
 			if (streamListenerToUse != null) {
-				observation.observe(() -> {
+				Runnable listenerCall = () -> {
 					try {
 						streamListenerToUse.onStreamMessage(message, context);
 						if (micrometerHolder != null && finalSample != null) {
@@ -350,13 +354,19 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 						}
 						throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
 					}
-				});
+				};
+				if (observation != null) {
+					observation.observe(listenerCall);
+				}
+				else {
+					listenerCall.run();
+				}
 			}
 			else {
 				Message message2 = this.streamConverter.toMessage(message, new StreamMessageProperties(context));
 				if (this.messageListener instanceof ChannelAwareMessageListener channelAwareMessageListener) {
 					try {
-						observation.observe(() -> {
+						Runnable listenerCall = () -> {
 							try {
 								channelAwareMessageListener.onMessage(message2, null);
 								if (micrometerHolder != null && finalSample != null) {
@@ -376,7 +386,13 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 								}
 								throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
 							}
-						});
+						};
+						if (observation != null) {
+							observation.observe(listenerCall);
+						}
+						else {
+							listenerCall.run();
+						}
 					}
 					catch (Exception ex) { // NOSONAR
 						this.logger.error(ex, "Listener threw an exception");
@@ -385,7 +401,12 @@ public class StreamListenerContainer extends ObservableListenerContainer {
 				else {
 					MessageListener messageListenerToUse = this.messageListener;
 					Assert.state(messageListenerToUse != null, "'messageListener' or 'streamListener' is required");
-					observation.observe(() -> messageListenerToUse.onMessage(message2));
+					if (observation != null) {
+						observation.observe(() -> messageListenerToUse.onMessage(message2));
+					}
+					else {
+						messageListenerToUse.onMessage(message2);
+					}
 				}
 			}
 		});

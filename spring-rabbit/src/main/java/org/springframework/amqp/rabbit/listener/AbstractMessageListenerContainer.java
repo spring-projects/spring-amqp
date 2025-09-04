@@ -1510,7 +1510,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	protected void executeListener(Channel channel, Object data) {
 		Observation observation;
 		ObservationRegistry registry = getObservationRegistry();
-		if (data instanceof Message message) {
+		if (data instanceof Message message && !registry.isNoop()) {
 			observation = RabbitListenerObservation.LISTENER_OBSERVATION.observation(this.observationConvention,
 					DefaultRabbitListenerObservationConvention.INSTANCE,
 					() -> new RabbitMessageReceiverContext(message, getListenerId()), registry);
