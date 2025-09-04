@@ -81,7 +81,8 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 
 	private String beanName;
 
-	private ProducerCustomizer producerCustomizer = (name, builder) -> { };
+	private ProducerCustomizer producerCustomizer = (name, builder) -> {
+	};
 
 	private boolean observationEnabled;
 
@@ -105,7 +106,6 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 		this.environment = environment;
 		this.streamName = streamName;
 	}
-
 
 	private Producer createOrGetProducer() {
 		if (this.producer == null) {
@@ -165,7 +165,6 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 			this.lock.unlock();
 		}
 	}
-
 
 	/**
 	 * Set a converter for {@link #convertAndSend(Object)} operations.
@@ -239,12 +238,10 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 		return this.messageConverter;
 	}
 
-
 	@Override
 	public StreamMessageConverter streamMessageConverter() {
 		return this.streamConverter;
 	}
-
 
 	@Override
 	public CompletableFuture<Boolean> send(Message message) {
@@ -274,7 +271,6 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 		return send(message2);
 	}
 
-
 	@Override
 	public CompletableFuture<Boolean> send(com.rabbitmq.stream.Message message) {
 		CompletableFuture<Boolean> future = new CompletableFuture<>();
@@ -283,17 +279,23 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 	}
 
 	private void observeSend(com.rabbitmq.stream.Message message, CompletableFuture<Boolean> future) {
-		Observation observation = RabbitStreamTemplateObservation.STREAM_TEMPLATE_OBSERVATION.observation(
-				this.observationConvention, DefaultRabbitStreamTemplateObservationConvention.INSTANCE,
-				() -> new RabbitStreamMessageSenderContext(message, this.beanName, this.streamName),
-					obtainObservationRegistry());
-		observation.start();
+		ObservationRegistry registry = obtainObservationRegistry();
+		Observation observation = null;
+		if (registry != null && !registry.isNoop()) {
+			observation = RabbitStreamTemplateObservation.STREAM_TEMPLATE_OBSERVATION.observation(
+					this.observationConvention, DefaultRabbitStreamTemplateObservationConvention.INSTANCE,
+					() -> new RabbitStreamMessageSenderContext(message, this.beanName, this.streamName),
+					registry);
+			observation.start();
+		}
 		try {
 			createOrGetProducer().send(message, handleConfirm(future, observation));
 		}
 		catch (Exception ex) {
-			observation.error(ex);
-			observation.stop();
+			if (observation != null) {
+				observation.error(ex);
+				observation.stop();
+			}
 			future.completeExceptionally(ex);
 		}
 	}
@@ -316,11 +318,13 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 		return createOrGetProducer().messageBuilder();
 	}
 
-	private ConfirmationHandler handleConfirm(CompletableFuture<Boolean> future, Observation observation) {
+	private ConfirmationHandler handleConfirm(CompletableFuture<Boolean> future, @Nullable Observation observation) {
 		return confStatus -> {
 			if (confStatus.isConfirmed()) {
 				future.complete(true);
-				observation.stop();
+				if (observation != null) {
+					observation.stop();
+				}
 			}
 			else {
 				int code = confStatus.getCode();
@@ -332,8 +336,10 @@ public class RabbitStreamTemplate implements RabbitStreamOperations, Application
 					default -> "Unknown code: " + code;
 				};
 				StreamSendException ex = new StreamSendException(errorMessage, code);
-				observation.error(ex);
-				observation.stop();
+				if (observation != null) {
+					observation.error(ex);
+					observation.stop();
+				}
 				future.completeExceptionally(ex);
 			}
 		};
