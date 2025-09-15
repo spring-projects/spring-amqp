@@ -127,7 +127,9 @@ public class LogLevelsCondition
 		LogLevels logLevels = store.remove(STORE_ANNOTATION_KEY, LogLevels.class);
 		if (logLevels != null) {
 			LevelsContainer container = store.get(STORE_CONTAINER_KEY, LevelsContainer.class);
-			JUnitUtils.revertLevels(context.getDisplayName(), container);
+			if (container != null) {
+				JUnitUtils.revertLevels(context.getDisplayName(), container);
+			}
 			store.remove(STORE_CONTAINER_KEY);
 		}
 		this.loggedMethods.clear();
