@@ -193,7 +193,7 @@ public class MissingIdRetryTests {
 
 	@SuppressWarnings("unchecked")
 	private static Map<String, Object> getCache(Advice retryInterceptor) {
-		return (Map<String, Object>) Objects.requireNonNull(ReflectionTestUtils.getField(retryInterceptor, "cache"));
+		return (Map<String, Object>) Objects.requireNonNull(ReflectionTestUtils.getField(retryInterceptor, "retryStateCache"));
 	}
 
 	public class POJO {

@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.config;
 
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.retry.MessageKeyGenerator;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbit.retry.NewMessageIdentifier;
@@ -25,9 +26,9 @@ import org.springframework.core.retry.RetryPolicy;
 
 /**
  * Convenient factory bean for creating a stateful retry interceptor for use in a message listener container, giving you
- * a large amount of control over the behaviour of a container when a listener fails. To control the number of retry
+ * a large amount of control over the behavior of a container when a listener fails. To control the number of retry
  * attempts or the backoff in between attempts, supply a customized {@link RetryPolicy}. Stateful retry is appropriate
- * if your listener is using a transactional resource that needs to be rolled back on an exception (e.g. a stateful
+ * if your listener is using a transactional resource that needs to be rolled back on an exception (e.g., a stateful
  * connection to a back end server). JPA is the canonical example. The semantics of stateful retry mean that a listener
  * exception is propagated to the container so that it can force a rollback. When the message is redelivered it has to
  * be recognised (hence the {@link MessageKeyGenerator} strategy), and when the retry attempts are exhausted it will be
@@ -44,9 +45,20 @@ import org.springframework.core.retry.RetryPolicy;
  */
 public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetryOperationsInterceptorFactoryBean {
 
-	private @Nullable MessageKeyGenerator messageKeyGenerator;
+	private MessageKeyGenerator messageKeyGenerator =
+			(message) -> {
+				MessageProperties messageProperties = message.getMessageProperties();
+				String messageId = messageProperties.getMessageId();
+				if (messageId == null && Boolean.TRUE.equals(messageProperties.isRedelivered())) {
+					messageProperties.setFinalRetryForMessageWithNoId(true);
+				}
+				return messageId;
+			};
 
-	private @Nullable NewMessageIdentifier newMessageIdentifier;
+	private NewMessageIdentifier newMessageIdentifier =
+			(message) -> Boolean.FALSE.equals(message.getMessageProperties().isRedelivered());
+
+	private @Nullable Integer stateCacheSize;
 
 	public void setMessageKeyGenerator(MessageKeyGenerator messageKeyGenerator) {
 		this.messageKeyGenerator = messageKeyGenerator;
@@ -56,30 +68,14 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 		this.newMessageIdentifier = newMessageIdentifier;
 	}
 
+	public void setStateCacheSize(int stateCacheSize) {
+		this.stateCacheSize = stateCacheSize;
+	}
+
 	@Override
 	public StatefulRetryOperationsInterceptor getObject() {
-		return new StatefulRetryOperationsInterceptor(getMessageKeyGenerator(),
-				getNewMessageIdentifier(), getRetryPolicy(), getMessageRecoverer());
-	}
-
-	private NewMessageIdentifier getNewMessageIdentifier() {
-		if (this.newMessageIdentifier != null) {
-			return this.newMessageIdentifier;
-		}
-		return (message) -> Boolean.FALSE.equals(message.getMessageProperties().isRedelivered());
-	}
-
-	private MessageKeyGenerator getMessageKeyGenerator() {
-		if (this.messageKeyGenerator != null) {
-			return this.messageKeyGenerator;
-		}
-		return (message) -> {
-			String messageId = message.getMessageProperties().getMessageId();
-			if (messageId == null && Boolean.TRUE.equals(message.getMessageProperties().isRedelivered())) {
-				message.getMessageProperties().setFinalRetryForMessageWithNoId(true);
-			}
-			return messageId;
-		};
+		return new StatefulRetryOperationsInterceptor(this.messageKeyGenerator,
+				this.newMessageIdentifier, getRetryPolicy(), getMessageRecoverer(), this.stateCacheSize);
 	}
 
 	@Override

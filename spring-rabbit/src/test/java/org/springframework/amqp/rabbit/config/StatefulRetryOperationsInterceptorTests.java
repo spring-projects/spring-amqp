@@ -61,16 +61,16 @@ class StatefulRetryOperationsInterceptorTests {
 	private final NewMessageIdentifier newMessageIdentifier;
 
 	StatefulRetryOperationsInterceptorTests() {
-		this.message = mock(Message.class);
-		this.invocation = mock(MethodInvocation.class);
-		given(this.invocation.getArguments()).willReturn(new Object[] { "dummy", this.message });
-		this.messageKeyGenerator = mock(MessageKeyGenerator.class);
-		this.newMessageIdentifier = mock(NewMessageIdentifier.class);
+		this.message = mock();
+		this.invocation = mock();
+		given(this.invocation.getArguments()).willReturn(new Object[] {"dummy", this.message});
+		this.messageKeyGenerator = mock();
+		this.newMessageIdentifier = mock();
 	}
 
 	@Test
 	void invokeWhenArgsHasNoArgument() {
-		MethodInvocation invalidInvocation = mock(MethodInvocation.class);
+		MethodInvocation invalidInvocation = mock();
 		given(invalidInvocation.getArguments()).willReturn(new Object[] {});
 
 		StatefulRetryOperationsInterceptor interceptor = createInterceptor(null, null);
@@ -81,8 +81,8 @@ class StatefulRetryOperationsInterceptorTests {
 
 	@Test
 	void invokeWhenArgsHasSingleArgument() {
-		MethodInvocation invalidInvocation = mock(MethodInvocation.class);
-		given(invalidInvocation.getArguments()).willReturn(new Object[] { "dummy" });
+		MethodInvocation invalidInvocation = mock();
+		given(invalidInvocation.getArguments()).willReturn(new Object[] {"dummy"});
 
 		StatefulRetryOperationsInterceptor interceptor = createInterceptor(null, null);
 		assertThatIllegalArgumentException()
@@ -92,8 +92,8 @@ class StatefulRetryOperationsInterceptorTests {
 
 	@Test
 	void invokeWhenArgsHasSecondArgumentWithInvalidType() {
-		MethodInvocation invalidInvocation = mock(MethodInvocation.class);
-		given(invalidInvocation.getArguments()).willReturn(new Object[] { "dummy", "invalid" });
+		MethodInvocation invalidInvocation = mock();
+		given(invalidInvocation.getArguments()).willReturn(new Object[] {"dummy", "invalid"});
 
 		StatefulRetryOperationsInterceptor interceptor = createInterceptor(null, null);
 		assertThatIllegalArgumentException()
@@ -144,8 +144,8 @@ class StatefulRetryOperationsInterceptorTests {
 
 	@Test
 	void invokeWhenInitialInvocationFailsCreateCacheEntry() throws Throwable {
-		BackOffExecution backOffExecution = mock(BackOffExecution.class);
-		BackOff backOff = mock(BackOff.class);
+		BackOffExecution backOffExecution = mock();
+		BackOff backOff = mock();
 		given(backOff.start()).willReturn(backOffExecution);
 		RetryPolicy retryPolicy = RetryPolicy.builder().backOff(backOff).build();
 		Exception failure = new IllegalStateException("test");
@@ -161,9 +161,9 @@ class StatefulRetryOperationsInterceptorTests {
 
 	@Test
 	void invokeWhenRetryFailsUpdatesCacheEntry() throws Throwable {
-		BackOffExecution backOffExecution = mock(BackOffExecution.class);
+		BackOffExecution backOffExecution = mock();
 		given(backOffExecution.nextBackOff()).willReturn(0L);
-		BackOff backOff = mock(BackOff.class);
+		BackOff backOff = mock();
 		given(backOff.start()).willReturn(backOffExecution);
 		RetryPolicy retryPolicy = RetryPolicy.builder().backOff(backOff).build();
 		Exception initialAttemptFailure = new IllegalStateException("test");
@@ -182,9 +182,9 @@ class StatefulRetryOperationsInterceptorTests {
 
 	@Test
 	void invokeWhenRetrySucceedsCleansCache() throws Throwable {
-		BackOffExecution backOffExecution = mock(BackOffExecution.class);
+		BackOffExecution backOffExecution = mock();
 		given(backOffExecution.nextBackOff()).willReturn(0L);
-		BackOff backOff = mock(BackOff.class);
+		BackOff backOff = mock();
 		given(backOff.start()).willReturn(backOffExecution);
 		RetryPolicy retryPolicy = RetryPolicy.builder().backOff(backOff).build();
 		Exception initialAttemptFailure = new IllegalStateException("test");
@@ -202,9 +202,9 @@ class StatefulRetryOperationsInterceptorTests {
 
 	@Test
 	void invokeWhenRetryPolicyShouldNotRetryThrowsImmediateAcknowledgeAmqpExceptionAndCleansCache() throws Throwable {
-		BackOffExecution backOffExecution = mock(BackOffExecution.class);
+		BackOffExecution backOffExecution = mock();
 		given(backOffExecution.nextBackOff()).willReturn(0L);
-		BackOff backOff = mock(BackOff.class);
+		BackOff backOff = mock();
 		given(backOff.start()).willReturn(backOffExecution);
 		Exception initialAttemptFailure = new IllegalStateException("test");
 		Predicate<Throwable> shouldRetry = mock();
@@ -225,9 +225,9 @@ class StatefulRetryOperationsInterceptorTests {
 
 	@Test
 	void invokesWhenRetriesAreExhaustedThrowsImmediateAcknowledgeAmqpExceptionAndCleansCache() throws Throwable {
-		BackOffExecution backOffExecution = mock(BackOffExecution.class);
+		BackOffExecution backOffExecution = mock();
 		given(backOffExecution.nextBackOff()).willReturn(0L).willReturn(0L).willReturn(BackOffExecution.STOP);
-		BackOff backOff = mock(BackOff.class);
+		BackOff backOff = mock();
 		given(backOff.start()).willReturn(backOffExecution);
 		RetryPolicy retryPolicy = RetryPolicy.builder().backOff(backOff).build();
 		Exception initialAttemptFailure = new IllegalStateException("test");
@@ -250,9 +250,9 @@ class StatefulRetryOperationsInterceptorTests {
 
 	@Test
 	void invokeWhenRetryInvokesNewMessageIdentifier() throws Throwable {
-		BackOffExecution backOffExecution = mock(BackOffExecution.class);
+		BackOffExecution backOffExecution = mock();
 		given(backOffExecution.nextBackOff()).willReturn(0L);
-		BackOff backOff = mock(BackOff.class);
+		BackOff backOff = mock();
 		given(backOff.start()).willReturn(backOffExecution);
 		RetryPolicy retryPolicy = RetryPolicy.builder().backOff(backOff).build();
 		Exception initialAttemptFailure = new IllegalStateException("test");
@@ -273,9 +273,9 @@ class StatefulRetryOperationsInterceptorTests {
 
 	@Test
 	void invokeWhenRetryInvokesNewMessageIdentifierAndNewMessageResetRetryState() throws Throwable {
-		BackOffExecution backOffExecution1 = mock(BackOffExecution.class);
-		BackOffExecution backOffExecution2 = mock(BackOffExecution.class);
-		BackOff backOff = mock(BackOff.class);
+		BackOffExecution backOffExecution1 = mock();
+		BackOffExecution backOffExecution2 = mock();
+		BackOff backOff = mock();
 		given(backOff.start()).willReturn(backOffExecution1).willReturn(backOffExecution2);
 		RetryPolicy retryPolicy = RetryPolicy.builder().backOff(backOff).build();
 		Exception initialAttemptFailure = new IllegalStateException("test");
@@ -297,10 +297,10 @@ class StatefulRetryOperationsInterceptorTests {
 
 	@Test
 	void invokeWhenRetryInvokesNewMessageIdentifierAndNewMessageReusedRetryState() throws Throwable {
-		BackOffExecution backOffExecution1 = mock(BackOffExecution.class);
-		BackOffExecution backOffExecution2 = mock(BackOffExecution.class);
+		BackOffExecution backOffExecution1 = mock();
+		BackOffExecution backOffExecution2 = mock();
 		given(backOffExecution2.nextBackOff()).willReturn(0L);
-		BackOff backOff = mock(BackOff.class);
+		BackOff backOff = mock();
 		given(backOff.start()).willReturn(backOffExecution1).willReturn(backOffExecution2);
 		RetryPolicy retryPolicy = RetryPolicy.builder().backOff(backOff).build();
 		Exception initialAttemptFailure = new IllegalStateException("test");
@@ -322,13 +322,12 @@ class StatefulRetryOperationsInterceptorTests {
 		then(backOffExecution2).should().nextBackOff();
 	}
 
-
 	@Test
 	void invokesWhenRetriesAreExhaustedInvokesMessageRecoverer() throws Throwable {
 		Exception failure = new IllegalStateException("test");
 		given(this.messageKeyGenerator.getKey(this.message)).willReturn("id");
 		given(this.invocation.proceed()).willThrow(failure);
-		MessageRecoverer messageRecoverer = mock(MessageRecoverer.class);
+		MessageRecoverer messageRecoverer = mock();
 
 		StatefulRetryOperationsInterceptor interceptor = createInterceptor(createNoRetryPolicy(), messageRecoverer);
 		assertThatException().isThrownBy(() -> interceptor.invoke(this.invocation)).isEqualTo(failure);
@@ -343,12 +342,12 @@ class StatefulRetryOperationsInterceptorTests {
 	@Test
 	void invokesWhenRetriesAreExhaustedInvokesMessageBatchRecoverer() throws Throwable {
 		List<Message> messages = List.of(this.message);
-		MethodInvocation listInvocation = mock(MethodInvocation.class);
-		given(listInvocation.getArguments()).willReturn(new Object[] { "dummy", messages });
+		MethodInvocation listInvocation = mock();
+		given(listInvocation.getArguments()).willReturn(new Object[] {"dummy", messages});
 		Exception failure = new IllegalStateException("test");
 		given(this.messageKeyGenerator.getKey(this.message)).willReturn("id");
 		given(listInvocation.proceed()).willThrow(failure);
-		MessageBatchRecoverer messageRecoverer = mock(MessageBatchRecoverer.class);
+		MessageBatchRecoverer messageRecoverer = mock();
 
 		StatefulRetryOperationsInterceptor interceptor = createInterceptor(createNoRetryPolicy(), messageRecoverer);
 		assertThatException().isThrownBy(() -> interceptor.invoke(listInvocation)).isEqualTo(failure);
@@ -361,21 +360,24 @@ class StatefulRetryOperationsInterceptorTests {
 	}
 
 	private RetryPolicy createNoRetryPolicy() {
-		BackOffExecution backOffExecution = mock(BackOffExecution.class);
+		BackOffExecution backOffExecution = mock();
 		given(backOffExecution.nextBackOff()).willReturn(BackOffExecution.STOP);
-		BackOff backOff = mock(BackOff.class);
+		BackOff backOff = mock();
 		given(backOff.start()).willReturn(backOffExecution);
 		return RetryPolicy.builder().backOff(backOff).build();
 	}
 
 	private MapAssert<String, RetryState> assertThatCache(StatefulRetryOperationsInterceptor interceptor) {
-		return assertThat(interceptor).extracting("cache").asInstanceOf(InstanceOfAssertFactories.map(String.class, RetryState.class));
+		return assertThat(interceptor)
+				.extracting("retryStateCache")
+				.asInstanceOf(InstanceOfAssertFactories.map(String.class, RetryState.class));
 	}
 
 	private StatefulRetryOperationsInterceptor createInterceptor(@Nullable RetryPolicy retryPolicy,
 			@Nullable MessageRecoverer messageRecoverer) {
+
 		return new StatefulRetryOperationsInterceptor(this.messageKeyGenerator,
-				this.newMessageIdentifier, retryPolicy, messageRecoverer);
+				this.newMessageIdentifier, retryPolicy, messageRecoverer, 100);
 	}
 
 }

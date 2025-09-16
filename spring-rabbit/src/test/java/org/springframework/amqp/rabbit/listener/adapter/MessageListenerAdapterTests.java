@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.listener.adapter;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -202,7 +203,7 @@ public class MessageListenerAdapterTests {
 		this.adapter = new MessageListenerAdapter();
 		this.adapter.setDefaultListenerMethod("handle");
 		this.adapter.setDelegate(this.simpleService);
-		RetryPolicy retryPolicy = RetryPolicy.builder().maxAttempts(2).build();
+		RetryPolicy retryPolicy = RetryPolicy.builder().maxAttempts(2).delay(Duration.ZERO).build();
 		RetryTemplate retryTemplate = new RetryTemplate();
 		retryTemplate.setRetryPolicy(retryPolicy);
 		this.adapter.setRetryTemplate(retryTemplate);

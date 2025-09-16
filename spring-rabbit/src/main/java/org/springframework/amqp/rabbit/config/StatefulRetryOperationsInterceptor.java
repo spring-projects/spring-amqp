@@ -16,10 +16,12 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
@@ -42,6 +44,7 @@ import org.springframework.util.backoff.BackOffExecution;
  *
  * @author Juergen Hoeller
  * @author Stephane Nicoll
+ * @author Artem Bilan
  *
  * @since 4.0
  */
@@ -57,15 +60,26 @@ public final class StatefulRetryOperationsInterceptor implements MethodIntercept
 
 	private final @Nullable MessageRecoverer messageRecoverer;
 
-	private final Map<Object, RetryState> cache = new ConcurrentHashMap<>();
+	private final int stateCacheSize;
+
+	private final Map<Object, RetryState> retryStateCache =
+			Collections.synchronizedMap(new LinkedHashMap<>(100, 0.75f, true) {
+
+				@Override
+				protected boolean removeEldestEntry(Map.Entry<Object, RetryState> eldest) {
+					return size() > StatefulRetryOperationsInterceptor.this.stateCacheSize;
+				}
+
+			});
 
 	StatefulRetryOperationsInterceptor(MessageKeyGenerator messageKeyGenerator,
 			NewMessageIdentifier newMessageIdentifier, @Nullable RetryPolicy retryPolicy,
-			@Nullable MessageRecoverer messageRecoverer) {
+			@Nullable MessageRecoverer messageRecoverer, @Nullable Integer stateCacheSize) {
 
 		this.messageKeyGenerator = messageKeyGenerator;
 		this.newMessageIdentifier = newMessageIdentifier;
-		this.retryPolicy = (retryPolicy != null) ? retryPolicy : RetryPolicy.builder().build();
+		this.retryPolicy = retryPolicy != null ? retryPolicy : RetryPolicy.builder().delay(Duration.ZERO).build();
+		this.stateCacheSize = stateCacheSize != null ? stateCacheSize : 1000;
 		this.messageRecoverer = messageRecoverer;
 	}
 
@@ -77,20 +91,20 @@ public final class StatefulRetryOperationsInterceptor implements MethodIntercept
 		if (key == null) { // Means no retry for this message anymore.
 			return invocation.proceed();
 		}
-		RetryState retryState = this.cache.get(key);
+		RetryState retryState = this.retryStateCache.get(key);
 		if (retryState == null || this.newMessageIdentifier.isNew(message)) {
 			try {
 				return invocation.proceed();
 			}
 			catch (Throwable ex) {
-				this.cache.put(key, new RetryState(this.retryPolicy.getBackOff().start(), ex));
+				this.retryStateCache.put(key, new RetryState(this.retryPolicy.getBackOff().start(), ex));
 				throw ex;
 			}
 		}
 		else {
 			long time = retryState.backOffExecution().nextBackOff();
 			if (time == BackOffExecution.STOP || !this.retryPolicy.shouldRetry(retryState.lastException())) {
-				this.cache.remove(key);
+				this.retryStateCache.remove(key);
 				recover(args[1], retryState.lastException());
 				// This is actually a normal outcome. It means the recovery was successful, but we don't want to consume
 				// any more messages until the acks and commits are sent for this (problematic) message...
@@ -101,11 +115,11 @@ public final class StatefulRetryOperationsInterceptor implements MethodIntercept
 				Thread.sleep(time);
 				try {
 					Object result = invocation.proceed();
-					this.cache.remove(key);
+					this.retryStateCache.remove(key);
 					return result;
 				}
 				catch (Throwable ex) {
-					this.cache.put(key, new RetryState(retryState.backOffExecution(), ex));
+					this.retryStateCache.put(key, new RetryState(retryState.backOffExecution(), ex));
 					throw ex;
 				}
 			}

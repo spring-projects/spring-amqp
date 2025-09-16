@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import java.time.Duration;
 import java.util.function.BiFunction;
 
 import org.aopalliance.intercept.MethodInterceptor;
@@ -33,6 +34,7 @@ import org.springframework.core.retry.RetryTemplate;
  *
  * @author Juergen Hoeller
  * @author Stephane Nicoll
+ * @author Artem Bilan
  *
  * @since 4.0
  */
@@ -44,7 +46,8 @@ public final class StatelessRetryOperationsInterceptor implements MethodIntercep
 
 	StatelessRetryOperationsInterceptor(@Nullable RetryPolicy retryPolicy,
 			@Nullable BiFunction<@Nullable Object[], Throwable, @Nullable Object> recoverer) {
-		this.retryOperations = new RetryTemplate((retryPolicy != null) ? retryPolicy : RetryPolicy.builder().build());
+		this.retryOperations =
+				new RetryTemplate(retryPolicy != null ? retryPolicy : RetryPolicy.builder().delay(Duration.ZERO).build());
 		this.recoverer = recoverer;
 	}
 
