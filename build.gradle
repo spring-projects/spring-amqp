@@ -55,7 +55,7 @@ ext {
 	rabbitmqVersion = '5.26.0'
 	reactorVersion = '2025.0.0-M7'
 	springDataVersion = '2025.1.0-M6'
-	springVersion = '7.0.0-M9'
+	springVersion = '7.0.0-SNAPSHOT'
 	testcontainersVersion = '1.21.3'
 
 	javaProjects = subprojects - project(':spring-amqp-bom')
