@@ -113,7 +113,7 @@ public interface AsyncAmqpTemplate {
 	 * @param <S> the response body type
 	 * @param queueName the queue to consume request.
 	 * @param callback an application callback to handle request and produce reply.
-	 * @return the completion status: true if no errors and reply has been produced.
+	 * @return the completion status: true if no errors, and reply has been produced.
 	 */
 	default <R, S> CompletableFuture<Boolean> receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback) {
 		throw new UnsupportedOperationException();
@@ -144,7 +144,7 @@ public interface AsyncAmqpTemplate {
 	 * @param message the message.
 	 * @return the {@link CompletableFuture}.
 	 */
-	CompletableFuture<Message> sendAndReceive(String exchange, String routingKey, Message message);
+	CompletableFuture<Message> sendAndReceive(String exchange, @Nullable String routingKey, Message message);
 
 	/**
 	 * Convert the object to a message and send it to the default exchange with the
@@ -174,14 +174,14 @@ public interface AsyncAmqpTemplate {
 	 * @param <C> the expected result type.
 	 * @return the {@link CompletableFuture}.
 	 */
-	<C> CompletableFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object);
+	<C> CompletableFuture<C> convertSendAndReceive(String exchange, @Nullable String routingKey, Object object);
 
 	/**
 	 * Convert the object to a message and send it to the default exchange with the
 	 * default routing key after invoking the {@link MessagePostProcessor}.
-	 * If the post processor adds a correlationId property, it must be unique.
+	 * If the post-processor adds a correlationId property, it must be unique.
 	 * @param object the object to convert.
-	 * @param messagePostProcessor the post processor.
+	 * @param messagePostProcessor the post-processor.
 	 * @param <C> the expected result type.
 	 * @return the {@link CompletableFuture}.
 	 */
@@ -190,10 +190,10 @@ public interface AsyncAmqpTemplate {
 	/**
 	 * Convert the object to a message and send it to the default exchange with the
 	 * provided routing key after invoking the {@link MessagePostProcessor}.
-	 * If the post processor adds a correlationId property, it must be unique.
+	 * If the post-processor adds a correlationId property, it must be unique.
 	 * @param routingKey the routing key.
 	 * @param object the object to convert.
-	 * @param messagePostProcessor the post processor.
+	 * @param messagePostProcessor the post-processor.
 	 * @param <C> the expected result type.
 	 * @return the {@link CompletableFuture}.
 	 */
@@ -203,15 +203,15 @@ public interface AsyncAmqpTemplate {
 	/**
 	 * Convert the object to a message and send it to the provided exchange and
 	 * routing key after invoking the {@link MessagePostProcessor}.
-	 * If the post processor adds a correlationId property, it must be unique.
+	 * If the post-processor adds a correlationId property, it must be unique.
 	 * @param exchange the exchange
 	 * @param routingKey the routing key.
 	 * @param object the object to convert.
-	 * @param messagePostProcessor the post processor.
+	 * @param messagePostProcessor the post-processor.
 	 * @param <C> the expected result type.
 	 * @return the {@link CompletableFuture}.
 	 */
-	<C> CompletableFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object,
+	<C> CompletableFuture<C> convertSendAndReceive(String exchange, @Nullable String routingKey, Object object,
 			@Nullable MessagePostProcessor messagePostProcessor);
 
 	/**
@@ -246,15 +246,15 @@ public interface AsyncAmqpTemplate {
 	 * @param <C> the expected result type.
 	 * @return the {@link CompletableFuture}.
 	 */
-	<C> CompletableFuture<C> convertSendAndReceiveAsType(String exchange, String routingKey, Object object,
+	<C> CompletableFuture<C> convertSendAndReceiveAsType(String exchange, @Nullable String routingKey, Object object,
 			ParameterizedTypeReference<C> responseType);
 
 	/**
 	 * Convert the object to a message and send it to the default exchange with the
 	 * default routing key after invoking the {@link MessagePostProcessor}.
-	 * If the post processor adds a correlationId property, it must be unique.
+	 * If the post-processor adds a correlationId property, it must be unique.
 	 * @param object the object to convert.
-	 * @param messagePostProcessor the post processor.
+	 * @param messagePostProcessor the post-processor.
 	 * @param responseType the response type.
 	 * @param <C> the expected result type.
 	 * @return the {@link CompletableFuture}.
@@ -266,10 +266,10 @@ public interface AsyncAmqpTemplate {
 	/**
 	 * Convert the object to a message and send it to the default exchange with the
 	 * provided routing key after invoking the {@link MessagePostProcessor}.
-	 * If the post processor adds a correlationId property, it must be unique.
+	 * If the post-processor adds a correlationId property, it must be unique.
 	 * @param routingKey the routing key.
 	 * @param object the object to convert.
-	 * @param messagePostProcessor the post processor.
+	 * @param messagePostProcessor the post-processor.
 	 * @param responseType the response type.
 	 * @param <C> the expected result type.
 	 * @return the {@link CompletableFuture}.
@@ -280,16 +280,16 @@ public interface AsyncAmqpTemplate {
 	/**
 	 * Convert the object to a message and send it to the provided exchange and
 	 * routing key after invoking the {@link MessagePostProcessor}.
-	 * If the post processor adds a correlationId property, it must be unique.
+	 * If the post-processor adds a correlationId property, it must be unique.
 	 * @param exchange the exchange
 	 * @param routingKey the routing key.
 	 * @param object the object to convert.
-	 * @param messagePostProcessor the post processor.
+	 * @param messagePostProcessor the post-processor.
 	 * @param responseType the response type.
 	 * @param <C> the expected result type.
 	 * @return the {@link CompletableFuture}.
 	 */
-	<C> CompletableFuture<C> convertSendAndReceiveAsType(String exchange, String routingKey, Object object,
+	<C> CompletableFuture<C> convertSendAndReceiveAsType(String exchange, @Nullable String routingKey, Object object,
 			@Nullable MessagePostProcessor messagePostProcessor, @Nullable ParameterizedTypeReference<C> responseType);
 
 }
