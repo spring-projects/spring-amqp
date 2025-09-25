@@ -159,7 +159,7 @@ public class RepublishMessageRecovererWithConfirms extends RepublishMessageRecov
 	}
 
 	private void doSendSimple(@Nullable String exchange, String routingKey, Message message) {
-		this.template.invoke(sender -> {
+		this.template.<@Nullable Object>invoke(sender -> {
 			if (exchange != null) {
 				sender.send(exchange, routingKey, message);
 			}

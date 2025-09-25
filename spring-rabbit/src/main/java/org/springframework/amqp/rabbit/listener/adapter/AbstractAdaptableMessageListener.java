@@ -43,7 +43,6 @@ import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
-import org.springframework.context.expression.MapAccessor;
 import org.springframework.core.retry.RetryException;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.expression.BeanResolver;
@@ -51,6 +50,7 @@ import org.springframework.expression.Expression;
 import org.springframework.expression.ParserContext;
 import org.springframework.expression.common.TemplateParserContext;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.MapAccessor;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.expression.spel.support.StandardTypeConverter;
 import org.springframework.util.Assert;
@@ -655,7 +655,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 			else {
 				final Message messageToSend = message;
 				try {
-					this.retryTemplate.execute(() -> {
+					this.retryTemplate.<@Nullable Object>execute(() -> {
 						doPublish(channel, replyTo, messageToSend);
 						return null;
 					});

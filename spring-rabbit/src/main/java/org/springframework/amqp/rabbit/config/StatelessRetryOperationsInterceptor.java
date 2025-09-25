@@ -54,7 +54,7 @@ public final class StatelessRetryOperationsInterceptor implements MethodIntercep
 	@Override
 	public @Nullable Object invoke(final MethodInvocation invocation) throws Throwable {
 		try {
-			return this.retryOperations.execute(invocation::proceed);
+			return this.retryOperations.<@Nullable Object>execute(invocation::proceed);
 		}
 		catch (RetryException ex) {
 			if (this.recoverer != null) {

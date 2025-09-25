@@ -27,7 +27,7 @@ import org.jspecify.annotations.Nullable;
  * @author Gary Russell
  */
 @FunctionalInterface
-public interface ChannelCallback<T> {
+public interface ChannelCallback<T extends @Nullable Object> {
 
 	/**
 	 * Execute any number of operations against the supplied RabbitMQ
@@ -37,7 +37,6 @@ public interface ChannelCallback<T> {
 	 * @return The result.
 	 * @throws Exception Not sure what else Rabbit Throws
 	 */
-	@Nullable
 	T doInRabbit(Channel channel) throws Exception; // NOSONAR user code might throw anything; cannot change
 
 }

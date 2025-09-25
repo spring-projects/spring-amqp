@@ -234,7 +234,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@Override
 	public void declareExchange(final Exchange exchange) {
 		try {
-			this.rabbitTemplate.execute(channel -> {
+			this.rabbitTemplate.<@Nullable Object>execute(channel -> {
 				declareExchanges(channel, exchange);
 				if (this.redeclareManualDeclarations) {
 					this.manualDeclarables.add(exchange);
@@ -301,7 +301,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@ManagedOperation(description = "Declare a queue on the broker (this operation is not available remotely)")
 	public @Nullable String declareQueue(final Queue queue) {
 		try {
-			return this.rabbitTemplate.execute(channel -> {
+			return this.rabbitTemplate.<@Nullable String>execute(channel -> {
 				DeclareOk[] declared = declareQueues(channel, queue);
 				String result = declared.length > 0 ? declared[0].getQueue() : null;
 				if (this.redeclareManualDeclarations) {
@@ -358,7 +358,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@ManagedOperation(description =
 			"Delete a queue from the broker if unused and empty (when corresponding arguments are true")
 	public void deleteQueue(final String queueName, final boolean unused, final boolean empty) {
-		this.rabbitTemplate.execute(channel -> {
+		this.rabbitTemplate.<@Nullable Object>execute(channel -> {
 			channel.queueDelete(queueName, unused, empty);
 			removeQueueBindings(queueName);
 			return null;
@@ -412,7 +412,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@ManagedOperation(description = "Declare a binding on the broker (this operation is not available remotely)")
 	public void declareBinding(final Binding binding) {
 		try {
-			this.rabbitTemplate.execute(channel -> {
+			this.rabbitTemplate.<@Nullable Object>execute(channel -> {
 				declareBindings(channel, binding);
 				if (this.redeclareManualDeclarations) {
 					this.manualDeclarables.add(binding);
@@ -428,7 +428,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@Override
 	@ManagedOperation(description = "Remove a binding from the broker (this operation is not available remotely)")
 	public void removeBinding(final Binding binding) {
-		this.rabbitTemplate.execute(channel -> {
+		this.rabbitTemplate.<@Nullable Object>execute(channel -> {
 			if (binding.isDestinationQueue()) {
 				if (isRemovingImplicitQueueBinding(binding)) {
 					return null;
@@ -469,7 +469,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@Override
 	public @Nullable QueueInformation getQueueInfo(String queueName) {
 		Assert.hasText(queueName, "'queueName' cannot be null or empty");
-		return this.rabbitTemplate.execute(channel -> {
+		return this.rabbitTemplate.<@Nullable QueueInformation>execute(channel -> {
 			try {
 				DeclareOk declareOk = channel.queueDeclarePassive(queueName);
 				return new QueueInformation(declareOk.getQueue(), declareOk.getMessageCount(),
@@ -627,7 +627,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 					 * declared for every connection. If anyone has a problem with it: use auto-startup="false".
 					 */
 					if (this.retryTemplate != null) {
-						this.retryTemplate.execute(() -> {
+						this.retryTemplate.<@Nullable Object>execute(() -> {
 							initialize();
 							return null;
 						});
@@ -712,7 +712,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			this.logger.debug("Nothing to declare");
 			return;
 		}
-		this.rabbitTemplate.execute(channel -> {
+		this.rabbitTemplate.<@Nullable Object>execute(channel -> {
 			declareExchanges(channel, exchanges.toArray(new Exchange[0]));
 			declareQueues(channel, queues.toArray(new Queue[0]));
 			declareBindings(channel, bindings.toArray(new Binding[0]));

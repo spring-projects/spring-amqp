@@ -45,7 +45,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * {@link ChannelCallback#doInRabbit(com.rabbitmq.client.Channel)}.
 	 * @throws AmqpException if one occurs.
 	 */
-	<T> @Nullable T execute(ChannelCallback<? extends @Nullable T> action) throws AmqpException;
+	<T extends @Nullable Object> T execute(ChannelCallback<T> action) throws AmqpException;
 
 	/**
 	 * Invoke the callback and run all operations on the template argument in a dedicated
@@ -57,7 +57,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @throws AmqpException if one occurs.
 	 * @since 2.0
 	 */
-	default <T> @Nullable T invoke(OperationsCallback<? extends @Nullable T> action) throws AmqpException {
+	default <T extends @Nullable Object> T invoke(OperationsCallback<T> action) throws AmqpException {
 		return invoke(action, null, null);
 	}
 
@@ -71,7 +71,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @return the result of the action method.
 	 * @since 2.1
 	 */
-	<T> @Nullable T invoke(OperationsCallback<? extends @Nullable T> action,
+	<T extends @Nullable Object> T invoke(OperationsCallback<T> action,
 			com.rabbitmq.client.@Nullable ConfirmCallback acks, com.rabbitmq.client.@Nullable ConfirmCallback nacks);
 
 	/**
@@ -358,8 +358,8 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
-	default <T> @Nullable T convertSendAndReceiveAsType(@Nullable String exchange, @Nullable String routingKey, Object message,
-			@Nullable CorrelationData correlationData, ParameterizedTypeReference<T> responseType)
+	default <T> @Nullable T convertSendAndReceiveAsType(@Nullable String exchange, @Nullable String routingKey,
+			Object message, @Nullable CorrelationData correlationData, ParameterizedTypeReference<T> responseType)
 			throws AmqpException {
 
 		return convertSendAndReceiveAsType(exchange, routingKey, message, null, correlationData, responseType);
@@ -451,7 +451,7 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 	 * @since 2.0
 	 */
 	@FunctionalInterface
-	interface OperationsCallback<T> {
+	interface OperationsCallback<T extends @Nullable Object> {
 
 		/**
 		 * Execute any number of operations using a dedicated
@@ -462,7 +462,6 @@ public interface RabbitOperations extends AmqpTemplate, Lifecycle {
 		 * @param operations The operations.
 		 * @return The result.
 		 */
-		@Nullable
 		T doInRabbit(RabbitOperations operations);
 
 	}

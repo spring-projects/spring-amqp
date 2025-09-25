@@ -107,13 +107,13 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.expression.BeanFactoryResolver;
-import org.springframework.context.expression.MapAccessor;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.retry.RetryException;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.core.retry.Retryable;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.MapAccessor;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.util.Assert;
 import org.springframework.util.ErrorHandler;
@@ -1140,7 +1140,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			final Message message, @Nullable CorrelationData correlationData)
 			throws AmqpException {
 
-		execute(channel -> {
+		this.<@Nullable Object>execute(channel -> {
 			doSend(channel, exchange, routingKey, message,
 					(RabbitTemplate.this.returnsCallback != null
 							|| (correlationData != null && StringUtils.hasText(correlationData.getId())))
@@ -1280,7 +1280,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * @since 1.5
 	 */
 	protected @Nullable Message doReceiveNoWait(final String queueName) {
-		Message message = execute(channel -> {
+		Message message = this.<@Nullable Message>execute(channel -> {
 			GetResponse response = channel.basicGet(queueName, !isChannelTransacted());
 			// Response can be null is the case that there is no message on the queue.
 			if (response != null) {
@@ -1316,7 +1316,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	@Override
 	public @Nullable Message receive(final String queueName, final long timeoutMillis) {
-		Message message = execute(channel -> {
+		Message message = this.<@Nullable Message>execute(channel -> {
 			Delivery delivery = consumeDelivery(channel, queueName, timeoutMillis);
 			if (delivery == null) {
 				return null;
@@ -1918,7 +1918,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	protected @Nullable Message doSendAndReceiveWithTemporary(@Nullable String exchange, @Nullable String routingKey,
 			final Message message, @Nullable CorrelationData correlationData) {
 
-		return execute(channel -> {
+		return this.<@Nullable Message>execute(channel -> {
 			final PendingReply pendingReply = new PendingReply();
 			String messageTag = String.valueOf(RabbitTemplate.this.messageTagProvider.incrementAndGet());
 			RabbitTemplate.this.replyHolder.putIfAbsent(messageTag, pendingReply);
@@ -1995,7 +1995,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 		Assert.state(this.isListener, () -> "RabbitTemplate is not configured as MessageListener - "
 				+ "cannot use a 'replyAddress': " + this.replyAddress);
-		return execute(channel ->
+		return this.<@Nullable Message>execute(channel ->
 						doSendAndReceiveAsListener(exchange, routingKey, message, correlationData, channel, false),
 				obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));
 	}
@@ -2189,12 +2189,12 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public <T> @Nullable T execute(ChannelCallback<? extends @Nullable T> action) {
+	public <T extends @Nullable Object> T execute(ChannelCallback<T> action) {
 		return execute(action, getConnectionFactory());
 	}
 
-	@SuppressWarnings(UNCHECKED)
-	private <T> @Nullable T execute(ChannelCallback<? extends @Nullable T> action,
+	@SuppressWarnings({UNCHECKED, "NullAway"})
+	private <T extends @Nullable Object> T execute(ChannelCallback<T> action,
 			ConnectionFactory connectionFactory) {
 
 		if (this.retryTemplate != null) {
@@ -2214,7 +2214,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 	}
 
-	private <T> @Nullable T doExecute(ChannelCallback<? extends @Nullable T> action,
+	private <T extends @Nullable Object> T doExecute(ChannelCallback<T> action,
 			ConnectionFactory connectionFactory) {
 
 		Assert.notNull(action, "Callback object must not be null");
@@ -2279,7 +2279,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		}
 	}
 
-	private <T> @Nullable T invokeAction(ChannelCallback<? extends @Nullable T> action,
+	private <T extends @Nullable Object> T invokeAction(ChannelCallback<T> action,
 			ConnectionFactory connectionFactory, Channel channel) throws Exception {
 
 		if (isPublisherConfirmsOrReturns(connectionFactory)) {
@@ -2294,7 +2294,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	}
 
 	@Override
-	public <T> @Nullable T invoke(OperationsCallback<? extends @Nullable T> action,
+	public <T extends @Nullable Object> T invoke(OperationsCallback<T> action,
 			com.rabbitmq.client.@Nullable ConfirmCallback acks, com.rabbitmq.client.@Nullable ConfirmCallback nacks) {
 
 		final Channel currentChannel = this.dedicatedChannels.get();
@@ -2906,7 +2906,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 		/**
 		 * Recover the exception that was thrown during the last attempt.
-		 * @param lastException the exception of the last attempt
+		 * @param lastException the exception from the last attempt
 		 * @return Object that can be used to replace the result {@link RabbitTemplate#execute(ChannelCallback)}
 		 */
 		@Nullable
