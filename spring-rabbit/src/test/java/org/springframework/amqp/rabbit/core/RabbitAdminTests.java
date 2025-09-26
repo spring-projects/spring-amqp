@@ -134,7 +134,7 @@ public class RabbitAdminTests extends NeedsManagementTests {
 		rabbitAdmin.setApplicationContext(applicationContext);
 		rabbitAdmin.setAutoStartup(true);
 		rabbitAdmin.afterPropertiesSet();
-		assertThatIllegalArgumentException().isThrownBy(() -> rabbitAdmin.declareQueue());
+		assertThatIllegalArgumentException().isThrownBy(rabbitAdmin::declareQueue);
 		connectionFactory.destroy();
 	}
 
@@ -153,8 +153,7 @@ public class RabbitAdminTests extends NeedsManagementTests {
 			channel.basicConsume(queueName, true, consumer);
 			await("Message count > 0").until(() -> messageCount(rabbitAdmin, queueName) == 0);
 			Properties props = rabbitAdmin.getQueueProperties(queueName);
-			assertThat(props.get(RabbitAdmin.QUEUE_CONSUMER_COUNT)).isNotNull();
-			assertThat(props.get(RabbitAdmin.QUEUE_CONSUMER_COUNT)).isEqualTo(1);
+			assertThat(props).containsEntry(RabbitAdmin.QUEUE_CONSUMER_COUNT, 1);
 			channel.close();
 		}
 		finally {
@@ -170,23 +169,23 @@ public class RabbitAdminTests extends NeedsManagementTests {
 	}
 
 	@Test
-	public void testTemporaryLogs() throws Exception {
+	public void testTemporaryLogs() {
 		SingleConnectionFactory connectionFactory = new SingleConnectionFactory();
 		connectionFactory.setHost("localhost");
 		RabbitAdmin rabbitAdmin = new RabbitAdmin(connectionFactory);
 		try {
-			ApplicationContext ctx = mock(ApplicationContext.class);
-			Map<String, Queue> queues = new HashMap<String, Queue>();
+			ApplicationContext ctx = mock();
+			Map<String, Queue> queues = new HashMap<>();
 			queues.put("nonDurQ", new Queue("testq.nonDur", false, false, false));
 			queues.put("adQ", new Queue("testq.ad", true, false, true));
 			queues.put("exclQ", new Queue("testq.excl", true, true, false));
 			queues.put("allQ", new Queue("testq.all", false, true, true));
-			given(ctx.getBeansOfType(Queue.class)).willReturn(queues);
-			Map<String, Exchange> exchanges = new HashMap<String, Exchange>();
+			given(ctx.getBeansOfType(Queue.class, false, false)).willReturn(queues);
+			Map<String, Exchange> exchanges = new HashMap<>();
 			exchanges.put("nonDurEx", new DirectExchange("testex.nonDur", false, false));
 			exchanges.put("adEx", new DirectExchange("testex.ad", true, true));
 			exchanges.put("allEx", new DirectExchange("testex.all", false, true));
-			given(ctx.getBeansOfType(Exchange.class)).willReturn(exchanges);
+			given(ctx.getBeansOfType(Exchange.class, false, false)).willReturn(exchanges);
 			rabbitAdmin.setApplicationContext(ctx);
 			rabbitAdmin.afterPropertiesSet();
 			Log logger = spy(TestUtils.getPropertyValue(rabbitAdmin, "logger", Log.class));
@@ -247,17 +246,17 @@ public class RabbitAdminTests extends NeedsManagementTests {
 		assertThat(admin.getQueueProperties(ctx.getBean(Config.class).prototypeQueueName)).isNull();
 		Declarables mixedDeclarables = ctx.getBean("ds", Declarables.class);
 		assertThat(mixedDeclarables.getDeclarablesByType(Queue.class))
-			.hasSize(1)
-			.extracting(Queue::getName)
-			.contains("q4");
+				.hasSize(1)
+				.extracting(Queue::getName)
+				.contains("q4");
 		assertThat(mixedDeclarables.getDeclarablesByType(Exchange.class))
-			.hasSize(1)
-			.extracting(Exchange::getName)
-			.contains("e4");
+				.hasSize(1)
+				.extracting(Exchange::getName)
+				.contains("e4");
 		assertThat(mixedDeclarables.getDeclarablesByType(Binding.class))
-			.hasSize(1)
-			.extracting(Binding::getDestination)
-			.contains("q4");
+				.hasSize(1)
+				.extracting(Binding::getDestination)
+				.contains("q4");
 		ctx.close();
 	}
 
@@ -283,14 +282,13 @@ public class RabbitAdminTests extends NeedsManagementTests {
 
 	@Test
 	public void testIgnoreDeclarationExceptionsTimeout() throws Exception {
-		com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory = mock(
-				com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory = mock();
 		TimeoutException toBeThrown = new TimeoutException("test");
 		willThrow(toBeThrown).given(rabbitConnectionFactory).newConnection(any(ExecutorService.class), anyString());
 		CachingConnectionFactory ccf = new CachingConnectionFactory(rabbitConnectionFactory);
 		ccf.setExecutor(mock(ExecutorService.class));
 		RabbitAdmin admin = new RabbitAdmin(ccf);
-		List<DeclarationExceptionEvent> events = new ArrayList<DeclarationExceptionEvent>();
+		List<DeclarationExceptionEvent> events = new ArrayList<>();
 		admin.setApplicationEventPublisher(new EventPublisher(events));
 		admin.setIgnoreDeclarationExceptions(true);
 		admin.declareQueue(new AnonymousQueue());
@@ -313,13 +311,13 @@ public class RabbitAdminTests extends NeedsManagementTests {
 
 	@Test
 	public void testWithinInvoke() throws Exception {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
-		Connection connection = mock(Connection.class);
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
 		given(connectionFactory.createConnection()).willReturn(connection);
-		Channel channel1 = mock(Channel.class);
-		Channel channel2 = mock(Channel.class);
+		Channel channel1 = mock();
+		Channel channel2 = mock();
 		given(connection.createChannel(false)).willReturn(channel1, channel2);
-		DeclareOk declareOk = mock(DeclareOk.class);
+		DeclareOk declareOk = mock();
 		given(channel1.queueDeclare()).willReturn(declareOk);
 		given(declareOk.getQueue()).willReturn("foo");
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
@@ -339,14 +337,14 @@ public class RabbitAdminTests extends NeedsManagementTests {
 
 	@Test
 	public void testRetry() throws Exception {
-		com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
-		com.rabbitmq.client.Connection connection = mock(com.rabbitmq.client.Connection.class);
+		com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory = mock();
+		com.rabbitmq.client.Connection connection = mock();
 		given(rabbitConnectionFactory.newConnection((ExecutorService) isNull(), anyString())).willReturn(connection);
-		Channel channel = mock(Channel.class);
+		Channel channel = mock();
 		given(connection.createChannel()).willReturn(channel);
 		given(channel.isOpen()).willReturn(true);
 		willThrow(new RuntimeException()).given(channel)
-			.queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), any());
+				.queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), any());
 		CachingConnectionFactory ccf = new CachingConnectionFactory(rabbitConnectionFactory);
 		RabbitAdmin admin = new RabbitAdmin(ccf);
 		RetryTemplate rtt = new RetryTemplate();
@@ -359,13 +357,13 @@ public class RabbitAdminTests extends NeedsManagementTests {
 		ctx.getBeanFactory().initializeBean(admin, "admin");
 		ctx.refresh();
 		assertThatThrownBy(() -> ccf.createConnection())
-			.isInstanceOf(UncategorizedAmqpException.class);
+				.isInstanceOf(UncategorizedAmqpException.class);
 		ctx.close();
 		verify(channel, times(3)).queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), any());
 	}
 
 	@Test
-	public void testLeaderLocator() throws Exception {
+	public void testLeaderLocator() {
 		CachingConnectionFactory cf = new CachingConnectionFactory(
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
 		RabbitAdmin admin = new RabbitAdmin(cf);

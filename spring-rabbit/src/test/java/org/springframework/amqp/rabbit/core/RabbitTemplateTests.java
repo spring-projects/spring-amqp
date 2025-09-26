@@ -444,7 +444,7 @@ public class RabbitTemplateTests {
 		rabbitTemplate.setChannelTransacted(true);
 		RabbitAdmin admin = new RabbitAdmin(rabbitTemplate);
 		ApplicationContext ac = mock(ApplicationContext.class);
-		willReturn(Collections.singletonMap("foo", new Queue("foo"))).given(ac).getBeansOfType(Queue.class);
+		willReturn(Collections.singletonMap("foo", new Queue("foo"))).given(ac).getBeansOfType(Queue.class, false, false);
 		admin.setApplicationContext(ac);
 		admin.afterPropertiesSet();
 		AtomicReference<Channel> templateChannel = new AtomicReference<>();
