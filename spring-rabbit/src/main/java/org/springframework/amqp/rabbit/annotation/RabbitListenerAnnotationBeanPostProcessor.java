@@ -267,7 +267,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 		if (this.beanFactory instanceof ListableBeanFactory lbf) {
 			Map<String, RabbitListenerConfigurer> instances =
-					lbf.getBeansOfType(RabbitListenerConfigurer.class);
+					lbf.getBeansOfType(RabbitListenerConfigurer.class, false, false);
 			for (RabbitListenerConfigurer configurer : instances.values()) {
 				configurer.configureRabbitListeners(this.registrar);
 			}

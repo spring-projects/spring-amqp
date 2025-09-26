@@ -188,16 +188,16 @@ public class RabbitAmqpAdmin
 
 		LOG.debug("Initializing declarations");
 		Collection<Exchange> contextExchanges = new LinkedList<>(
-				this.applicationContext.getBeansOfType(Exchange.class).values());
+				this.applicationContext.getBeansOfType(Exchange.class, false, false).values());
 		Collection<Queue> contextQueues = new LinkedList<>(
-				this.applicationContext.getBeansOfType(Queue.class).values());
+				this.applicationContext.getBeansOfType(Queue.class, false, false).values());
 		Collection<Binding> contextBindings = new LinkedList<>(
-				this.applicationContext.getBeansOfType(Binding.class).values());
+				this.applicationContext.getBeansOfType(Binding.class, false, false).values());
 		Collection<DeclarableCustomizer> customizers =
-				this.applicationContext.getBeansOfType(DeclarableCustomizer.class).values();
+				this.applicationContext.getBeansOfType(DeclarableCustomizer.class, false, false).values();
 
 		processDeclarables(contextExchanges, contextQueues, contextBindings,
-				this.applicationContext.getBeansOfType(Declarables.class, false, true).values());
+				this.applicationContext.getBeansOfType(Declarables.class, false, false).values());
 
 		final Collection<Exchange> exchanges = filterDeclarables(contextExchanges, customizers);
 		final Collection<Queue> queues = filterDeclarables(contextQueues, customizers);
