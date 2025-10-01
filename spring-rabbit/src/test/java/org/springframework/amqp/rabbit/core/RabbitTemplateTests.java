@@ -129,14 +129,8 @@ public class RabbitTemplateTests {
 		final RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		template.setChannelTransacted(true);
 
-		txTemplate.execute(status -> {
-			template.convertAndSend("foo", "bar");
-			return null;
-		});
-		txTemplate.execute(status -> {
-			template.convertAndSend("baz", "qux");
-			return null;
-		});
+		txTemplate.executeWithoutResult(status -> template.convertAndSend("foo", "bar"));
+		txTemplate.executeWithoutResult(status -> template.convertAndSend("baz", "qux"));
 		verify(mockConnectionFactory, Mockito.times(1)).newConnection(any(ExecutorService.class), anyString());
 		// ensure we used the same channel
 		verify(mockConnection, times(1)).createChannel();
@@ -424,12 +418,12 @@ public class RabbitTemplateTests {
 		admin.setApplicationContext(ac);
 		admin.afterPropertiesSet();
 		AtomicReference<Channel> templateChannel = new AtomicReference<>();
-		new TransactionTemplate(new TestTransactionManager()).execute(s -> {
-			return rabbitTemplate.execute(c -> {
-				templateChannel.set(((ChannelProxy) c).getTargetChannel());
-				return true;
-			});
-		});
+		new TransactionTemplate(new TestTransactionManager())
+				.execute(s ->
+						rabbitTemplate.execute(c -> {
+							templateChannel.set(((ChannelProxy) c).getTargetChannel());
+							return true;
+						}));
 		verify(channel1).txSelect();
 		verify(channel1).queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), anyMap());
 		assertThat(templateChannel.get()).isEqualTo(channel1);
@@ -606,10 +600,7 @@ public class RabbitTemplateTests {
 		TransactionTemplate tt = new TransactionTemplate(new RabbitTransactionManager(connectionFactory));
 		assertThatIllegalStateException()
 				.isThrownBy(() ->
-						tt.execute(status -> {
-							template.convertAndSend("foo", "bar");
-							return null;
-						}));
+						tt.executeWithoutResult(status -> template.convertAndSend("foo", "bar")));
 		assertThat(TransactionSynchronizationManager.hasResource(connectionFactory)).isFalse();
 		assertThatIllegalStateException()
 				.isThrownBy(() -> (TransactionSynchronizationManager.getSynchronizations()).isEmpty())
@@ -633,16 +624,13 @@ public class RabbitTemplateTests {
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		template.setChannelTransacted(true);
 		TransactionTemplate tt = new TransactionTemplate(new TestTransactionManager());
-		tt.execute(status -> {
-			template.convertAndSend("foo", "bar");
-			return null;
-		});
+		tt.executeWithoutResult(status -> template.convertAndSend("foo", "bar"));
 		assertThat(TransactionSynchronizationManager.hasResource(connectionFactory)).isFalse();
 		assertThatIllegalStateException()
 				.isThrownBy(() -> (TransactionSynchronizationManager.getSynchronizations()).isEmpty())
 				.withMessage("Transaction synchronization is not active");
 		assertThatExceptionOfType(AfterCompletionFailedException.class)
-				.isThrownBy(() -> ConnectionFactoryUtils.checkAfterCompletion());
+				.isThrownBy(ConnectionFactoryUtils::checkAfterCompletion);
 		ConnectionFactoryUtils.enableAfterCompletionFailureCapture(false);
 	}
 

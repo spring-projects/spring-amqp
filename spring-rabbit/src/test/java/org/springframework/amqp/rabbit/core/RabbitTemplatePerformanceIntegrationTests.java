@@ -109,10 +109,8 @@ public class RabbitTemplatePerformanceIntegrationTests {
 		List<String> results = Collections.synchronizedList(new ArrayList<>());
 		template.setChannelTransacted(true);
 		Stream.of(1, 2, 3, 4).forEach(i -> exec.execute(() -> {
-			new TransactionTemplate(new TestTransactionManager()).execute(status -> {
-				template.convertAndSend(ROUTE, "message");
-				return null;
-			});
+			new TransactionTemplate(new TestTransactionManager())
+					.executeWithoutResult(status -> template.convertAndSend(ROUTE, "message"));
 			template.convertAndSend(ROUTE, "message");
 			results.add((String) template.receiveAndConvert(ROUTE, 10_000L));
 			latch.countDown();

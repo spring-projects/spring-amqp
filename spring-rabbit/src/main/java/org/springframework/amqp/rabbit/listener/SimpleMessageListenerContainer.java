@@ -1023,7 +1023,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
-	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	private boolean receiveAndExecute(final BlockingQueueConsumer consumer) throws Exception { // NOSONAR
 
 		PlatformTransactionManager transactionManager = getTransactionManager();

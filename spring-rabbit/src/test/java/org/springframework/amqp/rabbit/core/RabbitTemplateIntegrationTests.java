@@ -49,6 +49,7 @@ import com.rabbitmq.client.ShutdownSignalException;
 import com.rabbitmq.client.impl.AMQImpl;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -106,10 +107,8 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
-import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 import org.springframework.transaction.support.DefaultTransactionStatus;
-import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionSynchronizationUtils;
@@ -628,12 +627,10 @@ public class RabbitTemplateIntegrationTests {
 	}
 
 	@Test
-	public void testSendInExternalTransaction() throws Exception {
+	public void testSendInExternalTransaction() {
 		template.setChannelTransacted(true);
-		new TransactionTemplate(new TestTransactionManager()).execute(status -> {
-			template.convertAndSend(ROUTE, "message");
-			return null;
-		});
+		new TransactionTemplate(new TestTransactionManager())
+				.executeWithoutResult(status -> template.convertAndSend(ROUTE, "message"));
 		String result = (String) template.receiveAndConvert(ROUTE);
 		assertThat(result).isEqualTo("message");
 		result = (String) template.receiveAndConvert(ROUTE);
@@ -641,7 +638,7 @@ public class RabbitTemplateIntegrationTests {
 	}
 
 	@Test
-	public void testSendInExternalTransactionWithRollback() throws Exception {
+	public void testSendInExternalTransactionWithRollback() {
 		template.setChannelTransacted(true);
 		try {
 			new TransactionTemplate(new TestTransactionManager()).execute(status -> {
@@ -1160,15 +1157,16 @@ public class RabbitTemplateIntegrationTests {
 
 		this.template.convertAndSend(ROUTE, "TEST");
 		this.template.setReceiveTimeout(timeout);
-		result = new TransactionTemplate(new TestTransactionManager()).execute(status -> {
-			final AtomicReference<String> payloadReference = new AtomicReference<String>();
-			boolean received1 = template.receiveAndReply((ReceiveAndReplyCallback<String, Void>) payload -> {
-				payloadReference.set(payload);
-				return null;
-			});
-			assertThat(received1).isTrue();
-			return payloadReference.get();
-		});
+		result = new TransactionTemplate(new TestTransactionManager())
+				.execute(status -> {
+					AtomicReference<@Nullable String> payloadReference = new AtomicReference<>();
+					boolean received1 = template.<String, Object>receiveAndReply(payload -> {
+						payloadReference.set(payload);
+						return null;
+					});
+					assertThat(received1).isTrue();
+					return payloadReference.get();
+				});
 		assertThat(result).isEqualTo("TEST");
 		this.template.setReceiveTimeout(0);
 		assertThat(this.template.receive(ROUTE)).isEqualTo(null);
@@ -1176,16 +1174,12 @@ public class RabbitTemplateIntegrationTests {
 		this.template.convertAndSend(ROUTE, "TEST");
 		this.template.setReceiveTimeout(timeout);
 		try {
-			new TransactionTemplate(new TestTransactionManager()).execute(new TransactionCallbackWithoutResult() {
-
-				@Override
-				public void doInTransactionWithoutResult(TransactionStatus status) {
-					template.receiveAndReply((ReceiveAndReplyMessageCallback) message -> message,
-							(request, reply) -> {
-								throw new PlannedException();
-							});
-				}
-			});
+			new TransactionTemplate(new TestTransactionManager())
+					.executeWithoutResult((status) ->
+							template.receiveAndReply((ReceiveAndReplyMessageCallback) message -> message,
+									(request, reply) -> {
+										throw new PlannedException();
+									}));
 			fail("Expected PlannedException");
 		}
 		catch (Exception e) {
@@ -1513,26 +1507,24 @@ public class RabbitTemplateIntegrationTests {
 		assertThat(template.receive(ROUTE)).isNull();
 	}
 
-	private void testSendInGlobalTransactionGuts(final boolean rollback) throws Exception {
+	private void testSendInGlobalTransactionGuts(final boolean rollback) {
 		template.setChannelTransacted(true);
-		new TransactionTemplate(new TestTransactionManager()).execute(status -> {
+		new TransactionTemplate(new TestTransactionManager())
+				.executeWithoutResult(status -> {
+					template.convertAndSend(ROUTE, "message");
 
-			template.convertAndSend(ROUTE, "message");
+					if (rollback) {
+						TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
 
-			if (rollback) {
-				TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+							@Override
+							public void afterCommit() {
+								TransactionSynchronizationUtils
+										.triggerAfterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK);
+							}
 
-					@Override
-					public void afterCommit() {
-						TransactionSynchronizationUtils
-								.triggerAfterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK);
+						});
 					}
-
 				});
-			}
-
-			return null;
-		});
 	}
 
 	@Test

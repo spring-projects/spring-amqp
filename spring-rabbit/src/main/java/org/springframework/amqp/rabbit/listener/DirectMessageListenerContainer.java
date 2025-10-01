@@ -1180,7 +1180,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				this.transactionTemplate =
 						new TransactionTemplate(this.transactionManager, this.transactionAttribute);
 			}
-			this.transactionTemplate.execute(s -> {
+			this.transactionTemplate.executeWithoutResult((status) -> {
 				RabbitResourceHolder resourceHolder = ConnectionFactoryUtils.bindResourceToTransaction(
 						new RabbitResourceHolder(getChannel(), false), this.connectionFactory, true);
 				if (resourceHolder != null) {
@@ -1197,7 +1197,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				catch (Throwable e2) { //NOSONAR ok to catch Throwable here because we re-throw it below
 					throw new WrappedTransactionException(e2);
 				}
-				return null;
 			});
 		}
 

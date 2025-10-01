@@ -64,7 +64,7 @@ public class RabbitTransactionManagerIntegrationTests {
 	}
 
 	@Test
-	public void testSendAndReceiveInTransaction() throws Exception {
+	public void testSendAndReceiveInTransaction() {
 		String result = transactionTemplate.execute(status -> {
 			template.convertAndSend(ROUTE, "message");
 			return (String) template.receiveAndConvert(ROUTE);
@@ -75,7 +75,7 @@ public class RabbitTransactionManagerIntegrationTests {
 	}
 
 	@Test
-	public void testReceiveInTransaction() throws Exception {
+	public void testReceiveInTransaction() {
 		template.convertAndSend(ROUTE, "message");
 		String result = transactionTemplate.execute(status -> (String) template.receiveAndConvert(ROUTE));
 		assertThat(result).isEqualTo("message");
@@ -84,7 +84,7 @@ public class RabbitTransactionManagerIntegrationTests {
 	}
 
 	@Test
-	public void testReceiveInTransactionWithRollback() throws Exception {
+	public void testReceiveInTransactionWithRollback() {
 		// Makes receive (and send in principle) transactional
 		template.setChannelTransacted(true);
 		template.convertAndSend(ROUTE, "message");
@@ -100,12 +100,9 @@ public class RabbitTransactionManagerIntegrationTests {
 	}
 
 	@Test
-	public void testSendInTransaction() throws Exception {
+	public void testSendInTransaction() {
 		template.setChannelTransacted(true);
-		transactionTemplate.execute(status -> {
-			template.convertAndSend(ROUTE, "message");
-			return null;
-		});
+		transactionTemplate.executeWithoutResult(status -> template.convertAndSend(ROUTE, "message"));
 		String result = (String) template.receiveAndConvert(ROUTE);
 		assertThat(result).isEqualTo("message");
 		result = (String) template.receiveAndConvert(ROUTE);
@@ -113,7 +110,7 @@ public class RabbitTransactionManagerIntegrationTests {
 	}
 
 	@Test
-	public void testSendInTransactionWithRollback() throws Exception {
+	public void testSendInTransactionWithRollback() {
 		template.setChannelTransacted(true);
 		assertThatExceptionOfType(PlannedException.class)
 				.isThrownBy(() -> transactionTemplate.execute(status -> {
