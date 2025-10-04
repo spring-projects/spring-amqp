@@ -19,7 +19,7 @@ plugins {
 	id 'org.antora' version '1.0.0'
 	id 'io.spring.antora.generate-antora-yml' version '0.0.1'
 	id 'io.freefair.aggregate-javadoc' version '8.13.1'
-	id 'io.spring.nullability' version '0.0.4' apply false
+	id 'io.spring.nullability' version '0.0.5' apply false
 }
 
 description = 'Spring AMQP'
@@ -35,7 +35,7 @@ ext {
 	assertjVersion = '3.27.6'
 	assertkVersion = '0.28.1'
 	awaitilityVersion = '4.3.0'
-	commonsHttpClientVersion = '5.5'
+	commonsHttpClientVersion = '5.5.1'
 	commonsPoolVersion = '2.12.1'
 	hamcrestVersion = '3.0'
 	hibernateValidationVersion = '9.0.1.Final'
