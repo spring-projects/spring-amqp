@@ -36,7 +36,6 @@ import org.aopalliance.aop.Advice;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AmqpAcknowledgment;
 import org.springframework.amqp.core.Message;
