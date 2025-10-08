@@ -134,14 +134,30 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer, Be
 		this.queues = Arrays.copyOf(queueNames, queueNames.length);
 	}
 
+	/**
+	 * The initial number credits to grant to the AMQP receiver.
+	 * The default is {@code 100}.
+	 * @param initialCredits number of initial credits
+	 * @see com.rabbitmq.client.amqp.ConsumerBuilder#initialCredits(int)
+	 */
 	public void setInitialCredits(int initialCredits) {
 		this.initialCredits = initialCredits;
 	}
 
+	/**
+	 * The consumer priority.
+	 * @param priority consumer priority
+	 * @see com.rabbitmq.client.amqp.ConsumerBuilder#priority(int)
+	 */
 	public void setPriority(int priority) {
 		this.priority = priority;
 	}
 
+	/**
+	 * Add {@link Resource.StateListener} instances to the consumer.
+	 * @param stateListeners listeners to add
+	 * @see com.rabbitmq.client.amqp.ConsumerBuilder#listeners(Resource.StateListener...)
+	 */
 	public void setStateListeners(Resource.StateListener... stateListeners) {
 		this.stateListeners = Arrays.copyOf(stateListeners, stateListeners.length);
 	}
@@ -156,11 +172,24 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer, Be
 		this.afterReceivePostProcessors = MessagePostProcessorUtils.sort(Arrays.asList(afterReceivePostProcessors));
 	}
 
+	/**
+	 * Set a number of AMQP messages to gather before producing as a single message downstream.
+	 * Default 1 - no batching.
+	 * @param batchSize the batch size to use.
+	 * @see #setBatchReceiveTimeout(long)
+	 */
 	public void setBatchSize(int batchSize) {
 		Assert.isTrue(batchSize > 1, "'batchSize' must be greater than 1");
 		this.batchSize = batchSize;
 	}
 
+	/**
+	 * Set a timeout in milliseconds for how long a batch gathering process should go.
+	 * Therefore, the batch is released as a single message whatever first happens:
+	 * this timeout or {@link #setBatchSize(int)}.
+	 * Default 30 seconds.
+	 * @param batchReceiveTimeout the timeout for gathering a batch.
+	 */
 	public void setBatchReceiveTimeout(long batchReceiveTimeout) {
 		this.batchReceiveDuration = Duration.ofMillis(batchReceiveTimeout);
 	}
@@ -192,7 +221,6 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer, Be
 	/**
 	 * Set an advice chain to apply to the listener.
 	 * @param advices the advice chain.
-	 * @since 2.4.5
 	 */
 	public void setAdviceChain(Advice... advices) {
 		Assert.notNull(advices, "'advices' cannot be null");
@@ -215,14 +243,21 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer, Be
 	/**
 	 * Set the default behavior when a message processing has failed.
 	 * When true, messages will be requeued, when false, they will be discarded.
-	 * When true, the default can be overridden by the listener throwing an
-	 * {@link AmqpRejectAndDontRequeueException}. Default true.
+	 * This option can be overruled by throwing
+	 * {@link org.springframework.amqp.AmqpRejectAndDontRequeueException} or
+	 * {@link org.springframework.amqp.ImmediateRequeueAmqpException} from the message listener.
+	 * Default true.
 	 * @param defaultRequeue true to requeue by default.
 	 */
 	public void setDefaultRequeue(boolean defaultRequeue) {
 		this.defaultRequeue = defaultRequeue;
 	}
 
+	/**
+	 * Set a duration for how long to wait for all the consumers to shut down successfully on listener container stop.
+	 * Default 30 seconds.
+	 * @param gracefulShutdownPeriod the timeout to wait on stop.
+	 */
 	public void setGracefulShutdownPeriod(Duration gracefulShutdownPeriod) {
 		this.gracefulShutdownPeriod = gracefulShutdownPeriod;
 	}
