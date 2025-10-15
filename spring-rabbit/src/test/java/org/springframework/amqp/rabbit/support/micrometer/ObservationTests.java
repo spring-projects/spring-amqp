@@ -73,7 +73,7 @@ import static org.awaitility.Awaitility.await;
  *
  */
 @SpringJUnitConfig
-@RabbitAvailable(queues = { "observation.testQ1", "observation.testQ2" })
+@RabbitAvailable(queues = {"observation.testQ1", "observation.testQ2"})
 @DirtiesContext
 public class ObservationTests {
 
@@ -81,7 +81,7 @@ public class ObservationTests {
 	void endToEnd(@Autowired Listener listener, @Autowired RabbitTemplate template,
 			@Autowired SimpleTracer tracer, @Autowired RabbitListenerEndpointRegistry rler,
 			@Autowired MeterRegistry meterRegistry)
-					throws InterruptedException {
+			throws InterruptedException {
 
 		template.convertAndSend("observation.testQ1", "test");
 		assertThat(listener.latch1.await(10, TimeUnit.SECONDS)).isTrue();
@@ -110,13 +110,14 @@ public class ObservationTests {
 				.containsAllEntriesOf(
 						Map.of("spring.rabbit.listener.id", "obs2", "foo", "some foo value", "bar", "some bar value"));
 		assertThat(span.getName()).isEqualTo("observation.testQ2 receive");
+
 		template.setObservationConvention(new DefaultRabbitTemplateObservationConvention() {
 
 			@Override
 			public KeyValues getLowCardinalityKeyValues(RabbitMessageSenderContext context) {
 				return super.getLowCardinalityKeyValues(context).and("foo", "bar")
-					.and("messaging.destination.name", context.getExchange())
-					.and("messaging.rabbitmq.destination.routing_key", context.getRoutingKey());
+						.and("messaging.destination.name", context.getExchange())
+						.and("messaging.rabbitmq.destination.routing_key", context.getRoutingKey());
 			}
 
 		});
@@ -211,16 +212,18 @@ public class ObservationTests {
 
 		@Bean
 		ObservationRegistry observationRegistry(Tracer tracer, Propagator propagator, MeterRegistry meterRegistry) {
-			TestObservationRegistry observationRegistry = TestObservationRegistry.create();
+			TestObservationRegistry observationRegistry = TestObservationRegistry.builder()
+					.validateObservationsWithTheSameNameHavingTheSameSetOfLowCardinalityKeys(false)
+					.build();
 			observationRegistry.observationConfig().observationHandler(
-					// Composite will pick the first matching handler
-					new ObservationHandler.FirstMatchingCompositeObservationHandler(
-							// This is responsible for creating a child span on the sender side
-							new PropagatingSenderTracingObservationHandler<>(tracer, propagator),
-							// This is responsible for creating a span on the receiver side
-							new PropagatingReceiverTracingObservationHandler<>(tracer, propagator),
-							// This is responsible for creating a default span
-							new DefaultTracingObservationHandler(tracer)))
+							// Composite will pick the first matching handler
+							new ObservationHandler.FirstMatchingCompositeObservationHandler(
+									// This is responsible for creating a child span on the sender side
+									new PropagatingSenderTracingObservationHandler<>(tracer, propagator),
+									// This is responsible for creating a span on the receiver side
+									new PropagatingReceiverTracingObservationHandler<>(tracer, propagator),
+									// This is responsible for creating a default span
+									new DefaultTracingObservationHandler(tracer)))
 					.observationHandler(new DefaultMeterObservationHandler(meterRegistry));
 			return observationRegistry;
 		}
@@ -244,7 +247,7 @@ public class ObservationTests {
 				}
 
 				// This is called on the consumer side when the message is consumed
-				// Normally we would use tools like Extractor from tracing but for tests we are just manually creating a span
+				// Normally we would use tools like Extractor from tracing, but for tests we are just manually creating a span
 				@Override
 				public <C> Span.Builder extract(C carrier, Getter<C> getter) {
 					String foo = getter.get(carrier, "foo");
