@@ -1213,11 +1213,11 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 						+ "transactional channel. Either use a different AcknowledgeMode or make sure " +
 						"channelTransacted=false");
 		validateConfiguration();
-		initialize();
 		checkMicrometer();
-		if (this.isAsyncReplies() && !AcknowledgeMode.MANUAL.equals(this.acknowledgeMode)) {
+		if (isAsyncReplies() && !AcknowledgeMode.MANUAL.equals(this.acknowledgeMode)) {
 			this.acknowledgeMode = AcknowledgeMode.MANUAL;
 		}
+		initialize();
 	}
 
 	@Override
