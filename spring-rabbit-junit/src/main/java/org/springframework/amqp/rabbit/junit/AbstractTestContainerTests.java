@@ -23,8 +23,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
-import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.rabbitmq.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -52,8 +52,8 @@ public abstract class AbstractTestContainerTests {
 			DockerImageName imageName = DockerImageName.parse(image)
 					.asCompatibleSubstituteFor("rabbitmq");
 			RABBITMQ = new RabbitMQContainer(imageName)
-						.withExposedPorts(5672, 15672, 5552)
-						.withStartupTimeout(Duration.ofMinutes(2));
+					.withExposedPorts(5672, 15672, 5552)
+					.withStartupTimeout(Duration.ofMinutes(2));
 		}
 		else {
 			RABBITMQ = null;
@@ -84,7 +84,7 @@ public abstract class AbstractTestContainerTests {
 	}
 
 	public static String restUri() {
-		return RABBITMQ != null ? RABBITMQ.getHttpUrl() + "/api/" : "http://localhost:" + managementPort()  + "/api/";
+		return RABBITMQ != null ? RABBITMQ.getHttpUrl() + "/api/" : "http://localhost:" + managementPort() + "/api/";
 	}
 
 }
