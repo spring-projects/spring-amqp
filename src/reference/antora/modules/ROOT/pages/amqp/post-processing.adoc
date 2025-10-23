@@ -21,7 +21,7 @@ If you retain a reference to the original outbound message, its properties will 
 So, if your application retains a copy of an outbound message with these message post processors, consider turning the `copyProperties` option on.
 
 IMPORTANT: Starting with version 2.2.12, you can configure the delimiter that the compressing post processors use between content encoding elements.
-With versions 2.2.11 and before, this was hard-coded as `:`, it is now set to `, ` by default.
+With versions 2.2.11 and before, this was hard-coded as `:`, it is now set to `,` by default.
 The decompressors will work with both delimiters.
 However, if you publish messages with 2.3 or later and consume with 2.2.11 or earlier, you MUST set the `encodingDelimiter` property on the compressor(s) to `:`.
 When your consumers are upgraded to 2.2.11 or later, you can revert to the default of `, `.
