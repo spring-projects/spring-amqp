@@ -12,7 +12,7 @@ However, the abstractions have been validated in .NET using Apache Qpid in addit
 Since AMQP operates at the protocol level, in principle, you can use the RabbitMQ client with any broker that supports the same protocol version, but we do not test any other brokers at present.
 
 This overview assumes that you are already familiar with the basics of the AMQP specification.
-If not, have a look at the resources listed in xref:index.adoc#resources[Other Resources]
+If not, have a look at the resources listed in xref:resources.adoc[Other Resources]
 
 [[message]]
 == `Message`
