@@ -23,7 +23,7 @@ public interface AmqpAdmin {
 
     String declareQueue(Queue queue);
 
-    void deleteQueue(String queueName);
+    boolean deleteQueue(String queueName);
 
     void deleteQueue(String queueName, boolean unused, boolean empty);
 
@@ -37,7 +37,7 @@ public interface AmqpAdmin {
 
     Properties getQueueProperties(String queueName);
 
-	QueueInformation getQueueInfo(String queueName);
+    QueueInformation getQueueInfo(String queueName);
 
 }
 ----
