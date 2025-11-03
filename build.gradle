@@ -545,7 +545,9 @@ javadoc {
 	}
 
 	destinationDir = file('build/api')
-	classpath = files().from { files(javaProjects.collect { it.sourceSets.main.compileClasspath }) }
+	doFirst {
+		classpath += files(javaProjects.collect { it.sourceSets.main.compileClasspath })
+	}
 }
 
 tasks.register('api') {
@@ -569,18 +571,9 @@ tasks.register('schemaZip', Zip) {
 			shortName = 'rabbit'
 		}
 
-		/* TODO until Gradle 9.1.1 or 9.2
 		subproject.sourceSets.main.resources.find {
 			it.path.endsWith("META-INF${File.separator}spring.schemas")
-		}?.withInputStream { schemas.load(it) }*/
-
-		File schemasFile = subproject.sourceSets.main.resources.find  {
-			it.path.endsWith("META-INF${File.separator}spring.schemas")
-		}
-
-		if (schemasFile) {
-			schemasFile.withInputStream { schemas.load(it) }
-		}
+		}?.withInputStream { schemas.load(it) }
 
 		for (def key : schemas.keySet()) {
 			File xsdFile = subproject.sourceSets.main.resources.find {
