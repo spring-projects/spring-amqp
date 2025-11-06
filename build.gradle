@@ -107,6 +107,30 @@ allprojects {
 		}
 //		maven { url 'https://repo.spring.io/libs-staging-local' }
 	}
+
+	configurations {
+		dependencyManagement {
+			canBeConsumed = false
+			canBeResolved = false
+		}
+
+		configureEach {
+			resolutionStrategy.cacheChangingModulesFor 0, 'minutes'
+		}
+	}
+
+	dependencies {
+		dependencyManagement(platform("com.fasterxml.jackson:jackson-bom:$jacksonBomVersion"))
+		dependencyManagement(platform("tools.jackson:jackson-bom:$jackson3Version"))
+		dependencyManagement(platform("org.junit:junit-bom:$junitJupiterVersion"))
+		dependencyManagement(platform("org.springframework:spring-framework-bom:$springVersion"))
+		dependencyManagement(platform("io.projectreactor:reactor-bom:$reactorVersion"))
+		dependencyManagement(platform("org.apache.logging.log4j:log4j-bom:$log4jVersion"))
+		dependencyManagement(platform("org.springframework.data:spring-data-bom:$springDataVersion"))
+		dependencyManagement(platform("io.micrometer:micrometer-bom:$micrometerVersion"))
+		dependencyManagement(platform("io.micrometer:micrometer-tracing-bom:$micrometerTracingVersion"))
+		dependencyManagement(platform("org.testcontainers:testcontainers-bom:$testcontainersVersion"))
+	}
 }
 
 ext {
@@ -159,29 +183,14 @@ configure(javaProjects) { subproject ->
 		}
 	}
 
-	configurations.create("dependencyManagement") {
-		canBeConsumed = false
-		canBeResolved = false
-
-		configurations["compileClasspath"].extendsFrom(it)
-		configurations["runtimeClasspath"].extendsFrom(it)
-		configurations["testCompileClasspath"].extendsFrom(it)
-		configurations["testRuntimeClasspath"].extendsFrom(it)
+	configurations {
+		[compileClasspath, runtimeClasspath, testCompileClasspath, testRuntimeClasspath].each {
+			it.extendsFrom(dependencyManagement)
+		}
 	}
 
 	// dependencies that are common across all java projects
 	dependencies {
-		dependencyManagement(platform("com.fasterxml.jackson:jackson-bom:$jacksonBomVersion"))
-		dependencyManagement(platform("tools.jackson:jackson-bom:$jackson3Version"))
-		dependencyManagement(platform("org.junit:junit-bom:$junitJupiterVersion"))
-		dependencyManagement(platform("org.springframework:spring-framework-bom:$springVersion"))
-		dependencyManagement(platform("io.projectreactor:reactor-bom:$reactorVersion"))
-		dependencyManagement(platform("org.apache.logging.log4j:log4j-bom:$log4jVersion"))
-		dependencyManagement(platform("org.springframework.data:spring-data-bom:$springDataVersion"))
-		dependencyManagement(platform("io.micrometer:micrometer-bom:$micrometerVersion"))
-		dependencyManagement(platform("io.micrometer:micrometer-tracing-bom:$micrometerTracingVersion"))
-		dependencyManagement(platform("org.testcontainers:testcontainers-bom:$testcontainersVersion"))
-
 		testImplementation 'org.apache.logging.log4j:log4j-core'
 		testImplementation "org.hamcrest:hamcrest-core:$hamcrestVersion"
 		testImplementation("org.mockito:mockito-core:$mockitoVersion") {
@@ -525,6 +534,8 @@ dependencies {
 		javadoc it
 	}
 }
+
+configurations.javadocClasspath.extendsFrom(configurations.dependencyManagement)
 
 javadoc {
 	title = "${rootProject.description} ${version} API"
