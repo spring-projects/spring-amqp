@@ -98,31 +98,6 @@ nohttp {
 allprojects {
 	group = 'org.springframework.amqp'
 
-	apply plugin: 'io.spring.dependency-management'
-
-	dependencyManagement {
-		resolutionStrategy {
-			cacheChangingModulesFor 0, 'seconds'
-		}
-		applyMavenExclusions = false
-		generatedPomCustomization {
-			enabled = false
-		}
-
-		imports {
-			mavenBom "com.fasterxml.jackson:jackson-bom:$jacksonBomVersion"
-			mavenBom "tools.jackson:jackson-bom:$jackson3Version"
-			mavenBom "org.junit:junit-bom:$junitJupiterVersion"
-			mavenBom "org.springframework:spring-framework-bom:$springVersion"
-			mavenBom "io.projectreactor:reactor-bom:$reactorVersion"
-			mavenBom "org.apache.logging.log4j:log4j-bom:$log4jVersion"
-			mavenBom "org.springframework.data:spring-data-bom:$springDataVersion"
-			mavenBom "io.micrometer:micrometer-bom:$micrometerVersion"
-			mavenBom "io.micrometer:micrometer-tracing-bom:$micrometerTracingVersion"
-			mavenBom "org.testcontainers:testcontainers-bom:$testcontainersVersion"
-		}
-	}
-
 	repositories {
 		mavenCentral()
 		maven { url 'https://repo.spring.io/milestone' }
@@ -184,8 +159,29 @@ configure(javaProjects) { subproject ->
 		}
 	}
 
+	configurations.create("dependencyManagement") {
+		canBeConsumed = false
+		canBeResolved = false
+
+		configurations["compileClasspath"].extendsFrom(it)
+		configurations["runtimeClasspath"].extendsFrom(it)
+		configurations["testCompileClasspath"].extendsFrom(it)
+		configurations["testRuntimeClasspath"].extendsFrom(it)
+	}
+
 	// dependencies that are common across all java projects
 	dependencies {
+		dependencyManagement(platform("com.fasterxml.jackson:jackson-bom:$jacksonBomVersion"))
+		dependencyManagement(platform("tools.jackson:jackson-bom:$jackson3Version"))
+		dependencyManagement(platform("org.junit:junit-bom:$junitJupiterVersion"))
+		dependencyManagement(platform("org.springframework:spring-framework-bom:$springVersion"))
+		dependencyManagement(platform("io.projectreactor:reactor-bom:$reactorVersion"))
+		dependencyManagement(platform("org.apache.logging.log4j:log4j-bom:$log4jVersion"))
+		dependencyManagement(platform("org.springframework.data:spring-data-bom:$springDataVersion"))
+		dependencyManagement(platform("io.micrometer:micrometer-bom:$micrometerVersion"))
+		dependencyManagement(platform("io.micrometer:micrometer-tracing-bom:$micrometerTracingVersion"))
+		dependencyManagement(platform("org.testcontainers:testcontainers-bom:$testcontainersVersion"))
+
 		testImplementation 'org.apache.logging.log4j:log4j-core'
 		testImplementation "org.hamcrest:hamcrest-core:$hamcrestVersion"
 		testImplementation("org.mockito:mockito-core:$mockitoVersion") {
