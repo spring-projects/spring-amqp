@@ -19,7 +19,7 @@ plugins {
 	id 'org.antora' version '1.0.0'
 	id 'io.spring.antora.generate-antora-yml' version '0.0.1'
 	id 'io.freefair.aggregate-javadoc' version '8.13.1'
-	id 'io.spring.nullability' version '0.0.6' apply false
+	id 'io.spring.nullability' version '0.0.8' apply false
 }
 
 description = 'Spring AMQP'
