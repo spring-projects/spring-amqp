@@ -54,7 +54,7 @@ ext {
 	rabbitmqAmqpClientVersion = '0.7.0'
 	rabbitmqStreamVersion = '1.3.0'
 	rabbitmqVersion = '5.27.1'
-	reactorVersion = '2025.0.0-RC1'
+	reactorVersion = '2025.0.1-SNAPSHOT'
 	springDataVersion = '2025.1.0-SNAPSHOT'
 	springVersion = '7.0.0-RC1'
 	testcontainersVersion = '2.0.1'
