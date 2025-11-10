@@ -90,7 +90,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	private static final String UNUSED = "unused";
 
-	private static final int DECLARE_MAX_ATTEMPTS = 5;
+	private static final int DECLARE_MAX_RETRIES = 5;
 
 	private static final Duration DECLARE_INITIAL_RETRY_DELAY = Duration.ofSeconds(1);
 
@@ -597,7 +597,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			if (this.retryTemplate == null && !this.retryDisabled) {
 				RetryPolicy retryPolicy =
 						RetryPolicy.builder()
-								.maxAttempts(DECLARE_MAX_ATTEMPTS)
+								.maxRetries(DECLARE_MAX_RETRIES)
 								.delay(DECLARE_INITIAL_RETRY_DELAY)
 								.multiplier(DECLARE_RETRY_MULTIPLIER)
 								.maxDelay(DECLARE_MAX_RETRY_DELAY)

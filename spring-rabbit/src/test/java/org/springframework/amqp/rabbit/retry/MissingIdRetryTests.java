@@ -108,7 +108,7 @@ public class MissingIdRetryTests {
 	@Test
 	public void testWithId() throws Exception {
 		// 2 messages; each retried twice by retry interceptor
-		RetryPolicy retryPolicy = RetryPolicy.builder().maxAttempts(2).delay(Duration.ZERO).build();
+		RetryPolicy retryPolicy = RetryPolicy.builder().maxRetries(2).delay(Duration.ZERO).build();
 		this.latch = new CountDownLatch(6);
 		ConfigurableApplicationContext ctx = new ClassPathXmlApplicationContext("retry-context.xml", this.getClass());
 		RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
@@ -146,7 +146,7 @@ public class MissingIdRetryTests {
 
 	@Test
 	public void testWithIdAndSuccess() throws Exception {
-		RetryPolicy retryPolicy = RetryPolicy.builder().maxAttempts(2).delay(Duration.ZERO).build();
+		RetryPolicy retryPolicy = RetryPolicy.builder().maxRetries(2).delay(Duration.ZERO).build();
 		// 2 messages; each retried twice by retry interceptor
 		this.latch = new CountDownLatch(6);
 		ConfigurableApplicationContext ctx = new ClassPathXmlApplicationContext("retry-context.xml", this.getClass());

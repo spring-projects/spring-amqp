@@ -181,7 +181,7 @@ public class AmqpAppender extends AbstractAppender {
 			}
 		}
 		else if (this.manager.maxSenderRetries > 0) {
-			this.rabbitTemplate.setRetryTemplate(new RetryTemplate(RetryPolicy.withMaxAttempts(2)));
+			this.rabbitTemplate.setRetryTemplate(new RetryTemplate(RetryPolicy.withMaxRetries(2)));
 		}
 	}
 

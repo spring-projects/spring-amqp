@@ -65,7 +65,7 @@ public class RetryInterceptorBuilderSupportTests {
 
 	@Test
 	public void testWithCustomRetryPolicy() {
-		RetryPolicy retryPolicy = RetryPolicy.builder().maxAttempts(2).build();
+		RetryPolicy retryPolicy = RetryPolicy.builder().maxRetries(2).build();
 		StatefulRetryOperationsInterceptor interceptor = RetryInterceptorBuilder.stateful()
 				.retryPolicy(retryPolicy)
 				.build();
@@ -78,7 +78,7 @@ public class RetryInterceptorBuilderSupportTests {
 	public void testWithMoreAttempts() {
 		StatefulRetryOperationsInterceptor interceptor =
 				RetryInterceptorBuilder.stateful()
-						.maxAttempts(5)
+						.maxRetries(5)
 						.build();
 
 		assertThat(TestUtils.getPropertyValue(interceptor, "retryPolicy.backOff.maxAttempts")).isEqualTo(5L);
@@ -88,7 +88,7 @@ public class RetryInterceptorBuilderSupportTests {
 	public void testWithCustomizedBackOffMoreAttempts() {
 		StatefulRetryOperationsInterceptor interceptor =
 				RetryInterceptorBuilder.stateful()
-						.maxAttempts(5)
+						.maxRetries(5)
 						.backOffOptions(1, 2, 10)
 						.build();
 
@@ -149,7 +149,7 @@ public class RetryInterceptorBuilderSupportTests {
 	@Test
 	public void testWitCustomRetryPolicyTraverseCause() {
 		StatefulRetryOperationsInterceptor interceptor = RetryInterceptorBuilder.stateful()
-				.retryPolicy(RetryPolicy.builder().maxAttempts(15).build())
+				.retryPolicy(RetryPolicy.builder().maxRetries(15).build())
 				.build();
 
 		assertThat(TestUtils.getPropertyValue(interceptor, "retryPolicy.backOff.maxAttempts")).isEqualTo(15L);

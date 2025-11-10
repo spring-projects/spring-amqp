@@ -210,7 +210,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 				latch.countDown();
 			});
 		}
-		factory.setRetryPolicy(RetryPolicy.builder().maxAttempts(2).delay(Duration.ofMillis(100)).build());
+		factory.setRetryPolicy(RetryPolicy.builder().maxRetries(2).delay(Duration.ofMillis(100)).build());
 		return factory.getObject();
 	}
 

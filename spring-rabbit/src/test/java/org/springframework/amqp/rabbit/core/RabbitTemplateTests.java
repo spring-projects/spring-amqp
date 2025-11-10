@@ -209,7 +209,7 @@ public class RabbitTemplateTests {
 		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
 		connectionFactory.setExecutor(mock(ExecutorService.class));
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
-		template.setRetryTemplate(new RetryTemplate(RetryPolicy.builder().maxAttempts(3).delay(Duration.ZERO).build()));
+		template.setRetryTemplate(new RetryTemplate(RetryPolicy.builder().maxRetries(3).delay(Duration.ZERO).build()));
 		try {
 			template.convertAndSend("foo", "bar", "baz");
 		}
@@ -295,7 +295,7 @@ public class RabbitTemplateTests {
 		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
 		connectionFactory.setExecutor(mock(ExecutorService.class));
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
-		template.setRetryTemplate(new RetryTemplate(RetryPolicy.builder().maxAttempts(3).delay(Duration.ZERO).build()));
+		template.setRetryTemplate(new RetryTemplate(RetryPolicy.builder().maxRetries(3).delay(Duration.ZERO).build()));
 
 		final AtomicBoolean recoverInvoked = new AtomicBoolean();
 

@@ -203,7 +203,7 @@ public class MessageListenerAdapterTests {
 		this.adapter = new MessageListenerAdapter();
 		this.adapter.setDefaultListenerMethod("handle");
 		this.adapter.setDelegate(this.simpleService);
-		RetryPolicy retryPolicy = RetryPolicy.builder().maxAttempts(2).delay(Duration.ZERO).build();
+		RetryPolicy retryPolicy = RetryPolicy.builder().maxRetries(2).delay(Duration.ZERO).build();
 		RetryTemplate retryTemplate = new RetryTemplate();
 		retryTemplate.setRetryPolicy(retryPolicy);
 		this.adapter.setRetryTemplate(retryTemplate);

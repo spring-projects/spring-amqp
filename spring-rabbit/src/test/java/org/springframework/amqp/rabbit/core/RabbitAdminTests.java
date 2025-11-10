@@ -340,7 +340,7 @@ public class RabbitAdminTests extends NeedsManagementTests {
 		CachingConnectionFactory ccf = new CachingConnectionFactory(rabbitConnectionFactory);
 		RabbitAdmin admin = new RabbitAdmin(ccf);
 		RetryTemplate rtt = new RetryTemplate();
-		rtt.setRetryPolicy(RetryPolicy.builder().maxAttempts(2).delay(Duration.ZERO).build());
+		rtt.setRetryPolicy(RetryPolicy.builder().maxRetries(2).delay(Duration.ZERO).build());
 		admin.setRetryTemplate(rtt);
 		GenericApplicationContext ctx = new GenericApplicationContext();
 		ctx.getBeanFactory().registerSingleton("foo", new AnonymousQueue());
