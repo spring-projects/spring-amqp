@@ -55,7 +55,7 @@ class StatelessRetryOperationsInterceptorTests {
 
 	@Test
 	void invokeWithFailuresNotExhaustingRetries() throws Throwable {
-		RetryPolicy retryPolicy = RetryPolicy.builder().maxAttempts(2).delay(Duration.ZERO).build();
+		RetryPolicy retryPolicy = RetryPolicy.builder().maxRetries(2).delay(Duration.ZERO).build();
 		MethodInvocation invocation = mock(MethodInvocation.class);
 		given(invocation.proceed()).willThrow(new IllegalStateException("initial"))
 				.willThrow(new IllegalStateException("retry-1")).willReturn("hello");
@@ -66,7 +66,7 @@ class StatelessRetryOperationsInterceptorTests {
 
 	@Test
 	void invokeWithFailuresExhaustingRetriesReturnsResultFromRecoverer() throws Throwable {
-		RetryPolicy retryPolicy = RetryPolicy.builder().maxAttempts(2).delay(Duration.ZERO).build();
+		RetryPolicy retryPolicy = RetryPolicy.builder().maxRetries(2).delay(Duration.ZERO).build();
 		Exception lastException = new IllegalStateException("retry-2");
 		Object[] arguments = new Object[] { "message" };
 		MethodInvocation invocation = mock(MethodInvocation.class);
@@ -82,7 +82,7 @@ class StatelessRetryOperationsInterceptorTests {
 
 	@Test
 	void invokeWithFailuresExhaustingRetriesThrowsResultFromRecoverer() throws Throwable {
-		RetryPolicy retryPolicy = RetryPolicy.builder().maxAttempts(2).delay(Duration.ZERO).build();
+		RetryPolicy retryPolicy = RetryPolicy.builder().maxRetries(2).delay(Duration.ZERO).build();
 		Exception recovererException = new IllegalStateException("failed");
 		Object[] arguments = new Object[] { "message" };
 		MethodInvocation invocation = mock(MethodInvocation.class);
@@ -97,7 +97,7 @@ class StatelessRetryOperationsInterceptorTests {
 
 	@Test
 	void invokeWithFailuresExhaustingRetriesAndNoRecovererThrowsLastException() throws Throwable {
-		RetryPolicy retryPolicy = RetryPolicy.builder().maxAttempts(2).delay(Duration.ZERO).build();
+		RetryPolicy retryPolicy = RetryPolicy.builder().maxRetries(2).delay(Duration.ZERO).build();
 		Exception LastException = new IllegalStateException("retry-2");
 		Object[] arguments = new Object[] { "message" };
 		MethodInvocation invocation = mock(MethodInvocation.class);

@@ -82,7 +82,7 @@ The following example shows how to do so:
 @Bean
 public StatefulRetryOperationsInterceptor interceptor() {
     return RetryInterceptorBuilder.stateful()
-            .maxAttempts(5)
+            .maxRetries(5)
             .backOffOptions(1000, 2.0, 10000) // initialInterval, multiplier, maxInterval
             .build();
 }
@@ -151,7 +151,7 @@ The following example shows how to set a `RepublishMessageRecoverer` as the reco
 @Bean
 RetryOperationsInterceptor interceptor() {
     return RetryInterceptorBuilder.stateless()
-            .maxAttempts(5)
+            .maxRetries(5)
             .recoverer(new RepublishMessageRecoverer(amqpTemplate(), "something", "somethingelse"))
             .build();
 }

@@ -40,7 +40,7 @@ import org.springframework.util.Assert;
  * <pre class="code">
  *	StatefulRetryOperationsInterceptor interceptor =
  *			RetryInterceptorBuilder.stateful()
- *				.maxAttempts(5)
+ *				.maxRetries(5)
  *				.backOffOptions(1, 2, 10) // initialInterval, multiplier, maxInterval
  *				.build();
  * </pre>
@@ -127,13 +127,13 @@ public abstract class RetryInterceptorBuilder<B extends RetryInterceptorBuilder<
 	}
 
 	/**
-	 * Apply the max attempts - a SimpleRetryPolicy will be used. Cannot be used if a custom retry operations
+	 * Apply the max retries - a SimpleRetryPolicy will be used. Cannot be used if a custom retry operations
 	 * or retry policy has been set.
-	 * @param maxAttempts the max attempts.
+	 * @param maxRetries the maximum number of retry attempts..
 	 * @return this.
 	 */
-	public B maxAttempts(int maxAttempts) {
-		return configureRetryPolicy((retryPolicy) -> retryPolicy.maxAttempts(maxAttempts));
+	public B maxRetries(int maxRetries) {
+		return configureRetryPolicy((retryPolicy) -> retryPolicy.maxRetries(maxRetries));
 	}
 
 	/**
