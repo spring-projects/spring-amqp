@@ -206,7 +206,7 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	}
 
 	/**
-	 * @return The target objects to delegate a message listening to.
+	 * @return The target object to delegate a message listening to.
 	 */
 	protected Object getDelegate() {
 		return this.delegate;
