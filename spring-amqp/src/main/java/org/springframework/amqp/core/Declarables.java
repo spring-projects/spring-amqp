@@ -31,20 +31,27 @@ import org.springframework.util.ObjectUtils;
  *
  * @author Gary Russell
  * @author Björn Michael
+ * @author Artem Bilan
+ *
  * @since 2.1
  */
 public class Declarables {
 
-	private final Collection<Declarable> declarables = new ArrayList<>();
+	private final Collection<Declarable> declarables;
 
 	public Declarables(Declarable... declarables) {
 		if (!ObjectUtils.isEmpty(declarables)) {
+			this.declarables = new ArrayList<>(declarables.length);
 			this.declarables.addAll(Arrays.asList(declarables));
+		}
+		else {
+			this.declarables = new ArrayList<>();
 		}
 	}
 
 	public Declarables(Collection<? extends Declarable> declarables) {
 		Assert.notNull(declarables, "declarables cannot be null");
+		this.declarables = new ArrayList<>(declarables.size());
 		this.declarables.addAll(declarables);
 	}
 

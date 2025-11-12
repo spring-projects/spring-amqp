@@ -361,7 +361,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	private void processMultiMethodListeners(RabbitListener[] classLevelListeners, Method[] multiMethods,
 			Object bean, String beanName) {
 
-		List<Method> checkedMethods = new ArrayList<>();
+		List<Method> checkedMethods = new ArrayList<>(multiMethods.length);
 		Method defaultMethod = null;
 		for (Method method : multiMethods) {
 			Method checked = checkProxy(method, bean);
@@ -646,8 +646,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		String[] queues = rabbitListener.queues();
 		QueueBinding[] bindings = rabbitListener.bindings();
 		org.springframework.amqp.rabbit.annotation.Queue[] queuesToDeclare = rabbitListener.queuesToDeclare();
-		List<String> queueNames = new ArrayList<>();
-		List<Queue> queueBeans = new ArrayList<>();
+		List<String> queueNames = new ArrayList<>(queues.length);
+		List<Queue> queueBeans = new ArrayList<>(queues.length);
 		for (String queue : queues) {
 			resolveQueues(queue, queueNames, queueBeans);
 		}
@@ -818,7 +818,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 		else {
 			final int length = binding.key().length;
-			routingKeys = new ArrayList<>();
+			routingKeys = new ArrayList<>(length);
 			for (int i = 0; i < length; ++i) {
 				resolveAsStringOrQueue(resolveExpression(binding.key()[i]), routingKeys, null, "@QueueBinding.key");
 			}

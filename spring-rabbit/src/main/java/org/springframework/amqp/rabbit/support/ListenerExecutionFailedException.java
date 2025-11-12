@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.rabbit.support;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,7 +25,6 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
-
 
 /**
  * Exception to be thrown when the execution of a listener method failed.
@@ -40,7 +38,7 @@ import org.springframework.amqp.core.Message;
 @SuppressWarnings("serial")
 public class ListenerExecutionFailedException extends AmqpException {
 
-	private final List<Message> failedMessages = new ArrayList<>();
+	private final List<Message> failedMessages;
 
 	/**
 	 * Constructor for ListenerExecutionFailedException.
@@ -50,7 +48,7 @@ public class ListenerExecutionFailedException extends AmqpException {
 	 */
 	public ListenerExecutionFailedException(String msg, Throwable cause, Message... failedMessage) {
 		super(msg, cause);
-		this.failedMessages.addAll(Arrays.asList(failedMessage));
+		this.failedMessages = Arrays.asList(failedMessage);
 	}
 
 	public @Nullable Message getFailedMessage() {

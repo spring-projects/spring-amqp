@@ -102,9 +102,9 @@ public class SuperStream extends Declarables {
 			BiFunction<String, Integer, List<String>> routingKeyStrategy,
 			Map<String, Object> arguments) {
 
-		List<Declarable> declarables = new ArrayList<>();
 		List<String> rks = routingKeyStrategy.apply(name, partitions);
 		Assert.state(rks.size() == partitions, () -> "Expected " + partitions + " routing keys, not " + rks.size());
+		List<Declarable> declarables = new ArrayList<>(partitions + 1);
 		declarables.add(
 				new DirectExchange(name, true, false, Map.<String, @Nullable Object>of("x-super-stream", true)));
 

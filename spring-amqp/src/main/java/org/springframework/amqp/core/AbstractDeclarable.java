@@ -35,6 +35,8 @@ import org.springframework.util.Assert;
  * @author Gary Russell
  * @author Christian Tzolov
  * @author Ngoc Nhan
+ * @author Artem Bilan
+ *
  * @since 1.2
  *
  */
@@ -104,16 +106,20 @@ public abstract class AbstractDeclarable implements Declarable {
 	@Override
 	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	public void setAdminsThatShouldDeclare(@Nullable Object @Nullable ... adminArgs) {
-		Collection<Object> admins = new ArrayList<>();
 		if (adminArgs != null) {
 			if (adminArgs.length > 1) {
 				Assert.noNullElements(adminArgs, "'admins' cannot contain null elements");
 			}
 			if (adminArgs.length > 0 && !(adminArgs.length == 1 && adminArgs[0] == null)) {
-				admins = Arrays.asList(adminArgs);
+				this.declaringAdmins = Arrays.asList(adminArgs);
+			}
+			else {
+				this.declaringAdmins = Collections.emptyList();
 			}
 		}
-		this.declaringAdmins = admins;
+		else {
+			this.declaringAdmins = Collections.emptyList();
+		}
 	}
 
 	@Override

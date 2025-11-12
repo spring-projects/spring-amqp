@@ -30,12 +30,13 @@ import org.springframework.util.Assert;
  *
  * @author Rene Felgentraeger
  * @author Gary Russell
+ * @author Artem Bilan
  *
  * @since 2.4.8
  */
 public class CompositeContainerCustomizer<C extends MessageListenerContainer> implements ContainerCustomizer<C> {
 
-	private final List<ContainerCustomizer<C>> customizers = new ArrayList<>();
+	private final List<ContainerCustomizer<C>> customizers;
 
 	/**
 	 * Create an instance with the provided delegate customizers.
@@ -43,7 +44,7 @@ public class CompositeContainerCustomizer<C extends MessageListenerContainer> im
 	 */
 	public CompositeContainerCustomizer(List<ContainerCustomizer<C>> customizers) {
 		Assert.notNull(customizers, "At least one customizer must be present");
-		this.customizers.addAll(customizers);
+		this.customizers = new ArrayList<>(customizers);
 	}
 
 	@Override

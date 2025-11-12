@@ -37,11 +37,13 @@ import org.springframework.util.Assert;
 /**
  * A simple batching strategy that supports only one exchange/routingKey; includes a batch
  * size, a batched message size limit and a timeout. The message properties from the first
- * message in the batch is used in the batch message. Each message is preceded by a 4 byte
+ * message in the batch are used in the batch message. Each message is preceded by a 4-byte
  * length field.
  *
  * @author Gary Russell
  * @author Ngoc Nhan
+ * @author Artem Bilan
+ *
  * @since 1.4.1
  *
  */
@@ -53,7 +55,7 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 
 	private final long timeout;
 
-	private final List<Message> messages = new ArrayList<>();
+	private final List<Message> messages;
 
 	private @Nullable String exchange;
 
@@ -68,6 +70,7 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 	 * @param timeout the batch timeout.
 	 */
 	public SimpleBatchingStrategy(int batchSize, int bufferLimit, long timeout) {
+		this.messages = new ArrayList<>(batchSize);
 		this.batchSize = batchSize;
 		this.bufferLimit = bufferLimit;
 		this.timeout = timeout;

@@ -191,7 +191,7 @@ public class RabbitAmqpMessageListenerAdapter extends MessagingMessageListenerAd
 				converted = new GenericMessage<>(messagingMessages);
 			}
 			else {
-				List<Object> payloads = new ArrayList<>();
+				List<Object> payloads = new ArrayList<>(messages.size());
 				for (org.springframework.messaging.Message<?> message : messagingMessages) {
 					payloads.add(message.getPayload());
 				}

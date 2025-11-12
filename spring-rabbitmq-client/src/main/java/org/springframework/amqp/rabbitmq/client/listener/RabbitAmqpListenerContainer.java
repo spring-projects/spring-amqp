@@ -561,7 +561,9 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer, Be
 			if (RabbitAmqpListenerContainer.this.batchSize > 1) {
 				ConsumerBatch currentBatch = this.consumerBatch;
 				if (currentBatch == null || currentBatch.batchReleaseFuture == null) {
-					currentBatch = new ConsumerBatch(context.batch(RabbitAmqpListenerContainer.this.batchSize));
+					currentBatch =
+							new ConsumerBatch(RabbitAmqpListenerContainer.this.batchSize,
+									context.batch(RabbitAmqpListenerContainer.this.batchSize));
 					this.consumerBatch = currentBatch;
 				}
 				currentBatch.add(context, message);
@@ -577,14 +579,15 @@ public class RabbitAmqpListenerContainer implements MessageListenerContainer, Be
 
 		private class ConsumerBatch {
 
-			private final List<com.rabbitmq.client.amqp.Message> batch = new ArrayList<>();
+			private final List<com.rabbitmq.client.amqp.Message> batch;
 
 			private final Consumer.BatchContext batchContext;
 
 			private volatile @Nullable ScheduledFuture<?> batchReleaseFuture;
 
-			ConsumerBatch(Consumer.BatchContext batchContext) {
+			ConsumerBatch(int batchSize, Consumer.BatchContext batchContext) {
 				this.batchContext = batchContext;
+				this.batch = new ArrayList<>(batchSize);
 			}
 
 			void add(Consumer.Context context, com.rabbitmq.client.amqp.Message message) {

@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.rabbitmq.client.Channel;
@@ -116,7 +117,7 @@ import org.springframework.util.StringUtils;
  * }
  * </pre>
  *
- * For further examples and discussion please do refer to the Spring reference documentation which describes this class
+ * For further examples and discussion, please do refer to the Spring reference documentation which describes this class
  * (and its attendant XML configuration) in detail.
  *
  * @author Juergen Hoeller
@@ -189,7 +190,7 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	}
 
 	/**
-	 * Set a target object to delegate message listening to. Specified listener methods have to be present on this
+	 * Set a target object to delegate a message listening to. Specified listener methods have to be present on this
 	 * target object.
 	 * <p> If no explicit delegate object has been specified, listener methods are expected to present on this adapter
 	 * instance, that is, on a custom subclass of this adapter, defining listener methods.
@@ -205,7 +206,7 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	}
 
 	/**
-	 * @return The target object to delegate message listening to.
+	 * @return The target objects to delegate a message listening to.
 	 */
 	protected Object getDelegate() {
 		return this.delegate;
@@ -229,8 +230,8 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	}
 
 	/**
-	 * Set the mapping of queue name or consumer tag to method name. The first lookup
-	 * is by queue name, if that returns null, we lookup by consumer tag, if that
+	 * Set the mapping of the queue name or consumer tag to the method name. The first lookup
+	 * is by queue name, if that returns null, we look up by consumer tag, if that
 	 * returns null, the {@link #setDefaultListenerMethod(String) defaultListenerMethod}
 	 * is used.
 	 * @param queueOrTagToMethodName the map.
@@ -242,7 +243,7 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 
 	/**
 	 * Add the mapping of a queue name or consumer tag to a method name. The first lookup
-	 * is by queue name, if that returns null, we lookup by consumer tag, if that
+	 * is by queue name, if that returns null, we look up by consumer tag, if that
 	 * returns null, the {@link #setDefaultListenerMethod(String) defaultListenerMethod}
 	 * is used.
 	 * @param queueOrTag The queue name or consumer tag.
@@ -266,14 +267,14 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	/**
 	 * Spring {@link ChannelAwareMessageListener} entry point.
 	 * <p>
-	 * Delegates the message to the target listener method, with appropriate conversion of the message argument. If the
-	 * target method returns a non-null object, wrap in a Rabbit message and send it back.
+	 * Delegates the message to the target listener method, with the appropriate conversion of the message argument.
+	 * If the target method returns a non-null object, wrap in a Rabbit message and send it back.
 	 * @param message the incoming Rabbit message
 	 * @param channel the Rabbit channel to operate on
 	 * @throws Exception if thrown by Rabbit API methods
 	 */
 	@Override
-	public void onMessage(Message message, @Nullable Channel channel) throws Exception { // NOSONAR
+	public void onMessage(Message message, @Nullable Channel channel) throws Exception {
 		// Check whether the delegate is a MessageListener impl itself.
 		// In that case, the adapter will simply act as a pass-through.
 		Object delegateListener = getDelegate();
@@ -335,12 +336,12 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	 * Build an array of arguments to be passed into the target listener method. Allows for multiple method arguments to
 	 * be built from a single message object.
 	 * <p>
-	 * The default implementation builds an array with the given message object as sole element. This means that the
+	 * The default implementation builds an array with the given message object as a sole element. This means that the
 	 * extracted message will always be passed into a <i>single</i> method argument, even if it is an array, with the
 	 * target method having a corresponding single argument of the array's type declared.
 	 * <p>
-	 * This can be overridden to treat special message content such as arrays differently, for example passing in each
-	 * element of the message array as distinct method argument.
+	 * This can be overridden to treat special message content such as arrays differently, for example, passing in each
+	 * element of the message array as a distinct method argument.
 	 * @param extractedMessage the content of the message
 	 * @param channel the Rabbit channel to operate on
 	 * @param message the incoming Rabbit message
@@ -376,16 +377,17 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 		catch (InvocationTargetException ex) {
 			Throwable targetEx = ex.getTargetException();
 			if (targetEx instanceof IOException iox) {
-				throw new AmqpIOException(iox); // NOSONAR lost stack trace
+				throw new AmqpIOException(iox);
 			}
 			else {
-				throw new ListenerExecutionFailedException("Listener method '" // NOSONAR lost stack trace
+				throw new ListenerExecutionFailedException("Listener method '"
 						+ methodName + "' threw exception", targetEx, originalMessage);
 			}
 		}
 		catch (Exception ex) {
-			ArrayList<String> arrayClass = new ArrayList<>();
+			List<String> arrayClass = null;
 			if (arguments != null) {
+				arrayClass = new ArrayList<>(arguments.length);
 				for (Object argument : arguments) {
 					arrayClass.add(argument != null ? argument.getClass().toString() : " null");
 				}
