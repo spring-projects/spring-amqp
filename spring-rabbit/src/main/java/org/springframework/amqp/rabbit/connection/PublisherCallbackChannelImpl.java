@@ -917,7 +917,7 @@ public class PublisherCallbackChannelImpl
 				return Collections.emptyList();
 			}
 
-			List<PendingConfirm> expired = new ArrayList<>();
+			List<PendingConfirm> expired = new ArrayList<>(pendingConfirmsForListener.size());
 			Iterator<Entry<Long, PendingConfirm>> iterator = pendingConfirmsForListener.entrySet().iterator();
 			while (iterator.hasNext()) {
 				PendingConfirm pendingConfirm = iterator.next().getValue();
@@ -926,7 +926,7 @@ public class PublisherCallbackChannelImpl
 					iterator.remove();
 					CorrelationData correlationData = pendingConfirm.getCorrelationData();
 					if (correlationData != null && StringUtils.hasText(correlationData.getId())) {
-						this.pendingReturns.remove(correlationData.getId()); // NOSONAR never null
+						this.pendingReturns.remove(correlationData.getId());
 					}
 				}
 				else {

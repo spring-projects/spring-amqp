@@ -679,7 +679,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	public void addBeforePublishPostProcessors(MessagePostProcessor... beforePublishPostProcessors) {
 		Assert.notNull(beforePublishPostProcessors, "'beforePublishPostProcessors' cannot be null");
 		if (this.beforePublishPostProcessors == null) {
-			this.beforePublishPostProcessors = new ArrayList<>();
+			this.beforePublishPostProcessors = new ArrayList<>(beforePublishPostProcessors.length);
 		}
 		this.beforePublishPostProcessors.addAll(Arrays.asList(beforePublishPostProcessors));
 		this.beforePublishPostProcessors = MessagePostProcessorUtils.sort(this.beforePublishPostProcessors);
@@ -740,7 +740,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	public void addAfterReceivePostProcessors(MessagePostProcessor... afterReceivePostProcessors) {
 		Assert.notNull(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot be null");
 		if (this.afterReceivePostProcessors == null) {
-			this.afterReceivePostProcessors = new ArrayList<>();
+			this.afterReceivePostProcessors = new ArrayList<>(afterReceivePostProcessors.length);
 		}
 		this.afterReceivePostProcessors.addAll(Arrays.asList(afterReceivePostProcessors));
 		this.afterReceivePostProcessors = MessagePostProcessorUtils.sort(this.afterReceivePostProcessors);

@@ -66,7 +66,7 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 			converted = new GenericMessage<>(messages);
 		}
 		else {
-			List<Message<?>> messagingMessages = new ArrayList<>();
+			List<Message<?>> messagingMessages = new ArrayList<>(messages.size());
 			for (org.springframework.amqp.core.Message message : messages) {
 				try {
 					Message<?> messagingMessage = toMessagingMessage(message);
@@ -88,7 +88,7 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 				converted = new GenericMessage<>(messagingMessages);
 			}
 			else {
-				List<Object> payloads = new ArrayList<>();
+				List<Object> payloads = new ArrayList<>(messagingMessages.size());
 				for (Message<?> message : messagingMessages) {
 					payloads.add(message.getPayload());
 				}

@@ -38,9 +38,10 @@ import org.springframework.core.PriorityOrdered;
 public final class MessagePostProcessorUtils {
 
 	public static Collection<MessagePostProcessor> sort(Collection<MessagePostProcessor> processors) {
-		List<MessagePostProcessor> priorityOrdered = new ArrayList<>();
-		List<MessagePostProcessor> ordered = new ArrayList<>();
-		List<MessagePostProcessor> unOrdered = new ArrayList<>();
+		int potentialSize = processors.size();
+		List<MessagePostProcessor> priorityOrdered = new ArrayList<>(potentialSize);
+		List<MessagePostProcessor> ordered = new ArrayList<>(potentialSize);
+		List<MessagePostProcessor> unOrdered = new ArrayList<>(potentialSize);
 		for (MessagePostProcessor processor : processors) {
 			if (processor instanceof PriorityOrdered) {
 				priorityOrdered.add(processor);
