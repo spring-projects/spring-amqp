@@ -67,7 +67,7 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 
 	private final Lock instanceLock = new ReentrantLock();
 
-	private @Nullable Object publisher;
+	private @Nullable Publisher publisher;
 
 	private MessageConverter messageConverter = new SimpleMessageConverter();
 
@@ -176,7 +176,7 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 	 * @return the {@link Publisher} for low-level AMQP operations.
 	 */
 	public Publisher getPublisher() {
-		Object publisherToReturn = this.publisher;
+		Publisher publisherToReturn = this.publisher;
 		if (publisherToReturn == null) {
 			this.instanceLock.lock();
 			try {
@@ -195,14 +195,14 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 				this.instanceLock.unlock();
 			}
 		}
-		return (Publisher) publisherToReturn;
+		return publisherToReturn;
 	}
 
 	@Override
 	public void destroy() {
-		Object publisherToClose = this.publisher;
+		Publisher publisherToClose = this.publisher;
 		if (publisherToClose != null) {
-			((Publisher) publisherToClose).close();
+			publisherToClose.close();
 			this.publisher = null;
 		}
 	}
