@@ -28,8 +28,8 @@ import java.util.function.Supplier;
 import com.rabbitmq.client.amqp.Consumer;
 import com.rabbitmq.client.amqp.Environment;
 import com.rabbitmq.client.amqp.Publisher;
+import com.rabbitmq.client.amqp.Requester;
 import com.rabbitmq.client.amqp.Resource;
-import com.rabbitmq.client.amqp.RpcClient;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpIllegalStateException;
@@ -171,7 +171,11 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 		return name;
 	}
 
-	private Publisher getPublisher() {
+	/**
+	 * Return the {@link Publisher} for low-level AMQP operations.
+	 * @return the {@link Publisher} for low-level AMQP operations.
+	 */
+	public Publisher getPublisher() {
 		Object publisherToReturn = this.publisher;
 		if (publisherToReturn == null) {
 			this.instanceLock.lock();
@@ -524,7 +528,7 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 		// To associate a response with a request, the correlation-id value of the response properties
 		// MUST be set to the message-id value of the request properties.
 		// So, this supplier will override request message-id, respectively.
-		// Otherwise, the RpcClient generates correlation-id internally.
+		// Otherwise, the Requester generates correlation-id internally.
 		Supplier<Object> correlationIdSupplier = null;
 		if (StringUtils.hasText(correlationId)) {
 			correlationIdSupplier = () -> correlationId;
@@ -534,15 +538,15 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 		}
 
 		// The default reply-to queue, or the one supplied in the message.
-		// Otherwise, the RpcClient generates one as exclusive and auto-delete.
+		// Otherwise, the Requester generates one as exclusive and auto-delete.
 		String replyToQueue = this.defaultReplyToQueue;
 		if (StringUtils.hasText(replyTo)) {
 			replyToQueue = replyTo;
 		}
 
-		RpcClient rpcClient =
+		Requester rpcClient =
 				this.connectionFactory.getConnection()
-						.rpcClientBuilder()
+						.requesterBuilder()
 						.requestTimeout(this.publishTimeout)
 						.correlationIdSupplier(correlationIdSupplier)
 						.replyToQueue(replyToQueue)

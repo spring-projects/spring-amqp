@@ -59,7 +59,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * Factory bean to create a RabbitMQ ConnectionFactory, delegating most setter methods and
+ * The factory bean to create a RabbitMQ ConnectionFactory, delegating most setter methods and
  * optionally enabling SSL, with or without certificate validation. When
  * {@link #setSslPropertiesLocation(Resource) sslPropertiesLocation} is not null, the
  * default implementation loads a {@code PKCS12} keystore and a {@code JKS} truststore
@@ -80,6 +80,7 @@ import org.springframework.util.StringUtils;
  * @author Dominique Villard
  * @author Zachary DeLuca
  * @author Ngoc Nhan
+ * @author Artem Bilan
  *
  * @since 1.4
  */
@@ -167,8 +168,8 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	}
 
 	/**
-	 * Whether Server Side certificate has to be validated or not.
-	 * @return true if Server Side certificate has to be skipped
+	 * Whether a Server Side certificate has to be validated or not.
+	 * @return true if the Server Side certificate has to be skipped
 	 * @since 1.6.6
 	 */
 	public boolean isSkipServerCertificateValidation() {
@@ -176,7 +177,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	}
 
 	/**
-	 * Whether Server Side certificate has to be validated or not.
+	 * Whether a Server Side certificate has to be validated or not.
 	 * This would be used if useSSL is set to true and should only be used on dev or Qa regions
 	 * skipServerCertificateValidation should <b> never be set to true in production</b>
 	 * @param skipServerCertificateValidation Flag to override Server side certificate checks;
@@ -598,8 +599,10 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	/**
 	 * Whether the factory should be configured to use Java NIO.
 	 * @param useNio true to use Java NIO, false to use blocking IO
+	 * @deprecated since 4.0 in favor of {@link #setUseNetty(boolean)}
 	 * @see com.rabbitmq.client.ConnectionFactory#useNio()
 	 */
+	@Deprecated(since = "4.0", forRemoval = true)
 	public void setUseNio(boolean useNio) {
 		if (useNio) {
 			this.connectionFactory.useNio();
@@ -610,9 +613,25 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	}
 
 	/**
+	 * Whether the factory should be configured to use Netty.
+	 * @param useNetty true to use Netty, false to use blocking IO
+	 * @see com.rabbitmq.client.ConnectionFactory#netty()
+	 */
+	public void setUseNetty(boolean useNetty) {
+		if (useNetty) {
+			this.connectionFactory.netty();
+		}
+		else {
+			this.connectionFactory.useBlockingIo();
+		}
+	}
+
+	/**
 	 * @param nioParams the NIO parameters
+	 * @deprecated since 4.0 in favor of {@link #setUseNetty(boolean)}
 	 * @see com.rabbitmq.client.ConnectionFactory#setNioParams(com.rabbitmq.client.impl.nio.NioParams)
 	 */
+	@Deprecated(since = "4.0", forRemoval = true)
 	public void setNioParams(NioParams nioParams) {
 		this.connectionFactory.setNioParams(nioParams);
 	}
@@ -627,7 +646,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	/**
 	 * Set to true to enable amqp-client automatic recovery. Note: Spring AMQP
-	 * implements its own connection recovery and this is generally not needed.
+	 * implements its own connection recovery, and this is generally not needed.
 	 * @param automaticRecoveryEnabled true to enable.
 	 * @since 1.7.1
 	 */
@@ -638,7 +657,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	/**
 	 * Set to true to enable amqp-client topology recovery. Note: if there is a
 	 * Rabbit admin in the application context, Spring AMQP
-	 * implements its own recovery and this is generally not needed.
+	 * implements its own recovery, and this is generally not needed.
 	 * @param topologyRecoveryEnabled true to enable.
 	 * @since 1.7.1
 	 */
