@@ -25,7 +25,7 @@ import org.springframework.util.StringUtils;
 /**
  * Represents an address for publication of an AMQP message. The AMQP 0.9
  * specification has an unstructured string that is used as a "reply to" address.
- * There are however conventions in use and this class makes it easier to
+ * There are, however, conventions in use, and this class makes it easier to
  * follow these conventions, which can be easily summarised as:
  *
  * <pre class="code">
@@ -35,7 +35,7 @@ import org.springframework.util.StringUtils;
  * Here we also the exchange name to default to empty
  * (so just a routing key will work as a queue name).
  * <p>
- * For AMQP 1.0, only routing key is treated as target destination.
+ * For AMQP 1.0, only a routing key is treated as a target destination.
  *
  *
  * @author Mark Pollack
@@ -65,7 +65,8 @@ public class Address {
 	 * (exchange)/(routingKey)
 	 * </pre>
 	 * .
-	 * If exchange is parsed to empty string, then routing key is treated as a queue name.
+	 * If exchange is parsed to an empty string, then a routing key is treated as a queue name.
+	 * The {@link #AMQ_RABBITMQ_REPLY_TO} matching address is treated as a routing key.
 	 * @param address a structured string.
 	 */
 	public Address(String address) {

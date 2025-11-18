@@ -24,14 +24,12 @@ import java.util.concurrent.CompletableFuture;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.amqp.Consumer;
-import com.rabbitmq.client.amqp.Publisher;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.AmqpAcknowledgment;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
-import org.springframework.amqp.rabbit.core.AmqpNackReceivedException;
 import org.springframework.amqp.rabbit.listener.adapter.InvocationResult;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
@@ -157,19 +155,7 @@ public class RabbitAmqpMessageListenerAdapter extends MessagingMessageListenerAd
 			sendFuture = this.rabbitAmqpTemplate.send(replyToExchange, replyToRoutingKey, replyMessage);
 		}
 		else {
-			Assert.hasText(replyToRoutingKey, "The 'replyTo' must be provided, in request message or in @SendTo.");
-			Publisher publisher = this.rabbitAmqpTemplate.getPublisher();
-			com.rabbitmq.client.amqp.Message amqpMessage = publisher.message();
-			RabbitAmqpUtils.toAmqpMessage(replyMessage, amqpMessage);
-			amqpMessage.to("/queues/" + replyToRoutingKey.replaceFirst("queues/", ""));
-			sendFuture = new CompletableFuture<>();
-			publisher.publish(amqpMessage, (context) -> {
-				switch (context.status()) {
-					case ACCEPTED -> sendFuture.complete(true);
-					case REJECTED, RELEASED -> sendFuture.completeExceptionally(
-							new AmqpNackReceivedException("The message was rejected", messageIn));
-				}
-			});
+			sendFuture = this.rabbitAmqpTemplate.send(replyToRoutingKey, replyMessage);
 		}
 
 		sendFuture.join();

@@ -663,12 +663,25 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 				amqpMessageSupplier.get()
 						.toAddress();
 
-		JavaUtils.INSTANCE
-				.acceptIfNotNull(exchange, address::exchange)
-				.acceptIfNotNull(routingKey, address::key)
-				.acceptIfNotNull(queue, address::queue);
+		/*
+		 * The 'reply-to' property in the request comes already encoded and with the '/queues/' prefix.
+		 * However, the 'org.springframework.amqp.core.Address' removes the first '/' on parsing.
+		 * Use this value as is, skipping 'com.rabbitmq.client.amqp.Message.MessageAddressBuilder' logic.
+		 */
+		boolean replyToProperty = queue != null && queue.startsWith("queues/");
+
+		if (!replyToProperty) {
+			JavaUtils.INSTANCE
+					.acceptIfNotNull(exchange, address::exchange)
+					.acceptIfNotNull(routingKey, address::key)
+					.acceptIfNotNull(queue, address::queue);
+		}
 
 		com.rabbitmq.client.amqp.Message amqpMessage = address.message();
+
+		if (replyToProperty) {
+			amqpMessage.to('/' + queue);
+		}
 
 		RabbitAmqpUtils.toAmqpMessage(message, amqpMessage);
 
