@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.support.micrometer;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -50,7 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @since 3.0
  */
-@RabbitAvailable(queues = { "int.observation.testQ1", "int.observation.testQ2" })
+@RabbitAvailable(queues = {"int.observation.testQ1", "int.observation.testQ2"})
 public class ObservationIntegrationTests extends SampleTestRunner {
 
 	@Override
@@ -67,6 +68,7 @@ public class ObservationIntegrationTests extends SampleTestRunner {
 			}
 
 			List<FinishedSpan> finishedSpans = bb.getFinishedSpans();
+			finishedSpans.sort(Comparator.comparing(FinishedSpan::getStartTimestamp));
 			SpansAssert.assertThat(finishedSpans)
 					.haveSameTraceId()
 					.hasSize(4);
