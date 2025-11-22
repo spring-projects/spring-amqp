@@ -27,7 +27,7 @@ jobs:
           plugins: rabbitmq_stream,rabbitmq_management
 
       - name: Checkout Spring Integration Repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: spring-projects/spring-integration
           show-progress: false
