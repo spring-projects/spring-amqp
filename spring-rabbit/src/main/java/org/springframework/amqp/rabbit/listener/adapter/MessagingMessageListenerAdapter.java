@@ -191,7 +191,10 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 					handleResult(invResult, amqpMessage, channel, message);
 				}
 				else {
-					logger.trace("Error handler returned no result");
+					logger.trace("Error handler returned no result; acknowledging the message.");
+					if (isManualAck()) {
+						basicAck(amqpMessage, channel);
+					}
 				}
 			}
 			catch (Exception ex) {
