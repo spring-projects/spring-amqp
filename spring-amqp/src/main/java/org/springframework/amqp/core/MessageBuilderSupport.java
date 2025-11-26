@@ -31,6 +31,7 @@ import org.springframework.beans.BeanUtils;
  * @param <T> The message builder type.
  *
  * @author Gary Russell
+ * @author Artem Bilan
  *
  * @since 1.3
  *
@@ -267,8 +268,7 @@ public abstract class MessageBuilderSupport<T> {
 	}
 
 	public MessageBuilderSupport<T> setPriorityIfAbsentOrDefault(Integer priority) {
-		if (this.properties.getPriority() == null
-				|| MessageProperties.DEFAULT_PRIORITY.equals(this.properties.getPriority())) {
+		if (MessageProperties.DEFAULT_PRIORITY.equals(this.properties.getPriority())) {
 			this.properties.setPriority(priority);
 		}
 		return this;

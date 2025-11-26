@@ -127,8 +127,14 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		}
 		target.setDeliveryMode(null);
 		target.setExpiration(source.getExpiration());
-		target.setPriority(source.getPriority());
-		target.setContentType(source.getContentType());
+		Integer priority = source.getPriority();
+		if (priority != null) {
+			target.setPriority(priority);
+		}
+		String contentType = source.getContentType();
+		if (contentType != null) {
+			target.setContentType(contentType);
+		}
 		target.setContentEncoding(source.getContentEncoding());
 		String correlationId = source.getCorrelationId();
 		if (StringUtils.hasText(correlationId)) {
