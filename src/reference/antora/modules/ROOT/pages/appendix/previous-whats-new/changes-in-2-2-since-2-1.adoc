@@ -21,7 +21,7 @@ JUnit (4) is now an optional dependency and will no longer appear as a transitiv
 
 The `spring-rabbit-junit` module is now a *compile* dependency in the `spring-rabbit-test` module for a better target application development experience when with only a single `spring-rabbit-test` we get the full stack of testing utilities for AMQP components.
 
-[[-breaking-api-changes]]
+[[breaking-api-changes]]
 == "Breaking" API Changes
 
 the JUnit (5) `RabbitAvailableCondition.getBrokerRunning()` now returns a `BrokerRunningSupport` instance instead of a `BrokerRunning`, which depends on JUnit 4.
@@ -87,7 +87,7 @@ See xref:logging.adoc[Logging Subsystem AMQP Appenders] for more information.
 The `MessageListenerAdapter` provides now a new `buildListenerArguments(Object, Channel, Message)` method  to build an array of arguments to be passed into target listener and an old one is deprecated.
 See xref:amqp/receiving-messages/async-consumer.adoc#message-listener-adapter[`MessageListenerAdapter`] for more information.
 
-[[exchange/queue-declaration-changes]]
+[[exchange-queue-declaration-changes]]
 == Exchange/Queue Declaration Changes
 
 The `ExchangeBuilder` and `QueueBuilder` fluent APIs used to create `Exchange` and `Queue` objects for declaration by `RabbitAdmin` now support "well known" arguments.
