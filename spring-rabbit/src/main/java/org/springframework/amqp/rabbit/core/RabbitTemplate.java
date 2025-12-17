@@ -436,7 +436,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	/**
 	 * Specify the {@code receive} operation timeout in milliseconds when using {@code receive()}
-	 * methods (for {@code sendAndReceive()} methods, refer to {@link #setReplyTimeout(long) replyTimeout}.
+	 * methods (for {@code sendAndReceive()} methods, refer to {@link #setReplyTimeout(long) replyTimeout}).
 	 * By default, the value is zero, which means the {@code receive()} methods will return {@code null}
 	 * immediately if there is no message available. Set to less than zero to wait for a message indefinitely.
 	 * @param receiveTimeout the timeout.

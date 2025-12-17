@@ -92,7 +92,7 @@ public final class BrokerRunning extends TestWatcher {
 	}
 
 	/**
-	 * Ensure the broker is running and has a empty queue(s) with the specified name(s) in the
+	 * Ensure the broker is running and has empty queue(s) with the specified name(s) in the
 	 * default exchange.
 	 *
 	 * @param names the queues to declare for the test.
@@ -126,7 +126,7 @@ public final class BrokerRunning extends TestWatcher {
 	/**
 	 * @param queues the queues.
 	 * @return a new rule that assumes an existing broker with the management plugin with
-	 * the provided queues declared (and emptied if needed)..
+	 * the provided queues declared (and emptied if needed).
 	 */
 	public static BrokerRunning isBrokerAndManagementRunningWithEmptyQueues(String... queues) {
 		return new BrokerRunning(true, true, queues);
