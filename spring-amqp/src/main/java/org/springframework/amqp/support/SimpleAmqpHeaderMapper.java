@@ -41,7 +41,7 @@ import org.springframework.util.StringUtils;
  * will likewise be copied to an AMQP Message. Those other headers will be
  * copied to the general headers of a {@link MessageProperties} whereas the
  * AMQP API headers are passed to the appropriate setter methods (e.g.
- * {@link MessageProperties#setAppId}.
+ * {@link MessageProperties#setAppId}).
  *
  * <p>Constants for the AMQP header keys are defined in {@link AmqpHeaders}.
  *

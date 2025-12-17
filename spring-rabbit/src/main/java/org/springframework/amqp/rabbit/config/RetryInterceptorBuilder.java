@@ -129,7 +129,7 @@ public abstract class RetryInterceptorBuilder<B extends RetryInterceptorBuilder<
 	/**
 	 * Apply the max retries - a SimpleRetryPolicy will be used. Cannot be used if a custom retry operations
 	 * or retry policy has been set.
-	 * @param maxRetries the maximum number of retry attempts..
+	 * @param maxRetries the maximum number of retry attempts.
 	 * @return this.
 	 */
 	public B maxRetries(int maxRetries) {

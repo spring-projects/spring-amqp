@@ -137,7 +137,7 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 
 	/**
 	 * Apply a prefix to the outbound routing key, which will be prefixed to the original message
-	 * routing key (if no explicit routing key was provided in the constructor; ignored otherwise.
+	 * routing key (if no explicit routing key was provided in the constructor; ignored otherwise).
 	 * Use an empty string ("") for no prefixing.
 	 * @param errorRoutingKeyPrefix The prefix (default "error.").
 	 * @return this.

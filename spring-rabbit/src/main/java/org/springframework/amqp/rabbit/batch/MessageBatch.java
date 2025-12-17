@@ -56,7 +56,7 @@ public record MessageBatch(@Nullable String exchange, @Nullable String routingKe
 
 	/**
 	 * @return the message
-	 * @deprecated in favor or {@link #message()} ()}.
+	 * @deprecated in favor or {@link #message()}.
 	 */
 	@Deprecated(forRemoval = true, since = "4.0")
 	public Message getMessage() {
