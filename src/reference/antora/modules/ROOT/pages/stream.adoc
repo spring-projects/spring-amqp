@@ -262,10 +262,26 @@ You must add a `superStreamRoutingFunction` to the `RabbitStreamTemplate`:
 RabbitStreamTemplate streamTemplate(Environment env) {
     RabbitStreamTemplate template = new RabbitStreamTemplate(env, "stream.queue1");
     template.setSuperStreamRouting(message -> {
-        // some logic to return a String for the client's hashing algorithm
+        // some logic to return a String for the client's hashing algorithm, e.g.
+        return message.getApplicationProperties().get("ROUTING_KEY").toString();
     });
     return template;
 }
+----
+
+
+The following is an example of sending a message using a `RabbitStreamTemplate`:
+
+[source, java]
+----
+//Send a message with the routing property for the hashing algorithm
+rabbitStreamTemplate.send(
+    rabbitStreamTemplate.messageBuilder()
+        .addData(converter.convert(domainObject))
+        .applicationProperties()
+        .entry("ROUTING_KEY", domainObject.getId())
+        .messageBuilder()
+        .build());
 ----
 
 You can also publish over AMQP, using the `RabbitTemplate`.
