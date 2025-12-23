@@ -1,0 +1,24 @@
+[[changes-in-4-0-since-3-2]]
+= Changes in 4.0 Since 3.2
+
+[[java-17-spring-framework-6-1]]
+== Java 17, Spring Framework 6.1
+
+This version requires Spring Framework 6.1 and Java 17.
+
+[[x31-exc]]
+== Exclusive Consumer Logging
+
+Log messages reporting access refusal due to exclusive consumers are now logged at DEBUG level by default.
+It remains possible to configure your own logging behavior by setting the `exclusiveConsumerExceptionLogger` and `closeExceptionLogger` properties on the listener container and connection factory respectively.
+In addition, the `SimpleMessageListenerContainer` consumer restart after such an exception is now logged at DEBUG level by default (previously INFO).
+A new method `logRestart()` has been added to the `ConditionalExceptionLogger` to allow this to be changed.
+See xref:amqp/receiving-messages/consumer-events.adoc[Consumer Events] and xref:amqp/connections.adoc#channel-close-logging[Logging Channel Close Events] for more information.
+
+[[x31-conn-backoff]]
+== Connections Enhancement
+
+Connection Factory supported backoff policy when creating connection channel.
+See xref:amqp/connections.adoc[Choosing a Connection Factory] for more information.
+
+

@@ -75,9 +75,9 @@ class EnableRabbitKotlinTests {
 		template.setReplyTimeout(10_000)
 		val result = template.convertSendAndReceive("kotlinQueue", "test")
 		assertThat(result).isEqualTo("TEST")
-		var listenerContainer = registry.getListenerContainer("single") as AbstractMessageListenerContainer
+		val listenerContainer = registry.getListenerContainer("single") as AbstractMessageListenerContainer
 		assertThat(listenerContainer.acknowledgeMode).isEqualTo(AcknowledgeMode.MANUAL)
-		val listener = listenerContainer?.messageListener
+		val listener = listenerContainer.messageListener
 		assertThat(listener).isNotNull()
 		listener?.let { nonNullableListener ->
 			assertThat(
@@ -89,7 +89,7 @@ class EnableRabbitKotlinTests {
 
 		template.convertAndSend("kotlinQueue", "junk")
 
-		var dlqResult = template.receiveAndConvert("kotlinDLQ", 30_000)
+		val dlqResult = template.receiveAndConvert("kotlinDLQ", 30_000)
 		assertThat(dlqResult).isEqualTo("junk")
 	}
 
@@ -102,7 +102,7 @@ class EnableRabbitKotlinTests {
 		assertThat(this.config.batch[0]).isInstanceOf(Message::class.java)
 		assertThat(this.config.batch.map { m -> String(m.body) }).containsOnly("test1", "test2")
 
-		var listenerContainer = registry.getListenerContainer("batch") as AbstractMessageListenerContainer
+		val listenerContainer = registry.getListenerContainer("batch") as AbstractMessageListenerContainer
 		assertThat(listenerContainer.acknowledgeMode).isEqualTo(AcknowledgeMode.MANUAL)
 	}
 
@@ -114,7 +114,7 @@ class EnableRabbitKotlinTests {
 		val reply = template.receiveAndConvert("kotlinReplyQueue", 10_000)
 		assertThat(reply).isEqualTo("error processed")
 
-		var listenerContainer = registry.getListenerContainer("multi") as AbstractMessageListenerContainer
+		val listenerContainer = registry.getListenerContainer("multi") as AbstractMessageListenerContainer
 		assertThat(listenerContainer.acknowledgeMode).isEqualTo(AcknowledgeMode.AUTO)
 	}
 

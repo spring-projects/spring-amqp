@@ -69,6 +69,7 @@
 * Change History
 ** xref:appendix/current-release.adoc[]
 ** xref:appendix/previous-whats-new.adoc[]
+*** xref:appendix/previous-whats-new/changes-in-4-0-since-3-2.adoc[]
 *** xref:appendix/previous-whats-new/changes-in-3-1-since-3-0.adoc[]
 *** xref:appendix/previous-whats-new/changes-in-3-0-since-2-4.adoc[]
 *** xref:appendix/previous-whats-new/changes-in-2-4-since-2-3.adoc[]
