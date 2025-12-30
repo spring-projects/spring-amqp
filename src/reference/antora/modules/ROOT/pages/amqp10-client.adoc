@@ -1,0 +1,132 @@
+[[amqp10-client]]
+= Generic AMQP 1.0 Support
+
+Version 4.1 introduces `spring-amqp-client` module for https://www.amqp.org/resources/specifications[AMQP 1.0] protocol support.
+
+This artifact is based on the https://github.com/apache/qpid-protonj2/blob/main/protonj2-client/README.md[Qpid ProtonJ2 Client Library] and can work with any peers supporting AMQP 1.0 protocol, including RabbitMQ broker.
+
+This dependency has to be added to the project to be able to interact with AMQP 1.0 support:
+
+[tabs]
+======
+Maven::
++
+[source,xml,subs="+attributes"]
+----
+<dependency>
+  <groupId>org.springframework.amqp</groupId>
+  <artifactId>spring-amqp-client</artifactId>
+  <version>{project-version}</version>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy,subs="+attributes"]
+----
+compile 'org.springframework.amqp:spring-amqp-client:{project-version}'
+----
+======
+
+[[amqp10-client-environment]]
+== AMQP 1.0 Environment
+
+The `org.apache.qpid:protonj2-client` is so flexible and comes with many convenient API, that it can be used in Spring applications even without any dedicated Spring implementations.
+For example, the `org.apache.qpid.protonj2.client.Message` class is a builder pattern implementation.
+Either way, the `spring-amqp-client` provides high-level Spring pattern implementations for connection lifecycle management and AMQP 1.0 protocol interaction for sending and receiving messages operations.
+The AMQP 1.0 environment starts with a `org.apache.qpid.protonj2.client.Client` instance:
+
+[source,java]
+----
+@Bean
+Client protonClient() {
+    return Client.create();
+}
+----
+
+The same `Client` can be used for connecting to different brokers, the connection setting must be provided on specific connection.
+See below.
+
+[[amqp10-client-connection-factory]]
+== AMQP 1.0 Connection Factory
+
+The `org.springframework.amqp.client.AmqpConnectionFactory` abstraction was introduced to manage `org.apache.qpid.protonj2.client.Connection`.
+The `SingleAmqpConnectionFactory` implementation is present to manage one connection and its settings.
+The same `Connection` can be shared between many producers and consumers.
+The multiplexing is handled by the link abstraction for AMQP 1.0 protocol implementation internally in the AMQP client library.
+The `Connection` has recovery capabilities.
+
+In most cases there is just enough to add this bean into the project:
+
+[source,java]
+----
+@Bean
+AmqpConnectionFactory connectionFactory(Client protonClient) {
+    return new SingleAmqpConnectionFactory(protonClient);
+}
+----
+
+See `SingleAmqpConnectionFactory` setters for all connection-specific options, including `host`, `port`, `user`.
+The more advance configuration could be done by the `setConnectionOptions(ConnectionOptions)` which is a builder API from ProtonJ library.
+The mentioned `SingleAmqpConnectionFactory` instance with all the defaults would connect to the `localhost:5672` with infinite number of reconnections.
+
+[[amqp10-client-api]]
+== `AmqpClient`
+
+The `AmqpClient` is a fluent API to perform send and receive operations on messages against AMQP 1.0 protocol.
+Requires an `AmqpConnectionFactory` and can be configured with some defaults via `AmqpClient.Builder` API.
+The `DefaultAmqpClient` is an internal implementation of the `AmqpClient` contract.
+Even if `org.apache.qpid:protonj2-client` library comes with a `org.apache.qpid.protonj2.client.Message` implementation, the `AmqpClient` still exposes an API based on the well-known `org.springframework.amqp.core.Message` with all the supporting classes like `MessageProperties` and `MessageConverter` abstractions.
+The conversion to/from `org.apache.qpid.protonj2.client.Message` is done internally in the `AmqpClient` implementation via `ProtonUtils` supporting class.
+All send and receive methods return a `CompletableFuture` to get operation results eventually.
+An interaction with plain objects require message body conversion and `SimpleMessageConverter` is used by default.
+See `AmqpClient.Builder.messageConverter(MessageConverter)` configuration and xref:amqp/message-converters.adoc[] for more information about conversions.
+
+Usually, just one bean like this is enough to perform all the possible send and receive operations:
+
+[source,java]
+----
+@Bean
+AmqpClient amqpClient(AmqpConnectionFactory connectionFactory) {
+    return AmqpClient.builder(connectionFactory)
+            .defaultToAddress("/queues/some_queue_as_default")
+            .messageConverter(new JacksonJsonMessageConverter())
+            .build();
+}
+----
+
+NOTE: In the example before the `/queues/` prefix used for a `defaultToAddress` is an example of the destination address convention in https://www.rabbitmq.com/docs/amqp#addresses[RabbitMQ].
+
+Here are some samples of `AmqpClient` operations:
+
+[source,java]
+----
+CompletableFuture<Boolean> sendFuture = this.amqpClient.send(Message.create("test_data"));
+----
+
+[source,java]
+----
+CompletableFuture<Boolean> sendFuture =
+    this.amqpClient
+            .to("/queues/" + TEST_SEND_QUEUE2)
+            .message(new org.springframework.amqp.core.Message("test_data2".getBytes()))
+            .send();
+----
+
+[source,java]
+----
+CompletableFuture<Boolean> sendFuture =
+        this.amqpClient
+                .to("/queues/" + TEST_SEND_QUEUE2)
+                .body("convert")
+                .priority(7)
+                .header("test_header", "test_value")
+                .messageId("some_id")
+                .userId("guest")
+                .send();
+----
+
+See Javadocs for those methods for more information about the fluent API exposed by the `AmqpClient`.
+
+[[amqp10-client-listener]]
+== The AMQP 1.0 Consumer

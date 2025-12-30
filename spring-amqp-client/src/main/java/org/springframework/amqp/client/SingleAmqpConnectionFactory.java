@@ -16,15 +16,12 @@
 
 package org.springframework.amqp.client;
 
-import java.time.Duration;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
 
 import org.apache.qpid.protonj2.client.Client;
 import org.apache.qpid.protonj2.client.Connection;
 import org.apache.qpid.protonj2.client.ConnectionOptions;
-import org.apache.qpid.protonj2.client.SslOptions;
 import org.apache.qpid.protonj2.client.exceptions.ClientException;
 import org.jspecify.annotations.Nullable;
 
@@ -42,15 +39,15 @@ public class SingleAmqpConnectionFactory implements AmqpConnectionFactory, Dispo
 
 	private final Lock instanceLock = new ReentrantLock();
 
-	private final ConnectionOptions connectionOptions = new ConnectionOptions();
-
 	private final Client protonjClient;
 
-	private volatile @Nullable Connection connection;
+	private ConnectionOptions connectionOptions = new ConnectionOptions();
 
 	private String host = "localhost";
 
 	private int port = -1;
+
+	private volatile @Nullable Connection connection;
 
 	public SingleAmqpConnectionFactory(Client protonjClient) {
 		this.protonjClient = protonjClient;
@@ -66,33 +63,38 @@ public class SingleAmqpConnectionFactory implements AmqpConnectionFactory, Dispo
 		return this;
 	}
 
+	/**
+	 * Set the username for the AMQP connection.
+	 * The convenient top-level property of the {@link ConnectionOptions}.
+	 * If a {@link ConnectionOptions} is provided, the username has to be set over there.
+	 * @param username the username to use.
+	 * @return the factory instance.
+	 */
 	public SingleAmqpConnectionFactory setUsername(String username) {
 		this.connectionOptions.user(username);
 		return this;
 	}
 
+	/**
+	 * Set the password for the AMQP connection.
+	 * The convenient top-level property of the {@link ConnectionOptions}.
+	 * If a {@link ConnectionOptions} is provided, the password has to be set over there.
+	 * @param password the password to use.
+	 * @return the factory instance.
+	 */
 	public SingleAmqpConnectionFactory setPassword(String password) {
 		this.connectionOptions.password(password);
 		return this;
 	}
 
-	public SingleAmqpConnectionFactory setVirtualHost(String virtualHost) {
-		this.connectionOptions.virtualHost(virtualHost);
-		return this;
-	}
-
-	public SingleAmqpConnectionFactory setIdleTimeout(Duration idleTimeout) {
-		this.connectionOptions.idleTimeout(idleTimeout.toMillis());
-		return this;
-	}
-
-	public SingleAmqpConnectionFactory setSaslMechanism(SaslMechanism saslMechanism) {
-		this.connectionOptions.saslOptions().addAllowedMechanism(saslMechanism.name());
-		return this;
-	}
-
-	public SingleAmqpConnectionFactory setSsl(Consumer<SslOptions> sslCustomizer) {
-		sslCustomizer.accept(this.connectionOptions.sslOptions());
+	/**
+	 * Set a {@link ConnectionOptions} instance.
+	 * Mutually exclusive with {@link #setUsername(String)} and {@link #setPassword(String)}.
+	 * @param connectionOptions to use.
+	 * @return the factory instance.
+	 */
+	public SingleAmqpConnectionFactory setConnectionOptions(ConnectionOptions connectionOptions) {
+		this.connectionOptions = connectionOptions.clone();
 		return this;
 	}
 
@@ -125,12 +127,6 @@ public class SingleAmqpConnectionFactory implements AmqpConnectionFactory, Dispo
 			connectionToClose.close();
 			this.connection = null;
 		}
-	}
-
-	public enum SaslMechanism {
-
-		PLAIN, ANONYMOUS, EXTERNAL
-
 	}
 
 }
