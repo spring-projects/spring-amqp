@@ -29,6 +29,7 @@ import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbitmq.client.AmqpConnectionFactory;
 import org.springframework.amqp.rabbitmq.client.listener.RabbitAmqpListenerContainer;
 import org.springframework.amqp.rabbitmq.client.listener.RabbitAmqpMessageListenerAdapter;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.scheduling.TaskScheduler;
 
@@ -56,6 +57,8 @@ public class RabbitAmqpListenerContainerFactory
 	private @Nullable Long batchReceiveTimeout;
 
 	private @Nullable TaskScheduler taskScheduler;
+
+	private @Nullable MessageConverter messageConverter;
 
 	/**
 	 * Construct an instance using the provided {@link AmqpConnectionFactory}.
@@ -117,6 +120,16 @@ public class RabbitAmqpListenerContainerFactory
 		this.taskScheduler = taskScheduler;
 	}
 
+	/**
+	 * Set a {@link MessageConverter} for all the listeners based on this factory.
+	 * @param messageConverter the message converter to use
+	 * @see RabbitListenerEndpoint#setMessageConverter(MessageConverter)
+	 * @since 4.0.2
+	 */
+	public void setMessageConverter(MessageConverter messageConverter) {
+		this.messageConverter = messageConverter;
+	}
+
 	@Override
 	public RabbitAmqpListenerContainer createListenerContainer(@Nullable RabbitListenerEndpoint endpoint) {
 		if (endpoint instanceof MethodRabbitListenerEndpoint methodRabbitListenerEndpoint) {
@@ -128,6 +141,9 @@ public class RabbitAmqpListenerContainerFactory
 			methodRabbitListenerEndpoint.setAdapterProvider(
 					(batch, bean, method, returnExceptions, errorHandler, batchingStrategy) ->
 							new RabbitAmqpMessageListenerAdapter(bean, method, returnExceptions, errorHandler, batch));
+		}
+		if (this.messageConverter != null && endpoint != null && endpoint.getMessageConverter() == null) {
+			endpoint.setMessageConverter(this.messageConverter);
 		}
 		RabbitAmqpListenerContainer container = createContainerInstance();
 		JavaUtils.INSTANCE
