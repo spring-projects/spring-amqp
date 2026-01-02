@@ -25,7 +25,6 @@ import org.apache.qpid.protonj2.client.ConnectionOptions;
 import org.apache.qpid.protonj2.client.exceptions.ClientException;
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.amqp.AmqpConnectException;
 import org.springframework.beans.factory.DisposableBean;
 
 /**
@@ -111,7 +110,7 @@ public class SingleAmqpConnectionFactory implements AmqpConnectionFactory, Dispo
 				}
 			}
 			catch (ClientException ex) {
-				throw new AmqpConnectException("Cannot create connection", ex);
+				throw ProtonUtils.convert(ex);
 			}
 			finally {
 				this.instanceLock.unlock();
