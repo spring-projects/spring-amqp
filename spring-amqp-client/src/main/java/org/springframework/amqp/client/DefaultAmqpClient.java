@@ -19,10 +19,7 @@ package org.springframework.amqp.client;
 import java.time.Duration;
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -35,13 +32,12 @@ import org.apache.qpid.protonj2.client.Tracker;
 import org.apache.qpid.protonj2.client.exceptions.ClientException;
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.amqp.AmqpTimeoutException;
-import org.springframework.amqp.UncategorizedAmqpException;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.MessagePropertiesBuilder;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.util.Assert;
 
 /**
@@ -51,7 +47,7 @@ import org.springframework.util.Assert;
  *
  * @since 4.1
  */
-class DefaultAmqpClient implements AmqpClient {
+class DefaultAmqpClient implements AmqpClient, DisposableBean {
 
 	private final AmqpConnectionFactory connectionFactory;
 
@@ -98,10 +94,13 @@ class DefaultAmqpClient implements AmqpClient {
 			trackerFuture = getSender().send(message).settlementFuture();
 		}
 		catch (ClientException ex) {
-			throw new AmqpClientException("Failed to send a message: " + message, ex);
+			throw ProtonUtils.convert(ex);
 		}
 
-		return CompletableFuture.supplyAsync(toUncheckedSupplier(trackerFuture, this.senderOptions.sendTimeout()))
+		Supplier<Tracker> uncheckedSupplier =
+				ProtonUtils.toUncheckedSupplier(trackerFuture, this.senderOptions.sendTimeout());
+
+		return CompletableFuture.supplyAsync(uncheckedSupplier)
 				.thenApply(tracker -> {
 					DeliveryState.Type deliveryStateType = tracker.remoteState().getType();
 					if (DeliveryState.Type.ACCEPTED.equals(deliveryStateType)) {
@@ -138,27 +137,13 @@ class DefaultAmqpClient implements AmqpClient {
 		return senderToReturn;
 	}
 
-	private static <T> Supplier<T> toUncheckedSupplier(Future<T> future, long timeout) {
-		return () -> {
-			try {
-				if (timeout > 0) {
-					return future.get(timeout, TimeUnit.MILLISECONDS);
-				}
-				else {
-					return future.get();
-				}
-			}
-			catch (InterruptedException ex) {
-				Thread.currentThread().interrupt();
-				throw new UncategorizedAmqpException(ex);
-			}
-			catch (TimeoutException ex) {
-				throw new AmqpTimeoutException(ex);
-			}
-			catch (ExecutionException ex) {
-				throw new UncategorizedAmqpException(ex.getCause());
-			}
-		};
+	@Override
+	public void destroy() {
+		Sender senderToClose = this.sender;
+		if (senderToClose != null) {
+			senderToClose.close();
+			this.sender = null;
+		}
 	}
 
 	class DefaultSendSpec implements SendSpec {
@@ -180,7 +165,7 @@ class DefaultAmqpClient implements AmqpClient {
 				protonMessage.to(this.toAddress);
 			}
 			catch (ClientException ex) {
-				throw new AmqpClientException(ex);
+				throw ProtonUtils.convert(ex);
 			}
 		}
 
