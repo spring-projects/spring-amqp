@@ -81,7 +81,7 @@ public class RabbitAmqpListenerContainerFactory
 	 * Set {@link MessagePostProcessor}s that will be applied after message reception, before
 	 * invoking the {@link MessageListener}. Often used to decompress data.  Processors are invoked in order,
 	 * depending on {@code PriorityOrder}, {@code Order} and finally unordered.
-	 * @param afterReceivePostProcessors the post processor.
+	 * @param afterReceivePostProcessors the post-processor.
 	 */
 	public void setAfterReceivePostProcessors(MessagePostProcessor... afterReceivePostProcessors) {
 		this.afterReceivePostProcessors = Arrays.copyOf(afterReceivePostProcessors, afterReceivePostProcessors.length);
@@ -123,8 +123,8 @@ public class RabbitAmqpListenerContainerFactory
 	/**
 	 * Set a {@link MessageConverter} for all the listeners based on this factory.
 	 * @param messageConverter the message converter to use
-	 * @see RabbitListenerEndpoint#setMessageConverter(MessageConverter)
 	 * @since 4.0.2
+	 * @see RabbitListenerEndpoint#setMessageConverter(MessageConverter)
 	 */
 	public void setMessageConverter(MessageConverter messageConverter) {
 		this.messageConverter = messageConverter;
