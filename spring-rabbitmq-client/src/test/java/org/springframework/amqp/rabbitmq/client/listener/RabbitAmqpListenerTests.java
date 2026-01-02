@@ -45,6 +45,8 @@ import org.springframework.amqp.rabbitmq.client.AmqpConnectionFactory;
 import org.springframework.amqp.rabbitmq.client.RabbitAmqpTestBase;
 import org.springframework.amqp.rabbitmq.client.config.RabbitAmqpListenerContainerFactory;
 import org.springframework.amqp.support.converter.MessageConversionException;
+import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -70,6 +72,9 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 	@Autowired
 	RabbitListenerEndpointRegistry rabbitListenerEndpointRegistry;
 
+	@Autowired
+	MessageConverter testMessageConverter;
+
 	@Test
 	@SuppressWarnings("unchecked")
 	void verifyAllDataIsConsumedFromQ1AndQ2() throws InterruptedException {
@@ -82,6 +87,11 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 				.values()
 				.flatMap(list -> (List<com.rabbitmq.client.amqp.Consumer>) list)
 				.hasSize(4);
+
+		assertThat(testAmqpListener.getMessageListener())
+				.isInstanceOf(RabbitAmqpMessageListenerAdapter.class)
+				.extracting("messageConverter")
+				.isSameAs(this.testMessageConverter);
 
 		List<String> testDataList =
 				List.of("data1", "data2", "requeue", "data4", "data5", "discard", "data7", "data8", "discard", "data10");
@@ -209,9 +219,18 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 			return BindingBuilder.bind(q4()).to(e1()).with("k4");
 		}
 
+		@Bean
+		MessageConverter testMessageConverter() {
+			return new SimpleMessageConverter();
+		}
+
 		@Bean(RabbitListenerAnnotationBeanPostProcessor.DEFAULT_RABBIT_LISTENER_CONTAINER_FACTORY_BEAN_NAME)
-		RabbitAmqpListenerContainerFactory rabbitAmqpListenerContainerFactory(AmqpConnectionFactory connectionFactory) {
-			return new RabbitAmqpListenerContainerFactory(connectionFactory);
+		RabbitAmqpListenerContainerFactory rabbitAmqpListenerContainerFactory(AmqpConnectionFactory connectionFactory,
+				MessageConverter testMessageConverter) {
+
+			var rabbitAmqpListenerContainerFactory = new RabbitAmqpListenerContainerFactory(connectionFactory);
+			rabbitAmqpListenerContainerFactory.setMessageConverter(testMessageConverter);
+			return rabbitAmqpListenerContainerFactory;
 		}
 
 		final List<String> received = Collections.synchronizedList(new ArrayList<>());
