@@ -95,7 +95,7 @@ public interface AmqpClient {
 		/**
 		 * Set the default target AMQP 1.0 address for the
 		 * {@link #sendToDefault(org.springframework.amqp.core.Message)} and {@link #send(Message)} operations.
-		 * @param defaultToAddress the target address to use a convenient default.
+		 * @param defaultToAddress the target address to use as a convenient default.
 		 * @return this builder.
 		 */
 		public Builder defaultToAddress(String defaultToAddress) {

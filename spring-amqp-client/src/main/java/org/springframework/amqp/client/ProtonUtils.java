@@ -103,7 +103,6 @@ public final class ProtonUtils {
 			Map<String, @Nullable Object> headers = messageProperties.getHeaders();
 			for (Map.Entry<String, @Nullable Object> entry : headers.entrySet()) {
 				protonMessage.property(entry.getKey(), entry.getValue());
-
 			}
 
 			return protonMessage;

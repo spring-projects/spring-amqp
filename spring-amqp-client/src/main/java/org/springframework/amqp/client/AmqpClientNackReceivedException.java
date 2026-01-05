@@ -23,7 +23,7 @@ import org.apache.qpid.protonj2.client.Message;
 import org.springframework.amqp.AmqpException;
 
 /**
- * An exception thrown when a negative acknowledgement received after publishing a message.
+ * An exception thrown when a negative acknowledgement is received after publishing a message.
  *
  * @author Artem Bilan
  *

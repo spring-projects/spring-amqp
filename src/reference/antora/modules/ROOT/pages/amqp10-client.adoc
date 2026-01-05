@@ -31,7 +31,7 @@ compile 'org.springframework.amqp:spring-amqp-client:{project-version}'
 [[amqp10-client-environment]]
 == AMQP 1.0 Environment
 
-The `org.apache.qpid:protonj2-client` is so flexible and comes with many convenient API, that it can be used in Spring applications even without any dedicated Spring implementations.
+The `org.apache.qpid:protonj2-client` is so flexible and comes with a convenient API that it can be used in Spring applications even without any dedicated Spring implementations.
 For example, the `org.apache.qpid.protonj2.client.Message` class is a builder pattern implementation.
 Either way, the `spring-amqp-client` provides high-level Spring pattern implementations for connection lifecycle management and AMQP 1.0 protocol interaction for sending and receiving messages operations.
 The AMQP 1.0 environment starts with a `org.apache.qpid.protonj2.client.Client` instance:
@@ -44,7 +44,7 @@ Client protonClient() {
 }
 ----
 
-The same `Client` can be used for connecting to different brokers, the connection setting must be provided on specific connection.
+The same `Client` can be used for connecting to different brokers, the connection settings must be provided on a specific connection.
 See below.
 
 [[amqp10-client-connection-factory]]
@@ -56,7 +56,7 @@ The same `Connection` can be shared between many producers and consumers.
 The multiplexing is handled by the link abstraction for AMQP 1.0 protocol implementation internally in the AMQP client library.
 The `Connection` has recovery capabilities.
 
-In most cases there is just enough to add this bean into the project:
+In most cases it is enough to add this bean into the project:
 
 [source,java]
 ----
@@ -95,7 +95,7 @@ AmqpClient amqpClient(AmqpConnectionFactory connectionFactory) {
 }
 ----
 
-NOTE: In the example before the `/queues/` prefix used for a `defaultToAddress` is an example of the destination address convention in https://www.rabbitmq.com/docs/amqp#addresses[RabbitMQ].
+NOTE: In the example above the `/queues/` prefix used for a `defaultToAddress` is an example of the destination address convention in https://www.rabbitmq.com/docs/amqp#addresses[RabbitMQ].
 
 Here are some samples of `AmqpClient` operations:
 
@@ -128,5 +128,9 @@ CompletableFuture<Boolean> sendFuture =
 
 See Javadocs for those methods for more information about the fluent API exposed by the `AmqpClient`.
 
+
+////
 [[amqp10-client-listener]]
 == The AMQP 1.0 Consumer
+////
+
