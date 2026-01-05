@@ -117,8 +117,8 @@ public final class ProtonUtils {
 	 * Convert a {@link Future} to a {@link CompletableFuture}.
 	 * @param future the future to covert from.
 	 * @param timeout for how long to wait for the {@link Future} result.
-	 * @return a {@link CompletableFuture} based on {@link Supplier} on the provided {@link Future}.
 	 * @param <T> the value type.
+	 * @return a {@link CompletableFuture} based on {@link Supplier} on the provided {@link Future}.
 	 */
 	public static <T> CompletableFuture<T> toCompletableFuture(Future<T> future, long timeout) {
 		Supplier<T> supplier =
