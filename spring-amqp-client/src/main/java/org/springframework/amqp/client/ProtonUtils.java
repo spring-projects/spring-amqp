@@ -18,6 +18,7 @@ package org.springframework.amqp.client;
 
 import java.util.Date;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -108,39 +109,54 @@ public final class ProtonUtils {
 			return protonMessage;
 		}
 		catch (ClientException ex) {
-			throw convert(ex);
+			throw toAmqpException(ex);
 		}
 	}
 
-	static <T> Supplier<T> toUncheckedSupplier(Future<T> future, long timeout) {
-		return () -> {
-			try {
-				if (timeout > 0) {
-					return future.get(timeout, TimeUnit.MILLISECONDS);
-				}
-				else {
-					return future.get();
-				}
-			}
-			catch (InterruptedException ex) {
-				Thread.currentThread().interrupt();
-				throw new UncategorizedAmqpException(ex);
-			}
-			catch (TimeoutException ex) {
-				throw convert(ex);
-			}
-			catch (ExecutionException ex) {
-				throw convert(ex);
-			}
-		};
+	/**
+	 * Convert a {@link Future} to a {@link CompletableFuture}.
+	 * @param future the future to covert from.
+	 * @param timeout for how long to wait for the {@link Future} result.
+	 * @return a {@link CompletableFuture} based on {@link Supplier} on the provided {@link Future}.
+	 * @param <T> the value type.
+	 */
+	public static <T> CompletableFuture<T> toCompletableFuture(Future<T> future, long timeout) {
+		Supplier<T> supplier =
+				() -> {
+					try {
+						if (timeout > 0) {
+							return future.get(timeout, TimeUnit.MILLISECONDS);
+						}
+						else {
+							return future.get();
+						}
+					}
+					catch (InterruptedException ex) {
+						Thread.currentThread().interrupt();
+						throw new UncategorizedAmqpException(ex);
+					}
+					catch (TimeoutException ex) {
+						throw toAmqpException(ex);
+					}
+					catch (ExecutionException ex) {
+						throw toAmqpException(ex);
+					}
+				};
+
+		return CompletableFuture.supplyAsync(supplier);
 	}
 
-	static AmqpException convert(Exception ex) {
+	/**
+	 * Wrap an exception to an {@link AmqpException} implementation.
+	 * @param ex the exception from Proton client to wrap.
+	 * @return the {@link AmqpException} implementation.
+	 */
+	public static AmqpException toAmqpException(Exception ex) {
 		if (ex instanceof AmqpException amqpException) {
 			return amqpException;
 		}
 		else if (ex instanceof ClientException clientException) {
-			return convert(clientException);
+			return toAmqpException(clientException);
 		}
 		else if (ex instanceof TimeoutException) {
 			return new AmqpTimeoutException(ex);
@@ -150,25 +166,35 @@ public final class ProtonUtils {
 		}
 	}
 
-	static AmqpException convert(ClientException ex) {
-		return convert(ex, null);
-	}
-
-	static AmqpException convert(ExecutionException ex) {
+	/**
+	 * Wrap an {@link ExecutionException} to an {@link AmqpException} implementation.
+	 * @param ex the exception from Proton client to wrap.
+	 * @return the {@link AmqpException} implementation.
+	 */
+	public static AmqpException toAmqpException(ExecutionException ex) {
 		Throwable cause = ex.getCause();
 		if (cause instanceof ClientException clientException) {
-			return convert(clientException);
+			return toAmqpException(clientException);
 		}
 		else {
 			return new AmqpException(cause == null ? ex : cause);
 		}
 	}
 
-	static AmqpException convert(ClientException ex, @Nullable String format, Object... args) {
-		return convert(ex, true, format, args);
+	/**
+	 * Wrap an {@link ClientException} to an {@link AmqpException} implementation.
+	 * @param ex the exception from Proton client to wrap.
+	 * @return the {@link AmqpException} implementation.
+	 */
+	public static AmqpException toAmqpException(ClientException ex) {
+		return toAmqpException(ex, null);
 	}
 
-	private static AmqpException convert(ClientException ex, boolean checkCause, @Nullable String format,
+	static AmqpException toAmqpException(ClientException ex, @Nullable String format, Object... args) {
+		return toAmqpException(ex, true, format, args);
+	}
+
+	private static AmqpException toAmqpException(ClientException ex, boolean checkCause, @Nullable String format,
 			Object... args) {
 
 		String message = format != null ? String.format(format, args) : null;
@@ -208,14 +234,14 @@ public final class ProtonUtils {
 				}
 			}
 			else {
-				result = new AmqpException(message, ex);
+				result = message != null ? new AmqpClientException(message, ex) : new AmqpException(ex);
 			}
 		}
 		if (checkCause
 				&& AmqpException.class.getName().equals(result.getClass().getName())
 				&& ex.getCause() instanceof ClientException clientException) {
 			// we end up with a generic exception, we try to narrow down with the cause
-			result = convert(clientException, false, format, args);
+			result = toAmqpException(clientException, false, format, args);
 		}
 		return result;
 	}

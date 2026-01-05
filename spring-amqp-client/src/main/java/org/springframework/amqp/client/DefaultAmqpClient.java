@@ -22,7 +22,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Supplier;
 
 import org.apache.qpid.protonj2.client.DeliveryState;
 import org.apache.qpid.protonj2.client.Message;
@@ -94,13 +93,10 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 			trackerFuture = getSender().send(message).settlementFuture();
 		}
 		catch (ClientException ex) {
-			throw ProtonUtils.convert(ex);
+			throw ProtonUtils.toAmqpException(ex);
 		}
 
-		Supplier<Tracker> uncheckedSupplier =
-				ProtonUtils.toUncheckedSupplier(trackerFuture, this.senderOptions.sendTimeout());
-
-		return CompletableFuture.supplyAsync(uncheckedSupplier)
+		return ProtonUtils.toCompletableFuture(trackerFuture, this.senderOptions.sendTimeout())
 				.thenApply(tracker -> {
 					DeliveryState.Type deliveryStateType = tracker.remoteState().getType();
 					if (DeliveryState.Type.ACCEPTED.equals(deliveryStateType)) {
@@ -165,7 +161,7 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 				protonMessage.to(this.toAddress);
 			}
 			catch (ClientException ex) {
-				throw ProtonUtils.convert(ex);
+				throw ProtonUtils.toAmqpException(ex);
 			}
 		}
 

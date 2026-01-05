@@ -110,7 +110,7 @@ public class SingleAmqpConnectionFactory implements AmqpConnectionFactory, Dispo
 				}
 			}
 			catch (ClientException ex) {
-				throw ProtonUtils.convert(ex);
+				throw ProtonUtils.toAmqpException(ex);
 			}
 			finally {
 				this.instanceLock.unlock();
