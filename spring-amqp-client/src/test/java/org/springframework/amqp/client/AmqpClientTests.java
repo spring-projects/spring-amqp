@@ -21,18 +21,18 @@ import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.qpid.protonj2.client.Client;
-import org.apache.qpid.protonj2.client.Connection;
 import org.apache.qpid.protonj2.client.DeliveryState;
 import org.apache.qpid.protonj2.client.Message;
-import org.apache.qpid.protonj2.client.Receiver;
-import org.apache.qpid.protonj2.client.exceptions.ClientException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.shaded.com.fasterxml.jackson.core.JsonProcessingException;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.json.JsonMapper;
 
+import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.rabbit.junit.AbstractTestContainerTests;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -67,47 +67,58 @@ public class AmqpClientTests extends AbstractTestContainerTests {
 	}
 
 	@Autowired
-	AmqpConnectionFactory amqpConnectionFactory;
-
-	@Autowired
 	AmqpClient amqpClient;
 
 	@Test
-	void sendNativeWithDefaultTo() throws ClientException {
-		CompletableFuture<Boolean> sendFuture = this.amqpClient.send(Message.create("test_data"));
+	void sendNativeWithDefaultTo() throws JsonProcessingException {
+		TestData testData = new TestData("test_data");
+		byte[] testDataBytes = JsonMapper.builder().build().writeValueAsBytes(testData);
+
+		CompletableFuture<Boolean> sendFuture = this.amqpClient.send(Message.create(testDataBytes));
 
 		assertThat(sendFuture)
 				.succeedsWithin(Duration.ofSeconds(10))
 				.isEqualTo(Boolean.TRUE);
 
-		Connection connection = this.amqpConnectionFactory.getConnection();
-		try (Receiver receiver = connection.openReceiver("/queues/" + TEST_SEND_QUEUE)) {
-			Message<String> receivedMessage = receiver.receive(10, TimeUnit.SECONDS).message();
-			assertThat(receivedMessage.body()).isEqualTo("test_data");
-		}
+		CompletableFuture<TestData> receiveFuture =
+				this.amqpClient.from("/queues/" + TEST_SEND_QUEUE)
+						.receiveAndConvert();
+
+		assertThat(receiveFuture)
+				.succeedsWithin(Duration.ofSeconds(10))
+				.isEqualTo(testData);
+
+		this.amqpClient.send(Message.create("\"more_data\"".getBytes()));
+
+		assertThat(this.amqpClient.from("/queues/" + TEST_SEND_QUEUE).receiveAndConvert())
+				.succeedsWithin(Duration.ofSeconds(10))
+				.isEqualTo("more_data");
+
 	}
 
 	@Test
-	void sendToWithMessage() throws ClientException {
+	void sendToWithMessage() {
 		CompletableFuture<Boolean> sendFuture =
 				this.amqpClient
 						.to("/queues/" + TEST_SEND_QUEUE2)
-						.message(new org.springframework.amqp.core.Message("test_data2".getBytes()))
+						.message(new org.springframework.amqp.core.Message("\"test_data2\"".getBytes()))
 						.send();
 
 		assertThat(sendFuture)
 				.succeedsWithin(Duration.ofSeconds(10))
 				.isEqualTo(Boolean.TRUE);
 
-		Connection connection = this.amqpConnectionFactory.getConnection();
-		try (Receiver receiver = connection.openReceiver("/queues/" + TEST_SEND_QUEUE2)) {
-			Message<?> receivedMessage = receiver.receive(10, TimeUnit.SECONDS).message();
-			assertThat(receivedMessage.body()).isEqualTo("test_data2".getBytes());
-		}
+		CompletableFuture<String> receiveFuture =
+				this.amqpClient.from("/queues/" + TEST_SEND_QUEUE2)
+						.receiveAndConvert();
+
+		assertThat(receiveFuture)
+				.succeedsWithin(Duration.ofSeconds(10))
+				.isEqualTo("test_data2");
 	}
 
 	@Test
-	void convertAndSend() throws ClientException {
+	void convertAndSend() {
 		CompletableFuture<Boolean> sendFuture =
 				this.amqpClient
 						.to("/queues/" + TEST_SEND_QUEUE2)
@@ -116,21 +127,30 @@ public class AmqpClientTests extends AbstractTestContainerTests {
 						.header("test_header", "test_value")
 						.messageId("some_id")
 						.userId("guest")
+						.durable(false)
 						.send();
 
 		assertThat(sendFuture)
 				.succeedsWithin(Duration.ofSeconds(10))
 				.isEqualTo(Boolean.TRUE);
 
-		Connection connection = this.amqpConnectionFactory.getConnection();
-		try (Receiver receiver = connection.openReceiver("/queues/" + TEST_SEND_QUEUE2)) {
-			Message<?> receivedMessage = receiver.receive(10, TimeUnit.SECONDS).message();
-			assertThat(receivedMessage.body()).isEqualTo("convert".getBytes());
-			assertThat(receivedMessage.userId()).isEqualTo("guest".getBytes());
-			assertThat(receivedMessage.messageId()).isEqualTo("some_id");
-			assertThat(receivedMessage.priority()).isEqualTo((byte) 7);
-			assertThat(receivedMessage.property("test_header")).isEqualTo("test_value");
-		}
+		CompletableFuture<org.springframework.amqp.core.Message> receiveFuture =
+				this.amqpClient.from("/queues/" + TEST_SEND_QUEUE2)
+						.receive();
+
+		assertThat(receiveFuture)
+				.succeedsWithin(Duration.ofSeconds(10))
+				.satisfies(message -> {
+					assertThat(message.getBody()).isEqualTo("\"convert\"".getBytes());
+					assertThat(message.getMessageProperties())
+							.satisfies(props -> {
+								assertThat(props.getPriority()).isEqualTo(7);
+								assertThat(props.getUserId()).isEqualTo("guest");
+								assertThat(props.getMessageId()).isEqualTo("some_id");
+								assertThat(props.getDeliveryMode()).isEqualTo(MessageDeliveryMode.NON_PERSISTENT);
+								assertThat(props.getHeaders()).containsEntry("test_header", "test_value");
+							});
+				});
 	}
 
 	@Test
@@ -167,8 +187,13 @@ public class AmqpClientTests extends AbstractTestContainerTests {
 		AmqpClient amqpClient(AmqpConnectionFactory connectionFactory) {
 			return AmqpClient.builder(connectionFactory)
 					.defaultToAddress("/queues/" + TEST_SEND_QUEUE)
+					.messageConverter(new JacksonJsonMessageConverter())
 					.build();
 		}
+
+	}
+
+	private record TestData(String data) {
 
 	}
 

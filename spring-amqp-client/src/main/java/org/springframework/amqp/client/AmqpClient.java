@@ -19,6 +19,7 @@ package org.springframework.amqp.client;
 import java.time.Duration;
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.qpid.protonj2.client.Message;
 import org.apache.qpid.protonj2.client.SenderOptions;
@@ -26,6 +27,7 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.utils.JavaUtils;
+import org.springframework.core.task.TaskExecutor;
 
 /**
  * The fluent API for the AMQP 1.0 client.
@@ -60,6 +62,13 @@ public interface AmqpClient {
 	 */
 	SendSpec to(String toAddress);
 
+	/**
+	 * The fluent API for the receiving operation based on the {@code from} address.
+	 * @param fromAddress the source AMQP 1.0 address.
+	 * @return the {@link SendSpec} with the message building blocks.
+	 */
+	ReceiveSpec from(String fromAddress);
+
 	static AmqpClient create(AmqpConnectionFactory connectionFactory) {
 		return builder(connectionFactory).build();
 	}
@@ -78,6 +87,10 @@ public interface AmqpClient {
 
 		private @Nullable String defaultToAddress;
 
+		private @Nullable Duration completionTimeout;
+
+		private @Nullable TaskExecutor taskExecutor;
+
 		Builder(AmqpConnectionFactory connectionFactory) {
 			this.connectionFactory = connectionFactory;
 		}
@@ -89,6 +102,21 @@ public interface AmqpClient {
 		 */
 		public Builder senderOptions(SenderOptions senderOptions) {
 			this.senderOptions = senderOptions;
+			return this;
+		}
+
+		/**
+		 * Set a duration for {@link CompletableFuture#orTimeout(long, TimeUnit)} on returns.
+		 * There is no {@link CompletableFuture} API like {@code onTimeout()} requested
+		 * from the {@link CompletableFuture#get(long, TimeUnit)},
+		 * but used in operations AMQP resources have to be closed eventually independently
+		 * of the {@link CompletableFuture} fulfilment.
+		 * Defaults to 1 minute.
+		 * @param completionTimeout duration for future completions.
+		 * @return this builder.
+		 */
+		public Builder completionTimeout(Duration completionTimeout) {
+			this.completionTimeout = completionTimeout;
 			return this;
 		}
 
@@ -114,15 +142,27 @@ public interface AmqpClient {
 		}
 
 		/**
+		 * Set the {@link TaskExecutor} for asynchronous operations.
+		 * @param taskExecutor the task executor.
+		 * @return this builder.
+		 */
+		public Builder taskExecutor(TaskExecutor taskExecutor) {
+			this.taskExecutor = taskExecutor;
+			return this;
+		}
+
+		/**
 		 * Build the {@link AmqpClient} instance based on the provided options.
 		 * @return the client instance.
 		 */
 		public AmqpClient build() {
 			DefaultAmqpClient defaultAmqpClient = new DefaultAmqpClient(this.connectionFactory);
 			JavaUtils.INSTANCE
-							.acceptIfNotNull(this.senderOptions, defaultAmqpClient::setSenderOptions)
-							.acceptIfNotNull(this.messageConverter, defaultAmqpClient::setMessageConverter)
-							.acceptIfNotNull(this.defaultToAddress, defaultAmqpClient::setDefaultToAddress);
+					.acceptIfNotNull(this.senderOptions, defaultAmqpClient::setSenderOptions)
+					.acceptIfNotNull(this.completionTimeout, defaultAmqpClient::setCompletionTimeout)
+					.acceptIfNotNull(this.messageConverter, defaultAmqpClient::setMessageConverter)
+					.acceptIfNotNull(this.defaultToAddress, defaultAmqpClient::setDefaultToAddress)
+					.acceptIfNotNull(this.taskExecutor, defaultAmqpClient::setTaskExecutor);
 			return defaultAmqpClient;
 		}
 
@@ -199,6 +239,23 @@ public interface AmqpClient {
 			CompletableFuture<Boolean> send();
 
 		}
+
+	}
+
+	/**
+	 * The fluent API for the receiving operation based on the {@code from} address.
+	 */
+	interface ReceiveSpec {
+
+		default CompletableFuture<org.springframework.amqp.core.Message> receive() {
+			return receiveProtonMessage()
+					.thenApply(ProtonUtils::fromProtonMessage);
+		}
+
+		CompletableFuture<Message<?>> receiveProtonMessage();
+
+		@SuppressWarnings("unchecked")
+		<T> CompletableFuture<T> receiveAndConvert(T... reified);
 
 	}
 

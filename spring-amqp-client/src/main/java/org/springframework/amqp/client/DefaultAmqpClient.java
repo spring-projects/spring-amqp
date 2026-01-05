@@ -20,11 +20,16 @@ import java.time.Duration;
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
+import org.apache.qpid.protonj2.client.Delivery;
 import org.apache.qpid.protonj2.client.DeliveryState;
 import org.apache.qpid.protonj2.client.Message;
+import org.apache.qpid.protonj2.client.Receiver;
+import org.apache.qpid.protonj2.client.ReceiverOptions;
 import org.apache.qpid.protonj2.client.Sender;
 import org.apache.qpid.protonj2.client.SenderOptions;
 import org.apache.qpid.protonj2.client.Tracker;
@@ -36,7 +41,11 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.MessagePropertiesBuilder;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.amqp.support.converter.SmartMessageConverter;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.Assert;
 
 /**
@@ -52,9 +61,17 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 
 	private final Lock instanceLock = new ReentrantLock();
 
+	private final ReceiverOptions receiverOptions = new ReceiverOptions();
+
 	private SenderOptions senderOptions = new SenderOptions();
 
 	private MessageConverter messageConverter = new SimpleMessageConverter();
+
+	private Duration completionTimeout = Duration.ofSeconds(60);
+
+	private TaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
+
+	private boolean taskExecutorSet;
 
 	private @Nullable String defaultToAddress;
 
@@ -62,6 +79,8 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 
 	DefaultAmqpClient(AmqpConnectionFactory connectionFactory) {
 		this.connectionFactory = connectionFactory;
+		((ThreadPoolTaskExecutor) this.taskExecutor).afterPropertiesSet();
+		this.receiverOptions.creditWindow(0);
 	}
 
 	void setSenderOptions(SenderOptions senderOptions) {
@@ -74,6 +93,15 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 
 	void setDefaultToAddress(String defaultToAddress) {
 		this.defaultToAddress = defaultToAddress;
+	}
+
+	void setCompletionTimeout(Duration completionTimeout) {
+		this.completionTimeout = completionTimeout;
+	}
+
+	void setTaskExecutor(TaskExecutor taskExecutor) {
+		this.taskExecutor = taskExecutor;
+		this.taskExecutorSet = true;
 	}
 
 	@Override
@@ -96,8 +124,9 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 			throw ProtonUtils.toAmqpException(ex);
 		}
 
-		return ProtonUtils.toCompletableFuture(trackerFuture, this.senderOptions.sendTimeout())
-				.thenApply(tracker -> {
+		Supplier<Tracker> supplier = ProtonUtils.toSupplier(trackerFuture, this.senderOptions.sendTimeout());
+		return CompletableFuture.supplyAsync(supplier, this.taskExecutor)
+				.thenApply((tracker) -> {
 					DeliveryState.Type deliveryStateType = tracker.remoteState().getType();
 					if (DeliveryState.Type.ACCEPTED.equals(deliveryStateType)) {
 						return true;
@@ -110,6 +139,11 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 	@Override
 	public SendSpec to(String toAddress) {
 		return new DefaultSendSpec(toAddress);
+	}
+
+	@Override
+	public ReceiveSpec from(String fromAddress) {
+		return new DefaultReceiveSpec(fromAddress);
 	}
 
 	private Sender getSender() throws ClientException {
@@ -133,12 +167,54 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 		return senderToReturn;
 	}
 
+	private <M extends Message<?>> CompletableFuture<M> receive(String fromAddress) {
+		try {
+			Receiver receiver =
+					this.connectionFactory.getConnection()
+							.openReceiver(fromAddress, this.receiverOptions)
+							.addCredit(1);
+
+			Supplier<Delivery> supplier =
+					() -> {
+						try {
+							return receiver.receive(this.receiverOptions.requestTimeout(), TimeUnit.MILLISECONDS);
+						}
+						catch (ClientException ex) {
+							throw ProtonUtils.toAmqpException(ex);
+						}
+					};
+			return CompletableFuture.supplyAsync(supplier)
+					.<M>thenApply(DefaultAmqpClient::deliveryToMessage)
+					.orTimeout(this.completionTimeout.toMillis(), TimeUnit.MILLISECONDS)
+					.whenComplete((message, exception) -> receiver.close());
+		}
+		catch (ClientException ex) {
+			throw ProtonUtils.toAmqpException(ex);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <M> M deliveryToMessage(Delivery delivery) {
+		try {
+			Message<?> message = delivery.message();
+			delivery.accept();
+			return (M) message;
+		}
+		catch (ClientException ex) {
+			throw ProtonUtils.toAmqpException(ex);
+		}
+	}
+
 	@Override
 	public void destroy() {
 		Sender senderToClose = this.sender;
 		if (senderToClose != null) {
 			senderToClose.close();
 			this.sender = null;
+		}
+
+		if (!this.taskExecutorSet) {
+			((ThreadPoolTaskExecutor) this.taskExecutor).destroy();
 		}
 	}
 
@@ -282,6 +358,58 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 				return DefaultAmqpClient.this.send(protonMessage);
 			}
 
+		}
+
+	}
+
+	class DefaultReceiveSpec implements ReceiveSpec {
+
+		private final String fromAddress;
+
+		DefaultReceiveSpec(String fromAddress) {
+			this.fromAddress = fromAddress;
+		}
+
+		@Override
+		public CompletableFuture<Message<?>> receiveProtonMessage() {
+			return DefaultAmqpClient.this.receive(this.fromAddress);
+		}
+
+		@Override
+		@SafeVarargs
+		@SuppressWarnings("varargs")
+		public final <T> CompletableFuture<T> receiveAndConvert(T... reified) {
+			Assert.state(reified.length == 0,
+					"No parameters are allowed for 'receiveAndConvert'. " +
+							"The generic argument is enough for inferring the expected conversion type.");
+
+			var parameterizedTypeReference = ParameterizedTypeReference.forType(getClassOf(reified));
+			boolean isObjectType = Object.class.equals(parameterizedTypeReference.getType());
+			if (!isObjectType) {
+				Assert.state(DefaultAmqpClient.this.messageConverter instanceof SmartMessageConverter,
+						"The client's message converter must be a 'SmartMessageConverter'");
+			}
+
+			return receive()
+					.thenApply((message) ->
+							convertReply(message, isObjectType ? null : parameterizedTypeReference));
+		}
+
+		@SuppressWarnings("unchecked")
+		private <T> T convertReply(org.springframework.amqp.core.Message message,
+				@Nullable ParameterizedTypeReference<?> type) {
+
+			if (type == null) {
+				return (T) DefaultAmqpClient.this.messageConverter.fromMessage(message);
+			}
+			else {
+				return (T) ((SmartMessageConverter) DefaultAmqpClient.this.messageConverter).fromMessage(message, type);
+			}
+		}
+
+		@SuppressWarnings("unchecked")
+		private static <T> Class<T> getClassOf(T[] array) {
+			return (Class<T>) array.getClass().getComponentType();
 		}
 
 	}

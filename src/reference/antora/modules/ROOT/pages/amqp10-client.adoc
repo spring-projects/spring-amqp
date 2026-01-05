@@ -108,7 +108,7 @@ CompletableFuture<Boolean> sendFuture = this.amqpClient.send(Message.create("tes
 ----
 CompletableFuture<Boolean> sendFuture =
     this.amqpClient
-            .to("/queues/" + TEST_SEND_QUEUE2)
+            .to("/queues/test_queue")
             .message(new org.springframework.amqp.core.Message("test_data2".getBytes()))
             .send();
 ----
@@ -117,13 +117,33 @@ CompletableFuture<Boolean> sendFuture =
 ----
 CompletableFuture<Boolean> sendFuture =
         this.amqpClient
-                .to("/queues/" + TEST_SEND_QUEUE2)
+                .to("/queues/test_queue")
                 .body("convert")
                 .priority(7)
                 .header("test_header", "test_value")
                 .messageId("some_id")
                 .userId("guest")
                 .send();
+----
+
+The `AmqpClient` also provides a fluent API to receive messages from addresses on demand.
+For that purpose an `AmqpClient.from(String fromAddress)` method should be called returning a `ReceiveSpec` for various receive operations behavior.
+All of them produce a `CompletableFuture` with either native ProtonJ message, a Spring AMQP message, or just payload converted from the message's body.
+The `receiveAndConvert()` with non-`Object.class` generic argument requires a `messageConverter` in the `AmqpClient` to be as a `SmartMessageConverter`.
+For example, when `JacksonJsonMessageConverter` is provided for the `AmqpClient`, the following example would yield a proper data model conversion:
+
+[source,java]
+----
+record TestData(String data) { }
+
+ this.amqpClient
+        .to("/queues/test_queue")
+        .body(new TestData("convert"))
+        .send();
+
+CompletableFuture<TestData> receiveFuture =
+        this.amqpClient.from("/queues/test_queue")
+                    .receiveAndConvert();
 ----
 
 See Javadocs for those methods for more information about the fluent API exposed by the `AmqpClient`.

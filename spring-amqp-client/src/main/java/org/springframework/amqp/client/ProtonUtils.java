@@ -18,7 +18,6 @@ package org.springframework.amqp.client;
 
 import java.util.Date;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -43,8 +42,11 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpResourceNotAvailableException;
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.UncategorizedAmqpException;
+import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.utils.JavaUtils;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
@@ -113,36 +115,79 @@ public final class ProtonUtils {
 	}
 
 	/**
-	 * Convert a {@link Future} to a {@link CompletableFuture}.
+	 * Convert a ProtonJ message to the Spring AMQP message.
+	 * Only messages with binary body are supported.
+	 * @param message the ProtonJ message to convert from.
+	 * @return the Spring AMQP message based on the provided ProtonJ message.
+	 */
+	public static org.springframework.amqp.core.Message fromProtonMessage(Message<?> message) {
+		try {
+			Object body = message.body();
+			Assert.state(body instanceof byte[], "Only binary data is supported for converting from ProtonJ message");
+			MessageBuilder messageBuilder = MessageBuilder.withBody((byte[]) body);
+
+			JavaUtils.INSTANCE
+					.acceptIfNotNull(message.messageId(),
+							(messageId) -> messageBuilder.setMessageId(messageId.toString()))
+					.acceptIfNotNull(message.contentType(), messageBuilder::setContentType)
+					.acceptIfNotNull(message.correlationId(),
+							(correlationId) -> messageBuilder.setCorrelationId(correlationId.toString()))
+					.acceptIfNotNull(message.userId(), (userId) -> messageBuilder.setUserId(new String(userId)))
+					.acceptIfNotNull(message.replyTo(), messageBuilder::setReplyTo);
+
+			long creationTime = message.creationTime();
+			if (creationTime > 0) {
+				messageBuilder.setTimestamp(new Date(creationTime));
+			}
+
+			long timeToLive = message.timeToLive();
+			if (timeToLive > 0) {
+				messageBuilder.setExpiration("" + timeToLive);
+			}
+
+			message.forEachProperty(messageBuilder::setHeader);
+
+			return messageBuilder
+					.setContentEncoding(message.contentEncoding())
+					.setPriority(Byte.valueOf(message.priority()).intValue())
+					.setDeliveryMode(message.durable()
+							? MessageDeliveryMode.PERSISTENT
+							: MessageDeliveryMode.NON_PERSISTENT)
+					.build();
+		}
+		catch (ClientException ex) {
+			throw toAmqpException(ex);
+		}
+	}
+
+	/**
+	 * Convert a {@link Future} to a {@link Supplier}.
 	 * @param future the future to covert from.
 	 * @param timeout for how long to wait for the {@link Future} result.
 	 * @param <T> the value type.
-	 * @return a {@link CompletableFuture} based on {@link Supplier} on the provided {@link Future}.
+	 * @return a {@link Supplier} calling the provided {@link Future}.
 	 */
-	public static <T> CompletableFuture<T> toCompletableFuture(Future<T> future, long timeout) {
-		Supplier<T> supplier =
-				() -> {
-					try {
-						if (timeout > 0) {
-							return future.get(timeout, TimeUnit.MILLISECONDS);
-						}
-						else {
-							return future.get();
-						}
-					}
-					catch (InterruptedException ex) {
-						Thread.currentThread().interrupt();
-						throw new UncategorizedAmqpException(ex);
-					}
-					catch (TimeoutException ex) {
-						throw toAmqpException(ex);
-					}
-					catch (ExecutionException ex) {
-						throw toAmqpException(ex);
-					}
-				};
-
-		return CompletableFuture.supplyAsync(supplier);
+	public static <T> Supplier<T> toSupplier(Future<T> future, long timeout) {
+		return () -> {
+			try {
+				if (timeout > 0) {
+					return future.get(timeout, TimeUnit.MILLISECONDS);
+				}
+				else {
+					return future.get();
+				}
+			}
+			catch (InterruptedException ex) {
+				Thread.currentThread().interrupt();
+				throw new UncategorizedAmqpException(ex);
+			}
+			catch (TimeoutException ex) {
+				throw toAmqpException(ex);
+			}
+			catch (ExecutionException ex) {
+				throw toAmqpException(ex);
+			}
+		};
 	}
 
 	/**
