@@ -4,3 +4,9 @@
 
 [[changes-in-4-1-since-4-0]]
 == Changes in 4.1 Since 4.0
+
+[[x41-amqp10-client]]
+=== Null-safety
+
+A new `spring-amqp-client` module has been introduced to provide support for interacting with generic AMQP 1.0 protocol.
+See xref:amqp10-client.adoc[] for more information.

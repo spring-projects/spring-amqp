@@ -56,6 +56,7 @@
 *** xref:amqp/resilience-recovering-from-errors-and-broker-failures.adoc[]
 *** xref:amqp/multi-rabbit.adoc[]
 *** xref:amqp/debugging.adoc[]
+** xref:amqp10-client.adoc[]
 ** xref:stream.adoc[]
 ** xref:rabbitmq-amqp-client.adoc[]
 ** xref:logging.adoc[]
