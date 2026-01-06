@@ -65,7 +65,7 @@ public interface AmqpClient {
 	/**
 	 * The fluent API for the receiving operation based on the {@code from} address.
 	 * @param fromAddress the source AMQP 1.0 address.
-	 * @return the {@link SendSpec} with the message building blocks.
+	 * @return the {@link ReceiveSpec}.
 	 */
 	ReceiveSpec from(String fromAddress);
 
@@ -145,6 +145,7 @@ public interface AmqpClient {
 
 		/**
 		 * Set the {@link TaskExecutor} for asynchronous operations.
+		 * A {@link java.util.concurrent.ThreadPoolExecutor} with one core pool thread is used by default.
 		 * @param taskExecutor the task executor.
 		 * @return this builder.
 		 */
@@ -249,13 +250,28 @@ public interface AmqpClient {
 	 */
 	interface ReceiveSpec {
 
+		/**
+		 * Receive a Spring AMQP message from the provided {@code from} address.
+		 * @return a {@link CompletableFuture} with the message.
+		 */
 		default CompletableFuture<org.springframework.amqp.core.Message> receive() {
 			return receiveProtonMessage()
 					.thenApply(ProtonUtils::fromProtonMessage);
 		}
 
+		/**
+		 * Receive a native ProtonJ message from the provided {@code from} address.
+		 * @return a {@link CompletableFuture} with the message.
+		 */
 		CompletableFuture<Message<?>> receiveProtonMessage();
 
+		/**
+		 * Receive a message from the provided {@code from} address and convert its body to the provided generic type.
+		 * @param reified the argument which is used to extract a generic type for conversion.
+		 *                Must not be set!
+		 * @param <T> the type to convert the message body into.
+		 * @return a {@link CompletableFuture} with payload of the expected type converted from the message body.
+		 */
 		@SuppressWarnings("unchecked")
 		<T> CompletableFuture<T> receiveAndConvert(T... reified);
 
