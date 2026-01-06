@@ -133,6 +133,8 @@ public interface AmqpClient {
 
 		/**
 		 * Set the {@link MessageConverter} for converting to/from message body.
+		 * For the {@link ReceiveSpec#receiveAndConvert} with non-{@link Object} generic type,
+		 * this converter has to be {@link org.springframework.amqp.support.converter.SmartMessageConverter}.
 		 * @param messageConverter the converter.
 		 * @return this builder.
 		 */

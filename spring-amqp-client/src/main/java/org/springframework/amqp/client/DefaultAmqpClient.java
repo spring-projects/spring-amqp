@@ -61,7 +61,11 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 
 	private final Lock instanceLock = new ReentrantLock();
 
-	private final ReceiverOptions receiverOptions = new ReceiverOptions();
+	private final ReceiverOptions receiverOptions = new ReceiverOptions()
+			// The 'receive' consumers are volatile and only about one message to consume.
+			// Therefore, no initial credit is needed:
+			// only one is permitted explicitly in the 'Receiver' instance.
+			.creditWindow(0);
 
 	private SenderOptions senderOptions = new SenderOptions();
 
@@ -80,7 +84,6 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 	DefaultAmqpClient(AmqpConnectionFactory connectionFactory) {
 		this.connectionFactory = connectionFactory;
 		((ThreadPoolTaskExecutor) this.taskExecutor).afterPropertiesSet();
-		this.receiverOptions.creditWindow(0);
 	}
 
 	void setSenderOptions(SenderOptions senderOptions) {
@@ -172,6 +175,8 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 			Receiver receiver =
 					this.connectionFactory.getConnection()
 							.openReceiver(fromAddress, this.receiverOptions)
+							// Since this 'Receiver' is volatile and only about one message to consume,
+							// therefore only one credit is permitted without renewing.
 							.addCredit(1);
 
 			Supplier<Delivery> supplier =
@@ -183,6 +188,7 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 							throw ProtonUtils.toAmqpException(ex);
 						}
 					};
+
 			return CompletableFuture.supplyAsync(supplier)
 					.<M>thenApply(DefaultAmqpClient::deliveryToMessage)
 					.orTimeout(this.completionTimeout.toMillis(), TimeUnit.MILLISECONDS)
@@ -196,9 +202,7 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 	@SuppressWarnings("unchecked")
 	private static <M> M deliveryToMessage(Delivery delivery) {
 		try {
-			Message<?> message = delivery.message();
-			delivery.accept();
-			return (M) message;
+			return (M) delivery.message();
 		}
 		catch (ClientException ex) {
 			throw ProtonUtils.toAmqpException(ex);
