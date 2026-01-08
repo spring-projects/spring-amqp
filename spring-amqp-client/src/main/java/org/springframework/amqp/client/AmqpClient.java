@@ -251,6 +251,15 @@ public interface AmqpClient {
 	interface ReceiveSpec {
 
 		/**
+		 * Set a timeout for the delivery.
+		 * The maximum is limited by the {@link AmqpClient.Builder#completionTimeout(Duration)}
+		 * which is 1 minute by default.
+		 * @param timeout to wait for the delivery.
+		 * @return a {@link CompletableFuture} with the message.
+		 */
+		ReceiveSpec timeout(Duration timeout);
+
+		/**
 		 * Receive a Spring AMQP message from the provided {@code from} address.
 		 * @return a {@link CompletableFuture} with the message.
 		 */

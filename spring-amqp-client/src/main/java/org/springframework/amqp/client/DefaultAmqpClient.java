@@ -170,7 +170,7 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 		return senderToReturn;
 	}
 
-	private <M extends Message<?>> CompletableFuture<M> receive(String fromAddress) {
+	private <M extends Message<?>> CompletableFuture<M> receive(String fromAddress, @Nullable Duration receiveTimeout) {
 		try {
 			Receiver receiver =
 					this.connectionFactory.getConnection()
@@ -182,14 +182,19 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 			Supplier<Delivery> supplier =
 					() -> {
 						try {
-							return receiver.receive(this.receiverOptions.requestTimeout(), TimeUnit.MILLISECONDS);
+							if (receiveTimeout != null) {
+								return receiver.receive(receiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
+							}
+							else {
+								return receiver.receive();
+							}
 						}
 						catch (ClientException ex) {
 							throw ProtonUtils.toAmqpException(ex);
 						}
 					};
 
-			return CompletableFuture.supplyAsync(supplier)
+			return CompletableFuture.supplyAsync(supplier, this.taskExecutor)
 					.<M>thenApply(DefaultAmqpClient::deliveryToMessage)
 					.orTimeout(this.completionTimeout.toMillis(), TimeUnit.MILLISECONDS)
 					.whenComplete((message, exception) -> receiver.close());
@@ -370,13 +375,21 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 
 		private final String fromAddress;
 
+		private @Nullable Duration receiveTimeout;
+
 		DefaultReceiveSpec(String fromAddress) {
 			this.fromAddress = fromAddress;
 		}
 
 		@Override
+		public ReceiveSpec timeout(Duration timeout) {
+			this.receiveTimeout = timeout;
+			return this;
+		}
+
+		@Override
 		public CompletableFuture<Message<?>> receiveProtonMessage() {
-			return DefaultAmqpClient.this.receive(this.fromAddress);
+			return DefaultAmqpClient.this.receive(this.fromAddress, receiveTimeout);
 		}
 
 		@Override

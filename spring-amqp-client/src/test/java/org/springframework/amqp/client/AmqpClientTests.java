@@ -136,6 +136,7 @@ public class AmqpClientTests extends AbstractTestContainerTests {
 
 		CompletableFuture<org.springframework.amqp.core.Message> receiveFuture =
 				this.amqpClient.from("/queues/" + TEST_SEND_QUEUE2)
+						.timeout(Duration.ofSeconds(1))
 						.receive();
 
 		assertThat(receiveFuture)
