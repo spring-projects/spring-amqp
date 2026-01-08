@@ -23,7 +23,7 @@ For Gradle, you can do something resembling the following:
 
 [source,groovy,subs="+attributes"]
 ----
-compile 'org.springframework.amqp:spring-rabbit:{project-version}'
+implementation 'org.springframework.amqp:spring-rabbit:{project-version}'
 ----
 
 [[compatibility]]

@@ -628,7 +628,7 @@ To add `WebFlux` to the class path:
 .Gradle
 [source,groovy,subs="+attributes"]
 ----
-compile 'org.springframework.amqp:spring-rabbit'
+implementation 'org.springframework.amqp:spring-rabbit'
 ----
 
 You can also use other REST technology by implementing javadoc:org.springframework.amqp.rabbit.connection.LocalizedQueueConnectionFactory#setNodeLocator(org.springframework.amqp.rabbit.connection.NodeLocator)[LocalizedQueueConnectionFactory#setNodeLocator] and overriding its `createClient`, `restCall`, and optionally, `close` methods.

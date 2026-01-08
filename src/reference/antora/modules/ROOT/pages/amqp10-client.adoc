@@ -24,7 +24,7 @@ Gradle::
 +
 [source,groovy,subs="+attributes"]
 ----
-compile 'org.springframework.amqp:spring-amqp-client:{project-version}'
+implementation 'org.springframework.amqp:spring-amqp-client:{project-version}'
 ----
 ======
 
