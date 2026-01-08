@@ -389,7 +389,7 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 
 		@Override
 		public CompletableFuture<Message<?>> receiveProtonMessage() {
-			return DefaultAmqpClient.this.receive(this.fromAddress, receiveTimeout);
+			return DefaultAmqpClient.this.receive(this.fromAddress, this.receiveTimeout);
 		}
 
 		@Override
