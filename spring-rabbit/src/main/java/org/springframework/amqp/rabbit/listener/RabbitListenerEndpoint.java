@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.listener;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.AcknowledgeMode;
+import org.springframework.amqp.core.MessageListenerContainer;
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -45,7 +46,7 @@ public interface RabbitListenerEndpoint {
 	String getId();
 
 	/**
-	 * @return the group of this endpoint or null if not in a group.
+	 * @return the group of these endpoints or null if not in a group.
 	 * @since 1.5
 	 */
 	@Nullable
@@ -102,7 +103,7 @@ public interface RabbitListenerEndpoint {
 	}
 
 	/**
-	 * Get the task executor to use for this endpoint's listener container.
+	 * Get the task executor to use it for this endpoint's listener container.
 	 * Overrides any executor set on the container factory.
 	 * @return the executor.
 	 * @since 2.2
@@ -157,7 +158,7 @@ public interface RabbitListenerEndpoint {
 	/**
 	 * Return a {@link ReplyPostProcessor} to post process a reply message before it is
 	 * sent.
-	 * @return the post processor.
+	 * @return the post-processor.
 	 * @since 2.2.5
 	 */
 	default @Nullable ReplyPostProcessor getReplyPostProcessor() {

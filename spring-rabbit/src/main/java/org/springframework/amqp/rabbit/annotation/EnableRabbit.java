@@ -50,7 +50,7 @@ import org.springframework.context.annotation.Import;
  * {@link org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory
  * SimpleRabbitListenerContainerFactory}
  * used in the sample above, provides the necessary configuration options that are supported by
- * the underlying {@link org.springframework.amqp.rabbit.listener.MessageListenerContainer MessageListenerContainer}.
+ * the underlying {@link org.springframework.amqp.core.MessageListenerContainer MessageListenerContainer}.
  *
  * <p>{@code @EnableRabbit} enables detection of {@link RabbitListener} annotations on any
  * Spring-managed bean in the container. For example, given a class {@code MyService}:

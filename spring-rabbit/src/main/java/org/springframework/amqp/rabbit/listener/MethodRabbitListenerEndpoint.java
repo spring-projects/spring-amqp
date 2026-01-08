@@ -21,6 +21,7 @@ import java.util.Arrays;
 
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.amqp.core.MessageListenerContainer;
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.listener.adapter.BatchMessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.HandlerAdapter;

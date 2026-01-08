@@ -19,7 +19,7 @@ package org.springframework.amqp.rabbit.config;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.MessageListener;
-import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
+import org.springframework.amqp.core.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;

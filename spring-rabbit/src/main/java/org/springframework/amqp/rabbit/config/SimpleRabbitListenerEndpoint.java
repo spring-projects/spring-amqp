@@ -16,12 +16,11 @@
 
 package org.springframework.amqp.rabbit.config;
 
-
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.core.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.AbstractRabbitListenerEndpoint;
-import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 
 /**
  * A {@link org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint} simply

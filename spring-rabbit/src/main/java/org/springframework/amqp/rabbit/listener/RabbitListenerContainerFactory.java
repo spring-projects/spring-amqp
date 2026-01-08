@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.listener;
 
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.amqp.core.MessageListenerContainer;
 import org.springframework.beans.factory.BeanNameAware;
 
 /**

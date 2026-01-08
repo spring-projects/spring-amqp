@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.amqp.core.MessageListenerContainer;
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;

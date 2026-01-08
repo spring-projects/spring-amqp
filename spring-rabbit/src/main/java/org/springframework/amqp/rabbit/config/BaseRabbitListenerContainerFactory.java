@@ -22,9 +22,9 @@ import java.util.function.Function;
 import org.aopalliance.aop.Advice;
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.amqp.core.MessageListenerContainer;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
-import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.adapter.AbstractAdaptableMessageListener;

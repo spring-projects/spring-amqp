@@ -196,7 +196,7 @@ The server side can be implemented with a `@RabbitListener` POJO method describe
 [[amqp-client-listener]]
 == The RabbitMQ AMQP 1.0 Consumer
 
-As with many other messaging implementations for consumer side, the `spring-rabbitmq-client` modules comes with the `RabbitAmqpListenerContainer` which is, essentially, an implementation of well-know `MessageListenerContainer`.
+As with many other messaging implementations for consumer side, the `spring-rabbitmq-client` modules comes with the `RabbitAmqpListenerContainer` which is, essentially, an implementation of well-know `org.springframework.amqp.core.MessageListenerContainer`.
 It does exactly the same as `DirectMessageListenerContainer`, but for RabbitMQ AMQP 1.0 support.
 Requires an `AmqpConnectionFactory` and at least one queue to consume from.
 Also, the `MessageListener` (or AMQP 1.0 specific `RabbitAmqpMessageListener`) must be provided.

@@ -19,7 +19,7 @@ package org.springframework.amqp.rabbit.config;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
+import org.springframework.amqp.core.MessageListenerContainer;
 import org.springframework.util.Assert;
 
 /**

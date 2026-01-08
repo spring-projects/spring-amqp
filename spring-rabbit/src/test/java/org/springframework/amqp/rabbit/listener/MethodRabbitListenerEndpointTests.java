@@ -32,6 +32,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.core.Address;
+import org.springframework.amqp.core.MessageListenerContainer;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyFailureException;

@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
+import org.springframework.amqp.core.MessageListenerContainer;
 
 /**
  * Called by the container factory after the container is created and configured.

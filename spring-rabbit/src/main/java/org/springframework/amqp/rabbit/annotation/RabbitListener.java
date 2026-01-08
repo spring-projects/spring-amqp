@@ -138,7 +138,7 @@ public @interface RabbitListener {
 	 * context.
 	 * Mutually exclusive with {@link #bindings()} and {@link #queuesToDeclare()}.
 	 * @return the queue names or expressions (SpEL) to listen to from target
-	 * @see org.springframework.amqp.rabbit.listener.MessageListenerContainer
+	 * @see org.springframework.amqp.core.MessageListenerContainer
 	 */
 	String[] queues() default {};
 
@@ -151,7 +151,7 @@ public @interface RabbitListener {
 	 * NOTE: Broker-named queues cannot be declared this way, they must be defined
 	 * as beans (with an empty string for the name).
 	 * @return the queue(s) to declare.
-	 * @see org.springframework.amqp.rabbit.listener.MessageListenerContainer
+	 * @see org.springframework.amqp.core.MessageListenerContainer
 	 * @since 2.0
 	 */
 	Queue[] queuesToDeclare() default {};
@@ -191,7 +191,7 @@ public @interface RabbitListener {
 	 * NOTE: Broker-named queues cannot be declared this way, they must be defined
 	 * as beans (with an empty string for the name).
 	 * @return the bindings.
-	 * @see org.springframework.amqp.rabbit.listener.MessageListenerContainer
+	 * @see org.springframework.amqp.core.MessageListenerContainer
 	 * @since 1.5
 	 */
 	QueueBinding[] bindings() default {};
