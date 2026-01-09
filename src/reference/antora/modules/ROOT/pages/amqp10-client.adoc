@@ -149,8 +149,43 @@ CompletableFuture<TestData> receiveFuture =
 See Javadocs for those methods for more information about the fluent API exposed by the `AmqpClient`.
 
 
-////
 [[amqp10-client-listener]]
 == The AMQP 1.0 Consumer
-////
 
+The event-driven consumer for AMQP 1.o protocol is implemented as an `AmqpMessageListenerContainer` similar to all other xref:amqp/receiving-messages/async-consumer.adoc[listener container implementations] in the framework.
+The `AmqpMessageListenerContainer` requires an `AmqpConnectionFactory` and uses `org.apache.qpid.protonj2.client.Receiver` instances internally to consume messages from the provided `queueNames` (essentially, AMQP 1.o addresses).
+The `100` initial credits are used for receiver links by default.
+Every settled delivery then replenishes some number of credits for new upcoming messages.
+The consumed messages are handled by the provided `MessageListener`, and if the `autoAccept` is set to `false`, an `AmqpAcknowledgment` implementation is populated to respective Spring AMQP message property for manual delivery settlement in the target message listener logic.
+
+The `consumersPerQueue` option (`1` by default) implements a concurrency behavior for each provided address to consume.
+
+The `Duration receiveTimeout` option (`1 second` by default) controls the blocking `Receiver.receive()` operation, which is called in a loop until consumer is stopped.
+
+Each consumer (an internal `AmqpMessageListenerContainer.AmqpConsumer` instance) is scheduled for running via `Executor`.
+The default one is `SimpleAsyncTaskExecutor`.
+
+The message processing errors can be handled by the `ErrorHandler` configuration.
+
+The `MessageListener` can be proxied in the `AmqpMessageListenerContainer` if some AOP interceptors are provided, e.g. `TransactionInterceptor`.
+
+The `AmqpMessageListenerContainer` also provides `pause()` and `resume()` API to set AMQP link credits to `0` and replenish, respectively.
+This functionality, essentially, leaves a `Receiver` active, but no delivery is coming from the AMQP peer.
+
+The following example demonstrates a simple configuration for `AmqpMessageListenerContainer`:
+
+[source,java]
+----
+BlockingQueue<Message> receivedMessages = new LinkedBlockingQueue<>();
+
+@Bean
+AmqpMessageListenerContainer amqpMessageListenerContainer(AmqpConnectionFactory connectionFactory) {
+    var amqpMessageListenerContainer = new AmqpMessageListenerContainer(connectionFactory);
+    amqpMessageListenerContainer.setQueueNames("address1", "address2");
+    amqpMessageListenerContainer.setConsumersPerQueue(3);
+    amqpMessageListenerContainer.setAutoAccept(false);
+    amqpMessageListenerContainer.setReceiveTimeout(Duration.ofMillis(100));
+    amqpMessageListenerContainer.setupMessageListener(this.receivedMessages::add);
+    return amqpMessageListenerContainer;
+}
+----
