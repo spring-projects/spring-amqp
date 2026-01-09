@@ -40,7 +40,6 @@ import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AmqpAcknowledgment;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
-import org.springframework.amqp.core.MessageListenerContainer;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.listener.ConditionalRejectingErrorHandler;
 import org.springframework.amqp.rabbit.listener.support.ContainerUtils;
@@ -68,7 +67,9 @@ import org.springframework.util.ObjectUtils;
  * @since 4.0
  *
  */
-public class RabbitAmqpListenerContainer implements MessageListenerContainer, BeanNameAware, DisposableBean {
+@SuppressWarnings("removal")
+public class RabbitAmqpListenerContainer
+		implements org.springframework.amqp.rabbit.listener.MessageListenerContainer, BeanNameAware, DisposableBean {
 
 	private static final LogAccessor LOG = new LogAccessor(LogFactory.getLog(RabbitAmqpListenerContainer.class));
 

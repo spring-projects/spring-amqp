@@ -21,7 +21,6 @@ import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.amqp.core.MessageListenerContainer;
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
@@ -35,10 +34,11 @@ import org.springframework.util.ClassUtils;
  * @author Artem Bilan
  *
  * @since 3.0.5
- *
  */
+@SuppressWarnings("removal")
 public abstract class ObservableListenerContainer extends RabbitAccessor
-		implements MessageListenerContainer, ApplicationContextAware, BeanNameAware, DisposableBean {
+		implements org.springframework.amqp.rabbit.listener.MessageListenerContainer,
+		ApplicationContextAware, BeanNameAware, DisposableBean {
 
 	private static final boolean MICROMETER_PRESENT = ClassUtils.isPresent(
 			"io.micrometer.core.instrument.MeterRegistry", AbstractMessageListenerContainer.class.getClassLoader());
@@ -122,7 +122,6 @@ public abstract class ObservableListenerContainer extends RabbitAccessor
 			obtainObservationRegistry(this.applicationContext);
 		}
 	}
-
 
 	protected boolean isApplicationContextClosed() {
 		return this.applicationContext instanceof ConfigurableApplicationContext configurableCtx

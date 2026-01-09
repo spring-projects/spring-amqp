@@ -60,7 +60,7 @@ public interface MessageListenerContainer extends SmartLifecycle, InitializingBe
 	}
 
 	/**
-	 * Set the queue names.
+	 * Set the queue names or AMQP 1.0 addresses.
 	 * @param queues the queue names.
 	 */
 	void setQueueNames(String... queues);
