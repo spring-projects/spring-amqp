@@ -153,6 +153,7 @@ public final class ProtonUtils {
 					.setDeliveryMode(message.durable()
 							? MessageDeliveryMode.PERSISTENT
 							: MessageDeliveryMode.NON_PERSISTENT)
+					.setReceivedRoutingKey(message.to())
 					.build();
 		}
 		catch (ClientException ex) {
@@ -302,20 +303,20 @@ public final class ProtonUtils {
 		return isUnauthorizedAccess(ex.getErrorCondition());
 	}
 
-	private static boolean isUnauthorizedAccess(ErrorCondition errorCondition) {
+	private static boolean isUnauthorizedAccess(@Nullable ErrorCondition errorCondition) {
 		return errorConditionEquals(errorCondition, ERROR_UNAUTHORIZED_ACCESS);
 	}
 
-	private static boolean isNotFound(ErrorCondition errorCondition) {
+	private static boolean isNotFound(@Nullable ErrorCondition errorCondition) {
 		return errorConditionEquals(errorCondition, ERROR_NOT_FOUND);
 	}
 
-	private static boolean isResourceDeleted(ErrorCondition errorCondition) {
+	private static boolean isResourceDeleted(@Nullable ErrorCondition errorCondition) {
 		return errorConditionEquals(errorCondition, ERROR_RESOURCE_DELETED);
 	}
 
-	private static boolean errorConditionEquals(ErrorCondition errorCondition, String expected) {
-		return expected.equals(errorCondition.condition());
+	private static boolean errorConditionEquals(@Nullable ErrorCondition errorCondition, String expected) {
+		return errorCondition != null && expected.equals(errorCondition.condition());
 	}
 
 	private static boolean isNetworkError(ClientException e) {
