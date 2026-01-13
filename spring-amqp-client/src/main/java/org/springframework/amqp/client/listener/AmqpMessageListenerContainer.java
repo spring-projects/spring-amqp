@@ -114,7 +114,7 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 
 	private boolean taskExecutorSet;
 
-	private boolean autoAccept;
+	private boolean autoAccept = true;
 
 	private int initialCredits = 100;
 
@@ -131,7 +131,7 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 	public void setupMessageListener(MessageListener messageListener) {
 		this.messageListener = messageListener;
 		this.asyncReplies = messageListener.isAsyncReplies();
-		this.proxy = this.messageListener;
+
 		if (!ObjectUtils.isEmpty(this.adviceChain)) {
 			ProxyFactory factory = new ProxyFactory(messageListener);
 			for (Advice advice : this.adviceChain) {
@@ -139,6 +139,9 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 			}
 			factory.setInterfaces(messageListener.getClass().getInterfaces());
 			this.proxy = (MessageListener) factory.getProxy(getClass().getClassLoader());
+		}
+		else {
+			this.proxy = messageListener;
 		}
 	}
 
@@ -221,7 +224,6 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 	 * @param taskExecutor the task executor.
 	 */
 	public void setTaskExecutor(Executor taskExecutor) {
-		Assert.notNull(taskExecutor, "'taskExecutor' cannot be null");
 		this.taskExecutor = taskExecutor;
 		this.taskExecutorSet = true;
 	}
@@ -275,6 +277,7 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 								// the auto-replenishment for the credit window is disabled.
 								.creditWindow(0)
 								.autoAccept(this.autoAccept);
+
 				for (String queue : this.queues) {
 					for (int i = 0; i < this.consumersPerQueue; i++) {
 						try {
@@ -442,6 +445,7 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 			ReflectionUtils.makeAccessible(SESSION_WINDOW_FIELD);
 			ReflectionUtils.makeAccessible(WRITE_FLOW_METHOD);
 		}
+
 		private final ClientReceiver receiver;
 
 		private final ProtonReceiver protonReceiver;

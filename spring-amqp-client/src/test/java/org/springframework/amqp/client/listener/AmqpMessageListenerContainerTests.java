@@ -24,6 +24,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.qpid.protonj2.client.Client;
+import org.apache.qpid.protonj2.engine.impl.ProtonReceiver;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -32,11 +33,15 @@ import org.springframework.amqp.client.AmqpConnectionFactory;
 import org.springframework.amqp.client.SingleAmqpConnectionFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.junit.AbstractTestContainerTests;
+import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.aop.interceptor.DebugInterceptor;
+import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.util.MultiValueMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -76,6 +81,8 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 
 	@Test
 	void messagesConsumedFromAllQueues() throws InterruptedException {
+		assertThat(AopUtils.isAopProxy(amqpMessageListenerContainer.getMessageListener())).isTrue();
+
 		Map<String, String> dataToQueue =
 				Map.of(
 						"test_data1", TEST_QUEUE1,
@@ -102,8 +109,19 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	void pauseAndResumeContainer() throws InterruptedException {
+		MultiValueMap<String, ?> queueToConsumers =
+				TestUtils.getPropertyValue(this.amqpMessageListenerContainer, "queueToConsumers", MultiValueMap.class);
+
+		Object amqpConsumer = queueToConsumers.getFirst(TEST_QUEUE1);
+		ProtonReceiver protonReceiver = TestUtils.getPropertyValue(amqpConsumer, "protonReceiver", ProtonReceiver.class);
+
+		assertThat(protonReceiver.getCredit()).isEqualTo(100);
+
 		this.amqpMessageListenerContainer.pause();
+
+		assertThat(protonReceiver.getCredit()).isEqualTo(0);
 
 		assertThat(this.amqpClient.to(TEST_QUEUE1).body("after resume").send())
 				.succeedsWithin(Duration.ofSeconds(10));
@@ -117,6 +135,8 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 		assertThat(message)
 				.extracting(Message::getBody)
 				.isEqualTo("after resume".getBytes());
+
+		assertThat(protonReceiver.getCredit()).isBetween(0, 100);
 	}
 
 	@Configuration(proxyBeanMethods = false)
@@ -147,6 +167,7 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 			amqpMessageListenerContainer.setConsumersPerQueue(3);
 			amqpMessageListenerContainer.setAutoAccept(false);
 			amqpMessageListenerContainer.setReceiveTimeout(Duration.ofMillis(100));
+			amqpMessageListenerContainer.setAdviceChain(new DebugInterceptor());
 			amqpMessageListenerContainer.setupMessageListener(this.receivedMessages::add);
 			return amqpMessageListenerContainer;
 		}
