@@ -46,6 +46,7 @@ Client protonClient() {
 
 The same `Client` can be used for connecting to different brokers, the connection settings must be provided on a specific connection.
 See below.
+See also
 
 [[amqp10-client-connection-factory]]
 == AMQP 1.0 Connection Factory
@@ -69,6 +70,8 @@ AmqpConnectionFactory connectionFactory(Client protonClient) {
 See `SingleAmqpConnectionFactory` setters for all connection-specific options, including `host`, `port`, `user`.
 The more advance configuration could be done by the `setConnectionOptions(ConnectionOptions)` which is a builder API from ProtonJ library.
 The mentioned `SingleAmqpConnectionFactory` instance with all the defaults would connect to the `localhost:5672` with infinite number of reconnections.
+
+NOTE: The `Client` injection can be omitted for the `SingleAmqpConnectionFactory`, and respective single bean is resolved from the `BeanFactory` on demand internally, when `getConnection()` is called.
 
 [[amqp10-client-api]]
 == `AmqpClient`
@@ -215,3 +218,12 @@ AmqpMessageListenerContainer protonDeliveryListenerContainer(AmqpConnectionFacto
     return amqpMessageListenerContainer;
 }
 ----
+
+[[amqp10-annotation-configuration]]
+== The AMQP 1.0 Annotation Configuration
+
+The `spring-amqp-client` provides a convenient way to configure the AMQP 1.0 infrastructure via annotations.
+One of the `@Configuration` classes in the target project can be marked with an `@EnableAmqp` annotation, which imports an `AmqpDefaultConfiguration`.
+The `AmqpDefaultConfiguration` provides conditional beans (may be configured in the target project manually):
+
+* The `org.apache.qpid.protonj2.client.Client` with `org.apache.qpid.protonj2.client.ClientOptions` based on the respective attributes of the imported metadata from the `@EnableAmqp`.

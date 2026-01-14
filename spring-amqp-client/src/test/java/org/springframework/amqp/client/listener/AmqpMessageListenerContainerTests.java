@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.amqp.client.AmqpClient;
 import org.springframework.amqp.client.AmqpConnectionFactory;
 import org.springframework.amqp.client.SingleAmqpConnectionFactory;
+import org.springframework.amqp.client.config.EnableAmqp;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.junit.AbstractTestContainerTests;
 import org.springframework.amqp.utils.test.TestUtils;
@@ -84,6 +85,11 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 
 	@Autowired
 	TestConfig testConfig;
+
+	@Test
+	void protonClientFromEnableAmqp(@Autowired Client protonClient) {
+		assertThat(protonClient.containerId()).isEqualTo("test-client");
+	}
 
 	@Test
 	void messagesConsumedFromAllQueues() throws InterruptedException {
@@ -163,6 +169,7 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 	}
 
 	@Configuration(proxyBeanMethods = false)
+	@EnableAmqp(clientId = "test-client")
 	static class TestConfig {
 
 		BlockingQueue<Message> receivedMessages = new LinkedBlockingQueue<>();
@@ -170,13 +177,8 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 		BlockingQueue<Delivery> receivedDeliveries = new LinkedBlockingQueue<>();
 
 		@Bean
-		Client protonClient() {
-			return Client.create();
-		}
-
-		@Bean
-		AmqpConnectionFactory amqpConnectionFactory(Client protonClient) {
-			return new SingleAmqpConnectionFactory(protonClient)
+		AmqpConnectionFactory amqpConnectionFactory() {
+			return new SingleAmqpConnectionFactory()
 					.setPort(amqpPort());
 		}
 
