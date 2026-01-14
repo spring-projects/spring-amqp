@@ -44,7 +44,7 @@ public @interface EnableAmqp {
 	/**
 	 * The id for the {@link org.apache.qpid.protonj2.client.ClientOptions#id()}
 	 * of the {@link org.apache.qpid.protonj2.client.Client} to be created by the {@link AmqpDefaultConfiguration}.
-	 * Can be specified as a property placeholder, e.g. {@code "${amqp.client.id}"}.
+	 * Can be specified as a property placeholder, e.g. {@code "${amqp.client-id}"}.
 	 * @return the client id.
 	 */
 	String clientId() default "";
@@ -52,7 +52,7 @@ public @interface EnableAmqp {
 	/**
 	 * The future type for the {@link ClientOptions#futureType()}
 	 * of the {@link org.apache.qpid.protonj2.client.Client} to be created by the {@link AmqpDefaultConfiguration}.
-	 * Can be specified as a property placeholder, e.g. {@code "${amqp.future.type}"}.
+	 * Can be specified as a property placeholder, e.g. {@code "${amqp.future-type}"}.
 	 * @return the client id.
 	 */
 	String clientFutureType() default "";

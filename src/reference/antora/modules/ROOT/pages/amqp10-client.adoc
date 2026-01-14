@@ -45,8 +45,7 @@ Client protonClient() {
 ----
 
 The same `Client` can be used for connecting to different brokers, the connection settings must be provided on a specific connection.
-See below.
-See also
+See also <<amqp10-client-connection-factory>> and <<amqp10-annotation-configuration>> below.
 
 [[amqp10-client-connection-factory]]
 == AMQP 1.0 Connection Factory

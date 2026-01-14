@@ -32,7 +32,8 @@ import org.springframework.beans.factory.DisposableBean;
 
 /**
  * The {@link AmqpConnectionFactory} implementation to hold a single, shared {@link Connection} instance.
- * If instance is created without a {@link Client}, it will be resolved from the {@link BeanFactory} on demand.
+ * If instance is created without a {@link Client}, it will be resolved from the {@link BeanFactory} on demand
+ * internally from the {@link #getConnection()} call.
  *
  * @author Artem Bilan
  *
