@@ -189,3 +189,29 @@ AmqpMessageListenerContainer amqpMessageListenerContainer(AmqpConnectionFactory 
     return amqpMessageListenerContainer;
 }
 ----
+
+=== ProtonJ `Delivery` Consumption
+
+For convenience, a `ProtonDeliveryListener` contract is provided to handle native ProtonJ `Delivery` objects instead of Spring AMQP messages.
+It could be useful in scenarios where full control over the `Delivery` instance is required.
+For example, adding some reject conditions, handling received data as an `InputStream`, replenishing link credits dynamically, according to some target application logic.
+Another scenario of native `Delivery` handling, when both producer and consumer deal with native ProtonJ `Message` contract, including ProtonJ body encoding/decoding internal mechanism (unlike the Spring AMQP message which accepts only `byte[]` bodies).
+
+NOTE: The manual delivery settlement still can be skipped, if the `AmqpMessageListenerContainer` is configured for `autoAccept = true` (default).
+And the `AmqpMessageListenerContainer` performs credits replenishment automatically.
+
+The `ProtonDeliveryListener` implementation should be injected into the `AmqpMessageListenerContainer` as a regular `MessageListener`:
+
+[source,java]
+----
+BlockingQueue<Delivery> receivedDeliveries = new LinkedBlockingQueue<>();
+
+@Bean
+AmqpMessageListenerContainer protonDeliveryListenerContainer(AmqpConnectionFactory connectionFactory) {
+    var amqpMessageListenerContainer = new AmqpMessageListenerContainer(connectionFactory);
+    amqpMessageListenerContainer.setQueueNames(TEST_QUEUE_FOR_NATIVE_PROTON);
+    amqpMessageListenerContainer.setAutoAccept(false);
+    amqpMessageListenerContainer.setupMessageListener((ProtonDeliveryListener) this.receivedDeliveries::add);
+    return amqpMessageListenerContainer;
+}
+----
