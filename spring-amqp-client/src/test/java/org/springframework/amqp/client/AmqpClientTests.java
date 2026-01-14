@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.qpid.protonj2.client.Client;
+import org.apache.qpid.protonj2.client.ClientOptions;
 import org.apache.qpid.protonj2.client.DeliveryState;
 import org.apache.qpid.protonj2.client.Message;
 import org.junit.jupiter.api.BeforeAll;
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.shaded.com.fasterxml.jackson.core.JsonProcessingException;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.json.JsonMapper;
 
+import org.springframework.amqp.client.config.EnableAmqp;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.rabbit.junit.AbstractTestContainerTests;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
@@ -64,6 +66,11 @@ public class AmqpClientTests extends AbstractTestContainerTests {
 		for (String queue : QUEUE_NAMES) {
 			RABBITMQ.execInContainer("rabbitmqadmin", "queues", "declare", "--name", queue);
 		}
+	}
+
+	@Test
+	void protonClientNotFromEnableAmqp(@Autowired Client protonClient) {
+		assertThat(protonClient.containerId()).isEqualTo("my-client");
 	}
 
 	@Autowired
@@ -171,11 +178,12 @@ public class AmqpClientTests extends AbstractTestContainerTests {
 	}
 
 	@Configuration(proxyBeanMethods = false)
+	@EnableAmqp(clientId = "property-out-of-use")
 	static class TestConfig {
 
 		@Bean
 		Client protonClient() {
-			return Client.create();
+			return Client.create(new ClientOptions().id("my-client"));
 		}
 
 		@Bean
