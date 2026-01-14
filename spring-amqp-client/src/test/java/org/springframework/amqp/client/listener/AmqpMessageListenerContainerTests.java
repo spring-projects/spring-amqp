@@ -24,6 +24,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.qpid.protonj2.client.Client;
+import org.apache.qpid.protonj2.client.Delivery;
+import org.apache.qpid.protonj2.client.exceptions.ClientException;
 import org.apache.qpid.protonj2.engine.impl.ProtonReceiver;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -58,6 +60,8 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 
 	static final String TEST_QUEUE2 = "/queues/test_queue2";
 
+	static final String TEST_QUEUE_FOR_NATIVE_PROTON = "/queues/test_queue_for_native_proton";
+
 	static final String[] QUEUE_NAMES = {
 			TEST_QUEUE1,
 			TEST_QUEUE2
@@ -68,6 +72,8 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 		for (String queue : QUEUE_NAMES) {
 			RABBITMQ.execInContainer("rabbitmqadmin", "queues", "declare", "--name", queue.replaceFirst("/queues/", ""));
 		}
+		RABBITMQ.execInContainer("rabbitmqadmin", "queues", "declare", "--name",
+				TEST_QUEUE_FOR_NATIVE_PROTON.replaceFirst("/queues/", ""));
 	}
 
 	@Autowired
@@ -139,10 +145,29 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 		assertThat(protonReceiver.getCredit()).isBetween(0, 100);
 	}
 
+	@Test
+	void protonDeliveryIsProcessedProperly() throws InterruptedException, ClientException {
+		this.amqpClient.send(org.apache.qpid.protonj2.client.Message.create("test1").to(TEST_QUEUE_FOR_NATIVE_PROTON));
+		this.amqpClient.send(org.apache.qpid.protonj2.client.Message.create("test2").to(TEST_QUEUE_FOR_NATIVE_PROTON));
+
+		Delivery delivery = this.testConfig.receivedDeliveries.poll(10, TimeUnit.SECONDS);
+		assertThat(delivery).isNotNull();
+		assertThat(delivery.message().body()).isEqualTo("test1");
+		delivery.accept();
+		delivery.receiver().addCredit(1);
+
+		delivery = this.testConfig.receivedDeliveries.poll(10, TimeUnit.SECONDS);
+		assertThat(delivery).isNotNull();
+		assertThat(delivery.message().body()).isEqualTo("test2");
+		// No need to accept and replenish credits since we are done with the test.
+	}
+
 	@Configuration(proxyBeanMethods = false)
 	static class TestConfig {
 
 		BlockingQueue<Message> receivedMessages = new LinkedBlockingQueue<>();
+
+		BlockingQueue<Delivery> receivedDeliveries = new LinkedBlockingQueue<>();
 
 		@Bean
 		Client protonClient() {
@@ -169,6 +194,15 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 			amqpMessageListenerContainer.setReceiveTimeout(Duration.ofMillis(100));
 			amqpMessageListenerContainer.setAdviceChain(new DebugInterceptor());
 			amqpMessageListenerContainer.setupMessageListener(this.receivedMessages::add);
+			return amqpMessageListenerContainer;
+		}
+
+		@Bean
+		AmqpMessageListenerContainer protonDeliveryListenerContainer(AmqpConnectionFactory connectionFactory) {
+			var amqpMessageListenerContainer = new AmqpMessageListenerContainer(connectionFactory);
+			amqpMessageListenerContainer.setQueueNames(TEST_QUEUE_FOR_NATIVE_PROTON);
+			amqpMessageListenerContainer.setAutoAccept(false);
+			amqpMessageListenerContainer.setupMessageListener((ProtonDeliveryListener) this.receivedDeliveries::add);
 			return amqpMessageListenerContainer;
 		}
 

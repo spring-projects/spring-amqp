@@ -69,6 +69,9 @@ import org.springframework.util.StringUtils;
  * an {@link org.springframework.amqp.core.MessageProperties#setAmqpAcknowledgment(AmqpAcknowledgment)}
  * is populated to the Spring AMQP message to be handled by the listener.
  * Therefore, the listener must manually acknowledge the message or reject/requeue, according to its logic.
+ * <p>
+ * If a {@link ProtonDeliveryListener} is provided and {@code autoAccept == false},
+ * it is this listener's responsibility to acknowledge the message manually and replenish the link credits.
  *
  * @author Artem Bilan
  *
@@ -398,27 +401,33 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 	private void doInvokeListener(Delivery delivery, Runnable replenishCreditOperation)
 			throws ClientException {
 
-		Message message = ProtonUtils.fromProtonMessage(delivery.message());
-		if (!this.autoAccept) {
-			message.getMessageProperties()
-					.setAmqpAcknowledgment((status) -> {
-						try {
-							switch (status) {
-								case ACCEPT -> delivery.accept();
-								case REJECT -> delivery.reject(null, null);
-								case REQUEUE -> delivery.release();
-							}
-							replenishCreditOperation.run();
-						}
-						catch (ClientException ex) {
-							throw ProtonUtils.toAmqpException(ex);
-						}
-					});
+		if (this.proxy instanceof ProtonDeliveryListener protonDeliveryListener) {
+			protonDeliveryListener.onDelivery(delivery);
 		}
 		else {
+			Message message = ProtonUtils.fromProtonMessage(delivery.message());
+			if (!this.autoAccept) {
+				message.getMessageProperties()
+						.setAmqpAcknowledgment((status) -> {
+							try {
+								switch (status) {
+									case ACCEPT -> delivery.accept();
+									case REJECT -> delivery.reject(null, null);
+									case REQUEUE -> delivery.release();
+								}
+								replenishCreditOperation.run();
+							}
+							catch (ClientException ex) {
+								throw ProtonUtils.toAmqpException(ex);
+							}
+						});
+			}
+			this.proxy.onMessage(message);
+		}
+
+		if (this.autoAccept) {
 			replenishCreditOperation.run();
 		}
-		this.proxy.onMessage(message);
 	}
 
 	private class AmqpConsumer implements SchedulingAwareRunnable, AutoCloseable {
