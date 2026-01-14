@@ -94,9 +94,6 @@ public class AmqpDefaultConfiguration implements ImportAware, EnvironmentAware {
 
 	private static final class OnMissingClientBeanCondition implements Condition {
 
-		OnMissingClientBeanCondition() {
-		}
-
 		@Override
 		@SuppressWarnings("NullAway")
 		public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
