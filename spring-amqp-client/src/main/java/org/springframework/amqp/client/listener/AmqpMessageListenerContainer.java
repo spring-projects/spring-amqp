@@ -71,7 +71,7 @@ import org.springframework.util.StringUtils;
  * Therefore, the listener must manually acknowledge the message or reject/requeue, according to its logic.
  * <p>
  * If a {@link ProtonDeliveryListener} is provided and {@code autoAccept == false},
- * it is this listener's responsibility to acknowledge the message manually and replenish the link credits.
+ * it is the listener's responsibility to acknowledge the message manually and replenish the link credits.
  *
  * @author Artem Bilan
  *
