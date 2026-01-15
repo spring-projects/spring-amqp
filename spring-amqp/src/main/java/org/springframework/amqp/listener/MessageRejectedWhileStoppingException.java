@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-present the original author or authors.
+ * Copyright 2026-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,28 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.listener.exception;
+package org.springframework.amqp.listener;
+
+import java.io.Serial;
+
+import org.springframework.amqp.AmqpException;
 
 /**
  * Exception class that indicates a rejected message on shutdown. Used to trigger a rollback for an
  * external transaction manager in that case.
  *
- * @deprecated in favor of {@link org.springframework.amqp.listener.MessageRejectedWhileStoppingException}.
+ * @author Dave Syer
+ * @author Artem Bilan
+ *
+ * @since 4.1
  */
-@Deprecated(forRemoval = true, since = "4.1")
-@SuppressWarnings("serial")
-public class MessageRejectedWhileStoppingException extends org.springframework.amqp.listener.MessageRejectedWhileStoppingException {
+public class MessageRejectedWhileStoppingException extends AmqpException {
+
+	@Serial
+	private static final long serialVersionUID = 1L;
+
+	public MessageRejectedWhileStoppingException() {
+		super("Message listener container was stopping when a message was received");
+	}
 
 }

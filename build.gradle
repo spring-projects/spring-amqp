@@ -321,13 +321,14 @@ project('spring-amqp') {
 		optionalApi 'com.fasterxml.jackson.datatype:jackson-datatype-joda'
 		optionalApi 'com.fasterxml.jackson.module:jackson-module-kotlin'
 
+		optionalApi 'io.projectreactor:reactor-core'
+
 		optionalApi 'tools.jackson.core:jackson-databind'
 		optionalApi 'tools.jackson.datatype:jackson-datatype-joda'
 		optionalApi 'tools.jackson.dataformat:jackson-dataformat-xml'
 		optionalApi('tools.jackson.module:jackson-module-kotlin') {
 			exclude group: 'org.jetbrains.kotlin'
 		}
-
 		// Spring Data projection message binding support
 		optionalApi 'org.springframework.data:spring-data-commons'
 		optionalApi "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"

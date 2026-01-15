@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-present the original author or authors.
+ * Copyright 2026-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.listener.support;
+package org.springframework.amqp.listener;
 
 import org.apache.commons.logging.Log;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.ImmediateRequeueAmqpException;
-import org.springframework.amqp.listener.MessageRejectedWhileStoppingException;
 
 /**
  * Utility methods for listener containers.
@@ -29,11 +29,9 @@ import org.springframework.amqp.listener.MessageRejectedWhileStoppingException;
  * @author Gary Russell
  * @author Artem Bilan
  *
- * @since 2.1
+ * @since 4.1
  *
- * @deprecated in favor of {@link org.springframework.amqp.listener.ContainerUtils}
  */
-@Deprecated(forRemoval = true, since = "4.1")
 public final class ContainerUtils {
 
 	private ContainerUtils() {
@@ -50,7 +48,28 @@ public final class ContainerUtils {
 	 * @return true to requeue.
 	 */
 	public static boolean shouldRequeue(boolean defaultRequeueRejected, Throwable throwable, Log logger) {
-		return org.springframework.amqp.listener.ContainerUtils.shouldRequeue(defaultRequeueRejected, throwable, logger);
+		boolean shouldRequeue = defaultRequeueRejected ||
+				throwable instanceof MessageRejectedWhileStoppingException;
+		Throwable t = throwable;
+		while (t != null) {
+			if (t instanceof AmqpRejectAndDontRequeueException) {
+				shouldRequeue = false;
+				break;
+			}
+			else if (t instanceof ImmediateRequeueAmqpException) {
+				shouldRequeue = true;
+				break;
+			}
+			Throwable cause = t.getCause();
+			if (cause == t) {
+				break;
+			}
+			t = cause;
+		}
+		if (logger.isDebugEnabled()) {
+			logger.debug("Rejecting messages (requeue=" + shouldRequeue + ")");
+		}
+		return shouldRequeue;
 	}
 
 	/**
@@ -58,30 +77,41 @@ public final class ContainerUtils {
 	 * @param ex the exception.
 	 * @return the exception's rejectManual property, if it's an
 	 * {@link AmqpRejectAndDontRequeueException}.
-	 * @since 2.2
 	 */
 	public static boolean isRejectManual(Throwable ex) {
-		return org.springframework.amqp.listener.ContainerUtils.isRejectManual(ex);
+		AmqpRejectAndDontRequeueException amqpRejectAndDontRequeueException =
+				findInCause(ex, AmqpRejectAndDontRequeueException.class);
+		return amqpRejectAndDontRequeueException != null && amqpRejectAndDontRequeueException.isRejectManual();
 	}
 
 	/**
 	 * Return true for {@link ImmediateAcknowledgeAmqpException}.
 	 * @param ex the exception to traverse.
 	 * @return true if an {@link ImmediateAcknowledgeAmqpException} is present in the cause chain.
-	 * @since 4.0
 	 */
 	public static boolean isImmediateAcknowledge(Throwable ex) {
-		return org.springframework.amqp.listener.ContainerUtils.isImmediateAcknowledge(ex);
+		return findInCause(ex, ImmediateAcknowledgeAmqpException.class) != null;
 	}
 
 	/**
 	 * Return true for {@link AmqpRejectAndDontRequeueException}.
 	 * @param ex the exception to traverse.
 	 * @return true if an {@link AmqpRejectAndDontRequeueException} is present in the cause chain.
-	 * @since 4.0
 	 */
 	public static boolean isAmqpReject(Throwable ex) {
-		return org.springframework.amqp.listener.ContainerUtils.isAmqpReject(ex);
+		return findInCause(ex, AmqpRejectAndDontRequeueException.class) != null;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T extends Throwable> @Nullable T findInCause(Throwable throwable, Class<T> exceptionToFind) {
+		if (exceptionToFind.isAssignableFrom(throwable.getClass())) {
+			return (T) throwable;
+		}
+		Throwable cause = throwable.getCause();
+		if (cause == null || cause == throwable) {
+			return null;
+		}
+		return findInCause(cause, exceptionToFind);
 	}
 
 }

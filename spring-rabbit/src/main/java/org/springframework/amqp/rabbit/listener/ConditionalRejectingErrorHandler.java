@@ -16,21 +16,9 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import java.lang.reflect.UndeclaredThrowableException;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.jspecify.annotations.Nullable;
-
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
-import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
+import org.springframework.amqp.listener.ListenerExecutionFailedException;
 import org.springframework.amqp.support.converter.MessageConversionException;
-import org.springframework.messaging.MessagingException;
-import org.springframework.messaging.handler.invocation.MethodArgumentResolutionException;
 import org.springframework.util.ErrorHandler;
 
 /**
@@ -54,201 +42,24 @@ import org.springframework.util.ErrorHandler;
  * @author Ngoc Nhan
  * @since 1.3.2
  *
+ * @deprecated in favor of {@link org.springframework.amqp.listener.ConditionalRejectingErrorHandler}
  */
-public class ConditionalRejectingErrorHandler implements ErrorHandler {
-
-	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR
-
-	private final FatalExceptionStrategy exceptionStrategy;
-
-	private boolean discardFatalsWithXDeath = true;
-
-	private boolean rejectManual = true;
+@Deprecated(forRemoval = true, since = "4.1")
+public class ConditionalRejectingErrorHandler extends org.springframework.amqp.listener.ConditionalRejectingErrorHandler {
 
 	/**
-	 * Create a handler with the {@link ConditionalRejectingErrorHandler.DefaultExceptionStrategy}.
+	 * Create a handler with the {@link DefaultExceptionStrategy}.
 	 */
 	public ConditionalRejectingErrorHandler() {
-		this.exceptionStrategy = new DefaultExceptionStrategy();
+		super();
 	}
 
 	/**
-	 * Create a handler with the supplied {@link FatalExceptionStrategy} implementation.
+	 * Create a handler with the supplied {@link org.springframework.amqp.listener.FatalExceptionStrategy} implementation.
 	 * @param exceptionStrategy The strategy implementation.
 	 */
-	public ConditionalRejectingErrorHandler(FatalExceptionStrategy exceptionStrategy) {
-		this.exceptionStrategy = exceptionStrategy;
-	}
-
-	/**
-	 * Return the discardFatalsWithXDeath.
-	 * @return the discardFatalsWithXDeath.
-	 * @since 2.3
-	 * @see #setDiscardFatalsWithXDeath(boolean)
-	 */
-	protected boolean isDiscardFatalsWithXDeath() {
-		return this.discardFatalsWithXDeath;
-	}
-
-	/**
-	 * Set to {@code false} to disable the (now) default behavior of logging and discarding
-	 * messages that cause fatal exceptions and have an `x-death` header; which
-	 * usually means that the message has been republished after previously being
-	 * sent to a DLQ.
-	 * @param discardFatalsWithXDeath false to disable.
-	 * @since 2.1
-	 */
-	public void setDiscardFatalsWithXDeath(boolean discardFatalsWithXDeath) {
-		this.discardFatalsWithXDeath = discardFatalsWithXDeath;
-	}
-
-	/**
-	 * Return the rejectManual.
-	 * @return the rejectManual.
-	 * @since 2.3
-	 * @see #setRejectManual(boolean)
-	 */
-	protected boolean isRejectManual() {
-		return this.rejectManual;
-	}
-
-	/**
-	 * Set to {@code false} to NOT reject a fatal message when MANUAL ack mode is being used.
-	 * @param rejectManual false to leave the message in an unack'd state.
-	 * @since 2.1.9
-	 */
-	public void setRejectManual(boolean rejectManual) {
-		this.rejectManual = rejectManual;
-	}
-
-	/**
-	 * Return the exception strategy.
-	 * @return the strategy.
-	 * @since 2.3
-	 */
-	protected FatalExceptionStrategy getExceptionStrategy() {
-		return this.exceptionStrategy;
-	}
-
-	@Override
-	public void handleError(Throwable t) {
-		log(t);
-		if (!this.causeChainContainsARADRE(t) && this.exceptionStrategy.isFatal(t)) {
-			if (this.discardFatalsWithXDeath && t instanceof ListenerExecutionFailedException lefe) {
-				Message failed = lefe.getFailedMessage();
-				if (failed != null) {
-					List<Map<String, ?>> xDeath = failed.getMessageProperties().getXDeathHeader();
-					if (xDeath != null && !xDeath.isEmpty()) {
-						this.logger.error("x-death header detected on a message with a fatal exception; "
-								+ "perhaps requeued from a DLQ? - discarding: " + failed);
-						handleDiscarded(failed);
-						throw new ImmediateAcknowledgeAmqpException("Fatal and x-death present");
-					}
-				}
-			}
-			throw new AmqpRejectAndDontRequeueException("Error Handler converted exception to fatal", this.rejectManual,
-					t);
-		}
-	}
-
-	/**
-	 * Called when a message with a fatal exception has an {@code x-death} header, prior
-	 * to discarding the message. Subclasses can override this method to perform some
-	 * action, such as sending the message to a parking queue.
-	 * @param failed the failed message.
-	 * @since 2.3
-	 */
-	protected void handleDiscarded(Message failed) {
-	}
-
-	/**
-	 * Log the throwable at WARN level, including stack trace.
-	 * Subclasses can override this behavior.
-	 * @param t the {@link Throwable}.
-	 * @since 1.7.8
-	 */
-	protected void log(Throwable t) {
-		if (this.logger.isWarnEnabled()) {
-			this.logger.warn("Execution of Rabbit message listener failed.", t);
-		}
-	}
-
-	/**
-	 * Return true if there is already an {@link AmqpRejectAndDontRequeueException}
-	 * present in the cause chain.
-	 * @param t a {@link Throwable}.
-	 * @return true if the cause chain already contains an
-	 * {@link AmqpRejectAndDontRequeueException}.
-	 * @since 1.7.8
-	 */
-	protected boolean causeChainContainsARADRE(Throwable t) {
-		Throwable cause = t.getCause();
-		while (cause != null) {
-			if (cause instanceof AmqpRejectAndDontRequeueException) {
-				return true;
-			}
-			cause = cause.getCause();
-		}
-		return false;
-	}
-
-	/**
-	 * Default implementation of {@link FatalExceptionStrategy}.
-	 * @since 1.6.3
-	 */
-	public static class DefaultExceptionStrategy implements FatalExceptionStrategy {
-
-		protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR
-
-		@Override
-		public boolean isFatal(Throwable t) {
-			Throwable cause = t.getCause();
-			while ((cause instanceof MessagingException || cause instanceof UndeclaredThrowableException)
-					&& !isCauseFatal(cause)) {
-
-				cause = cause.getCause();
-			}
-			if (t instanceof ListenerExecutionFailedException lefe && isCauseFatal(cause)) {
-				logFatalException(lefe, cause);
-				return true;
-			}
-			return false;
-		}
-
-		private boolean isCauseFatal(@Nullable Throwable cause) {
-			return cause instanceof MessageConversionException // NOSONAR boolean complexity
-					|| cause instanceof org.springframework.messaging.converter.MessageConversionException
-					|| cause instanceof MethodArgumentResolutionException
-					|| cause instanceof NoSuchMethodException
-					|| cause instanceof ClassCastException
-					|| isUserCauseFatal(cause);
-		}
-
-		/**
-		 * Log the fatal ListenerExecutionFailedException at WARN level, excluding stack
-		 * trace. Subclasses can override this behavior.
-		 * @param t the {@link ListenerExecutionFailedException}.
-		 * @param cause the root cause (skipping any general {@link MessagingException}s).
-		 * @since 2.2.4
-		 */
-		protected void logFatalException(ListenerExecutionFailedException t, @Nullable Throwable cause) {
-			if (this.logger.isWarnEnabled()) {
-				this.logger.warn(
-						"Fatal message conversion error; message rejected; "
-								+ "it will be dropped or routed to a dead letter exchange, if so configured: "
-								+ t.getFailedMessage());
-			}
-		}
-
-		/**
-		 * Subclasses can override this to add custom exceptions.
-		 * @param cause the cause
-		 * @return true if the cause is fatal.
-		 */
-		protected boolean isUserCauseFatal(@Nullable Throwable cause) {
-			return false;
-		}
-
+	public ConditionalRejectingErrorHandler(org.springframework.amqp.listener.FatalExceptionStrategy exceptionStrategy) {
+		super(exceptionStrategy);
 	}
 
 }

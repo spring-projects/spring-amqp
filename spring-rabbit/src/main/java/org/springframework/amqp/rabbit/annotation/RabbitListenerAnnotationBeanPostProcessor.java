@@ -47,6 +47,7 @@ import org.springframework.amqp.core.Declarable;
 import org.springframework.amqp.core.ExchangeBuilder;
 import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.listener.adapter.AmqpMessageHandlerMethodFactory;
 import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
@@ -54,7 +55,6 @@ import org.springframework.amqp.rabbit.listener.MultiMethodRabbitListenerEndpoin
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
-import org.springframework.amqp.rabbit.listener.adapter.AmqpMessageHandlerMethodFactory;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -100,7 +100,7 @@ import org.springframework.validation.Validator;
 
 /**
  * Bean post-processor that registers methods annotated with {@link RabbitListener}
- * to be invoked by a AMQP message listener container created under the cover
+ * to be invoked by an AMQP message listener container created under the cover
  * by a {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory}
  * according to the parameters of the annotation.
  *

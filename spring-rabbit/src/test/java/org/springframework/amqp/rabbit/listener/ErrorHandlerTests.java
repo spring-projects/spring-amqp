@@ -21,7 +21,8 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
+import org.springframework.amqp.listener.ConditionalRejectingErrorHandler;
+import org.springframework.amqp.listener.ListenerExecutionFailedException;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;

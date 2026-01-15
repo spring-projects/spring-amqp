@@ -29,9 +29,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.listener.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.util.ErrorHandler;
 
@@ -77,12 +77,12 @@ public class RabbitTemplateDirectReplyToContainerIntegrationTests extends Rabbit
 		assertThat(TestUtils.getPropertyValue(container, "errorHandler")).isSameAs(replyErrorHandler);
 		Message replyMessage = new Message("foo".getBytes(), new MessageProperties());
 		assertThatThrownBy(() -> rabbitTemplate.onMessage(replyMessage, mock(Channel.class)))
-			.isInstanceOf(AmqpRejectAndDontRequeueException.class)
-			.hasMessage("No correlation header in reply");
+				.isInstanceOf(AmqpRejectAndDontRequeueException.class)
+				.hasMessage("No correlation header in reply");
 		replyMessage.getMessageProperties().setCorrelationId("foo");
 		assertThatThrownBy(() -> rabbitTemplate.onMessage(replyMessage, mock(Channel.class)))
-			.isInstanceOf(AmqpRejectAndDontRequeueException.class)
-			.hasMessage("Reply received after timeout");
+				.isInstanceOf(AmqpRejectAndDontRequeueException.class)
+				.hasMessage("Reply received after timeout");
 
 		ExecutorService executor = Executors.newFixedThreadPool(1);
 		// Set up a consumer to respond to our producer
@@ -101,7 +101,7 @@ public class RabbitTemplateDirectReplyToContainerIntegrationTests extends Rabbit
 		assertThat(exception.get()).isInstanceOf(ListenerExecutionFailedException.class);
 		assertThat(exception.get().getCause().getMessage()).isEqualTo("Reply received after timeout");
 		assertThat(((ListenerExecutionFailedException) exception.get()).getFailedMessage().getBody())
-			.isEqualTo(replyMessage.getBody());
+				.isEqualTo(replyMessage.getBody());
 		assertThat(TestUtils.getPropertyValue(container, "inUseConsumerChannels", Map.class)).hasSize(0);
 		executor.shutdownNow();
 		rabbitTemplate.stop();

@@ -31,7 +31,6 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
-import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.util.Assert;
 import org.springframework.util.MethodInvoker;
@@ -361,6 +360,7 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	 * @see #getListenerMethodName
 	 * @see #buildListenerArguments
 	 */
+	@SuppressWarnings("removal")
 	protected @Nullable Object invokeListenerMethod(String methodName, @Nullable Object @Nullable [] arguments,
 			Message originalMessage) {
 
@@ -380,7 +380,7 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 				throw new AmqpIOException(iox);
 			}
 			else {
-				throw new ListenerExecutionFailedException("Listener method '"
+				throw new org.springframework.amqp.rabbit.support.ListenerExecutionFailedException("Listener method '"
 						+ methodName + "' threw exception", targetEx, originalMessage);
 			}
 		}
@@ -392,9 +392,10 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 					arrayClass.add(argument != null ? argument.getClass().toString() : " null");
 				}
 			}
-			throw new ListenerExecutionFailedException("Failed to invoke target method '" + methodName
-					+ "' with argument type = [" + StringUtils.collectionToCommaDelimitedString(arrayClass)
-					+ "], value = [" + ObjectUtils.nullSafeToString(arguments) + "]", ex, originalMessage);
+			throw new org.springframework.amqp.rabbit.support.ListenerExecutionFailedException(
+					"Failed to invoke target method '" + methodName
+							+ "' with argument type = [" + StringUtils.collectionToCommaDelimitedString(arrayClass)
+							+ "], value = [" + ObjectUtils.nullSafeToString(arguments) + "]", ex, originalMessage);
 		}
 	}
 

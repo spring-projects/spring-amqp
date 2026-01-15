@@ -34,6 +34,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.listener.ConditionalRejectingErrorHandler;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;

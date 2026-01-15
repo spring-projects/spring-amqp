@@ -25,11 +25,11 @@ import java.util.concurrent.CompletableFuture;
 import com.rabbitmq.client.Channel;
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.amqp.listener.ContainerUtils;
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.batch.SimpleBatchingStrategy;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareBatchMessageListener;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
-import org.springframework.amqp.rabbit.listener.support.ContainerUtils;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.messaging.Message;

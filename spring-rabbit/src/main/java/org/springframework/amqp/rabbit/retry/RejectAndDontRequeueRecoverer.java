@@ -24,16 +24,16 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.util.Assert;
 
 /**
  * MessageRecover that causes the listener container to reject
  * the message without requeuing. This enables failed messages
- * to be sent to a Dead Letter Exchange/Queue, if the broker is
+ * to be sent to a Dead Letter Exchange/Queue if the broker is
  * so configured.
  *
  * @author Gary Russell
+ *
  * @since 1.1.2
  *
  */
@@ -41,7 +41,7 @@ public class RejectAndDontRequeueRecoverer implements MessageRecoverer {
 
 	private final Supplier<String> messageSupplier;
 
-	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR protected
+	protected final Log logger = LogFactory.getLog(getClass());
 
 	/**
 	 * Construct an instance with the default exception message.
@@ -70,12 +70,13 @@ public class RejectAndDontRequeueRecoverer implements MessageRecoverer {
 	}
 
 	@Override
+	@SuppressWarnings("removal")
 	public void recover(Message message, @Nullable Throwable cause) {
 		if (this.logger.isWarnEnabled()) {
 			this.logger.warn("Retries exhausted for message " + message, cause);
 		}
-		throw new ListenerExecutionFailedException(this.messageSupplier.get(),
-					new AmqpRejectAndDontRequeueException(cause), message);
+		throw new org.springframework.amqp.rabbit.support.ListenerExecutionFailedException(this.messageSupplier.get(),
+				new AmqpRejectAndDontRequeueException(cause), message);
 	}
 
 }

@@ -30,8 +30,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.listener.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
-import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.test.MessageTestUtils;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;

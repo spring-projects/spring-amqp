@@ -20,7 +20,7 @@ import com.rabbitmq.client.Channel;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
+import org.springframework.amqp.listener.ListenerExecutionFailedException;
 
 /**
  * An error handler which is called when a {code @RabbitListener} method

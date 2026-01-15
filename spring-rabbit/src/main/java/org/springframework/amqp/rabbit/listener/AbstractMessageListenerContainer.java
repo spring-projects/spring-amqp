@@ -54,6 +54,10 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.listener.ConditionalRejectingErrorHandler;
+import org.springframework.amqp.listener.ContainerUtils;
+import org.springframework.amqp.listener.FatalExceptionStrategy;
+import org.springframework.amqp.listener.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.batch.SimpleBatchingStrategy;
 import org.springframework.amqp.rabbit.connection.Connection;
@@ -66,10 +70,7 @@ import org.springframework.amqp.rabbit.listener.api.ChannelAwareBatchMessageList
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
-import org.springframework.amqp.rabbit.listener.exception.MessageRejectedWhileStoppingException;
-import org.springframework.amqp.rabbit.listener.support.ContainerUtils;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
-import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservation;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservation.DefaultRabbitListenerObservationConvention;
@@ -1521,14 +1522,14 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		}
 	}
 
-	@SuppressWarnings(UNCHECKED)
+	@SuppressWarnings({UNCHECKED, "removal"})
 	protected void executeListenerAndHandleException(Channel channel, Object data) {
 		if (!isRunning()) {
 			if (logger.isWarnEnabled()) {
 				logger.warn(
 						"Rejecting received message(s) because the listener container has been stopped: " + data);
 			}
-			throw new MessageRejectedWhileStoppingException();
+			throw new org.springframework.amqp.rabbit.listener.exception.MessageRejectedWhileStoppingException();
 		}
 		Object sample = null;
 		MicrometerHolder micrometerHolder = getMicrometerHolder();
@@ -1562,6 +1563,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		}
 	}
 
+	@SuppressWarnings("removal")
 	private void checkStatefulRetry(RuntimeException ex, Message message) {
 		if (message.getMessageProperties().isFinalRetryForMessageWithNoId()) {
 			if (this.statefulRetryFatalWithNullMessageId) {
@@ -1569,7 +1571,8 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 						"Illegal null id in message. Failed to manage retry for message: " + message, ex);
 			}
 			else {
-				throw new ListenerExecutionFailedException("Cannot retry message more than once without an ID",
+				throw new org.springframework.amqp.rabbit.support.ListenerExecutionFailedException(
+						"Cannot retry message more than once without an ID",
 						new AmqpRejectAndDontRequeueException("Not retryable; rejecting and not requeuing", ex),
 						message);
 			}
@@ -1781,18 +1784,19 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * @return If 'e' is of type {@link ListenerExecutionFailedException} - return 'e' as it is, otherwise wrap it to
 	 * {@link ListenerExecutionFailedException} and return.
 	 */
-	@SuppressWarnings(UNCHECKED)
+	@SuppressWarnings({UNCHECKED, "removal"})
 	protected ListenerExecutionFailedException wrapToListenerExecutionFailedExceptionIfNeeded(Exception e,
 			Object data) {
 
 		if (!(e instanceof ListenerExecutionFailedException)) {
-			// Wrap exception to ListenerExecutionFailedException.
+			// Wrap an exception to ListenerExecutionFailedException.
 			if (data instanceof List) {
-				return new ListenerExecutionFailedException("Listener threw exception", e,
-						((List<Message>) data).toArray(new Message[0]));
+				return new org.springframework.amqp.rabbit.support.ListenerExecutionFailedException(
+						"Listener threw exception", e, ((List<Message>) data).toArray(new Message[0]));
 			}
 			else {
-				return new ListenerExecutionFailedException("Listener threw exception", e, (Message) data);
+				return new org.springframework.amqp.rabbit.support.ListenerExecutionFailedException(
+						"Listener threw exception", e, (Message) data);
 			}
 		}
 		return (ListenerExecutionFailedException) e;

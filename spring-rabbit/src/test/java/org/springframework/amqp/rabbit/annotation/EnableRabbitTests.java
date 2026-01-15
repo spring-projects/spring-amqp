@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessageListenerContainer;
+import org.springframework.amqp.listener.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.config.MessageListenerTestContainer;
 import org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
@@ -32,7 +33,6 @@ import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
-import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -89,8 +89,8 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 	public void noRabbitAdminConfiguration() {
 		assertThatThrownBy(
 				() -> new AnnotationConfigApplicationContext(EnableRabbitSampleConfig.class, FullBean.class).close())
-			.isExactlyInstanceOf(BeanCreationException.class)
-			.withFailMessage("'rabbitAdmin'");
+				.isExactlyInstanceOf(BeanCreationException.class)
+				.withFailMessage("'rabbitAdmin'");
 	}
 
 	@Override
@@ -124,25 +124,25 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 				EnableRabbitHandlerMethodFactoryConfig.class, ValidationBean.class);
 
 		assertThatThrownBy(() -> testRabbitHandlerMethodFactoryConfiguration(context))
-			.isExactlyInstanceOf(ListenerExecutionFailedException.class)
-			.hasCauseExactlyInstanceOf(MethodArgumentNotValidException.class);
+				.isInstanceOf(ListenerExecutionFailedException.class)
+				.hasCauseExactlyInstanceOf(MethodArgumentNotValidException.class);
 	}
 
 	@Test
 	public void unknownFactory() {
 		assertThatThrownBy(
 				() -> new AnnotationConfigApplicationContext(EnableRabbitSampleConfig.class, CustomBean.class).close())
-			.isExactlyInstanceOf(BeanCreationException.class)
-			.withFailMessage("customFactory");
+				.isExactlyInstanceOf(BeanCreationException.class)
+				.withFailMessage("customFactory");
 	}
 
 	@Test
 	public void invalidPriorityConfiguration() {
 		assertThatThrownBy(
 				() -> new AnnotationConfigApplicationContext(EnableRabbitSampleConfig.class, InvalidPriorityBean.class)
-					.close())
-			.isExactlyInstanceOf(BeanCreationException.class)
-			.withFailMessage("NotANumber");
+						.close())
+				.isExactlyInstanceOf(BeanCreationException.class)
+				.withFailMessage("NotANumber");
 	}
 
 	@Test
@@ -214,12 +214,12 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 		static class Listener {
 
 			@RabbitListener(bindings =
-				@QueueBinding(value = @Queue(value = "foo", ignoreDeclarationExceptions = "true",
-						declare = "false", admins = "myAdmin"),
+			@QueueBinding(value = @Queue(value = "foo", ignoreDeclarationExceptions = "true",
+					declare = "false", admins = "myAdmin"),
 					exchange = @Exchange(value = "bar", ignoreDeclarationExceptions = "true",
-						declare = "false", admins = "myAdmin"),
+							declare = "false", admins = "myAdmin"),
 					key = "baz", ignoreDeclarationExceptions = "true",
-						declare = "false", admins = "myAdmin"))
+					declare = "false", admins = "myAdmin"))
 			public void handle(String foo) {
 				// empty
 			}
@@ -241,6 +241,7 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 		public RabbitAdmin rabbitAdmin() {
 			return mock(RabbitAdmin.class);
 		}
+
 	}
 
 	@EnableRabbit
@@ -262,6 +263,7 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 		public PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
 			return new PropertySourcesPlaceholderConfigurer();
 		}
+
 	}
 
 	@Configuration
@@ -299,6 +301,7 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 		public MessageListener simpleMessageListener() {
 			return new MessageListenerAdapter();
 		}
+
 	}
 
 	@Configuration
@@ -314,6 +317,7 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 		public RabbitListenerContainerTestFactory simpleFactory() {
 			return new RabbitListenerContainerTestFactory();
 		}
+
 	}
 
 	@Configuration
@@ -324,6 +328,7 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 		public RabbitListenerContainerTestFactory rabbitListenerContainerFactory() {
 			return new RabbitListenerContainerTestFactory();
 		}
+
 	}
 
 	@Configuration
