@@ -28,7 +28,6 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.beans.BeanUtils;
@@ -175,6 +174,7 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 	 * @since 2.2
 	 */
 	@Override
+	@SuppressWarnings("removal")
 	public void deBatch(Message message, Consumer<Message> fragmentConsumer) {
 		ByteBuffer byteBuffer = ByteBuffer.wrap(message.getBody());
 		MessageProperties messageProperties = message.getMessageProperties();
@@ -182,7 +182,8 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 		while (byteBuffer.hasRemaining()) {
 			int length = byteBuffer.getInt();
 			if (length < 0 || length > byteBuffer.remaining()) {
-				throw new ListenerExecutionFailedException("Bad batched message received",
+				throw new org.springframework.amqp.rabbit.support.ListenerExecutionFailedException(
+						"Bad batched message received",
 						new MessageConversionException("Insufficient batch data at offset " + byteBuffer.position()),
 						message);
 			}

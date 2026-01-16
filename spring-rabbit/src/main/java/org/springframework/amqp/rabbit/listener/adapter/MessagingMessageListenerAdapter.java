@@ -29,8 +29,8 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.listener.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
-import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.support.AmqpHeaderMapper;
 import org.springframework.amqp.support.SimpleAmqpHeaderMapper;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -148,6 +148,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	}
 
 	@Override
+	@SuppressWarnings("removal")
 	public void onMessage(org.springframework.amqp.core.Message amqpMessage, @Nullable Channel channel)
 			throws Exception {
 
@@ -163,12 +164,14 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			throw ex;
 		}
 		catch (Exception ex) { // NOSONAR
-			handleException(amqpMessage, channel, message, new ListenerExecutionFailedException(
-					"Failed to convert message", ex, amqpMessage));
+			handleException(amqpMessage, channel, message,
+					new org.springframework.amqp.rabbit.support.ListenerExecutionFailedException(
+							"Failed to convert message", ex, amqpMessage));
 		}
 	}
 
 	@Override
+	@SuppressWarnings("removal")
 	protected void asyncFailure(org.springframework.amqp.core.Message request, @Nullable Channel channel, Throwable t,
 			@Nullable Object source) {
 
@@ -176,7 +179,8 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 		try {
 			handleException(request, channel, (Message<?>) source,
-					new ListenerExecutionFailedException("Async Fail", throwableToHandle, request));
+					new org.springframework.amqp.rabbit.support.ListenerExecutionFailedException(
+							"Async Fail", throwableToHandle, request));
 			return;
 		}
 		catch (Exception ex) {
@@ -275,6 +279,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	 * @param message the messaging message.
 	 * @return the result of invoking the handler.
 	 */
+	@SuppressWarnings("removal")
 	protected InvocationResult invokeHandler(@Nullable Channel channel, Message<?> message,
 			boolean batch, org.springframework.amqp.core.Message... amqpMessages) {
 
@@ -288,11 +293,11 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			}
 		}
 		catch (MessagingException ex) {
-			throw new ListenerExecutionFailedException(createMessagingErrorMessage(message.getPayload()),
-					ex, amqpMessages);
+			throw new org.springframework.amqp.rabbit.support.ListenerExecutionFailedException(
+					createMessagingErrorMessage(message.getPayload()), ex, amqpMessages);
 		}
 		catch (Exception ex) {
-			throw new ListenerExecutionFailedException("Listener method '" +
+			throw new org.springframework.amqp.rabbit.support.ListenerExecutionFailedException("Listener method '" +
 					getHandlerAdapter().getMethodAsString(message.getPayload()) + "' threw exception", ex, amqpMessages);
 		}
 	}

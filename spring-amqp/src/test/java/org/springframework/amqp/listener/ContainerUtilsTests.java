@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-present the original author or authors.
+ * Copyright 2026-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.listener;
+package org.springframework.amqp.listener;
 
 import org.apache.commons.logging.Log;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.ImmediateRequeueAmqpException;
-import org.springframework.amqp.rabbit.listener.support.ContainerUtils;
-import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 /**
  * @author Gary Russell
- * @since 2.1.8
+ * @author Artem Bilan
+ *
+ * @since 4.1
  *
  */
 public class ContainerUtilsTests {
@@ -39,7 +39,7 @@ public class ContainerUtilsTests {
 		assertThat(ContainerUtils.shouldRequeue(false,
 				new ListenerExecutionFailedException("", new ImmediateRequeueAmqpException("requeue")),
 				mock(Log.class)))
-			.isTrue();
+				.isTrue();
 	}
 
 	@Test
@@ -47,7 +47,7 @@ public class ContainerUtilsTests {
 		assertThat(ContainerUtils.shouldRequeue(true,
 				new ListenerExecutionFailedException("", new AmqpRejectAndDontRequeueException("no requeue")),
 				mock(Log.class)))
-			.isFalse();
+				.isFalse();
 	}
 
 }

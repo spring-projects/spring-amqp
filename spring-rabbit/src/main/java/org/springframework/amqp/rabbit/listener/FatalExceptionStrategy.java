@@ -24,10 +24,10 @@ package org.springframework.amqp.rabbit.listener;
  * @author Gary Russell
  * @since 1.3.2
  *
+ * @deprecated in favor of {@link org.springframework.amqp.listener.FatalExceptionStrategy}
  */
+@Deprecated(forRemoval = true, since = "4.1")
 @FunctionalInterface
-public interface FatalExceptionStrategy {
-
-	boolean isFatal(Throwable t);
+public interface FatalExceptionStrategy extends org.springframework.amqp.listener.FatalExceptionStrategy {
 
 }

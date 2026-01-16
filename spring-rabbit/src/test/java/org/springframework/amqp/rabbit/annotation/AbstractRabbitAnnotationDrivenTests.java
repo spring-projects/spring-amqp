@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.listener.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
@@ -213,7 +214,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	/**
 	 * Test for {@link ValidationBean} with a validator ({@link TestValidator}) specified
 	 * in a custom {@link org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory}.
-	 * The test should throw a {@link org.springframework.amqp.rabbit.support.ListenerExecutionFailedException}
+	 * The test should throw a {@link ListenerExecutionFailedException}
 	 */
 	public void testRabbitHandlerMethodFactoryConfiguration(ApplicationContext context) throws Exception {
 		RabbitListenerContainerTestFactory simpleFactory =

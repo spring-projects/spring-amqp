@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
+import org.springframework.amqp.listener.ListenerExecutionFailedException;
 import org.springframework.transaction.interceptor.RuleBasedTransactionAttribute;
 
 /**

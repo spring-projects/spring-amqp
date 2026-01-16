@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-present the original author or authors.
+ * Copyright 2026-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.listener.adapter;
+package org.springframework.amqp.listener.adapter;
 
 import java.lang.reflect.Method;
 
+import org.jspecify.annotations.Nullable;
+
+import org.springframework.core.CoroutinesUtils;
+import org.springframework.core.KotlinDetector;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 
 /**
@@ -25,15 +29,23 @@ import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
  *
  * @author Artem Bilan
  *
- * @since 3.0.5
- *
- * @deprecated since 4.1 in favor of Spring AMQP's {@link org.springframework.amqp.listener.adapter.KotlinAwareInvocableHandlerMethod}.
+ * @since 4.1
  */
-@Deprecated(forRemoval = true, since = "4.1")
-public class KotlinAwareInvocableHandlerMethod extends org.springframework.amqp.listener.adapter.KotlinAwareInvocableHandlerMethod {
+public class KotlinAwareInvocableHandlerMethod extends InvocableHandlerMethod {
 
 	public KotlinAwareInvocableHandlerMethod(Object bean, Method method) {
 		super(bean, method);
+	}
+
+	@Override
+	protected @Nullable Object doInvoke(@Nullable Object... args) throws Exception {
+		Method method = getBridgedMethod();
+		if (KotlinDetector.isSuspendingFunction(method)) {
+			return CoroutinesUtils.invokeSuspendingFunction(method, getBean(), args);
+		}
+		else {
+			return super.doInvoke(args);
+		}
 	}
 
 }

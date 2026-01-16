@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-present the original author or authors.
+ * Copyright 2026-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.listener.adapter;
+package org.springframework.amqp.listener.adapter;
 
+import reactor.core.publisher.Mono;
+
+import org.springframework.core.MethodParameter;
+import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.invocation.HandlerMethodArgumentResolver;
 
 /**
@@ -27,13 +31,20 @@ import org.springframework.messaging.handler.invocation.HandlerMethodArgumentRes
  *
  * @author Artem Bilan
  *
- * @since 3.0.5
+ * @since 4.1
  *
  * @see org.springframework.messaging.handler.annotation.reactive.ContinuationHandlerMethodArgumentResolver
- *
- * @deprecated since 4.1 in favor of Spring AMQP's {@link org.springframework.amqp.listener.adapter.ContinuationHandlerMethodArgumentResolver}.
  */
-@Deprecated(forRemoval = true, since = "4.1")
-public class ContinuationHandlerMethodArgumentResolver extends org.springframework.amqp.listener.adapter.ContinuationHandlerMethodArgumentResolver {
+public class ContinuationHandlerMethodArgumentResolver implements HandlerMethodArgumentResolver {
+
+	@Override
+	public boolean supportsParameter(MethodParameter parameter) {
+		return "kotlin.coroutines.Continuation".equals(parameter.getParameterType().getName());
+	}
+
+	@Override
+	public Object resolveArgument(MethodParameter parameter, Message<?> message) {
+		return Mono.empty();
+	}
 
 }

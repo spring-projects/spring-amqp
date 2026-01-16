@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.rabbit.repeatable;
 
-
 import org.junit.jupiter.api.Test;
 
 import org.springframework.context.ApplicationContext;

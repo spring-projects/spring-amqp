@@ -19,9 +19,9 @@ package org.springframework.amqp.rabbit.annotation;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.listener.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
-import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -63,9 +63,9 @@ public class AnnotationDrivenNamespaceTests extends AbstractRabbitAnnotationDriv
 	public void noRabbitAdminConfiguration() {
 		assertThatThrownBy(
 				() -> new ClassPathXmlApplicationContext("annotation-driven-no-rabbit-admin-config.xml", getClass())
-					.close())
-			.isExactlyInstanceOf(BeanCreationException.class)
-			.withFailMessage("'rabbitAdmin'");
+						.close())
+				.isExactlyInstanceOf(BeanCreationException.class)
+				.withFailMessage("'rabbitAdmin'");
 	}
 
 	@Override
@@ -97,8 +97,8 @@ public class AnnotationDrivenNamespaceTests extends AbstractRabbitAnnotationDriv
 				"annotation-driven-custom-handler-method-factory.xml", getClass());
 
 		assertThatThrownBy(() -> testRabbitHandlerMethodFactoryConfiguration(context))
-			.isExactlyInstanceOf(ListenerExecutionFailedException.class)
-			.hasCauseExactlyInstanceOf(MethodArgumentNotValidException.class);
+				.isExactlyInstanceOf(ListenerExecutionFailedException.class)
+				.hasCauseExactlyInstanceOf(MethodArgumentNotValidException.class);
 
 	}
 
@@ -128,4 +128,5 @@ public class AnnotationDrivenNamespaceTests extends AbstractRabbitAnnotationDriv
 		}
 
 	}
+
 }

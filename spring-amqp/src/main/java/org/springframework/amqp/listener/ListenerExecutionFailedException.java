@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-present the original author or authors.
+ * Copyright 2026-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,17 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.support;
+package org.springframework.amqp.listener;
 
+import java.io.Serial;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+
+import org.jspecify.annotations.Nullable;
+
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 
 /**
@@ -25,11 +34,14 @@ import org.springframework.amqp.core.Message;
  * @author Gary Russell
  * @author Artem Bilan
  *
- * @deprecated in favor of {@link org.springframework.amqp.listener.ListenerExecutionFailedException}
+ * @since 4.1
  */
-@Deprecated(forRemoval = true, since = "4.1")
-@SuppressWarnings("serial")
-public class ListenerExecutionFailedException extends org.springframework.amqp.listener.ListenerExecutionFailedException {
+public class ListenerExecutionFailedException extends AmqpException {
+
+	@Serial
+	private static final long serialVersionUID = 1L;
+
+	private final ArrayList<Message> failedMessages;
 
 	/**
 	 * Constructor for ListenerExecutionFailedException.
@@ -38,7 +50,16 @@ public class ListenerExecutionFailedException extends org.springframework.amqp.l
 	 * @param failedMessage the message(s) that failed
 	 */
 	public ListenerExecutionFailedException(String msg, Throwable cause, Message... failedMessage) {
-		super(msg, cause, failedMessage);
+		super(msg, cause);
+		this.failedMessages = new ArrayList<>(Arrays.asList(failedMessage));
+	}
+
+	public @Nullable Message getFailedMessage() {
+		return this.failedMessages.isEmpty() ? null : this.failedMessages.get(0);
+	}
+
+	public Collection<Message> getFailedMessages() {
+		return Collections.unmodifiableList(this.failedMessages);
 	}
 
 }

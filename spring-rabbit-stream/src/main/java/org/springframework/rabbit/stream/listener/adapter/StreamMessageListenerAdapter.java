@@ -25,7 +25,6 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.amqp.rabbit.listener.adapter.InvocationResult;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
-import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.messaging.support.GenericMessage;
 import org.springframework.rabbit.stream.listener.StreamMessageListener;
 
@@ -33,6 +32,7 @@ import org.springframework.rabbit.stream.listener.StreamMessageListener;
  * A listener adapter that receives native stream messages.
  *
  * @author Gary Russell
+ *
  * @since 2.4
  *
  */
@@ -57,6 +57,7 @@ public class StreamMessageListenerAdapter extends MessagingMessageListenerAdapte
 	}
 
 	@Override
+	@SuppressWarnings("removal")
 	public void onStreamMessage(Message message, Context context) {
 		try {
 			InvocationResult result = getHandlerAdapter().invoke(FAKE_MESSAGE, message, context);
@@ -68,7 +69,8 @@ public class StreamMessageListenerAdapter extends MessagingMessageListenerAdapte
 			}
 		}
 		catch (Exception ex) {
-			throw new ListenerExecutionFailedException("Failed to invoke listener", ex);
+			throw new org.springframework.amqp.rabbit.support.ListenerExecutionFailedException(
+					"Failed to invoke listener", ex);
 		}
 	}
 

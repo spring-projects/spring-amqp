@@ -60,6 +60,8 @@ import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.listener.ContainerUtils;
+import org.springframework.amqp.listener.MessageRejectedWhileStoppingException;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -69,7 +71,6 @@ import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.RoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SimpleResourceHolder;
-import org.springframework.amqp.rabbit.listener.support.ContainerUtils;
 import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
 import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
 import org.springframework.context.ApplicationEventPublisher;
@@ -1222,7 +1223,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					handleAck(deliveryTag, channelLocallyTransacted);
 				}
 				else {
-					if (e instanceof org.springframework.amqp.rabbit.listener.exception.MessageRejectedWhileStoppingException) {
+					if (e instanceof MessageRejectedWhileStoppingException) {
 						this.logger.info("Listener rejected message while stopping (requeued)", e);
 					}
 					else {
