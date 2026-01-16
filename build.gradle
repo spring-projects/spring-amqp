@@ -17,7 +17,7 @@ plugins {
 	id 'io.spring.nohttp' version '0.0.11'
 	id 'org.antora' version '1.0.0'
 	id 'io.spring.antora.generate-antora-yml' version '0.0.1'
-	id 'io.freefair.aggregate-javadoc' version '9.1.0'
+	id 'io.freefair.aggregate-javadoc' version '9.2.0'
 	id 'io.spring.nullability' version '0.0.9' apply false
 }
 
@@ -199,7 +199,7 @@ configure(javaProjects) { subproject ->
 		testImplementation 'org.springframework:spring-test'
 
 		testRuntimeOnly 'org.apache.logging.log4j:log4j-jcl'
-		testRuntimeOnly 'org.apache.logging.log4j:log4j-slf4j-impl'
+		testRuntimeOnly 'org.apache.logging.log4j:log4j-slf4j2-impl'
 
 		testImplementation 'org.junit.jupiter:junit-jupiter-api'
 		testImplementation 'org.junit.jupiter:junit-jupiter-params'
@@ -272,7 +272,7 @@ configure(javaProjects) { subproject ->
 
 	checkstyle {
 		configDirectory.set(rootProject.file('src/checkstyle'))
-		toolVersion = '12.3.0'
+		toolVersion = '13.0.0'
 	}
 
 	jar {
