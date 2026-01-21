@@ -70,7 +70,7 @@ public final class TestUtils {
 	@Deprecated(since = "4.1", forRemoval = true)
 	@SuppressWarnings("unchecked")
 	public static <T> @Nullable T getPropertyValue(Object root, String propertyPath, Class<T> type) {
-		Object value = propertyValue(root, propertyPath);
+		Object value = getPropertyValue(root, propertyPath);
 		if (value != null) {
 			Assert.isAssignable(type, value.getClass());
 		}
