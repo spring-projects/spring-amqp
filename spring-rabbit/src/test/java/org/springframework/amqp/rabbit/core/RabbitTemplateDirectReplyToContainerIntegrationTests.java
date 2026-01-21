@@ -41,6 +41,8 @@ import static org.mockito.Mockito.mock;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.0
  *
  */
@@ -69,11 +71,11 @@ public class RabbitTemplateDirectReplyToContainerIntegrationTests extends Rabbit
 		rabbitTemplate.setReplyErrorHandler(replyErrorHandler);
 		Object reply = rabbitTemplate.convertSendAndReceive(ROUTE, "foo");
 		assertThat(reply).isNull();
-		Object container = TestUtils.getPropertyValue(rabbitTemplate, "directReplyToContainers", Map.class)
+		Object container = TestUtils.<Map<?, ?>>propertyValue(rabbitTemplate, "directReplyToContainers")
 				.get(rabbitTemplate.isUsePublisherConnection()
 						? connectionFactory.getPublisherConnectionFactory()
 						: connectionFactory);
-		assertThat(TestUtils.getPropertyValue(container, "inUseConsumerChannels", Map.class)).hasSize(0);
+		assertThat(TestUtils.<Map<?, ?>>propertyValue(container, "inUseConsumerChannels")).isEmpty();
 		assertThat(TestUtils.getPropertyValue(container, "errorHandler")).isSameAs(replyErrorHandler);
 		Message replyMessage = new Message("foo".getBytes(), new MessageProperties());
 		assertThatThrownBy(() -> rabbitTemplate.onMessage(replyMessage, mock(Channel.class)))
@@ -102,7 +104,7 @@ public class RabbitTemplateDirectReplyToContainerIntegrationTests extends Rabbit
 		assertThat(exception.get().getCause().getMessage()).isEqualTo("Reply received after timeout");
 		assertThat(((ListenerExecutionFailedException) exception.get()).getFailedMessage().getBody())
 				.isEqualTo(replyMessage.getBody());
-		assertThat(TestUtils.getPropertyValue(container, "inUseConsumerChannels", Map.class)).hasSize(0);
+		assertThat(TestUtils.<Map<?, ?>>propertyValue(container, "inUseConsumerChannels")).isEmpty();
 		executor.shutdownNow();
 		rabbitTemplate.stop();
 		connectionFactory.destroy();

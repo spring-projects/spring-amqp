@@ -115,7 +115,7 @@ public class RabbitListenerContainerFactoryTests {
 		this.factory.setContainerCustomizer(c -> c.setShutdownTimeout(10_000));
 		this.factory.setForceStop(true);
 
-		assertThat(this.factory.getAdviceChain()).isEqualTo(new Advice[]{advice});
+		assertThat(this.factory.getAdviceChain()).isEqualTo(new Advice[] {advice});
 
 		SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
 
@@ -140,17 +140,19 @@ public class RabbitListenerContainerFactoryTests {
 		assertThat(fieldAccessor.getPropertyValue("shutdownTimeout")).isEqualTo(10_000L);
 		assertThat(fieldAccessor.getPropertyValue("defaultRequeueRejected")).isEqualTo(false);
 		Advice[] actualAdviceChain = (Advice[]) fieldAccessor.getPropertyValue("adviceChain");
-		assertThat(actualAdviceChain.length).as("Wrong number of advice").isEqualTo(1);
+		assertThat(actualAdviceChain).hasSize(1);
 		assertThat(actualAdviceChain[0]).as("Wrong advice").isSameAs(advice);
 		assertThat(fieldAccessor.getPropertyValue("recoveryBackOff")).isSameAs(recoveryBackOff);
 		assertThat(fieldAccessor.getPropertyValue("missingQueuesFatal")).isEqualTo(true);
 		assertThat(container.getMessageListener()).isEqualTo(messageListener);
 		assertThat(container.getQueueNames()[0]).isEqualTo("myQueue");
 		List<?> actualAfterReceivePostProcessors = (List<?>) fieldAccessor.getPropertyValue("afterReceivePostProcessors");
-		assertThat(actualAfterReceivePostProcessors.size()).as("Wrong number of afterReceivePostProcessors").isEqualTo(1);
-		assertThat(actualAfterReceivePostProcessors.get(0)).as("Wrong advice").isSameAs(afterReceivePostProcessor);
+		assertThat(actualAfterReceivePostProcessors)
+				.hasSize(1)
+				.element(0)
+				.isSameAs(afterReceivePostProcessor);
 		assertThat(fieldAccessor.getPropertyValue("globalQos")).isEqualTo(true);
-		assertThat(TestUtils.getPropertyValue(container, "forceStop", Boolean.class)).isTrue();
+		assertThat(TestUtils.<Boolean>propertyValue(container, "forceStop")).isTrue();
 	}
 
 	@Test
@@ -179,7 +181,7 @@ public class RabbitListenerContainerFactoryTests {
 		this.direct.setAfterReceivePostProcessors(afterReceivePostProcessor);
 		this.direct.setForceStop(true);
 
-		assertThat(this.direct.getAdviceChain()).isEqualTo(new Advice[]{advice});
+		assertThat(this.direct.getAdviceChain()).isEqualTo(new Advice[] {advice});
 
 		SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
 
@@ -207,9 +209,11 @@ public class RabbitListenerContainerFactoryTests {
 		assertThat(fieldAccessor.getPropertyValue("messagesPerAck")).isEqualTo(5);
 		assertThat(fieldAccessor.getPropertyValue("ackTimeout")).isEqualTo(3L);
 		List<?> actualAfterReceivePostProcessors = (List<?>) fieldAccessor.getPropertyValue("afterReceivePostProcessors");
-		assertThat(actualAfterReceivePostProcessors.size()).as("Wrong number of afterReceivePostProcessors").isEqualTo(1);
-		assertThat(actualAfterReceivePostProcessors.get(0)).as("Wrong afterReceivePostProcessor").isSameAs(afterReceivePostProcessor);
-		assertThat(TestUtils.getPropertyValue(container, "forceStop", Boolean.class)).isTrue();
+		assertThat(actualAfterReceivePostProcessors)
+				.hasSize(1)
+				.element(0)
+				.isSameAs(afterReceivePostProcessor);
+		assertThat(TestUtils.<Boolean>propertyValue(container, "forceStop")).isTrue();
 	}
 
 	private void setBasicConfig(AbstractRabbitListenerContainerFactory<?> factory) {

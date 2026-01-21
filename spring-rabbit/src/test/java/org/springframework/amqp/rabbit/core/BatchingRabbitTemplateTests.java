@@ -349,7 +349,7 @@ public class BatchingRabbitTemplateTests {
 		container.setErrorHandler(errorHandler);
 		container.afterPropertiesSet();
 		container.start();
-		Log logger = spy(TestUtils.getPropertyValue(errorHandler, "logger", Log.class));
+		Log logger = spy(TestUtils.<Log>propertyValue(errorHandler, "logger"));
 		willReturn(true).given(logger).isWarnEnabled();
 		willDoNothing().given(logger).warn(anyString(), any(Throwable.class));
 		new DirectFieldAccessor(errorHandler).setPropertyValue("logger", logger);
@@ -665,13 +665,13 @@ public class BatchingRabbitTemplateTests {
 	}
 
 	private int getStreamLevel(Object stream) throws Exception {
-		final AtomicReference<Method> m = new AtomicReference<Method>();
+		final AtomicReference<Method> m = new AtomicReference<>();
 		ReflectionUtils.doWithMethods(AbstractCompressingPostProcessor.class, method -> {
 			method.setAccessible(true);
 			m.set(method);
 		}, method -> method.getName().equals("getCompressorStream"));
 		Object zipStream = m.get().invoke(stream, mock(OutputStream.class));
-		return TestUtils.getPropertyValue(zipStream, "def.level", Integer.class);
+		return TestUtils.propertyValue(zipStream, "def.level");
 	}
 
 	private static final class HeaderPostProcessor implements MessagePostProcessor {

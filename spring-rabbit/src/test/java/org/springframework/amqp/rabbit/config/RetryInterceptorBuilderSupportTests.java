@@ -121,7 +121,7 @@ public class RetryInterceptorBuilderSupportTests {
 						})
 						.build();
 
-		assertThat(TestUtils.getPropertyValue(interceptor, "retryPolicy.backOff", FixedBackOff.class))
+		assertThat(TestUtils.<FixedBackOff>propertyValue(interceptor, "retryPolicy.backOff"))
 				.satisfies((backOff) -> {
 					assertThat(backOff.getInterval()).isEqualTo(10L);
 					assertThat(backOff.getMaxAttempts()).isEqualTo(5L);

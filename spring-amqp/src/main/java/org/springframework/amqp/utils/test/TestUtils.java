@@ -22,12 +22,15 @@ import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.util.Assert;
 
 /**
- * See Spring Integration TestUtils.
+ * Testing utilities.
+ *
  * @author Mark Fisher
  * @author Iwein Fuld
  * @author Oleg Zhurakousky
  * @author Gary Russell
  * @author Ngoc Nhan
+ * @author Artem Bilan
+ *
  * @since 1.2
  */
 public final class TestUtils {
@@ -49,7 +52,9 @@ public final class TestUtils {
 		for (int i = 0; i < tokens.length; i++) {
 			value = accessor.getPropertyValue(tokens[i]);
 			if (value != null) {
-				accessor = new DirectFieldAccessor(value);
+				if (i < tokens.length - 1) {
+					accessor = new DirectFieldAccessor(value);
+				}
 				continue;
 			}
 
@@ -62,13 +67,45 @@ public final class TestUtils {
 		return value;
 	}
 
+	@Deprecated(since = "4.1", forRemoval = true)
 	@SuppressWarnings("unchecked")
 	public static <T> @Nullable T getPropertyValue(Object root, String propertyPath, Class<T> type) {
-		Object value = getPropertyValue(root, propertyPath);
+		Object value = propertyValue(root, propertyPath);
 		if (value != null) {
 			Assert.isAssignable(type, value.getClass());
 		}
 		return (T) value;
+	}
+
+	/**
+	 * Uses nested {@link DirectFieldAccessor}s to get a property using dotted notation to traverse fields; e.g.
+	 * {@code prop.subProp.subSubProp} will get a reference to the {@code subSubProp} field
+	 * of the {@code subProp} field of {@code prop} prop from the {@code root}.
+	 * @param root the object to get the property from.
+	 * @param propertyPath the path to the property. Can be a dotted notation for a nested property.
+	 * @param reified the argument which is used to extract a generic type for conversion.
+	 *                Must not be set!
+	 * @param <T> the expected type of the value.
+	 * @return the property value.
+	 * @since 4.1
+	 */
+	@SafeVarargs
+	@SuppressWarnings({"varargs", "unchecked"})
+	public static <T> @Nullable T propertyValue(Object root, String propertyPath, T... reified) {
+		Assert.state(reified.length == 0,
+				"No 'reified' parameter is allowed for 'propertyValue'. " +
+						"The generic argument is enough for inferring the expected conversion type.");
+
+		Object value = getPropertyValue(root, propertyPath);
+		if (value != null) {
+			Assert.isAssignable(getClassOf(reified), value.getClass());
+		}
+		return (T) value;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T> Class<T> getClassOf(T[] array) {
+		return (Class<T>) array.getClass().getComponentType();
 	}
 
 }

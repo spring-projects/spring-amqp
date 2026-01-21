@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Gary Russell
  * @author Artem Bilan
+ *
  * @since 2.0
  *
  */
@@ -78,8 +79,7 @@ public class ContainerShutDownTests {
 			}
 		});
 		Connection connection = cf.createConnection();
-		Map<?, ?> channels = TestUtils.getPropertyValue(connection, "target.delegate._channelManager._channelMap",
-				Map.class);
+		Map<?, ?> channels = TestUtils.propertyValue(connection, "target.delegate._channelManager._channelMap");
 		container.start();
 		try {
 			assertThat(startLatch.await(30, TimeUnit.SECONDS)).isTrue();
@@ -152,7 +152,7 @@ public class ContainerShutDownTests {
 		container.start();
 
 		ScheduledExecutorService scheduledExecutorService =
-				TestUtils.getPropertyValue(container, "taskScheduler.scheduledExecutor", ScheduledExecutorService.class);
+				TestUtils.propertyValue(container, "taskScheduler.scheduledExecutor");
 
 		container.stop(() -> {
 		});

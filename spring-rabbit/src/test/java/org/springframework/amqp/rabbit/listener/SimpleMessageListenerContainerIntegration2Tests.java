@@ -227,7 +227,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		});
 		container.removeQueueNames(queue.getName(), queue1.getName());
 		assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
-		assertThat(TestUtils.getPropertyValue(newConsumer.get(), "queues", String[].class).length).isEqualTo(0);
+		assertThat(TestUtils.<String[]>propertyValue(newConsumer.get(), "queues")).isEmpty();
 	}
 
 	@Test
@@ -255,7 +255,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		}
 		boolean waited = latch.await(10, TimeUnit.SECONDS);
 		assertThat(waited).as("Timed out waiting for message").isTrue();
-		Set<?> consumers = TestUtils.getPropertyValue(container, "consumers", Set.class);
+		Set<?> consumers = TestUtils.propertyValue(container, "consumers");
 		BlockingQueueConsumer consumer = (BlockingQueueConsumer) consumers.iterator().next();
 		admin.deleteQueue(queue1.getName());
 		latch = new CountDownLatch(10);
@@ -274,7 +274,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 				return null;
 			}
 		}, newCon -> newCon != consumer);
-		Set<?> missingQueues = TestUtils.getPropertyValue(newConsumer, "missingQueues", Set.class);
+		Set<?> missingQueues = TestUtils.propertyValue(newConsumer, "missingQueues");
 		with().pollInterval(Duration.ofMillis(200)).await("Failed to detect missing queue")
 				.atMost(Duration.ofSeconds(20))
 				.until(() -> missingQueues.size() > 0);
@@ -346,7 +346,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 
 	@Test
 	public void testExclusive() throws Exception {
-		Log logger = spy(TestUtils.getPropertyValue(this.template.getConnectionFactory(), "logger", Log.class));
+		Log logger = spy(TestUtils.<Log>propertyValue(this.template.getConnectionFactory(), "logger"));
 		willReturn(true).given(logger).isDebugEnabled();
 		new DirectFieldAccessor(this.template.getConnectionFactory()).setPropertyValue("logger", logger);
 		CountDownLatch latch1 = new CountDownLatch(1000);
@@ -391,7 +391,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		});
 		container2.setBeanName("container2");
 		container2.afterPropertiesSet();
-		Log containerLogger = spy(TestUtils.getPropertyValue(container2, "logger", Log.class));
+		Log containerLogger = spy(TestUtils.<Log>propertyValue(container2, "logger"));
 		willReturn(true).given(containerLogger).isDebugEnabled();
 		new DirectFieldAccessor(container2).setPropertyValue("logger", containerLogger);
 		container2.start();
@@ -565,8 +565,10 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 
 		// verify properties propagated to consumer
-		BlockingQueueConsumer consumer = (BlockingQueueConsumer) TestUtils
-				.getPropertyValue(container, "consumers", Set.class).iterator().next();
+		BlockingQueueConsumer consumer =
+				TestUtils.<Set<BlockingQueueConsumer>>propertyValue(container, "consumers")
+						.iterator()
+						.next();
 		assertThat(TestUtils.getPropertyValue(consumer, "declarationRetries")).isEqualTo(1);
 		assertThat(TestUtils.getPropertyValue(consumer, "failedDeclarationRetryInterval")).isEqualTo(100L);
 		assertThat(TestUtils.getPropertyValue(consumer, "retryDeclarationInterval")).isEqualTo(30000L);
@@ -641,11 +643,11 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		this.container.setTaskExecutor(exec);
 		this.container.setConcurrentConsumers(2);
 		this.container.setConsumerStartTimeout(100);
-		Log logger = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
+		Log logger = spy(TestUtils.<Log>propertyValue(container, "logger"));
 		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
 		this.container.start();
 		this.container.stop();
-		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		ArgumentCaptor<String> captor = ArgumentCaptor.captor();
 		verify(logger).error(captor.capture());
 		assertThat(captor.getValue()).isEqualTo("Consumer failed to start in 100 milliseconds; does the task "
 				+ "executor have enough threads to support the container concurrency?");
@@ -798,8 +800,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		}
 	}
 
-	private boolean containerStoppedForAbortWithBadListener() throws InterruptedException {
-		Log logger = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
+	private boolean containerStoppedForAbortWithBadListener() {
+		Log logger = spy(TestUtils.<Log>propertyValue(container, "logger"));
 		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
 		this.template.convertAndSend(queue.getName(), "foo");
 		await().until(() -> !this.container.isRunning());

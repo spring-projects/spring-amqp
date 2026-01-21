@@ -41,6 +41,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Lars Hvile
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.5.6
  *
  */
@@ -76,11 +78,12 @@ public class RabbitReconnectProblemTests {
 			checkIt(i);
 		}
 
-		int availablePermits = ((Semaphore) TestUtils.getPropertyValue(this.connFactory, "checkoutPermits", Map.class)
-				.values()
-				.iterator()
-				.next())
-				.availablePermits();
+		int availablePermits =
+				TestUtils.<Map<?, Semaphore>>propertyValue(this.connFactory, "checkoutPermits")
+						.values()
+						.iterator()
+						.next()
+						.availablePermits();
 		SOUT.println("Permits after test: " + availablePermits);
 		assertThat(availablePermits).isEqualTo(2);
 	}

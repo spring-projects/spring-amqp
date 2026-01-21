@@ -30,12 +30,13 @@ import static org.mockito.Mockito.mock;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.4.6
  *
  */
 public class ListenerContainerFactoryBeanTests {
 
-	@SuppressWarnings("unchecked")
 	@Test
 	void micrometer() throws Exception {
 		ListenerContainerFactoryBean lcfb = new ListenerContainerFactoryBean();
@@ -44,8 +45,8 @@ public class ListenerContainerFactoryBeanTests {
 		lcfb.setMicrometerTags(Map.of("foo", "bar"));
 		lcfb.afterPropertiesSet();
 		AbstractMessageListenerContainer container = lcfb.getObject();
-		assertThat(TestUtils.getPropertyValue(container, "micrometerEnabled", Boolean.class)).isFalse();
-		assertThat(TestUtils.getPropertyValue(container, "micrometerTags", Map.class)).hasSize(1);
+		assertThat(TestUtils.<Boolean>propertyValue(container, "micrometerEnabled")).isFalse();
+		assertThat(TestUtils.<Map<?, ?>>propertyValue(container, "micrometerTags")).hasSize(1);
 	}
 
 	@Test
@@ -57,7 +58,7 @@ public class ListenerContainerFactoryBeanTests {
 		});
 		lcfb.afterPropertiesSet();
 		AbstractMessageListenerContainer container = lcfb.getObject();
-		assertThat(TestUtils.getPropertyValue(container, "consumerStartTimeout", Long.class)).isEqualTo(42L);
+		assertThat(TestUtils.<Long>propertyValue(container, "consumerStartTimeout")).isEqualTo(42L);
 	}
 
 	@Test
@@ -70,8 +71,7 @@ public class ListenerContainerFactoryBeanTests {
 		});
 		lcfb.afterPropertiesSet();
 		AbstractMessageListenerContainer container = lcfb.getObject();
-		assertThat(TestUtils.getPropertyValue(container, "consumersPerQueue", Integer.class)).isEqualTo(2);
+		assertThat(TestUtils.<Integer>propertyValue(container, "consumersPerQueue")).isEqualTo(2);
 	}
-
 
 }

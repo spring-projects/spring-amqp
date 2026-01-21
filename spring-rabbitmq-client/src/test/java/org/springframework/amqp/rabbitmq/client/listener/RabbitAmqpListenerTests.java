@@ -113,7 +113,6 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	void verifyBatchConsumedAfterScheduledTimeout() {
 		List<String> testDataList =
 				List.of("batchData1", "batchData2", "batchData3", "batchData4", "batchData5");
@@ -133,7 +132,7 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 				this.rabbitListenerEndpointRegistry.getListenerContainer("testBatchListener");
 
 		MultiValueMap<String, Consumer> queueToConsumers =
-				TestUtils.getPropertyValue(testBatchListener, "queueToConsumers", MultiValueMap.class);
+				TestUtils.propertyValue(testBatchListener, "queueToConsumers");
 		Consumer consumer = queueToConsumers.get("q3").get(0);
 
 		assertThat(consumer.unsettledMessageCount()).isEqualTo(0L);

@@ -119,8 +119,9 @@ public class ExtendAmqpAppenderTests {
 	@Disabled("weird - this.events.take() in appender is returning null")
 	public void testProperties() {
 		Logger logger = LogManager.getLogger("foo");
-		AmqpAppender appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
-				Map.class).get("rabbitmq");
+		AmqpAppender appender =
+				TestUtils.<Map<String, AmqpAppender>>propertyValue(logger, "context.configuration.appenders")
+						.get("rabbitmq");
 		Object manager = TestUtils.getPropertyValue(appender, "manager");
 		// <RabbitMQ name="rabbitmq"
 		// addresses="localhost:5672"
@@ -144,24 +145,24 @@ public class ExtendAmqpAppenderTests {
 		assertThat(TestUtils.getPropertyValue(manager, "virtualHost")).isEqualTo("/");
 		assertThat(TestUtils.getPropertyValue(manager, "exchangeName")).isEqualTo("log4j2Test");
 		assertThat(TestUtils.getPropertyValue(manager, "exchangeType")).isEqualTo("fanout");
-		assertThat(TestUtils.getPropertyValue(manager, "declareExchange", Boolean.class)).isTrue();
-		assertThat(TestUtils.getPropertyValue(manager, "durable", Boolean.class)).isTrue();
-		assertThat(TestUtils.getPropertyValue(manager, "autoDelete", Boolean.class)).isFalse();
+		assertThat(TestUtils.<Boolean>propertyValue(manager, "declareExchange")).isTrue();
+		assertThat(TestUtils.<Boolean>propertyValue(manager, "durable")).isTrue();
+		assertThat(TestUtils.<Boolean>propertyValue(manager, "autoDelete")).isFalse();
 		assertThat(TestUtils.getPropertyValue(manager, "applicationId")).isEqualTo("testAppId");
 		assertThat(TestUtils.getPropertyValue(manager, "routingKeyPattern")).isEqualTo("%X{applicationId}.%c.%p");
 		assertThat(TestUtils.getPropertyValue(manager, "contentType")).isEqualTo("text/plain");
 		assertThat(TestUtils.getPropertyValue(manager, "contentEncoding")).isEqualTo("UTF-8");
-		assertThat(TestUtils.getPropertyValue(manager, "generateId", Boolean.class)).isTrue();
+		assertThat(TestUtils.<Boolean>propertyValue(manager, "generateId")).isTrue();
 		assertThat(TestUtils.getPropertyValue(manager, "deliveryMode")).isEqualTo(MessageDeliveryMode.NON_PERSISTENT);
 		assertThat(TestUtils.getPropertyValue(manager, "contentEncoding")).isEqualTo("UTF-8");
 		assertThat(TestUtils.getPropertyValue(manager, "senderPoolSize")).isEqualTo(3);
 		assertThat(TestUtils.getPropertyValue(manager, "maxSenderRetries")).isEqualTo(5);
-		// change the property to true and this fails and test() randomly fails too.
-		assertThat(TestUtils.getPropertyValue(manager, "async", Boolean.class)).isFalse();
+		// change the property to true, and this fails and test() randomly fails too.
+		assertThat(TestUtils.<Boolean>propertyValue(manager, "async")).isFalse();
 		// default value
-		assertThat(TestUtils.getPropertyValue(manager, "addMdcAsHeaders", Boolean.class)).isTrue();
+		assertThat(TestUtils.<Boolean>propertyValue(manager, "addMdcAsHeaders")).isTrue();
 
-		java.util.Queue<?> queue = TestUtils.getPropertyValue(appender, "events", java.util.Queue.class);
+		java.util.Queue<?> queue = TestUtils.propertyValue(appender, "events");
 		int i = 0;
 		while (queue.poll() != null) {
 			i++;
@@ -178,8 +179,9 @@ public class ExtendAmqpAppenderTests {
 	@Test
 	public void testAmqpAppenderEventQueueTypeDefaultsToLinkedBlockingQueue() {
 		Logger logger = LogManager.getLogger("default_queue_logger");
-		AmqpAppender appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
-				Map.class).get("rabbitmq_default_queue");
+		AmqpAppender appender =
+				TestUtils.<Map<String, AmqpAppender>>propertyValue(logger, "context.configuration.appenders")
+						.get("rabbitmq_default_queue");
 
 		Object events = TestUtils.getPropertyValue(appender, "events");
 
@@ -187,16 +189,17 @@ public class ExtendAmqpAppenderTests {
 		assertThat(TestUtils.getPropertyValue(appender, "bar")).isEqualTo("defaultBar");
 
 		Object manager = TestUtils.getPropertyValue(appender, "manager");
-		assertThat(TestUtils.getPropertyValue(manager, "addMdcAsHeaders", Boolean.class)).isTrue();
+		assertThat(TestUtils.<Boolean>propertyValue(manager, "addMdcAsHeaders")).isTrue();
 
-		assertThat(events.getClass()).isEqualTo(LinkedBlockingQueue.class);
+		assertThat(events).isInstanceOf(LinkedBlockingQueue.class);
 	}
 
 	@Test
 	public void testUriProperties() {
 		Logger logger = LogManager.getLogger("bar");
-		AmqpAppender appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
-				Map.class).get("rabbitmq_uri");
+		AmqpAppender appender =
+				TestUtils.<Map<String, AmqpAppender>>propertyValue(logger, "context.configuration.appenders")
+						.get("rabbitmq_uri");
 		Object manager = TestUtils.getPropertyValue(appender, "manager");
 		assertThat(TestUtils.getPropertyValue(manager, "uri").toString())
 				.isEqualTo("amqp://guest:guest@localhost:5672/");
@@ -206,7 +209,7 @@ public class ExtendAmqpAppenderTests {
 		assertThat(TestUtils.getPropertyValue(manager, "username")).isNull();
 		assertThat(TestUtils.getPropertyValue(manager, "password")).isNull();
 		assertThat(TestUtils.getPropertyValue(manager, "virtualHost")).isNull();
-		assertThat(TestUtils.getPropertyValue(manager, "addMdcAsHeaders", Boolean.class)).isFalse();
+		assertThat(TestUtils.<Boolean>propertyValue(manager, "addMdcAsHeaders")).isFalse();
 
 		assertThat(TestUtils.getPropertyValue(appender, "foo")).isEqualTo("foo_uri");
 		assertThat(TestUtils.getPropertyValue(appender, "bar")).isEqualTo("bar_uri");
@@ -257,4 +260,5 @@ public class ExtendAmqpAppenderTests {
 		verify(bean, never()).setPassword("guest");
 		verify(bean, never()).setVirtualHost("/");
 	}
+
 }

@@ -37,16 +37,17 @@ import static org.assertj.core.api.Assertions.fail;
  *
  * @author tomas.lukosius@opencredo.com
  * @author Gary Russell
+ * @author Artem Bilan
  *
  */
 public final class AdminParserTests {
 
-	private static Log logger = LogFactory.getLog(AdminParserTests.class);
+	private static final Log logger = LogFactory.getLog(AdminParserTests.class);
 
-	// Specifies if test case expects context to be valid or not: true - context expects to be valid.
+	// Specifies if a test case expects context to be valid or not: true - context expects to be valid.
 	private boolean validContext = true;
 
-	// Index of context file used by this test case. Context file name has such template:
+	// Index of a context file used by this test case. Context file name has such a template:
 	// <class-name>-<contextIndex>-context.xml.
 	private int contextIndex;
 
@@ -57,7 +58,7 @@ public final class AdminParserTests {
 	private boolean initialisedWithTemplate;
 
 	@Test
-	public void testValid0() throws Exception {
+	public void testValid0() {
 		this.expectedAutoStartup = true;
 		this.contextIndex = 0;
 		this.validContext = true;
@@ -65,20 +66,20 @@ public final class AdminParserTests {
 	}
 
 	@Test
-	public void testInvalid1() throws Exception {
+	public void testInvalid1() {
 		this.contextIndex = 1;
 		this.validContext = false;
 		doTest(false);
 	}
 
 	@Test
-	public void testValid2() throws Exception {
+	public void testValid2() {
 		this.contextIndex = 2;
 		this.validContext = true;
 		doTest(true);
 	}
 
-	private void doTest(boolean explicit) throws Exception {
+	private void doTest(boolean explicit) {
 		// Create context
 		DefaultListableBeanFactory beanFactory = loadContext();
 		if (beanFactory == null) {
@@ -101,12 +102,11 @@ public final class AdminParserTests {
 		if (this.initialisedWithTemplate) {
 			assertThat(admin.getRabbitTemplate()).isEqualTo(beanFactory.getBean(RabbitTemplate.class));
 		}
-		assertThat(TestUtils.getPropertyValue(admin, "explicitDeclarationsOnly", Boolean.class)).isEqualTo(explicit);
+		assertThat(TestUtils.<Boolean>propertyValue(admin, "explicitDeclarationsOnly")).isEqualTo(explicit);
 	}
 
 	/**
-	 * Load application context. Fail if tests expects invalid spring-context, but spring-context is valid.
-	 * @return
+	 * Load application context. Fail if tests expect invalid spring-context, but spring-context is valid.
 	 */
 	private DefaultListableBeanFactory loadContext() {
 		DefaultListableBeanFactory beanFactory = null;

@@ -103,12 +103,13 @@ public class LocalizedQueueConnectionFactoryTests {
 			}
 
 		});
-		Map<?, ?> nodeAddress = TestUtils.getPropertyValue(lqcf, "nodeToAddress", Map.class);
+		Map<?, ?> nodeAddress = TestUtils.propertyValue(lqcf, "nodeToAddress");
 		assertThat(nodeAddress.get("rabbit@foo")).isEqualTo(rabbit1);
 		assertThat(nodeAddress.get("rabbit@bar")).isEqualTo(rabbit2);
-		String[] admins = TestUtils.getPropertyValue(lqcf, "adminUris", String[].class);
+		String[] admins = TestUtils.propertyValue(lqcf, "adminUris");
 		assertThat(admins).containsExactly(adminUris);
-		Log logger = spy(TestUtils.getPropertyValue(lqcf, "logger", Log.class));
+		Log logger = TestUtils.propertyValue(lqcf, "logger");
+		logger = spy(logger);
 		willReturn(true).given(logger).isInfoEnabled();
 		new DirectFieldAccessor(lqcf).setPropertyValue("logger", logger);
 		willAnswer(new CallsRealMethods()).given(logger).debug(anyString());

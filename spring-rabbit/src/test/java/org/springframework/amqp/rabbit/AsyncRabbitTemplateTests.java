@@ -121,9 +121,9 @@ public class AsyncRabbitTemplateTests {
 		checkConverterResult(future2, "BAR");
 		this.latch.set(null);
 		waitForZeroInUseConsumers();
-		assertThat(TestUtils
-				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount",
-						AtomicInteger.class).get())
+		assertThat(
+				TestUtils.<AtomicInteger>propertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount")
+						.get())
 				.isEqualTo(2);
 		final String missingQueue = UUID.randomUUID().toString();
 		this.asyncDirectTemplate.convertSendAndReceive("", missingQueue, "foo"); // send to nowhere
@@ -179,21 +179,21 @@ public class AsyncRabbitTemplateTests {
 		assertThat(reply2.getMessageProperties().getConsumerQueue()).isEqualTo(Address.AMQ_RABBITMQ_REPLY_TO);
 		this.latch.set(null);
 		waitForZeroInUseConsumers();
-		assertThat(TestUtils
-				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount",
-						AtomicInteger.class).get())
+		assertThat(
+				TestUtils.<AtomicInteger>propertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount")
+						.get())
 				.isEqualTo(2);
 		this.asyncDirectTemplate.stop();
 		this.asyncDirectTemplate.start();
-		assertThat(TestUtils
-				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount",
-						AtomicInteger.class).get())
+		assertThat(
+				TestUtils.<AtomicInteger>propertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount")
+						.get())
 				.isZero();
 	}
 
 	private void waitForZeroInUseConsumers() {
-		Map<?, ?> inUseConsumers = TestUtils
-				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels", Map.class);
+		Map<?, ?> inUseConsumers =
+				TestUtils.propertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels");
 		await().until(inUseConsumers::isEmpty);
 	}
 
@@ -210,12 +210,11 @@ public class AsyncRabbitTemplateTests {
 		checkMessageResult(future, "FOO");
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testCancel() {
 		CompletableFuture<String> future = this.asyncTemplate.convertSendAndReceive("foo");
 		future.cancel(false);
-		assertThat(TestUtils.getPropertyValue(asyncTemplate, "pending", Map.class)).isEmpty();
+		assertThat(TestUtils.<Map<?, ?>>propertyValue(asyncTemplate, "pending")).isEmpty();
 	}
 
 	@Test
@@ -316,7 +315,6 @@ public class AsyncRabbitTemplateTests {
 		checkMessageResult(future, "SLEEP");
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	@DirtiesContext
 	public void testReceiveTimeout() throws Exception {
@@ -324,18 +322,17 @@ public class AsyncRabbitTemplateTests {
 		CompletableFuture<String> future = this.asyncTemplate.convertSendAndReceive("noReply");
 		TheCallback callback = new TheCallback();
 		future.whenComplete(callback);
-		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(1);
+		assertThat(TestUtils.<Map<?, ?>>propertyValue(this.asyncTemplate, "pending")).hasSize(1);
 		assertThat(future)
 				.as("Expected ExecutionException")
 				.failsWithin(Duration.ofSeconds(10))
 				.withThrowableOfType(ExecutionException.class)
 				.withCauseInstanceOf(AmqpReplyTimeoutException.class);
-		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).isEmpty();
+		assertThat(TestUtils.<Map<?, ?>>propertyValue(this.asyncTemplate, "pending")).isEmpty();
 		assertThat(callback.latch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(callback.ex).isInstanceOf(AmqpReplyTimeoutException.class);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	@DirtiesContext
 	public void testReplyAfterReceiveTimeout() throws Exception {
@@ -343,14 +340,14 @@ public class AsyncRabbitTemplateTests {
 		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("sleep");
 		TheCallback callback = new TheCallback();
 		future.whenComplete(callback);
-		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(1);
+		assertThat(TestUtils.<Map<?, ?>>propertyValue(this.asyncTemplate, "pending")).hasSize(1);
 
 		assertThat(future)
 				.as("Expected ExecutionException")
 				.failsWithin(Duration.ofSeconds(10))
 				.withThrowableOfType(ExecutionException.class)
 				.withCauseInstanceOf(AmqpReplyTimeoutException.class);
-		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).isEmpty();
+		assertThat(TestUtils.<Map<?, ?>>propertyValue(this.asyncTemplate, "pending")).isEmpty();
 		assertThat(callback.latch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(callback.ex).isInstanceOf(AmqpReplyTimeoutException.class);
 
@@ -364,7 +361,6 @@ public class AsyncRabbitTemplateTests {
 		assertThat(callback.result).isNull();
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	@DirtiesContext
 	public void testStopCancelled() throws Exception {
@@ -372,7 +368,7 @@ public class AsyncRabbitTemplateTests {
 		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("noReply");
 		TheCallback callback = new TheCallback();
 		future.whenComplete(callback);
-		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).hasSize(1);
+		assertThat(TestUtils.<Map<?, ?>>propertyValue(this.asyncTemplate, "pending")).hasSize(1);
 		this.asyncTemplate.stop();
 		// Second stop() to be sure that it is idempotent
 		this.asyncTemplate.stop();
@@ -385,7 +381,7 @@ public class AsyncRabbitTemplateTests {
 					assertThat(future).isCancelled();
 				});
 
-		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class)).isEmpty();
+		assertThat(TestUtils.<Map<?, ?>>propertyValue(this.asyncTemplate, "pending")).isEmpty();
 		assertThat(callback.latch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(TestUtils.getPropertyValue(this.asyncTemplate, "taskScheduler")).isNull();
 
@@ -499,7 +495,7 @@ public class AsyncRabbitTemplateTests {
 		assertThat(cdl.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(new String(resultRef.get().getBody())).isEqualTo(expected);
 		await().untilAsserted(() ->
-				assertThat(TestUtils.getPropertyValue(future, "timeoutTask", Future.class).isCancelled()).isTrue());
+				assertThat(TestUtils.<Future<?>>propertyValue(future, "timeoutTask").isCancelled()).isTrue());
 		return resultRef.get();
 	}
 

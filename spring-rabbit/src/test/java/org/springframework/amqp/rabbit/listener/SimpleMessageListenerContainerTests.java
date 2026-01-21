@@ -119,7 +119,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setTransactionManager(new TestTransactionManager());
 		container.setReceiveTimeout(10);
 		container.afterPropertiesSet();
-		assertThat(TestUtils.getPropertyValue(container, "transactional", Boolean.class)).isTrue();
+		assertThat(TestUtils.<Boolean>propertyValue(container, "transactional")).isTrue();
 		container.stop();
 		singleConnectionFactory.destroy();
 	}
@@ -372,7 +372,7 @@ public class SimpleMessageListenerContainerTests {
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setQueueNames("foo");
 		container.setReceiveTimeout(10);
-		List<?> queues = TestUtils.getPropertyValue(container, "queues", List.class);
+		List<?> queues = TestUtils.propertyValue(container, "queues");
 		assertThat(queues).hasSize(1);
 		container.addQueueNames(new AnonymousQueue().getName(), new AnonymousQueue().getName());
 		assertThat(queues).hasSize(3);
@@ -507,13 +507,13 @@ public class SimpleMessageListenerContainerTests {
 
 		container.start();
 		assertThat(latch1.await(10, TimeUnit.SECONDS)).isTrue();
-		Set<?> consumers = TestUtils.getPropertyValue(container, "consumers", Set.class);
+		Set<?> consumers = TestUtils.propertyValue(container, "consumers");
 		Iterator<?> iterator = consumers.iterator();
 		Set<Long> delays = new HashSet<>();
 		delays.add(100L);
 		delays.add(200L);
-		Long consumerDelay1 = TestUtils.getPropertyValue(iterator.next(), "consumeDelay", Long.class);
-		Long consumerDelay2 = TestUtils.getPropertyValue(iterator.next(), "consumeDelay", Long.class);
+		Long consumerDelay1 = TestUtils.propertyValue(iterator.next(), "consumeDelay");
+		Long consumerDelay2 = TestUtils.propertyValue(iterator.next(), "consumeDelay");
 		assertThat(delays).contains(consumerDelay1);
 		delays.remove(consumerDelay1);
 		assertThat(delays).contains(consumerDelay2);
@@ -522,7 +522,7 @@ public class SimpleMessageListenerContainerTests {
 		assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
 
 		waitForConsumersToStop(consumers);
-		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections", Set.class);
+		Set<?> allocatedConnections = TestUtils.propertyValue(ccf, "allocatedConnections");
 		assertThat(allocatedConnections).hasSize(2);
 		assertThat(ccf.getCacheProperties().get("openConnections")).isEqualTo("1");
 	}
@@ -551,7 +551,7 @@ public class SimpleMessageListenerContainerTests {
 		container.start();
 		verify(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
 				any(Consumer.class));
-		Log logger = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
+		Log logger = spy(TestUtils.<Log>propertyValue(container, "logger"));
 		willReturn(false).given(logger).isDebugEnabled();
 		willReturn(true).given(logger).isWarnEnabled();
 		final CountDownLatch latch = new CountDownLatch(1);
@@ -691,9 +691,9 @@ public class SimpleMessageListenerContainerTests {
 		container.setMessageListener(mock(MessageListener.class));
 		container.setConcurrency("5-10");
 		container.start();
-		await().until(() -> TestUtils.getPropertyValue(container, "consumers", Collection.class).size() == 5);
+		await().until(() -> TestUtils.<Collection<?>>propertyValue(container, "consumers").size() == 5);
 		container.setConcurrency("10-10");
-		assertThat(TestUtils.getPropertyValue(container, "consumers", Collection.class)).hasSize(10);
+		assertThat(TestUtils.<Collection<?>>propertyValue(container, "consumers")).hasSize(10);
 	}
 
 	@Test
@@ -713,9 +713,9 @@ public class SimpleMessageListenerContainerTests {
 		// then add queue for trigger container shutdown
 		container.addQueueNames("bar");
 
-		// valid the 'start' countdown is 0.  lastTask is AsyncMessageProcessingConsumer
+		// valid the 'start' countdown is 0. The lastTask is AsyncMessageProcessingConsumer
 		Runnable lastTask = testExecutor.getLastTask();
-		CountDownLatch start = TestUtils.getPropertyValue(lastTask, "start", CountDownLatch.class);
+		CountDownLatch start = TestUtils.propertyValue(lastTask, "start");
 
 		assertThat(start.getCount()).isEqualTo(0L);
 	}
@@ -758,7 +758,6 @@ public class SimpleMessageListenerContainerTests {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	void listenerIsInterruptedOnUnsuccessfulShutdown() throws Exception {
 		ConnectionFactory connectionFactory = mock();
 		Connection connection = mock();
@@ -786,11 +785,10 @@ public class SimpleMessageListenerContainerTests {
 		container.setShutdownTimeout(200L);
 		container.start();
 
-		Set<BlockingQueueConsumer> consumers = TestUtils.getPropertyValue(container, "consumers", Set.class);
+		Set<BlockingQueueConsumer> consumers = TestUtils.propertyValue(container, "consumers");
 		BlockingQueueConsumer blockingQueueConsumer = consumers.iterator().next();
 
-		Map<String, DefaultConsumer> internalConsumers =
-				TestUtils.getPropertyValue(blockingQueueConsumer, "consumers", Map.class);
+		Map<String, DefaultConsumer> internalConsumers = TestUtils.propertyValue(blockingQueueConsumer, "consumers");
 		internalConsumers.values().iterator().next()
 				.handleDelivery("1", new Envelope(1, false, "", ""), new BasicProperties(), new byte[] {1});
 
@@ -805,13 +803,14 @@ public class SimpleMessageListenerContainerTests {
 			final boolean cancel, final CountDownLatch latch) {
 		return invocation -> {
 			String returnValue = null;
-			Set<?> consumers = TestUtils.getPropertyValue(container, "consumers", Set.class);
+			Set<?> consumers = TestUtils.propertyValue(container, "consumers");
 			for (Object consumer : consumers) {
-				ChannelProxy channel = TestUtils.getPropertyValue(consumer, "channel", ChannelProxy.class);
+				ChannelProxy channel = TestUtils.propertyValue(consumer, "channel");
 				if (channel != null && channel.getTargetChannel() == mockChannel) {
 					if (cancel) {
-						((Consumer) TestUtils.getPropertyValue(consumer, "consumers", Map.class)
-								.values().iterator().next()).handleCancelOk(invocation.getArgument(0));
+						TestUtils.<Map<?, Consumer>>propertyValue(consumer, "consumers")
+								.values().iterator().next()
+								.handleCancelOk(invocation.getArgument(0));
 					}
 					else {
 						((Consumer) invocation.getArgument(6)).handleConsumeOk("foo");

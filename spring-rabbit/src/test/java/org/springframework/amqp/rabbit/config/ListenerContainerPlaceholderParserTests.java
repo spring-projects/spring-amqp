@@ -18,7 +18,6 @@ package org.springframework.amqp.rabbit.config;
 
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,20 +55,20 @@ public final class ListenerContainerPlaceholderParserTests {
 	}
 
 	@AfterEach
-	public void closeBeanFactory() throws Exception {
+	public void closeBeanFactory() {
 		if (this.context != null) {
 			CachingConnectionFactory cf = this.context.getBean(CachingConnectionFactory.class);
 			this.context.close();
-			ExecutorService es = TestUtils.getPropertyValue(cf, "channelsExecutor", ThreadPoolExecutor.class);
+			ExecutorService es = TestUtils.propertyValue(cf, "channelsExecutor");
 			if (es != null) {
-				// if it gets started make sure its terminated..
+				// if it gets started make sure its terminated.
 				assertThat(es.isTerminated()).isTrue();
 			}
 		}
 	}
 
 	@Test
-	public void testParseWithQueueNames() throws Exception {
+	public void testParseWithQueueNames() {
 		SimpleMessageListenerContainer container =
 				this.context.getBean("testListener", SimpleMessageListenerContainer.class);
 		assertThat(container.getAcknowledgeMode()).isEqualTo(AcknowledgeMode.MANUAL);

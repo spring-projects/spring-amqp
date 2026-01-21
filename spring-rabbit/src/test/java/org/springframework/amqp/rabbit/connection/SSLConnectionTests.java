@@ -49,6 +49,7 @@ import static org.mockito.Mockito.verify;
  * @author Heath Abelson
  * @author Hareendran
  * @author Ngoc Nhan
+ * @author Artem Bilan
  *
  * @since 1.4.4
  *
@@ -75,7 +76,8 @@ public class SSLConnectionTests {
 	public void testAlgNoProps() throws Exception {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
 		fb.setMaxInboundMessageBodySize(1000);
-		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
+		ConnectionFactory rabbitCf = TestUtils.propertyValue(fb, "connectionFactory");
+		rabbitCf = spy(rabbitCf);
 		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
 		fb.setUseSSL(true);
 		fb.setSslAlgorithm("TLSv1.2");
@@ -88,7 +90,7 @@ public class SSLConnectionTests {
 	@Test
 	public void testNoAlgNoProps() throws Exception {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
-		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
+		ConnectionFactory rabbitCf = spy(TestUtils.<ConnectionFactory>propertyValue(fb, "connectionFactory"));
 		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
 		fb.setUseSSL(true);
 		fb.afterPropertiesSet();
@@ -99,7 +101,7 @@ public class SSLConnectionTests {
 	@Test
 	public void testUseSslProtocolShouldNotBeCalled() throws Exception {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
-		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
+		ConnectionFactory rabbitCf = spy(TestUtils.<ConnectionFactory>propertyValue(fb, "connectionFactory"));
 		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
 		fb.setUseSSL(true);
 		fb.afterPropertiesSet();
@@ -113,7 +115,7 @@ public class SSLConnectionTests {
 	@Test
 	public void testSkipServerCertificate() throws Exception {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
-		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
+		ConnectionFactory rabbitCf = spy(TestUtils.<ConnectionFactory>propertyValue(fb, "connectionFactory"));
 		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
 		fb.setUseSSL(true);
 		fb.setSkipServerCertificateValidation(true);
@@ -126,7 +128,7 @@ public class SSLConnectionTests {
 	@Test
 	public void testSkipServerCertificateWithAlgorithm() throws Exception {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
-		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
+		ConnectionFactory rabbitCf = spy(TestUtils.<ConnectionFactory>propertyValue(fb, "connectionFactory"));
 		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
 		fb.setUseSSL(true);
 		fb.setSslAlgorithm("TLSv1.1");
@@ -139,7 +141,7 @@ public class SSLConnectionTests {
 	@Test
 	public void testUseSslProtocolWithProtocolShouldNotBeCalled() throws Exception {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
-		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
+		ConnectionFactory rabbitCf = spy(TestUtils.<ConnectionFactory>propertyValue(fb, "connectionFactory"));
 		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
 		fb.setUseSSL(true);
 		fb.setSslAlgorithm("TLSv1.2");
@@ -151,7 +153,7 @@ public class SSLConnectionTests {
 	@Test
 	public void testKSTS() throws Exception {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
-		Log logger = spy(TestUtils.getPropertyValue(fb, "logger", Log.class));
+		Log logger = spy(TestUtils.<Log>propertyValue(fb, "logger"));
 		given(logger.isDebugEnabled()).willReturn(true);
 		new DirectFieldAccessor(fb).setPropertyValue("logger", logger);
 		fb.setUseSSL(true);
@@ -172,7 +174,7 @@ public class SSLConnectionTests {
 	@Test
 	public void testNullTS() throws Exception {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
-		Log logger = spy(TestUtils.getPropertyValue(fb, "logger", Log.class));
+		Log logger = spy(TestUtils.<Log>propertyValue(fb, "logger"));
 		given(logger.isDebugEnabled()).willReturn(true);
 		new DirectFieldAccessor(fb).setPropertyValue("logger", logger);
 		fb.setUseSSL(true);
@@ -190,7 +192,7 @@ public class SSLConnectionTests {
 	@Test
 	public void testNullKS() throws Exception {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
-		Log logger = spy(TestUtils.getPropertyValue(fb, "logger", Log.class));
+		Log logger = spy(TestUtils.<Log>propertyValue(fb, "logger"));
 		given(logger.isDebugEnabled()).willReturn(true);
 		new DirectFieldAccessor(fb).setPropertyValue("logger", logger);
 		fb.setUseSSL(true);

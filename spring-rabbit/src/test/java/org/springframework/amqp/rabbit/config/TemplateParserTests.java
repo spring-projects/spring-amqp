@@ -60,7 +60,7 @@ public final class TemplateParserTests {
 		assertThat(TestUtils.getPropertyValue(template, "mandatoryExpression.value")).isEqualTo(Boolean.FALSE);
 		assertThat(TestUtils.getPropertyValue(template, "returnsCallback")).isNull();
 		assertThat(TestUtils.getPropertyValue(template, "confirmCallback")).isNull();
-		assertThat(TestUtils.getPropertyValue(template, "useDirectReplyToContainer", Boolean.class)).isTrue();
+		assertThat(TestUtils.<Boolean>propertyValue(template, "useDirectReplyToContainer")).isTrue();
 	}
 
 	@Test
@@ -70,7 +70,7 @@ public final class TemplateParserTests {
 		assertThat(TestUtils.getPropertyValue(template, "mandatoryExpression.literalValue")).isEqualTo("true");
 		assertThat(TestUtils.getPropertyValue(template, "returnsCallback")).isNotNull();
 		assertThat(TestUtils.getPropertyValue(template, "confirmCallback")).isNotNull();
-		assertThat(TestUtils.getPropertyValue(template, "useDirectReplyToContainer", Boolean.class)).isFalse();
+		assertThat(TestUtils.<Boolean>propertyValue(template, "useDirectReplyToContainer")).isFalse();
 	}
 
 	@Test
@@ -82,7 +82,7 @@ public final class TemplateParserTests {
 				.isEqualTo("'foo'");
 		assertThat(TestUtils.getPropertyValue(template, "receiveConnectionFactorySelectorExpression.expression"))
 				.isEqualTo("'foo'");
-		assertThat(TestUtils.getPropertyValue(template, "useTemporaryReplyQueues", Boolean.class)).isFalse();
+		assertThat(TestUtils.<Boolean>propertyValue(template, "useTemporaryReplyQueues")).isFalse();
 	}
 
 	@Test
@@ -99,7 +99,7 @@ public final class TemplateParserTests {
 		assertThat(accessor.getPropertyValue("exchange")).isEqualTo("foo");
 		assertThat(accessor.getPropertyValue("defaultReceiveQueue")).isEqualTo("bar");
 		assertThat(accessor.getPropertyValue("routingKey")).isEqualTo("spam");
-		assertThat(TestUtils.getPropertyValue(template, "useTemporaryReplyQueues", Boolean.class)).isTrue();
+		assertThat(TestUtils.<Boolean>propertyValue(template, "useTemporaryReplyQueues")).isTrue();
 		assertThat(TestUtils.getPropertyValue(template, "userIdExpression.expression"))
 				.isEqualTo("@connectionFactory.username");
 	}
