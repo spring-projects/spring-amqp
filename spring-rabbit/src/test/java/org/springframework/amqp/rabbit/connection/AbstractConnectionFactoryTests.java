@@ -87,7 +87,7 @@ public abstract class AbstractConnectionFactoryTests {
 
 		}));
 
-		Log logger = TestUtils.propertyValue(connectionFactory, "logger");
+		Log logger = TestUtils.getPropertyValue(connectionFactory, "logger");
 		logger = spy(logger);
 		willReturn(true).given(logger).isInfoEnabled();
 		new DirectFieldAccessor(connectionFactory).setPropertyValue("logger", logger);

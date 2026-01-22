@@ -120,7 +120,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		});
 		container.setReceiveTimeout(50);
 		container.start();
-		Log logger = spy(TestUtils.<Log>propertyValue(container, "logger"));
+		Log logger = spy(TestUtils.<Log>getPropertyValue(container, "logger"));
 		willReturn(true).given(logger).isWarnEnabled();
 		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
 		template.convertAndSend(QUEUE.getName(), "baz");

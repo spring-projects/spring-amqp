@@ -63,7 +63,7 @@ public class DirectReplyToMessageListenerContainerTests {
 
 		// Extract actual ChannelAwareMessageListener from container
 		// with the inUseConsumerChannels.remove(channel); operation
-		final ChannelAwareMessageListener messageListener = TestUtils.propertyValue(container, "messageListener");
+		final ChannelAwareMessageListener messageListener = TestUtils.getPropertyValue(container, "messageListener");
 
 		// Wrap actual listener for latch barrier exactly after inUseConsumerChannels.remove(channel);
 		ChannelAwareMessageListener mockMessageListener =
@@ -96,7 +96,7 @@ public class DirectReplyToMessageListenerContainerTests {
 		ChannelHolder channel2 = container.getChannelHolder();
 		assertThat(channel2.getChannel()).isSameAs(channel1.getChannel());
 		container.releaseConsumerFor(channel1, false, null); // simulate race for future timeout/cancel and onMessage()
-		Map<?, ?> inUse = TestUtils.propertyValue(container, "inUseConsumerChannels");
+		Map<?, ?> inUse = TestUtils.getPropertyValue(container, "inUseConsumerChannels");
 		assertThat(inUse).hasSize(1);
 		container.releaseConsumerFor(channel2, false, null);
 		assertThat(inUse).isEmpty();

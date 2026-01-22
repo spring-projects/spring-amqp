@@ -119,9 +119,9 @@ public class AsyncListenerTests {
 		assertThat(this.config.contentTypeId).isEqualTo("java.lang.String");
 		this.rabbitTemplate.convertAndSend(this.queue4.getName(), "foo");
 		assertThat(listener.latch4.await(10, TimeUnit.SECONDS));
-		assertThat(TestUtils.<Boolean>propertyValue(registry.getListenerContainer("foo"), "asyncReplies"))
+		assertThat(TestUtils.<Boolean>getPropertyValue(registry.getListenerContainer("foo"), "asyncReplies"))
 				.isTrue();
-		assertThat(TestUtils.<Boolean>propertyValue(registry.getListenerContainer("bar"), "asyncReplies"))
+		assertThat(TestUtils.<Boolean>getPropertyValue(registry.getListenerContainer("bar"), "asyncReplies"))
 				.isTrue();
 	}
 
@@ -140,7 +140,7 @@ public class AsyncListenerTests {
 
 	@Test
 	public void testAuthByProps() {
-		assertThat(TestUtils.<Boolean>propertyValue(this.registry.getListenerContainer("foo"),
+		assertThat(TestUtils.<Boolean>getPropertyValue(this.registry.getListenerContainer("foo"),
 				"possibleAuthenticationFailureFatal")).isFalse();
 	}
 

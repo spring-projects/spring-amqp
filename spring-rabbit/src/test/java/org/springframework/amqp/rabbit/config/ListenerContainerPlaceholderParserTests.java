@@ -59,7 +59,7 @@ public final class ListenerContainerPlaceholderParserTests {
 		if (this.context != null) {
 			CachingConnectionFactory cf = this.context.getBean(CachingConnectionFactory.class);
 			this.context.close();
-			ExecutorService es = TestUtils.propertyValue(cf, "channelsExecutor");
+			ExecutorService es = TestUtils.getPropertyValue(cf, "channelsExecutor");
 			if (es != null) {
 				// if it gets started make sure its terminated.
 				assertThat(es.isTerminated()).isTrue();

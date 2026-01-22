@@ -49,7 +49,7 @@ public class ContainerAdminTests {
 		child.registerBean(SimpleMessageListenerContainer.class, () -> container);
 		child.refresh();
 		container.start();
-		assertThat(TestUtils.getPropertyValue(container, "amqpAdmin")).isSameAs(admin);
+		assertThat(TestUtils.<RabbitAdmin>getPropertyValue(container, "amqpAdmin")).isSameAs(admin);
 		container.stop();
 	}
 

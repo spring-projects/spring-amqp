@@ -82,7 +82,7 @@ class EnableRabbitKotlinTests {
 		assertThat(listener).isNotNull()
 		listener?.let { nonNullableListener ->
 			assertThat(
-				TestUtils.propertyValue<Type>(
+				TestUtils.getPropertyValue<Type>(
 					nonNullableListener,
 					"messagingMessageConverter.inferredArgumentType"
 				)

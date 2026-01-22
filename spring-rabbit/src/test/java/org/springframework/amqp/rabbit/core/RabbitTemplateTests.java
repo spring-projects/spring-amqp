@@ -225,7 +225,7 @@ public class RabbitTemplateTests {
 		willThrow(new AmqpConnectException(null)).given(mockConnectionFactory).createConnection();
 		RabbitTemplate template = new RabbitTemplate(mockConnectionFactory);
 		assertThatThrownBy(() -> template.convertSendAndReceive("foo")).isInstanceOf(AmqpConnectException.class);
-		assertThat(TestUtils.<Boolean>propertyValue(template, "evaluatedFastReplyTo")).isFalse();
+		assertThat(TestUtils.<Boolean>getPropertyValue(template, "evaluatedFastReplyTo")).isFalse();
 	}
 
 	@Test
@@ -234,7 +234,7 @@ public class RabbitTemplateTests {
 		willThrow(new AmqpIOException(null)).given(mockConnectionFactory).createConnection();
 		RabbitTemplate template = new RabbitTemplate(mockConnectionFactory);
 		assertThatThrownBy(() -> template.convertSendAndReceive("foo")).isInstanceOf(AmqpIOException.class);
-		assertThat(TestUtils.<Boolean>propertyValue(template, "evaluatedFastReplyTo")).isFalse();
+		assertThat(TestUtils.<Boolean>getPropertyValue(template, "evaluatedFastReplyTo")).isFalse();
 	}
 
 	@Test
@@ -258,8 +258,8 @@ public class RabbitTemplateTests {
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		template.setReplyTimeout(1);
 		template.convertSendAndReceive("foo");
-		assertThat(TestUtils.<Boolean>propertyValue(template, "evaluatedFastReplyTo")).isTrue();
-		assertThat(TestUtils.<Boolean>propertyValue(template, "usingFastReplyTo")).isFalse();
+		assertThat(TestUtils.<Boolean>getPropertyValue(template, "evaluatedFastReplyTo")).isTrue();
+		assertThat(TestUtils.<Boolean>getPropertyValue(template, "usingFastReplyTo")).isFalse();
 	}
 
 	@Test
@@ -279,8 +279,8 @@ public class RabbitTemplateTests {
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		template.setReplyTimeout(1);
 		template.convertSendAndReceive("foo");
-		assertThat(TestUtils.<Boolean>propertyValue(template, "evaluatedFastReplyTo")).isTrue();
-		assertThat(TestUtils.<Boolean>propertyValue(template, "usingFastReplyTo")).isTrue();
+		assertThat(TestUtils.<Boolean>getPropertyValue(template, "evaluatedFastReplyTo")).isTrue();
+		assertThat(TestUtils.<Boolean>getPropertyValue(template, "usingFastReplyTo")).isTrue();
 	}
 
 	@Test

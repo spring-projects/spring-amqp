@@ -78,7 +78,7 @@ public class EnableRabbitIdleContainerTests {
 		assertThat(this.rabbitTemplate.convertSendAndReceive(this.queue.getName(), "bar")).isEqualTo("BAR");
 		assertThat(this.listener.barEventReceived).isFalse();
 		MessageListenerContainer listenerContainer = registry.getListenerContainer("foo");
-		assertThat(TestUtils.<Boolean>propertyValue(listenerContainer, "mismatchedQueuesFatal")).isTrue();
+		assertThat(TestUtils.<Boolean>getPropertyValue(listenerContainer, "mismatchedQueuesFatal")).isTrue();
 	}
 
 	@Configuration

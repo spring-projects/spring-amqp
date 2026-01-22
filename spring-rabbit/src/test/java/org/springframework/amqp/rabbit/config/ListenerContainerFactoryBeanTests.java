@@ -45,8 +45,8 @@ public class ListenerContainerFactoryBeanTests {
 		lcfb.setMicrometerTags(Map.of("foo", "bar"));
 		lcfb.afterPropertiesSet();
 		AbstractMessageListenerContainer container = lcfb.getObject();
-		assertThat(TestUtils.<Boolean>propertyValue(container, "micrometerEnabled")).isFalse();
-		assertThat(TestUtils.<Map<?, ?>>propertyValue(container, "micrometerTags")).hasSize(1);
+		assertThat(TestUtils.<Boolean>getPropertyValue(container, "micrometerEnabled")).isFalse();
+		assertThat(TestUtils.<Map<?, ?>>getPropertyValue(container, "micrometerTags")).hasSize(1);
 	}
 
 	@Test
@@ -58,7 +58,7 @@ public class ListenerContainerFactoryBeanTests {
 		});
 		lcfb.afterPropertiesSet();
 		AbstractMessageListenerContainer container = lcfb.getObject();
-		assertThat(TestUtils.<Long>propertyValue(container, "consumerStartTimeout")).isEqualTo(42L);
+		assertThat(TestUtils.<Long>getPropertyValue(container, "consumerStartTimeout")).isEqualTo(42L);
 	}
 
 	@Test
@@ -71,7 +71,7 @@ public class ListenerContainerFactoryBeanTests {
 		});
 		lcfb.afterPropertiesSet();
 		AbstractMessageListenerContainer container = lcfb.getObject();
-		assertThat(TestUtils.<Integer>propertyValue(container, "consumersPerQueue")).isEqualTo(2);
+		assertThat(TestUtils.<Integer>getPropertyValue(container, "consumersPerQueue")).isEqualTo(2);
 	}
 
 }

@@ -56,7 +56,6 @@ public class RabbitTemplateDirectReplyToContainerIntegrationTests extends Rabbit
 		return rabbitTemplate;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void channelReleasedOnTimeout() throws Exception {
 		final CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
@@ -71,12 +70,12 @@ public class RabbitTemplateDirectReplyToContainerIntegrationTests extends Rabbit
 		rabbitTemplate.setReplyErrorHandler(replyErrorHandler);
 		Object reply = rabbitTemplate.convertSendAndReceive(ROUTE, "foo");
 		assertThat(reply).isNull();
-		Object container = TestUtils.<Map<?, ?>>propertyValue(rabbitTemplate, "directReplyToContainers")
+		Object container = TestUtils.<Map<?, ?>>getPropertyValue(rabbitTemplate, "directReplyToContainers")
 				.get(rabbitTemplate.isUsePublisherConnection()
 						? connectionFactory.getPublisherConnectionFactory()
 						: connectionFactory);
-		assertThat(TestUtils.<Map<?, ?>>propertyValue(container, "inUseConsumerChannels")).isEmpty();
-		assertThat(TestUtils.getPropertyValue(container, "errorHandler")).isSameAs(replyErrorHandler);
+		assertThat(TestUtils.<Map<?, ?>>getPropertyValue(container, "inUseConsumerChannels")).isEmpty();
+		assertThat(TestUtils.<ErrorHandler>getPropertyValue(container, "errorHandler")).isSameAs(replyErrorHandler);
 		Message replyMessage = new Message("foo".getBytes(), new MessageProperties());
 		assertThatThrownBy(() -> rabbitTemplate.onMessage(replyMessage, mock(Channel.class)))
 				.isInstanceOf(AmqpRejectAndDontRequeueException.class)
@@ -104,7 +103,7 @@ public class RabbitTemplateDirectReplyToContainerIntegrationTests extends Rabbit
 		assertThat(exception.get().getCause().getMessage()).isEqualTo("Reply received after timeout");
 		assertThat(((ListenerExecutionFailedException) exception.get()).getFailedMessage().getBody())
 				.isEqualTo(replyMessage.getBody());
-		assertThat(TestUtils.<Map<?, ?>>propertyValue(container, "inUseConsumerChannels")).isEmpty();
+		assertThat(TestUtils.<Map<?, ?>>getPropertyValue(container, "inUseConsumerChannels")).isEmpty();
 		executor.shutdownNow();
 		rabbitTemplate.stop();
 		connectionFactory.destroy();

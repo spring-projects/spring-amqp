@@ -43,9 +43,11 @@ public final class TestUtils {
 	 * "foo.bar.baz" will obtain a reference to the baz field of the bar field of foo. Adopted from Spring Integration.
 	 * @param root The object.
 	 * @param propertyPath The path.
+	 * @param <T> the expected type of the value.
 	 * @return The field.
 	 */
-	public static @Nullable Object getPropertyValue(Object root, String propertyPath) {
+	@SuppressWarnings("unchecked")
+	public static <T> @Nullable T getPropertyValue(Object root, String propertyPath) {
 		Object value = null;
 		DirectFieldAccessor accessor = new DirectFieldAccessor(root);
 		String[] tokens = propertyPath.split("\\.");
@@ -64,16 +66,6 @@ public final class TestUtils {
 
 			throw new IllegalArgumentException("intermediate property '" + tokens[i] + "' is null");
 		}
-		return value;
-	}
-
-	@Deprecated(since = "4.1", forRemoval = true)
-	@SuppressWarnings("unchecked")
-	public static <T> @Nullable T getPropertyValue(Object root, String propertyPath, Class<T> type) {
-		Object value = getPropertyValue(root, propertyPath);
-		if (value != null) {
-			Assert.isAssignable(type, value.getClass());
-		}
 		return (T) value;
 	}
 
@@ -83,29 +75,20 @@ public final class TestUtils {
 	 * of the {@code subProp} field of {@code prop} prop from the {@code root}.
 	 * @param root the object to get the property from.
 	 * @param propertyPath the path to the property. Can be a dotted notation for a nested property.
-	 * @param reified the argument which is used to extract a generic type for conversion.
-	 *                Must not be set!
+	 * @param type the value expected type.
 	 * @param <T> the expected type of the value.
 	 * @return the property value.
-	 * @since 4.1
+	 * @deprecated since 4.1, use {@link #getPropertyValue(Object, String)} instead:
+	 * there is no need in extra type check in tests.
 	 */
-	@SafeVarargs
-	@SuppressWarnings({"varargs", "unchecked"})
-	public static <T> @Nullable T propertyValue(Object root, String propertyPath, T... reified) {
-		Assert.state(reified.length == 0,
-				"No 'reified' parameter is allowed for 'propertyValue'. " +
-						"The generic argument is enough for inferring the expected conversion type.");
-
+	@Deprecated(since = "4.1", forRemoval = true)
+	@SuppressWarnings("unchecked")
+	public static <T> @Nullable T getPropertyValue(Object root, String propertyPath, Class<T> type) {
 		Object value = getPropertyValue(root, propertyPath);
 		if (value != null) {
-			Assert.isAssignable(getClassOf(reified), value.getClass());
+			Assert.isAssignable(type, value.getClass());
 		}
 		return (T) value;
-	}
-
-	@SuppressWarnings("unchecked")
-	private static <T> Class<T> getClassOf(T[] array) {
-		return (Class<T>) array.getClass().getComponentType();
 	}
 
 }

@@ -362,12 +362,10 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		// wait until the listener has the first message...
 		assertThat(awaitStart1.await(10, TimeUnit.SECONDS)).isTrue();
 		// ... and the remaining 4 are queued...
-		@SuppressWarnings("unchecked")
-		Set<BlockingQueueConsumer> consumers = (Set<BlockingQueueConsumer>) TestUtils
-				.getPropertyValue(container, "consumers");
+		Set<BlockingQueueConsumer> consumers = TestUtils.getPropertyValue(container, "consumers");
 		await().until(() -> {
 			if (!consumers.isEmpty()
-					&& TestUtils.<BlockingQueue<?>>propertyValue(consumers.iterator().next(), "queue").size() > 3) {
+					&& TestUtils.<BlockingQueue<?>>getPropertyValue(consumers.iterator().next(), "queue").size() > 3) {
 				prefetched.countDown();
 				return true;
 			}
@@ -402,7 +400,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
-		Log log = spy(TestUtils.<Log>propertyValue(container, "logger"));
+		Log log = spy(TestUtils.<Log>getPropertyValue(container, "logger"));
 		final CountDownLatch latch = new CountDownLatch(1);
 		given(log.isDebugEnabled()).willReturn(true);
 		willAnswer(invocation -> {
@@ -449,7 +447,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 		applicationContext.close();
 
-		ActiveObjectCounter<?> counter = TestUtils.propertyValue(container, "cancellationLock");
+		ActiveObjectCounter<?> counter = TestUtils.getPropertyValue(container, "cancellationLock");
 		assertThat(counter.getCount()).isGreaterThan(0);
 
 		await().until(() -> counter.getCount() == 0);
@@ -463,8 +461,8 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		container.setMaxConcurrentConsumers(1);
 		container.setConcurrency("2-5");
 
-		assertThat(TestUtils.getPropertyValue(container, "concurrentConsumers")).isEqualTo(2);
-		assertThat(TestUtils.getPropertyValue(container, "maxConcurrentConsumers")).isEqualTo(5);
+		assertThat(TestUtils.<Integer>getPropertyValue(container, "concurrentConsumers")).isEqualTo(2);
+		assertThat(TestUtils.<Integer>getPropertyValue(container, "maxConcurrentConsumers")).isEqualTo(5);
 	}
 
 	@Configuration

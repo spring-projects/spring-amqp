@@ -349,7 +349,7 @@ public class BatchingRabbitTemplateTests {
 		container.setErrorHandler(errorHandler);
 		container.afterPropertiesSet();
 		container.start();
-		Log logger = spy(TestUtils.<Log>propertyValue(errorHandler, "logger"));
+		Log logger = spy(TestUtils.<Log>getPropertyValue(errorHandler, "logger"));
 		willReturn(true).given(logger).isWarnEnabled();
 		willDoNothing().given(logger).warn(anyString(), any(Throwable.class));
 		new DirectFieldAccessor(errorHandler).setPropertyValue("logger", logger);
@@ -671,7 +671,7 @@ public class BatchingRabbitTemplateTests {
 			m.set(method);
 		}, method -> method.getName().equals("getCompressorStream"));
 		Object zipStream = m.get().invoke(stream, mock(OutputStream.class));
-		return TestUtils.propertyValue(zipStream, "def.level");
+		return TestUtils.getPropertyValue(zipStream, "def.level");
 	}
 
 	private static final class HeaderPostProcessor implements MessagePostProcessor {

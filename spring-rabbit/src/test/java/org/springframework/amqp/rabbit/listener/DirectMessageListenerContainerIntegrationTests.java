@@ -174,7 +174,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.<MultiValueMap<?, ?>>propertyValue(container, "consumersByQueue")).isEmpty();
+		assertThat(TestUtils.<MultiValueMap<?, ?>>getPropertyValue(container, "consumersByQueue")).isEmpty();
 		template.stop();
 		cf.destroy();
 		executor.destroy();
@@ -240,7 +240,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.<MultiValueMap<?, ?>>propertyValue(container, "consumersByQueue")).isEmpty();
+		assertThat(TestUtils.<MultiValueMap<?, ?>>getPropertyValue(container, "consumersByQueue")).isEmpty();
 		cf.destroy();
 	}
 
@@ -280,7 +280,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.<MultiValueMap<?, ?>>propertyValue(container, "consumersByQueue")).isEmpty();
+		assertThat(TestUtils.<MultiValueMap<?, ?>>getPropertyValue(container, "consumersByQueue")).isEmpty();
 		template.stop();
 		cf.destroy();
 		executor.destroy();
@@ -324,7 +324,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.<MultiValueMap<?, ?>>propertyValue(container, "consumersByQueue")).isEmpty();
+		assertThat(TestUtils.<MultiValueMap<?, ?>>getPropertyValue(container, "consumersByQueue")).isEmpty();
 		template.stop();
 		cf.destroy();
 		executor.destroy();
@@ -368,7 +368,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.<MultiValueMap<?, ?>>propertyValue(container, "consumersByQueue")).isEmpty();
+		assertThat(TestUtils.<MultiValueMap<?, ?>>getPropertyValue(container, "consumersByQueue")).isEmpty();
 		template.stop();
 		cf.destroy();
 		executor.destroy();
@@ -436,7 +436,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.<MultiValueMap<?, ?>>propertyValue(container, "consumersByQueue")).isEmpty();
+		assertThat(TestUtils.<MultiValueMap<?, ?>>getPropertyValue(container, "consumersByQueue")).isEmpty();
 		assertThat(channel.get().isOpen()).isFalse();
 		cf.destroy();
 	}
@@ -584,7 +584,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.<MultiValueMap<?, ?>>propertyValue(container, "consumersByQueue")).isEmpty();
+		assertThat(TestUtils.<MultiValueMap<?, ?>>getPropertyValue(container, "consumersByQueue")).isEmpty();
 		cf.destroy();
 	}
 
@@ -895,14 +895,14 @@ public class DirectMessageListenerContainerIntegrationTests {
 	}
 
 	private boolean activeConsumerCount(AbstractMessageListenerContainer container, int expected) {
-		List<?> consumers = TestUtils.propertyValue(container, "consumers");
+		List<?> consumers = TestUtils.getPropertyValue(container, "consumers");
 		await().with().pollDelay(Duration.ZERO).atMost(Duration.ofSeconds(60))
 				.until(() -> consumers.size() == expected);
 		return true;
 	}
 
 	private boolean restartConsumerCount(AbstractMessageListenerContainer container, int expected) {
-		Set<?> consumers = TestUtils.propertyValue(container, "consumersToRestart");
+		Set<?> consumers = TestUtils.getPropertyValue(container, "consumersToRestart");
 		await().with().pollDelay(Duration.ZERO).atMost(Duration.ofSeconds(60))
 				.until(() -> consumers.size() == expected);
 		return true;

@@ -413,7 +413,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 			template.convertAndSend("nonexistent", "foo" + i);
 		}
 		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
-		Set<?> consumers = TestUtils.propertyValue(container, "consumers");
+		Set<?> consumers = TestUtils.getPropertyValue(container, "consumers");
 		assertThat(consumers).hasSize(1);
 		Object consumer = consumers.iterator().next();
 

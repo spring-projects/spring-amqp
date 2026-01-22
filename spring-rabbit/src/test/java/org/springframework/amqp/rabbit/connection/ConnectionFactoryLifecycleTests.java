@@ -60,7 +60,7 @@ public class ConnectionFactoryLifecycleTests {
 		CachingConnectionFactory cf = context.getBean(CachingConnectionFactory.class);
 		context.close();
 		assertThat(myLifecycle.isRunning()).isFalse();
-		assertThat(TestUtils.<Boolean>propertyValue(cf, "stopped")).isTrue();
+		assertThat(TestUtils.<Boolean>getPropertyValue(cf, "stopped")).isTrue();
 		assertThatExceptionOfType(AmqpApplicationContextClosedException.class)
 				.isThrownBy(cf::createConnection)
 				.withMessageContaining("The ApplicationContext is closed");
@@ -97,7 +97,7 @@ public class ConnectionFactoryLifecycleTests {
 
 		});
 
-		AMQConnection amqConnection = TestUtils.propertyValue(connection, "target.delegate");
+		AMQConnection amqConnection = TestUtils.getPropertyValue(connection, "target.delegate");
 		amqConnection.processControlCommand(new AMQCommand(new AMQImpl.Connection.Blocked("Test connection blocked")));
 
 		assertThat(blockedConnectionLatch.await(10, TimeUnit.SECONDS)).isTrue();

@@ -165,7 +165,7 @@ public class SimpleMessageListenerContainerLongTests {
 		}
 		waitForNConsumers(container, 5);
 		container.setConcurrentConsumers(4);
-		Set<?> consumers = (Set<?>) TestUtils.getPropertyValue(container, "consumers");
+		Set<?> consumers = TestUtils.getPropertyValue(container, "consumers");
 		assertThat(consumers).hasSize(5);
 	}
 
@@ -194,7 +194,7 @@ public class SimpleMessageListenerContainerLongTests {
 		}
 		waitForNConsumers(container, 3);
 		container.setConcurrentConsumers(1);
-		Set<?> consumers = (Set<?>) TestUtils.getPropertyValue(container, "consumers");
+		Set<?> consumers = TestUtils.getPropertyValue(container, "consumers");
 		assertThat(consumers).hasSize(3);
 	}
 
@@ -224,7 +224,7 @@ public class SimpleMessageListenerContainerLongTests {
 		waitForNConsumers(container, 3);
 		container.setConcurrentConsumers(1);
 		container.setMaxConcurrentConsumers(1);
-		Set<?> consumers = (Set<?>) TestUtils.getPropertyValue(container, "consumers");
+		Set<?> consumers = TestUtils.getPropertyValue(container, "consumers");
 		assertThat(consumers).hasSize(1);
 	}
 
@@ -236,10 +236,12 @@ public class SimpleMessageListenerContainerLongTests {
 		this.waitForNConsumers(container, n, 10000);
 	}
 
-	private void waitForNConsumers(SimpleMessageListenerContainer container, int n, int howLong) throws InterruptedException {
+	private void waitForNConsumers(SimpleMessageListenerContainer container, int n, int howLong)
+			throws InterruptedException {
+
 		int i = 0;
 		while (true) {
-			Set<?> consumers = (Set<?>) TestUtils.getPropertyValue(container, "consumers");
+			Set<?> consumers = TestUtils.getPropertyValue(container, "consumers");
 			if (n == 0 && consumers == null) {
 				break;
 			}

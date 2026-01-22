@@ -132,7 +132,7 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 				this.rabbitListenerEndpointRegistry.getListenerContainer("testBatchListener");
 
 		MultiValueMap<String, Consumer> queueToConsumers =
-				TestUtils.propertyValue(testBatchListener, "queueToConsumers");
+				TestUtils.getPropertyValue(testBatchListener, "queueToConsumers");
 		Consumer consumer = queueToConsumers.get("q3").get(0);
 
 		assertThat(consumer.unsettledMessageCount()).isEqualTo(0L);

@@ -234,12 +234,12 @@ public class RabbitTemplatePublisherCallbacksIntegration1Tests {
 		assertThat(templateWithConfirmsEnabled.getUnconfirmed(-1)).isNull();
 		this.templateWithConfirmsEnabled.execute(channel -> {
 			Map<?, ?> listenerMap =
-					TestUtils.propertyValue(((ChannelProxy) channel).getTargetChannel(), "listenerForSeq");
+					TestUtils.getPropertyValue(((ChannelProxy) channel).getTargetChannel(), "listenerForSeq");
 			await().until(listenerMap::isEmpty);
 			return null;
 		});
 
-		Log logger = spy(TestUtils.<Log>propertyValue(connectionFactoryWithConfirmsEnabled, "logger"));
+		Log logger = spy(TestUtils.<Log>getPropertyValue(connectionFactoryWithConfirmsEnabled, "logger"));
 		new DirectFieldAccessor(connectionFactoryWithConfirmsEnabled).setPropertyValue("logger", logger);
 		cleanUp();
 		verify(logger, never()).error(any());
@@ -691,7 +691,7 @@ public class RabbitTemplatePublisherCallbacksIntegration1Tests {
 			reason.set(cause);
 			latch.countDown();
 		});
-		Log logger = spy(TestUtils.<Log>propertyValue(connectionFactoryWithConfirmsEnabled, "logger"));
+		Log logger = spy(TestUtils.<Log>getPropertyValue(connectionFactoryWithConfirmsEnabled, "logger"));
 		final AtomicReference<String> log = new AtomicReference<>();
 		willAnswer(invocation -> {
 			log.set((String) invocation.getArguments()[0]);
@@ -867,7 +867,7 @@ public class RabbitTemplatePublisherCallbacksIntegration1Tests {
 
 		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 
-		Map<?, ?> pending = TestUtils.propertyValue(channel, "pendingConfirms");
+		Map<?, ?> pending = TestUtils.getPropertyValue(channel, "pendingConfirms");
 		await().until(pending::isEmpty);
 	}
 

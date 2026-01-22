@@ -79,7 +79,7 @@ public class ContainerShutDownTests {
 			}
 		});
 		Connection connection = cf.createConnection();
-		Map<?, ?> channels = TestUtils.propertyValue(connection, "target.delegate._channelManager._channelMap");
+		Map<?, ?> channels = TestUtils.getPropertyValue(connection, "target.delegate._channelManager._channelMap");
 		container.start();
 		try {
 			assertThat(startLatch.await(30, TimeUnit.SECONDS)).isTrue();
@@ -152,7 +152,7 @@ public class ContainerShutDownTests {
 		container.start();
 
 		ScheduledExecutorService scheduledExecutorService =
-				TestUtils.propertyValue(container, "taskScheduler.scheduledExecutor");
+				TestUtils.getPropertyValue(container, "taskScheduler.scheduledExecutor");
 
 		container.stop(() -> {
 		});

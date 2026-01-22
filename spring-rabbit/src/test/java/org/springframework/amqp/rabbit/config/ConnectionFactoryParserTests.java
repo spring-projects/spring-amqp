@@ -49,14 +49,14 @@ public final class ConnectionFactoryParserTests {
 	private DefaultListableBeanFactory beanFactory;
 
 	@BeforeEach
-	public void setUpDefaultBeanFactory() throws Exception {
+	public void setUpDefaultBeanFactory() {
 		beanFactory = new DefaultListableBeanFactory();
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
 		reader.loadBeanDefinitions(new ClassPathResource(getClass().getSimpleName() + "-context.xml", getClass()));
 	}
 
 	@Test
-	public void testKitchenSink() throws Exception {
+	public void testKitchenSink() {
 		CachingConnectionFactory connectionFactory = beanFactory.getBean("kitchenSink", CachingConnectionFactory.class);
 		assertThat(connectionFactory).isNotNull();
 		assertThat(connectionFactory.getChannelCacheSize()).isEqualTo(10);
@@ -64,23 +64,26 @@ public final class ConnectionFactoryParserTests {
 		assertThat(dfa.getPropertyValue("executorService")).isNull();
 		assertThat(dfa.getPropertyValue("confirmType")).isEqualTo(ConfirmType.CORRELATED);
 		assertThat(dfa.getPropertyValue("publisherReturns")).isEqualTo(Boolean.TRUE);
-		assertThat(TestUtils.getPropertyValue(connectionFactory, "rabbitConnectionFactory.requestedHeartbeat")).isEqualTo(123);
-		assertThat(TestUtils.getPropertyValue(connectionFactory, "rabbitConnectionFactory.connectionTimeout")).isEqualTo(789);
+		assertThat(TestUtils.<Integer>getPropertyValue(connectionFactory, "rabbitConnectionFactory.requestedHeartbeat"))
+				.isEqualTo(123);
+		assertThat(TestUtils.<Integer>getPropertyValue(connectionFactory, "rabbitConnectionFactory.connectionTimeout"))
+				.isEqualTo(789);
 		assertThat(connectionFactory.getCacheMode()).isEqualTo(CachingConnectionFactory.CacheMode.CHANNEL);
-		assertThat(TestUtils.getPropertyValue(connectionFactory, "channelCheckoutTimeout")).isEqualTo(234L);
-		assertThat(TestUtils.getPropertyValue(connectionFactory, "connectionLimit")).isEqualTo(456);
-		assertThat(TestUtils.getPropertyValue(connectionFactory, "connectionNameStrategy")).isSameAs(beanFactory.getBean(ConnectionNameStrategy.class));
+		assertThat(TestUtils.<Long>getPropertyValue(connectionFactory, "channelCheckoutTimeout")).isEqualTo(234L);
+		assertThat(TestUtils.<Integer>getPropertyValue(connectionFactory, "connectionLimit")).isEqualTo(456);
+		assertThat(TestUtils.<ConnectionNameStrategy>getPropertyValue(connectionFactory, "connectionNameStrategy"))
+				.isSameAs(beanFactory.getBean(ConnectionNameStrategy.class));
 	}
 
 	@Test
-	public void testNative() throws Exception {
+	public void testNative() {
 		CachingConnectionFactory connectionFactory = beanFactory.getBean("native", CachingConnectionFactory.class);
 		assertThat(connectionFactory).isNotNull();
 		assertThat(connectionFactory.getChannelCacheSize()).isEqualTo(10);
 	}
 
 	@Test
-	public void testWithExecutor() throws Exception {
+	public void testWithExecutor() {
 		CachingConnectionFactory connectionFactory = beanFactory.getBean("withExecutor", CachingConnectionFactory.class);
 		assertThat(connectionFactory).isNotNull();
 		Object executor = new DirectFieldAccessor(connectionFactory).getPropertyValue("executorService");
@@ -91,21 +94,24 @@ public final class ConnectionFactoryParserTests {
 		assertThat(dfa.getPropertyValue("confirmType")).isEqualTo(ConfirmType.NONE);
 		assertThat(dfa.getPropertyValue("publisherReturns")).isEqualTo(Boolean.FALSE);
 		assertThat(connectionFactory.getCacheMode()).isEqualTo(CachingConnectionFactory.CacheMode.CONNECTION);
-		assertThat(TestUtils.getPropertyValue(connectionFactory, "rabbitConnectionFactory.connectionTimeout")).isEqualTo(new ConnectionFactory().getConnectionTimeout());
+		assertThat(
+				TestUtils.<Integer>getPropertyValue(connectionFactory, "rabbitConnectionFactory.connectionTimeout"))
+				.isEqualTo(new ConnectionFactory().getConnectionTimeout());
 		assertThat(connectionFactory.getConnectionCacheSize()).isEqualTo(10);
 	}
 
 	@Test
-	public void testWithExecutorService() throws Exception {
-		CachingConnectionFactory connectionFactory = beanFactory.getBean("withExecutorService", CachingConnectionFactory.class);
+	public void testWithExecutorService() {
+		CachingConnectionFactory connectionFactory =
+				beanFactory.getBean("withExecutorService", CachingConnectionFactory.class);
 		assertThat(connectionFactory).isNotNull();
 		assertThat(connectionFactory.getChannelCacheSize()).isEqualTo(10);
-		Object executor = new DirectFieldAccessor(connectionFactory).getPropertyValue("executorService");
+		Object executor = TestUtils.getPropertyValue(connectionFactory, "executorService");
 		assertThat(executor).isNotNull();
 		ExecutorService exec = beanFactory.getBean("execService", ExecutorService.class);
 		assertThat(executor).isSameAs(exec);
-		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory);
-		assertThat(dfa.getPropertyValue("confirmType")).isEqualTo(ConfirmType.SIMPLE);
+		assertThat(TestUtils.<ConfirmType>getPropertyValue(connectionFactory, "confirmType"))
+				.isEqualTo(ConfirmType.SIMPLE);
 	}
 
 	@Test
@@ -113,7 +119,7 @@ public final class ConnectionFactoryParserTests {
 		CachingConnectionFactory connectionFactory = beanFactory.getBean("multiHost", CachingConnectionFactory.class);
 		assertThat(connectionFactory).isNotNull();
 		assertThat(connectionFactory.getChannelCacheSize()).isEqualTo(10);
-		DirectFieldAccessor dfa =  new DirectFieldAccessor(connectionFactory);
+		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory);
 		@SuppressWarnings("unchecked")
 		List<Address> addresses = (List<Address>) dfa.getPropertyValue("addresses");
 		assertThat(addresses).hasSize(3);
@@ -124,14 +130,15 @@ public final class ConnectionFactoryParserTests {
 		assertThat(addresses.get(2).getHost()).isEqualTo("host3");
 		assertThat(addresses.get(2).getPort()).isEqualTo(4567);
 		assertThat(dfa.getPropertyValue("addressShuffleMode")).isEqualTo(AddressShuffleMode.INORDER);
-		assertThat(TestUtils.getPropertyValue(connectionFactory,
-				"rabbitConnectionFactory.threadFactory")).isSameAs(beanFactory.getBean("tf"));
+		assertThat(TestUtils.<Object>getPropertyValue(connectionFactory, "rabbitConnectionFactory.threadFactory"))
+				.isSameAs(beanFactory.getBean("tf"));
 	}
 
 	@Test
 	void testResolver() {
 		CachingConnectionFactory connectionFactory = beanFactory.getBean("resolved", CachingConnectionFactory.class);
-		assertThat(TestUtils.getPropertyValue(connectionFactory, "addressResolver"))
+		assertThat(TestUtils.<Object>getPropertyValue(connectionFactory, "addressResolver"))
 				.isSameAs(this.beanFactory.getBean("resolver"));
 	}
+
 }

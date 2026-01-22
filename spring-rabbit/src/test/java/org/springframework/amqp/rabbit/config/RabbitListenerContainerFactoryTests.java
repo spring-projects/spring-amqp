@@ -57,9 +57,9 @@ public class RabbitListenerContainerFactoryTests {
 
 	private final DirectRabbitListenerContainerFactory direct = new DirectRabbitListenerContainerFactory();
 
-	private final ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+	private final ConnectionFactory connectionFactory = mock();
 
-	private final ErrorHandler errorHandler = mock(ErrorHandler.class);
+	private final ErrorHandler errorHandler = mock();
 
 	private final MessageConverter messageConverter = new SimpleMessageConverter();
 
@@ -71,9 +71,9 @@ public class RabbitListenerContainerFactoryTests {
 		SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
 		endpoint.setMessageListener(this.messageListener);
 		endpoint.setQueueNames("myQueue");
-		BatchingStrategy bs1 = mock(BatchingStrategy.class);
+		BatchingStrategy bs1 = mock();
 		this.factory.setBatchingStrategy(bs1);
-		BatchingStrategy bs2 = mock(BatchingStrategy.class);
+		BatchingStrategy bs2 = mock();
 		endpoint.setBatchingStrategy(bs2);
 
 		SimpleMessageListenerContainer container = this.factory.createListenerContainer(endpoint);
@@ -81,21 +81,21 @@ public class RabbitListenerContainerFactoryTests {
 		assertBasicConfig(container);
 		assertThat(container.getMessageListener()).isEqualTo(messageListener);
 		assertThat(container.getQueueNames()[0]).isEqualTo("myQueue");
-		assertThat(TestUtils.getPropertyValue(container, "batchingStrategy")).isSameAs(bs2);
+		assertThat(TestUtils.<BatchingStrategy>getPropertyValue(container, "batchingStrategy")).isSameAs(bs2);
 	}
 
 	@Test
 	public void createContainerFullConfig() {
-		Executor executor = mock(Executor.class);
-		PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
-		Advice advice = mock(Advice.class);
-		MessagePostProcessor afterReceivePostProcessor = mock(MessagePostProcessor.class);
+		Executor executor = mock();
+		PlatformTransactionManager transactionManager = mock();
+		Advice advice = mock();
+		MessagePostProcessor afterReceivePostProcessor = mock();
 
 		setBasicConfig(this.factory);
 		this.factory.setTaskExecutor(executor);
 		this.factory.setTransactionManager(transactionManager);
 		this.factory.setBatchSize(10);
-		BatchingStrategy bs1 = mock(BatchingStrategy.class);
+		BatchingStrategy bs1 = mock();
 		this.factory.setBatchingStrategy(bs1);
 		this.factory.setConcurrentConsumers(2);
 		this.factory.setMaxConcurrentConsumers(5);
@@ -124,7 +124,7 @@ public class RabbitListenerContainerFactoryTests {
 		SimpleMessageListenerContainer container = this.factory.createListenerContainer(endpoint);
 
 		assertBasicConfig(container);
-		assertThat(TestUtils.getPropertyValue(container, "batchingStrategy")).isSameAs(bs1);
+		assertThat(TestUtils.<BatchingStrategy>getPropertyValue(container, "batchingStrategy")).isSameAs(bs1);
 		DirectFieldAccessor fieldAccessor = new DirectFieldAccessor(container);
 		assertThat(fieldAccessor.getPropertyValue("taskExecutor")).isSameAs(executor);
 		assertThat(fieldAccessor.getPropertyValue("transactionManager")).isSameAs(transactionManager);
@@ -152,16 +152,16 @@ public class RabbitListenerContainerFactoryTests {
 				.element(0)
 				.isSameAs(afterReceivePostProcessor);
 		assertThat(fieldAccessor.getPropertyValue("globalQos")).isEqualTo(true);
-		assertThat(TestUtils.<Boolean>propertyValue(container, "forceStop")).isTrue();
+		assertThat(TestUtils.<Boolean>getPropertyValue(container, "forceStop")).isTrue();
 	}
 
 	@Test
 	public void createDirectContainerFullConfig() {
-		Executor executor = mock(Executor.class);
-		TaskScheduler scheduler = mock(TaskScheduler.class);
-		PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
-		Advice advice = mock(Advice.class);
-		MessagePostProcessor afterReceivePostProcessor = mock(MessagePostProcessor.class);
+		Executor executor = mock();
+		TaskScheduler scheduler = mock();
+		PlatformTransactionManager transactionManager = mock();
+		Advice advice = mock();
+		MessagePostProcessor afterReceivePostProcessor = mock();
 
 		setBasicConfig(this.direct);
 		this.direct.setTaskExecutor(executor);
@@ -208,12 +208,12 @@ public class RabbitListenerContainerFactoryTests {
 		assertThat(fieldAccessor.getPropertyValue("consumersPerQueue")).isEqualTo(42);
 		assertThat(fieldAccessor.getPropertyValue("messagesPerAck")).isEqualTo(5);
 		assertThat(fieldAccessor.getPropertyValue("ackTimeout")).isEqualTo(3L);
-		List<?> actualAfterReceivePostProcessors = (List<?>) fieldAccessor.getPropertyValue("afterReceivePostProcessors");
+		List<?> actualAfterReceivePostProcessors = TestUtils.getPropertyValue(container, "afterReceivePostProcessors");
 		assertThat(actualAfterReceivePostProcessors)
 				.hasSize(1)
 				.element(0)
 				.isSameAs(afterReceivePostProcessor);
-		assertThat(TestUtils.<Boolean>propertyValue(container, "forceStop")).isTrue();
+		assertThat(TestUtils.<Boolean>getPropertyValue(container, "forceStop")).isTrue();
 	}
 
 	private void setBasicConfig(AbstractRabbitListenerContainerFactory<?> factory) {

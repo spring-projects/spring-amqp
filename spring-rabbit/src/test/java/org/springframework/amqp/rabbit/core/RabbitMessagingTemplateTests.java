@@ -96,7 +96,7 @@ public class RabbitMessagingTemplateTests {
 		RabbitTemplate template = new RabbitTemplate(mock(ConnectionFactory.class));
 		RabbitMessagingTemplate rmt = new RabbitMessagingTemplate(template);
 		rmt.afterPropertiesSet();
-		assertThat(TestUtils.getPropertyValue(rmt, "amqpMessageConverter.payloadConverter"))
+		assertThat(TestUtils.<MessageConverter>getPropertyValue(rmt, "amqpMessageConverter.payloadConverter"))
 				.isSameAs(template.getMessageConverter());
 
 		rmt = new RabbitMessagingTemplate(template);
@@ -105,7 +105,8 @@ public class RabbitMessagingTemplateTests {
 		amqpMessageConverter.setPayloadConverter(payloadConverter);
 		rmt.setAmqpMessageConverter(amqpMessageConverter);
 		rmt.afterPropertiesSet();
-		assertThat(TestUtils.getPropertyValue(rmt, "amqpMessageConverter.payloadConverter")).isSameAs(payloadConverter);
+		assertThat(TestUtils.<MessageConverter>getPropertyValue(rmt, "amqpMessageConverter.payloadConverter"))
+				.isSameAs(payloadConverter);
 	}
 
 	@Test

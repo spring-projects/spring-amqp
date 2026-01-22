@@ -57,32 +57,32 @@ public final class TemplateParserTests {
 	public void testTemplate() {
 		AmqpTemplate template = beanFactory.getBean("template", AmqpTemplate.class);
 		assertThat(template).isNotNull();
-		assertThat(TestUtils.getPropertyValue(template, "mandatoryExpression.value")).isEqualTo(Boolean.FALSE);
-		assertThat(TestUtils.getPropertyValue(template, "returnsCallback")).isNull();
-		assertThat(TestUtils.getPropertyValue(template, "confirmCallback")).isNull();
-		assertThat(TestUtils.<Boolean>propertyValue(template, "useDirectReplyToContainer")).isTrue();
+		assertThat(TestUtils.<Boolean>getPropertyValue(template, "mandatoryExpression.value")).isEqualTo(Boolean.FALSE);
+		assertThat(TestUtils.<Object>getPropertyValue(template, "returnsCallback")).isNull();
+		assertThat(TestUtils.<Object>getPropertyValue(template, "confirmCallback")).isNull();
+		assertThat(TestUtils.<Boolean>getPropertyValue(template, "useDirectReplyToContainer")).isTrue();
 	}
 
 	@Test
 	public void testTemplateWithCallbacks() {
 		AmqpTemplate template = beanFactory.getBean("withCallbacks", AmqpTemplate.class);
 		assertThat(template).isNotNull();
-		assertThat(TestUtils.getPropertyValue(template, "mandatoryExpression.literalValue")).isEqualTo("true");
-		assertThat(TestUtils.getPropertyValue(template, "returnsCallback")).isNotNull();
-		assertThat(TestUtils.getPropertyValue(template, "confirmCallback")).isNotNull();
-		assertThat(TestUtils.<Boolean>propertyValue(template, "useDirectReplyToContainer")).isFalse();
+		assertThat(TestUtils.<String>getPropertyValue(template, "mandatoryExpression.literalValue")).isEqualTo("true");
+		assertThat(TestUtils.<Object>getPropertyValue(template, "returnsCallback")).isNotNull();
+		assertThat(TestUtils.<Object>getPropertyValue(template, "confirmCallback")).isNotNull();
+		assertThat(TestUtils.<Boolean>getPropertyValue(template, "useDirectReplyToContainer")).isFalse();
 	}
 
 	@Test
 	public void testTemplateWithMandatoryExpression() {
 		AmqpTemplate template = beanFactory.getBean("withMandatoryExpression", AmqpTemplate.class);
 		assertThat(template).isNotNull();
-		assertThat(TestUtils.getPropertyValue(template, "mandatoryExpression.expression")).isEqualTo("'true'");
-		assertThat(TestUtils.getPropertyValue(template, "sendConnectionFactorySelectorExpression.expression"))
+		assertThat(TestUtils.<String>getPropertyValue(template, "mandatoryExpression.expression")).isEqualTo("'true'");
+		assertThat(TestUtils.<String>getPropertyValue(template, "sendConnectionFactorySelectorExpression.expression"))
 				.isEqualTo("'foo'");
-		assertThat(TestUtils.getPropertyValue(template, "receiveConnectionFactorySelectorExpression.expression"))
+		assertThat(TestUtils.<String>getPropertyValue(template, "receiveConnectionFactorySelectorExpression.expression"))
 				.isEqualTo("'foo'");
-		assertThat(TestUtils.<Boolean>propertyValue(template, "useTemporaryReplyQueues")).isFalse();
+		assertThat(TestUtils.<Boolean>getPropertyValue(template, "useTemporaryReplyQueues")).isFalse();
 	}
 
 	@Test
@@ -99,8 +99,8 @@ public final class TemplateParserTests {
 		assertThat(accessor.getPropertyValue("exchange")).isEqualTo("foo");
 		assertThat(accessor.getPropertyValue("defaultReceiveQueue")).isEqualTo("bar");
 		assertThat(accessor.getPropertyValue("routingKey")).isEqualTo("spam");
-		assertThat(TestUtils.<Boolean>propertyValue(template, "useTemporaryReplyQueues")).isTrue();
-		assertThat(TestUtils.getPropertyValue(template, "userIdExpression.expression"))
+		assertThat(TestUtils.<Boolean>getPropertyValue(template, "useTemporaryReplyQueues")).isTrue();
+		assertThat(TestUtils.<String>getPropertyValue(template, "userIdExpression.expression"))
 				.isEqualTo("@connectionFactory.username");
 	}
 

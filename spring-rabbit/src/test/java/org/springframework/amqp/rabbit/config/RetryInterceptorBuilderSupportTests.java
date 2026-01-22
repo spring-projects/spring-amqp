@@ -59,8 +59,7 @@ public class RetryInterceptorBuilderSupportTests {
 	@Test
 	public void testBasic() {
 		StatefulRetryOperationsInterceptor interceptor = RetryInterceptorBuilder.stateful().build();
-
-		assertThat(TestUtils.getPropertyValue(interceptor, "retryPolicy.backOff.maxAttempts")).isEqualTo(3L);
+		assertThat(TestUtils.<Long>getPropertyValue(interceptor, "retryPolicy.backOff.maxAttempts")).isEqualTo(3L);
 	}
 
 	@Test
@@ -70,8 +69,8 @@ public class RetryInterceptorBuilderSupportTests {
 				.retryPolicy(retryPolicy)
 				.build();
 
-		assertThat(TestUtils.getPropertyValue(interceptor, "retryPolicy.backOff.maxAttempts")).isEqualTo(2L);
-		assertThat(TestUtils.getPropertyValue(interceptor, "retryPolicy")).isSameAs(retryPolicy);
+		assertThat(TestUtils.<Long>getPropertyValue(interceptor, "retryPolicy.backOff.maxAttempts")).isEqualTo(2L);
+		assertThat(TestUtils.<RetryPolicy>getPropertyValue(interceptor, "retryPolicy")).isSameAs(retryPolicy);
 	}
 
 	@Test
@@ -81,7 +80,7 @@ public class RetryInterceptorBuilderSupportTests {
 						.maxRetries(5)
 						.build();
 
-		assertThat(TestUtils.getPropertyValue(interceptor, "retryPolicy.backOff.maxAttempts")).isEqualTo(5L);
+		assertThat(TestUtils.<Long>getPropertyValue(interceptor, "retryPolicy.backOff.maxAttempts")).isEqualTo(5L);
 	}
 
 	@Test
@@ -92,10 +91,10 @@ public class RetryInterceptorBuilderSupportTests {
 						.backOffOptions(1, 2, 10)
 						.build();
 
-		assertThat(TestUtils.getPropertyValue(interceptor, "retryPolicy.backOff.maxAttempts")).isEqualTo(5L);
-		assertThat(TestUtils.getPropertyValue(interceptor, "retryPolicy.backOff.initialInterval")).isEqualTo(1L);
-		assertThat(TestUtils.getPropertyValue(interceptor, "retryPolicy.backOff.multiplier")).isEqualTo(2.0);
-		assertThat(TestUtils.getPropertyValue(interceptor, "retryPolicy.backOff.maxInterval")).isEqualTo(10L);
+		assertThat(TestUtils.<Long>getPropertyValue(interceptor, "retryPolicy.backOff.maxAttempts")).isEqualTo(5L);
+		assertThat(TestUtils.<Long>getPropertyValue(interceptor, "retryPolicy.backOff.initialInterval")).isEqualTo(1L);
+		assertThat(TestUtils.<Double>getPropertyValue(interceptor, "retryPolicy.backOff.multiplier")).isEqualTo(2.0);
+		assertThat(TestUtils.<Long>getPropertyValue(interceptor, "retryPolicy.backOff.maxInterval")).isEqualTo(10L);
 	}
 
 	@Test
@@ -106,7 +105,7 @@ public class RetryInterceptorBuilderSupportTests {
 						.configureRetryPolicy((retryPolicy) -> retryPolicy.backOff(customBackOff))
 						.build();
 
-		assertThat(TestUtils.getPropertyValue(interceptor, "retryPolicy.backOff")).isSameAs(customBackOff);
+		assertThat(TestUtils.<BackOff>getPropertyValue(interceptor, "retryPolicy.backOff")).isSameAs(customBackOff);
 	}
 
 	@Test
@@ -121,7 +120,7 @@ public class RetryInterceptorBuilderSupportTests {
 						})
 						.build();
 
-		assertThat(TestUtils.<FixedBackOff>propertyValue(interceptor, "retryPolicy.backOff"))
+		assertThat(TestUtils.<FixedBackOff>getPropertyValue(interceptor, "retryPolicy.backOff"))
 				.satisfies((backOff) -> {
 					assertThat(backOff.getInterval()).isEqualTo(10L);
 					assertThat(backOff.getMaxAttempts()).isEqualTo(5L);
@@ -152,7 +151,7 @@ public class RetryInterceptorBuilderSupportTests {
 				.retryPolicy(RetryPolicy.builder().maxRetries(15).build())
 				.build();
 
-		assertThat(TestUtils.getPropertyValue(interceptor, "retryPolicy.backOff.maxAttempts")).isEqualTo(15L);
+		assertThat(TestUtils.<Long>getPropertyValue(interceptor, "retryPolicy.backOff.maxAttempts")).isEqualTo(15L);
 	}
 
 	@Test

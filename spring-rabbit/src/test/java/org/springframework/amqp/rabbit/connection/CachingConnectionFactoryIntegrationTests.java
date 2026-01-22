@@ -121,12 +121,12 @@ public class CachingConnectionFactoryIntegrationTests {
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
-		Set<?> allocatedConnections = TestUtils.propertyValue(connectionFactory, "allocatedConnections");
+		Set<?> allocatedConnections = TestUtils.getPropertyValue(connectionFactory, "allocatedConnections");
 		assertThat(allocatedConnections).hasSize(6);
 		connections.forEach(Connection::close);
 		assertThat(allocatedConnections).hasSize(6);
 		assertThat(connectionFactory.getCacheProperties().get("openConnections")).isEqualTo("5");
-		BlockingQueue<?> idleConnections = TestUtils.propertyValue(connectionFactory, "idleConnections");
+		BlockingQueue<?> idleConnections = TestUtils.getPropertyValue(connectionFactory, "idleConnections");
 		assertThat(idleConnections).hasSize(6);
 		connections.clear();
 		connections.add(connectionFactory.createConnection());
@@ -184,7 +184,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		List<Connection> connections = new ArrayList<>();
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
-		Set<?> allocatedConnections = TestUtils.propertyValue(connectionFactory, "allocatedConnections");
+		Set<?> allocatedConnections = TestUtils.getPropertyValue(connectionFactory, "allocatedConnections");
 		assertThat(allocatedConnections).hasSize(2);
 		assertThat(connections.get(1)).isNotSameAs(connections.get(0));
 		List<Channel> channels = new ArrayList<>();
@@ -195,11 +195,11 @@ public class CachingConnectionFactoryIntegrationTests {
 			channels.add(connections.get(1).createChannel(true));
 		}
 		Map<?, List<?>> cachedChannels =
-				TestUtils.propertyValue(connectionFactory, "allocatedConnectionNonTransactionalChannels");
+				TestUtils.getPropertyValue(connectionFactory, "allocatedConnectionNonTransactionalChannels");
 		assertThat(cachedChannels.get(connections.get(0))).hasSize(0);
 		assertThat(cachedChannels.get(connections.get(1))).hasSize(0);
 		Map<?, List<?>> cachedTxChannels =
-				TestUtils.propertyValue(connectionFactory, "allocatedConnectionTransactionalChannels");
+				TestUtils.getPropertyValue(connectionFactory, "allocatedConnectionTransactionalChannels");
 		assertThat(cachedTxChannels.get(connections.get(0))).hasSize(0);
 		assertThat(cachedTxChannels.get(connections.get(1))).hasSize(0);
 		for (Channel channel : channels) {
@@ -234,7 +234,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		assertThat(connectionFactory.getCacheProperties().get("openConnections")).isEqualTo("1");
 
 		Connection connection = connectionFactory.createConnection();
-		Connection rabbitConnection = TestUtils.propertyValue(connection, "target");
+		Connection rabbitConnection = TestUtils.getPropertyValue(connection, "target");
 		rabbitConnection.close();
 		Channel channel = connection.createChannel(false);
 		assertThat(allocatedConnections).hasSize(2);
@@ -358,7 +358,7 @@ public class CachingConnectionFactoryIntegrationTests {
 
 	@Test
 	public void testConnectionCloseLog() {
-		Log log = TestUtils.propertyValue(this.connectionFactory, "logger");
+		Log log = TestUtils.getPropertyValue(this.connectionFactory, "logger");
 		log = spy(log);
 		new DirectFieldAccessor(this.connectionFactory).setPropertyValue("logger", log);
 		Connection conn = this.connectionFactory.createConnection();
@@ -370,7 +370,7 @@ public class CachingConnectionFactoryIntegrationTests {
 	@Test
 	public void testConnectionName() {
 		Connection connection = this.connectionFactory.createConnection();
-		com.rabbitmq.client.Connection rabbitConnection = TestUtils.propertyValue(connection, "target.delegate");
+		com.rabbitmq.client.Connection rabbitConnection = TestUtils.getPropertyValue(connection, "target.delegate");
 		assertThat(rabbitConnection.getClientProperties().get("connection_name"))
 				.isEqualTo(CF_INTEGRATION_CONNECTION_NAME);
 		this.connectionFactory.destroy();

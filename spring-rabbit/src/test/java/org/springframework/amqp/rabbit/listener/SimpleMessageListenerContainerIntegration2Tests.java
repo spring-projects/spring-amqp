@@ -227,7 +227,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		});
 		container.removeQueueNames(queue.getName(), queue1.getName());
 		assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
-		assertThat(TestUtils.<String[]>propertyValue(newConsumer.get(), "queues")).isEmpty();
+		assertThat(TestUtils.<String[]>getPropertyValue(newConsumer.get(), "queues")).isEmpty();
 	}
 
 	@Test
@@ -255,7 +255,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		}
 		boolean waited = latch.await(10, TimeUnit.SECONDS);
 		assertThat(waited).as("Timed out waiting for message").isTrue();
-		Set<?> consumers = TestUtils.propertyValue(container, "consumers");
+		Set<?> consumers = TestUtils.getPropertyValue(container, "consumers");
 		BlockingQueueConsumer consumer = (BlockingQueueConsumer) consumers.iterator().next();
 		admin.deleteQueue(queue1.getName());
 		latch = new CountDownLatch(10);
@@ -274,7 +274,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 				return null;
 			}
 		}, newCon -> newCon != consumer);
-		Set<?> missingQueues = TestUtils.propertyValue(newConsumer, "missingQueues");
+		Set<?> missingQueues = TestUtils.getPropertyValue(newConsumer, "missingQueues");
 		with().pollInterval(Duration.ofMillis(200)).await("Failed to detect missing queue")
 				.atMost(Duration.ofSeconds(20))
 				.until(() -> missingQueues.size() > 0);
@@ -346,7 +346,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 
 	@Test
 	public void testExclusive() throws Exception {
-		Log logger = spy(TestUtils.<Log>propertyValue(this.template.getConnectionFactory(), "logger"));
+		Log logger = spy(TestUtils.<Log>getPropertyValue(this.template.getConnectionFactory(), "logger"));
 		willReturn(true).given(logger).isDebugEnabled();
 		new DirectFieldAccessor(this.template.getConnectionFactory()).setPropertyValue("logger", logger);
 		CountDownLatch latch1 = new CountDownLatch(1000);
@@ -391,7 +391,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		});
 		container2.setBeanName("container2");
 		container2.afterPropertiesSet();
-		Log containerLogger = spy(TestUtils.<Log>propertyValue(container2, "logger"));
+		Log containerLogger = spy(TestUtils.<Log>getPropertyValue(container2, "logger"));
 		willReturn(true).given(containerLogger).isDebugEnabled();
 		new DirectFieldAccessor(container2).setPropertyValue("logger", containerLogger);
 		container2.start();
@@ -566,12 +566,12 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 
 		// verify properties propagated to consumer
 		BlockingQueueConsumer consumer =
-				TestUtils.<Set<BlockingQueueConsumer>>propertyValue(container, "consumers")
+				TestUtils.<Set<BlockingQueueConsumer>>getPropertyValue(container, "consumers")
 						.iterator()
 						.next();
-		assertThat(TestUtils.getPropertyValue(consumer, "declarationRetries")).isEqualTo(1);
-		assertThat(TestUtils.getPropertyValue(consumer, "failedDeclarationRetryInterval")).isEqualTo(100L);
-		assertThat(TestUtils.getPropertyValue(consumer, "retryDeclarationInterval")).isEqualTo(30000L);
+		assertThat(TestUtils.<Integer>getPropertyValue(consumer, "declarationRetries")).isEqualTo(1);
+		assertThat(TestUtils.<Long>getPropertyValue(consumer, "failedDeclarationRetryInterval")).isEqualTo(100L);
+		assertThat(TestUtils.<Long>getPropertyValue(consumer, "retryDeclarationInterval")).isEqualTo(30000L);
 
 		container.stop();
 		((DisposableBean) connectionFactory).destroy();
@@ -643,7 +643,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		this.container.setTaskExecutor(exec);
 		this.container.setConcurrentConsumers(2);
 		this.container.setConsumerStartTimeout(100);
-		Log logger = spy(TestUtils.<Log>propertyValue(container, "logger"));
+		Log logger = spy(TestUtils.<Log>getPropertyValue(container, "logger"));
 		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
 		this.container.start();
 		this.container.stop();
@@ -801,7 +801,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	}
 
 	private boolean containerStoppedForAbortWithBadListener() {
-		Log logger = spy(TestUtils.<Log>propertyValue(container, "logger"));
+		Log logger = spy(TestUtils.<Log>getPropertyValue(container, "logger"));
 		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
 		this.template.convertAndSend(queue.getName(), "foo");
 		await().until(() -> !this.container.isRunning());

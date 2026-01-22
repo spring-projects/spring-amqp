@@ -79,7 +79,7 @@ public class RabbitReconnectProblemTests {
 		}
 
 		int availablePermits =
-				TestUtils.<Map<?, Semaphore>>propertyValue(this.connFactory, "checkoutPermits")
+				TestUtils.<Map<?, Semaphore>>getPropertyValue(this.connFactory, "checkoutPermits")
 						.values()
 						.iterator()
 						.next()

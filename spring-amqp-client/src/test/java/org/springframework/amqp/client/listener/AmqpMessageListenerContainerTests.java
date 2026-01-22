@@ -124,10 +124,10 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 	@Test
 	void pauseAndResumeContainer() throws InterruptedException {
 		MultiValueMap<String, ?> queueToConsumers =
-				TestUtils.propertyValue(this.amqpMessageListenerContainer, "queueToConsumers");
+				TestUtils.getPropertyValue(this.amqpMessageListenerContainer, "queueToConsumers");
 
 		Object amqpConsumer = queueToConsumers.getFirst(TEST_QUEUE1);
-		ProtonReceiver protonReceiver = TestUtils.propertyValue(amqpConsumer, "protonReceiver");
+		ProtonReceiver protonReceiver = TestUtils.getPropertyValue(amqpConsumer, "protonReceiver");
 
 		assertThat(protonReceiver.getCredit()).isEqualTo(100);
 

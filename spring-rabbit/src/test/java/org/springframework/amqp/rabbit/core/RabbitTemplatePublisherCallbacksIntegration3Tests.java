@@ -88,7 +88,7 @@ public class RabbitTemplatePublisherCallbacksIntegration3Tests {
 		AtomicInteger cacheCount = new AtomicInteger();
 		AtomicBoolean returnCalledFirst = new AtomicBoolean();
 		template.setConfirmCallback((cd, a, c) -> {
-			cacheCount.set(TestUtils.<List<?>>propertyValue(cf, "cachedChannelsNonTransactional").size());
+			cacheCount.set(TestUtils.<List<?>>getPropertyValue(cf, "cachedChannelsNonTransactional").size());
 			returnCalledFirst.set(returnLatch.getCount() == 0);
 			confirmLatch.countDown();
 		});
@@ -102,7 +102,7 @@ public class RabbitTemplatePublisherCallbacksIntegration3Tests {
 		channel1.close();
 		channel2.close();
 		conn.close();
-		assertThat(TestUtils.<List<?>>propertyValue(cf, "cachedChannelsNonTransactional")).hasSize(2);
+		assertThat(TestUtils.<List<?>>getPropertyValue(cf, "cachedChannelsNonTransactional")).hasSize(2);
 		CorrelationData correlationData = new CorrelationData("foo");
 		template.convertAndSend("", QUEUE2 + "junk", "foo", correlationData);
 		assertThat(returnLatch.await(10, TimeUnit.SECONDS)).isTrue();
@@ -125,7 +125,7 @@ public class RabbitTemplatePublisherCallbacksIntegration3Tests {
 		final CountDownLatch confirmLatch = new CountDownLatch(1);
 		final AtomicInteger cacheCount = new AtomicInteger();
 		template.setConfirmCallback((cd, a, c) -> {
-			cacheCount.set(TestUtils.<List<?>>propertyValue(cf, "cachedChannelsNonTransactional").size());
+			cacheCount.set(TestUtils.<List<?>>getPropertyValue(cf, "cachedChannelsNonTransactional").size());
 			confirmLatch.countDown();
 		});
 		template.setMandatory(true);
@@ -135,7 +135,7 @@ public class RabbitTemplatePublisherCallbacksIntegration3Tests {
 		channel1.close();
 		channel2.close();
 		conn.close();
-		assertThat(TestUtils.<List<?>>propertyValue(cf, "cachedChannelsNonTransactional")).hasSize(2);
+		assertThat(TestUtils.<List<?>>getPropertyValue(cf, "cachedChannelsNonTransactional")).hasSize(2);
 		template.convertAndSend("", QUEUE2, "foo", new CorrelationData("foo"));
 		assertThat(confirmLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(cacheCount.get()).isEqualTo(1);

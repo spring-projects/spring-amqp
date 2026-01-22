@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -240,23 +241,29 @@ public class RabbitTemplateIntegrationTests {
 		this.connectionFactory.destroy();
 		this.template.setUsePublisherConnection(true);
 		this.template.convertAndSend("dummy", "foo");
-		assertThat(TestUtils.getPropertyValue(this.connectionFactory, "connection.target")).isNull();
-		assertThat(TestUtils.getPropertyValue(
-				this.connectionFactory, "publisherConnectionFactory.connection.target")).isNotNull();
+		assertThat(TestUtils.<Object>getPropertyValue(this.connectionFactory, "connection.target")).isNull();
+		assertThat(
+				TestUtils.<Object>getPropertyValue(this.connectionFactory,
+						"publisherConnectionFactory.connection.target"))
+				.isNotNull();
 		this.connectionFactory.destroy();
-		assertThat(TestUtils.getPropertyValue(this.connectionFactory, "connection.target")).isNull();
-		assertThat(TestUtils.getPropertyValue(
-				this.connectionFactory, "publisherConnectionFactory.connection.target")).isNull();
+		assertThat(TestUtils.<Object>getPropertyValue(this.connectionFactory, "connection.target")).isNull();
+		assertThat(
+				TestUtils.<Object>getPropertyValue(this.connectionFactory,
+						"publisherConnectionFactory.connection.target"))
+				.isNull();
 		Channel channel = this.connectionFactory.createConnection().createChannel(true);
-		assertThat(TestUtils.getPropertyValue(this.connectionFactory, "connection.target")).isNotNull();
+		assertThat(TestUtils.<Object>getPropertyValue(this.connectionFactory, "connection.target")).isNotNull();
 		RabbitResourceHolder holder = new RabbitResourceHolder(channel, true);
 		TransactionSynchronizationManager.bindResource(this.connectionFactory, holder);
 		try {
 			this.template.setChannelTransacted(true);
 			this.template.convertAndSend("dummy", "foo");
-			assertThat(TestUtils.getPropertyValue(this.connectionFactory, "connection.target")).isNotNull();
-			assertThat(TestUtils.getPropertyValue(
-					this.connectionFactory, "publisherConnectionFactory.connection.target")).isNull();
+			assertThat(TestUtils.<Object>getPropertyValue(this.connectionFactory, "connection.target")).isNotNull();
+			assertThat(
+					TestUtils.<Object>getPropertyValue(this.connectionFactory,
+							"publisherConnectionFactory.connection.target"))
+					.isNull();
 		}
 		finally {
 			TransactionSynchronizationManager.unbindResource(this.connectionFactory);
@@ -265,9 +272,9 @@ public class RabbitTemplateIntegrationTests {
 	}
 
 	@Test
-	public void testReceiveNonBlocking() throws Exception {
+	public void testReceiveNonBlocking() {
 		this.template.convertAndSend(ROUTE, "nonblock");
-		String out = await().until(() -> (String) this.template.receiveAndConvert(ROUTE), str -> str != null);
+		String out = await().until(() -> (String) this.template.receiveAndConvert(ROUTE), Objects::nonNull);
 		assertThat(out).isEqualTo("nonblock");
 		assertThat(this.template.receive(ROUTE)).isNull();
 	}
@@ -276,13 +283,7 @@ public class RabbitTemplateIntegrationTests {
 	public void testReceiveConsumerCanceled() {
 		ConnectionFactory connectionFactory = new SingleConnectionFactory("localhost", BrokerTestUtils.getPort());
 
-		class MockConsumer implements Consumer {
-
-			private final Consumer delegate;
-
-			MockConsumer(Consumer delegate) {
-				this.delegate = delegate;
-			}
+		record MockConsumer(Consumer delegate) implements Consumer {
 
 			@Override
 			public void handleConsumeOk(String consumerTag) {
@@ -389,7 +390,7 @@ public class RabbitTemplateIntegrationTests {
 		catch (ConsumeOkNotReceivedException e) {
 			// empty - race for consumeOk
 		}
-		assertThat(TestUtils.<List<?>>propertyValue(this.connectionFactory, "cachedChannelsNonTransactional")).isEmpty();
+		assertThat(TestUtils.<List<?>>getPropertyValue(this.connectionFactory, "cachedChannelsNonTransactional")).isEmpty();
 	}
 
 	@Test
@@ -486,7 +487,7 @@ public class RabbitTemplateIntegrationTests {
 					assertThat(new String(e.getReturnedMessage().getBody())).isEqualTo("undeliverable");
 					assertThat(e.getReplyText()).isEqualTo("NO_ROUTE");
 				});
-		assertThat(TestUtils.<Map<?, ?>>propertyValue(template, "replyHolder")).isEmpty();
+		assertThat(TestUtils.<Map<?, ?>>getPropertyValue(template, "replyHolder")).isEmpty();
 	}
 
 	@Test
@@ -680,7 +681,7 @@ public class RabbitTemplateIntegrationTests {
 		// Message was consumed so nothing left on queue
 		reply = template.receive();
 		assertThat(reply).isEqualTo(null);
-		assertThat(TestUtils.<Map<?, ?>>propertyValue(template, "replyHolder")).isEmpty();
+		assertThat(TestUtils.<Map<?, ?>>getPropertyValue(template, "replyHolder")).isEmpty();
 		template.stop();
 		cachingConnectionFactory.destroy();
 	}
@@ -726,7 +727,7 @@ public class RabbitTemplateIntegrationTests {
 		// Message was consumed so nothing left on queue
 		reply = template.receive();
 		assertThat(reply).isEqualTo(null);
-		assertThat(TestUtils.<Map<?, ?>>propertyValue(template, "replyHolder")).isEmpty();
+		assertThat(TestUtils.<Map<?, ?>>getPropertyValue(template, "replyHolder")).isEmpty();
 		template.stop();
 		container.stop();
 		cachingConnectionFactory.destroy();
@@ -1356,7 +1357,7 @@ public class RabbitTemplateIntegrationTests {
 			else {
 				assertThat(replyToWas.get()).startsWith(Address.AMQ_RABBITMQ_REPLY_TO);
 			}
-			assertThat(TestUtils.<Map<?, ?>>propertyValue(template, "replyHolder")).isEmpty();
+			assertThat(TestUtils.<Map<?, ?>>getPropertyValue(template, "replyHolder")).isEmpty();
 		}
 		catch (Exception e) {
 			assertThat(e.getCause().getCause().getMessage()).contains("404");
@@ -1395,7 +1396,7 @@ public class RabbitTemplateIntegrationTests {
 			GUnzipPostProcessor unzipper = new GUnzipPostProcessor();
 			reply = unzipper.postProcessMessage(reply);
 			assertThat(new String(reply.getBody())).isEqualTo("FOO");
-			assertThat(TestUtils.<Map<?, ?>>propertyValue(template, "replyHolder")).isEmpty();
+			assertThat(TestUtils.<Map<?, ?>>getPropertyValue(template, "replyHolder")).isEmpty();
 		}
 		finally {
 			template.stop();
@@ -1412,7 +1413,7 @@ public class RabbitTemplateIntegrationTests {
 	@Test
 	public void testDebugLogOnPassiveDeclaration() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
-		Log logger = spy(TestUtils.<Log>propertyValue(connectionFactory, "logger"));
+		Log logger = spy(TestUtils.<Log>getPropertyValue(connectionFactory, "logger"));
 		willReturn(true).given(logger).isDebugEnabled();
 		new DirectFieldAccessor(connectionFactory).setPropertyValue("logger", logger);
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
@@ -1584,7 +1585,7 @@ public class RabbitTemplateIntegrationTests {
 			});
 			return null;
 		});
-		ThreadLocal<?> tl = TestUtils.propertyValue(this.template, "dedicatedChannels");
+		ThreadLocal<?> tl = TestUtils.getPropertyValue(this.template, "dedicatedChannels");
 		assertThat(tl.get()).isNull();
 	}
 

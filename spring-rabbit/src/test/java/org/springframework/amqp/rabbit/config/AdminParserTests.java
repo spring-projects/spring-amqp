@@ -22,13 +22,11 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.parsing.BeanDefinitionParsingException;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -52,10 +50,6 @@ public final class AdminParserTests {
 	private int contextIndex;
 
 	private boolean expectedAutoStartup;
-
-	private String adminBeanName;
-
-	private boolean initialisedWithTemplate;
 
 	@Test
 	public void testValid0() {
@@ -82,34 +76,18 @@ public final class AdminParserTests {
 	private void doTest(boolean explicit) {
 		// Create context
 		DefaultListableBeanFactory beanFactory = loadContext();
-		if (beanFactory == null) {
-			// Context was invalid
-			return;
-		}
 
 		// Validate values
-		RabbitAdmin admin;
-		if (StringUtils.hasText(this.adminBeanName)) {
-			admin = beanFactory.getBean(this.adminBeanName, RabbitAdmin.class);
-		}
-		else {
-			admin = beanFactory.getBean(RabbitAdmin.class);
-		}
+		RabbitAdmin admin = beanFactory.getBean(RabbitAdmin.class);
 		assertThat(admin.isAutoStartup()).isEqualTo(this.expectedAutoStartup);
 		assertThat(admin.getRabbitTemplate().getConnectionFactory())
 				.isEqualTo(beanFactory.getBean(ConnectionFactory.class));
 
-		if (this.initialisedWithTemplate) {
-			assertThat(admin.getRabbitTemplate()).isEqualTo(beanFactory.getBean(RabbitTemplate.class));
-		}
-		assertThat(TestUtils.<Boolean>propertyValue(admin, "explicitDeclarationsOnly")).isEqualTo(explicit);
+		assertThat(TestUtils.<Boolean>getPropertyValue(admin, "explicitDeclarationsOnly")).isEqualTo(explicit);
 	}
 
-	/**
-	 * Load application context. Fail if tests expect invalid spring-context, but spring-context is valid.
-	 */
 	private DefaultListableBeanFactory loadContext() {
-		DefaultListableBeanFactory beanFactory = null;
+		DefaultListableBeanFactory beanFactory;
 		try {
 			// Resource file name template: <class-name>-<contextIndex>-context.xml
 			ClassPathResource resource = new ClassPathResource(getClass().getSimpleName() + "-" + contextIndex
@@ -132,4 +110,5 @@ public final class AdminParserTests {
 		}
 		return beanFactory;
 	}
+
 }
