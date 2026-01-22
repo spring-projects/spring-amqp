@@ -1901,7 +1901,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ccf.setAddressResolver(resolver);
 		Connection con = ccf.createConnection();
 		assertThat(con).isNotNull();
-		assertThat(TestUtils.<Connection>getPropertyValue(con, "target.delegate")).isEqualTo(mockConnection);
+		assertThat(TestUtils.<com.rabbitmq.client.Connection>getPropertyValue(con, "target.delegate"))
+				.isEqualTo(mockConnection);
 		verify(mockConnectionFactory).newConnection(any(ExecutorService.class), eq(resolver), anyString());
 	}
 

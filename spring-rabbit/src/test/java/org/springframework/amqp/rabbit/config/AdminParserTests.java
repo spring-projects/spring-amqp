@@ -76,6 +76,10 @@ public final class AdminParserTests {
 	private void doTest(boolean explicit) {
 		// Create context
 		DefaultListableBeanFactory beanFactory = loadContext();
+		if (beanFactory == null) {
+			// Context was invalid
+			return;
+		}
 
 		// Validate values
 		RabbitAdmin admin = beanFactory.getBean(RabbitAdmin.class);
