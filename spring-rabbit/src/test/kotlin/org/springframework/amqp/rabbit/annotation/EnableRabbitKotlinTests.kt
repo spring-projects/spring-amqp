@@ -46,6 +46,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.handler.annotation.SendTo
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig
+import java.lang.reflect.Type
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -81,10 +82,12 @@ class EnableRabbitKotlinTests {
 		assertThat(listener).isNotNull()
 		listener?.let { nonNullableListener ->
 			assertThat(
-				TestUtils.getPropertyValue(nonNullableListener, "messagingMessageConverter.inferredArgumentType")
-					.toString()
+				TestUtils.getPropertyValue<Type>(
+					nonNullableListener,
+					"messagingMessageConverter.inferredArgumentType"
+				)
 			)
-				.isEqualTo("class java.lang.String")
+				.isEqualTo(String::class.java)
 		}
 
 		template.convertAndSend("kotlinQueue", "junk")

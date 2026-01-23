@@ -22,12 +22,15 @@ import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.util.Assert;
 
 /**
- * See Spring Integration TestUtils.
+ * Testing utilities.
+ *
  * @author Mark Fisher
  * @author Iwein Fuld
  * @author Oleg Zhurakousky
  * @author Gary Russell
  * @author Ngoc Nhan
+ * @author Artem Bilan
+ *
  * @since 1.2
  */
 public final class TestUtils {
@@ -40,16 +43,20 @@ public final class TestUtils {
 	 * "foo.bar.baz" will obtain a reference to the baz field of the bar field of foo. Adopted from Spring Integration.
 	 * @param root The object.
 	 * @param propertyPath The path.
+	 * @param <T> the expected type of the value.
 	 * @return The field.
 	 */
-	public static @Nullable Object getPropertyValue(Object root, String propertyPath) {
+	@SuppressWarnings("unchecked")
+	public static <T> @Nullable T getPropertyValue(Object root, String propertyPath) {
 		Object value = null;
 		DirectFieldAccessor accessor = new DirectFieldAccessor(root);
 		String[] tokens = propertyPath.split("\\.");
 		for (int i = 0; i < tokens.length; i++) {
 			value = accessor.getPropertyValue(tokens[i]);
 			if (value != null) {
-				accessor = new DirectFieldAccessor(value);
+				if (i < tokens.length - 1) {
+					accessor = new DirectFieldAccessor(value);
+				}
 				continue;
 			}
 
@@ -59,9 +66,22 @@ public final class TestUtils {
 
 			throw new IllegalArgumentException("intermediate property '" + tokens[i] + "' is null");
 		}
-		return value;
+		return (T) value;
 	}
 
+	/**
+	 * Uses nested {@link DirectFieldAccessor}s to get a property using dotted notation to traverse fields; e.g.
+	 * {@code prop.subProp.subSubProp} will get a reference to the {@code subSubProp} field
+	 * of the {@code subProp} field of {@code prop} prop from the {@code root}.
+	 * @param root the object to get the property from.
+	 * @param propertyPath the path to the property. Can be a dotted notation for a nested property.
+	 * @param type the value expected type.
+	 * @param <T> the expected type of the value.
+	 * @return the property value.
+	 * @deprecated since 4.1, use {@link #getPropertyValue(Object, String)} instead:
+	 * there is no need in extra type check in tests.
+	 */
+	@Deprecated(since = "4.1", forRemoval = true)
 	@SuppressWarnings("unchecked")
 	public static <T> @Nullable T getPropertyValue(Object root, String propertyPath, Class<T> type) {
 		Object value = getPropertyValue(root, propertyPath);

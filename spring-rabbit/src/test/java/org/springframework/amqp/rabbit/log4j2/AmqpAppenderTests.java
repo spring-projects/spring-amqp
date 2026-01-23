@@ -23,7 +23,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DefaultSaslConfig;
 import com.rabbitmq.client.JDKSaslConfig;
 import com.rabbitmq.client.impl.CRDemoMechanism;
@@ -126,8 +125,9 @@ public class AmqpAppenderTests {
 	@Disabled("weird - this.events.take() in appender is returning null")
 	public void testProperties() {
 		Logger logger = LogManager.getLogger("foo");
-		AmqpAppender appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
-				Map.class).get("rabbitmq");
+		AmqpAppender appender =
+				TestUtils.<Map<String, AmqpAppender>>getPropertyValue(logger, "context.configuration.appenders")
+						.get("rabbitmq");
 		Object manager = TestUtils.getPropertyValue(appender, "manager");
 		// <RabbitMQ name="rabbitmq"
 		// addresses="localhost:5672"
@@ -141,32 +141,33 @@ public class AmqpAppenderTests {
 		// async="false"
 		// senderPoolSize="3" maxSenderRetries="5">
 		// </RabbitMQ>
-		assertThat(TestUtils.getPropertyValue(manager, "addresses")).isEqualTo("localhost:5672");
-		assertThat(TestUtils.getPropertyValue(manager, "host")).isEqualTo("localhost");
-		assertThat(TestUtils.getPropertyValue(manager, "port")).isEqualTo(5672);
-		assertThat(TestUtils.getPropertyValue(manager, "username")).isEqualTo("guest");
-		assertThat(TestUtils.getPropertyValue(manager, "password")).isEqualTo("guest");
-		assertThat(TestUtils.getPropertyValue(manager, "virtualHost")).isEqualTo("/");
-		assertThat(TestUtils.getPropertyValue(manager, "exchangeName")).isEqualTo("log4j2Test");
-		assertThat(TestUtils.getPropertyValue(manager, "exchangeType")).isEqualTo("fanout");
-		assertThat(TestUtils.getPropertyValue(manager, "declareExchange", Boolean.class)).isTrue();
-		assertThat(TestUtils.getPropertyValue(manager, "durable", Boolean.class)).isTrue();
-		assertThat(TestUtils.getPropertyValue(manager, "autoDelete", Boolean.class)).isFalse();
-		assertThat(TestUtils.getPropertyValue(manager, "applicationId")).isEqualTo("testAppId");
-		assertThat(TestUtils.getPropertyValue(manager, "routingKeyPattern")).isEqualTo("%X{applicationId}.%c.%p");
-		assertThat(TestUtils.getPropertyValue(manager, "contentType")).isEqualTo("text/plain");
-		assertThat(TestUtils.getPropertyValue(manager, "contentEncoding")).isEqualTo("UTF-8");
-		assertThat(TestUtils.getPropertyValue(manager, "generateId", Boolean.class)).isTrue();
-		assertThat(TestUtils.getPropertyValue(manager, "deliveryMode")).isEqualTo(MessageDeliveryMode.NON_PERSISTENT);
-		assertThat(TestUtils.getPropertyValue(manager, "contentEncoding")).isEqualTo("UTF-8");
-		assertThat(TestUtils.getPropertyValue(manager, "senderPoolSize")).isEqualTo(3);
-		assertThat(TestUtils.getPropertyValue(manager, "maxSenderRetries")).isEqualTo(5);
-		// change the property to true and this fails and test() randomly fails too.
-		assertThat(TestUtils.getPropertyValue(manager, "async", Boolean.class)).isFalse();
+		assertThat(TestUtils.<String>getPropertyValue(manager, "addresses")).isEqualTo("localhost:5672");
+		assertThat(TestUtils.<String>getPropertyValue(manager, "host")).isEqualTo("localhost");
+		assertThat(TestUtils.<Integer>getPropertyValue(manager, "port")).isEqualTo(5672);
+		assertThat(TestUtils.<String>getPropertyValue(manager, "username")).isEqualTo("guest");
+		assertThat(TestUtils.<String>getPropertyValue(manager, "password")).isEqualTo("guest");
+		assertThat(TestUtils.<String>getPropertyValue(manager, "virtualHost")).isEqualTo("/");
+		assertThat(TestUtils.<String>getPropertyValue(manager, "exchangeName")).isEqualTo("log4j2Test");
+		assertThat(TestUtils.<String>getPropertyValue(manager, "exchangeType")).isEqualTo("fanout");
+		assertThat(TestUtils.<Boolean>getPropertyValue(manager, "declareExchange")).isTrue();
+		assertThat(TestUtils.<Boolean>getPropertyValue(manager, "durable")).isTrue();
+		assertThat(TestUtils.<Boolean>getPropertyValue(manager, "autoDelete")).isFalse();
+		assertThat(TestUtils.<String>getPropertyValue(manager, "applicationId")).isEqualTo("testAppId");
+		assertThat(TestUtils.<String>getPropertyValue(manager, "routingKeyPattern")).isEqualTo("%X{applicationId}.%c.%p");
+		assertThat(TestUtils.<String>getPropertyValue(manager, "contentType")).isEqualTo("text/plain");
+		assertThat(TestUtils.<String>getPropertyValue(manager, "contentEncoding")).isEqualTo("UTF-8");
+		assertThat(TestUtils.<Boolean>getPropertyValue(manager, "generateId")).isTrue();
+		assertThat(TestUtils.<MessageDeliveryMode>getPropertyValue(manager, "deliveryMode"))
+				.isEqualTo(MessageDeliveryMode.NON_PERSISTENT);
+		assertThat(TestUtils.<String>getPropertyValue(manager, "contentEncoding")).isEqualTo("UTF-8");
+		assertThat(TestUtils.<Integer>getPropertyValue(manager, "senderPoolSize")).isEqualTo(3);
+		assertThat(TestUtils.<Integer>getPropertyValue(manager, "maxSenderRetries")).isEqualTo(5);
+		// change the property to true, and this fails and test() randomly fails too.
+		assertThat(TestUtils.<Boolean>getPropertyValue(manager, "async")).isFalse();
 		// default value
-		assertThat(TestUtils.getPropertyValue(manager, "addMdcAsHeaders", Boolean.class)).isTrue();
+		assertThat(TestUtils.<Boolean>getPropertyValue(manager, "addMdcAsHeaders")).isTrue();
 
-		java.util.Queue<?> queue = TestUtils.getPropertyValue(appender, "events", java.util.Queue.class);
+		java.util.Queue<?> queue = TestUtils.getPropertyValue(appender, "events");
 		int i = 0;
 		while (queue.poll() != null) {
 			i++;
@@ -174,47 +175,45 @@ public class AmqpAppenderTests {
 		assertThat(i).isEqualTo(10);
 
 		Object events = TestUtils.getPropertyValue(appender, "events");
-		assertThat(events.getClass()).isEqualTo(ArrayBlockingQueue.class);
+		assertThat(events).isInstanceOf(ArrayBlockingQueue.class);
 	}
 
 	@Test
 	public void testSaslConfig() {
 		Logger logger = LogManager.getLogger("sasl");
-		AmqpAppender appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
-				Map.class).get("sasl1");
-		assertThat(RabbitUtils.stringToSaslConfig(TestUtils.getPropertyValue(appender, "manager.saslConfig",
-				String.class), mock(ConnectionFactory.class)))
+		AmqpAppender appender =
+				TestUtils.<Map<String, AmqpAppender>>getPropertyValue(logger, "context.configuration.appenders")
+						.get("sasl1");
+		assertThat(RabbitUtils.stringToSaslConfig(TestUtils.getPropertyValue(appender, "manager.saslConfig"), mock()))
 				.isInstanceOf(DefaultSaslConfig.class)
 				.hasFieldOrPropertyWithValue("mechanism", "PLAIN");
-		appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
-				Map.class).get("sasl2");
-		assertThat(RabbitUtils.stringToSaslConfig(TestUtils.getPropertyValue(appender, "manager.saslConfig",
-				String.class), mock(ConnectionFactory.class)))
+		appender = TestUtils.<Map<String, AmqpAppender>>getPropertyValue(logger, "context.configuration.appenders")
+				.get("sasl2");
+		assertThat(RabbitUtils.stringToSaslConfig(TestUtils.getPropertyValue(appender, "manager.saslConfig"), mock()))
 				.isInstanceOf(DefaultSaslConfig.class)
 				.hasFieldOrPropertyWithValue("mechanism", "EXTERNAL");
-		appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
-				Map.class).get("sasl3");
-		assertThat(RabbitUtils.stringToSaslConfig(TestUtils.getPropertyValue(appender, "manager.saslConfig",
-				String.class), mock(ConnectionFactory.class)))
+		appender = TestUtils.<Map<String, AmqpAppender>>getPropertyValue(logger, "context.configuration.appenders")
+				.get("sasl3");
+		assertThat(RabbitUtils.stringToSaslConfig(TestUtils.getPropertyValue(appender, "manager.saslConfig"), mock()))
 				.isInstanceOf(JDKSaslConfig.class);
-		appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
-				Map.class).get("sasl4");
-		assertThat(RabbitUtils.stringToSaslConfig(TestUtils.getPropertyValue(appender, "manager.saslConfig",
-				String.class), mock(ConnectionFactory.class)))
+		appender = TestUtils.<Map<String, AmqpAppender>>getPropertyValue(logger, "context.configuration.appenders")
+				.get("sasl4");
+		assertThat(RabbitUtils.stringToSaslConfig(TestUtils.getPropertyValue(appender, "manager.saslConfig"), mock()))
 				.isInstanceOf(CRDemoMechanism.CRDemoSaslConfig.class);
 	}
 
 	@Test
-	public void testAmqpAppenderEventQueueTypeDefaultsToLinkedBlockingQueue() throws InterruptedException {
+	public void testAmqpAppenderEventQueueTypeDefaultsToLinkedBlockingQueue() {
 		Logger logger = LogManager.getLogger("default_queue_logger");
 		logger.info("test");
-		AmqpAppender appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
-				Map.class).get("rabbitmq_default_queue");
+		AmqpAppender appender =
+				TestUtils.<Map<String, AmqpAppender>>getPropertyValue(logger, "context.configuration.appenders")
+						.get("rabbitmq_default_queue");
 
 		Object events = TestUtils.getPropertyValue(appender, "events");
 
 		Object manager = TestUtils.getPropertyValue(appender, "manager");
-		assertThat(TestUtils.getPropertyValue(manager, "addMdcAsHeaders", Boolean.class)).isTrue();
+		assertThat(TestUtils.<Boolean>getPropertyValue(manager, "addMdcAsHeaders")).isTrue();
 
 		assertThat(events.getClass()).isEqualTo(LinkedBlockingQueue.class);
 		BlockingQueue<?> queue = (BlockingQueue<?>) events;
@@ -224,18 +223,19 @@ public class AmqpAppenderTests {
 	@Test
 	public void testUriProperties() {
 		Logger logger = LogManager.getLogger("bar");
-		AmqpAppender appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
-				Map.class).get("rabbitmq_uri");
+		AmqpAppender appender =
+				TestUtils.<Map<String, AmqpAppender>>getPropertyValue(logger, "context.configuration.appenders")
+						.get("rabbitmq_uri");
 		Object manager = TestUtils.getPropertyValue(appender, "manager");
 		assertThat(TestUtils.getPropertyValue(manager, "uri").toString())
 				.isEqualTo("amqp://guest:guest@localhost:5672/");
 
-		assertThat(TestUtils.getPropertyValue(manager, "host")).isNull();
-		assertThat(TestUtils.getPropertyValue(manager, "port")).isNull();
-		assertThat(TestUtils.getPropertyValue(manager, "username")).isNull();
-		assertThat(TestUtils.getPropertyValue(manager, "password")).isNull();
-		assertThat(TestUtils.getPropertyValue(manager, "virtualHost")).isNull();
-		assertThat(TestUtils.getPropertyValue(manager, "addMdcAsHeaders", Boolean.class)).isFalse();
+		assertThat(TestUtils.<Object>getPropertyValue(manager, "host")).isNull();
+		assertThat(TestUtils.<Object>getPropertyValue(manager, "port")).isNull();
+		assertThat(TestUtils.<Object>getPropertyValue(manager, "username")).isNull();
+		assertThat(TestUtils.<Object>getPropertyValue(manager, "password")).isNull();
+		assertThat(TestUtils.<Object>getPropertyValue(manager, "virtualHost")).isNull();
+		assertThat(TestUtils.<Boolean>getPropertyValue(manager, "addMdcAsHeaders")).isFalse();
 	}
 
 	@Test

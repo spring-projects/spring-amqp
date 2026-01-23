@@ -174,7 +174,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class)).hasSize(0);
+		assertThat(TestUtils.<MultiValueMap<?, ?>>getPropertyValue(container, "consumersByQueue")).isEmpty();
 		template.stop();
 		cf.destroy();
 		executor.destroy();
@@ -240,7 +240,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class)).hasSize(0);
+		assertThat(TestUtils.<MultiValueMap<?, ?>>getPropertyValue(container, "consumersByQueue")).isEmpty();
 		cf.destroy();
 	}
 
@@ -280,7 +280,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class)).hasSize(0);
+		assertThat(TestUtils.<MultiValueMap<?, ?>>getPropertyValue(container, "consumersByQueue")).isEmpty();
 		template.stop();
 		cf.destroy();
 		executor.destroy();
@@ -324,7 +324,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class)).hasSize(0);
+		assertThat(TestUtils.<MultiValueMap<?, ?>>getPropertyValue(container, "consumersByQueue")).isEmpty();
 		template.stop();
 		cf.destroy();
 		executor.destroy();
@@ -368,7 +368,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class)).hasSize(0);
+		assertThat(TestUtils.<MultiValueMap<?, ?>>getPropertyValue(container, "consumersByQueue")).isEmpty();
 		template.stop();
 		cf.destroy();
 		executor.destroy();
@@ -436,7 +436,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class)).hasSize(0);
+		assertThat(TestUtils.<MultiValueMap<?, ?>>getPropertyValue(container, "consumersByQueue")).isEmpty();
 		assertThat(channel.get().isOpen()).isFalse();
 		cf.destroy();
 	}
@@ -584,7 +584,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
 		assertThat(activeConsumerCount(container, 0)).isTrue();
-		assertThat(TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class)).hasSize(0);
+		assertThat(TestUtils.<MultiValueMap<?, ?>>getPropertyValue(container, "consumersByQueue")).isEmpty();
 		cf.destroy();
 	}
 
@@ -887,22 +887,22 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(ackDeliveryTag.get()).isEqualTo(messageCount);
 	}
 
-	private boolean consumersOnQueue(String queue, int expected) throws Exception {
+	private boolean consumersOnQueue(String queue, int expected) {
 		await().with().pollDelay(Duration.ZERO).atMost(Duration.ofSeconds(60))
 				.until(() -> admin.getQueueProperties(queue),
 						props -> props != null && props.get(RabbitAdmin.QUEUE_CONSUMER_COUNT).equals(expected));
 		return true;
 	}
 
-	private boolean activeConsumerCount(AbstractMessageListenerContainer container, int expected) throws Exception {
-		List<?> consumers = TestUtils.getPropertyValue(container, "consumers", List.class);
+	private boolean activeConsumerCount(AbstractMessageListenerContainer container, int expected) {
+		List<?> consumers = TestUtils.getPropertyValue(container, "consumers");
 		await().with().pollDelay(Duration.ZERO).atMost(Duration.ofSeconds(60))
 				.until(() -> consumers.size() == expected);
 		return true;
 	}
 
-	private boolean restartConsumerCount(AbstractMessageListenerContainer container, int expected) throws Exception {
-		Set<?> consumers = TestUtils.getPropertyValue(container, "consumersToRestart", Set.class);
+	private boolean restartConsumerCount(AbstractMessageListenerContainer container, int expected) {
+		Set<?> consumers = TestUtils.getPropertyValue(container, "consumersToRestart");
 		await().with().pollDelay(Duration.ZERO).atMost(Duration.ofSeconds(60))
 				.until(() -> consumers.size() == expected);
 		return true;

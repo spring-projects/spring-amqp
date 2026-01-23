@@ -185,7 +185,7 @@ public class RabbitAdminTests extends NeedsManagementTests {
 			given(ctx.getBeansOfType(Exchange.class, false, false)).willReturn(exchanges);
 			rabbitAdmin.setApplicationContext(ctx);
 			rabbitAdmin.afterPropertiesSet();
-			Log logger = spy(TestUtils.getPropertyValue(rabbitAdmin, "logger", Log.class));
+			Log logger = spy(TestUtils.<Log>getPropertyValue(rabbitAdmin, "logger"));
 			willReturn(true).given(logger).isInfoEnabled();
 			willDoNothing().given(logger).info(anyString());
 			new DirectFieldAccessor(rabbitAdmin).setPropertyValue("logger", logger);
@@ -391,7 +391,7 @@ public class RabbitAdminTests extends NeedsManagementTests {
 				() -> new Binding("thisOneShouldntBeInTheManualDecs", DestinationType.QUEUE,
 						"thisOneShouldntBeInTheManualDecs", "test", null));
 		applicationContext.refresh();
-		Set<?> declarables = TestUtils.getPropertyValue(admin, "manualDeclarables", Set.class);
+		Set<?> declarables = TestUtils.getPropertyValue(admin, "manualDeclarables");
 		assertThat(declarables).hasSize(0);
 		// check the auto-configured Declarables
 		RabbitTemplate template = new RabbitTemplate(cf);
@@ -445,7 +445,7 @@ public class RabbitAdminTests extends NeedsManagementTests {
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
 		RabbitAdmin admin = new RabbitAdmin(cf);
 		admin.setRedeclareManualDeclarations(true);
-		Set<?> declarables = TestUtils.getPropertyValue(admin, "manualDeclarables", Set.class);
+		Set<?> declarables = TestUtils.getPropertyValue(admin, "manualDeclarables");
 		assertThat(declarables).hasSize(0);
 		RabbitTemplate template = new RabbitTemplate(cf);
 		// manual declarations

@@ -333,7 +333,7 @@ public class BlockingQueueConsumerTests {
 		blockingQueueConsumer.start();
 
 		verify(channel).basicQos(2, false);
-		Consumer consumer = (Consumer) TestUtils.getPropertyValue(blockingQueueConsumer, "consumers", Map.class)
+		Consumer consumer = TestUtils.<Map<String, Consumer>>getPropertyValue(blockingQueueConsumer, "consumers")
 				.get("test");
 		isOpen.set(false);
 		blockingQueueConsumer.stop();
@@ -344,10 +344,10 @@ public class BlockingQueueConsumerTests {
 		consumer.handleDelivery("consumerTag", envelope, props, new byte[0]);
 		envelope = new Envelope(2, false, "foo", "bar");
 		consumer.handleDelivery("consumerTag", envelope, props, new byte[0]);
-		assertThat(TestUtils.getPropertyValue(blockingQueueConsumer, "queue", BlockingQueue.class)).hasSize(2);
+		assertThat(TestUtils.<BlockingQueue<?>>getPropertyValue(blockingQueueConsumer, "queue")).hasSize(2);
 		envelope = new Envelope(3, false, "foo", "bar");
 		consumer.handleDelivery("consumerTag", envelope, props, new byte[0]);
-		assertThat(TestUtils.getPropertyValue(blockingQueueConsumer, "queue", BlockingQueue.class)).hasSize(0);
+		assertThat(TestUtils.<BlockingQueue<?>>getPropertyValue(blockingQueueConsumer, "queue")).isEmpty();
 		verify(channel, times(1)).basicCancel("consumerTag");
 	}
 

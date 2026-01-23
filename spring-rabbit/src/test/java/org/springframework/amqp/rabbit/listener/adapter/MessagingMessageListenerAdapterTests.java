@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.listener.adapter;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -200,7 +201,7 @@ public class MessagingMessageListenerAdapterTests {
 	@Test
 	void headers() throws Exception {
 		MessagingMessageListenerAdapter listener = getSimpleInstance("withHeaders", Foo.class, Map.class);
-		assertThat(TestUtils.getPropertyValue(listener, "messagingMessageConverter.inferredArgumentType"))
+		assertThat(TestUtils.<Type>getPropertyValue(listener, "messagingMessageConverter.inferredArgumentType"))
 				.isEqualTo(Foo.class);
 	}
 

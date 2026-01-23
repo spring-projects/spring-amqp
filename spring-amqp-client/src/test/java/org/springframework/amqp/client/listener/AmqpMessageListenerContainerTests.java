@@ -113,7 +113,8 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 					.isNotNull()
 					.satisfies(m ->
 							assertThat(dataToQueue)
-									.containsEntry(new String(m.getBody()), m.getMessageProperties().getReceivedRoutingKey()));
+									.containsEntry(new String(m.getBody()),
+											m.getMessageProperties().getReceivedRoutingKey()));
 			message.getMessageProperties().getAmqpAcknowledgment().acknowledge();
 		}
 		Message noMessage = this.testConfig.receivedMessages.poll(1, TimeUnit.SECONDS);
@@ -121,13 +122,12 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	void pauseAndResumeContainer() throws InterruptedException {
 		MultiValueMap<String, ?> queueToConsumers =
-				TestUtils.getPropertyValue(this.amqpMessageListenerContainer, "queueToConsumers", MultiValueMap.class);
+				TestUtils.getPropertyValue(this.amqpMessageListenerContainer, "queueToConsumers");
 
 		Object amqpConsumer = queueToConsumers.getFirst(TEST_QUEUE1);
-		ProtonReceiver protonReceiver = TestUtils.getPropertyValue(amqpConsumer, "protonReceiver", ProtonReceiver.class);
+		ProtonReceiver protonReceiver = TestUtils.getPropertyValue(amqpConsumer, "protonReceiver");
 
 		assertThat(protonReceiver.getCredit()).isEqualTo(100);
 

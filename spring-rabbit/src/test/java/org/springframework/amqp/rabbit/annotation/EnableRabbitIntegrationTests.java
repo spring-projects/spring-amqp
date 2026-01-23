@@ -290,8 +290,8 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		assertThat(container.getQueueNames()).hasSize(1);
 		assertThat(rabbitTemplate.convertSendAndReceive(container.getQueueNames()[0], "foo")).isEqualTo("viaAnonymous:foo");
 		Object messageListener = container.getMessageListener();
-		assertThat(TestUtils.getPropertyValue(messageListener, "retryTemplate")).isNotNull();
-		assertThat(TestUtils.getPropertyValue(messageListener, "recoveryCallback")).isNotNull();
+		assertThat(TestUtils.<Object>getPropertyValue(messageListener, "retryTemplate")).isNotNull();
+		assertThat(TestUtils.<Object>getPropertyValue(messageListener, "recoveryCallback")).isNotNull();
 	}
 
 	@Test
@@ -348,7 +348,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		String reply = (String) rabbitTemplate.convertSendAndReceive("test.simple.direct", "foo");
 		assertThat(reply).startsWith("FOOfoo");
 		assertThat(reply).contains("rabbitClientThread-"); // container runs on client thread
-		assertThat(TestUtils.getPropertyValue(container, "consumersPerQueue")).isEqualTo(2);
+		assertThat(TestUtils.<Integer>getPropertyValue(container, "consumersPerQueue")).isEqualTo(2);
 	}
 
 	@Test
@@ -357,8 +357,10 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		String reply = (String) rabbitTemplate.convertSendAndReceive("test.simple.direct2", "foo");
 		assertThat(reply).startsWith("FOOfoo");
 		assertThat(reply).contains("rabbitClientThread-"); // container runs on client thread
-		assertThat(TestUtils.getPropertyValue(this.registry.getListenerContainer("directWithConcurrency"),
-				"consumersPerQueue")).isEqualTo(3);
+		assertThat(
+				TestUtils.<Integer>getPropertyValue(this.registry.getListenerContainer("directWithConcurrency"),
+						"consumersPerQueue"))
+				.isEqualTo(3);
 	}
 
 	@Test
@@ -443,9 +445,9 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		this.jsonRabbitTemplate.setReceiveTimeout(10000);
 		assertThat(this.jsonRabbitTemplate.receiveAndConvert("sendTo.replies.spel")).isEqualTo("BAR: barMultiListenerJsonBean");
 		MessageListenerContainer container = this.registry.getListenerContainer("multi");
-		assertThat(TestUtils.getPropertyValue(container, "concurrentConsumers")).isEqualTo(1);
-		assertThat(TestUtils.getPropertyValue(container, "messageListener.errorHandler")).isNotNull();
-		assertThat(TestUtils.getPropertyValue(container, "messageListener.returnExceptions", Boolean.class)).isTrue();
+		assertThat(TestUtils.<Integer>getPropertyValue(container, "concurrentConsumers")).isEqualTo(1);
+		assertThat(TestUtils.<Object>getPropertyValue(container, "messageListener.errorHandler")).isNotNull();
+		assertThat(TestUtils.<Boolean>getPropertyValue(container, "messageListener.returnExceptions")).isTrue();
 	}
 
 	@Test
@@ -577,7 +579,10 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		assertThat(this.service.dtLatch1.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.service.foos.get(0)).isInstanceOf(Foo2.class);
 		assertThat(((Foo2) this.service.foos.get(0)).getBar()).isEqualTo("bar");
-		assertThat(TestUtils.getPropertyValue(this.registry.getListenerContainer("different"), "concurrentConsumers")).isEqualTo(2);
+		assertThat(
+				TestUtils.<Object>getPropertyValue(this.registry.getListenerContainer("different"),
+						"concurrentConsumers"))
+				.isEqualTo(2);
 	}
 
 	@Test
@@ -590,8 +595,8 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		assertThat(this.service.foos.get(0)).isInstanceOf(Foo2.class);
 		assertThat(((Foo2) this.service.foos.get(0)).getBar()).isEqualTo("bar");
 		MessageListenerContainer container = this.registry.getListenerContainer("differentWithConcurrency");
-		assertThat(TestUtils.getPropertyValue(container, "concurrentConsumers")).isEqualTo(3);
-		assertThat(TestUtils.getPropertyValue(container, "maxConcurrentConsumers")).isNull();
+		assertThat(TestUtils.<Integer>getPropertyValue(container, "concurrentConsumers")).isEqualTo(3);
+		assertThat(TestUtils.<Integer>getPropertyValue(container, "maxConcurrentConsumers")).isNull();
 	}
 
 	@Test
@@ -604,15 +609,16 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		assertThat(this.service.foos.get(0)).isInstanceOf(Foo2.class);
 		assertThat(((Foo2) this.service.foos.get(0)).getBar()).isEqualTo("bar");
 		MessageListenerContainer container = this.registry.getListenerContainer("differentWithVariableConcurrency");
-		assertThat(TestUtils.getPropertyValue(container, "concurrentConsumers")).isEqualTo(3);
-		assertThat(TestUtils.getPropertyValue(container, "maxConcurrentConsumers")).isEqualTo(4);
+		assertThat(TestUtils.<Integer>getPropertyValue(container, "concurrentConsumers")).isEqualTo(3);
+		assertThat(TestUtils.<Integer>getPropertyValue(container, "maxConcurrentConsumers")).isEqualTo(4);
 	}
 
 	@Test
 	public void testInterceptor() throws InterruptedException {
 		this.rabbitTemplate.convertAndSend("test.intercepted", "intercept this");
 		assertThat(this.interceptor.oneWayLatch.await(10, TimeUnit.SECONDS)).isTrue();
-		assertThat(this.rabbitTemplate.convertSendAndReceive("test.intercepted.withReply", "intercept this")).isEqualTo("INTERCEPT THIS");
+		assertThat(this.rabbitTemplate.convertSendAndReceive("test.intercepted.withReply", "intercept this"))
+				.isEqualTo("INTERCEPT THIS");
 		assertThat(this.interceptor.twoWayLatch.await(10, TimeUnit.SECONDS)).isTrue();
 	}
 
@@ -628,12 +634,11 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		Object returned = template.convertSendAndReceive("test.converted", foo1);
 		assertThat(returned).isInstanceOf(Foo2.class);
 		assertThat(((Foo2) returned).getBar()).isEqualTo("bar");
-		assertThat(TestUtils.getPropertyValue(ctx.getBean("foo1To2Converter"), "converted", Boolean.class)).isTrue();
+		assertThat(TestUtils.<Boolean>getPropertyValue(ctx.getBean("foo1To2Converter"), "converted")).isTrue();
 		converter.setTypePrecedence(JacksonJavaTypeMapper.TypePrecedence.INFERRED);
 
-		// No type info in message
+		// No type info in a message
 		template.setMessageConverter(new SimpleMessageConverter());
-		@SuppressWarnings("resource")
 		MessagePostProcessor messagePostProcessor = message -> {
 			message.getMessageProperties().setContentType("application/json");
 			message.getMessageProperties().setUserId("guest");
@@ -724,8 +729,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 		JacksonJsonMessageConverter jsonConverter = ctx.getBean(JacksonJsonMessageConverter.class);
 
-		DefaultJacksonJavaTypeMapper mapper = TestUtils.getPropertyValue(jsonConverter, "javaTypeMapper",
-				DefaultJacksonJavaTypeMapper.class);
+		DefaultJacksonJavaTypeMapper mapper = TestUtils.getPropertyValue(jsonConverter, "javaTypeMapper");
 		Mockito.verify(mapper).setBeanClassLoader(ctx.getClassLoader());
 
 		ctx.close();
@@ -743,12 +747,11 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		Object returned = template.convertSendAndReceive("test.converted", foo1);
 		assertThat(returned).isInstanceOf(Foo2.class);
 		assertThat(((Foo2) returned).getBar()).isEqualTo("bar");
-		assertThat(TestUtils.getPropertyValue(ctx.getBean("foo1To2Converter"), "converted", Boolean.class)).isTrue();
+		assertThat(TestUtils.<Boolean>getPropertyValue(ctx.getBean("foo1To2Converter"), "converted")).isTrue();
 		converter.setTypePrecedence(JacksonJavaTypeMapper.TypePrecedence.INFERRED);
 
-		// No type info in message
+		// No type info in a message
 		template.setMessageConverter(new SimpleMessageConverter());
-		@SuppressWarnings("resource")
 		MessagePostProcessor messagePostProcessor = message -> {
 			message.getMessageProperties().setContentType("application/xml");
 			message.getMessageProperties().setUserId("guest");
@@ -815,8 +818,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 		JacksonXmlMessageConverter xmlConverter = ctx.getBean(JacksonXmlMessageConverter.class);
 
-		DefaultJacksonJavaTypeMapper mapper = TestUtils.getPropertyValue(xmlConverter, "javaTypeMapper",
-				DefaultJacksonJavaTypeMapper.class);
+		DefaultJacksonJavaTypeMapper mapper = TestUtils.getPropertyValue(xmlConverter, "javaTypeMapper");
 		Mockito.verify(mapper).setBeanClassLoader(ctx.getClassLoader());
 
 		ctx.close();
@@ -893,8 +895,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 	public void testPrototypeCache() {
 		RabbitListenerAnnotationBeanPostProcessor bpp =
 				this.context.getBean(RabbitListenerAnnotationBeanPostProcessor.class);
-		@SuppressWarnings("unchecked")
-		Map<Class<?>, ?> typeCache = TestUtils.getPropertyValue(bpp, "typeCache", Map.class);
+		Map<Class<?>, ?> typeCache = TestUtils.getPropertyValue(bpp, "typeCache");
 		assertThat(typeCache.containsKey(Foo1.class)).isFalse();
 		this.context.getBean("foo1Prototype");
 		assertThat(typeCache.containsKey(Foo1.class)).isTrue();
@@ -983,9 +984,13 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 	@Test
 	public void testManualOverride() {
-		assertThat(TestUtils.getPropertyValue(this.registry.getListenerContainer("manual.acks.1"), "acknowledgeMode"))
+		assertThat(
+				TestUtils.<AcknowledgeMode>getPropertyValue(
+						this.registry.getListenerContainer("manual.acks.1"), "acknowledgeMode"))
 				.isEqualTo(AcknowledgeMode.MANUAL);
-		assertThat(TestUtils.getPropertyValue(this.registry.getListenerContainer("manual.acks.2"), "acknowledgeMode"))
+		assertThat(
+				TestUtils.<AcknowledgeMode>getPropertyValue(
+						this.registry.getListenerContainer("manual.acks.2"), "acknowledgeMode"))
 				.isEqualTo(AcknowledgeMode.MANUAL);
 	}
 
@@ -2264,8 +2269,8 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		@Bean
 		public JacksonJsonMessageConverter jsonConverter() {
 			JacksonJsonMessageConverter jackson2JsonMessageConverter = new JacksonJsonMessageConverter();
-			DefaultJacksonJavaTypeMapper mapper = Mockito.spy(TestUtils.getPropertyValue(jackson2JsonMessageConverter,
-					"javaTypeMapper", DefaultJacksonJavaTypeMapper.class));
+			DefaultJacksonJavaTypeMapper mapper = TestUtils.getPropertyValue(jackson2JsonMessageConverter, "javaTypeMapper");
+			mapper = Mockito.spy(mapper);
 			new DirectFieldAccessor(jackson2JsonMessageConverter).setPropertyValue("javaTypeMapper", mapper);
 			jackson2JsonMessageConverter.setUseProjectionForInterfaces(true);
 			return jackson2JsonMessageConverter;
@@ -2352,8 +2357,8 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		@Bean
 		public JacksonXmlMessageConverter xmlConverter() {
 			JacksonXmlMessageConverter jackson2XmlMessageConverter = new JacksonXmlMessageConverter();
-			DefaultJacksonJavaTypeMapper mapper = Mockito.spy(TestUtils.getPropertyValue(jackson2XmlMessageConverter,
-					"javaTypeMapper", DefaultJacksonJavaTypeMapper.class));
+			DefaultJacksonJavaTypeMapper mapper = TestUtils.getPropertyValue(jackson2XmlMessageConverter, "javaTypeMapper");
+			mapper = Mockito.spy(mapper);
 			new DirectFieldAccessor(jackson2XmlMessageConverter).setPropertyValue("javaTypeMapper", mapper);
 			return jackson2XmlMessageConverter;
 		}

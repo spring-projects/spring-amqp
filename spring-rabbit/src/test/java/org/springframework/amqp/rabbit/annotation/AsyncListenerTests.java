@@ -119,9 +119,9 @@ public class AsyncListenerTests {
 		assertThat(this.config.contentTypeId).isEqualTo("java.lang.String");
 		this.rabbitTemplate.convertAndSend(this.queue4.getName(), "foo");
 		assertThat(listener.latch4.await(10, TimeUnit.SECONDS));
-		assertThat(TestUtils.getPropertyValue(registry.getListenerContainer("foo"), "asyncReplies", Boolean.class))
+		assertThat(TestUtils.<Boolean>getPropertyValue(registry.getListenerContainer("foo"), "asyncReplies"))
 				.isTrue();
-		assertThat(TestUtils.getPropertyValue(registry.getListenerContainer("bar"), "asyncReplies", Boolean.class))
+		assertThat(TestUtils.<Boolean>getPropertyValue(registry.getListenerContainer("bar"), "asyncReplies"))
 				.isTrue();
 	}
 
@@ -134,14 +134,14 @@ public class AsyncListenerTests {
 	}
 
 	@Test
-	public void testOverrideDontRequeue() throws Exception {
+	public void testOverrideDontRequeue() {
 		assertThat(this.rabbitTemplate.convertSendAndReceive(this.queue7.getName(), "foo")).isEqualTo("listen7");
 	}
 
 	@Test
 	public void testAuthByProps() {
-		assertThat(TestUtils.getPropertyValue(this.registry.getListenerContainer("foo"),
-				"possibleAuthenticationFailureFatal", Boolean.class)).isFalse();
+		assertThat(TestUtils.<Boolean>getPropertyValue(this.registry.getListenerContainer("foo"),
+				"possibleAuthenticationFailureFatal")).isFalse();
 	}
 
 	@Configuration

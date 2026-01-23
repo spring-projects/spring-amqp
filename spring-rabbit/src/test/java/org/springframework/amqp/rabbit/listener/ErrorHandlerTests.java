@@ -52,7 +52,7 @@ public class ErrorHandlerTests {
 	@Test
 	public void testFatalsAreRejected() throws Exception {
 		ConditionalRejectingErrorHandler handler = new ConditionalRejectingErrorHandler();
-		Log logger = spy(TestUtils.getPropertyValue(handler, "logger", Log.class));
+		Log logger = spy(TestUtils.<Log>getPropertyValue(handler, "logger"));
 		willDoNothing().given(logger).warn(anyString(), any(Throwable.class));
 		new DirectFieldAccessor(handler).setPropertyValue("logger", logger);
 		handler.handleError(new ListenerExecutionFailedException("intended", new RuntimeException(),

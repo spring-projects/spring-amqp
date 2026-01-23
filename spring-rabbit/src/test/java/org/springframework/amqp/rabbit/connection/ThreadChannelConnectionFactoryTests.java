@@ -55,6 +55,8 @@ import static org.mockito.Mockito.verify;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.3
  *
  */
@@ -75,7 +77,7 @@ public class ThreadChannelConnectionFactoryTests {
 		assertThat(chann2).isSameAs(chann1);
 		chann2.close();
 		conn.closeThreadChannel();
-		assertThat(TestUtils.getPropertyValue(conn, "channels", ThreadLocal.class).get()).isNull();
+		assertThat(TestUtils.<ThreadLocal<?>>getPropertyValue(conn, "channels").get()).isNull();
 		chann2 = conn.createChannel(false);
 		assertThat(chann2).isNotSameAs(chann1);
 		chann2.close();
@@ -86,12 +88,12 @@ public class ThreadChannelConnectionFactoryTests {
 		chann2 = conn.createChannel(true);
 		assertThat(chann2).isSameAs(chann1);
 		chann2.close();
-		assertThat(TestUtils.getPropertyValue(conn, "channels", ThreadLocal.class).get()).isNotNull();
-		assertThat(TestUtils.getPropertyValue(conn, "txChannels", ThreadLocal.class).get()).isNotNull();
+		assertThat(TestUtils.<ThreadLocal<?>>getPropertyValue(conn, "channels").get()).isNotNull();
+		assertThat(TestUtils.<ThreadLocal<?>>getPropertyValue(conn, "txChannels").get()).isNotNull();
 		conn.closeThreadChannel();
-		assertThat(TestUtils.getPropertyValue(conn, "txChannels", ThreadLocal.class).get()).isNull();
+		assertThat(TestUtils.<ThreadLocal<?>>getPropertyValue(conn, "txChannels").get()).isNull();
 		chann2 = conn.createChannel(true);
-		assertThat(((Channel) TestUtils.getPropertyValue(conn, "txChannels", ThreadLocal.class).get()).isOpen())
+		assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn, "txChannels").get().isOpen())
 				.isTrue();
 		chann2.close();
 		chann2 = conn.createChannel(false);
@@ -103,9 +105,9 @@ public class ThreadChannelConnectionFactoryTests {
 		assertThat(((ChannelProxy) chann1).isConfirmSelected()).isTrue();
 		chann1.close();
 		tccf.destroy();
-		assertThat(((Channel) TestUtils.getPropertyValue(conn, "channels", ThreadLocal.class).get()).isOpen())
+		assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn, "channels").get().isOpen())
 				.isFalse();
-		assertThat(((Channel) TestUtils.getPropertyValue(conn, "txChannels", ThreadLocal.class).get()).isOpen())
+		assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn, "txChannels").get().isOpen())
 				.isFalse();
 	}
 
@@ -153,7 +155,6 @@ public class ThreadChannelConnectionFactoryTests {
 		assertThat(config.closed).isTrue();
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	void contextSwitch() throws Exception {
 		ConnectionFactory rabbitConnectionFactory = new ConnectionFactory();
@@ -170,8 +171,8 @@ public class ThreadChannelConnectionFactoryTests {
 			tx.set(conn.createChannel(true));
 			Object ctx = tccf.prepareSwitchContext();
 			assertThat(tccf.prepareSwitchContext()).isNull();
-			assertThat(TestUtils.getPropertyValue(conn, "channels", ThreadLocal.class).get()).isNull();
-			assertThat(TestUtils.getPropertyValue(conn, "txChannels", ThreadLocal.class).get()).isNull();
+			assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn, "channels").get()).isNull();
+			assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn, "txChannels").get()).isNull();
 			context.add(ctx);
 		});
 		Object ctx = context.poll(10, TimeUnit.SECONDS);
@@ -183,7 +184,7 @@ public class ThreadChannelConnectionFactoryTests {
 		assertThat(chann1).isSameAs(nonTx.get());
 		Channel chann2 = conn.createChannel(true);
 		assertThat(chann2).isSameAs(tx.get());
-		assertThat(TestUtils.getPropertyValue(tccf, "switchesInProgress", Map.class)).isEmpty();
+		assertThat(TestUtils.<Map<?, ?>>getPropertyValue(tccf, "switchesInProgress")).isEmpty();
 		tccf.switchContext(null); // test no-op
 		tccf.destroy();
 	}
@@ -206,8 +207,8 @@ public class ThreadChannelConnectionFactoryTests {
 			tx.set(conn.createChannel(true));
 			Object ctx = tccf.prepareSwitchContext();
 			assertThat(tccf.prepareSwitchContext()).isNull();
-			assertThat(TestUtils.getPropertyValue(conn, "channels", ThreadLocal.class).get()).isNull();
-			assertThat(TestUtils.getPropertyValue(conn, "txChannels", ThreadLocal.class).get()).isNull();
+			assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn, "channels").get()).isNull();
+			assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn, "txChannels").get()).isNull();
 			conn.createChannel(false);
 			context.add(ctx);
 			context.add(tccf.prepareSwitchContext());
@@ -222,10 +223,10 @@ public class ThreadChannelConnectionFactoryTests {
 		assertThat(chann1).isSameAs(nonTx.get());
 		Channel chann2 = conn.createChannel(true);
 		assertThat(chann2).isSameAs(tx.get());
-		assertThat(TestUtils.getPropertyValue(tccf, "switchesInProgress", Map.class)).hasSize(1);
+		assertThat(TestUtils.<Map<?, ?>>getPropertyValue(tccf, "switchesInProgress")).hasSize(1);
 		ctx = context.poll(10, TimeUnit.SECONDS);
 		tccf.switchContext(ctx);
-		assertThat(TestUtils.getPropertyValue(tccf, "switchesInProgress", Map.class)).isEmpty();
+		assertThat(TestUtils.<Map<?, ?>>getPropertyValue(tccf, "switchesInProgress")).isEmpty();
 		tccf.destroy();
 	}
 
@@ -252,10 +253,10 @@ public class ThreadChannelConnectionFactoryTests {
 			tx2.set(conn2.createChannel(true));
 			Object ctx = tccf.prepareSwitchContext();
 			assertThat(tccf.prepareSwitchContext()).isNull();
-			assertThat(TestUtils.getPropertyValue(conn1, "channels", ThreadLocal.class).get()).isNull();
-			assertThat(TestUtils.getPropertyValue(conn1, "txChannels", ThreadLocal.class).get()).isNull();
-			assertThat(TestUtils.getPropertyValue(conn2, "channels", ThreadLocal.class).get()).isNull();
-			assertThat(TestUtils.getPropertyValue(conn2, "txChannels", ThreadLocal.class).get()).isNull();
+			assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn1, "channels").get()).isNull();
+			assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn1, "txChannels").get()).isNull();
+			assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn2, "channels").get()).isNull();
+			assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn2, "txChannels").get()).isNull();
 			context.add(ctx);
 		});
 		Object ctx = context.poll(10, TimeUnit.SECONDS);
@@ -273,9 +274,8 @@ public class ThreadChannelConnectionFactoryTests {
 		assertThat(chann3).isSameAs(nonTx2.get());
 		Channel chann4 = conn2.createChannel(true);
 		assertThat(chann4).isSameAs(tx2.get());
-		assertThat(TestUtils.getPropertyValue(tccf, "switchesInProgress", Map.class)).isEmpty();
-		assertThat(TestUtils.getPropertyValue(tccf, "publisherConnectionFactory.switchesInProgress", Map.class))
-				.isEmpty();
+		assertThat(TestUtils.<Map<?, ?>>getPropertyValue(tccf, "switchesInProgress")).isEmpty();
+		assertThat(TestUtils.<Map<?, ?>>getPropertyValue(tccf, "publisherConnectionFactory.switchesInProgress")).isEmpty();
 		tccf.destroy();
 	}
 
@@ -340,7 +340,7 @@ public class ThreadChannelConnectionFactoryTests {
 		rabbitConnectionFactory.setHost("localhost");
 		rabbitConnectionFactory.setAutomaticRecoveryEnabled(false);
 		ThreadChannelConnectionFactory tccf = new ThreadChannelConnectionFactory(rabbitConnectionFactory);
-		Log log = spy(TestUtils.getPropertyValue(tccf, "logger", Log.class));
+		Log log = spy(TestUtils.<Log>getPropertyValue(tccf, "logger"));
 		new DirectFieldAccessor(tccf).setPropertyValue("logger", log);
 		given(log.isWarnEnabled()).willReturn(true);
 		Connection conn = tccf.createConnection();
@@ -358,9 +358,9 @@ public class ThreadChannelConnectionFactoryTests {
 		rabbitConnectionFactory.setHost("localhost");
 		rabbitConnectionFactory.setAutomaticRecoveryEnabled(false);
 		ThreadChannelConnectionFactory tccf = new ThreadChannelConnectionFactory(rabbitConnectionFactory);
-		Log log1 = spy(TestUtils.getPropertyValue(tccf, "logger", Log.class));
+		Log log1 = spy(TestUtils.<Log>getPropertyValue(tccf, "logger"));
 		new DirectFieldAccessor(tccf).setPropertyValue("logger", log1);
-		Log log2 = spy(TestUtils.getPropertyValue(tccf, "publisherConnectionFactory.logger", Log.class));
+		Log log2 = spy(TestUtils.<Log>getPropertyValue(tccf, "publisherConnectionFactory.logger"));
 		new DirectFieldAccessor(tccf).setPropertyValue("publisherConnectionFactory.logger", log2);
 		given(log1.isDebugEnabled()).willReturn(true);
 		given(log2.isDebugEnabled()).willReturn(true);

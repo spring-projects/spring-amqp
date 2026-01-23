@@ -64,6 +64,7 @@ import static org.mockito.Mockito.spy;
  * @author Gary Russell
  * @author Gunnar Hillert
  * @author Artem Bilan
+ *
  * @since 1.0
  *
  */
@@ -76,9 +77,9 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 	public static final String TEST_QUEUE = "test.queue.MessageListenerContainerLifecycleIntegrationTests";
 
-	private static Log logger = LogFactory.getLog(MessageListenerContainerLifecycleIntegrationTests.class);
+	private static final Log logger = LogFactory.getLog(MessageListenerContainerLifecycleIntegrationTests.class);
 
-	private static Queue queue = new Queue(TEST_QUEUE);
+	private static final Queue queue = new Queue(TEST_QUEUE);
 
 	private enum TransactionMode {
 		ON, OFF, PREFETCH, PREFETCH_NO_TX;
@@ -361,12 +362,10 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		// wait until the listener has the first message...
 		assertThat(awaitStart1.await(10, TimeUnit.SECONDS)).isTrue();
 		// ... and the remaining 4 are queued...
-		@SuppressWarnings("unchecked")
-		Set<BlockingQueueConsumer> consumers = (Set<BlockingQueueConsumer>) TestUtils
-				.getPropertyValue(container, "consumers");
+		Set<BlockingQueueConsumer> consumers = TestUtils.getPropertyValue(container, "consumers");
 		await().until(() -> {
-			if (consumers.size() > 0
-					&& TestUtils.getPropertyValue(consumers.iterator().next(), "queue", BlockingQueue.class).size() > 3) {
+			if (!consumers.isEmpty()
+					&& TestUtils.<BlockingQueue<?>>getPropertyValue(consumers.iterator().next(), "queue").size() > 3) {
 				prefetched.countDown();
 				return true;
 			}
@@ -374,7 +373,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 				return false;
 			}
 		});
-		Executors.newSingleThreadExecutor().execute(() -> container.stop());
+		Executors.newSingleThreadExecutor().execute(container::stop);
 		await().until(() -> !container.isActive());
 		awaitStop.countDown();
 
@@ -401,7 +400,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
-		Log log = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
+		Log log = spy(TestUtils.<Log>getPropertyValue(container, "logger"));
 		final CountDownLatch latch = new CountDownLatch(1);
 		given(log.isDebugEnabled()).willReturn(true);
 		willAnswer(invocation -> {
@@ -448,9 +447,8 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 		applicationContext.close();
 
-		@SuppressWarnings("rawtypes")
-		ActiveObjectCounter counter = TestUtils.getPropertyValue(container, "cancellationLock", ActiveObjectCounter.class);
-		assertThat(counter.getCount() > 0).isTrue();
+		ActiveObjectCounter<?> counter = TestUtils.getPropertyValue(container, "cancellationLock");
+		assertThat(counter.getCount()).isGreaterThan(0);
 
 		await().until(() -> counter.getCount() == 0);
 		((DisposableBean) template.getConnectionFactory()).destroy();
@@ -463,8 +461,8 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		container.setMaxConcurrentConsumers(1);
 		container.setConcurrency("2-5");
 
-		assertThat(TestUtils.getPropertyValue(container, "concurrentConsumers")).isEqualTo(2);
-		assertThat(TestUtils.getPropertyValue(container, "maxConcurrentConsumers")).isEqualTo(5);
+		assertThat(TestUtils.<Integer>getPropertyValue(container, "concurrentConsumers")).isEqualTo(2);
+		assertThat(TestUtils.<Integer>getPropertyValue(container, "maxConcurrentConsumers")).isEqualTo(5);
 	}
 
 	@Configuration

@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.listener.adapter;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -65,7 +66,7 @@ public class BatchMessagingMessageListenerAdapterTests {
 		Method method = getClass().getDeclaredMethod("listen", List.class);
 		BatchMessagingMessageListenerAdapter adapter = new BatchMessagingMessageListenerAdapter(this, method, false,
 				null, null);
-		assertThat(TestUtils.getPropertyValue(adapter, "messagingMessageConverter.inferredArgumentType"))
+		assertThat(TestUtils.<Type>getPropertyValue(adapter, "messagingMessageConverter.inferredArgumentType"))
 				.isEqualTo(String.class);
 		Method badMethod = getClass().getDeclaredMethod("listen", String.class);
 		assertThatIllegalStateException().isThrownBy(() ->
