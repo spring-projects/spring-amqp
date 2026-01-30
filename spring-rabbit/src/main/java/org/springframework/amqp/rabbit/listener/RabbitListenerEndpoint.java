@@ -20,8 +20,8 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.MessageListenerContainer;
+import org.springframework.amqp.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
-import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.core.task.TaskExecutor;
 

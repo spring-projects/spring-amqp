@@ -26,7 +26,7 @@ import com.rabbitmq.client.Channel;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.listener.adapter.HandlerAdapter;
+import org.springframework.amqp.listener.adapter.HandlerAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;

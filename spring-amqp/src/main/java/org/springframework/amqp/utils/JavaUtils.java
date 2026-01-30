@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -39,6 +40,13 @@ public final class JavaUtils {
 	 * The singleton instance of this utility class.
 	 */
 	public static final JavaUtils INSTANCE = new JavaUtils();
+
+	/**
+	 * True if the Reactor's {@code Mono} class is present.
+	 * @since 4.1
+	 */
+	public static final boolean MONO_PRESENT = ClassUtils.isPresent("reactor.core.publisher.Mono", null);
+
 
 	private JavaUtils() {
 	}

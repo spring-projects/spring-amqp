@@ -32,6 +32,9 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.listener.ListenerExecutionFailedException;
+import org.springframework.amqp.listener.adapter.DelegatingInvocableHandler;
+import org.springframework.amqp.listener.adapter.HandlerAdapter;
+import org.springframework.amqp.listener.adapter.ReplyFailureException;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.test.MessageTestUtils;
 import org.springframework.amqp.support.AmqpHeaders;

@@ -22,9 +22,9 @@ import java.util.Arrays;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.MessageListenerContainer;
+import org.springframework.amqp.listener.adapter.HandlerAdapter;
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.listener.adapter.BatchMessagingMessageListenerAdapter;
-import org.springframework.amqp.rabbit.listener.adapter.HandlerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.support.converter.MessageConverter;

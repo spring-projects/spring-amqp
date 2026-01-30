@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-present the original author or authors.
+ * Copyright 2026-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.listener.adapter;
+package org.springframework.amqp.listener.adapter;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -29,12 +29,19 @@ import org.springframework.expression.Expression;
  * @author Gary Russell
  * @author Artem Bilan
  *
- * @since 2.1
- *
- * @deprecated since 4.1 in favor of {@link org.springframework.amqp.listener.adapter.InvocationResult}.
+ * @since 4.1
  */
-@Deprecated(since = "4.1", forRemoval = true)
-public final class InvocationResult extends org.springframework.amqp.listener.adapter.InvocationResult {
+public class InvocationResult {
+
+	private final @Nullable Object returnValue;
+
+	private final @Nullable Expression sendTo;
+
+	private final @Nullable Type returnType;
+
+	private final @Nullable Object bean;
+
+	private final @Nullable Method method;
 
 	/**
 	 * Construct an instance with the provided properties.
@@ -47,7 +54,44 @@ public final class InvocationResult extends org.springframework.amqp.listener.ad
 	public InvocationResult(@Nullable Object result, @Nullable Expression sendTo, @Nullable Type returnType,
 			@Nullable Object bean, @Nullable Method method) {
 
-		super(result, sendTo, returnType, bean, method);
+		this.returnValue = result;
+		this.sendTo = sendTo;
+		this.returnType = returnType;
+		this.bean = bean;
+		this.method = method;
+	}
+
+	public @Nullable Object getReturnValue() {
+		return this.returnValue;
+	}
+
+	public @Nullable Expression getSendTo() {
+		return this.sendTo;
+	}
+
+	@Nullable
+	public Type getReturnType() {
+		return this.returnType;
+	}
+
+	@Nullable
+	public Object getBean() {
+		return this.bean;
+	}
+
+	@Nullable
+	public Method getMethod() {
+		return this.method;
+	}
+
+	@Override
+	public String toString() {
+		return "InvocationResult [returnValue=" + this.returnValue
+				+ (this.sendTo != null ? ", sendTo=" + this.sendTo : "")
+				+ ", returnType=" + this.returnType
+				+ ", bean=" + this.bean
+				+ ", method=" + this.method
+				+ "]";
 	}
 
 }

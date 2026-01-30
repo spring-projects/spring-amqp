@@ -30,6 +30,7 @@ import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.listener.adapter.InvocationResult;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.util.Assert;

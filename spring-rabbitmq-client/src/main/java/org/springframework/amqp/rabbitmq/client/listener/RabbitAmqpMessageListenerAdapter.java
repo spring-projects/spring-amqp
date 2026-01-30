@@ -32,7 +32,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.listener.ContainerUtils;
 import org.springframework.amqp.listener.ListenerExecutionFailedException;
-import org.springframework.amqp.rabbit.listener.adapter.InvocationResult;
+import org.springframework.amqp.listener.adapter.InvocationResult;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbitmq.client.AmqpConnectionFactory;

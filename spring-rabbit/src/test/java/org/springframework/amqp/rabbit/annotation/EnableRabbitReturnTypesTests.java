@@ -23,13 +23,13 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
-import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.support.converter.ContentTypeDelegatingMessageConverter;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;

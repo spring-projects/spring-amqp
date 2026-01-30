@@ -35,6 +35,8 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.listener.ContainerUtils;
+import org.springframework.amqp.listener.adapter.InvocationResult;
+import org.springframework.amqp.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
@@ -43,6 +45,8 @@ import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.amqp.utils.JavaUtils;
+import org.springframework.amqp.utils.MonoHandler;
 import org.springframework.core.retry.RetryException;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.expression.BeanResolver;
@@ -54,7 +58,6 @@ import org.springframework.expression.spel.support.MapAccessor;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.expression.spel.support.StandardTypeConverter;
 import org.springframework.util.Assert;
-import org.springframework.util.ClassUtils;
 
 /**
  * An abstract {@link org.springframework.amqp.core.MessageListener} adapter providing the
@@ -79,13 +82,10 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 
 	private static final ParserContext PARSER_CONTEXT = new TemplateParserContext("!{", "}");
 
-	static final boolean monoPresent = // NOSONAR - lower case, protected
-			ClassUtils.isPresent("reactor.core.publisher.Mono", ChannelAwareMessageListener.class.getClassLoader());
-
 	/**
 	 * Logger available to subclasses.
 	 */
-	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR protected
+	protected final Log logger = LogFactory.getLog(getClass());
 
 	private final StandardEvaluationContext evalContext = new StandardEvaluationContext();
 
@@ -403,7 +403,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 					}
 				});
 			}
-			else if (monoPresent && MonoHandler.isMono(resultArg.getReturnValue())) {
+			else if (JavaUtils.MONO_PRESENT && MonoHandler.isMono(resultArg.getReturnValue())) {
 				if (!this.isManualAck) {
 					this.logger.warn("Container AcknowledgeMode must be MANUAL for a Mono<?> return type" +
 							"(or Kotlin suspend function); otherwise the container will ack the message immediately");
@@ -470,6 +470,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 		}
 	}
 
+	@SuppressWarnings("removal")
 	protected void doHandleResult(InvocationResult resultArg, Message request, @Nullable Channel channel,
 			@Nullable Object source) {
 
@@ -636,6 +637,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	 * @see #postProcessResponse(Message, Message)
 	 * @see #setReplyPostProcessor(ReplyPostProcessor)
 	 */
+	@SuppressWarnings("removal")
 	protected void sendResponse(@Nullable Channel channel, Address replyTo, Message messageIn) {
 		Assert.notNull(channel, "'channel' must not be null.");
 		Message message = messageIn;

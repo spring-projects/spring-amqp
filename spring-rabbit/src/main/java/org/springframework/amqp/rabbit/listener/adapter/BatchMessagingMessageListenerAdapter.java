@@ -26,12 +26,15 @@ import com.rabbitmq.client.Channel;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.listener.ContainerUtils;
+import org.springframework.amqp.listener.adapter.InvocationResult;
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.batch.SimpleBatchingStrategy;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareBatchMessageListener;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.support.converter.MessageConversionException;
+import org.springframework.amqp.utils.JavaUtils;
+import org.springframework.amqp.utils.MonoHandler;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.GenericMessage;
 import org.springframework.messaging.support.MessageBuilder;
@@ -138,7 +141,7 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 					}
 				});
 			}
-			else if (monoPresent && MonoHandler.isMono(resultArg.getReturnValue())) {
+			else if (JavaUtils.MONO_PRESENT && MonoHandler.isMono(resultArg.getReturnValue())) {
 				if (!isManualAck()) {
 					this.logger.warn("Container AcknowledgeMode must be MANUAL for a Mono<?> return type" +
 							"(or Kotlin suspend function); otherwise the container will ack the message immediately");

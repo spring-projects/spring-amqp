@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-present the original author or authors.
+ * Copyright 2026-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.listener.adapter;
+package org.springframework.amqp.listener.adapter;
+
+import java.io.Serial;
 
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Address;
 
 /**
@@ -26,16 +29,22 @@ import org.springframework.amqp.core.Address;
  * @author Stephane Nicoll
  * @author Artem Bilan
  *
- * @since 1.4
- *
- * @deprecated since 4.1 in favor of {@link org.springframework.amqp.listener.adapter.ReplyFailureException}.
+ * @since 4.1
  */
-@SuppressWarnings("serial")
-@Deprecated(since = "4.1", forRemoval = true)
-public class ReplyFailureException extends org.springframework.amqp.listener.adapter.ReplyFailureException {
+public class ReplyFailureException extends AmqpException {
+
+	@Serial
+	private static final long serialVersionUID = 1L;
+
+	private final @Nullable Address replyTo;
 
 	public ReplyFailureException(String msg, @Nullable Address replyTo, Throwable cause) {
-		super(msg, replyTo, cause);
+		super(msg, cause);
+		this.replyTo = replyTo;
+	}
+
+	public @Nullable Address getReplyTo() {
+		return this.replyTo;
 	}
 
 }

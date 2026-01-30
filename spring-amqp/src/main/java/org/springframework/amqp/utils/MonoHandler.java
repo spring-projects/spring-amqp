@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-present the original author or authors.
+ * Copyright 2026-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.listener.adapter;
+package org.springframework.amqp.utils;
 
 import java.util.function.Consumer;
 
@@ -25,27 +25,25 @@ import reactor.core.publisher.Mono;
  * Class to prevent direct links to {@link Mono}.
  *
  * @author Gary Russell
+ * @author Artem Bilan
  *
- * @since 2.2.21
- *
- * @deprecated since 4.1 in favor of {@link org.springframework.amqp.utils.MonoHandler}.
+ * @since 4.1
  */
-@Deprecated(since = "4.1", forRemoval = true)
-final class MonoHandler { // NOSONAR - pointless to name it ..Utils|Helper
+public final class MonoHandler {
 
 	private MonoHandler() {
 	}
 
-	static boolean isMono(@Nullable Object result) {
+	public static boolean isMono(@Nullable Object result) {
 		return result instanceof Mono;
 	}
 
-	static boolean isMono(Class<?> resultType) {
+	public static boolean isMono(Class<?> resultType) {
 		return Mono.class.isAssignableFrom(resultType);
 	}
 
 	@SuppressWarnings("unchecked")
-	static void subscribe(Object returnValue, @Nullable Consumer<? super Object> success,
+	public static void subscribe(Object returnValue, @Nullable Consumer<? super Object> success,
 			Consumer<? super Throwable> failure, Runnable completeConsumer) {
 
 		((Mono<? super Object>) returnValue).subscribe(success, failure, completeConsumer);

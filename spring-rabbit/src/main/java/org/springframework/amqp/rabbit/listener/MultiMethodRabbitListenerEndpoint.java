@@ -22,8 +22,8 @@ import java.util.List;
 
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.amqp.rabbit.listener.adapter.DelegatingInvocableHandler;
-import org.springframework.amqp.rabbit.listener.adapter.HandlerAdapter;
+import org.springframework.amqp.listener.adapter.DelegatingInvocableHandler;
+import org.springframework.amqp.listener.adapter.HandlerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;

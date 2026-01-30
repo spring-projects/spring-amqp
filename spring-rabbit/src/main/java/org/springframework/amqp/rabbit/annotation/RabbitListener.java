@@ -100,7 +100,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
  * @see RabbitListenerAnnotationBeanPostProcessor
  * @see RabbitListeners
  */
-@Target({ ElementType.TYPE, ElementType.METHOD, ElementType.ANNOTATION_TYPE })
+@Target({ElementType.TYPE, ElementType.METHOD, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @MessageMapping
 @Documented
@@ -278,13 +278,13 @@ public @interface RabbitListener {
 
 	/**
 	 * The bean name of a
-	 * {@link org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor} to post
+	 * {@link org.springframework.amqp.listener.adapter.ReplyPostProcessor} to post
 	 * process a response before it is sent. If a SpEL expression is provided
-	 * ({@code #{...}}), the expression can either evaluate to a post processor instance
+	 * ({@code #{...}}), the expression can either evaluate to a post-processor instance
 	 * or a bean name.
 	 * @return the bean name.
 	 * @since 2.2.5
-	 * @see org.springframework.amqp.rabbit.listener.adapter.AbstractAdaptableMessageListener#setReplyPostProcessor(org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor)
+	 * @see org.springframework.amqp.rabbit.listener.adapter.AbstractAdaptableMessageListener#setReplyPostProcessor(org.springframework.amqp.listener.adapter.ReplyPostProcessor)
 	 */
 	String replyPostProcessor() default "";
 

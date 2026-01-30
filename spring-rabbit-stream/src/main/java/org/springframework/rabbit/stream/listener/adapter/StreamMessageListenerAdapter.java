@@ -22,7 +22,7 @@ import com.rabbitmq.stream.Message;
 import com.rabbitmq.stream.MessageHandler.Context;
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.amqp.rabbit.listener.adapter.InvocationResult;
+import org.springframework.amqp.listener.adapter.InvocationResult;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.messaging.support.GenericMessage;

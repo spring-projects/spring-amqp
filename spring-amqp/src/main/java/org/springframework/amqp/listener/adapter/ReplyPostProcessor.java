@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-present the original author or authors.
+ * Copyright 2026-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,24 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.listener.adapter;
+package org.springframework.amqp.listener.adapter;
+
+import java.util.function.BiFunction;
+
+import org.springframework.amqp.core.Message;
 
 /**
- * A post processor for replies. The first parameter to the function is the request
+ * A post-processor for replies. The first parameter to the function is the request
  * message, the second is the response message; it must return the modified (or a new)
  * message. Use this, for example, if you want to copy additional headers from the request
  * message.
  *
  * @author Gary Russell
+ * @author Artem Bilan
  *
- * @since 2.2.5
+ * @since 4.1
  *
- * @deprecated since 4.1 in favor of {@link org.springframework.amqp.listener.adapter.ReplyPostProcessor}.
  */
-@Deprecated(since = "4.1", forRemoval = true)
-public interface ReplyPostProcessor extends org.springframework.amqp.listener.adapter.ReplyPostProcessor {
+public interface ReplyPostProcessor extends BiFunction<Message, Message, Message> {
 
 }

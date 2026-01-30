@@ -24,11 +24,11 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.MessageListenerContainer;
 import org.springframework.amqp.core.MessagePostProcessor;
+import org.springframework.amqp.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.adapter.AbstractAdaptableMessageListener;
-import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.beans.BeansException;

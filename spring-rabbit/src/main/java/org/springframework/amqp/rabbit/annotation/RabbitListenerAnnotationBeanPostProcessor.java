@@ -48,6 +48,7 @@ import org.springframework.amqp.core.ExchangeBuilder;
 import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.listener.adapter.AmqpMessageHandlerMethodFactory;
+import org.springframework.amqp.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
@@ -55,7 +56,6 @@ import org.springframework.amqp.rabbit.listener.MultiMethodRabbitListenerEndpoin
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
-import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.aop.framework.Advised;
@@ -413,10 +413,10 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			catch (NoSuchMethodException ex) {
 				throw new IllegalStateException(String.format(
 						"@RabbitListener method '%s' found on bean target class '%s', " +
-						"but not found in any interface(s) for a bean JDK proxy. Either " +
-						"pull the method up to an interface or switch to subclass (CGLIB) " +
-						"proxies by setting proxy-target-class/proxyTargetClass " +
-						"attribute to 'true'", method.getName(), method.getDeclaringClass().getSimpleName()), ex);
+								"but not found in any interface(s) for a bean JDK proxy. Either " +
+								"pull the method up to an interface or switch to subclass (CGLIB) " +
+								"proxies by setting proxy-target-class/proxyTargetClass " +
+								"attribute to 'true'", method.getName(), method.getDeclaringClass().getSimpleName()), ex);
 			}
 		}
 		return method;
@@ -676,11 +676,11 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 		return queueNames.isEmpty()
 				? queueBeans.stream()
-						.map(s -> (Object) s)
-						.collect(Collectors.toList())
+				.map(s -> (Object) s)
+				.collect(Collectors.toList())
 				: queueNames.stream()
-						.map(s -> (Object) s)
-						.collect(Collectors.toList());
+				.map(s -> (Object) s)
+				.collect(Collectors.toList());
 
 	}
 
@@ -716,9 +716,9 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		else {
 			throw new IllegalArgumentException(String.format(
 					"@RabbitListener."
-					+ what
-					+ " can't resolve '%s' as a String[] or a String "
-					+ (queues != null ? "or a Queue" : ""),
+							+ what
+							+ " can't resolve '%s' as a String[] or a String "
+							+ (queues != null ? "or a Queue" : ""),
 					resolvedValue));
 		}
 	}
@@ -797,7 +797,6 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		if (!CollectionUtils.isEmpty(arguments)) {
 			exchangeBuilder.withArguments(arguments);
 		}
-
 
 		org.springframework.amqp.core.Exchange exchange =
 				exchangeBuilder.durable(resolveExpressionAsBoolean(bindingExchange.durable()))
@@ -1071,6 +1070,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	 * @param annotations on the method
 	 */
 	private record ListenerMethod(Method method, RabbitListener[] annotations) {
+
 	}
 
 	private record BytesToStringConverter(Charset charset) implements Converter<byte[], String> {

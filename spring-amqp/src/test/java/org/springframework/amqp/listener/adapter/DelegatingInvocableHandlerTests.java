@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.listener.adapter;
+package org.springframework.amqp.listener.adapter;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.UndeclaredThrowableException;
@@ -36,7 +36,9 @@ import static org.mockito.Mockito.mock;
 
 /**
  * @author Gary Russell
- * @since 2.4.12
+ * @author Artem Bilan
+ *
+ * @since 4.1
  *
  */
 public class DelegatingInvocableHandlerTests {
@@ -51,7 +53,7 @@ public class DelegatingInvocableHandlerTests {
 		BeanExpressionContext context = mock(BeanExpressionContext.class);
 		DelegatingInvocableHandler handler = new DelegatingInvocableHandler(methods, bean, resolver, context);
 		assertThatExceptionOfType(UndeclaredThrowableException.class).isThrownBy(() ->
-				handler.getHandlerForPayload(Long.class))
+						handler.getHandlerForPayload(Long.class))
 				.withCauseExactlyInstanceOf(NoSuchMethodException.class)
 				.withStackTraceContaining("No listener method found in");
 	}

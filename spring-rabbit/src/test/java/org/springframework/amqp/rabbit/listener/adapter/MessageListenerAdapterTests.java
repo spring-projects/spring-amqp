@@ -34,6 +34,8 @@ import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.listener.adapter.InvocationResult;
+import org.springframework.amqp.listener.adapter.ReplyFailureException;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.core.retry.RetryPolicy;
 import org.springframework.core.retry.RetryTemplate;
