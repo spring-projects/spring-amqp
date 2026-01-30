@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.core;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -47,6 +48,9 @@ import org.springframework.util.StringUtils;
  * @author Ngoc Nhan
  */
 public class Address implements Serializable {
+
+	@Serial
+	private static final long serialVersionUID = 1L;
 
 	/**
 	 * Use this value in {@code RabbitTemplate#setReplyAddress(String)} to explicitly
