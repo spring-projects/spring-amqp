@@ -25,6 +25,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.amqp.listener.adapter.InvocationResult;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
+import org.springframework.amqp.support.converter.MessagingMessageConverterAdapter;
 import org.springframework.messaging.support.GenericMessage;
 import org.springframework.rabbit.stream.listener.StreamMessageListener;
 
@@ -32,6 +33,7 @@ import org.springframework.rabbit.stream.listener.StreamMessageListener;
  * A listener adapter that receives native stream messages.
  *
  * @author Gary Russell
+ * @author Artem Bilan
  *
  * @since 2.4
  *
@@ -54,6 +56,13 @@ public class StreamMessageListenerAdapter extends MessagingMessageListenerAdapte
 			@Nullable RabbitListenerErrorHandler errorHandler) {
 
 		super(bean, method, returnExceptions, errorHandler);
+	}
+
+	@Override
+	protected MessagingMessageConverterAdapter newMessagingMessageConverterAdapter(
+			@Nullable Object bean, @Nullable Method method, boolean batch) {
+
+		return new MessagingMessageConverterAdapter(bean, method, batch, Message.class, Context.class);
 	}
 
 	@Override

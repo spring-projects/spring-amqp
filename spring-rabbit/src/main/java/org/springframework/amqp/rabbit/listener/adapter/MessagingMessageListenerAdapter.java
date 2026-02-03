@@ -17,12 +17,7 @@
 package org.springframework.amqp.rabbit.listener.adapter;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.lang.reflect.WildcardType;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
 
 import com.rabbitmq.client.Channel;
 import org.jspecify.annotations.Nullable;
@@ -38,17 +33,12 @@ import org.springframework.amqp.support.AmqpHeaderMapper;
 import org.springframework.amqp.support.SimpleAmqpHeaderMapper;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.MessagingMessageConverter;
+import org.springframework.amqp.support.converter.MessagingMessageConverterAdapter;
 import org.springframework.amqp.support.converter.RemoteInvocationResult;
-import org.springframework.core.MethodParameter;
 import org.springframework.messaging.Message;
-import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.converter.MessageConversionException;
-import org.springframework.messaging.handler.annotation.Header;
-import org.springframework.messaging.handler.annotation.Headers;
-import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.util.Assert;
-import org.springframework.util.TypeUtils;
 
 /**
  * A {@link MessageListener MessageListener}
@@ -94,14 +84,30 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		this(bean, method, returnExceptions, errorHandler, false);
 	}
 
+	@SuppressWarnings("this-escape")
 	protected MessagingMessageListenerAdapter(@Nullable Object bean, @Nullable Method method, boolean returnExceptions,
 			@Nullable RabbitListenerErrorHandler errorHandler, boolean batch) {
 
-		this.messagingMessageConverter = new MessagingMessageConverterAdapter(bean, method, batch);
+		this.messagingMessageConverter = newMessagingMessageConverterAdapter(bean, method, batch);
 		this.returnExceptions = returnExceptions;
 		this.errorHandler = errorHandler;
 	}
 
+	/**
+	 * Create a new {@link MessagingMessageConverterAdapter} instance based on the given bean and method.
+	 * By default, additional provided argument type is a {@link Channel}.
+	 * Extensions of this class can override this method to provide some other eligible additional argument types
+	 * not required conversion.
+	 * @param bean the bean of the method.
+	 * @param method the method to infer a payload type.
+	 * @param batch if the method is a batch listener.
+	 * @return the {@link MessagingMessageConverterAdapter} instance.
+	 */
+	protected MessagingMessageConverterAdapter newMessagingMessageConverterAdapter(
+			@Nullable Object bean, @Nullable Method method, boolean batch) {
+
+		return new MessagingMessageConverterAdapter(bean, method, batch, Channel.class);
+	}
 	/**
 	 * Set the {@link HandlerAdapter} to use to invoke the method
 	 * processing an incoming {@link org.springframework.amqp.core.Message}.
@@ -194,7 +200,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	}
 
 	protected void handleException(org.springframework.amqp.core.Message amqpMessage, @Nullable Channel channel,
-			@Nullable Message<?> message, ListenerExecutionFailedException e) throws Exception { // NOSONAR
+			@Nullable Message<?> message, ListenerExecutionFailedException e) throws Exception {
 
 		if (this.errorHandler != null) {
 			try {
@@ -233,7 +239,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			logger.debug("Processing [" + message + "]");
 		}
 		InvocationResult result;
-		if (this.messagingMessageConverter.method == null) {
+		if (this.messagingMessageConverter.getMethod() == null) {
 			amqpMessage.getMessageProperties()
 					.setTargetMethod(getHandlerAdapter().getMethodFor(message.getPayload()));
 		}
@@ -247,7 +253,8 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	}
 
 	private void returnOrThrow(org.springframework.amqp.core.Message amqpMessage, @Nullable Channel channel,
-			@Nullable Message<?> message, @Nullable Throwable throwableToReturn, Exception exceptionToThrow) throws Exception {
+			@Nullable Message<?> message, @Nullable Throwable throwableToReturn, Exception exceptionToThrow)
+			throws Exception {
 
 		if (!this.returnExceptions) {
 			throw exceptionToThrow;
@@ -313,7 +320,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	}
 
 	/**
-	 * Build a Rabbit message to be sent as response based on the given result object.
+	 * Build a Rabbit message to be sent as a response based on the given result object.
 	 * @param channel the Rabbit Channel to operate on
 	 * @param result the content of the message, as returned from the listener method
 	 * @param genericType the generic type of the result.
@@ -342,171 +349,6 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 						+ result + "]");
 			}
 		}
-	}
-
-	/**
-	 * Delegates payload extraction to
-	 * {@link #extractMessage(org.springframework.amqp.core.Message message)}
-	 * to enforce backward compatibility. Uses this listener adapter's converter instead of
-	 * the one configured in the converter adapter.
-	 * If the inbound message has no type information and the configured message converter
-	 * supports it, we attempt to infer the conversion type from the method signature.
-	 */
-	protected final class MessagingMessageConverterAdapter extends MessagingMessageConverter {
-
-		private final @Nullable Object bean;
-
-		final @Nullable Method method; // NOSONAR visibility
-
-		private final @Nullable Type inferredArgumentType;
-
-		private final boolean isBatch;
-
-		private boolean isMessageList;
-
-		private boolean isAmqpMessageList;
-
-		private boolean isCollection;
-
-		MessagingMessageConverterAdapter(@Nullable Object bean, @Nullable Method method, boolean batch) {
-			this.bean = bean;
-			this.method = method;
-			this.isBatch = batch;
-			this.inferredArgumentType = determineInferredType();
-			if (logger.isDebugEnabled() && this.inferredArgumentType != null) {
-				logger.debug("Inferred argument type for " + method + " is " + this.inferredArgumentType);
-			}
-		}
-
-		public boolean isMessageList() {
-			return this.isMessageList;
-		}
-
-		public boolean isAmqpMessageList() {
-			return this.isAmqpMessageList;
-		}
-
-		public @Nullable Method getMethod() {
-			return this.method;
-		}
-
-		@Override
-		protected Object extractPayload(org.springframework.amqp.core.Message message) {
-			MessageProperties messageProperties = message.getMessageProperties();
-			if (this.bean != null) {
-				messageProperties.setTargetBean(this.bean);
-			}
-			if (this.method != null) {
-				messageProperties.setTargetMethod(this.method);
-				if (this.inferredArgumentType != null) {
-					messageProperties.setInferredArgumentType(this.inferredArgumentType);
-				}
-			}
-			return extractMessage(message);
-		}
-
-		private @Nullable Type determineInferredType() { // NOSONAR - complexity
-			if (this.method == null) {
-				return null;
-			}
-
-			Type genericParameterType = null;
-
-			for (int i = 0; i < this.method.getParameterCount(); i++) {
-				MethodParameter methodParameter = new MethodParameter(this.method, i);
-				/*
-				 * We're looking for a single parameter, or one annotated with @Payload.
-				 * We ignore parameters with type Message because they are not involved with conversion.
-				 */
-				boolean isHeaderOrHeaders = methodParameter.hasParameterAnnotation(Header.class)
-						|| methodParameter.hasParameterAnnotation(Headers.class)
-						|| methodParameter.getParameterType().equals(MessageHeaders.class);
-				boolean isPayload = methodParameter.hasParameterAnnotation(Payload.class);
-				if (isHeaderOrHeaders && isPayload && MessagingMessageListenerAdapter.this.logger.isWarnEnabled()) {
-					MessagingMessageListenerAdapter.this.logger.warn(this.method.getName()
-							+ ": Cannot annotate a parameter with both @Header and @Payload; "
-							+ "ignored for payload conversion");
-				}
-				if (isEligibleParameter(methodParameter) && !isHeaderOrHeaders) {
-
-					if (genericParameterType == null) {
-						genericParameterType = extractGenericParameterTypFromMethodParameter(methodParameter);
-						if (this.isBatch && !this.isCollection) {
-							throw new IllegalStateException(
-									"Mis-configuration; a batch listener must consume a List<?> or "
-											+ "Collection<?> for method: " + this.method);
-						}
-
-					}
-					else {
-						if (MessagingMessageListenerAdapter.this.logger.isDebugEnabled()) {
-							MessagingMessageListenerAdapter.this.logger
-									.debug("Ambiguous parameters for target payload for method " + this.method
-											+ "; no inferred type header added");
-						}
-						return null;
-					}
-				}
-			}
-			return checkOptional(genericParameterType);
-		}
-
-		protected @Nullable Type checkOptional(@Nullable Type genericParameterType) {
-			if (genericParameterType instanceof ParameterizedType pType && pType.getRawType().equals(Optional.class)) {
-				return pType.getActualTypeArguments()[0];
-			}
-			return genericParameterType;
-		}
-
-		/*
-		 * Don't consider parameter types that are available after conversion.
-		 * Message, Message<?> and Channel.
-		 */
-		private boolean isEligibleParameter(MethodParameter methodParameter) {
-			Type parameterType = methodParameter.getGenericParameterType();
-			if (parameterType.equals(Channel.class)
-					|| parameterType.equals(MessageProperties.class)
-					|| parameterType.equals(org.springframework.amqp.core.Message.class)
-					|| parameterType.getTypeName().startsWith("kotlin.coroutines.Continuation")) {
-				return false;
-			}
-			if (parameterType instanceof ParameterizedType parameterizedType &&
-					(parameterizedType.getRawType().equals(Message.class))) {
-				return !(parameterizedType.getActualTypeArguments()[0] instanceof WildcardType);
-			}
-			return !parameterType.equals(Message.class); // could be Message without a generic type
-		}
-
-		private Type extractGenericParameterTypFromMethodParameter(MethodParameter methodParameter) {
-			Type genericParameterType = methodParameter.getGenericParameterType();
-			if (genericParameterType instanceof ParameterizedType parameterizedType) {
-				if (parameterizedType.getRawType().equals(Message.class)) {
-					genericParameterType = ((ParameterizedType) genericParameterType).getActualTypeArguments()[0];
-				}
-				else if (this.isBatch &&
-						(parameterizedType.getRawType().equals(List.class) ||
-								(parameterizedType.getRawType().equals(Collection.class) &&
-										parameterizedType.getActualTypeArguments().length == 1))) {
-
-					this.isCollection = true;
-					Type paramType = parameterizedType.getActualTypeArguments()[0];
-					boolean messageHasGeneric = paramType instanceof ParameterizedType pType
-							&& pType.getRawType().equals(Message.class);
-					this.isMessageList = TypeUtils.isAssignable(paramType, Message.class) || messageHasGeneric;
-					this.isAmqpMessageList =
-							TypeUtils.isAssignable(paramType, org.springframework.amqp.core.Message.class);
-					if (messageHasGeneric) {
-						genericParameterType = ((ParameterizedType) paramType).getActualTypeArguments()[0];
-					}
-					else {
-						// when decoding batch messages we convert to the List's generic type
-						genericParameterType = paramType;
-					}
-				}
-			}
-			return genericParameterType;
-		}
-
 	}
 
 }

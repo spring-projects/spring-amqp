@@ -38,6 +38,7 @@ import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbitmq.client.AmqpConnectionFactory;
 import org.springframework.amqp.rabbitmq.client.RabbitAmqpTemplate;
 import org.springframework.amqp.rabbitmq.client.RabbitAmqpUtils;
+import org.springframework.amqp.support.converter.MessagingMessageConverterAdapter;
 import org.springframework.messaging.support.GenericMessage;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -47,10 +48,13 @@ import org.springframework.util.StringUtils;
  * Provides these arguments for the {@link #getHandlerAdapter()} invocation:
  * <ul>
  * <li>{@link com.rabbitmq.client.amqp.Message} - the native AMQP 1.0 message without any conversions</li>
- * <li>{@link org.springframework.amqp.core.Message} - Spring AMQP message abstraction as conversion result from the native AMQP 1.0 message</li>
- * <li>{@link org.springframework.messaging.Message} - Spring Messaging abstraction as conversion result from the Spring AMQP message</li>
+ * <li>{@link org.springframework.amqp.core.Message} -
+ * 				Spring AMQP message abstraction as a conversion result from the native AMQP 1.0 message</li>
+ * <li>{@link org.springframework.messaging.Message} -
+ * 				Spring Messaging abstraction as conversion results from the Spring AMQP message</li>
  * <li>{@link Consumer.Context} - RabbitMQ AMQP client consumer settlement API.</li>
- * <li>{@link org.springframework.amqp.core.AmqpAcknowledgment} - Spring AMQP acknowledgment abstraction: delegates to the {@link Consumer.Context}</li>
+ * <li>{@link org.springframework.amqp.core.AmqpAcknowledgment} -
+ * 				Spring AMQP acknowledgment abstraction: delegates to the {@link Consumer.Context}</li>
  * </ul>
  * <p>
  * This class reuses the {@link MessagingMessageListenerAdapter} as much as possible just to avoid duplication.
@@ -73,6 +77,14 @@ public class RabbitAmqpMessageListenerAdapter extends MessagingMessageListenerAd
 			@Nullable RabbitListenerErrorHandler errorHandler, boolean batch) {
 
 		super(bean, method, returnExceptions, errorHandler, batch);
+	}
+
+	@Override
+	protected MessagingMessageConverterAdapter newMessagingMessageConverterAdapter(
+			@Nullable Object bean, @Nullable Method method, boolean batch) {
+
+		return new MessagingMessageConverterAdapter(bean, method, batch, com.rabbitmq.client.amqp.Message.class,
+				Consumer.Context.class);
 	}
 
 	public void setAfterReceivePostProcessors(Collection<MessagePostProcessor> afterReceivePostProcessors) {
@@ -122,7 +134,7 @@ public class RabbitAmqpMessageListenerAdapter extends MessagingMessageListenerAd
 			return;
 		}
 		catch (Exception ex) {
-			// Ignore and reject the message against original error
+			// Ignore and reject the message against the original error
 		}
 
 		this.logger.error("Future, Mono, or suspend function was completed with an exception for " + request, t);
