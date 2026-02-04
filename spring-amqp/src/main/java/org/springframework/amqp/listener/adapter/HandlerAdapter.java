@@ -79,9 +79,9 @@ public class HandlerAdapter {
 	 * @return the invocation result.
 	 * @throws Exception if one occurs.
 	 */
-	public InvocationResult invoke(Message<?> message, @Nullable Object... providedArgs) throws Exception { // NOSONAR
+	public InvocationResult invoke(Message<?> message, @Nullable Object... providedArgs) throws Exception {
 		InvocableHandlerMethod invokerHandlerMethodToUse = this.invokerHandlerMethod;
-		if (invokerHandlerMethodToUse != null) { // NOSONAR (nullable message)
+		if (invokerHandlerMethodToUse != null) {
 			return new InvocationResult(invokerHandlerMethodToUse.invoke(message, providedArgs),
 					null, invokerHandlerMethodToUse.getMethod().getGenericReturnType(),
 					invokerHandlerMethodToUse.getBean(),
@@ -89,7 +89,7 @@ public class HandlerAdapter {
 		}
 		Assert.notNull(this.delegatingHandler, "'delegatingHandler' or 'invokerHandlerMethod' is required");
 		if (this.delegatingHandler.hasDefaultHandler()) {
-			// Needed to avoid returning raw Message which matches Object
+			// Needed to avoid returning a raw Message which matches Object
 			Object[] args = new Object[providedArgs.length + 1];
 			args[0] = message.getPayload();
 			System.arraycopy(providedArgs, 0, args, 1, providedArgs.length);

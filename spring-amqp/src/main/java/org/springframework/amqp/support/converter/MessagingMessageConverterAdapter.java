@@ -41,6 +41,7 @@ import org.springframework.util.TypeUtils;
 
 /**
  * The {@link MessagingMessageConverter} extension for message listeners with flexible method signature.
+ * <p>
  * If the inbound message has no type information and the configured message converter
  * supports it, this converter attempts to infer the conversion type from the method signature
  * and populates the {@link MessageProperties#setInferredArgumentType(Type)} before calling
@@ -67,7 +68,7 @@ public class MessagingMessageConverterAdapter extends MessagingMessageConverter 
 
 	private final @Nullable Object bean;
 
-	final @Nullable Method method;
+	private final @Nullable Method method;
 
 	private final @Nullable Type inferredArgumentType;
 
@@ -112,21 +113,6 @@ public class MessagingMessageConverterAdapter extends MessagingMessageConverter 
 		return this.method;
 	}
 
-	@Override
-	public Object extractPayload(org.springframework.amqp.core.Message message) {
-		MessageProperties messageProperties = message.getMessageProperties();
-		if (this.bean != null) {
-			messageProperties.setTargetBean(this.bean);
-		}
-		if (this.method != null) {
-			messageProperties.setTargetMethod(this.method);
-			if (this.inferredArgumentType != null) {
-				messageProperties.setInferredArgumentType(this.inferredArgumentType);
-			}
-		}
-		return super.extractPayload(message);
-	}
-
 	private @Nullable Type determineInferredType() {
 		if (this.method == null) {
 			return null;
@@ -152,7 +138,7 @@ public class MessagingMessageConverterAdapter extends MessagingMessageConverter 
 			if (isEligibleParameter(methodParameter) && !isHeaderOrHeaders) {
 
 				if (genericParameterType == null) {
-					genericParameterType = extractGenericParameterTypFromMethodParameter(methodParameter);
+					genericParameterType = extractGenericParameterTypeFromMethodParameter(methodParameter);
 					if (this.isBatch && !this.isCollection) {
 						throw new IllegalStateException(
 								"Mis-configuration; a batch listener must consume a List<?> or "
@@ -170,13 +156,6 @@ public class MessagingMessageConverterAdapter extends MessagingMessageConverter 
 		return checkOptional(genericParameterType);
 	}
 
-	protected @Nullable Type checkOptional(@Nullable Type genericParameterType) {
-		if (genericParameterType instanceof ParameterizedType pType && pType.getRawType().equals(Optional.class)) {
-			return pType.getActualTypeArguments()[0];
-		}
-		return genericParameterType;
-	}
-
 	/*
 	 * Don't consider parameter types that are available after conversion:
 	 * Message, Message<?>, AmqpAcknowledgment etc.
@@ -188,17 +167,21 @@ public class MessagingMessageConverterAdapter extends MessagingMessageConverter 
 
 			return false;
 		}
+
 		if (parameterType instanceof ParameterizedType parameterizedType &&
-				(parameterizedType.getRawType().equals(Message.class))) {
+				parameterizedType.getRawType().equals(Message.class)) {
+
 			return !(parameterizedType.getActualTypeArguments()[0] instanceof WildcardType);
 		}
+
 		return !parameterType.equals(Message.class); // could be Message without a generic type
 	}
 
-	private Type extractGenericParameterTypFromMethodParameter(MethodParameter methodParameter) {
+	private Type extractGenericParameterTypeFromMethodParameter(MethodParameter methodParameter) {
 		Type genericParameterType = methodParameter.getGenericParameterType();
 		if (genericParameterType instanceof ParameterizedType parameterizedType) {
 			if (parameterizedType.getRawType().equals(Message.class)) {
+
 				genericParameterType = parameterizedType.getActualTypeArguments()[0];
 			}
 			else if (this.isBatch &&
@@ -208,8 +191,9 @@ public class MessagingMessageConverterAdapter extends MessagingMessageConverter 
 
 				this.isCollection = true;
 				Type paramType = parameterizedType.getActualTypeArguments()[0];
-				boolean messageHasGeneric = paramType instanceof ParameterizedType pType
-						&& pType.getRawType().equals(Message.class);
+				boolean messageHasGeneric =
+						paramType instanceof ParameterizedType pType
+								&& pType.getRawType().equals(Message.class);
 				this.isMessageList = TypeUtils.isAssignable(paramType, Message.class) || messageHasGeneric;
 				this.isAmqpMessageList =
 						TypeUtils.isAssignable(paramType, org.springframework.amqp.core.Message.class);
@@ -221,6 +205,28 @@ public class MessagingMessageConverterAdapter extends MessagingMessageConverter 
 					genericParameterType = paramType;
 				}
 			}
+		}
+		return genericParameterType;
+	}
+
+	@Override
+	public Object extractPayload(org.springframework.amqp.core.Message message) {
+		MessageProperties messageProperties = message.getMessageProperties();
+		if (this.bean != null) {
+			messageProperties.setTargetBean(this.bean);
+		}
+		if (this.method != null) {
+			messageProperties.setTargetMethod(this.method);
+			if (this.inferredArgumentType != null) {
+				messageProperties.setInferredArgumentType(this.inferredArgumentType);
+			}
+		}
+		return super.extractPayload(message);
+	}
+
+	private static @Nullable Type checkOptional(@Nullable Type genericParameterType) {
+		if (genericParameterType instanceof ParameterizedType pType && pType.getRawType().equals(Optional.class)) {
+			return pType.getActualTypeArguments()[0];
 		}
 		return genericParameterType;
 	}
