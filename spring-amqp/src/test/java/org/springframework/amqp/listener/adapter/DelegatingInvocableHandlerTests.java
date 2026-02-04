@@ -17,7 +17,6 @@
 package org.springframework.amqp.listener.adapter;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.UndeclaredThrowableException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +30,7 @@ import org.springframework.messaging.handler.annotation.support.DefaultMessageHa
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -49,16 +48,16 @@ public class DelegatingInvocableHandlerTests {
 		Object bean = new Multi();
 		Method method = Multi.class.getDeclaredMethod("listen", Integer.class);
 		methods.add(messageHandlerFactory().createInvocableHandlerMethod(bean, method));
-		BeanExpressionResolver resolver = mock(BeanExpressionResolver.class);
-		BeanExpressionContext context = mock(BeanExpressionContext.class);
+		BeanExpressionResolver resolver = mock();
+		BeanExpressionContext context = mock();
 		DelegatingInvocableHandler handler = new DelegatingInvocableHandler(methods, bean, resolver, context);
-		assertThatExceptionOfType(UndeclaredThrowableException.class).isThrownBy(() ->
-						handler.getHandlerForPayload(Long.class))
+		assertThatIllegalStateException()
+				.isThrownBy(() -> handler.getHandlerForPayload(Long.class))
 				.withCauseExactlyInstanceOf(NoSuchMethodException.class)
 				.withStackTraceContaining("No listener method found in");
 	}
 
-	private MessageHandlerMethodFactory messageHandlerFactory() {
+	private static MessageHandlerMethodFactory messageHandlerFactory() {
 		DefaultMessageHandlerMethodFactory defaultFactory = new DefaultMessageHandlerMethodFactory();
 		DefaultFormattingConversionService cs = new DefaultFormattingConversionService();
 		defaultFactory.setConversionService(cs);
@@ -68,7 +67,7 @@ public class DelegatingInvocableHandlerTests {
 		return defaultFactory;
 	}
 
-	public static class Multi {
+	static class Multi {
 
 		void listen(Integer in) {
 		}

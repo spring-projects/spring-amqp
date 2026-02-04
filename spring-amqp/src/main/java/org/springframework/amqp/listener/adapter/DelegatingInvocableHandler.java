@@ -49,7 +49,6 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.handler.annotation.support.PayloadMethodArgumentResolver;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 import org.springframework.util.Assert;
-import org.springframework.util.ReflectionUtils;
 import org.springframework.validation.Validator;
 
 /**
@@ -203,17 +202,16 @@ public class DelegatingInvocableHandler {
 	 * @param payloadClass the payload class.
 	 * @return the handler.
 	 */
-	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	protected InvocableHandlerMethod getHandlerForPayload(Class<?> payloadClass) {
 		InvocableHandlerMethod handler = this.cachedHandlers.get(payloadClass);
 		if (handler == null) {
 			handler = findHandlerForPayload(payloadClass);
 			if (handler == null) {
-				ReflectionUtils.rethrowRuntimeException(
+				throw new IllegalStateException(
 						new NoSuchMethodException("No listener method found in " + this.bean.getClass().getName()
 								+ " for " + payloadClass));
 			}
-			this.cachedHandlers.putIfAbsent(payloadClass, handler);
+			this.cachedHandlers.put(payloadClass, handler);
 			setupReplyTo(handler);
 		}
 		return handler;
@@ -374,6 +372,13 @@ public class DelegatingInvocableHandler {
 			}, validator);
 		}
 
+		/**
+		 * Validate the payload in method parameter.
+		 * Not redundant: raised visibility from {@code protected} to {@code public}.
+		 * @param message the currently processed message
+		 * @param parameter the method parameter
+		 * @param target the target payload object
+		 */
 		@Override
 		public void validate(Message<?> message, MethodParameter parameter, Object target) {
 			super.validate(message, parameter, target);
