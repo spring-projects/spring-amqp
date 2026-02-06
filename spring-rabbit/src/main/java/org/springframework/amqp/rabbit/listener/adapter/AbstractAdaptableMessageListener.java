@@ -36,6 +36,7 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.listener.ContainerUtils;
 import org.springframework.amqp.listener.adapter.InvocationResult;
+import org.springframework.amqp.listener.adapter.ReplyExpressionRoot;
 import org.springframework.amqp.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
@@ -694,16 +695,6 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	 * @param response the outgoing Rabbit message about to be sent
 	 */
 	protected void postProcessChannel(Channel channel, Message response) {
-	}
-
-	/**
-	 * Root object for reply expression evaluation.
-	 * @param request the request message.
-	 * @param source the source data (e.g. {@code o.s.messaging.Message<?>}).
-	 * @param result the result.
-	 */
-	public record ReplyExpressionRoot(Message request, @Nullable Object source, @Nullable Object result) {
-
 	}
 
 }

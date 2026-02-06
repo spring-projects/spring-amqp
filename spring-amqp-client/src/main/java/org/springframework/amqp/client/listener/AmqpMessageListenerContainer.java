@@ -398,29 +398,37 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 		}
 	}
 
-	private void doInvokeListener(Delivery delivery, Runnable replenishCreditOperation)
-			throws ClientException {
+	private void doInvokeListener(Delivery delivery, Runnable replenishCreditOperation) throws Exception {
+		AmqpAcknowledgment amqpAcknowledgment = null;
+		if (!this.autoAccept) {
+			amqpAcknowledgment = (status) -> {
+				try {
+					switch (status) {
+						case ACCEPT -> delivery.accept();
+						case REJECT -> delivery.reject(null, null);
+						case REQUEUE -> delivery.release();
+					}
+					replenishCreditOperation.run();
+				}
+				catch (ClientException ex) {
+					throw ProtonUtils.toAmqpException(ex);
+				}
+			};
+		}
 
 		if (this.proxy instanceof ProtonDeliveryListener protonDeliveryListener) {
-			protonDeliveryListener.onDelivery(delivery);
+			if (protonDeliveryListener instanceof AcknowledgingProtonDeliveryListener ackProtonDeliveryListener) {
+				ackProtonDeliveryListener.onDelivery(delivery, amqpAcknowledgment);
+			}
+			else {
+				protonDeliveryListener.onDelivery(delivery);
+			}
 		}
 		else {
 			Message message = ProtonUtils.fromProtonMessage(delivery.message());
-			if (!this.autoAccept) {
+			if (amqpAcknowledgment != null) {
 				message.getMessageProperties()
-						.setAmqpAcknowledgment((status) -> {
-							try {
-								switch (status) {
-									case ACCEPT -> delivery.accept();
-									case REJECT -> delivery.reject(null, null);
-									case REQUEUE -> delivery.release();
-								}
-								replenishCreditOperation.run();
-							}
-							catch (ClientException ex) {
-								throw ProtonUtils.toAmqpException(ex);
-							}
-						});
+						.setAmqpAcknowledgment(amqpAcknowledgment);
 			}
 			this.proxy.onMessage(message);
 		}

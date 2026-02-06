@@ -160,6 +160,20 @@ public class HandlerAdapter {
 	}
 
 	/**
+	 * Get the method from the {@link InvocableHandlerMethod},
+	 * otherwise {@code null}.
+	 * @return the method, if any.
+	 * @since 4.1
+	 */
+	public @Nullable Method getMethod() {
+		if (this.invokerHandlerMethod != null) {
+			return this.invokerHandlerMethod.getMethod();
+		}
+
+		return null;
+	}
+
+	/**
 	 * Return true if any handler method has an async reply type.
 	 * @return the asyncReply.
 	 */
