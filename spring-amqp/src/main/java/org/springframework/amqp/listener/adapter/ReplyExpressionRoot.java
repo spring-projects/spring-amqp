@@ -14,33 +14,23 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.client.listener;
+package org.springframework.amqp.listener.adapter;
 
-import org.apache.qpid.protonj2.client.Delivery;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageListener;
 
 /**
- * A message listener extension to process ProtonJ native {@link Delivery} objects.
+ * Root object for reply expression evaluation.
+ *
+ * @param request the request message.
+ * @param source the source data (e.g. {@code o.s.messaging.Message<?>}).
+ * @param result the result.
  *
  * @author Artem Bilan
  *
  * @since 4.1
  */
-@FunctionalInterface
-public interface ProtonDeliveryListener extends MessageListener {
-
-	/**
-	 * Process ProtonJ {@link Delivery}.
-	 * @param delivery the delivery to handle.
-	 * @throws Exception any exception from the handling logic.
-	 */
-	void onDelivery(Delivery delivery) throws Exception;
-
-	@Override
-	default void onMessage(Message message) {
-		throw new UnsupportedOperationException("The 'onDelivery(Delivery)' has to be called instead.");
-	}
+public record ReplyExpressionRoot(Message request, @Nullable Object source, @Nullable Object result) {
 
 }
