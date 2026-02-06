@@ -65,12 +65,13 @@ import org.springframework.messaging.MessagingException;
 /**
  * The {@link ProtonDeliveryListener} implementation for POJO listeners
  * delegating to the provided {@link HandlerAdapter}.
- * <p>Wraps the incoming {@link Delivery} to {@link Message},
+ * <p>
+ * Wraps the incoming {@link Delivery} to {@link Message},
  * and further to the Spring's {@link org.springframework.messaging.Message} abstraction,
  * copying the standard headers using a configurable
  * {@link AmqpHeaderMapper AmqpHeaderMapper}.
- *
- * <p>The original {@link Delivery} and {@link Message Message}
+ * <p>
+ * The original {@link Delivery} and {@link Message Message}
  * are provided as additional arguments so that these can be injected as method arguments if necessary.
  *
  * @author Artem Bilan
@@ -105,11 +106,17 @@ public class AmqpMessagingListenerAdapter implements AcknowledgingProtonDelivery
 
 	private @Nullable Expression responseExpression;
 
+	/**
+	 * Create an instance based on the provided {@link HandlerAdapter}.
+	 * @param handlerAdapter the {@link HandlerAdapter} to invoke as POJO message listener.
+	 */
 	public AmqpMessagingListenerAdapter(HandlerAdapter handlerAdapter) {
 		this.handlerAdapter = handlerAdapter;
 		this.messagingMessageConverter =
 				new MessagingMessageConverterAdapter(handlerAdapter.getBean(), handlerAdapter.getMethod(),
 						false, Delivery.class);
+		this.evalContext.setTypeConverter(new StandardTypeConverter());
+		this.evalContext.addPropertyAccessor(new MapAccessor());
 	}
 
 	@Override
@@ -122,18 +129,42 @@ public class AmqpMessagingListenerAdapter implements AcknowledgingProtonDelivery
 		return this.handlerAdapter.isAsyncReplies();
 	}
 
+	/**
+	 * Set the default behavior for messages rejection, for example, when the listener
+	 * threw an exception. When {@code true} (default), messages will be requeued, otherwise - rejected.
+	 * Setting to {@code false} causes all rejections to not be requeued.
+	 * When set to {@code true}, the default can be overridden by the listener throwing an
+	 * {@link org.springframework.amqp.AmqpRejectAndDontRequeueException}.
+	 * @param defaultRequeueRejected false to reject messages by default.
+	 */
 	public void setDefaultRequeueRejected(boolean defaultRequeueRejected) {
 		this.defaultRequeueRejected = defaultRequeueRejected;
 	}
 
+	/**
+	 * Set a {@link ReplyPostProcessor} to post process a response message before it is
+	 * sent. It is called after {@link #postProcessResponse(Message, Message)} which sets
+	 * up a {@code correlationId} property on the response message.
+	 * @param replyPostProcessor the post-processor.
+	 */
 	public void setReplyPostProcessor(ReplyPostProcessor replyPostProcessor) {
 		this.replyPostProcessor = replyPostProcessor;
 	}
 
-	public void setErrorHandler(@Nullable AmqpListenerErrorHandler errorHandler) {
+	/**
+	 * Set the {@link AmqpListenerErrorHandler} to invoke if the listener method
+	 * throws an exception.
+	 * @param errorHandler the error handler.
+	 */
+	public void setErrorHandler(AmqpListenerErrorHandler errorHandler) {
 		this.errorHandler = errorHandler;
 	}
 
+	/**
+	 * Set whether exceptions thrown by the listener should be returned as a response message body
+	 * to the sender using the normal {@code replyTo/@SendTo} semantics.
+	 * @param returnExceptions true to return exceptions.
+	 */
 	public void setReturnExceptions(boolean returnExceptions) {
 		this.returnExceptions = returnExceptions;
 	}
@@ -178,23 +209,23 @@ public class AmqpMessagingListenerAdapter implements AcknowledgingProtonDelivery
 		this.messagingMessageConverter.setHeaderMapper(headerMapper);
 	}
 
-	public void setMessageConverter(@Nullable MessageConverter messageConverter) {
-		if (messageConverter != null) {
-			this.messagingMessageConverter.setPayloadConverter(messageConverter);
-		}
+	/**
+	 * Set the converter to convert incoming messages to listener method arguments,
+	 * and objects returned from listener methods for response messages.
+	 * The default converter is a {@link org.springframework.amqp.support.converter.SimpleMessageConverter}.
+	 * @param messageConverter The message converter.
+	 * @see MessagingMessageConverterAdapter
+	 */
+	public void setMessageConverter(MessageConverter messageConverter) {
+		this.messagingMessageConverter.setPayloadConverter(messageConverter);
 	}
 
 	/**
-	 * Set a bean resolver for runtime SpEL expressions. Also configures the evaluation
-	 * context with a standard type converter and map accessor.
+	 * Set a bean resolver for runtime SpEL expressions.
 	 * @param beanResolver the resolver.
 	 */
-	public void setBeanResolver(@Nullable BeanResolver beanResolver) {
-		if (beanResolver != null) {
-			this.evalContext.setBeanResolver(beanResolver);
-		}
-		this.evalContext.setTypeConverter(new StandardTypeConverter());
-		this.evalContext.addPropertyAccessor(new MapAccessor());
+	public void setBeanResolver(BeanResolver beanResolver) {
+		this.evalContext.setBeanResolver(beanResolver);
 	}
 
 	@Override
@@ -223,16 +254,9 @@ public class AmqpMessagingListenerAdapter implements AcknowledgingProtonDelivery
 	private void invokeHandlerAndProcessResult(Delivery delivery, Message amqpMessage,
 			org.springframework.messaging.Message<?> message) {
 
-		MessageProperties messageProperties = amqpMessage.getMessageProperties();
-		boolean projectionUsed = messageProperties.isProjectionUsed();
-		if (projectionUsed) {
-			messageProperties.setProjectionUsed(false);
-		}
-		if (!projectionUsed) {
-			LOGGER.debug("Processing [" + message + "]");
-		}
+		LOGGER.debug("Processing [" + message + "]");
 		if (this.messagingMessageConverter.getMethod() == null) {
-			messageProperties.setTargetMethod(this.handlerAdapter.getMethodFor(message.getPayload()));
+			amqpMessage.getMessageProperties().setTargetMethod(this.handlerAdapter.getMethodFor(message.getPayload()));
 		}
 		InvocationResult result = invokeHandler(delivery, amqpMessage, message);
 		if (result.getReturnValue() != null) {
@@ -473,7 +497,7 @@ public class AmqpMessagingListenerAdapter implements AcknowledgingProtonDelivery
 	 * The default implementation first checks the Reply-To address of the supplied request; if that is not
 	 * <code>null</code> it is returned; otherwise, then the configured default response address.
 	 * If result still <code>null</code>, the {@link AmqpException} is thrown.
-	 * @param request the original incoming Rabbit message.
+	 * @param request the original incoming AMQP message.
 	 * @param source the source data (e.g. {@code o.s.messaging.Message<?>}).
 	 * @param result the result.
 	 * @return the reply-to address (never <code>null</code>)
