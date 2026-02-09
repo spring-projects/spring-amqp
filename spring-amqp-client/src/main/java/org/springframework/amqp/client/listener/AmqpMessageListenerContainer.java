@@ -28,7 +28,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.aopalliance.aop.Advice;
-import org.apache.commons.logging.LogFactory;
 import org.apache.qpid.protonj2.client.Connection;
 import org.apache.qpid.protonj2.client.Delivery;
 import org.apache.qpid.protonj2.client.Receiver;
@@ -79,13 +78,18 @@ import org.springframework.util.StringUtils;
  */
 public class AmqpMessageListenerContainer implements MessageListenerContainer, BeanNameAware {
 
-	private static final LogAccessor LOG = new LogAccessor(LogFactory.getLog(AmqpMessageListenerContainer.class));
+	private static final LogAccessor LOG = new LogAccessor(AmqpMessageListenerContainer.class);
 
 	private final Lock lock = new ReentrantLock();
 
 	private final AmqpConnectionFactory connectionFactory;
 
 	private final MultiValueMap<String, AmqpConsumer> queueToConsumers = new LinkedMultiValueMap<>();
+
+	private @Nullable MessageListener messageListener;
+
+	@SuppressWarnings("NullAway.Init")
+	private MessageListener proxy;
 
 	@SuppressWarnings("NullAway.Init")
 	private String[] queues;
@@ -94,20 +98,11 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 
 	private int consumersPerQueue = 1;
 
-	private @Nullable MessageListener messageListener;
-
-	@SuppressWarnings("NullAway.Init")
-	private MessageListener proxy;
-
-	private boolean asyncReplies;
+	private String beanName = "not.a.Spring.bean";
 
 	private @Nullable ErrorHandler errorHandler;
 
 	private boolean autoStartup = true;
-
-	private String beanName = "not.a.Spring.bean";
-
-	private @Nullable String listenerId;
 
 	private Duration receiveTimeout = Duration.ofSeconds(1);
 
@@ -120,6 +115,10 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 	private boolean autoAccept = true;
 
 	private int initialCredits = 100;
+
+	private @Nullable String listenerId;
+
+	private boolean asyncReplies;
 
 	public AmqpMessageListenerContainer(AmqpConnectionFactory connectionFactory) {
 		this.connectionFactory = connectionFactory;
@@ -218,7 +217,7 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 		this.consumersPerQueue = consumersPerQueue;
 	}
 
-	public void setErrorHandler(@Nullable ErrorHandler errorHandler) {
+	public void setErrorHandler(ErrorHandler errorHandler) {
 		this.errorHandler = errorHandler;
 	}
 
