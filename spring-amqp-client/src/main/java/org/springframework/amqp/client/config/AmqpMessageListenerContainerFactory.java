@@ -26,12 +26,11 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.amqp.client.AmqpConnectionFactory;
 import org.springframework.amqp.client.listener.AmqpMessageListenerContainer;
 import org.springframework.amqp.utils.JavaUtils;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.util.ErrorHandler;
 
 /**
  * The configuration factory to produce {@link AmqpMessageListenerContainer} instance
- * based on the provided.
+ * based on the provided {@link AmqpListenerEndpoint}.
  *
  * @author Artem Bilan
  *
@@ -51,7 +50,7 @@ public class AmqpMessageListenerContainerFactory {
 
 	private @Nullable Boolean autoAccept;
 
-	private @Nullable TaskExecutor taskExecutor;
+	private @Nullable Executor taskExecutor;
 
 	private @Nullable Integer initialCredits;
 
@@ -102,12 +101,12 @@ public class AmqpMessageListenerContainerFactory {
 	}
 
 	/**
-	 * The default {@link TaskExecutor} for container instances created by this factory.
+	 * The default {@link Executor} for container instances created by this factory.
 	 * Can be overridden by {@link AmqpListenerEndpoint#getTaskExecutor()}.
 	 * @param taskExecutor the task executor.
 	 * @see AmqpMessageListenerContainer#setTaskExecutor(Executor)
 	 */
-	public void setTaskExecutor(TaskExecutor taskExecutor) {
+	public void setTaskExecutor(Executor taskExecutor) {
 		this.taskExecutor = taskExecutor;
 	}
 
@@ -134,7 +133,7 @@ public class AmqpMessageListenerContainerFactory {
 	/**
 	 * The default {@code gracefulShutdownPeriod} for container instances created by this factory.
 	 * Can be overridden by {@link AmqpListenerEndpoint#getGracefulShutdownPeriod()}.
-	 * @param gracefulShutdownPeriod the timeout for shoutdown.
+	 * @param gracefulShutdownPeriod the timeout for shutdown.
 	 * @see AmqpMessageListenerContainer#setGracefulShutdownPeriod(Duration)
 	 */
 	public void setGracefulShutdownPeriod(Duration gracefulShutdownPeriod) {

@@ -18,11 +18,10 @@ package org.springframework.amqp.client.config;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.concurrent.Executor;
 
 import org.aopalliance.aop.Advice;
 import org.jspecify.annotations.Nullable;
-
-import org.springframework.core.task.TaskExecutor;
 
 /**
  * The abstract {@link AmqpListenerEndpoint} implementation holding common properties.
@@ -41,7 +40,7 @@ public abstract class AbstractAmqpListenerEndpoint implements AmqpListenerEndpoi
 
 	private @Nullable Boolean autoStartup;
 
-	private @Nullable TaskExecutor taskExecutor;
+	private @Nullable Executor taskExecutor;
 
 	private @Nullable Boolean autoAccept;
 
@@ -89,12 +88,12 @@ public abstract class AbstractAmqpListenerEndpoint implements AmqpListenerEndpoi
 		return this.autoStartup;
 	}
 
-	public void setTaskExecutor(TaskExecutor taskExecutor) {
+	public void setTaskExecutor(Executor taskExecutor) {
 		this.taskExecutor = taskExecutor;
 	}
 
 	@Override
-	public @Nullable TaskExecutor getTaskExecutor() {
+	public @Nullable Executor getTaskExecutor() {
 		return this.taskExecutor;
 	}
 

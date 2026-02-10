@@ -17,16 +17,16 @@
 package org.springframework.amqp.client.config;
 
 import java.time.Duration;
+import java.util.concurrent.Executor;
 
 import org.aopalliance.aop.Advice;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.MessageListener;
-import org.springframework.core.task.TaskExecutor;
 
 /**
  * The configuration model to represent a {@link MessageListener}
- * with properties for target @{@link org.springframework.amqp.client.listener.AmqpMessageListenerContainer}
+ * with properties for target {@link org.springframework.amqp.client.listener.AmqpMessageListenerContainer}
  * to be registered as a bean in the application context.
  *
  * @author Artem Bilan
@@ -79,7 +79,7 @@ public interface AmqpListenerEndpoint {
 	 * @return the executor.
 	 */
 	@Nullable
-	TaskExecutor getTaskExecutor();
+	Executor getTaskExecutor();
 
 	/**
 	 * Override the {@code autoAccept} property in the {@link AmqpMessageListenerContainerFactory}.

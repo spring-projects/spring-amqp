@@ -59,6 +59,11 @@ public class AmqpListenerEndpointRegistry implements ApplicationContextAware {
 		this.beanFactory = (DefaultListableBeanFactory) this.applicationContext.getBeanFactory();
 	}
 
+	/**
+	 * Register {@link AmqpMessageListenerContainer} beans based on the provided {@link AmqpListenerEndpointRegistration}.
+	 * @param registration the registration with endpoints to process.
+	 * @return this registry.
+	 */
 	public AmqpListenerEndpointRegistry registerListenerEndpoints(AmqpListenerEndpointRegistration registration) {
 		AmqpMessageListenerContainerFactory containerFactory = registration.getContainerFactory();
 		if (containerFactory == null) {
@@ -76,6 +81,12 @@ public class AmqpListenerEndpointRegistry implements ApplicationContextAware {
 		return this;
 	}
 
+	/**
+	 * Register {@link AmqpMessageListenerContainer} bean based on the provided {@link AmqpListenerEndpoint}.
+	 * The default {@link AmqpMessageListenerContainerFactory} is required in this case.
+	 * @param endpoint the endpoint to process from.
+	 * @return this registry.
+	 */
 	public AmqpListenerEndpointRegistry registerListenerEndpoint(AmqpListenerEndpoint endpoint) {
 		AmqpMessageListenerContainerFactory containerFactory = this.defaultAmqpMessageListenerContainerFactory;
 		Assert.state(containerFactory != null, "No default listener container factory available.");
@@ -84,6 +95,13 @@ public class AmqpListenerEndpointRegistry implements ApplicationContextAware {
 		return this;
 	}
 
+	/**
+	 * Register {@link AmqpMessageListenerContainer} bean based on the provided {@link AmqpListenerEndpoint} and
+	 * {@link AmqpMessageListenerContainerFactory}.
+	 * @param containerFactory the factory to create a message listener container from.
+	 * @param endpoint the endpoint to process from.
+	 * @return this registry.
+	 */
 	public AmqpListenerEndpointRegistry registerListenerEndpoint(AmqpMessageListenerContainerFactory containerFactory,
 			AmqpListenerEndpoint endpoint) {
 
@@ -99,10 +117,9 @@ public class AmqpListenerEndpointRegistry implements ApplicationContextAware {
 		}
 
 		String generatedBeanName = id;
-		int counter = 0;
-		while (counter == -1 || this.beanFactory.containsBean(id)) {
-			counter++;
-			id = generatedBeanName + BeanFactoryUtils.GENERATED_BEAN_NAME_SEPARATOR + counter;
+		int counter = -1;
+		while (this.beanFactory.containsBean(id)) {
+			id = generatedBeanName + BeanFactoryUtils.GENERATED_BEAN_NAME_SEPARATOR + counter++;
 		}
 
 		this.beanFactory.registerSingleton(id, container);
