@@ -22,6 +22,7 @@ import org.apache.qpid.protonj2.client.Client;
 import org.apache.qpid.protonj2.client.ClientOptions;
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.context.annotation.Bean;
@@ -43,6 +44,8 @@ import org.springframework.util.StringUtils;
  * Provides default bean for the ProtonJ {@link Client}.
  * If this class is imported via {@link EnableAmqp}, then {@link ClientOptions} are
  * based on {@link EnableAmqp} attributes.
+ * <p>
+ * Also registers {@link AmqpListenerEndpointRegistry}.
  *
  * @author Artem Bilan
  *
@@ -53,6 +56,11 @@ import org.springframework.util.StringUtils;
 @Configuration(proxyBeanMethods = false)
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 public class AmqpDefaultConfiguration implements ImportAware, EnvironmentAware {
+
+	/**
+	 * The bean name of the default {@link AmqpMessageListenerContainerFactory}.
+	 */
+	public static final String DEFAULT_AMQP_LISTENER_CONTAINER_FACTORY_BEAN_NAME = "amqpListenerContainerFactory";
 
 	private @Nullable AnnotationAttributes attributes;
 
@@ -71,6 +79,16 @@ public class AmqpDefaultConfiguration implements ImportAware, EnvironmentAware {
 	@Override
 	public void setEnvironment(Environment environment) {
 		this.environment = environment;
+	}
+
+	@Bean
+	AmqpListenerEndpointRegistry amqpListenerEndpointRegistry(
+			@Qualifier(DEFAULT_AMQP_LISTENER_CONTAINER_FACTORY_BEAN_NAME)
+			@Nullable AmqpMessageListenerContainerFactory factory) {
+
+		return factory != null
+				? new AmqpListenerEndpointRegistry(factory)
+				: new AmqpListenerEndpointRegistry();
 	}
 
 	@Bean
