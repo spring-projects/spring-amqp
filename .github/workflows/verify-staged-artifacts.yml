@@ -21,7 +21,7 @@ jobs:
     steps:
 
       - name: Start RabbitMQ
-        uses: namoshek/rabbitmq-github-action@v1
+        uses: namoshek/rabbitmq-github-action@v1.2.0
         with:
           ports: '5672:5672 15672:15672 5552:5552'
           plugins: rabbitmq_stream,rabbitmq_management
