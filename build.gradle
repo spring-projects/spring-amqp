@@ -59,7 +59,7 @@ ext {
 	reactorVersion = '2024.0.14'
 	springDataVersion = '2024.1.13'
 	springRetryVersion = '2.0.12'
-	springVersion = '6.2.15'
+	springVersion = '6.2.16'
 	testcontainersVersion = '1.20.6'
 
 	javaProjects = subprojects - project(':spring-amqp-bom')
