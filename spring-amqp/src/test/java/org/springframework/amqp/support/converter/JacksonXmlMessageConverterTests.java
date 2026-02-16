@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import tools.jackson.dataformat.xml.XmlMapper;
 
@@ -215,9 +214,8 @@ public class JacksonXmlMessageConverterTests {
 	}
 
 	@Test
-	@Disabled("Until next Jackson 3 RC or GA")
 	public void testInferredGenericTypeInfo() {
-		byte[] bytes = "<root><name>foo</name></root>".getBytes();
+		byte[] bytes = "<root><element><name>foo</name></element></root>".getBytes();
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setContentType("application/xml");
 		messageProperties.setInferredArgumentType((new ParameterizedTypeReference<List<Foo>>() {
