@@ -70,12 +70,19 @@ jobs:
              --arg project "$PROJECT" \
              '{version: $version, referenceDocUrl: "https://docs.spring.io/\($project)/reference/{version}", apiDocUrl: "https://docs.spring.io/\($project)/docs/\($version)/api", isAntora: true}')
           
+            echo "::add-mask::$GH_TOKEN"
+            echo "::add-mask::$GITHUB_USER"
+          
+            set -x
+
             curl -v -u "$GITHUB_USER:$GH_TOKEN" \
               -H "Content-Type: application/json" \
               -X POST \
               -d "$VERSION_JSON" \
               --fail --show-error \
               "https://api.spring.io/projects/$PROJECT/releases"
-
+          
+            set +x
+          
            echo "Versions have been updated: $VERSION"
           done
