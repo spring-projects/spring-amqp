@@ -10,7 +10,66 @@ jobs:
   update-website-versions:
     runs-on: ubuntu-latest
     steps:
-      - uses: spring-io/spring-github-workflows/.github/actions/spring-website-project-version-update@v7
-        with:
-          newVersion: ${{ github.event.inputs.releaseVersion }}
-          token: ${{ secrets.GH_ACTIONS_REPO_TOKEN }}
+      - name: Update project page for new version
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GH_ACTIONS_REPO_TOKEN }}
+        run: |
+          PROJECT=${{ github.event.repository.name }}
+          GITHUB_USER=$(gh api /user --jq '.login')
+          SPRING_WEBSITE_CLIENT='curl -s -u "$GITHUB_USER:$GH_TOKEN" -H "Content-Type: application/json" --url "https://api.spring.io/projects/$PROJECT"'
+          
+          if [ $(eval $SPRING_WEBSITE_CLIENT -o /dev/null -w '%{http_code}') != '200' ]
+          then
+             echo "::notice title=Nothing to update on Spring website::No versions update for $PROJECT project which is not listed on Spring website."
+             exit 0
+          fi
+          
+          VERSIONS_TO_UPDATE=${{ inputs.releaseVersion }}
+          
+          MAJOR_MINOR=$(echo ${{ inputs.releaseVersion }} | cut -d '.' -f1-2)
+          
+          OSS_SUPPORT_END_DATE=$(eval $SPRING_WEBSITE_CLIENT/generations/${MAJOR_MINOR}.x | jq -r '.ossSupportEndDate')
+          
+          echo "OSS support end date for $MAJOR_MINOR.x is $OSS_SUPPORT_END_DATE"
+          
+          if [[ -z $OSS_SUPPORT_END_DATE || $OSS_SUPPORT_END_DATE > $(date '+%F') ]]
+          then
+            NEXT_SNAPSHOT=${{ inputs.releaseVersion }}
+          
+            if [[ $NEXT_SNAPSHOT == *"-"* ]] 
+            then
+              NEXT_SNAPSHOT=${NEXT_SNAPSHOT/-*}
+            else
+              PATCH=$(echo $NEXT_SNAPSHOT | cut -d '.' -f3)
+              PATCH=$((PATCH+1))
+              NEXT_SNAPSHOT=$MAJOR_MINOR.$PATCH
+            fi
+          
+            NEXT_SNAPSHOT+='-SNAPSHOT'
+            VERSIONS_TO_UPDATE+=" $NEXT_SNAPSHOT"
+          fi
+          
+          echo "Versions to update: $VERSIONS_TO_UPDATE"
+          
+          VERSIONS_TO_REMOVE=$(eval $SPRING_WEBSITE_CLIENT/releases | jq -r "._embedded.releases[].version | select(startswith(\"$MAJOR_MINOR\"))")
+          
+          echo "Versions to remove: $VERSIONS_TO_REMOVE"
+          
+          for VERSION_TO_REMOVE in $VERSIONS_TO_REMOVE
+          do
+             eval $SPRING_WEBSITE_CLIENT/releases/$VERSION_TO_REMOVE -X DELETE
+          done
+          
+          echo "Versions have been removed"
+          
+          for VERSION in $VERSIONS_TO_UPDATE
+          do
+            VERSION_JSON=$(jq -n \
+             --arg version "$VERSION" \
+             --arg project "$PROJECT" \
+             '{version: $version, referenceDocUrl: "https://docs.spring.io/\($project)/reference/{version}", apiDocUrl: "https://docs.spring.io/\($project)/docs/\($version)/api", isAntora: true}')
+          
+           eval $SPRING_WEBSITE_CLIENT/releases -X POST -d '"$VERSION_JSON"' --fail --show-error
+           echo "Versions have been updated: $VERSION"
+          done
