@@ -70,6 +70,12 @@ jobs:
              --arg project "$PROJECT" \
              '{version: $version, referenceDocUrl: "https://docs.spring.io/\($project)/reference/{version}", apiDocUrl: "https://docs.spring.io/\($project)/docs/\($version)/api", isAntora: true}')
           
-           eval $SPRING_WEBSITE_CLIENT/releases -X POST -d '"$VERSION_JSON"' --fail --show-error
+            curl -v -u "$GITHUB_USER:$GH_TOKEN" \
+              -H "Content-Type: application/json" \
+              -X POST \
+              -d "$VERSION_JSON" \
+              --fail --show-error \
+              "https://api.spring.io/projects/$PROJECT/releases"
+
            echo "Versions have been updated: $VERSION"
           done
