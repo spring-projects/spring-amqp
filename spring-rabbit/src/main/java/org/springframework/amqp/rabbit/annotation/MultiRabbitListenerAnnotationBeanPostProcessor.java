@@ -22,6 +22,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Collection;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.core.Declarable;
 import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
@@ -38,6 +40,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Wander Costa
  * @author Ngoc Nhan
+ * @author Artem Bilan
  *
  * @since 2.3
  */
@@ -57,7 +60,7 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 		return declarables;
 	}
 
-	private RabbitListener proxyIfAdminNotPresent(final RabbitListener rabbitListener, final String rabbitAdmin) {
+	private RabbitListener proxyIfAdminNotPresent(final RabbitListener rabbitListener, @Nullable String rabbitAdmin) {
 		if (StringUtils.hasText(rabbitListener.admin())) {
 			return rabbitListener;
 		}
@@ -72,7 +75,7 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 	 * @param rabbitListener The RabbitListener to process the name from.
 	 * @return The name of the RabbitAdmin bean.
 	 */
-	protected String resolveMultiRabbitAdminName(RabbitListener rabbitListener) {
+	protected @Nullable String resolveMultiRabbitAdminName(RabbitListener rabbitListener) {
 
 		var admin = rabbitListener.admin();
 		if (StringUtils.hasText(admin)) {
@@ -104,11 +107,11 @@ public class MultiRabbitListenerAnnotationBeanPostProcessor extends RabbitListen
 	/**
 	 * An {@link InvocationHandler} to provide a replacing admin() parameter of the listener.
 	 */
-	private record RabbitListenerAdminReplacementInvocationHandler(RabbitListener target,
-																   String admin) implements InvocationHandler {
+	private record RabbitListenerAdminReplacementInvocationHandler(RabbitListener target, @Nullable String admin)
+			implements InvocationHandler {
 
 		@Override
-		public Object invoke(final Object proxy, final Method method, final Object[] args)
+		public @Nullable Object invoke(final Object proxy, final Method method, final Object[] args)
 				throws InvocationTargetException, IllegalAccessException {
 			if (method.getName().equals("admin")) {
 				return this.admin;

@@ -52,7 +52,7 @@ public interface AmqpListenerEndpoint {
 
 	/**
 	 * Return the id of the target listener container bean.
-	 * TODO: If not provided, the {@link AmqpMessageListenerContainerFactory} makes a decision about generated bean name.
+	 * If not provided, the {@link AmqpListenerEndpointRegistry} makes a decision about generated bean name.
 	 * @return the id
 	 */
 	@Nullable

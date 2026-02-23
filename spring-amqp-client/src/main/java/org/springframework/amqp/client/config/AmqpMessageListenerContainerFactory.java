@@ -163,9 +163,9 @@ public class AmqpMessageListenerContainerFactory {
 	 * @return the container instance.
 	 */
 	public AmqpMessageListenerContainer createContainer(AmqpListenerEndpoint listenerEndpoint) {
+		configureEndpoint(listenerEndpoint);
 		AmqpMessageListenerContainer listenerContainer = new AmqpMessageListenerContainer(this.connectionFactory);
 		listenerContainer.setQueueNames(listenerEndpoint.getAddresses());
-		listenerContainer.setupMessageListener(listenerEndpoint.getMessageListener());
 		JavaUtils.INSTANCE
 				.acceptIfNotNull(this.errorHandler, listenerContainer::setErrorHandler)
 				.acceptIfNotNull(listenerEndpoint.getId(), listenerContainer::setBeanName)
@@ -193,7 +193,12 @@ public class AmqpMessageListenerContainerFactory {
 				.acceptOrElseIfNotNull(
 						listenerEndpoint.getAdviceChain(), this.adviceChain,
 						listenerContainer::setAdviceChain);
+		listenerContainer.setupMessageListener(listenerEndpoint.getMessageListener());
 		return listenerContainer;
+	}
+
+	protected void configureEndpoint(AmqpListenerEndpoint endpoint) {
+
 	}
 
 }
