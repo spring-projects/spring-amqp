@@ -211,6 +211,7 @@ configure(javaProjects) { subproject ->
 
 		testImplementation 'org.jetbrains.kotlin:kotlin-reflect'
 		testImplementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+		testImplementation "com.willowtreeapps.assertk:assertk-jvm:$assertkVersion"
 	}
 
 	// enable all compiler warnings; individual projects may customize further
@@ -372,12 +373,12 @@ project('spring-amqp-client') {
 
 		testImplementation project(':spring-rabbit-junit')
 		testImplementation 'io.projectreactor:reactor-core'
+		optionalApi "org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$kotlinCoroutinesVersion"
 		testImplementation 'org.testcontainers:testcontainers-rabbitmq'
 		testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
 
-		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind'
 		testRuntimeOnly 'tools.jackson.core:jackson-databind'
-
+		testRuntimeOnly 'tools.jackson.module:jackson-module-kotlin'
 	}
 }
 
@@ -408,7 +409,6 @@ project('spring-rabbit') {
 		optionalApi "org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$kotlinCoroutinesVersion"
 
 		testImplementation project(':spring-rabbit-junit')
-		testImplementation "com.willowtreeapps.assertk:assertk-jvm:$assertkVersion"
 		testImplementation "org.hibernate.validator:hibernate-validator:$hibernateValidationVersion"
 		testImplementation 'io.micrometer:micrometer-observation-test'
 		testImplementation 'io.micrometer:micrometer-tracing-bridge-brave'
