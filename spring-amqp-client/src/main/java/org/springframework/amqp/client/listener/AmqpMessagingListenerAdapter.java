@@ -48,6 +48,7 @@ import org.springframework.amqp.support.SimpleAmqpHeaderMapper;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.MessagingMessageConverterAdapter;
 import org.springframework.amqp.support.converter.RemoteInvocationResult;
+import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.amqp.utils.MonoHandler;
 import org.springframework.core.log.LogAccessor;
@@ -91,6 +92,8 @@ public class AmqpMessagingListenerAdapter implements AcknowledgingProtonDelivery
 	private final HandlerAdapter handlerAdapter;
 
 	private final MessagingMessageConverterAdapter messagingMessageConverter;
+
+	private MessageConverter messageConverter = new SimpleMessageConverter();
 
 	private boolean isManualAck;
 
@@ -218,6 +221,7 @@ public class AmqpMessagingListenerAdapter implements AcknowledgingProtonDelivery
 	 */
 	public void setMessageConverter(MessageConverter messageConverter) {
 		this.messagingMessageConverter.setPayloadConverter(messageConverter);
+		this.messageConverter = messageConverter;
 	}
 
 	/**
@@ -469,8 +473,15 @@ public class AmqpMessagingListenerAdapter implements AcknowledgingProtonDelivery
 			message = new Message(new byte[0], messageProperties);
 		}
 		else {
-			message = this.messagingMessageConverter.toMessage(value, messageProperties, result.getReturnType());
+			Type returnType = result.getReturnType();
+			if (value instanceof org.springframework.messaging.Message<?>) {
+				message = this.messagingMessageConverter.toMessage(value, messageProperties, returnType);
+			}
+			else {
+				message = this.messageConverter.toMessage(value, messageProperties, returnType);
+			}
 		}
+
 		// To override the set one by a message converter
 		if (this.replyContentType != null) {
 			message.getMessageProperties().setContentType(this.replyContentType);

@@ -371,6 +371,7 @@ project('spring-amqp-client') {
 		api 'org.springframework:spring-messaging'
 
 		testImplementation project(':spring-rabbit-junit')
+		testImplementation 'io.projectreactor:reactor-core'
 		testImplementation 'org.testcontainers:testcontainers-rabbitmq'
 		testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
 

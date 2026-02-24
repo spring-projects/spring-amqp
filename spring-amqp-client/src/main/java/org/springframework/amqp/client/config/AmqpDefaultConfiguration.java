@@ -22,6 +22,7 @@ import org.apache.qpid.protonj2.client.Client;
 import org.apache.qpid.protonj2.client.ClientOptions;
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.amqp.client.annotation.AmqpListenerAnnotationBeanPostProcessor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.EnvironmentAware;
@@ -45,7 +46,7 @@ import org.springframework.util.StringUtils;
  * If this class is imported via {@link EnableAmqp}, then {@link ClientOptions} are
  * based on {@link EnableAmqp} attributes.
  * <p>
- * Also registers {@link AmqpListenerEndpointRegistry}.
+ * Also registers {@link AmqpListenerEndpointRegistry} and {@link AmqpListenerAnnotationBeanPostProcessor}.
  *
  * @author Artem Bilan
  *
@@ -79,6 +80,11 @@ public class AmqpDefaultConfiguration implements ImportAware, EnvironmentAware {
 	@Override
 	public void setEnvironment(Environment environment) {
 		this.environment = environment;
+	}
+
+	@Bean
+	static AmqpListenerAnnotationBeanPostProcessor amqpListenerAnnotationBeanPostProcessor() {
+		return new AmqpListenerAnnotationBeanPostProcessor();
 	}
 
 	@Bean
