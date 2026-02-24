@@ -23,13 +23,14 @@ import java.util.Map;
  *
  * @author Maciej Walkowiak
  * @author Gary Russell
+ * @author Artem Bilan
  *
  * @since 1.6
  *
  */
 public final class QueueBuilder extends AbstractBuilder {
 
-	private static final NamingStrategy namingStrategy = Base64UrlNamingStrategy.DEFAULT; // NOSONAR lower case
+	private static final NamingStrategy namingStrategy = Base64UrlNamingStrategy.DEFAULT;
 
 	private final String name;
 
@@ -102,7 +103,7 @@ public final class QueueBuilder extends AbstractBuilder {
 	}
 
 	/**
-	 * The final queue will contain argument used to declare a queue.
+	 * The final queue will contain the argument used to declare a queue.
 	 * @param key argument name
 	 * @param value argument value
 	 * @return the QueueBuilder instance.
@@ -114,7 +115,7 @@ public final class QueueBuilder extends AbstractBuilder {
 
 	/**
 	 * The final queue will contain arguments used to declare a queue.
-	 * @param arguments the arguments map
+	 * @param arguments the argument map
 	 * @return the QueueBuilder instance.
 	 */
 	public QueueBuilder withArguments(Map<String, Object> arguments) {
@@ -123,7 +124,7 @@ public final class QueueBuilder extends AbstractBuilder {
 	}
 
 	/**
-	 * Set the message time-to-live after which it will be discarded, or routed to the
+	 * Set the message time-to-live after which it will be discarded or routed to the
 	 * dead-letter-exchange, if so configured.
 	 * @param ttl the time to live (milliseconds).
 	 * @return the builder.
@@ -244,16 +245,16 @@ public final class QueueBuilder extends AbstractBuilder {
 	}
 
 	/**
-	 * Set the queue argument to declare a queue of type 'classic' instead of default type.
+	 * Set the queue argument to declare a queue of a type {@code classic} instead of default one.
 	 * @return the builder.
 	 * @since 3.2.10
 	 */
 	public QueueBuilder classic() {
 		return withArgument("x-queue-type", "classic");
 	}
-	
+
 	/**
-	 * Set the queue argument to declare a queue of type 'quorum' instead of 'classic'.
+	 * Set the queue argument to declare a queue of type {@code quorum} instead of default one.
 	 * @return the builder.
 	 * @since 2.2.2
 	 */
@@ -262,7 +263,7 @@ public final class QueueBuilder extends AbstractBuilder {
 	}
 
 	/**
-	 * Set the queue argument to declare a queue of type 'stream' instead of 'classic'.
+	 * Set the queue argument to declare a queue of type {@code stream} instead of default one.
 	 * @return the builder.
 	 * @since 2.4
 	 */
