@@ -137,9 +137,9 @@ public class AmqpListenerAnnotationBeanPostProcessor extends AbstractListenerAnn
 						(value) -> endpoint.setAutoStartup(resolveExpressionAsBoolean(value)))
 				.acceptIfHasText(listener.autoAccept(),
 						(value) -> endpoint.setAutoAccept(resolveExpressionAsBoolean(value)))
-				.acceptIfNotNull(resolveExpressiontoInteger(listener.concurrency(), "concurrency"),
+				.acceptIfNotNull(resolveExpressionToInteger(listener.concurrency(), "concurrency"),
 						endpoint::setConcurrency)
-				.acceptIfNotNull(resolveExpressiontoInteger(listener.initialCredits(), "initialCredits"),
+				.acceptIfNotNull(resolveExpressionToInteger(listener.initialCredits(), "initialCredits"),
 						endpoint::setInitialCredits)
 				.acceptIfHasText(resolveExpressionAsString(listener.receiveTimeout(), "receiveTimeout"),
 						(value) -> endpoint.setReceiveTimeout(toDuration(value, TimeUnit.MILLISECONDS)))

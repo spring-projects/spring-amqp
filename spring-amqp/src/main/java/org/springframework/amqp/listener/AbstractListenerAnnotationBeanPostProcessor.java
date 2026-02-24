@@ -188,7 +188,7 @@ public abstract class AbstractListenerAnnotationBeanPostProcessor<A extends Anno
 	protected static String noBeanFoundMessage(Object target, String listenerBeanName, String requestedBeanName,
 			Class<?> expectedClass) {
 
-		return "Could not register rabbit listener endpoint on ["
+		return "Could not register listener endpoint on ["
 				+ target + "] for bean " + listenerBeanName + ", no '" + expectedClass.getSimpleName() + "' with id '"
 				+ requestedBeanName + "' was found in the application context";
 	}
@@ -238,7 +238,7 @@ public abstract class AbstractListenerAnnotationBeanPostProcessor<A extends Anno
 		}
 	}
 
-	protected @Nullable Integer resolveExpressiontoInteger(String value, String attribute) {
+	protected @Nullable Integer resolveExpressionToInteger(String value, String attribute) {
 		if (!StringUtils.hasLength(value)) {
 			return null;
 		}
@@ -330,8 +330,8 @@ public abstract class AbstractListenerAnnotationBeanPostProcessor<A extends Anno
 						methods.add(new ListenerMethod<>(method, listenerAnnotations));
 					}
 					if (hasClassLevelListeners) {
-						Annotation rabbitHandler = AnnotationUtils.findAnnotation(method, handlerAnnotation);
-						if (rabbitHandler != null) {
+						Annotation handler = AnnotationUtils.findAnnotation(method, handlerAnnotation);
+						if (handler != null) {
 							multiMethods.add(method);
 						}
 					}
@@ -385,7 +385,7 @@ public abstract class AbstractListenerAnnotationBeanPostProcessor<A extends Anno
 	/**
 	 * A method annotated with {@link A}, together with the annotations.
 	 *
-	 * @param method      the method with annotations
+	 * @param method the method with annotations
 	 * @param annotations on the method
 	 * @param <A> the annotation type.
 	 */

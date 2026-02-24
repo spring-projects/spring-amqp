@@ -102,9 +102,9 @@ public @interface AmqpListener {
 	/**
 	 * The AMQP 1.0 addresses to listen to.
 	 * The entries can be 'queue name', 'property-placeholder keys' or 'expressions'.
-	 * Expression must be resolved to the address.
+	 * Each expression must be resolved to the address.
 	 * The addresses must exist.
-	 * @return the addresses or expressions (SpEL) to listen to from in the target listener container.
+	 * @return the addresses or expressions (SpEL) for the target listener container to listen from.
 	 * @see org.springframework.amqp.core.MessageListenerContainer
 	 */
 	String[] addresses() default {};
@@ -123,7 +123,7 @@ public @interface AmqpListener {
 	 * When {@code false}, the exception is thrown to the listener container
 	 * and retry/DLQ processing could be performed on the AMQP broker side.
 	 * Overrides the default set by the listener container factory.
-	 * @return true to return exceptions. If the client side uses a
+	 * @return {@code true} to return exceptions. If the client side uses a
 	 * {@code RemoteInvocationAwareMessageConverterAdapter} the exception will be re-thrown.
 	 * Otherwise, the sender will receive a {@code RemoteInvocationResult} wrapping the
 	 * exception.
@@ -133,8 +133,7 @@ public @interface AmqpListener {
 	/**
 	 * Set the default behavior for messages rejection.
 	 * Overrides the default set by the listener container factory.
-	 * Can be SpEL or properties placeholder-based;
-	 * evaluates to {@code boolean}.
+	 * Can be SpEL or properties placeholder-based; evaluates to {@code boolean}.
 	 * @return the default flag for messages rejection.
 	 */
 	String defaultRequeueRejected() default "";
@@ -160,8 +159,8 @@ public @interface AmqpListener {
 	String concurrency() default "";
 
 	/**
-	 * Set to {@code true} to auto start, to override the default setting in the container factory.
-	 * @return true to auto start, false to not auto start.
+	 * Set to {@code false} to not auto start, to override the default setting in the container factory.
+	 * @return {@code false} to not auto start.
 	 */
 	String autoStartup() default "";
 
@@ -197,17 +196,17 @@ public @interface AmqpListener {
 
 	/**
 	 * Override the container factory's message converter used for this listener.
-	 * @return the message converter bean name.
 	 * If a SpEL expression is provided ({@code #{...}}),
 	 * the expression can either evaluate to a converter instance or a bean name.
+	 * @return the message converter bean name.
 	 */
 	String messageConverter() default "";
 
 	/**
 	 * Override the container factory's {@code headerMapper} used for this listener.
-	 * @return the header mapper bean name.
 	 * If a SpEL expression is provided ({@code #{...}}),
 	 * the expression can either evaluate to a header mapper instance or a bean name.
+	 * @return the header mapper bean name.
 	 */
 	String headerMapper() default "";
 

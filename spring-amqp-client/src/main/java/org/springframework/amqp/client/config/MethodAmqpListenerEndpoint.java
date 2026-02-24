@@ -85,6 +85,14 @@ public class MethodAmqpListenerEndpoint extends AbstractAmqpListenerEndpoint {
 
 	private @Nullable BeanResolver beanResolver;
 
+	/**
+	 * Create an instance for the method to invoke on the provided bean.
+	 * The {@code addresses} are propagated to the
+	 * {@link org.springframework.amqp.client.listener.AmqpMessageListenerContainer}.
+	 * @param bean the bean to invoke the method on.
+	 * @param method the method to invoke.
+	 * @param addresses the addresses to listen to.
+	 */
 	public MethodAmqpListenerEndpoint(Object bean, Method method, String... addresses) {
 		super(addresses);
 		this.bean = bean;
@@ -103,11 +111,11 @@ public class MethodAmqpListenerEndpoint extends AbstractAmqpListenerEndpoint {
 
 	/**
 	 * Set the default behavior for messages rejection, for example, when the listener
-	 * threw an exception. When {@code true} (default), messages will be requeued, otherwise - rejected.
+	 * throws an exception. When {@code true} (default), messages will be requeued, otherwise - rejected.
 	 * Setting to {@code false} causes all rejections to not be requeued.
 	 * When set to {@code true}, the default can be overridden by the listener throwing an
 	 * {@link org.springframework.amqp.AmqpRejectAndDontRequeueException}.
-	 * @param defaultRequeueRejected false to reject messages by default.
+	 * @param defaultRequeueRejected {@code false} to reject messages by default.
 	 * @see AmqpMessagingListenerAdapter#setDefaultRequeueRejected(boolean)
 	 */
 	public void setDefaultRequeueRejected(boolean defaultRequeueRejected) {
