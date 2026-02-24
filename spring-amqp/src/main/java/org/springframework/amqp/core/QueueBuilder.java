@@ -244,6 +244,15 @@ public final class QueueBuilder extends AbstractBuilder {
 	}
 
 	/**
+	 * Set the queue argument to declare a queue of type 'classic' instead of default type.
+	 * @return the builder.
+	 * @since 3.2.10
+	 */
+	public QueueBuilder classic() {
+		return withArgument("x-queue-type", "classic");
+	}
+	
+	/**
 	 * Set the queue argument to declare a queue of type 'quorum' instead of 'classic'.
 	 * @return the builder.
 	 * @since 2.2.2
