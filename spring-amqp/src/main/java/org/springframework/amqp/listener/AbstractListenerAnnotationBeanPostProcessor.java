@@ -54,6 +54,8 @@ import org.springframework.core.annotation.MergedAnnotations;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.env.Environment;
+import org.springframework.format.annotation.DurationFormat;
+import org.springframework.format.datetime.standard.DurationFormatterUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -297,22 +299,8 @@ public abstract class AbstractListenerAnnotationBeanPostProcessor<A extends Anno
 	}
 
 	protected static Duration toDuration(String value, TimeUnit timeUnit) {
-		if (isDurationString(value)) {
-			return Duration.parse(value);
-		}
-		return toDuration(Long.parseLong(value), timeUnit);
-	}
-
-	protected static boolean isDurationString(String value) {
-		return (value.length() > 1 && (isP(value.charAt(0)) || isP(value.charAt(1))));
-	}
-
-	protected static boolean isP(char ch) {
-		return (ch == 'P' || ch == 'p');
-	}
-
-	private static Duration toDuration(long value, TimeUnit timeUnit) {
-		return Duration.of(value, timeUnit.toChronoUnit());
+		DurationFormat.Unit unit = DurationFormat.Unit.fromChronoUnit(timeUnit.toChronoUnit());
+		return DurationFormatterUtils.detectAndParse(value, unit);
 	}
 
 	@SuppressWarnings("unchecked")
