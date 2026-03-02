@@ -228,7 +228,7 @@ public class MethodAmqpListenerEndpoint extends AbstractAmqpListenerEndpoint {
 
 		String id = getId();
 		if (id == null) {
-			setId(this.bean.getClass().getName() + "." + this.method.getName() + ".listener");
+			setId(this.bean.getClass().getName() + "." + this.method.getName() + ".listenerContainer");
 		}
 
 		InvocableHandlerMethod invocableHandlerMethod =

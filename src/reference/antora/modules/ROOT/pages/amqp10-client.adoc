@@ -226,3 +226,129 @@ The `@EnableAmqp` annotation can be set on a `@Configuration` class in the targe
 The imported by the `@EnableAmqp` annotation `AmqpDefaultConfiguration` provides conditional beans (may be configured in the target project manually):
 
 * The `org.apache.qpid.protonj2.client.Client` where its `org.apache.qpid.protonj2.client.ClientOptions` property is based on the respective attributes of the imported metadata from the `@EnableAmqp`.
+* The `AmqpListenerEndpointRegistry` - the global component to register AMQP listener containers programmatically.
+* The `AmqpListenerAnnotationBeanPostProcessor` - a `BeanPostProcessor` to parse POJO methods with the `@AmqpListener` and register listener containers with via the `AmqpListenerEndpointRegistry`.
+
+=== `@AmqpListener`
+
+For high-level and convenient configuration, the framework provides an `@AmqpListener` annotation to mark POJO methods to be used as listener invokers from created by the framework `AmqpMessageListenerContainer` instances.
+This annotation has many similarities with the `@RabbitListener`, `@KafkaListener`, `@JmsListener`.
+It requires AMQP addresses to consume from, and also can be configured with many other listener container properties.
+All the `@AmqpListener` attributes can be configured as property-placeholders (`${}`) and/or SpEL expressions (`#{}`).
+The request-reply method signature is also supported, where `@SendTo` can be used as a fallback reply address, if `replyTo` is not provided in the request message.
+These methods can have asynchronous return types: Project Reactor's `Mono`, `CompletableFuture` or Kotlin `suspend` functions.
+
+* `Mono`-based request-reply example with possible attributes:
+
+[source,java]
+----
+@Bean
+AmqpMessageListenerContainerFactory customContainerFactory(AmqpConnectionFactory connectionFactory) {
+	var containerFactory = new MethodAmqpMessageListenerContainerFactory(connectionFactory);
+	containerFactory.setAutoStartup(false);
+	containerFactory.setAutoAccept(true);
+	containerFactory.setConcurrency(5);
+	containerFactory.setReceiveTimeout(Duration.ofSeconds(5));
+	containerFactory.setGracefulShutdownPeriod(Duration.ofSeconds(36));
+	containerFactory.setInitialCredits(55);
+	containerFactory.setTaskExecutor(this.taskExecutor);
+	containerFactory.setAdviceChain(new DebugInterceptor());
+	containerFactory.setListenerErrorHandler(mock());
+	containerFactory.setDefaultRequeueRejected(false);
+	containerFactory.setHeaderMapper(this.headerMapper);
+	containerFactory.setMessageConverter(this.messageConverter);
+	return containerFactory;
+}
+
+@Bean
+TaskExecutor taskExecutor() {
+	ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
+	threadPoolTaskExecutor.setCorePoolSize(10);
+	return threadPoolTaskExecutor;
+}
+
+@Bean
+AmqpHeaderMapper headerMapper() {
+	return new SimpleAmqpHeaderMapper();
+}
+
+@Bean
+DebugInterceptor debugInterceptor() {
+	return new DebugInterceptor();
+}
+
+@AmqpListener(
+        id = "monoListener",
+        addresses = TEST_QUEUE2 + "," + TEST_QUEUE3,
+        concurrency = "2",
+        autoStartup = "#{true}",
+        autoAccept = "true",
+        containerFactory = "customContainerFactory",
+        receiveTimeout = "${receive.timeout:22000}",
+        gracefulShutdownPeriod = "pt2m",
+        initialCredits = "101",
+        defaultRequeueRejected = "true",
+        executor = "#{taskExecutor}",
+        messageConverter = "jsonMessageConverter",
+        headerMapper = "headerMapper",
+        adviceChain = "debugInterceptor")
+Mono<DataOut> requestReplyWithJsonAndOtherAnnotationAttributes(DataIn dataIn) {
+       DataOut dataOut = new DataOut(dataIn.data + "_out");
+       return Mono.just(dataOut);
+}
+----
+
+The `id` attribute is not required, and target listener container bean name will be based on the class name, method name plus `.listenerContainer` suffix.
+The `addresses` - can be an array of names, or each item can be a comma-delimited set of names.
+This can be useful when a list of AMQP addresses is provided via external configuration properties.
+The `containerFactory` (see below), `executor`, `messageConverter` and `headerMapper` attributes are options and can be configured to bean name of bean reference as a SpEL expression like the `executor` in the sample above.
+The `adviceChain` attribute is a list of bean names of `Advice` implementations.
+
+* Kotlin `suspend` function example with an explicit `@SendTo`:
+
+[source,kotlin]
+----
+@Bean
+fun jsonMessageConverter() = JacksonJsonMessageConverter()
+
+@Bean
+fun amqpConnectionFactory(protonClient: Client) =
+    SingleAmqpConnectionFactory(protonClient)
+        .setPort(amqpPort())
+
+@Bean
+fun amqpClient(connectionFactory: AmqpConnectionFactory, jsonMessageConverter: MessageConverter) =
+    AmqpClient.builder(connectionFactory)
+        .messageConverter(jsonMessageConverter)
+        .build()
+
+@Bean(AmqpDefaultConfiguration.DEFAULT_AMQP_LISTENER_CONTAINER_FACTORY_BEAN_NAME)
+fun containerFactory(connectionFactory: AmqpConnectionFactory, jsonMessageConverter: MessageConverter) =
+    MethodAmqpMessageListenerContainerFactory(connectionFactory)
+        .also { it.setMessageConverter(jsonMessageConverter) }
+
+@AmqpListener(addresses = ["TEST_QUEUE"])
+@SendTo("TEST_REPLY_TO")
+suspend fun requestReplyAsyncListener(payload: DataIn) = DataOut(payload.data + "_out")
+
+data class DataIn(val data: String)
+
+data class DataOut(val data: String)
+----
+
+The `@AmqpListener` is `@Repeatable`, so several listener containers will be registered for each annotation invoking the same service method.
+
+=== `AmqpMessageListenerContainerFactory`
+
+The `AmqpMessageListenerContainerFactory` abstraction can be used to create an `AmqpMessageListenerContainer` based on the provided `AmqpListenerEndpoint`.
+The factory provides default listener container properties if they are not overridden by the `AmqpListenerEndpoint` instance.
+The framework provides a `SimpleAmqpListenerEndpoint` implementation based on the `MessageListener`, and `MethodAmqpListenerEndpoint` based on the specific POJO method invocation.
+Both endpoint implementations require AMQP addresses to consume from.
+The `MethodAmqpMessageListenerContainerFactory` extension of the `AmqpMessageListenerContainerFactory` is designed specifically for the `AmqpMessageListenerContainer` instances based on the `MethodAmqpListenerEndpoint`.
+The framework relies on a bean for this factory when `@AmqpListener` annotation is parsed via `AmqpListenerAnnotationBeanPostProcessor`.
+If `@AmqpListener(containerFactory)` attribute is not provided on a POJO method, the framework expects a global bean for an `AmqpMessageListenerContainerFactory` with the `AmqpDefaultConfiguration.DEFAULT_AMQP_LISTENER_CONTAINER_FACTORY_BEAN_NAME`.
+
+Unlike with the `@RabbitListener` and `RabbitListenerEndpointRegistry` infrastructure, the `AmqpListenerEndpointRegistry` uses an `AmqpMessageListenerContainerFactory` & `AmqpListenerEndpoint` to created an `AmqpMessageListenerContainer` instance, and registers it as a singleton bean into the application context directly.
+The bean name for this `AmqpMessageListenerContainer` instance is a value from the `AmqpListenerEndpoint.getId()` or generated one based on the `MessageListener` class name and `.listenerContainer` suffix.
+
+See `AmqpListenerEndpoint`, `AmqpMessageListenerContainerFactory` and `AmqpListenerEndpointRegistry` Javadocs for more information.
