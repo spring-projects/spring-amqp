@@ -1,6 +1,5 @@
 buildscript {
 	ext.kotlinVersion = '2.3.10'
-	ext.isCI = System.getenv('GITHUB_ACTION')
 	repositories {
 		mavenCentral()
 		gradlePluginPortal()
@@ -14,7 +13,6 @@ buildscript {
 plugins {
 	id 'base'
 	id 'idea'
-	id 'io.spring.nohttp' version '0.0.11'
 	id 'org.antora' version '1.0.0'
 	id 'io.spring.antora.generate-antora-yml' version '0.0.1'
 	id 'io.freefair.aggregate-javadoc' version '9.2.0'
@@ -64,7 +62,12 @@ ext {
 antora {
 	version = '3.2.0-alpha.2'
 	playbook = file('src/reference/antora/antora-playbook.yml')
-	options = ['to-dir': project.layout.buildDirectory.dir('site').get().toString(), clean: true, fetch: !project.gradle.startParameter.offline, stacktrace: true]
+	options = [
+			'to-dir'    : project.layout.buildDirectory.dir('site').get().toString(),
+			'clean'     : 'true',
+			'fetch'     : "${!project.gradle.startParameter.offline}".toString(),
+			'stacktrace': 'true'
+	]
 	dependencies = [
 			'@antora/atlas-extension'         : '0.0.2',
 			'@antora/collector-extension'     : '1.0.1',
@@ -75,7 +78,7 @@ antora {
 }
 
 tasks.named('generateAntoraYml') {
-	asciidocAttributes = project.provider( { generateAttributes() } )
+	asciidocAttributes = project.provider({ generateAttributes() })
 	baseAntoraYmlFile = file('src/reference/antora/antora.yml')
 }
 
@@ -89,20 +92,15 @@ tasks.register('generateAntoraResources') {
 	dependsOn 'generateAntoraYml'
 }
 
-nohttp {
-	source.include '**/src/**'
-	source.exclude '**/*.gif', '**/*.ks'
-}
-
 allprojects {
 	group = 'org.springframework.amqp'
 
 	repositories {
 		mavenCentral()
-		maven { url 'https://repo.spring.io/milestone' }
+		maven { url = 'https://repo.spring.io/milestone' }
 		if (version.endsWith('-SNAPSHOT')) {
-			maven { url 'https://repo.spring.io/snapshot' }
-			maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+			maven { url = 'https://repo.spring.io/snapshot' }
+			maven { url = 'https://oss.sonatype.org/content/repositories/snapshots' }
 		}
 //		maven { url 'https://repo.spring.io/libs-staging-local' }
 	}
@@ -130,15 +128,6 @@ allprojects {
 		dependencyManagement(platform("io.micrometer:micrometer-tracing-bom:$micrometerTracingVersion"))
 		dependencyManagement(platform("org.testcontainers:testcontainers-bom:$testcontainersVersion"))
 	}
-}
-
-ext {
-	expandPlaceholders = '**/quick-tour.xml'
-	javadocLinks = [
-			'https://docs.oracle.com/en/java/javase/17/docs/api/',
-			'https://jakarta.ee/specifications/platform/11/apidocs/',
-			'https://docs.spring.io/spring-framework/docs/current/javadoc-api/'
-	] as String[]
 }
 
 configure(javaProjects) { subproject ->
@@ -190,28 +179,23 @@ configure(javaProjects) { subproject ->
 
 	// dependencies that are common across all java projects
 	dependencies {
+		runtimeOnly 'com.github.spotbugs:spotbugs-annotations:4.9.8'
+
 		testImplementation 'org.apache.logging.log4j:log4j-core'
 		testImplementation "org.hamcrest:hamcrest-core:$hamcrestVersion"
-		testImplementation("org.mockito:mockito-core:$mockitoVersion") {
-			exclude group: 'org.hamcrest', module: 'hamcrest-core'
-		}
+		testImplementation "org.mockito:mockito-core:$mockitoVersion"
 		testImplementation "org.mockito:mockito-junit-jupiter:$mockitoVersion"
 		testImplementation 'org.springframework:spring-test'
-
-		testRuntimeOnly 'org.apache.logging.log4j:log4j-jcl'
-		testRuntimeOnly 'org.apache.logging.log4j:log4j-slf4j2-impl'
-
 		testImplementation 'org.junit.jupiter:junit-jupiter-api'
 		testImplementation 'org.junit.jupiter:junit-jupiter-params'
 		testImplementation 'org.junit.jupiter:junit-jupiter-engine'
 		testImplementation 'org.junit.platform:junit-platform-launcher'
-		testImplementation("org.awaitility:awaitility:$awaitilityVersion") {
-			exclude group: 'org.hamcrest'
-		}
-
+		testImplementation "org.awaitility:awaitility:$awaitilityVersion"
 		testImplementation 'org.jetbrains.kotlin:kotlin-reflect'
 		testImplementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 		testImplementation "com.willowtreeapps.assertk:assertk-jvm:$assertkVersion"
+
+		testRuntimeOnly 'org.apache.logging.log4j:log4j-jcl'
 	}
 
 	// enable all compiler warnings; individual projects may customize further
@@ -231,7 +215,7 @@ configure(javaProjects) { subproject ->
 		jvmArgs '--add-opens', 'java.base/java.util.zip=ALL-UNNAMED'
 	}
 
-	tasks.withType(Javadoc) {
+	tasks.withType(Javadoc).configureEach {
 		options.addBooleanOption('Xdoclint:syntax', true) // only check syntax with doclint
 		options.addBooleanOption('Werror', true) // fail build on Javadoc warnings
 	}
@@ -239,14 +223,6 @@ configure(javaProjects) { subproject ->
 	test {
 		maxHeapSize = '2g'
 		jvmArgs '-XX:+HeapDumpOnOutOfMemoryError'
-
-		testLogging {
-			events "skipped", "failed"
-			showStandardStreams = project.hasProperty("showStandardStreams") ?: false
-			showExceptions = true
-			showStackTraces = true
-			exceptionFormat = 'full'
-		}
 	}
 
 	tasks.register('testAll', Test) {
@@ -308,10 +284,10 @@ project('spring-amqp') {
 
 	dependencies {
 		api 'org.springframework:spring-core'
+
 		optionalApi 'org.springframework:spring-messaging'
 		optionalApi 'org.springframework:spring-oxm'
 		optionalApi 'org.springframework:spring-context'
-
 		optionalApi 'com.fasterxml.jackson.core:jackson-core'
 		optionalApi 'com.fasterxml.jackson.core:jackson-databind'
 		optionalApi 'com.fasterxml.jackson.core:jackson-annotations'
@@ -321,14 +297,11 @@ project('spring-amqp') {
 		optionalApi 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 		optionalApi 'com.fasterxml.jackson.datatype:jackson-datatype-joda'
 		optionalApi 'com.fasterxml.jackson.module:jackson-module-kotlin'
-
 		optionalApi 'io.projectreactor:reactor-core'
-
 		optionalApi 'tools.jackson.core:jackson-databind'
 		optionalApi 'tools.jackson.datatype:jackson-datatype-joda'
 		optionalApi 'tools.jackson.dataformat:jackson-dataformat-xml'
 		optionalApi 'tools.jackson.module:jackson-module-kotlin'
-
 		// Spring Data projection message binding support
 		optionalApi 'org.springframework.data:spring-data-commons'
 		optionalApi "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
@@ -346,7 +319,7 @@ project('spring-amqp-bom') {
 
 	dependencies {
 		constraints {
-			javaProjects.sort { "$it.name" }.each {
+			javaProjects.sort { it.name }.each {
 				api it
 			}
 		}
@@ -372,7 +345,7 @@ project('spring-amqp-client') {
 
 		testImplementation project(':spring-rabbit-junit')
 		testImplementation 'io.projectreactor:reactor-core'
-		optionalApi "org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$kotlinCoroutinesVersion"
+		testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$kotlinCoroutinesVersion"
 		testImplementation 'org.testcontainers:testcontainers-rabbitmq'
 		testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
 
@@ -547,11 +520,16 @@ javadoc {
 		use = true
 		overview = 'src/api/overview.html'
 		splitIndex = true
-		links(project.ext.javadocLinks)
+		links('https://docs.oracle.com/en/java/javase/17/docs/api/',
+				'https://jakarta.ee/specifications/platform/11/apidocs/',
+				'https://docs.spring.io/spring-framework/docs/current/javadoc-api/')
 		addBooleanOption('Xdoclint:syntax', true) // only check syntax with doclint
 	}
 
 	destinationDir = file('build/api')
+
+	notCompatibleWithConfigurationCache('Task requires resolving transitive dependencies from all subprojects')
+
 	doFirst {
 		classpath += files(javaProjects.collect { it.sourceSets.main.compileClasspath })
 	}
@@ -569,6 +547,8 @@ tasks.register('schemaZip', Zip) {
 	description = "Builds -${archiveClassifier} archive containing all " +
 			"XSDs for deployment at static.springframework.org/schema."
 
+	String[] versionNumbers = project.version.toString().split(/\./, 3)
+
 	javaProjects.each { subproject ->
 		Set files = new HashSet()
 		Properties schemas = new Properties();
@@ -585,15 +565,12 @@ tasks.register('schemaZip', Zip) {
 		for (def key : schemas.keySet()) {
 			File xsdFile = subproject.sourceSets.main.resources.find {
 				it.path.replaceAll('\\\\', '/').endsWith(schemas.get(key))
-			}
+			} as File
 			assert xsdFile != null
 			if (!files.contains(xsdFile.path)) {
 				into("${shortName}") {
 					from xsdFile.path
-					rename { String fileName ->
-						String[] versionNumbers = project.version.split(/\./, 3)
-						fileName.replace('.xsd', "-${versionNumbers[0]}.${versionNumbers[1]}.xsd")
-					}
+					rename { it.replace('.xsd', "-${versionNumbers[0]}.${versionNumbers[1]}.xsd") }
 				}
 				files.add(xsdFile.path)
 			}
@@ -712,22 +689,21 @@ publishing {
 }
 
 def generateAttributes() {
-	def springDocs = "https://docs.spring.io"
-	def micrometerDocsPrefix = "https://docs.micrometer.io"
+	def springDocs = 'https://docs.spring.io'
+	def micrometerDocsPrefix = 'https://docs.micrometer.io'
 
 	return [
-		'project-version': project.version,
-		'spring-integration-docs': "$springDocs/spring-integration/reference".toString(),
-		'spring-framework-docs': "$springDocs/spring-framework/reference/${generateVersionWithoutPatch(springVersion)}".toString(),
-		'spring-framework-javadoc': "$springDocs/spring-framework/docs/$springVersion/javadoc-api".toString(),
-		'javadoc-location-org-springframework-transaction': "$springDocs/spring-framework/docs/$springVersion/javadoc-api".toString(),
-		'javadoc-location-org-springframework-amqp': "$springDocs/spring-amqp/docs/$project.version/api".toString(),
-		'micrometer-docs': "$micrometerDocsPrefix/micrometer/reference/${generateVersionWithoutPatch(micrometerVersion)}".toString(),
-		'micrometer-tracing-docs': "$micrometerDocsPrefix/tracing/reference/${generateVersionWithoutPatch(micrometerTracingVersion)}".toString()
+			'project-version'                                 : project.version,
+			'spring-integration-docs'                         : "$springDocs/spring-integration/reference".toString(),
+			'spring-framework-docs'                           : "$springDocs/spring-framework/reference/${generateVersionWithoutPatch(springVersion)}".toString(),
+			'spring-framework-javadoc'                        : "$springDocs/spring-framework/docs/$springVersion/javadoc-api".toString(),
+			'javadoc-location-org-springframework-transaction': "$springDocs/spring-framework/docs/$springVersion/javadoc-api".toString(),
+			'javadoc-location-org-springframework-amqp'       : "$springDocs/spring-amqp/docs/$project.version/api".toString(),
+			'micrometer-docs'                                 : "$micrometerDocsPrefix/micrometer/reference/${generateVersionWithoutPatch(micrometerVersion)}".toString(),
+			'micrometer-tracing-docs'                         : "$micrometerDocsPrefix/tracing/reference/${generateVersionWithoutPatch(micrometerTracingVersion)}".toString()
 	]
 }
 
 static String generateVersionWithoutPatch(String version) {
-
-	return version.split('\\.')[0,1].join('.') + (version.endsWith('-SNAPSHOT') ? '-SNAPSHOT' : '')
+	return version.split('\\.')[0, 1].join('.') + (version.endsWith('-SNAPSHOT') ? '-SNAPSHOT' : '')
 }
