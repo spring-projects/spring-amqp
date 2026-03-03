@@ -114,7 +114,7 @@ class AmqpListenerAnnotationTests extends AbstractTestContainerTests {
 	@Test
 	void simpleAmqpListenerBasedOnDefaultContainerFactoryAndDeliversAllTheArguments() throws InterruptedException {
 		AmqpMessageListenerContainer listenerContainer =
-				this.beanFactory.getBean(TestConfig.class.getName() + ".simpleListener.listener",
+				this.beanFactory.getBean(TestConfig.class.getName() + ".simpleListener.listenerContainer",
 						AmqpMessageListenerContainer.class);
 
 		assertThat(listenerContainer.isAutoStartup()).isFalse();
