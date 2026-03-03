@@ -179,7 +179,10 @@ configure(javaProjects) { subproject ->
 
 	// dependencies that are common across all java projects
 	dependencies {
-		runtimeOnly 'com.github.spotbugs:spotbugs-annotations:4.9.8'
+		def spotBugs = 'com.github.spotbugs:spotbugs-annotations:4.9.8'
+		runtimeOnly spotBugs
+		compileOnly spotBugs
+		testRuntimeOnly spotBugs
 
 		testImplementation 'org.apache.logging.log4j:log4j-core'
 		testImplementation "org.hamcrest:hamcrest-core:$hamcrestVersion"
@@ -245,6 +248,8 @@ configure(javaProjects) { subproject ->
 		environment "SPRING_AMQP_DESERIALIZATION_TRUST_ALL", "true"
 
 		useJUnitPlatform()
+
+		jvmArgs '--enable-native-access=ALL-UNNAMED'
 	}
 
 	checkstyle {
