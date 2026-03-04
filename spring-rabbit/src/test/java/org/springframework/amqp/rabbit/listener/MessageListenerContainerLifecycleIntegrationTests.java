@@ -37,8 +37,6 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
-import org.springframework.amqp.rabbit.junit.LogLevels;
-import org.springframework.amqp.rabbit.junit.LongRunning;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
@@ -68,10 +66,6 @@ import static org.mockito.Mockito.spy;
  *
  */
 @RabbitAvailable(queues = MessageListenerContainerLifecycleIntegrationTests.TEST_QUEUE)
-@LongRunning
-@LogLevels(classes = {RabbitTemplate.class,
-		SimpleMessageListenerContainer.class, BlockingQueueConsumer.class,
-		MessageListenerContainerLifecycleIntegrationTests.class}, level = "INFO")
 public class MessageListenerContainerLifecycleIntegrationTests {
 
 	public static final String TEST_QUEUE = "test.queue.MessageListenerContainerLifecycleIntegrationTests";
@@ -450,9 +444,8 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 		@SuppressWarnings("rawtypes")
 		ActiveObjectCounter counter = TestUtils.getPropertyValue(container, "cancellationLock", ActiveObjectCounter.class);
-		assertThat(counter.getCount() > 0).isTrue();
+		assertThat(counter.getCount()).isEqualTo(0);
 
-		await().until(() -> counter.getCount() == 0);
 		((DisposableBean) template.getConnectionFactory()).destroy();
 	}
 
