@@ -181,7 +181,6 @@ configure(javaProjects) { subproject ->
 	dependencies {
 		def spotBugs = 'com.github.spotbugs:spotbugs-annotations:4.9.8'
 		runtimeOnly spotBugs
-		compileOnly spotBugs
 		testRuntimeOnly spotBugs
 
 		testImplementation 'org.apache.logging.log4j:log4j-core'
