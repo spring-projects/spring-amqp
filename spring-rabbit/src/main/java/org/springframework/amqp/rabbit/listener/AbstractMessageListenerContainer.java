@@ -1610,7 +1610,9 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 */
 	protected void actualInvokeListener(Channel channel, Object data) {
 		MessageListener listener = getMessageListener();
-		Assert.notNull(listener, "listener cannot be null");
+		if (listener == null) {
+			throw new FatalListenerStartupException("listener cannot be null", new NullPointerException());
+		}
 		if (listener instanceof ChannelAwareMessageListener chaml) {
 			doInvokeListener(chaml, channel, data);
 		}
