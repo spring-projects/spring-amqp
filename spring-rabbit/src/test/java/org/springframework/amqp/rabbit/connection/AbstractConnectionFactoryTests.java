@@ -68,6 +68,7 @@ public abstract class AbstractConnectionFactoryTests {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
 		com.rabbitmq.client.Connection mockConnection = mock();
 
+		given(mockConnection.isOpen()).willReturn(true);
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnectionFactory.newConnection(any(), anyList(), anyString())).willReturn(mockConnection);
 
@@ -129,6 +130,7 @@ public abstract class AbstractConnectionFactoryTests {
 	public void testWithListenerRegisteredAfterOpen() throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
 		com.rabbitmq.client.Connection mockConnection = mock();
+		given(mockConnection.isOpen()).willReturn(true);
 
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 

@@ -1024,6 +1024,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString()))
 				.willReturn(mockConnection1, mockConnection2);
 		given(mockConnection1.isOpen()).willReturn(true);
+		given(mockConnection2.isOpen()).willReturn(true);
 		given(mockChannel.isOpen()).willReturn(true);
 		given(mockConnection1.createChannel()).willReturn(mockChannel);
 		given(mockConnection2.createChannel()).willReturn(mockChannel);
