@@ -741,7 +741,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			if (this.cacheMode == CacheMode.CONNECTION) {
 				return connectionFromCache();
 			}
-			if (this.connection.target == null) {
+			if (!this.connection.isOpen()) {
 				this.connection.target = super.createBareConnection();
 				// invoke the listener *after* this.connection is assigned
 				if (!this.checkoutPermits.containsKey(this.connection)) {

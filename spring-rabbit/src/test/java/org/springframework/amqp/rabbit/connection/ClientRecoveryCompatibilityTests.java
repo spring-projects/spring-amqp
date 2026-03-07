@@ -69,13 +69,15 @@ public class ClientRecoveryCompatibilityTests {
 		channel.close();
 		conn2.close();
 
-		given(rabbitConn.isOpen()).willReturn(false).willReturn(true);
+		given(rabbitConn.isOpen()).willReturn(true);
 		given(channel1.isOpen()).willReturn(false);
 		Connection conn3 = ccf.createConnection();
 		assertThat(conn3).isSameAs(conn1);
+		given(rabbitConn.isOpen()).willReturn(false);
 		assertThatExceptionOfType(AutoRecoverConnectionNotCurrentlyOpenException.class).isThrownBy(() ->
 					conn3.createChannel(false))
 				.withMessage("Auto recovery connection is not currently open");
+		given(rabbitConn.isOpen()).willReturn(true);
 		channel = conn2.createChannel(false);
 		proxy = (ChannelProxy) channel;
 		assertThat(proxy.getTargetChannel()).isSameAs(channel2);
