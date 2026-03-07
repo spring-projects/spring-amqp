@@ -609,14 +609,15 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			doConsumeFromQueue(consumer.getQueue(), consumer.getIndex());
 			return true;
 		}
-		catch (AmqpConnectException | AmqpIOException e) {
-			this.logger.error("Cannot connect to server", e);
+		catch (AmqpConnectException | AmqpIOException | AmqpTimeoutException e) {
+			this.logger.error("Cannot connect to server or create channel", e);
 			if (e.getCause() instanceof AmqpApplicationContextClosedException) {
 				this.logger.error("Application context is closed, terminating");
 				Assert.state(this.taskScheduler != null, "taskScheduler must be provided");
 				this.taskScheduler.schedule(this::stop, Instant.now());
 			}
 			this.consumersToRestart.addAll(restartableConsumers);
+			this.consumersToRestart.add(consumer);
 			if (this.logger.isTraceEnabled()) {
 				this.logger.trace("After restart exception, consumers to restart now: "
 						+ this.consumersToRestart);
@@ -637,12 +638,13 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				BackOffExecution backOffExecution = getRecoveryBackOff().start();
 				while (!DirectMessageListenerContainer.this.started && isRunning()) {
 					this.cancellationLock.reset();
+					this.lastRestartAttempt = System.currentTimeMillis();
 					try {
 						for (String queue : queueNames) {
 							consumeFromQueue(queue);
 						}
 					}
-					catch (AmqpConnectException | AmqpIOException e) {
+					catch (AmqpConnectException | AmqpIOException | AmqpTimeoutException e) {
 						long nextBackOff = backOffExecution.nextBackOff();
 						if (nextBackOff < 0 || e.getCause() instanceof AmqpApplicationContextClosedException) {
 							DirectMessageListenerContainer.this.aborted = true;
@@ -869,6 +871,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		boolean waitForConsumers = false;
 		this.consumersLock.lock();
 		try {
+			this.consumersToRestart.clear();
 			if (this.started || this.aborted) {
 				// Copy in the same order to avoid ConcurrentModificationException during remove in the
 				// cancelConsumer().

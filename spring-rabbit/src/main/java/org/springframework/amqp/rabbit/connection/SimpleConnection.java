@@ -39,6 +39,7 @@ import org.springframework.util.backoff.BackOffExecution;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Salk Lee
+ * @author Alexei Sischin
  *
  * @since 1.0
  */
@@ -132,10 +133,11 @@ public class SimpleConnection implements Connection, NetworkConnection {
 	 */
 	@Override
 	public boolean isOpen() {
-		if (!this.explicitlyClosed && this.delegate instanceof AutorecoveringConnection && !this.delegate.isOpen()) {
+		boolean delegateOpen = this.delegate.isOpen();
+		if (!this.explicitlyClosed && this.delegate instanceof AutorecoveringConnection && !delegateOpen) {
 			throw new AutoRecoverConnectionNotCurrentlyOpenException("Auto recovery connection is not currently open");
 		}
-		return this.delegate.isOpen();
+		return delegateOpen;
 	}
 
 	@Override

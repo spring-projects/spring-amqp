@@ -16,12 +16,16 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import java.time.Duration;
+import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.BasicProperties;
@@ -29,16 +33,28 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
+import org.springframework.amqp.AmqpConnectException;
+import org.springframework.amqp.AmqpIOException;
+import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.rabbit.connection.AutoRecoverConnectionNotCurrentlyOpenException;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.util.MultiValueMap;
+import org.springframework.util.backoff.FixedBackOff;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -56,6 +72,7 @@ import static org.mockito.Mockito.verify;
 /**
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Alexei Sischin
  *
  * @since 2.0
  *
@@ -64,10 +81,10 @@ public class DirectMessageListenerContainerMockTests {
 
 	@Test
 	public void testAlwaysCancelAutoRecoverConsumer() throws Exception {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
-		Connection connection = mock(Connection.class);
-		ChannelProxy channel = mock(ChannelProxy.class);
-		Channel rabbitChannel = mock(AutorecoveringChannel.class);
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		ChannelProxy channel = mock();
+		AutorecoveringChannel rabbitChannel = mock();
 		given(channel.getTargetChannel()).willReturn(rabbitChannel);
 
 		given(connectionFactory.createConnection()).willReturn(connection);
@@ -77,7 +94,7 @@ public class DirectMessageListenerContainerMockTests {
 		given(channel.queueDeclarePassive(Mockito.anyString()))
 				.willAnswer(invocation -> mock(AMQP.Queue.DeclareOk.class));
 		given(channel.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
-						anyMap(), any(Consumer.class))).willReturn("consumerTag");
+				anyMap(), any(Consumer.class))).willReturn("consumerTag");
 
 		final CountDownLatch latch1 = new CountDownLatch(1);
 		final AtomicInteger qos = new AtomicInteger();
@@ -108,10 +125,10 @@ public class DirectMessageListenerContainerMockTests {
 
 	@Test
 	public void testDeferredAcks() throws Exception {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
-		Connection connection = mock(Connection.class);
-		ChannelProxy channel = mock(ChannelProxy.class);
-		Channel rabbitChannel = mock(AutorecoveringChannel.class);
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		ChannelProxy channel = mock();
+		AutorecoveringChannel rabbitChannel = mock();
 		given(channel.getTargetChannel()).willReturn(rabbitChannel);
 
 		given(connectionFactory.createConnection()).willReturn(connection);
@@ -204,10 +221,10 @@ public class DirectMessageListenerContainerMockTests {
 
 	@Test
 	public void testRemoveQueuesWhileNotConnected() throws Exception {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
-		Connection connection = mock(Connection.class);
-		ChannelProxy channel = mock(ChannelProxy.class);
-		Channel rabbitChannel = mock(AutorecoveringChannel.class);
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		ChannelProxy channel = mock();
+		AutorecoveringChannel rabbitChannel = mock();
 		given(channel.getTargetChannel()).willReturn(rabbitChannel);
 
 		given(connectionFactory.createConnection()).willReturn(connection);
@@ -267,10 +284,10 @@ public class DirectMessageListenerContainerMockTests {
 
 	@Test
 	public void testMonitorCancelsAfterBadAckEvenIfChannelReportsOpen() throws Exception {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
-		Connection connection = mock(Connection.class);
-		ChannelProxy channel = mock(ChannelProxy.class);
-		Channel rabbitChannel = mock(Channel.class);
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		ChannelProxy channel = mock();
+		Channel rabbitChannel = mock();
 		given(channel.getTargetChannel()).willReturn(rabbitChannel);
 
 		given(connectionFactory.createConnection()).willReturn(connection);
@@ -286,7 +303,7 @@ public class DirectMessageListenerContainerMockTests {
 			latch1.countDown();
 			return "consumerTag";
 		}).given(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
-						anyMap(), any(Consumer.class));
+				anyMap(), any(Consumer.class));
 
 		willThrow(new RuntimeException("bad ack")).given(channel).basicAck(1L, false);
 		willAnswer(inv -> {
@@ -311,15 +328,13 @@ public class DirectMessageListenerContainerMockTests {
 
 	@Test
 	public void testMonitorCancelsAfterTargetChannelChanges() throws Exception {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
-		Connection connection = mock(Connection.class);
-		ChannelProxy channel = mock(ChannelProxy.class);
-		Channel rabbitChannel1 = mock(Channel.class);
-		Channel rabbitChannel2 = mock(Channel.class);
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		ChannelProxy channel = mock();
+		Channel rabbitChannel1 = mock();
+		Channel rabbitChannel2 = mock();
 		AtomicReference<Channel> target = new AtomicReference<>(rabbitChannel1);
-		willAnswer(inv -> {
-			return target.get();
-		}).given(channel).getTargetChannel();
+		willAnswer(inv -> target.get()).given(channel).getTargetChannel();
 
 		given(connectionFactory.createConnection()).willReturn(connection);
 		given(connection.createChannel(anyBoolean())).willReturn(channel);
@@ -334,7 +349,7 @@ public class DirectMessageListenerContainerMockTests {
 			latch1.countDown();
 			return "consumerTag";
 		}).given(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
-						anyMap(), any(Consumer.class));
+				anyMap(), any(Consumer.class));
 
 		willAnswer(inv -> {
 			consumer.get().handleCancelOk("consumerTag");
@@ -346,9 +361,7 @@ public class DirectMessageListenerContainerMockTests {
 		container.setQueueNames("test");
 		container.setPrefetchCount(2);
 		container.setMonitorInterval(100);
-		container.setMessageListener(msg -> {
-			target.set(rabbitChannel2);
-		});
+		container.setMessageListener(msg -> target.set(rabbitChannel2));
 		container.setAcknowledgeMode(AcknowledgeMode.MANUAL);
 		container.afterPropertiesSet();
 		container.start();
@@ -361,7 +374,7 @@ public class DirectMessageListenerContainerMockTests {
 
 	@Test
 	void monitorTaskThreadName() {
-		DirectMessageListenerContainer container = new DirectMessageListenerContainer(mock(ConnectionFactory.class));
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(mock());
 		assertThat(container.getListenerId()).isEqualTo("not.a.Spring.bean");
 		container.setBeanName("aBean");
 		assertThat(container.getListenerId()).isEqualTo("aBean");
@@ -373,7 +386,7 @@ public class DirectMessageListenerContainerMockTests {
 				.asString()
 				.startsWith("id-consumerMonitor");
 
-		container = new DirectMessageListenerContainer(mock(ConnectionFactory.class));
+		container = new DirectMessageListenerContainer(mock());
 		container.setBeanName("aBean");
 		container.afterPropertiesSet();
 		assertThat(container).extracting("taskScheduler")
@@ -382,7 +395,195 @@ public class DirectMessageListenerContainerMockTests {
 				.startsWith("aBean-consumerMonitor");
 	}
 
-	private Envelope envelope(long tag) {
+	@MethodSource("transientExceptions")
+	@ParameterizedTest
+	public void keepsConnectionAttemptsRegardlessExceptionAtChannelCreationAtStart(
+			Supplier<? extends Exception> exceptionSupplier) throws Exception {
+
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		Channel channel = mock();
+
+		CountDownLatch createChannelAttemptsLatch = new CountDownLatch(10);
+		given(connectionFactory.createConnection()).willReturn(connection);
+		AtomicBoolean simulateFailure = new AtomicBoolean(true);
+		given(connection.createChannel(anyBoolean())).will(i -> {
+			if (simulateFailure.get()) {
+				createChannelAttemptsLatch.countDown();
+				throw exceptionSupplier.get();
+			}
+			return channel;
+		});
+		given(channel.isOpen()).willAnswer(i -> !simulateFailure.get());
+
+		DirectMessageListenerContainer container = buildContainerForReconnectionTest(connectionFactory);
+		container.start();
+		assertActiveConsumerCount(container, 0);
+		assertConsumersByQueue(container, 0);
+		assertThat(createChannelAttemptsLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		simulateFailure.set(false);
+		assertActiveConsumerCount(container, 6);
+		assertConsumersByQueue(container, 2);
+
+		container.stop();
+		assertActiveConsumerCount(container, 0);
+		assertConsumersByQueue(container, 0);
+	}
+
+	@MethodSource("transientExceptions")
+	@ParameterizedTest
+	public void keepsConnectionAttemptsRegardlessExceptionAtChannelCreationAtRestart(
+			Supplier<? extends Exception> exceptionSupplier) throws Exception {
+
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		Channel channel = mock();
+
+		CountDownLatch createChannelAttemptsLatch = new CountDownLatch(10);
+		given(connectionFactory.createConnection()).willReturn(connection);
+		AtomicBoolean simulateFailure = new AtomicBoolean(false);
+		given(connection.createChannel(anyBoolean())).will(i -> {
+			if (simulateFailure.get()) {
+				createChannelAttemptsLatch.countDown();
+				throw exceptionSupplier.get();
+			}
+			return channel;
+		});
+		given(channel.isOpen()).willAnswer(i -> !simulateFailure.get());
+
+		DirectMessageListenerContainer container = buildContainerForReconnectionTest(connectionFactory);
+		container.start();
+		assertActiveConsumerCount(container, 6);
+		assertConsumersByQueue(container, 2);
+		simulateFailure.set(true);
+		assertActiveConsumerCount(container, 0);
+		assertConsumersByQueue(container, 2);
+		assertThat(createChannelAttemptsLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		simulateFailure.set(false);
+		assertActiveConsumerCount(container, 6);
+		assertConsumersByQueue(container, 2);
+
+		container.stop();
+		assertActiveConsumerCount(container, 0);
+		assertConsumersByQueue(container, 0);
+	}
+
+	@MethodSource("transientExceptions")
+	@ParameterizedTest
+	public void keepsConnectionAttemptsRegardlessExceptionAtConnectionCreationAtStart(
+			Supplier<? extends Exception> exceptionSupplier) throws Exception {
+
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		Channel channel = mock();
+
+		CountDownLatch createConnectionAttemptsLatch = new CountDownLatch(10);
+		AtomicBoolean simulateFailure = new AtomicBoolean(true);
+		given(connectionFactory.createConnection()).will(i -> {
+			if (simulateFailure.get()) {
+				createConnectionAttemptsLatch.countDown();
+				throw exceptionSupplier.get();
+			}
+			return connection;
+		});
+		given(connection.createChannel(anyBoolean())).willReturn(channel);
+		given(channel.isOpen()).willAnswer(i -> !simulateFailure.get());
+
+		DirectMessageListenerContainer container = buildContainerForReconnectionTest(connectionFactory);
+		container.start();
+		assertActiveConsumerCount(container, 0);
+		assertConsumersByQueue(container, 0);
+		assertThat(createConnectionAttemptsLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		simulateFailure.set(false);
+		assertActiveConsumerCount(container, 6);
+		assertConsumersByQueue(container, 2);
+
+		container.stop();
+		assertActiveConsumerCount(container, 0);
+		assertConsumersByQueue(container, 0);
+	}
+
+	@MethodSource("transientExceptions")
+	@ParameterizedTest
+	public void keepsConnectionAttemptsRegardlessExceptionAtConnectionCreationAtRestart(
+			Supplier<? extends Exception> exceptionSupplier) throws Exception {
+
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		Channel channel = mock();
+
+		CountDownLatch createConnectionAttemptsLatch = new CountDownLatch(10);
+		AtomicBoolean simulateFailure = new AtomicBoolean(false);
+		given(connectionFactory.createConnection()).will(i -> {
+			if (simulateFailure.get()) {
+				createConnectionAttemptsLatch.countDown();
+				throw exceptionSupplier.get();
+			}
+			return connection;
+		});
+		given(connection.createChannel(anyBoolean())).willReturn(channel);
+		given(channel.isOpen()).willAnswer(i -> !simulateFailure.get());
+
+		DirectMessageListenerContainer container = buildContainerForReconnectionTest(connectionFactory);
+		container.start();
+		assertActiveConsumerCount(container, 6);
+		assertConsumersByQueue(container, 2);
+		simulateFailure.set(true);
+		assertActiveConsumerCount(container, 0);
+		assertConsumersByQueue(container, 2);
+		assertThat(createConnectionAttemptsLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		simulateFailure.set(false);
+		assertActiveConsumerCount(container, 6);
+		assertConsumersByQueue(container, 2);
+
+		container.stop();
+		assertActiveConsumerCount(container, 0);
+		assertConsumersByQueue(container, 0);
+	}
+
+	private static DirectMessageListenerContainer buildContainerForReconnectionTest(
+			ConnectionFactory connectionFactory) {
+
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(connectionFactory);
+		container.setQueueNames("test1", "test2");
+		container.setConsumersPerQueue(3);
+		container.setMonitorInterval(100);
+		container.setFailedDeclarationRetryInterval(100);
+		container.setRecoveryBackOff(new FixedBackOff(100, 10));
+		container.setShutdownTimeout(100);
+		container.afterPropertiesSet();
+		return container;
+	}
+
+	private static Stream<Arguments> transientExceptions() {
+		RuntimeException dummyCause = new RuntimeException("Test cause");
+		String msg = "Test exception";
+		return Stream.of(
+				Arguments.of(Named.named("AmqpTimeoutException",
+						(Supplier<? extends Exception>) () -> new AmqpTimeoutException(msg))),
+				Arguments.of(Named.named("AmqpConnectException",
+						(Supplier<? extends Exception>) () -> new AmqpConnectException(msg, dummyCause))),
+				Arguments.of(Named.named("AmqpIOException",
+						(Supplier<? extends Exception>) () -> new AmqpIOException(msg, dummyCause))),
+				Arguments.of(Named.named("AutoRecoverConnectionNotCurrentlyOpenException",
+						(Supplier<? extends Exception>) () -> new AutoRecoverConnectionNotCurrentlyOpenException(msg)))
+		);
+	}
+
+	private static void assertActiveConsumerCount(AbstractMessageListenerContainer container, int expected) {
+		Collection<?> consumers = TestUtils.getPropertyValue(container, "consumers", Collection.class);
+		await().with().pollDelay(Duration.ZERO).atMost(Duration.ofSeconds(10))
+				.until(consumers::size, v -> v == expected);
+	}
+
+	private static void assertConsumersByQueue(AbstractMessageListenerContainer container, int expected) {
+		MultiValueMap<?, ?> consumersByQueue =
+				TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class);
+		await().with().pollDelay(Duration.ZERO).atMost(Duration.ofSeconds(10))
+				.until(consumersByQueue::size, v -> v == expected);
+	}
+
+	private static Envelope envelope(long tag) {
 		return new Envelope(tag, false, "", "");
 	}
 
