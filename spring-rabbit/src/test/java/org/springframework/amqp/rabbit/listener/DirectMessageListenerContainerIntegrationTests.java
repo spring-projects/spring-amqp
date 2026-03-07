@@ -16,17 +16,21 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import java.io.IOException;
 import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Consumer;
@@ -34,8 +38,12 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.AmqpAuthenticationException;
@@ -57,6 +65,7 @@ import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.support.ArgumentBuilder;
+import org.springframework.amqp.rabbit.test.RabbitMQProxy;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.utils.test.TestUtils;
@@ -69,6 +78,7 @@ import org.springframework.util.backoff.FixedBackOff;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -84,6 +94,7 @@ import static org.mockito.Mockito.verify;
  * @author Artem Bilan
  * @author Alex Panchenko
  * @author Cao Weibo
+ * @author Alexei Sischin
  *
  * @since 2.0
  *
@@ -144,9 +155,8 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThatExceptionOfType(AmqpAuthenticationException.class).isThrownBy(() -> dmlc.start());
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
-	public void testSimple() throws Exception {
+	public void testSimple() {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 		executor.setThreadNamePrefix("client-");
@@ -155,14 +165,16 @@ public class DirectMessageListenerContainerIntegrationTests {
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
 		container.setQueueNames(Q1, Q2);
 		container.setConsumersPerQueue(2);
-		container.setMessageListener(new MessageListenerAdapter((ReplyingMessageListener<String, String>) in -> {
-			if ("foo".equals(in) || "bar".equals(in)) {
-				return in.toUpperCase();
-			}
-			else {
-				return null;
-			}
-		}));
+		container.setMessageListener(
+				new MessageListenerAdapter(
+						(ReplyingMessageListener<String, String>) in -> {
+							if ("foo".equals(in) || "bar".equals(in)) {
+								return in.toUpperCase();
+							}
+							else {
+								return null;
+							}
+						}));
 		container.setBeanName("simple");
 		container.setConsumerTagStrategy(new Tag());
 		container.afterPropertiesSet();
@@ -178,6 +190,156 @@ public class DirectMessageListenerContainerIntegrationTests {
 		template.stop();
 		cf.destroy();
 		executor.destroy();
+	}
+
+	@MethodSource("networkProblems")
+	@ParameterizedTest
+	public void testRecoveringFromNetworkProblemsAtInitialConnection(
+			java.util.function.Consumer<RabbitMQProxy> startProblem,
+			java.util.function.Consumer<RabbitMQProxy> resolveProblem
+	) throws Exception {
+
+		// Prepare
+		RecoveryTestPrerequisites prerequisites = prepareRecoveryTest();
+		RabbitMQProxy rabbitMQProxy = prerequisites.rabbitMqProxy();
+		ThreadPoolTaskExecutor executor = prerequisites.executor();
+		CachingConnectionFactory cf = prerequisites.cf();
+		DirectMessageListenerContainer container = prerequisites.container();
+		AtomicReference<String> expectedMessage = prerequisites.expectedMessage();
+		ThreadPoolTaskExecutor templateExecutor = prerequisites.templateExecutor();
+		RabbitTemplate template = prerequisites.template();
+
+		// Simulate network problems during container start
+		startProblem.accept(rabbitMQProxy);
+		container.start();
+		assertThat(lastRestartAttemptUpdates(container, 5)).isTrue();
+		await().until(container::isActive);
+		assertThat(consumersOnQueue(Q1, 0)).isTrue();
+		assertThat(consumersOnQueue(Q2, 0)).isTrue();
+
+		// Stop simulating network problems. Container should recover and process messages.
+		resolveProblem.accept(rabbitMQProxy);
+		assertThat(consumersOnQueue(Q1, 1)).isTrue();
+		assertThat(consumersOnQueue(Q2, 1)).isTrue();
+		assertThat(activeConsumerCount(container, 2)).isTrue();
+		expectedMessage.set("message-1");
+		template.convertAndSend(Q1, "message-1");
+		await().until(() -> Objects.isNull(expectedMessage.get()));
+		expectedMessage.set("message-2");
+		template.convertAndSend(Q2, "message-2");
+		await().atMost(Duration.ofSeconds(30)).until(() -> Objects.isNull(expectedMessage.get()));
+
+		// Check correct termination
+		container.stop();
+		assertThat(consumersOnQueue(Q1, 0)).isTrue();
+		assertThat(consumersOnQueue(Q2, 0)).isTrue();
+		assertThat(activeConsumerCount(container, 0)).isTrue();
+		assertThat(TestUtils.<MultiValueMap<?, ?>>getPropertyValue(container, "consumersByQueue")).isEmpty();
+
+		// Cleanup
+		template.stop();
+		templateExecutor.destroy();
+		cf.destroy();
+		executor.destroy();
+		rabbitMQProxy.close();
+	}
+
+	@MethodSource("networkProblems")
+	@ParameterizedTest
+	public void testRecoveringFromNetworkProblemsAfterInitialConnection(
+			java.util.function.Consumer<RabbitMQProxy> startProblem,
+			java.util.function.Consumer<RabbitMQProxy> resolveProblem
+	) throws Exception {
+
+		// Prepare
+		RecoveryTestPrerequisites prerequisites = prepareRecoveryTest();
+		RabbitMQProxy rabbitMQProxy = prerequisites.rabbitMqProxy();
+		ThreadPoolTaskExecutor executor = prerequisites.executor();
+		CachingConnectionFactory cf = prerequisites.cf();
+		DirectMessageListenerContainer container = prerequisites.container();
+		AtomicReference<String> expectedMessage = prerequisites.expectedMessage();
+		ThreadPoolTaskExecutor templateExecutor = prerequisites.templateExecutor();
+		RabbitTemplate template = prerequisites.template();
+
+		// Let container start and connect
+		container.start();
+		await().until(container::isActive);
+		assertThat(consumersOnQueue(Q1, 1)).isTrue();
+		assertThat(consumersOnQueue(Q2, 1)).isTrue();
+
+		// Simulate network problems for some time
+		startProblem.accept(rabbitMQProxy);
+		assertThat(lastRestartAttemptUpdates(container, 5)).isTrue();
+		resolveProblem.accept(rabbitMQProxy);
+
+		// Container should recover and process messages
+		assertThat(consumersOnQueue(Q1, 1)).isTrue();
+		assertThat(consumersOnQueue(Q2, 1)).isTrue();
+		assertThat(activeConsumerCount(container, 2)).isTrue();
+		expectedMessage.set("message-1");
+		template.convertAndSend(Q1, "message-1");
+		await().until(() -> Objects.isNull(expectedMessage.get()));
+		expectedMessage.set("message-2");
+		template.convertAndSend(Q2, "message-2");
+		await().atMost(Duration.ofSeconds(30)).until(() -> Objects.isNull(expectedMessage.get()));
+
+		// Check correct termination
+		container.stop();
+		assertThat(consumersOnQueue(Q1, 0)).isTrue();
+		assertThat(consumersOnQueue(Q2, 0)).isTrue();
+		assertThat(activeConsumerCount(container, 0)).isTrue();
+		assertThat(TestUtils.<MultiValueMap<?, ?>>getPropertyValue(container, "consumersByQueue")).isEmpty();
+
+		// Cleanup
+		template.stop();
+		templateExecutor.destroy();
+		cf.destroy();
+		executor.destroy();
+		rabbitMQProxy.close();
+	}
+
+	private RecoveryTestPrerequisites prepareRecoveryTest() throws Exception {
+		RabbitMQProxy rabbitMqProxy = new RabbitMQProxy();
+		int rabbitMqProxyPort = rabbitMqProxy.start();
+
+		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+		executor.setThreadNamePrefix("client-");
+		executor.afterPropertiesSet();
+
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		cf.setRequestedHeartBeat(1);
+		cf.getRabbitConnectionFactory().setHandshakeTimeout(1000);
+		cf.setPort(rabbitMqProxyPort);
+		cf.setExecutor(executor);
+
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
+		container.setBeanName("simple");
+		container.setQueueNames(Q1, Q2);
+		container.setMonitorInterval(1000);
+		container.setFailedDeclarationRetryInterval(1000);
+		container.setRecoveryBackOff(new FixedBackOff(1000));
+		container.setShutdownTimeout(1000);
+		container.setConsumerTagStrategy(new Tag());
+		AtomicReference<String> expectedMessage = new AtomicReference<>();
+		container.setMessageListener((message -> {
+			String s = new String(message.getBody());
+			if (!expectedMessage.compareAndSet(s.intern(), null)) {
+				fail("Received unexpected message: %s".formatted(s));
+			}
+		}));
+		container.afterPropertiesSet();
+
+		ThreadPoolTaskExecutor templateExecutor = new ThreadPoolTaskExecutor();
+		templateExecutor.setThreadNamePrefix("rabbit-template-");
+		templateExecutor.afterPropertiesSet();
+		CachingConnectionFactory cf2 = new CachingConnectionFactory("localhost");
+		cf2.setExecutor(templateExecutor);
+		RabbitTemplate template = new RabbitTemplate(cf2);
+
+		rabbitMqProxy.awaitStarted();
+
+		return new RecoveryTestPrerequisites(
+				rabbitMqProxy, executor, cf, container, expectedMessage, templateExecutor, template);
 	}
 
 	@Test
@@ -823,8 +985,9 @@ public class DirectMessageListenerContainerIntegrationTests {
 			template.convertAndSend(Q3, "five");
 			await().untilAsserted(() -> {
 				QueueInformation queueInfo = admin.getQueueInfo(Q3);
-				assertThat(queueInfo).isNotNull();
-				assertThat(queueInfo.getMessageCount()).isEqualTo(5);
+				assertThat(queueInfo)
+						.extracting(QueueInformation::getMessageCount)
+						.isEqualTo(5L);
 			});
 			container.start();
 			await().untilAsserted(() -> {
@@ -834,9 +997,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 			});
 			CountDownLatch latch2 = new CountDownLatch(1);
 			long t1 = System.currentTimeMillis();
-			container.stop(() -> {
-				latch2.countDown();
-			});
+			container.stop(latch2::countDown);
 			latch1.countDown();
 			assertThat(System.currentTimeMillis() - t1).isLessThan(5_000L);
 			await().untilAsserted(() -> {
@@ -887,25 +1048,81 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(ackDeliveryTag.get()).isEqualTo(messageCount);
 	}
 
-	private boolean consumersOnQueue(String queue, int expected) {
+	public static Stream<Arguments> networkProblems() {
+		java.util.function.Consumer<RabbitMQProxy> suspendMethod = RabbitMQProxy::suspend;
+		java.util.function.Consumer<RabbitMQProxy> resumeMethod = RabbitMQProxy::resume;
+		java.util.function.Consumer<RabbitMQProxy> closeMethod = RabbitMQProxy::close;
+		java.util.function.Consumer<RabbitMQProxy> startMethod = p -> {
+			try {
+				p.start();
+			}
+			catch (IOException e) {
+				throw new RuntimeException("Unexpected exception on proxy start", e);
+			}
+		};
+
+		return Stream.of(
+				Arguments.of(
+						Named.named("Bidirectional packet loss", suspendMethod),
+						Named.named("Packets reach destination", resumeMethod)
+				),
+				Arguments.of(
+						Named.named("Connection closed by server", closeMethod),
+						Named.named("Connection is available", startMethod)
+				)
+		);
+	}
+
+	private static boolean consumersOnQueue(String queue, int expected) {
 		await().with().pollDelay(Duration.ZERO).atMost(Duration.ofSeconds(60))
 				.until(() -> admin.getQueueProperties(queue),
 						props -> props != null && props.get(RabbitAdmin.QUEUE_CONSUMER_COUNT).equals(expected));
 		return true;
 	}
 
-	private boolean activeConsumerCount(AbstractMessageListenerContainer container, int expected) {
+	private static boolean activeConsumerCount(AbstractMessageListenerContainer container, int expected) {
 		List<?> consumers = TestUtils.getPropertyValue(container, "consumers");
 		await().with().pollDelay(Duration.ZERO).atMost(Duration.ofSeconds(60))
 				.until(() -> consumers.size() == expected);
 		return true;
 	}
 
-	private boolean restartConsumerCount(AbstractMessageListenerContainer container, int expected) {
+	private static boolean restartConsumerCount(AbstractMessageListenerContainer container, int expected) {
 		Set<?> consumers = TestUtils.getPropertyValue(container, "consumersToRestart");
 		await().with().pollDelay(Duration.ZERO).atMost(Duration.ofSeconds(60))
 				.until(() -> consumers.size() == expected);
 		return true;
+	}
+
+	private static boolean lastRestartAttemptUpdates(AbstractMessageListenerContainer container, int times) {
+		AtomicLong lastValue = new AtomicLong(TestUtils.<Long>getPropertyValue(container, "lastRestartAttempt"));
+		AtomicLong counter = new AtomicLong(0);
+		await().with().pollDelay(Duration.ZERO)
+				.atMost(Duration.ofSeconds(60))
+				.until(() -> {
+					if (counter.get() >= times) {
+						return true;
+					}
+					Long currentValue = TestUtils.getPropertyValue(container, "lastRestartAttempt");
+					if (currentValue > lastValue.get()) {
+						lastValue.set(currentValue);
+						counter.addAndGet(1);
+					}
+					return false;
+				});
+		return true;
+	}
+
+	private record RecoveryTestPrerequisites(
+			RabbitMQProxy rabbitMqProxy,
+			ThreadPoolTaskExecutor executor,
+			CachingConnectionFactory cf,
+			DirectMessageListenerContainer container,
+			AtomicReference<String> expectedMessage,
+			ThreadPoolTaskExecutor templateExecutor,
+			RabbitTemplate template
+	) {
+
 	}
 
 	public class Tag implements ConsumerTagStrategy {
