@@ -35,6 +35,8 @@ import static org.mockito.Mockito.verify;
 /**
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Alexei Sischin
+ *
  * @since 1.4
  *
  */
@@ -43,15 +45,17 @@ public class ClientRecoveryCompatibilityTests {
 	@Test
 	public void testDefeatRecovery() throws Exception {
 		RabbitUtils.clearPhysicalCloseRequired(); // left over from some other test
-		final Channel channel1 = mock(Channel.class);
+		final Channel channel1 = mock();
 		given(channel1.isOpen()).willReturn(true);
-		final Channel channel2 = mock(Channel.class);
+		final Channel channel2 = mock();
 		given(channel2.isOpen()).willReturn(true);
-		final com.rabbitmq.client.Connection rabbitConn = mock(AutorecoveringConnection.class);
+		AutorecoveringConnection rabbitConn = mock();
 		given(rabbitConn.isOpen()).willReturn(true);
-		com.rabbitmq.client.ConnectionFactory cf = mock(com.rabbitmq.client.ConnectionFactory.class);
-		willAnswer(invocation -> rabbitConn).given(cf).newConnection(any(ExecutorService.class), anyString());
-		given(rabbitConn.createChannel()).willReturn(channel1).willReturn(channel2);
+		com.rabbitmq.client.ConnectionFactory cf = mock();
+		willAnswer(invocation -> rabbitConn)
+				.given(cf)
+				.newConnection(any(ExecutorService.class), anyString());
+		given(rabbitConn.createChannel()).willReturn(channel1, channel2);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(cf);
 		ccf.setExecutor(mock(ExecutorService.class));
@@ -69,12 +73,12 @@ public class ClientRecoveryCompatibilityTests {
 		channel.close();
 		conn2.close();
 
-		given(rabbitConn.isOpen()).willReturn(false).willReturn(true);
+		given(rabbitConn.isOpen()).willReturn(true, false, true);
 		given(channel1.isOpen()).willReturn(false);
 		Connection conn3 = ccf.createConnection();
 		assertThat(conn3).isSameAs(conn1);
-		assertThatExceptionOfType(AutoRecoverConnectionNotCurrentlyOpenException.class).isThrownBy(() ->
-					conn3.createChannel(false))
+		assertThatExceptionOfType(AutoRecoverConnectionNotCurrentlyOpenException.class)
+				.isThrownBy(() -> conn3.createChannel(false))
 				.withMessage("Auto recovery connection is not currently open");
 		channel = conn2.createChannel(false);
 		proxy = (ChannelProxy) channel;

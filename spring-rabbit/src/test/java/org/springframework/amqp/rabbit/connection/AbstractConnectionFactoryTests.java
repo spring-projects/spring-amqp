@@ -22,7 +22,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
 import org.apache.commons.logging.Log;
 import org.junit.jupiter.api.Test;
@@ -58,6 +57,7 @@ import static org.mockito.Mockito.verify;
  * @author Dmitry Dbrazhnikov
  * @author Artem Bilan
  * @author Salk Lee
+ * @author Alexei Sischin
  */
 public abstract class AbstractConnectionFactoryTests {
 
@@ -65,9 +65,10 @@ public abstract class AbstractConnectionFactoryTests {
 
 	@Test
 	public void testWithListener() throws Exception {
-		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
 		com.rabbitmq.client.Connection mockConnection = mock();
+		given(mockConnection.isOpen()).willReturn(true);
 
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnectionFactory.newConnection(any(), anyList(), anyString())).willReturn(mockConnection);
 
@@ -108,7 +109,7 @@ public abstract class AbstractConnectionFactoryTests {
 		assertThat(called.get()).isEqualTo(0);
 		verify(mockConnection, atLeastOnce()).close(anyInt());
 
-		verify(mockConnectionFactory, times(1)).newConnection(any(ExecutorService.class), anyString());
+		verify(mockConnectionFactory).newConnection(any(ExecutorService.class), anyString());
 
 		connectionFactory.setAddresses(List.of("foo:5672", "bar:5672"));
 		connectionFactory.setAddressShuffleMode(AddressShuffleMode.NONE);
@@ -126,9 +127,10 @@ public abstract class AbstractConnectionFactoryTests {
 
 	@Test
 	public void testWithListenerRegisteredAfterOpen() throws Exception {
-		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
 		com.rabbitmq.client.Connection mockConnection = mock();
+		given(mockConnection.isOpen()).willReturn(true);
 
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 
 		final AtomicInteger called = new AtomicInteger(0);
@@ -162,21 +164,22 @@ public abstract class AbstractConnectionFactoryTests {
 		assertThat(called.get()).isEqualTo(0);
 		verify(mockConnection, atLeastOnce()).close(anyInt());
 
-		verify(mockConnectionFactory, times(1)).newConnection(any(ExecutorService.class), anyString());
+		verify(mockConnectionFactory).newConnection(any(ExecutorService.class), anyString());
 
 	}
 
 	@Test
 	public void testCloseInvalidConnection() throws Exception {
-		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
 		com.rabbitmq.client.Connection mockConnection1 = mock();
-		com.rabbitmq.client.Connection mockConnection2 = mock();
-
-		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString()))
-				.willReturn(mockConnection1, mockConnection2);
 		// simulate a dead connection
 		given(mockConnection1.isOpen()).willReturn(false);
-		given(mockConnection2.createChannel()).willReturn(mock(Channel.class));
+
+		com.rabbitmq.client.Connection mockConnection2 = mock();
+		given(mockConnection2.createChannel()).willReturn(mock());
+
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString()))
+				.willReturn(mockConnection1, mockConnection2);
 
 		AbstractConnectionFactory connectionFactory = createConnectionFactory(mockConnectionFactory);
 
@@ -184,10 +187,10 @@ public abstract class AbstractConnectionFactoryTests {
 		// the dead connection should be discarded
 		connection.createChannel(false);
 		verify(mockConnectionFactory, times(2)).newConnection(any(ExecutorService.class), anyString());
-		verify(mockConnection2, times(1)).createChannel();
+		verify(mockConnection2).createChannel();
 
 		connectionFactory.destroy();
-		verify(mockConnection2, times(1)).close(anyInt());
+		verify(mockConnection2).close(anyInt());
 
 	}
 
@@ -219,15 +222,14 @@ public abstract class AbstractConnectionFactoryTests {
 	public void testConnectionCreatingBackOff() throws Exception {
 		int maxAttempts = 2;
 		long interval = 100L;
-		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		com.rabbitmq.client.Connection mockConnection = mock();
 		given(mockConnection.createChannel()).willReturn(null);
-		SimpleConnection simpleConnection = new SimpleConnection(mockConnection, 5,
-				new FixedBackOff(interval, maxAttempts).start());
+		SimpleConnection simpleConnection =
+				new SimpleConnection(mockConnection, 5, new FixedBackOff(interval, maxAttempts).start());
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
-		assertThatExceptionOfType(AmqpResourceNotAvailableException.class).isThrownBy(() -> {
-			simpleConnection.createChannel(false);
-		});
+		assertThatExceptionOfType(AmqpResourceNotAvailableException.class)
+				.isThrownBy(() -> simpleConnection.createChannel(false));
 		stopWatch.stop();
 		assertThat(stopWatch.getTotalTimeMillis()).isGreaterThanOrEqualTo(maxAttempts * interval);
 		verify(mockConnection, times(maxAttempts + 1)).createChannel();

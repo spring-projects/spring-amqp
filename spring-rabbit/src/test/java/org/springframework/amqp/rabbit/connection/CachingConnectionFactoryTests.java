@@ -65,6 +65,7 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatObject;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -94,6 +95,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Steve Powell
+ * @author Alexei Sischin
  */
 public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTests {
 
@@ -164,11 +166,12 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel = mock(Channel.class);
+		given(mockChannel.isOpen()).willReturn(true);
+
+		given(mockConnection.createChannel()).willReturn(mockChannel);
+		given(mockConnection.isOpen()).willReturn(true);
 
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
-		given(mockConnection.createChannel()).willReturn(mockChannel);
-		given(mockChannel.isOpen()).willReturn(true);
-		given(mockConnection.isOpen()).willReturn(true);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setExecutor(mock(ExecutorService.class));
@@ -191,9 +194,9 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verify(mockConnection, never()).close();
 		verify(mockChannel, never()).close();
 
-		assertThat(TestUtils.getPropertyValue(ccf, "connection.target")).isNull();
-		assertThat(TestUtils.getPropertyValue(ccf, "publisherConnectionFactory.connection.target")).isNotNull();
-		assertThat(TestUtils.getPropertyValue(ccf, "publisherConnectionFactory.connection")).isSameAs(con);
+		assertThatObject(TestUtils.getPropertyValue(ccf, "connection.target")).isNull();
+		assertThatObject(TestUtils.getPropertyValue(ccf, "publisherConnectionFactory.connection.target")).isNotNull();
+		assertThatObject(TestUtils.getPropertyValue(ccf, "publisherConnectionFactory.connection")).isSameAs(con);
 	}
 
 	@Test
@@ -204,12 +207,13 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Channel mockChannel2 = mock(Channel.class);
 		Channel mockTxChannel = mock(Channel.class);
 
-		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
 		given(mockConnection.createChannel()).willReturn(mockChannel1, mockChannel2, mockTxChannel);
 
-		given(mockChannel1.basicGet("foo", false)).willReturn(new GetResponse(null, null, null, 1));
-		given(mockChannel2.basicGet("bar", false)).willReturn(new GetResponse(null, null, null, 1));
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
+
+		given(mockChannel1.basicGet("test1", false)).willReturn(new GetResponse(null, null, null, 1));
+		given(mockChannel2.basicGet("test2", false)).willReturn(new GetResponse(null, null, null, 1));
 		given(mockChannel1.isOpen()).willReturn(true);
 		given(mockChannel2.isOpen()).willReturn(true);
 
@@ -227,15 +231,15 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verify(mockTxChannel).txSelect();
 		txChannel.close();
 
-		channel1.basicGet("foo", true);
-		channel2.basicGet("bar", true);
+		channel1.basicGet("test1", true);
+		channel2.basicGet("test2", true);
 
 		channel1.close(); // should be ignored, and add last into channel cache.
 		channel2.close(); // should be ignored, and add last into channel cache.
 
-		Channel ch1 = con.createChannel(false); // remove first entry in cache
+		Channel ch1 = con.createChannel(false); // remove the first entry in the cache
 		// (channel1)
-		Channel ch2 = con.createChannel(false); // remove first entry in cache
+		Channel ch2 = con.createChannel(false); // remove the first entry in the cache
 		// (channel2)
 
 		assertThat(ch2).isNotSameAs(ch1);
@@ -262,15 +266,14 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Channel mockChannel1 = mock(Channel.class);
 		Channel mockChannel2 = mock(Channel.class);
 		Channel mockChannel3 = mock(Channel.class);
-
-		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
-		given(mockConnection.createChannel()).willReturn(mockChannel1).willReturn(mockChannel2).willReturn(mockChannel3);
-		given(mockConnection.isOpen()).willReturn(true);
-
-		// Called during physical close
 		given(mockChannel1.isOpen()).willReturn(true);
 		given(mockChannel2.isOpen()).willReturn(true);
 		given(mockChannel3.isOpen()).willReturn(true);
+
+		given(mockConnection.createChannel()).willReturn(mockChannel1, mockChannel2, mockChannel3);
+		given(mockConnection.isOpen()).willReturn(true);
+
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setExecutor(mock(ExecutorService.class));
@@ -317,13 +320,13 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel1 = mock(Channel.class);
+		// Called during physical close
+		given(mockChannel1.isOpen()).willReturn(true);
 
-		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.createChannel()).willReturn(mockChannel1);
 		given(mockConnection.isOpen()).willReturn(true);
 
-		// Called during physical close
-		given(mockChannel1.isOpen()).willReturn(true);
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setExecutor(mock(ExecutorService.class));
@@ -1051,6 +1054,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection1, mockConnection2);
 		given(mockConnection1.isOpen()).willReturn(true);
+		given(mockConnection2.isOpen()).willReturn(true);
 		given(mockChannel.isOpen()).willReturn(true);
 		given(mockConnection1.createChannel()).willReturn(mockChannel);
 		given(mockConnection2.createChannel()).willReturn(mockChannel);

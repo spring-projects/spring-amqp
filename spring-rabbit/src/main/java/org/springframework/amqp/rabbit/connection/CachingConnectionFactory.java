@@ -101,6 +101,7 @@ import org.springframework.util.StringUtils;
  * @author Steve Powell
  * @author Will Droste
  * @author Leonardo Ferreira
+ * @author Alexei Sischin
  */
 @ManagedResource
 public class CachingConnectionFactory extends AbstractConnectionFactory
@@ -721,26 +722,23 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 		this.connectionLock.lock();
 		try {
-			if (this.cacheMode == CacheMode.CHANNEL) {
-				if (this.connection.target == null) {
-					this.connection.target = super.createBareConnection();
-					// invoke the listener *after* this.connection is assigned
-					if (!this.checkoutPermits.containsKey(this.connection)) {
-						this.checkoutPermits.put(this.connection, new Semaphore(this.channelCacheSize));
-					}
-					this.connection.closeNotified.set(false);
-					getConnectionListener().onCreate(this.connection);
-				}
-				return this.connection;
-			}
-			else if (this.cacheMode == CacheMode.CONNECTION) {
+			if (this.cacheMode == CacheMode.CONNECTION) {
 				return connectionFromCache();
 			}
+			if (!this.connection.isOpen()) {
+				this.connection.target = super.createBareConnection();
+				// invoke the listener *after* this.connection is assigned
+				if (!this.checkoutPermits.containsKey(this.connection)) {
+					this.checkoutPermits.put(this.connection, new Semaphore(this.channelCacheSize));
+				}
+				this.connection.closeNotified.set(false);
+				getConnectionListener().onCreate(this.connection);
+			}
+			return this.connection;
 		}
 		finally {
 			this.connectionLock.unlock();
 		}
-		return null; // NOSONAR - never reach here - exceptions
 	}
 
 	private Connection connectionFromCache() {
