@@ -639,6 +639,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				BackOffExecution backOffExecution = getRecoveryBackOff().start();
 				while (!DirectMessageListenerContainer.this.started && isRunning()) {
 					this.cancellationLock.reset();
+					this.lastRestartAttempt = System.currentTimeMillis();
 					try {
 						for (String queue : queueNames) {
 							consumeFromQueue(queue);

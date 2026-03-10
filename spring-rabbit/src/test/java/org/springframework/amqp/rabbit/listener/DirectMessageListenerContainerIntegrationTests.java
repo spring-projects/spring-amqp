@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -210,7 +211,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		// Simulate network problems during container start
 		startProblem.accept(rabbitMQProxy);
 		container.start();
-		Thread.sleep(10000);
+		assertThat(lastRestartAttemptUpdates(container, 5)).isTrue();
 		await().until(container::isActive);
 		assertThat(consumersOnQueue(Q1, 0)).isTrue();
 		assertThat(consumersOnQueue(Q2, 0)).isTrue();
@@ -267,7 +268,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 
 		// Simulate network problems for some time
 		startProblem.accept(rabbitMQProxy);
-		Thread.sleep(10000);
+		assertThat(lastRestartAttemptUpdates(container, 5)).isTrue();
 		resolveProblem.accept(rabbitMQProxy);
 
 		// Container should recover and process messages
@@ -1072,24 +1073,44 @@ public class DirectMessageListenerContainerIntegrationTests {
 		);
 	}
 
-	private boolean consumersOnQueue(String queue, int expected) {
+	private static boolean consumersOnQueue(String queue, int expected) {
 		await().with().pollDelay(Duration.ZERO).atMost(Duration.ofSeconds(60))
 				.until(() -> admin.getQueueProperties(queue),
 						props -> props != null && props.get(RabbitAdmin.QUEUE_CONSUMER_COUNT).equals(expected));
 		return true;
 	}
 
-	private boolean activeConsumerCount(AbstractMessageListenerContainer container, int expected) {
+	private static boolean activeConsumerCount(AbstractMessageListenerContainer container, int expected) {
 		List<?> consumers = TestUtils.getPropertyValue(container, "consumers");
 		await().with().pollDelay(Duration.ZERO).atMost(Duration.ofSeconds(60))
 				.until(() -> consumers.size() == expected);
 		return true;
 	}
 
-	private boolean restartConsumerCount(AbstractMessageListenerContainer container, int expected) {
+	private static boolean restartConsumerCount(AbstractMessageListenerContainer container, int expected) {
 		Set<?> consumers = TestUtils.getPropertyValue(container, "consumersToRestart");
 		await().with().pollDelay(Duration.ZERO).atMost(Duration.ofSeconds(60))
 				.until(() -> consumers.size() == expected);
+		return true;
+	}
+
+	private static boolean lastRestartAttemptUpdates(AbstractMessageListenerContainer container, int times) {
+		AtomicLong lastValue = new AtomicLong(
+				TestUtils.getPropertyValue(container, "lastRestartAttempt"));
+		AtomicLong counter = new AtomicLong(0);
+		await().with().pollDelay(Duration.ZERO)
+				.atMost(Duration.ofSeconds(60))
+				.until(() -> {
+					if (counter.get() >= times) {
+						return true;
+					}
+					Long currentValue = TestUtils.getPropertyValue(container, "lastRestartAttempt");
+					if (currentValue > lastValue.get()) {
+						lastValue.set(currentValue);
+						counter.addAndGet(1);
+					}
+					return false;
+				});
 		return true;
 	}
 
