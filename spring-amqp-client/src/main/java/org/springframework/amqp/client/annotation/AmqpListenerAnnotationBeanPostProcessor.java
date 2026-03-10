@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.aopalliance.aop.Advice;
 import org.jspecify.annotations.Nullable;
@@ -59,7 +59,7 @@ import org.springframework.util.ObjectUtils;
  */
 public class AmqpListenerAnnotationBeanPostProcessor extends AbstractListenerAnnotationBeanPostProcessor<AmqpListener> {
 
-	private final Map<MethodAmqpListenerEndpoint, @Nullable AmqpMessageListenerContainerFactory> endpoints =
+	private final Map<MethodAmqpListenerEndpoint, Supplier<@Nullable AmqpMessageListenerContainerFactory>> endpoints =
 			new HashMap<>();
 
 	private @Nullable AmqpListenerEndpointRegistry amqpListenerEndpointRegistry;
@@ -127,63 +127,78 @@ public class AmqpListenerAnnotationBeanPostProcessor extends AbstractListenerAnn
 	private void processListener(MethodAmqpListenerEndpoint endpoint, AmqpListener listener,
 			Method method, String beanName) {
 
-		JavaUtils.INSTANCE
-				.acceptIfHasText(resolveExpressionAsString(listener.id(), "id"), endpoint::setId)
-				.acceptIfHasText(listener.returnExceptions(),
-						(value) -> endpoint.setReturnExceptions(resolveExpressionAsBoolean(value)))
-				.acceptIfHasText(listener.defaultRequeueRejected(),
-						(value) -> endpoint.setDefaultRequeueRejected(resolveExpressionAsBoolean(value)))
-				.acceptIfHasText(listener.autoStartup(),
-						(value) -> endpoint.setAutoStartup(resolveExpressionAsBoolean(value)))
-				.acceptIfHasText(listener.autoAccept(),
-						(value) -> endpoint.setAutoAccept(resolveExpressionAsBoolean(value)))
-				.acceptIfNotNull(resolveExpressionToInteger(listener.concurrency(), "concurrency"),
-						endpoint::setConcurrency)
-				.acceptIfNotNull(resolveExpressionToInteger(listener.initialCredits(), "initialCredits"),
-						endpoint::setInitialCredits)
-				.acceptIfHasText(resolveExpressionAsString(listener.receiveTimeout(), "receiveTimeout"),
-						(value) -> endpoint.setReceiveTimeout(toDuration(value, TimeUnit.MILLISECONDS)))
-				.acceptIfHasText(resolveExpressionAsString(listener.gracefulShutdownPeriod(), "gracefulShutdownPeriod"),
-						(value) -> endpoint.setGracefulShutdownPeriod(toDuration(value, TimeUnit.MILLISECONDS)))
-				.acceptIfHasText(resolveExpressionAsString(listener.replyContentType(), "replyContentType"),
-						endpoint::setReplyContentType)
-				.acceptIfNotNull(resolveExpressionToBean(listener.errorHandler(), "errorHandler", method, beanName,
-						AmqpListenerErrorHandler.class), endpoint::setErrorHandler)
-				.acceptIfNotNull(resolveExpressionToBean(listener.executor(), "executor", method, beanName,
-						Executor.class), endpoint::setTaskExecutor)
-				.acceptIfNotNull(resolveExpressionToBean(listener.headerMapper(), "headerMapper", method, beanName,
-						AmqpHeaderMapper.class), endpoint::setHeaderMapper)
-				.acceptIfNotNull(resolveExpressionToBean(listener.replyPostProcessor(), "replyPostProcessor", method,
-						beanName, ReplyPostProcessor.class), endpoint::setReplyPostProcessor)
-				.acceptIfNotNull(resolveExpressionToBean(listener.messageConverter(), "messageConverter", method,
-						beanName, MessageConverter.class), endpoint::setMessageConverter);
+		Supplier<@Nullable AmqpMessageListenerContainerFactory> containerFactorySupplier =
+				() -> {
+					JavaUtils.INSTANCE
+							.acceptIfHasText(resolveExpressionAsString(listener.id(), "id"), endpoint::setId)
+							.acceptIfHasText(listener.returnExceptions(),
+									(value) -> endpoint.setReturnExceptions(resolveExpressionAsBoolean(value)))
+							.acceptIfHasText(listener.defaultRequeueRejected(),
+									(value) ->
+											endpoint.setDefaultRequeueRejected(resolveExpressionAsBoolean(value)))
+							.acceptIfHasText(listener.autoStartup(),
+									(value) -> endpoint.setAutoStartup(resolveExpressionAsBoolean(value)))
+							.acceptIfHasText(listener.autoAccept(),
+									(value) -> endpoint.setAutoAccept(resolveExpressionAsBoolean(value)))
+							.acceptIfNotNull(resolveExpressionToInteger(listener.concurrency(), "concurrency"),
+									endpoint::setConcurrency)
+							.acceptIfNotNull(resolveExpressionToInteger(listener.initialCredits(), "initialCredits"),
+									endpoint::setInitialCredits)
+							.acceptIfHasText(resolveExpressionAsString(listener.receiveTimeout(), "receiveTimeout"),
+									(value) -> endpoint.setReceiveTimeout(toDuration(value)))
+							.acceptIfHasText(
+									resolveExpressionAsString(listener.gracefulShutdownPeriod(),
+											"gracefulShutdownPeriod"),
+									(value) -> endpoint.setGracefulShutdownPeriod(toDuration(value)))
+							.acceptIfHasText(resolveExpressionAsString(listener.replyContentType(), "replyContentType"),
+									endpoint::setReplyContentType)
+							.acceptIfNotNull(
+									resolveExpressionToBean(listener.errorHandler(), "errorHandler", method, beanName,
+											AmqpListenerErrorHandler.class), endpoint::setErrorHandler)
+							.acceptIfNotNull(
+									resolveExpressionToBean(listener.executor(), "executor", method, beanName,
+											Executor.class),
+									endpoint::setTaskExecutor)
+							.acceptIfNotNull(
+									resolveExpressionToBean(listener.headerMapper(), "headerMapper", method, beanName,
+											AmqpHeaderMapper.class),
+									endpoint::setHeaderMapper)
+							.acceptIfNotNull(
+									resolveExpressionToBean(listener.replyPostProcessor(), "replyPostProcessor", method,
+											beanName, ReplyPostProcessor.class),
+									endpoint::setReplyPostProcessor)
+							.acceptIfNotNull(
+									resolveExpressionToBean(listener.messageConverter(), "messageConverter", method,
+											beanName, MessageConverter.class),
+									endpoint::setMessageConverter);
 
-		BeanFactory beanFactory = getBeanFactory();
-		String[] adviceNamesChain = listener.adviceChain();
-		if (!ObjectUtils.isEmpty(adviceNamesChain)) {
-			Advice[] adviceChain =
-					Arrays.stream(adviceNamesChain)
-							.map((name) -> beanFactory.getBean(name, Advice.class))
-							.toArray(Advice[]::new);
-			endpoint.setAdviceChain(adviceChain);
-		}
+					BeanFactory beanFactory = getBeanFactory();
+					String[] adviceNamesChain = listener.adviceChain();
+					if (!ObjectUtils.isEmpty(adviceNamesChain)) {
+						Advice[] adviceChain =
+								Arrays.stream(adviceNamesChain)
+										.map((name) -> beanFactory.getBean(name, Advice.class))
+										.toArray(Advice[]::new);
+						endpoint.setAdviceChain(adviceChain);
+					}
 
-		AmqpMessageListenerContainerFactory containerFactory =
-				resolveExpressionToBean(listener.containerFactory(), "containerFactory", method, beanName,
-						AmqpMessageListenerContainerFactory.class);
+					return resolveExpressionToBean(listener.containerFactory(), "containerFactory", method, beanName,
+							AmqpMessageListenerContainerFactory.class);
+				};
 
 		if (this.amqpListenerEndpointRegistry == null) {
-			this.endpoints.put(endpoint, containerFactory);
+			this.endpoints.put(endpoint, containerFactorySupplier);
 		}
 		else {
-			registerListenerEndpoint(endpoint, containerFactory);
+			registerListenerEndpoint(endpoint, containerFactorySupplier);
 		}
 	}
 
 	@SuppressWarnings("NullAway")
 	private void registerListenerEndpoint(MethodAmqpListenerEndpoint endpoint,
-			@Nullable AmqpMessageListenerContainerFactory containerFactory) {
+			Supplier<@Nullable AmqpMessageListenerContainerFactory> containerFactorySupplier) {
 
+		AmqpMessageListenerContainerFactory containerFactory = containerFactorySupplier.get();
 		if (containerFactory != null) {
 			this.amqpListenerEndpointRegistry.registerListenerEndpoint(containerFactory, endpoint);
 		}
