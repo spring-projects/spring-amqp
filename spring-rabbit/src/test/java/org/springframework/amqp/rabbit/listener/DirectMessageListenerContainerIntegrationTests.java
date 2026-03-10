@@ -221,11 +221,11 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 1)).isTrue();
 		assertThat(consumersOnQueue(Q2, 1)).isTrue();
 		assertThat(activeConsumerCount(container, 2)).isTrue();
-		expectedMessage.set("foo");
-		template.convertAndSend(Q1, "foo");
+		expectedMessage.set("message-1");
+		template.convertAndSend(Q1, "message-1");
 		await().until(() -> Objects.isNull(expectedMessage.get()));
-		expectedMessage.set("bar");
-		template.convertAndSend(Q2, "bar");
+		expectedMessage.set("message-2");
+		template.convertAndSend(Q2, "message-2");
 		await().atMost(Duration.ofSeconds(30)).until(() -> Objects.isNull(expectedMessage.get()));
 
 		// Check correct termination
@@ -275,11 +275,11 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(consumersOnQueue(Q1, 1)).isTrue();
 		assertThat(consumersOnQueue(Q2, 1)).isTrue();
 		assertThat(activeConsumerCount(container, 2)).isTrue();
-		expectedMessage.set("foo");
-		template.convertAndSend(Q1, "foo");
+		expectedMessage.set("message-1");
+		template.convertAndSend(Q1, "message-1");
 		await().until(() -> Objects.isNull(expectedMessage.get()));
-		expectedMessage.set("bar");
-		template.convertAndSend(Q2, "bar");
+		expectedMessage.set("message-2");
+		template.convertAndSend(Q2, "message-2");
 		await().atMost(Duration.ofSeconds(30)).until(() -> Objects.isNull(expectedMessage.get()));
 
 		// Check correct termination
