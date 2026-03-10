@@ -68,7 +68,6 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.springframework.amqp.rabbit.test.MockingThrowableUtils.mockThrowable;
 
 /**
  * @author Gary Russell
@@ -576,8 +575,7 @@ public class DirectMessageListenerContainerMockTests {
 				Arguments.of(named("AmqpIOException",
 						(Supplier<? extends Exception>) () -> new AmqpIOException(msg, dummyCause))),
 				Arguments.of(named("AutoRecoverConnectionNotCurrentlyOpenException",
-						(Supplier<? extends Exception>) () -> mockThrowable(
-								AutoRecoverConnectionNotCurrentlyOpenException.class, msg)))
+						(Supplier<? extends Exception>) () -> new AutoRecoverConnectionNotCurrentlyOpenException(msg)))
 		);
 	}
 

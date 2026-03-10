@@ -41,7 +41,7 @@ import org.springframework.amqp.AmqpException;
 @SuppressWarnings("serial")
 public class AutoRecoverConnectionNotCurrentlyOpenException extends AmqpException {
 
-	AutoRecoverConnectionNotCurrentlyOpenException(String message) {
+	public AutoRecoverConnectionNotCurrentlyOpenException(String message) {
 		super(message);
 	}
 
