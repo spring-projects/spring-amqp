@@ -33,6 +33,7 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -54,7 +55,6 @@ import org.springframework.util.backoff.FixedBackOff;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Named.named;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -568,13 +568,13 @@ public class DirectMessageListenerContainerMockTests {
 		RuntimeException dummyCause = new RuntimeException("Test cause");
 		String msg = "Test exception";
 		return Stream.of(
-				Arguments.of(named("AmqpTimeoutException",
+				Arguments.of(Named.named("AmqpTimeoutException",
 						(Supplier<? extends Exception>) () -> new AmqpTimeoutException(msg))),
-				Arguments.of(named("AmqpConnectException",
+				Arguments.of(Named.named("AmqpConnectException",
 						(Supplier<? extends Exception>) () -> new AmqpConnectException(msg, dummyCause))),
-				Arguments.of(named("AmqpIOException",
+				Arguments.of(Named.named("AmqpIOException",
 						(Supplier<? extends Exception>) () -> new AmqpIOException(msg, dummyCause))),
-				Arguments.of(named("AutoRecoverConnectionNotCurrentlyOpenException",
+				Arguments.of(Named.named("AutoRecoverConnectionNotCurrentlyOpenException",
 						(Supplier<? extends Exception>) () -> new AutoRecoverConnectionNotCurrentlyOpenException(msg)))
 		);
 	}

@@ -66,7 +66,7 @@ public class RabbitMQProxy implements AutoCloseable, Runnable {
 	private volatile Thread t2cThread;
 
 	public RabbitMQProxy() {
-		this("localhost", 0, "localhost", 5672);
+		this("localhost", 5672);
 	}
 
 	public RabbitMQProxy(String targetHost, int targetPort) {
@@ -190,9 +190,11 @@ public class RabbitMQProxy implements AutoCloseable, Runnable {
 				out.write(buf, 0, n);
 				out.flush();
 			}
-		} catch (IOException ignored) {
+		}
+		catch (IOException ignored) {
 			// Any IO error closes the active connection.
-		} finally {
+		}
+		finally {
 			this.closeActiveConnections();
 		}
 	}
@@ -216,10 +218,13 @@ public class RabbitMQProxy implements AutoCloseable, Runnable {
 	}
 
 	private static void safeClose(Closeable ss) {
-		if (ss == null) return;
+		if (ss == null) {
+			return;
+		}
 		try {
 			ss.close();
-		} catch (IOException ignored) {
+		}
+		catch (IOException ignored) {
 		}
 	}
 

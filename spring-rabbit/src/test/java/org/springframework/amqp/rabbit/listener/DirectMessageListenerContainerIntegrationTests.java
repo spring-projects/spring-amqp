@@ -38,6 +38,7 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -79,7 +80,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Named.named;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -1063,12 +1063,12 @@ public class DirectMessageListenerContainerIntegrationTests {
 
 		return Stream.of(
 				Arguments.of(
-						named("Bidirectional packet loss", suspendMethod),
-						named("Packets reach destination", resumeMethod)
+						Named.named("Bidirectional packet loss", suspendMethod),
+						Named.named("Packets reach destination", resumeMethod)
 				),
 				Arguments.of(
-						named("Connection closed by server", closeMethod),
-						named("Connection is available", startMethod)
+						Named.named("Connection closed by server", closeMethod),
+						Named.named("Connection is available", startMethod)
 				)
 		);
 	}
