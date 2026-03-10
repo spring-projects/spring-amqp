@@ -198,6 +198,7 @@ configure(javaProjects) { subproject ->
 		testImplementation "com.willowtreeapps.assertk:assertk-jvm:$assertkVersion"
 
 		testRuntimeOnly 'org.apache.logging.log4j:log4j-jcl'
+		testRuntimeOnly 'org.apache.logging.log4j:log4j-slf4j2-impl'
 	}
 
 	// enable all compiler warnings; individual projects may customize further
