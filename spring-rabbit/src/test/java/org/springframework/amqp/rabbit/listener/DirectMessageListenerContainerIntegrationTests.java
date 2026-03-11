@@ -321,7 +321,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.setQueueNames(Q1, Q2);
 		container.setMonitorInterval(1000);
 		container.setFailedDeclarationRetryInterval(1000);
-		container.setRecoveryBackOff(new FixedBackOff(1000));
+		container.setRecoveryBackOff(new FixedBackOff(1000, 10));
 		container.setShutdownTimeout(1000);
 		container.setConsumerTagStrategy(new Tag());
 		AtomicReference<String> expectedMessage = new AtomicReference<>();
@@ -986,7 +986,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 				QueueInformation queueInfo = admin.getQueueInfo(Q3);
 				assertThat(queueInfo)
 						.extracting(QueueInformation::getMessageCount)
-						.isEqualTo(5L);
+						.isEqualTo(5);
 			});
 			container.start();
 			await().untilAsserted(() -> {
