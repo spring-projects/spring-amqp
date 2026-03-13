@@ -298,6 +298,10 @@ public abstract class AbstractListenerAnnotationBeanPostProcessor<A extends Anno
 		return value;
 	}
 
+	protected static Duration toDuration(String value) {
+		return toDuration(value, TimeUnit.MILLISECONDS);
+	}
+
 	protected static Duration toDuration(String value, TimeUnit timeUnit) {
 		DurationFormat.Unit unit = DurationFormat.Unit.fromChronoUnit(timeUnit.toChronoUnit());
 		return DurationFormatterUtils.detectAndParse(value, unit);
