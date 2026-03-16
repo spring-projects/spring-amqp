@@ -460,9 +460,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		checkMissingQueues(queueNames);
 		checkConnect();
 		long idleEventInterval = getIdleEventInterval();
-		if (this.taskScheduler == null) {
-			afterPropertiesSet();
-		}
+		doInitialize();
 		if (idleEventInterval > 0 && this.monitorInterval > idleEventInterval) {
 			this.monitorInterval = idleEventInterval / 2;
 		}

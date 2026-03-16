@@ -33,6 +33,7 @@ import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.util.StopWatch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatObject;
 
 /**
  * @author Gary Russell
@@ -141,7 +142,9 @@ public class ContainerShutDownTests {
 	}
 
 	@Test
-	void directMessageListenerContainerShutdownsItsSchedulerOnStopWithCallback() {
+	void directMessageListenerContainerShutdownsItsSchedulerOnStopWithCallbackAndRecreatedOnRestart()
+			throws InterruptedException {
+
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer();
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
 		container.setConnectionFactory(cf);
@@ -154,12 +157,19 @@ public class ContainerShutDownTests {
 		ScheduledExecutorService scheduledExecutorService =
 				TestUtils.getPropertyValue(container, "taskScheduler.scheduledExecutor");
 
-		container.stop(() -> {
-		});
+		CountDownLatch stopLatch = new CountDownLatch(1);
+
+		container.stop(stopLatch::countDown);
+
+		assertThat(stopLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(scheduledExecutorService.isShutdown()).isTrue();
+		assertThatObject(TestUtils.getPropertyValue(container, "taskScheduler")).isNull();
+
+		container.start();
+
+		assertThatObject(TestUtils.getPropertyValue(container, "taskScheduler")).isNotNull();
 
 		cf.destroy();
-
-		assertThat(scheduledExecutorService.isShutdown()).isTrue();
 	}
 
 }
