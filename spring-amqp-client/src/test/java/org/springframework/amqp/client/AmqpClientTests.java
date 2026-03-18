@@ -26,6 +26,7 @@ import org.apache.qpid.protonj2.client.Client;
 import org.apache.qpid.protonj2.client.ClientOptions;
 import org.apache.qpid.protonj2.client.DeliveryState;
 import org.apache.qpid.protonj2.client.Message;
+import org.apache.qpid.protonj2.client.SenderOptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.shaded.com.fasterxml.jackson.core.JsonProcessingException;
@@ -35,6 +36,7 @@ import org.springframework.amqp.client.config.EnableAmqp;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.rabbit.junit.AbstractTestContainerTests;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -101,6 +103,9 @@ public class AmqpClientTests extends AbstractTestContainerTests {
 				.succeedsWithin(Duration.ofSeconds(10))
 				.isEqualTo("more_data");
 
+		SenderOptions options = TestUtils.getPropertyValue(this.amqpClient, "sender.options");
+		assertThat(options.sendTimeout()).isEqualTo(381);
+		assertThat(options.closeTimeout()).isEqualTo(247);
 	}
 
 	@Test
@@ -195,6 +200,8 @@ public class AmqpClientTests extends AbstractTestContainerTests {
 		@Bean
 		AmqpClient amqpClient(AmqpConnectionFactory connectionFactory) {
 			return AmqpClient.builder(connectionFactory)
+					.senderOptions(new SenderOptions().sendTimeout(381).closeTimeout(1))
+					.senderOptions(senderOptions -> senderOptions.closeTimeout(247))
 					.defaultToAddress("/queues/" + TEST_SEND_QUEUE)
 					.messageConverter(new JacksonJsonMessageConverter())
 					.build();

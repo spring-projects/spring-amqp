@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import org.apache.qpid.protonj2.client.Message;
 import org.apache.qpid.protonj2.client.SenderOptions;
@@ -81,7 +82,7 @@ public interface AmqpClient {
 
 		private final AmqpConnectionFactory connectionFactory;
 
-		private @Nullable SenderOptions senderOptions;
+		private SenderOptions senderOptions = new SenderOptions();
 
 		private @Nullable MessageConverter messageConverter;
 
@@ -97,11 +98,25 @@ public interface AmqpClient {
 
 		/**
 		 * Set the {@link SenderOptions} for an internal AMQP 1.0 {@link org.apache.qpid.protonj2.client.Sender}.
+		 * Overrides existing instance.
 		 * @param senderOptions to use.
 		 * @return this builder.
+		 * @see #senderOptions(Consumer)
 		 */
 		public Builder senderOptions(SenderOptions senderOptions) {
 			this.senderOptions = senderOptions;
+			return this;
+		}
+
+		/**
+		 * Customize the {@link SenderOptions} instance in this builder.
+		 * Calling {@link #senderOptions(SenderOptions)} overrides existing instance.
+		 * @param senderOptionsCustomizer the consumer to accept existing {@link SenderOptions}.
+		 * @return this builder.
+		 * @see #senderOptions(SenderOptions)
+		 */
+		public Builder senderOptions(Consumer<SenderOptions> senderOptionsCustomizer) {
+			senderOptionsCustomizer.accept(this.senderOptions);
 			return this;
 		}
 
@@ -160,8 +175,8 @@ public interface AmqpClient {
 		 */
 		public AmqpClient build() {
 			DefaultAmqpClient defaultAmqpClient = new DefaultAmqpClient(this.connectionFactory);
+			defaultAmqpClient.setSenderOptions(this.senderOptions);
 			JavaUtils.INSTANCE
-					.acceptIfNotNull(this.senderOptions, defaultAmqpClient::setSenderOptions)
 					.acceptIfNotNull(this.completionTimeout, defaultAmqpClient::setCompletionTimeout)
 					.acceptIfNotNull(this.messageConverter, defaultAmqpClient::setMessageConverter)
 					.acceptIfNotNull(this.defaultToAddress, defaultAmqpClient::setDefaultToAddress)
