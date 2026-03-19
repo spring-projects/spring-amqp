@@ -25,7 +25,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.aopalliance.aop.Advice;
-import org.apache.qpid.protonj2.client.Client;
 import org.apache.qpid.protonj2.client.Delivery;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeAll;
@@ -222,16 +221,16 @@ class AmqpListenerAnnotationTests extends AbstractTestContainerTests {
 		}
 
 		@Bean
+		AmqpConnectionFactory amqpConnectionFactory() {
+			return new SingleAmqpConnectionFactory()
+					.setPort(amqpPort());
+		}
+
+		@Bean
 		AmqpClient amqpClient(AmqpConnectionFactory connectionFactory, MessageConverter jsonMessageConverter) {
 			return AmqpClient.builder(connectionFactory)
 					.messageConverter(jsonMessageConverter)
 					.build();
-		}
-
-		@Bean
-		AmqpConnectionFactory amqpConnectionFactory(Client protonClient) {
-			return new SingleAmqpConnectionFactory(protonClient)
-					.setPort(amqpPort());
 		}
 
 		TaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();

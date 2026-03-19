@@ -16,37 +16,21 @@
 
 package org.springframework.amqp.client.config;
 
-import java.util.Map;
-
-import org.apache.qpid.protonj2.client.Client;
-import org.apache.qpid.protonj2.client.ClientOptions;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.client.annotation.AmqpListenerAnnotationBeanPostProcessor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.context.EnvironmentAware;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Condition;
-import org.springframework.context.annotation.ConditionContext;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.ImportAware;
 import org.springframework.context.annotation.Role;
-import org.springframework.core.annotation.AnnotationAttributes;
-import org.springframework.core.env.Environment;
-import org.springframework.core.type.AnnotatedTypeMetadata;
-import org.springframework.core.type.AnnotationMetadata;
-import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 /**
- * The {@link Configuration} for AMQP 1.0 infrastructure.
- * Provides default bean for the ProtonJ {@link Client}.
- * If this class is imported via {@link EnableAmqp}, then {@link ClientOptions} are
- * based on {@link EnableAmqp} attributes.
+ * The {@link Configuration} for AMQP 1.0 infrastructure to support
+ * {@link org.springframework.amqp.client.annotation.AmqpListener}.
  * <p>
- * Also registers {@link AmqpListenerEndpointRegistry} and {@link AmqpListenerAnnotationBeanPostProcessor}.
+ * Registers {@link AmqpListenerEndpointRegistry} and {@link AmqpListenerAnnotationBeanPostProcessor}
+ * with the {@link AmqpDefaultConfiguration#AMQP_LISTENER_ANNOTATION_PROCESSOR_BEAN_NAME}.
  *
  * @author Artem Bilan
  *
@@ -56,33 +40,20 @@ import org.springframework.util.StringUtils;
  */
 @Configuration(proxyBeanMethods = false)
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
-public class AmqpDefaultConfiguration implements ImportAware, EnvironmentAware {
+public class AmqpDefaultConfiguration {
+
+	/**
+	 * The bean name of the default {@link AmqpMessageListenerContainerFactory}.
+	 */
+	public static final String AMQP_LISTENER_ANNOTATION_PROCESSOR_BEAN_NAME =
+			"org.springframework.amqp.client.config.internalAmqpListenerAnnotationProcessor";
 
 	/**
 	 * The bean name of the default {@link AmqpMessageListenerContainerFactory}.
 	 */
 	public static final String DEFAULT_AMQP_LISTENER_CONTAINER_FACTORY_BEAN_NAME = "amqpListenerContainerFactory";
 
-	private @Nullable AnnotationAttributes attributes;
-
-	@SuppressWarnings("NullAway.Init")
-	private Environment environment;
-
-	@Override
-	public void setImportMetadata(AnnotationMetadata importMetadata) {
-		Map<String, @Nullable Object> map = importMetadata.getAnnotationAttributes(EnableAmqp.class.getName());
-		AnnotationAttributes attributes = AnnotationAttributes.fromMap(map);
-		Assert.notNull(attributes, () ->
-				"The '@EnableAmqp' is not present on importing class: " + importMetadata.getClassName());
-		this.attributes = attributes;
-	}
-
-	@Override
-	public void setEnvironment(Environment environment) {
-		this.environment = environment;
-	}
-
-	@Bean
+	@Bean(name = AMQP_LISTENER_ANNOTATION_PROCESSOR_BEAN_NAME)
 	static AmqpListenerAnnotationBeanPostProcessor amqpListenerAnnotationBeanPostProcessor() {
 		return new AmqpListenerAnnotationBeanPostProcessor();
 	}
@@ -95,35 +66,6 @@ public class AmqpDefaultConfiguration implements ImportAware, EnvironmentAware {
 		return factory != null
 				? new AmqpListenerEndpointRegistry(factory)
 				: new AmqpListenerEndpointRegistry();
-	}
-
-	@Bean
-	@Conditional(OnMissingClientBeanCondition.class)
-	Client protonClient() {
-		ClientOptions options = new ClientOptions();
-		if (this.attributes != null) {
-			String id = this.attributes.getString("clientId");
-			id = this.environment.resolvePlaceholders(id);
-			if (StringUtils.hasText(id)) {
-				options.id(id);
-			}
-			String futureType = this.attributes.getString("clientFutureType");
-			futureType = this.environment.resolvePlaceholders(futureType);
-			if (StringUtils.hasText(futureType)) {
-				options.futureType(futureType);
-			}
-		}
-		return Client.create(options);
-	}
-
-	private static final class OnMissingClientBeanCondition implements Condition {
-
-		@Override
-		@SuppressWarnings("NullAway")
-		public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
-			return context.getBeanFactory().getBeanNamesForType(Client.class).length == 0;
-		}
-
 	}
 
 }

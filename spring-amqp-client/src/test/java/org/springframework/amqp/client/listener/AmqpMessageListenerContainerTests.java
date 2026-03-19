@@ -23,7 +23,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.qpid.protonj2.client.Client;
 import org.apache.qpid.protonj2.client.Delivery;
 import org.apache.qpid.protonj2.client.exceptions.ClientException;
 import org.apache.qpid.protonj2.engine.impl.ProtonReceiver;
@@ -85,11 +84,6 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 
 	@Autowired
 	TestConfig testConfig;
-
-	@Test
-	void protonClientFromEnableAmqp(@Autowired Client protonClient) {
-		assertThat(protonClient.containerId()).isEqualTo("test-client");
-	}
 
 	@Test
 	void messagesConsumedFromAllQueues() throws InterruptedException {
@@ -169,7 +163,7 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 	}
 
 	@Configuration(proxyBeanMethods = false)
-	@EnableAmqp(clientId = "test-client")
+	@EnableAmqp
 	static class TestConfig {
 
 		BlockingQueue<Message> receivedMessages = new LinkedBlockingQueue<>();

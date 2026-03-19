@@ -18,7 +18,6 @@ package org.springframework.amqp.client.annotation
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
-import org.apache.qpid.protonj2.client.Client
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.springframework.amqp.client.AmqpClient
@@ -116,8 +115,8 @@ class KotlinAmqpListenerAnnotationTests : AbstractTestContainerTests() {
 		fun jsonMessageConverter() = JacksonJsonMessageConverter()
 
 		@Bean
-		fun amqpConnectionFactory(protonClient: Client) =
-			SingleAmqpConnectionFactory(protonClient)
+		fun amqpConnectionFactory() =
+			SingleAmqpConnectionFactory()
 				.setPort(amqpPort())
 
 		@Bean
