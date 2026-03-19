@@ -43,6 +43,8 @@ public class SingleAmqpConnectionFactory implements AmqpConnectionFactory, Dispo
 
 	private final Client protonClient;
 
+	private final boolean internalClient;
+
 	private String host = "localhost";
 
 	private int port = -1;
@@ -54,6 +56,7 @@ public class SingleAmqpConnectionFactory implements AmqpConnectionFactory, Dispo
 	 */
 	public SingleAmqpConnectionFactory() {
 		this.protonClient = Client.create();
+		this.internalClient = true;
 	}
 
 	/**
@@ -62,6 +65,7 @@ public class SingleAmqpConnectionFactory implements AmqpConnectionFactory, Dispo
 	 */
 	public SingleAmqpConnectionFactory(Client protonClient) {
 		this.protonClient = protonClient;
+		this.internalClient = false;
 	}
 
 	public SingleAmqpConnectionFactory setHost(String host) {
@@ -137,6 +141,10 @@ public class SingleAmqpConnectionFactory implements AmqpConnectionFactory, Dispo
 		if (connectionToClose != null) {
 			connectionToClose.close();
 			this.connection = null;
+		}
+
+		if (this.internalClient) {
+			this.protonClient.close();
 		}
 	}
 
