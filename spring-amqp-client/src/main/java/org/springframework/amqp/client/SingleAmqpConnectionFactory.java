@@ -29,7 +29,7 @@ import org.springframework.beans.factory.DisposableBean;
 
 /**
  * The {@link AmqpConnectionFactory} implementation to hold a single, shared {@link Connection} instance.
- * If instance is created without a {@link Client}, a default {@link Client#create()} is used internally.
+ * If instance is created without a {@link Client}, a {@link Client#create() default client} is used internally.
  *
  * @author Artem Bilan
  *
@@ -41,7 +41,7 @@ public class SingleAmqpConnectionFactory implements AmqpConnectionFactory, Dispo
 
 	private ConnectionOptions connectionOptions = new ConnectionOptions();
 
-	private final Client protonjClient;
+	private final Client protonClient;
 
 	private String host = "localhost";
 
@@ -50,18 +50,18 @@ public class SingleAmqpConnectionFactory implements AmqpConnectionFactory, Dispo
 	private volatile @Nullable Connection connection;
 
 	/**
-	 * Create an instance based on a default {@link Client#create()}.
+	 * Create an instance based on a {@link Client#create() default client}.
 	 */
 	public SingleAmqpConnectionFactory() {
-		this.protonjClient = Client.create();
+		this.protonClient = Client.create();
 	}
 
 	/**
 	 * Create an instance based on the provided {@link Client}.
-	 * @param protonjClient the client to use.
+	 * @param protonClient the client to use.
 	 */
-	public SingleAmqpConnectionFactory(Client protonjClient) {
-		this.protonjClient = protonjClient;
+	public SingleAmqpConnectionFactory(Client protonClient) {
+		this.protonClient = protonClient;
 	}
 
 	public SingleAmqpConnectionFactory setHost(String host) {
@@ -117,7 +117,7 @@ public class SingleAmqpConnectionFactory implements AmqpConnectionFactory, Dispo
 			try {
 				connectionToReturn = this.connection;
 				if (connectionToReturn == null) {
-					connectionToReturn = this.protonjClient.connect(this.host, this.port, this.connectionOptions);
+					connectionToReturn = this.protonClient.connect(this.host, this.port, this.connectionOptions);
 					this.connection = connectionToReturn;
 				}
 			}
