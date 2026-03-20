@@ -207,8 +207,8 @@ class EnableAmqpTests extends AbstractTestContainerTests {
 	static class TestConfig {
 
 		@Bean
-		AmqpConnectionFactory amqpConnectionFactory(Client protonClient) {
-			return new SingleAmqpConnectionFactory(protonClient)
+		AmqpConnectionFactory amqpConnectionFactory() {
+			return new SingleAmqpConnectionFactory(Client.create())
 					.setPort(amqpPort());
 		}
 

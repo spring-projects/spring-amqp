@@ -45,7 +45,8 @@ Client protonClient() {
 ----
 
 The same `Client` can be used for connecting to different brokers, the connection settings must be provided on a specific connection.
-See also <<amqp10-client-connection-factory>> and <<amqp10-annotation-configuration>> below.
+However, this bean is not mandatory, `SingleAmqpConnectionFactory` creates instance internally.
+See also <<amqp10-client-connection-factory>> below.
 
 [[amqp10-client-connection-factory]]
 == AMQP 1.0 Connection Factory
@@ -61,8 +62,8 @@ In most cases it is enough to add this bean into the project:
 [source,java]
 ----
 @Bean
-AmqpConnectionFactory connectionFactory(Client protonClient) {
-    return new SingleAmqpConnectionFactory(protonClient);
+AmqpConnectionFactory connectionFactory() {
+    return new SingleAmqpConnectionFactory();
 }
 ----
 
@@ -70,7 +71,7 @@ See `SingleAmqpConnectionFactory` setters for all connection-specific options, i
 The more advance configuration could be done by the `setConnectionOptions(ConnectionOptions)` which is a builder API from ProtonJ library.
 The mentioned `SingleAmqpConnectionFactory` instance with all the defaults would connect to the `localhost:5672` with infinite number of reconnections.
 
-NOTE: The `Client` injection can be omitted for the `SingleAmqpConnectionFactory`, and respective single bean is resolved from the `BeanFactory` on demand internally, when `getConnection()` is called.
+NOTE: The `Client` injection can be omitted for the `SingleAmqpConnectionFactory`, and respective instance is created by the factory internally.
 
 [[amqp10-client-api]]
 == `AmqpClient`
@@ -223,11 +224,10 @@ AmqpMessageListenerContainer protonDeliveryListenerContainer(AmqpConnectionFacto
 
 The `spring-amqp-client` provides a convenient way to configure the AMQP 1.0 infrastructure via annotations.
 The `@EnableAmqp` annotation can be set on a `@Configuration` class in the target project to trigger that infrastructure registration.
-The imported by the `@EnableAmqp` annotation `AmqpDefaultConfiguration` provides conditional beans (may be configured in the target project manually):
+The imported by the `@EnableAmqp` annotation `AmqpDefaultConfiguration` provides infrastructure beans to support `@AmqpListener` (see below):
 
-* The `org.apache.qpid.protonj2.client.Client` where its `org.apache.qpid.protonj2.client.ClientOptions` property is based on the respective attributes of the imported metadata from the `@EnableAmqp`.
 * The `AmqpListenerEndpointRegistry` - the global component to register AMQP listener containers programmatically.
-* The `AmqpListenerAnnotationBeanPostProcessor` - a `BeanPostProcessor` to parse POJO methods with the `@AmqpListener` and register listener containers via the `AmqpListenerEndpointRegistry`.
+* The `AmqpListenerAnnotationBeanPostProcessor` (under the `AmqpDefaultConfiguration.AMQP_LISTENER_ANNOTATION_PROCESSOR_BEAN_NAME`) - a `BeanPostProcessor` to parse POJO methods with the `@AmqpListener` and register listener containers via the `AmqpListenerEndpointRegistry`.
 
 === `@AmqpListener`
 

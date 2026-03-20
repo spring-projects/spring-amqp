@@ -22,39 +22,19 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.apache.qpid.protonj2.client.ClientOptions;
-
 import org.springframework.context.annotation.Import;
 
 /**
- * Enable AMQP 1.0 infrastructure beans: {@link org.apache.qpid.protonj2.client.Client} etc.
+ * Enable AMQP 1.0 infrastructure beans for {@link org.springframework.amqp.client.annotation.AmqpListener}.
  *
  * @author Artem Bilan
  *
  * @since 4.1
- *
- * @see org.apache.qpid.protonj2.client.Client
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Import(AmqpDefaultConfiguration.class)
 public @interface EnableAmqp {
-
-	/**
-	 * The value for the {@link org.apache.qpid.protonj2.client.ClientOptions#id()}
-	 * of the {@link org.apache.qpid.protonj2.client.Client} to be created by the {@link AmqpDefaultConfiguration}.
-	 * Can be specified as a property placeholder, e.g. {@code "${amqp.client-id}"}.
-	 * @return the client id.
-	 */
-	String clientId() default "";
-
-	/**
-	 * The value for the {@link ClientOptions#futureType()}
-	 * of the {@link org.apache.qpid.protonj2.client.Client} to be created by the {@link AmqpDefaultConfiguration}.
-	 * Can be specified as a property placeholder, e.g. {@code "${amqp.future-type}"}.
-	 * @return the future type for the client.
-	 */
-	String clientFutureType() default "";
 
 }
