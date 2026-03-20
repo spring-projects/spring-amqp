@@ -267,6 +267,8 @@ configure(javaProjects) { subproject ->
 		}
 		environment "SPRING_AMQP_DESERIALIZATION_TRUST_ALL", "true"
 
+		maxParallelForks = Runtime.runtime.availableProcessors() / 2
+
 		useJUnitPlatform()
 	}
 
