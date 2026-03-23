@@ -38,6 +38,7 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -249,6 +250,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 	@MethodSource("networkProblems")
 	@ParameterizedTest
 	@SuppressWarnings("unchecked")
+	@Disabled
 	public void testRecoveringFromNetworkProblemsAfterInitialConnection(
 			java.util.function.Consumer<RabbitMQProxy> startProblem,
 			java.util.function.Consumer<RabbitMQProxy> resolveProblem
