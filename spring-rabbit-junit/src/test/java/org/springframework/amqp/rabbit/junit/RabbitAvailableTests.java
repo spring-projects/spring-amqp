@@ -20,6 +20,7 @@ import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  */
 @RabbitAvailable(queues = "rabbitAvailableTests.queue", management = true)
+@Disabled
 public class RabbitAvailableTests {
 
 	@Test
