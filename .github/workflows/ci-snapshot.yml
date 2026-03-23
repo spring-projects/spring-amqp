@@ -26,6 +26,7 @@ jobs:
       - name: Start RabbitMQ
         uses: namoshek/rabbitmq-github-action@v1.2.0
         with:
+          version: 4.1
           ports: '5672:5672 15672:15672 5552:5552'
           plugins: rabbitmq_stream,rabbitmq_management,rabbitmq_delayed_message_exchange,rabbitmq_consistent_hash_exchange
 
