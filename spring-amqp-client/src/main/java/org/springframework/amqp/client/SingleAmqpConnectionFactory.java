@@ -22,6 +22,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.qpid.protonj2.client.Client;
 import org.apache.qpid.protonj2.client.Connection;
 import org.apache.qpid.protonj2.client.ConnectionOptions;
+import org.apache.qpid.protonj2.client.ReconnectLocation;
+import org.apache.qpid.protonj2.client.ReconnectOptions;
 import org.apache.qpid.protonj2.client.exceptions.ClientException;
 import org.jspecify.annotations.Nullable;
 
@@ -99,6 +101,33 @@ public class SingleAmqpConnectionFactory implements AmqpConnectionFactory, Dispo
 	 */
 	public SingleAmqpConnectionFactory setPassword(String password) {
 		this.connectionOptions.password(password);
+		return this;
+	}
+
+	/**
+	 * Set the {@link ReconnectOptions} for the AMQP connection.
+	 * The convenient top-level property for the {@link ConnectionOptions#reconnectOptions()}.
+	 * If a {@link ConnectionOptions} is provided expictily, the {@link ReconnectOptions} has to be set over there.
+	 * @param reconnectOptions the {@link ReconnectOptions} to use.
+	 * @return the factory instance.
+	 * @see #setConnectionOptions(ConnectionOptions)
+	 */
+	public SingleAmqpConnectionFactory setReconnectOptions(ReconnectOptions reconnectOptions) {
+		ReconnectOptions reconnectOptionsToConfigure =
+				this.connectionOptions.reconnectOptions()
+						.reconnectEnabled(reconnectOptions.reconnectEnabled())
+						.maxInitialConnectionAttempts(reconnectOptions.maxInitialConnectionAttempts())
+						.maxReconnectAttempts(reconnectOptions.maxReconnectAttempts())
+						.reconnectDelay(reconnectOptions.reconnectDelay())
+						.maxReconnectDelay(reconnectOptions.maxReconnectDelay())
+						.useReconnectBackOff(reconnectOptions.useReconnectBackOff())
+						.reconnectBackOffMultiplier(reconnectOptions.reconnectBackOffMultiplier())
+						.warnAfterReconnectAttempts(reconnectOptions.warnAfterReconnectAttempts());
+
+		for (ReconnectLocation reconnectLocation : reconnectOptions.reconnectLocations()) {
+			reconnectOptionsToConfigure.addReconnectLocation(reconnectLocation.getHost(), reconnectLocation.getPort());
+		}
+
 		return this;
 	}
 

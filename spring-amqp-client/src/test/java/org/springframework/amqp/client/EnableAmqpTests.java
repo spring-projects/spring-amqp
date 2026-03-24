@@ -26,6 +26,7 @@ import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.qpid.protonj2.client.Client;
+import org.apache.qpid.protonj2.client.ReconnectOptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -209,7 +210,8 @@ class EnableAmqpTests extends AbstractTestContainerTests {
 		@Bean
 		AmqpConnectionFactory amqpConnectionFactory() {
 			return new SingleAmqpConnectionFactory(Client.create())
-					.setPort(amqpPort());
+					.setPort(amqpPort())
+					.setReconnectOptions(new ReconnectOptions().reconnectEnabled(true));
 		}
 
 		@Bean

@@ -55,7 +55,7 @@ The `org.springframework.amqp.client.AmqpConnectionFactory` abstraction was intr
 The `SingleAmqpConnectionFactory` implementation is present to manage one connection and its settings.
 The same `Connection` can be shared between many producers and consumers.
 The multiplexing is handled by the link abstraction for AMQP 1.0 protocol implementation internally in the AMQP client library.
-The `Connection` has recovery capabilities.
+The `Connection` has recovery capabilities via `ReconnectOptions` provided for the `ConnectionOptions`.
 
 In most cases it is enough to add this bean into the project:
 
