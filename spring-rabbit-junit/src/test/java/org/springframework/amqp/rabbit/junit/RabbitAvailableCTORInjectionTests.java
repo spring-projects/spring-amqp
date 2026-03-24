@@ -26,11 +26,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.0.2
  *
  */
-@RabbitAvailable(queues = "rabbitAvailableTests.queue")
+@RabbitAvailable(queues = RabbitAvailableCTORInjectionTests.TEST_QUEUE)
 public class RabbitAvailableCTORInjectionTests {
+
+	static final String TEST_QUEUE = "rabbitAvailableCTORInjectionTests.queue";
 
 	private final ConnectionFactory connectionFactory;
 
@@ -43,7 +47,7 @@ public class RabbitAvailableCTORInjectionTests {
 		assertThat(this.connectionFactory).isSameAs(cf);
 		Connection conn = this.connectionFactory.newConnection();
 		Channel channel = conn.createChannel();
-		DeclareOk declareOk = channel.queueDeclarePassive("rabbitAvailableTests.queue");
+		DeclareOk declareOk = channel.queueDeclarePassive(TEST_QUEUE);
 		assertThat(declareOk.getConsumerCount()).isEqualTo(0);
 		channel.close();
 		conn.close();
