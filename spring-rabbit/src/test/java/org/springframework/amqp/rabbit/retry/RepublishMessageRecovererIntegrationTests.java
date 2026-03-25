@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbit.retry;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Message;
@@ -55,7 +54,6 @@ class RepublishMessageRecovererIntegrationTests {
 	private int maxHeaderSize;
 
 	@Test
-	@Disabled("Need to figure out the failure on CI")
 	void testBigHeader() {
 		CachingConnectionFactory ccf = new CachingConnectionFactory(
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
@@ -140,12 +138,9 @@ class RepublishMessageRecovererIntegrationTests {
 		int length = getStackTraceAsString(cause).length();
 		int wantThisSize = this.maxHeaderSize + RepublishMessageRecoverer.DEFAULT_FRAME_MAX_HEADROOM;
 		if (length > wantThisSize) {
-			return cause;
+			return new RuntimeException(BIG_EXCEPTION_MESSAGE1, cause);
 		}
-		String msg = length + BIG_EXCEPTION_MESSAGE1.length() > wantThisSize
-				? BIG_EXCEPTION_MESSAGE1
-				: BIG_EXCEPTION_MESSAGE2;
-		return bigCause(new RuntimeException(msg, cause));
+		return bigCause(new RuntimeException(BIG_EXCEPTION_MESSAGE2, cause));
 	}
 
 	private String getStackTraceAsString(Throwable cause) {

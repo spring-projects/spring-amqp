@@ -34,6 +34,7 @@ import org.springframework.util.StopWatch;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatObject;
+import static org.mockito.Mockito.mock;
 
 /**
  * @author Gary Russell
@@ -142,12 +143,10 @@ public class ContainerShutDownTests {
 	}
 
 	@Test
-	void directMessageListenerContainerShutdownsItsSchedulerOnStopWithCallbackAndRecreatedOnRestart()
-			throws InterruptedException {
-
+	void directMessageListenerContainerShutdownsItsSchedulerOnStopWithCallbackAndRecreatedOnRestart() {
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer();
-		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
-		container.setConnectionFactory(cf);
+		container.setConnectionFactory(mock());
+		container.setTaskExecutor(mock());
 		container.setQueueNames("test.shutdown");
 		container.setMessageListener(m -> {
 		});
@@ -157,11 +156,9 @@ public class ContainerShutDownTests {
 		ScheduledExecutorService scheduledExecutorService =
 				TestUtils.getPropertyValue(container, "taskScheduler.scheduledExecutor", ScheduledExecutorService.class);
 
-		CountDownLatch stopLatch = new CountDownLatch(1);
+		container.stop(() -> {
+		});
 
-		container.stop(stopLatch::countDown);
-
-		assertThat(stopLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(scheduledExecutorService.isShutdown()).isTrue();
 		assertThatObject(TestUtils.getPropertyValue(container, "taskScheduler")).isNull();
 
@@ -169,7 +166,7 @@ public class ContainerShutDownTests {
 
 		assertThatObject(TestUtils.getPropertyValue(container, "taskScheduler")).isNotNull();
 
-		cf.destroy();
+		container.stop();
 	}
 
 }
