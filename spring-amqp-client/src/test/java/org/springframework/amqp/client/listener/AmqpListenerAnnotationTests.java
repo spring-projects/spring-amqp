@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.aopalliance.aop.Advice;
 import org.apache.qpid.protonj2.client.Delivery;
+import org.apache.qpid.protonj2.client.ReconnectOptions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -223,7 +224,8 @@ class AmqpListenerAnnotationTests extends AbstractTestContainerTests {
 		@Bean
 		AmqpConnectionFactory amqpConnectionFactory() {
 			return new SingleAmqpConnectionFactory()
-					.setPort(amqpPort());
+					.setPort(amqpPort())
+					.setReconnectOptions(new ReconnectOptions().reconnectEnabled(true));
 		}
 
 		@Bean

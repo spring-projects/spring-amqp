@@ -24,6 +24,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.qpid.protonj2.client.Delivery;
+import org.apache.qpid.protonj2.client.ReconnectOptions;
 import org.apache.qpid.protonj2.client.exceptions.ClientException;
 import org.apache.qpid.protonj2.engine.impl.ProtonReceiver;
 import org.junit.jupiter.api.BeforeAll;
@@ -173,7 +174,8 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 		@Bean
 		AmqpConnectionFactory amqpConnectionFactory() {
 			return new SingleAmqpConnectionFactory()
-					.setPort(amqpPort());
+					.setPort(amqpPort())
+					.setReconnectOptions(new ReconnectOptions().reconnectEnabled(true));
 		}
 
 		@Bean

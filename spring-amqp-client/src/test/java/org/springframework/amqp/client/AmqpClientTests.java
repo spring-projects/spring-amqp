@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.apache.qpid.protonj2.client.DeliveryState;
 import org.apache.qpid.protonj2.client.Message;
+import org.apache.qpid.protonj2.client.ReconnectOptions;
 import org.apache.qpid.protonj2.client.SenderOptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -180,7 +181,8 @@ public class AmqpClientTests extends AbstractTestContainerTests {
 		@Bean
 		AmqpConnectionFactory amqpConnectionFactory() {
 			return new SingleAmqpConnectionFactory()
-					.setPort(amqpPort());
+					.setPort(amqpPort())
+					.setReconnectOptions(new ReconnectOptions().reconnectEnabled(true));
 		}
 
 		@Bean

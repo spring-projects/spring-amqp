@@ -18,6 +18,7 @@ package org.springframework.amqp.client.annotation
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
+import org.apache.qpid.protonj2.client.ReconnectOptions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.springframework.amqp.client.AmqpClient
@@ -118,6 +119,7 @@ class KotlinAmqpListenerAnnotationTests : AbstractTestContainerTests() {
 		fun amqpConnectionFactory() =
 			SingleAmqpConnectionFactory()
 				.setPort(amqpPort())
+				.setReconnectOptions(ReconnectOptions().reconnectEnabled(true))
 
 		@Bean
 		fun amqpClient(connectionFactory: AmqpConnectionFactory, jsonMessageConverter: MessageConverter) =
@@ -130,7 +132,7 @@ class KotlinAmqpListenerAnnotationTests : AbstractTestContainerTests() {
 			MethodAmqpMessageListenerContainerFactory(connectionFactory)
 				.also { it.setMessageConverter(jsonMessageConverter) }
 
-		val results: BlockingQueue<Any> = LinkedBlockingQueue<Any>()
+		val results: BlockingQueue<Any> = LinkedBlockingQueue()
 
 		@AmqpListener(addresses = [TEST_QUEUE1])
 		fun simpleListener(payload: String) {
