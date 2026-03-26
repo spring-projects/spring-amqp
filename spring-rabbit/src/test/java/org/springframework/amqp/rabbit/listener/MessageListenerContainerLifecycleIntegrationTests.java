@@ -479,6 +479,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
 			container.setQueues(queue);
 			container.setReceiveTimeout(10);
+			container.setMicrometerEnabled(false);
 			container.setMessageListener(message -> {
 				try {
 					consumerLatch().countDown();
@@ -488,7 +489,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 					Thread.currentThread().interrupt();
 				}
 			});
-			container.setShutdownTimeout(1);
+			container.setShutdownTimeout(1000);
 			return container;
 		}
 
