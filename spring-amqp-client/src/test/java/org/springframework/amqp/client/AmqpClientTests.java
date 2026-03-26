@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.qpid.protonj2.client.DeliveryState;
 import org.apache.qpid.protonj2.client.Message;
@@ -97,7 +98,7 @@ public class AmqpClientTests extends AbstractTestContainerTests {
 				.isEqualTo("more_data");
 
 		SenderOptions options = TestUtils.getPropertyValue(this.amqpClient, "sender.options");
-		assertThat(options.sendTimeout()).isEqualTo(381);
+		assertThat(options.sendTimeout()).isEqualTo(TimeUnit.SECONDS.toMillis(381));
 		assertThat(options.closeTimeout()).isEqualTo(247);
 	}
 
@@ -188,7 +189,7 @@ public class AmqpClientTests extends AbstractTestContainerTests {
 		@Bean
 		AmqpClient amqpClient(AmqpConnectionFactory connectionFactory) {
 			return AmqpClient.builder(connectionFactory)
-					.senderOptions(new SenderOptions().sendTimeout(381).closeTimeout(1))
+					.senderOptions(new SenderOptions().sendTimeout(381, TimeUnit.SECONDS).closeTimeout(1))
 					.senderOptions(senderOptions -> senderOptions.closeTimeout(247))
 					.defaultToAddress("/queues/" + TEST_SEND_QUEUE)
 					.messageConverter(new JacksonJsonMessageConverter())
