@@ -19,6 +19,7 @@ package org.springframework.amqp.client;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -26,7 +27,7 @@ import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.qpid.protonj2.client.Client;
-import org.apache.qpid.protonj2.client.ReconnectOptions;
+import org.apache.qpid.protonj2.client.ConnectionOptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -136,7 +137,11 @@ class EnableAmqpTests extends AbstractTestContainerTests {
 				.extracting(Message::getBody)
 				.isEqualTo("test_data".getBytes());
 
-		listenerContainer.stop();
+		CountDownLatch stopLatch = new CountDownLatch(1);
+
+		listenerContainer.stop(stopLatch::countDown);
+
+		assertThat(stopLatch.await(10, TimeUnit.SECONDS)).isTrue();
 	}
 
 	@Test
@@ -186,7 +191,11 @@ class EnableAmqpTests extends AbstractTestContainerTests {
 				.extracting(Message::getBody)
 				.isEqualTo("test_data2".getBytes());
 
-		listenerContainer.stop();
+		CountDownLatch stopLatch = new CountDownLatch(1);
+
+		listenerContainer.stop(stopLatch::countDown);
+
+		assertThat(stopLatch.await(10, TimeUnit.SECONDS)).isTrue();
 	}
 
 	@Test
@@ -211,7 +220,7 @@ class EnableAmqpTests extends AbstractTestContainerTests {
 		AmqpConnectionFactory amqpConnectionFactory() {
 			return new SingleAmqpConnectionFactory(Client.create())
 					.setPort(amqpPort())
-					.setReconnectOptions(new ReconnectOptions().reconnectEnabled(true));
+					.setConnectionOptions(new ConnectionOptions().traceFrames(true).reconnectEnabled(true));
 		}
 
 		@Bean
