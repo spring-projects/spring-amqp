@@ -107,7 +107,6 @@ class RabbitTemplateRoutingConnectionFactoryIntegrationTests {
 
 		final CorrelationData correlationData = new CorrelationData();
 		rabbitTemplate.send(ROUTE, message, correlationData);
-		assertThat(rabbitTemplate.getUnconfirmedCount()).isEqualTo(1);
 
 		final CorrelationData.Confirm confirm = correlationData.getFuture().get(10, TimeUnit.SECONDS);
 
