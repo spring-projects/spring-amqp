@@ -26,10 +26,15 @@ import java.util.concurrent.TimeUnit;
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.qpid.protonj2.client.Client;
 import org.apache.qpid.protonj2.client.ConnectionOptions;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.TestWatcher;
 
 import org.springframework.amqp.client.config.AmqpDefaultConfiguration;
 import org.springframework.amqp.client.config.AmqpListenerEndpointRegistration;
@@ -67,7 +72,9 @@ import static org.mockito.Mockito.mockingDetails;
  */
 @SpringJUnitConfig(EnableAmqpTests.TestConfig.class)
 @DirtiesContext
-class EnableAmqpTests extends AbstractTestContainerTests {
+class EnableAmqpTests extends AbstractTestContainerTests implements TestWatcher {
+
+	static final Log LOG = LogFactory.getLog(EnableAmqpTests.class);
 
 	static final String TEST_QUEUE1 = "/queues/enable_amqp_queue1";
 
@@ -96,6 +103,11 @@ class EnableAmqpTests extends AbstractTestContainerTests {
 
 	@Autowired
 	TaskExecutor taskExecutor;
+
+	@Override
+	public void testFailed(ExtensionContext context, @Nullable Throwable cause) {
+		LOG.error("LOGS FROM RABBITMQ CONTAINER: " + RABBITMQ.getLogs());
+	}
 
 	@Test
 	void simpleEndpointBasedOnTheDefaultContainerFactory() throws InterruptedException {
