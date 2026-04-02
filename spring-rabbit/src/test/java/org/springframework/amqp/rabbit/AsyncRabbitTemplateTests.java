@@ -77,7 +77,7 @@ import static org.mockito.Mockito.mock;
  * @since 1.6
  */
 @SpringJUnitConfig
-@DirtiesContext
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @RabbitAvailable
 public class AsyncRabbitTemplateTests {
 
@@ -233,7 +233,6 @@ public class AsyncRabbitTemplateTests {
 	}
 
 	@Test
-	@DirtiesContext
 	public void testReturn() {
 		this.asyncTemplate.setMandatory(true);
 		CompletableFuture<String> future = this.asyncTemplate.convertSendAndReceive(this.requests.getName() + "x",
@@ -249,7 +248,6 @@ public class AsyncRabbitTemplateTests {
 	}
 
 	@Test
-	@DirtiesContext
 	public void testReturnDirect() {
 		this.asyncDirectTemplate.setMandatory(true);
 		CompletableFuture<String> future = this.asyncDirectTemplate.convertSendAndReceive(this.requests.getName() + "x",
@@ -266,7 +264,6 @@ public class AsyncRabbitTemplateTests {
 	}
 
 	@Test
-	@DirtiesContext
 	public void testConvertWithConfirm() {
 		this.asyncTemplate.setEnableConfirms(true);
 		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("sleep");
@@ -278,7 +275,6 @@ public class AsyncRabbitTemplateTests {
 	}
 
 	@Test
-	@DirtiesContext
 	public void testMessageWithConfirm() throws Exception {
 		this.asyncTemplate.setEnableConfirms(true);
 		RabbitMessageFuture future = this.asyncTemplate
@@ -291,7 +287,6 @@ public class AsyncRabbitTemplateTests {
 	}
 
 	@Test
-	@DirtiesContext
 	public void testConvertWithConfirmDirect() {
 		this.asyncDirectTemplate.setEnableConfirms(true);
 		RabbitConverterFuture<String> future = this.asyncDirectTemplate.convertSendAndReceive("sleep");
@@ -303,7 +298,6 @@ public class AsyncRabbitTemplateTests {
 	}
 
 	@Test
-	@DirtiesContext
 	public void testMessageWithConfirmDirect() throws Exception {
 		this.asyncDirectTemplate.setEnableConfirms(true);
 		RabbitMessageFuture future = this.asyncDirectTemplate
@@ -316,7 +310,6 @@ public class AsyncRabbitTemplateTests {
 	}
 
 	@Test
-	@DirtiesContext
 	public void testReceiveTimeout() throws Exception {
 		this.asyncTemplate.setReceiveTimeout(500);
 		CompletableFuture<String> future = this.asyncTemplate.convertSendAndReceive("noReply");
@@ -334,7 +327,6 @@ public class AsyncRabbitTemplateTests {
 	}
 
 	@Test
-	@DirtiesContext
 	public void testReplyAfterReceiveTimeout() throws Exception {
 		this.asyncTemplate.setReceiveTimeout(100);
 		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("sleep");
@@ -362,7 +354,6 @@ public class AsyncRabbitTemplateTests {
 	}
 
 	@Test
-	@DirtiesContext
 	public void testStopCancelled() throws Exception {
 		this.asyncTemplate.setReceiveTimeout(5000);
 		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("noReply");
@@ -395,7 +386,6 @@ public class AsyncRabbitTemplateTests {
 	}
 
 	@Test
-	@DirtiesContext
 	public void testConversionException() {
 		this.asyncTemplate.getRabbitTemplate().setMessageConverter(new SimpleMessageConverter() {
 
@@ -479,13 +469,13 @@ public class AsyncRabbitTemplateTests {
 		connectionFactory.destroy();
 	}
 
-	private void checkConverterResult(CompletableFuture<String> future, String expected) {
+	static void checkConverterResult(CompletableFuture<String> future, String expected) {
 		assertThat(future)
 				.succeedsWithin(Duration.ofSeconds(10))
 				.isEqualTo(expected);
 	}
 
-	private Message checkMessageResult(CompletableFuture<Message> future, String expected) throws InterruptedException {
+	static Message checkMessageResult(CompletableFuture<Message> future, String expected) throws InterruptedException {
 		final CountDownLatch cdl = new CountDownLatch(1);
 		final AtomicReference<Message> resultRef = new AtomicReference<>();
 		future.whenComplete((result, ex) -> {
@@ -493,10 +483,11 @@ public class AsyncRabbitTemplateTests {
 			cdl.countDown();
 		});
 		assertThat(cdl.await(10, TimeUnit.SECONDS)).isTrue();
-		assertThat(new String(resultRef.get().getBody())).isEqualTo(expected);
+		Message message = resultRef.get();
+		assertThat(new String(message.getBody())).isEqualTo(expected);
 		await().untilAsserted(() ->
 				assertThat(TestUtils.<Future<?>>getPropertyValue(future, "timeoutTask").isCancelled()).isTrue());
-		return resultRef.get();
+		return message;
 	}
 
 	public static class TheCallback implements BiConsumer<String, Throwable> {
