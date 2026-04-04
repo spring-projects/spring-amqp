@@ -41,7 +41,7 @@ ext {
 	jaywayJsonPathVersion = '3.0.0'
 	junitJupiterVersion = '6.0.3'
 	kotlinCoroutinesVersion = '1.10.2'
-	log4jVersion = '2.25.3'
+	log4jVersion = '2.25.4'
 	logbackVersion = '1.5.32'
 	micrometerDocsVersion = '1.0.4'
 	micrometerVersion = '1.17.0-SNAPSHOT'
