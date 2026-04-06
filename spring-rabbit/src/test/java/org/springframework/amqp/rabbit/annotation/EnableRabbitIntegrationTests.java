@@ -80,6 +80,7 @@ import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.ListenerContainerConsumerFailedEvent;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
@@ -108,6 +109,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -182,7 +184,8 @@ import static org.mockito.Mockito.verify;
 		"amqp656dlq", "test.simple.declare", "test.return.exceptions", "test.pojo.errors", "test.pojo.errors2",
 		"test.messaging.message", "test.amqp.message", "test.bytes.to.string", "test.projection",
 		"test.custom.argument", "test.arg.validation",
-		"manual.acks.1", "manual.acks.2", "erit.batch.1", "erit.batch.2", "erit.batch.3", "erit.mp.arg"},
+		"manual.acks.1", "manual.acks.2", "erit.batch.1", "erit.batch.2", "erit.batch.3", "erit.mp.arg",
+		"no.such.method"},
 		purgeAfterEach = false)
 public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
@@ -1039,6 +1042,16 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		AbstractMessageListenerContainer container =
 				(AbstractMessageListenerContainer) this.registry.getListenerContainer("brokerNamed");
 		assertThat(container.getQueueNames()[0]).startsWith("amq.gen");
+	}
+
+	@Test
+	void noSuchMethodErrorStopsContainer(@Autowired NoSuchMethodService noSuchMethodService)
+			throws InterruptedException {
+
+		this.rabbitTemplate.convertAndSend("no.such.method", "test data");
+		MessageListenerContainer container = this.registry.getListenerContainer("no.such.method");
+		assertThat(noSuchMethodService.eventLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(container.isRunning()).isFalse();
 	}
 
 	interface TxService {
@@ -2061,6 +2074,11 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 			return QueueBuilder.nonDurable("").autoDelete().exclusive().build();
 		}
 
+		@Bean
+		NoSuchMethodService noSuchMethodService() {
+			return new NoSuchMethodService();
+		}
+
 	}
 
 	@RabbitListener(bindings = @QueueBinding
@@ -2492,6 +2510,23 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		@RabbitListener(queues = "test.projection")
 		public String projection(Sample in) {
 			return in.getUsername() + in.getName();
+		}
+
+	}
+
+	@RabbitListener(id = "no.such.method", queues = "no.such.method")
+	static class NoSuchMethodService implements ApplicationListener<ListenerContainerConsumerFailedEvent> {
+
+		CountDownLatch eventLatch = new CountDownLatch(1);
+
+		@RabbitHandler
+		void notReachableHandle(Message message) {
+			throw new RuntimeException("Should not be thrown");
+		}
+
+		@Override
+		public void onApplicationEvent(ListenerContainerConsumerFailedEvent event) {
+			this.eventLatch.countDown();
 		}
 
 	}
