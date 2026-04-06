@@ -1486,7 +1486,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			catch (ListenerExecutionFailedException ex) {
 				// Continue to process, otherwise re-throw
-				if (ex.getCause() instanceof NoSuchMethodException) {
+				if (causeContainsNoSuchMethod(ex.getCause())) {
 					throw new FatalListenerExecutionException("Invalid listener", ex);
 				}
 			}
@@ -1649,6 +1649,22 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			publishConsumerFailedEvent("Consumer raised exception, attempting restart", false, t);
+		}
+
+		private static boolean causeContainsNoSuchMethod(@Nullable Throwable throwable) {
+			if (throwable instanceof NoSuchMethodException) {
+				return true;
+			}
+
+			if (throwable != null) {
+				Throwable cause = throwable.getCause();
+				if (cause == null || cause == throwable) {
+					return false;
+				}
+				return causeContainsNoSuchMethod(cause);
+			}
+
+			return false;
 		}
 
 	}
