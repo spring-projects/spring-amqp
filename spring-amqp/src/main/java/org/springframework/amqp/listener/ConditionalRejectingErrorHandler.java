@@ -195,7 +195,7 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 		@Override
 		public boolean isFatal(Throwable t) {
 			Throwable cause = t.getCause();
-			while ((cause instanceof MessagingException || cause instanceof UndeclaredThrowableException)
+			while ((cause instanceof MessagingException || cause instanceof IllegalStateException)
 					&& !isCauseFatal(cause)) {
 
 				cause = cause.getCause();
