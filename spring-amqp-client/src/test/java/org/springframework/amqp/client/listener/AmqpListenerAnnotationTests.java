@@ -36,7 +36,6 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.amqp.client.AmqpClient;
 import org.springframework.amqp.client.AmqpConnectionFactory;
-import org.springframework.amqp.client.EnableAmqpTests;
 import org.springframework.amqp.client.SingleAmqpConnectionFactory;
 import org.springframework.amqp.client.annotation.AmqpListener;
 import org.springframework.amqp.client.config.AmqpDefaultConfiguration;
