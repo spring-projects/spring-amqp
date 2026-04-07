@@ -141,6 +141,9 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 
 	protected final AtomicBoolean stopNow = new AtomicBoolean(); // NOSONAR
 
+	protected final FatalExceptionStrategy exceptionStrategy =
+			new ConditionalRejectingErrorHandler.DefaultExceptionStrategy();
+
 	private ContainerDelegate proxy = this.delegate;
 
 	private long shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;

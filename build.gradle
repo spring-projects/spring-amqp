@@ -190,6 +190,10 @@ configure(javaProjects) { subproject ->
 
 	// dependencies that are common across all java projects
 	dependencies {
+		def spotBugs = 'com.github.spotbugs:spotbugs-annotations:4.9.8'
+		compileOnly spotBugs
+		testImplementation spotBugs
+
 		testImplementation 'org.apache.logging.log4j:log4j-core'
 		testImplementation "org.hamcrest:hamcrest-core:$hamcrestVersion"
 		testImplementation("org.mockito:mockito-core:$mockitoVersion") {

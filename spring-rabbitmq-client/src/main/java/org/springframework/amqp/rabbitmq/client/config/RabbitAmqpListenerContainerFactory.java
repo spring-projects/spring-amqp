@@ -31,7 +31,10 @@ import org.springframework.amqp.rabbitmq.client.listener.RabbitAmqpListenerConta
 import org.springframework.amqp.rabbitmq.client.listener.RabbitAmqpMessageListenerAdapter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.utils.JavaUtils;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.scheduling.TaskScheduler;
+import org.springframework.util.ErrorHandler;
 
 /**
  * Factory for {@link RabbitAmqpListenerContainer}.
@@ -44,7 +47,8 @@ import org.springframework.scheduling.TaskScheduler;
  *
  */
 public class RabbitAmqpListenerContainerFactory
-		extends BaseRabbitListenerContainerFactory<RabbitAmqpListenerContainer> {
+		extends BaseRabbitListenerContainerFactory<RabbitAmqpListenerContainer>
+		implements ApplicationEventPublisherAware {
 
 	private final AmqpConnectionFactory connectionFactory;
 
@@ -60,12 +64,21 @@ public class RabbitAmqpListenerContainerFactory
 
 	private @Nullable MessageConverter messageConverter;
 
+	private @Nullable ErrorHandler errorHandler;
+
+	private @Nullable ApplicationEventPublisher applicationEventPublisher;
+
 	/**
 	 * Construct an instance using the provided {@link AmqpConnectionFactory}.
 	 * @param connectionFactory the connection.
 	 */
 	public RabbitAmqpListenerContainerFactory(AmqpConnectionFactory connectionFactory) {
 		this.connectionFactory = connectionFactory;
+	}
+
+	@Override
+	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+		this.applicationEventPublisher = applicationEventPublisher;
 	}
 
 	/**
@@ -130,6 +143,16 @@ public class RabbitAmqpListenerContainerFactory
 		this.messageConverter = messageConverter;
 	}
 
+	/**
+	 * Set the error handler for the container.
+	 * @param errorHandler The error handler.
+	 * @since 4.0.3
+	 * @see RabbitAmqpListenerContainer#setErrorHandler(ErrorHandler)
+	 */
+	public void setErrorHandler(ErrorHandler errorHandler) {
+		this.errorHandler = errorHandler;
+	}
+
 	@Override
 	public RabbitAmqpListenerContainer createListenerContainer(@Nullable RabbitListenerEndpoint endpoint) {
 		if (endpoint instanceof MethodRabbitListenerEndpoint methodRabbitListenerEndpoint) {
@@ -152,7 +175,9 @@ public class RabbitAmqpListenerContainerFactory
 				.acceptIfNotNull(this.afterReceivePostProcessors, container::setAfterReceivePostProcessors)
 				.acceptIfNotNull(this.batchSize, container::setBatchSize)
 				.acceptIfNotNull(this.batchReceiveTimeout, container::setBatchReceiveTimeout)
-				.acceptIfNotNull(this.taskScheduler, container::setTaskScheduler);
+				.acceptIfNotNull(this.taskScheduler, container::setTaskScheduler)
+				.acceptIfNotNull(this.errorHandler, container::setErrorHandler)
+				.acceptIfNotNull(this.applicationEventPublisher, container::setApplicationEventPublisher);
 
 		applyCommonOverrides(endpoint, container);
 
