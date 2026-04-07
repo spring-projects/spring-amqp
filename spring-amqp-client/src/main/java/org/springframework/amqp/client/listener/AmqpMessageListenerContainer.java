@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -283,8 +284,13 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 				for (String queue : this.queues) {
 					for (int i = 0; i < this.consumersPerQueue; i++) {
 						try {
+							Future<Receiver> openFuture =
+									this.connectionFactory.getConnection()
+											.openReceiver(queue, receiverOptions)
+											.openFuture();
 							ClientReceiver receiver =
-									(ClientReceiver) connection.openReceiver(queue, receiverOptions)
+									(ClientReceiver) ProtonUtils.toSupplier(openFuture, receiverOptions.openTimeout())
+											.get()
 											.addCredit(this.initialCredits);
 							AmqpConsumer consumer = new AmqpConsumer(receiver);
 							this.queueToConsumers.add(queue, consumer);

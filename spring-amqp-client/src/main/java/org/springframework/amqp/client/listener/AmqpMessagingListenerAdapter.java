@@ -21,9 +21,12 @@ import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
+import org.apache.qpid.protonj2.client.ConnectionOptions;
 import org.apache.qpid.protonj2.client.Delivery;
 import org.apache.qpid.protonj2.client.DeliveryState;
+import org.apache.qpid.protonj2.client.Sender;
 import org.apache.qpid.protonj2.client.Tracker;
 import org.apache.qpid.protonj2.client.exceptions.ClientException;
 import org.jspecify.annotations.Nullable;
@@ -566,10 +569,14 @@ public class AmqpMessagingListenerAdapter implements AcknowledgingProtonDelivery
 
 	private static void sendResponse(Delivery delivery, String replyTo, Message response) throws Exception {
 		org.apache.qpid.protonj2.client.Message<?> protonMessage = ProtonUtils.toProtonMessage(response);
-		Tracker tracker =
+		Future<Sender> openFuture =
 				delivery.receiver()
 						.connection()
 						.openSender(replyTo)
+						.openFuture();
+		Tracker tracker =
+				ProtonUtils.toSupplier(openFuture, ConnectionOptions.DEFAULT_OPEN_TIMEOUT)
+						.get()
 						.send(protonMessage)
 						.settlementFuture()
 						.get();

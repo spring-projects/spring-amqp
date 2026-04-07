@@ -160,7 +160,8 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 							this.connectionFactory
 									.getConnection()
 									.openAnonymousSender(this.senderOptions);
-					this.sender = senderToReturn;
+					Future<Sender> openFuture = senderToReturn.openFuture();
+					this.sender = ProtonUtils.toSupplier(openFuture, this.senderOptions.openTimeout()).get();
 				}
 			}
 			finally {
@@ -172,9 +173,12 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 
 	private <M extends Message<?>> CompletableFuture<M> receive(String fromAddress, @Nullable Duration receiveTimeout) {
 		try {
-			Receiver receiver =
+			Future<Receiver> openFuture =
 					this.connectionFactory.getConnection()
 							.openReceiver(fromAddress, this.receiverOptions)
+							.openFuture();
+			Receiver receiver =
+					ProtonUtils.toSupplier(openFuture, this.receiverOptions.openTimeout()).get()
 							// Since this 'Receiver' is volatile and only about one message to consume,
 							// therefore only one credit is permitted without renewing.
 							.addCredit(1);
