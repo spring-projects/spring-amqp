@@ -46,7 +46,6 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.handler.annotation.support.PayloadMethodArgumentResolver;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 import org.springframework.util.Assert;
-import org.springframework.util.ReflectionUtils;
 import org.springframework.validation.Validator;
 
 /**
@@ -206,7 +205,7 @@ public class DelegatingInvocableHandler {
 		if (handler == null) {
 			handler = findHandlerForPayload(payloadClass);
 			if (handler == null) {
-				ReflectionUtils.rethrowRuntimeException(
+				throw new IllegalStateException(
 						new NoSuchMethodException("No listener method found in " + this.bean.getClass().getName()
 								+ " for " + payloadClass));
 			}
