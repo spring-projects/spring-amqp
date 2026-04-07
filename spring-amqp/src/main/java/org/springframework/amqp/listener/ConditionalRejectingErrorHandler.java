@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.listener;
 
-import java.lang.reflect.UndeclaredThrowableException;
 import java.util.List;
 import java.util.Map;
 
