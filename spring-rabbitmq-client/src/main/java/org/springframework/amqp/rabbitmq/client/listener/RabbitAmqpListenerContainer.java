@@ -43,6 +43,9 @@ import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.listener.ConditionalRejectingErrorHandler;
 import org.springframework.amqp.listener.ContainerUtils;
+import org.springframework.amqp.listener.FatalExceptionStrategy;
+import org.springframework.amqp.rabbit.listener.ListenerContainerConsumerFailedEvent;
+import org.springframework.amqp.rabbit.listener.ListenerContainerConsumerTerminatedEvent;
 import org.springframework.amqp.rabbitmq.client.AmqpConnectionFactory;
 import org.springframework.amqp.rabbitmq.client.RabbitAmqpUtils;
 import org.springframework.amqp.support.postprocessor.MessagePostProcessorUtils;
@@ -50,6 +53,9 @@ import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.core.log.LogAccessor;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -69,7 +75,8 @@ import org.springframework.util.ObjectUtils;
  */
 @SuppressWarnings("removal")
 public class RabbitAmqpListenerContainer
-		implements org.springframework.amqp.rabbit.listener.MessageListenerContainer, BeanNameAware, DisposableBean {
+		implements org.springframework.amqp.rabbit.listener.MessageListenerContainer, BeanNameAware, DisposableBean,
+		ApplicationEventPublisherAware {
 
 	private static final LogAccessor LOG = new LogAccessor(LogFactory.getLog(RabbitAmqpListenerContainer.class));
 
@@ -78,6 +85,11 @@ public class RabbitAmqpListenerContainer
 	private final AmqpConnectionFactory connectionFactory;
 
 	private final MultiValueMap<String, Consumer> queueToConsumers = new LinkedMultiValueMap<>();
+
+	private final FatalExceptionStrategy exceptionStrategy =
+			new ConditionalRejectingErrorHandler.DefaultExceptionStrategy();
+
+	private @Nullable ApplicationEventPublisher applicationEventPublisher;
 
 	private String @Nullable [] queues;
 
@@ -127,6 +139,11 @@ public class RabbitAmqpListenerContainer
 	 */
 	public RabbitAmqpListenerContainer(AmqpConnectionFactory connectionFactory) {
 		this.connectionFactory = connectionFactory;
+	}
+
+	@Override
+	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+		this.applicationEventPublisher = applicationEventPublisher;
 	}
 
 	@Override
@@ -446,6 +463,12 @@ public class RabbitAmqpListenerContainer
 	}
 
 	private boolean handleSpecialErrors(Exception ex, Consumer.Context context) {
+		if (this.exceptionStrategy.isFatal(ex)) {
+			stop();
+			context.requeue();
+			publishConsumerFailedEvent("Consumer received fatal exception during processing", true, ex);
+			return true;
+		}
 		if (ContainerUtils.shouldRequeue(this.defaultRequeue, ex, LOG.getLog())) {
 			context.requeue();
 			return true;
@@ -459,6 +482,16 @@ public class RabbitAmqpListenerContainer
 			return true;
 		}
 		return false;
+	}
+
+	private void publishConsumerFailedEvent(@Nullable String reason, boolean fatal, @Nullable Throwable t) {
+		if (this.applicationEventPublisher != null) {
+			ApplicationEvent event =
+					t == null
+							? new ListenerContainerConsumerTerminatedEvent(this, reason) :
+							new ListenerContainerConsumerFailedEvent(this, reason, t, fatal);
+			this.applicationEventPublisher.publishEvent(event);
+		}
 	}
 
 	@Override

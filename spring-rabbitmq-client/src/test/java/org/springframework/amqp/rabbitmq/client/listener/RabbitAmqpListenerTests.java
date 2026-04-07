@@ -34,12 +34,15 @@ import org.springframework.amqp.core.AmqpAcknowledgment;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListenerContainer;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
+import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.annotation.RabbitListenerAnnotationBeanPostProcessor;
+import org.springframework.amqp.rabbit.listener.ListenerContainerConsumerFailedEvent;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbitmq.client.AmqpConnectionFactory;
 import org.springframework.amqp.rabbitmq.client.RabbitAmqpTestBase;
@@ -49,14 +52,17 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 /**
  * @author Artem Bilan
@@ -182,6 +188,16 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 		CompletableFuture<Object> replyFuture = this.template.receiveAndConvert("q4");
 		assertThat(replyFuture).succeedsWithin(20, TimeUnit.SECONDS)
 				.isEqualTo("Reply for 'test data4' via 'e1' and 'k4'");
+	}
+
+	@Test
+	void noSuchMethodErrorStopsContainer(@Autowired NoSuchMethodService noSuchMethodService)
+			throws InterruptedException {
+
+		this.template.convertAndSend("no.such.method", "test data");
+		MessageListenerContainer container = this.rabbitListenerEndpointRegistry.getListenerContainer("no.such.method");
+		assertThat(noSuchMethodService.eventLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		await().until(() -> !container.isRunning());
 	}
 
 	@Configuration
@@ -316,6 +332,44 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 		@SendTo("e1/k4")
 		String replyViaSendTo(String data) {
 			return "Reply for '%s' via 'e1' and 'k4'".formatted(data);
+		}
+
+		@Bean
+		public RabbitAmqpListenerContainerFactory noSuchMethodListenerContainerFactory(
+				AmqpConnectionFactory connectionFactory) {
+
+			RabbitAmqpListenerContainerFactory rabbitAmqpListenerContainerFactory =
+					new RabbitAmqpListenerContainerFactory(connectionFactory);
+			rabbitAmqpListenerContainerFactory.setErrorHandler(ReflectionUtils::rethrowRuntimeException);
+			return rabbitAmqpListenerContainerFactory;
+		}
+
+		@Bean
+		Queue noSuchMethodQueue() {
+			return new Queue("no.such.method");
+		}
+
+		@Bean
+		NoSuchMethodService noSuchMethodService() {
+			return new NoSuchMethodService();
+		}
+
+	}
+
+	@RabbitListener(id = "no.such.method", queues = "no.such.method",
+			containerFactory = "noSuchMethodListenerContainerFactory")
+	static class NoSuchMethodService implements ApplicationListener<ListenerContainerConsumerFailedEvent> {
+
+		CountDownLatch eventLatch = new CountDownLatch(1);
+
+		@RabbitHandler
+		void notReachableHandle(Message message) {
+			throw new RuntimeException("Should not be thrown");
+		}
+
+		@Override
+		public void onApplicationEvent(ListenerContainerConsumerFailedEvent event) {
+			this.eventLatch.countDown();
 		}
 
 	}
