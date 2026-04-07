@@ -141,6 +141,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ErrorHandler;
+import org.springframework.util.ReflectionUtils;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 import org.springframework.validation.annotation.Validated;
@@ -2073,6 +2074,14 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		}
 
 		@Bean
+		public SimpleRabbitListenerContainerFactory noSuchMethodListenerContainerFactory() {
+			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+			factory.setConnectionFactory(rabbitConnectionFactory());
+			factory.setErrorHandler(ReflectionUtils::rethrowRuntimeException);
+			return factory;
+		}
+
+		@Bean
 		NoSuchMethodService noSuchMethodService() {
 			return new NoSuchMethodService();
 		}
@@ -2509,7 +2518,8 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		}
 	}
 
-	@RabbitListener(id = "no.such.method", queues = "no.such.method")
+	@RabbitListener(id = "no.such.method", queues = "no.such.method",
+			containerFactory = "noSuchMethodListenerContainerFactory")
 	static class NoSuchMethodService implements ApplicationListener<ListenerContainerConsumerFailedEvent> {
 
 		CountDownLatch eventLatch = new CountDownLatch(1);
