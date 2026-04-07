@@ -25,6 +25,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.aopalliance.aop.Advice;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.qpid.protonj2.client.Delivery;
 import org.apache.qpid.protonj2.client.ReconnectOptions;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -34,6 +36,7 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.amqp.client.AmqpClient;
 import org.springframework.amqp.client.AmqpConnectionFactory;
+import org.springframework.amqp.client.EnableAmqpTests;
 import org.springframework.amqp.client.SingleAmqpConnectionFactory;
 import org.springframework.amqp.client.annotation.AmqpListener;
 import org.springframework.amqp.client.config.AmqpDefaultConfiguration;
@@ -79,6 +82,8 @@ import static org.mockito.Mockito.mockingDetails;
 @SpringJUnitConfig
 @DirtiesContext
 class AmqpListenerAnnotationTests extends AbstractTestContainerTests {
+
+	static final Log LOG = LogFactory.getLog(AmqpListenerAnnotationTests.class);
 
 	static final String TEST_QUEUE1 = "/queues/listener_annotation1";
 
@@ -198,18 +203,24 @@ class AmqpListenerAnnotationTests extends AbstractTestContainerTests {
 
 		DataIn dataIn = new DataIn("test_data");
 
-		this.amqpClient.to(TEST_QUEUE2)
-				.body(dataIn)
-				.replyTo(TEST_REPLY_TO)
-				.send();
+		try {
+			this.amqpClient.to(TEST_QUEUE2)
+					.body(dataIn)
+					.replyTo(TEST_REPLY_TO)
+					.send();
 
-		CompletableFuture<DataOut> dataOut =
-				this.amqpClient.from(TEST_REPLY_TO)
-						.receiveAndConvert();
+			CompletableFuture<DataOut> dataOut =
+					this.amqpClient.from(TEST_REPLY_TO)
+							.receiveAndConvert();
 
-		assertThat(dataOut)
-				.succeedsWithin(Duration.ofSeconds(30))
-				.isEqualTo(new DataOut(dataIn.data + "_out"));
+			assertThat(dataOut)
+					.succeedsWithin(Duration.ofSeconds(30))
+					.isEqualTo(new DataOut(dataIn.data + "_out"));
+		}
+		catch (Exception e) {
+			LOG.error("LOGS FROM RABBITMQ CONTAINER: " + RABBITMQ.getLogs());
+			throw e;
+		}
 	}
 
 	@Configuration(proxyBeanMethods = false)
