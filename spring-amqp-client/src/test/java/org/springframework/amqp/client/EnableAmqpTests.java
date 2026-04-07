@@ -71,7 +71,7 @@ import static org.mockito.Mockito.mockingDetails;
  * @since 4.1
  */
 @SpringJUnitConfig(EnableAmqpTests.TestConfig.class)
-@DirtiesContext
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class EnableAmqpTests extends AbstractTestContainerTests implements TestWatcher {
 
 	static final Log LOG = LogFactory.getLog(EnableAmqpTests.class);
