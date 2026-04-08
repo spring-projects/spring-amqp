@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.listener.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
@@ -31,20 +32,20 @@ import org.springframework.amqp.rabbit.connection.ShutDownChannelListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
-import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextException;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.retry.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.awaitility.Awaitility.await;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.6
  *
  */
@@ -57,28 +58,20 @@ public class ContainerInitializationTests {
 
 	@Test
 	public void testNoAdmin() {
-		try {
-			AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Config0.class);
-			context.close();
-			fail("expected initialization failure");
-		}
-		catch (ApplicationContextException e) {
-			assertThat(e.getCause().getCause()).isInstanceOf(IllegalStateException.class);
-			assertThat(e.getCause().getMessage()).contains("When 'mismatchedQueuesFatal' is 'true', there must be "
-					+ "exactly one AmqpAdmin in the context or you must inject one into this container; found: 0");
-		}
+		assertThatExceptionOfType(ApplicationContextException.class)
+				.isThrownBy(() -> new AnnotationConfigApplicationContext(Config0.class))
+				.havingCause()
+				.withMessageContaining("When 'mismatchedQueuesFatal' is 'true', there must be "
+						+ "exactly one AmqpAdmin in the context or you must inject one into this container; found: 0")
+				.havingCause()
+				.isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test
 	public void testMismatchedQueue() {
-		try {
-			AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Config1.class);
-			context.close();
-			fail("expected initialization failure");
-		}
-		catch (ApplicationContextException e) {
-			assertThat(e.getCause()).isInstanceOf(FatalListenerStartupException.class);
-		}
+		assertThatExceptionOfType(ApplicationContextException.class)
+				.isThrownBy(() -> new AnnotationConfigApplicationContext(Config1.class))
+				.withCauseInstanceOf(FatalListenerStartupException.class);
 	}
 
 	@Test
@@ -170,7 +163,7 @@ public class ContainerInitializationTests {
 		@Bean
 		public RabbitAdmin admin() {
 			RabbitAdmin admin = new RabbitAdmin(connectionFactory());
-			admin.setRetryTemplate((RetryTemplate) null);
+			admin.setRetryTemplate(null);
 			return admin;
 		}
 

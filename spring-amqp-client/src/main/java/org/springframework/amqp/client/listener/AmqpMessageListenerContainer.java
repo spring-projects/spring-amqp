@@ -29,7 +29,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.aopalliance.aop.Advice;
-import org.apache.qpid.protonj2.client.Connection;
 import org.apache.qpid.protonj2.client.Delivery;
 import org.apache.qpid.protonj2.client.Receiver;
 import org.apache.qpid.protonj2.client.ReceiverOptions;
@@ -273,7 +272,6 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 		this.lock.lock();
 		try {
 			if (this.queueToConsumers.isEmpty()) {
-				Connection connection = this.connectionFactory.getConnection();
 				ReceiverOptions receiverOptions =
 						new ReceiverOptions()
 								// Since 'AmqpConsumer' implements pause/resume logic,

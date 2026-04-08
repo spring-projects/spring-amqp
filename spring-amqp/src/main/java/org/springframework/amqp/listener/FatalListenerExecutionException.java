@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-present the original author or authors.
+ * Copyright 2026-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,26 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.listener.exception;
+package org.springframework.amqp.listener;
+
+import java.io.Serial;
+
+import org.springframework.amqp.AmqpException;
 
 /**
  * Exception to be thrown when the execution of a listener method failed with an
- * irrecoverable problem.
+ * irrecoverable problem as an alternative to the {@link org.springframework.amqp.AmqpRejectAndDontRequeueException}.
+ * The listener container must requeue the message and stop its execution in case of this error.
  *
  * @author Dave Syer
- * @see org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter
+ * @author Artem Bilan
+ *
+ * @since 4.1
  */
-@SuppressWarnings("serial")
-@Deprecated(since = "4.1", forRemoval = true)
-public class FatalListenerExecutionException extends org.springframework.amqp.listener.FatalListenerExecutionException {
+public class FatalListenerExecutionException extends AmqpException {
+
+	@Serial
+	private static final long serialVersionUID = 1L;
 
 	/**
 	 * Constructor for ListenerExecutionFailedException.

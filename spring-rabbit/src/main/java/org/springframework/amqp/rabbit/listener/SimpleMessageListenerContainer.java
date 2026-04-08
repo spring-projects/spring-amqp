@@ -48,6 +48,8 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.listener.FatalListenerExecutionException;
+import org.springframework.amqp.listener.FatalListenerStartupException;
 import org.springframework.amqp.listener.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.batch.BatchingStrategy;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -58,8 +60,6 @@ import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.RoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SimpleResourceHolder;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareBatchMessageListener;
-import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
-import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.ListenerContainerAware;
@@ -1456,7 +1456,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 
-		private void mainLoop() throws Exception { // NOSONAR Exception
+		private void mainLoop() throws Exception {
 			try {
 				if (SimpleMessageListenerContainer.this.stopNow.get()) {
 					this.consumer.forceCloseAndClearQueue();

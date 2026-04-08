@@ -63,7 +63,6 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
-import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.Delivery;
@@ -619,7 +618,7 @@ public class BlockingQueueConsumer {
 		}
 	}
 
-	@SuppressWarnings("NullAway") // Dataflow analysis limitation
+	@SuppressWarnings({ "NullAway", "removal" }) // Dataflow analysis limitation
 	public void start() throws AmqpException {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Starting consumer " + this);
@@ -634,7 +633,8 @@ public class BlockingQueueConsumer {
 			ClosingRecoveryListener.addRecoveryListenerIfNecessary(this.channel);
 		}
 		catch (AmqpAuthenticationException e) {
-			throw new FatalListenerStartupException("Authentication failure", e);
+			throw new org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException(
+					"Authentication failure", e);
 		}
 		this.deliveryTags.clear();
 		this.activeObjectCounter.add(this);
@@ -748,6 +748,7 @@ public class BlockingQueueConsumer {
 		}
 	}
 
+	@SuppressWarnings("removal")
 	private void attemptPassiveDeclarations() {
 		DeclarationException failures = null;
 		for (String queueName : this.queues) {
@@ -764,7 +765,8 @@ public class BlockingQueueConsumer {
 					catch (TimeoutException e1) {
 						// Ignore
 					}
-					throw new FatalListenerStartupException("Illegal Argument on Queue Declaration", e);
+					throw new org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException(
+							"Illegal Argument on Queue Declaration", e);
 				}
 			}
 			catch (IOException e) {

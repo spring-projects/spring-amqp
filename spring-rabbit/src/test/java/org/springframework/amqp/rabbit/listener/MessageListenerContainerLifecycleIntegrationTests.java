@@ -33,13 +33,13 @@ import org.mockito.Mockito;
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.listener.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
-import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
@@ -123,7 +123,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		}
 	}
 
-	private RabbitTemplate createTemplate(int concurrentConsumers) {
+	static RabbitTemplate createTemplate(int concurrentConsumers) {
 		RabbitTemplate template = new RabbitTemplate();
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setHost("localhost");
@@ -194,13 +194,14 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		cf.setAutomaticRecoveryEnabled(false);
 		cf.setUsername("foo");
 		final CachingConnectionFactory connectionFactory = new CachingConnectionFactory(cf);
-		assertThatExceptionOfType(AmqpIllegalStateException.class).isThrownBy(() ->
+		assertThatExceptionOfType(AmqpIllegalStateException.class)
+				.isThrownBy(() ->
 						doTest(MessageCount.LOW, Concurrency.LOW, TransactionMode.OFF, template, connectionFactory))
 				.withCauseExactlyInstanceOf(FatalListenerStartupException.class);
 		((DisposableBean) template.getConnectionFactory()).destroy();
 	}
 
-	private void doTest(MessageCount level, Concurrency concurrency, TransactionMode transactionMode) throws Exception {
+	static void doTest(MessageCount level, Concurrency concurrency, TransactionMode transactionMode) throws Exception {
 		RabbitTemplate template = createTemplate(concurrency.value);
 		doTest(level, concurrency, transactionMode, template, template.getConnectionFactory());
 	}
@@ -209,7 +210,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 	 * If transactionMode is OFF, the undelivered messages will be lost (ack=NONE). If it is
 	 * ON, PREFETCH, or PREFETCH_NO_TX, ack=AUTO, so we should not lose any messages.
 	 */
-	private void doTest(MessageCount level, Concurrency concurrency, TransactionMode transactionMode,
+	static void doTest(MessageCount level, Concurrency concurrency, TransactionMode transactionMode,
 			RabbitTemplate template, ConnectionFactory connectionFactory) throws Exception {
 
 		int messageCount = level.value();

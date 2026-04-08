@@ -16,8 +16,6 @@
 
 package org.springframework.amqp.rabbit.listener.exception;
 
-import org.springframework.amqp.AmqpException;
-
 /**
  * Exception to be thrown when the execution of a listener method failed on startup.
  *
@@ -25,7 +23,8 @@ import org.springframework.amqp.AmqpException;
  * @see org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter
  */
 @SuppressWarnings("serial")
-public class FatalListenerStartupException extends AmqpException {
+@Deprecated(since = "4.1", forRemoval = true)
+public class FatalListenerStartupException extends org.springframework.amqp.listener.FatalListenerStartupException {
 
 	/**
 	 * Constructor for ListenerExecutionFailedException.

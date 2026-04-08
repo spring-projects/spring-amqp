@@ -44,6 +44,7 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.listener.ConditionalRejectingErrorHandler;
 import org.springframework.amqp.listener.ContainerUtils;
 import org.springframework.amqp.listener.FatalExceptionStrategy;
+import org.springframework.amqp.listener.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.listener.ListenerContainerConsumerFailedEvent;
 import org.springframework.amqp.rabbit.listener.ListenerContainerConsumerTerminatedEvent;
 import org.springframework.amqp.rabbitmq.client.AmqpConnectionFactory;
@@ -463,7 +464,7 @@ public class RabbitAmqpListenerContainer
 	}
 
 	private boolean handleSpecialErrors(Exception ex, Consumer.Context context) {
-		if (this.exceptionStrategy.isFatal(ex)) {
+		if (ex instanceof FatalListenerExecutionException || this.exceptionStrategy.isFatal(ex)) {
 			stop();
 			context.requeue();
 			publishConsumerFailedEvent("Consumer received fatal exception during processing", true, ex);

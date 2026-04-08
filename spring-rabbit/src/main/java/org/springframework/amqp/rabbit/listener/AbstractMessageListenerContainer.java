@@ -68,8 +68,6 @@ import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.RoutingConnectionFactory;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareBatchMessageListener;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
-import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
-import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservation;
@@ -1570,7 +1568,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	private void checkStatefulRetry(RuntimeException ex, Message message) {
 		if (message.getMessageProperties().isFinalRetryForMessageWithNoId()) {
 			if (this.statefulRetryFatalWithNullMessageId) {
-				throw new FatalListenerExecutionException(
+				throw new org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException(
 						"Illegal null id in message. Failed to manage retry for message: " + message, ex);
 			}
 			else {
@@ -1611,10 +1609,12 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * @param data the received Rabbit Message or List of Message.
 	 * @see #setMessageListener(MessageListener)
 	 */
+	@SuppressWarnings("removal")
 	protected void actualInvokeListener(Channel channel, Object data) {
 		MessageListener listener = getMessageListener();
 		if (listener == null) {
-			throw new FatalListenerStartupException("listener cannot be null", new NullPointerException());
+			throw new org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException(
+					"listener cannot be null", new NullPointerException());
 		}
 		if (listener instanceof ChannelAwareMessageListener chaml) {
 			doInvokeListener(chaml, channel, data);
@@ -1859,6 +1859,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		}
 	}
 
+	@SuppressWarnings("removal")
 	protected void checkMismatchedQueues() {
 		if (this.mismatchedQueuesFatal && this.amqpAdmin != null) {
 			try {
@@ -1869,7 +1870,8 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 			}
 			catch (AmqpIOException e) {
 				if (RabbitUtils.isMismatchedQueueArgs(e)) {
-					throw new FatalListenerStartupException("Mismatched queues", e);
+					throw new org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException(
+							"Mismatched queues", e);
 				}
 				else {
 					logger.info("Failed to get connection during start(): " + e);
@@ -1923,6 +1925,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * the declarations are always attempted during restart so the listener will
 	 * fail with a fatal error if mismatches occur.
 	 */
+	@SuppressWarnings("removal")
 	protected void redeclareElementsIfNecessary() {
 		this.lifecycleLock.lock();
 		try {
@@ -1934,7 +1937,8 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 				}
 				catch (Exception e) {
 					if (RabbitUtils.isMismatchedQueueArgs(e)) {
-						throw new FatalListenerStartupException("Mismatched queues", e);
+						throw new org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException(
+								"Mismatched queues", e);
 					}
 					if (this.logDeclarationException.getAndSet(false)) {
 						this.logger.error("Failed to check/redeclare auto-delete queue(s).", e);

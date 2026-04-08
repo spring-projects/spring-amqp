@@ -38,6 +38,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListenerContainer;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.listener.ConditionalRejectingErrorHandler;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -59,7 +60,6 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.MultiValueMap;
-import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -340,7 +340,9 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 
 			RabbitAmqpListenerContainerFactory rabbitAmqpListenerContainerFactory =
 					new RabbitAmqpListenerContainerFactory(connectionFactory);
-			rabbitAmqpListenerContainerFactory.setErrorHandler(ReflectionUtils::rethrowRuntimeException);
+			ConditionalRejectingErrorHandler errorHandler = new ConditionalRejectingErrorHandler();
+			errorHandler.setStopListenerOnFatal(true);
+			rabbitAmqpListenerContainerFactory.setErrorHandler(errorHandler);
 			return rabbitAmqpListenerContainerFactory;
 		}
 

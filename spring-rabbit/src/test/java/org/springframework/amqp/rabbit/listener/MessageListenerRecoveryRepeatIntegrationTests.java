@@ -35,6 +35,7 @@ import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.listener.ConditionalRejectingErrorHandler;
+import org.springframework.amqp.listener.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -43,7 +44,6 @@ import org.springframework.amqp.rabbit.junit.LogLevels;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
-import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.beans.factory.DisposableBean;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,16 +57,16 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  */
 @RabbitAvailable(queues = MessageListenerRecoveryRepeatIntegrationTests.TEST_QUEUE, purgeAfterEach = false)
-@LogLevels(level = "ERROR", classes = { RabbitTemplate.class,
+@LogLevels(level = "ERROR", classes = {RabbitTemplate.class,
 		ConditionalRejectingErrorHandler.class,
 		SimpleMessageListenerContainer.class, BlockingQueueConsumer.class,
-		MessageListenerRecoveryRepeatIntegrationTests.class })
+		MessageListenerRecoveryRepeatIntegrationTests.class})
 @TestInstance(Lifecycle.PER_CLASS)
 public class MessageListenerRecoveryRepeatIntegrationTests {
 
 	public static final String TEST_QUEUE = "test.queue.MessageListenerRecoveryRepeatIntegrationTests";
 
-	private static Log logger = LogFactory.getLog(MessageListenerRecoveryRepeatIntegrationTests.class);
+	private static final Log logger = LogFactory.getLog(MessageListenerRecoveryRepeatIntegrationTests.class);
 
 	private final Queue queue = new Queue(TEST_QUEUE);
 
@@ -176,7 +176,7 @@ public class MessageListenerRecoveryRepeatIntegrationTests {
 		}
 
 		@Override
-		public void onMessage(Message message, Channel channel) throws Exception {
+		public void onMessage(Message message, Channel channel) {
 			String value = new String(message.getBody());
 			logger.info("Receiving: " + value);
 			if (failed.compareAndSet(false, true)) {
@@ -189,5 +189,7 @@ public class MessageListenerRecoveryRepeatIntegrationTests {
 				latch.countDown();
 			}
 		}
+
 	}
+
 }

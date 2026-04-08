@@ -157,8 +157,7 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 				senderToReturn = this.sender;
 				if (senderToReturn == null) {
 					senderToReturn =
-							this.connectionFactory
-									.getConnection()
+							this.connectionFactory.getConnection()
 									.openAnonymousSender(this.senderOptions);
 					Future<Sender> openFuture = senderToReturn.openFuture();
 					this.sender = ProtonUtils.toSupplier(openFuture, this.senderOptions.openTimeout()).get();

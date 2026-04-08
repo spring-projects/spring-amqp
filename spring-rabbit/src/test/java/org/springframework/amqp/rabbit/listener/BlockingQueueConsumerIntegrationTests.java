@@ -26,12 +26,12 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.listener.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.rabbit.junit.LogLevels;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
-import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 
@@ -43,6 +43,8 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  * @author Gunnar Hillert
  * @author Gary Russell
  * @author Ngoc Nhan
+ * @author Artem Bilan
+ *
  * @since 1.0
  *
  */
@@ -57,9 +59,9 @@ public class BlockingQueueConsumerIntegrationTests {
 
 	public static final String QUEUE2_NAME = "test.queue2.BlockingQueueConsumerIntegrationTests";
 
-	private static Queue queue1 = new Queue(QUEUE1_NAME);
+	private static final Queue queue1 = new Queue(QUEUE1_NAME);
 
-	private static Queue queue2 = new Queue(QUEUE2_NAME);
+	private static final Queue queue2 = new Queue(QUEUE2_NAME);
 
 	@Test
 	public void testTransactionalLowLevel() throws Exception {

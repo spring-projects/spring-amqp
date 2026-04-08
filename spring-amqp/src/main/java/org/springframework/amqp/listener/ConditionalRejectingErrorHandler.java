@@ -47,6 +47,11 @@ import org.springframework.util.ErrorHandler;
  * <p>
  * The exception will not be wrapped if the {@code cause} chain already contains an
  * {@link AmqpRejectAndDontRequeueException}.
+ * <p>
+ * If {@link #setStopListenerOnFatal(boolean)} is true, a {@link FatalListenerExecutionException}
+ * is thrown instead of an {@link AmqpRejectAndDontRequeueException}.
+ * The listener container must be stopped due to such a fatal state,
+ * and the message requeued for other consumers on the destination.
  *
  * @author Gary Russell
  * @author Ngoc Nhan
@@ -64,6 +69,8 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 	private boolean discardFatalsWithXDeath = true;
 
 	private boolean rejectManual = true;
+
+	private boolean stopListenerOnFatal;
 
 	/**
 	 * Create a handler with the {@link ConditionalRejectingErrorHandler.DefaultExceptionStrategy}.
@@ -125,10 +132,24 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 		return this.exceptionStrategy;
 	}
 
+	/**
+	 * Set to {@code true} to throw a {@link FatalListenerExecutionException} on fatal error
+	 * instead of a {@link AmqpRejectAndDontRequeueException}.
+	 * @param stopListenerOnFatal true to throw a {@link FatalListenerExecutionException}
+	 * @since 4.1
+	 */
+	public void setStopListenerOnFatal(boolean stopListenerOnFatal) {
+		this.stopListenerOnFatal = stopListenerOnFatal;
+	}
+
+	protected boolean isStopListenerOnFatal() {
+		return this.stopListenerOnFatal;
+	}
+
 	@Override
 	public void handleError(Throwable t) {
 		log(t);
-		if (!this.causeChainContainsARADRE(t) && this.exceptionStrategy.isFatal(t)) {
+		if (!causeChainContainsARADRE(t) && this.exceptionStrategy.isFatal(t)) {
 			if (this.discardFatalsWithXDeath && t instanceof ListenerExecutionFailedException lefe) {
 				Message failed = lefe.getFailedMessage();
 				if (failed != null) {
@@ -141,8 +162,15 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 					}
 				}
 			}
-			throw new AmqpRejectAndDontRequeueException("Error Handler converted exception to fatal", this.rejectManual,
-					t);
+
+			if (this.stopListenerOnFatal) {
+				throw new FatalListenerExecutionException(
+						"Fatal error for listener execution: container should be stopped", t);
+			}
+			else {
+				throw new AmqpRejectAndDontRequeueException("Error Handler converted exception to fatal",
+						this.rejectManual, t);
+			}
 		}
 	}
 
@@ -224,9 +252,8 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 		protected void logFatalException(ListenerExecutionFailedException exception, @Nullable Throwable cause) {
 			if (this.logger.isWarnEnabled()) {
 				this.logger.warn(
-						"Fatal message conversion error; message rejected; "
-								+ "it will be dropped or routed to a dead letter exchange, if so configured: "
-								+ exception.getFailedMessage());
+						"Fatal message conversion error; message will be reject or listener container stopped, " +
+								"if so configured: " + exception.getFailedMessage());
 			}
 		}
 
