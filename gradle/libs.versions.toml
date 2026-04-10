@@ -27,36 +27,35 @@ springVersion = "7.0.6"
 testcontainersVersion = "2.0.4"
 
 [libraries]
-apache-commons-pool2 = { module = "org.apache.commons:commons-pool2", version.ref = "commonsPoolVersion" }
-apache-httpcomponents-httpclient5 = { module = "org.apache.httpcomponents.client5:httpclient5", version.ref = "commonsHttpClientVersion" }
-apache-logging-log4j-bom = { module = "org.apache.logging.log4j:log4j-bom", version.ref = "log4jVersion" }
-ch-qos-logback = { module = "ch.qos.logback:logback-classic", version.ref = "logbackVersion" }
-com-fasterxml-jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jacksonBomVersion" }
-com-jayway-jsonpath = { module = "com.jayway.jsonpath:json-path", version.ref = "jaywayJsonPathVersion" }
-com-rabbitmq-amqp-client = { module = "com.rabbitmq:amqp-client", version.ref = "rabbitmqVersion" }
-com-rabbitmq-client-amqp = { module = "com.rabbitmq.client:amqp-client", version.ref = "rabbitmqAmqpClientVersion" }
-com-rabbitmq-stream-client = { module = "com.rabbitmq:stream-client", version.ref = "rabbitmqStreamVersion" }
-com-willowtreeapps-assertk = { module = "com.willowtreeapps.assertk:assertk-jvm", version.ref = "assertkVersion" }
-io-micrometer-bom = { module = "io.micrometer:micrometer-bom", version.ref = "micrometerVersion" }
-io-micrometer-docs-generator = { module = "io.micrometer:micrometer-docs-generator", version.ref = "micrometerDocsVersion" }
-io-micrometer-tracing-bom = { module = "io.micrometer:micrometer-tracing-bom", version.ref = "micrometerTracingVersion" }
-io-projectreactor-bom = { module = "io.projectreactor:reactor-bom", version.ref = "reactorVersion" }
-org-apache-qpid-protonj2-client = { module = "org.apache.qpid:protonj2-client", version.ref = "protonjVersion" }
-org-assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertjVersion" }
-org-awaitility = { module = "org.awaitility:awaitility", version.ref = "awaitilityVersion" }
-org-hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrestVersion" }
-org-hibernate-validator = { module = "org.hibernate.validator:hibernate-validator", version.ref = "hibernateValidationVersion" }
-org-jetbrains-kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor", version.ref = "kotlinCoroutinesVersion" }
-org-junit-bom = { module = "org.junit:junit-bom", version.ref = "junitJupiterVersion" }
-org-mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockitoVersion" }
-org-mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter", version.ref = "mockitoVersion" }
+assertj = { module = "org.assertj:assertj-core", version.ref = "assertjVersion" }
+assertk = { module = "com.willowtreeapps.assertk:assertk-jvm", version.ref = "assertkVersion" }
+awaitility = { module = "org.awaitility:awaitility", version.ref = "awaitilityVersion" }
+commons-pool2 = { module = "org.apache.commons:commons-pool2", version.ref = "commonsPoolVersion" }
+fasterxml-jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jacksonBomVersion" }
+hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrestVersion" }
+hibernate-validator = { module = "org.hibernate.validator:hibernate-validator", version.ref = "hibernateValidationVersion" }
+httpclient5 = { module = "org.apache.httpcomponents.client5:httpclient5", version.ref = "commonsHttpClientVersion" }
+jsonpath = { module = "com.jayway.jsonpath:json-path", version.ref = "jaywayJsonPathVersion" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junitJupiterVersion" }
+kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor", version.ref = "kotlinCoroutinesVersion" }
+log4j-bom = { module = "org.apache.logging.log4j:log4j-bom", version.ref = "log4jVersion" }
+logback = { module = "ch.qos.logback:logback-classic", version.ref = "logbackVersion" }
+micrometer-bom = { module = "io.micrometer:micrometer-bom", version.ref = "micrometerVersion" }
+micrometer-docs-generator = { module = "io.micrometer:micrometer-docs-generator", version.ref = "micrometerDocsVersion" }
+micrometer-tracing-bom = { module = "io.micrometer:micrometer-tracing-bom", version.ref = "micrometerTracingVersion" }
+mockito-bom = { module = "org.mockito:mockito-bom", version.ref = "mockitoVersion" }
+qpid-protonj2-client = { module = "org.apache.qpid:protonj2-client", version.ref = "protonjVersion" }
+rabbitmq-amqp-client = { module = "com.rabbitmq:amqp-client", version.ref = "rabbitmqVersion" }
+rabbitmq-client-amqp = { module = "com.rabbitmq.client:amqp-client", version.ref = "rabbitmqAmqpClientVersion" }
+rabbitmq-stream-client = { module = "com.rabbitmq:stream-client", version.ref = "rabbitmqStreamVersion" }
+reactor-bom = { module = "io.projectreactor:reactor-bom", version.ref = "reactorVersion" }
 spring-data-bom = { module = "org.springframework.data:spring-data-bom", version.ref = "springDataVersion" }
 spring-framework-bom = { module = "org.springframework:spring-framework-bom", version.ref = "springVersion" }
 testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", version.ref = "testcontainersVersion" }
 tools-jackson-bom = { module = "tools.jackson:jackson-bom", version.ref = "jackson3Version" }
 
 [plugins]
-antora = { id = "org.antora", version = "1.0.0" }
-io-spring-antora-generate-yml = { id = "io.spring.antora.generate-antora-yml", version = "0.0.1" }
 aggregate-javadoc = { id = "io.freefair.aggregate-javadoc", version = "9.2.0" }
+antora = { id = "org.antora", version = "1.0.0" }
 nullability = { id = "io.spring.nullability", version = "0.0.12" }
+spring-antora-generateYml = { id = "io.spring.antora.generate-antora-yml", version = "0.0.1" }

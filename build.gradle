@@ -14,7 +14,7 @@ plugins {
 	id 'base'
 	id 'idea'
 	alias(libs.plugins.antora)
-	alias(libs.plugins.io.spring.antora.generate.yml)
+	alias(libs.plugins.spring.antora.generateYml)
 	alias(libs.plugins.aggregate.javadoc)
 	alias(libs.plugins.nullability) apply false
 }
@@ -89,15 +89,16 @@ allprojects {
 	}
 
 	dependencies {
-		dependencyManagement(platform(libs.com.fasterxml.jackson.bom))
+		dependencyManagement(platform(libs.fasterxml.jackson.bom))
 		dependencyManagement(platform(libs.tools.jackson.bom))
-		dependencyManagement(platform(libs.org.junit.bom))
+		dependencyManagement(platform(libs.junit.bom))
+		dependencyManagement(platform(libs.mockito.bom))
 		dependencyManagement(platform(libs.spring.framework.bom))
-		dependencyManagement(platform(libs.io.projectreactor.bom))
-		dependencyManagement(platform(libs.apache.logging.log4j.bom))
+		dependencyManagement(platform(libs.reactor.bom))
+		dependencyManagement(platform(libs.log4j.bom))
 		dependencyManagement(platform(libs.spring.data.bom))
-		dependencyManagement(platform(libs.io.micrometer.bom))
-		dependencyManagement(platform(libs.io.micrometer.tracing.bom))
+		dependencyManagement(platform(libs.micrometer.bom))
+		dependencyManagement(platform(libs.micrometer.tracing.bom))
 		dependencyManagement(platform(libs.testcontainers.bom))
 	}
 }
@@ -156,18 +157,18 @@ configure(javaProjects) { subproject ->
 		testImplementation spotBugs
 
 		testImplementation 'org.apache.logging.log4j:log4j-core'
-		testImplementation libs.org.hamcrest
-		testImplementation libs.org.mockito.core
-		testImplementation libs.org.mockito.junit.jupiter
+		testImplementation libs.hamcrest
+		testImplementation 'org.mockito:mockito-core'
+		testImplementation 'org.mockito:mockito-junit-jupiter'
 		testImplementation 'org.springframework:spring-test'
 		testImplementation 'org.junit.jupiter:junit-jupiter-api'
 		testImplementation 'org.junit.jupiter:junit-jupiter-params'
 		testImplementation 'org.junit.jupiter:junit-jupiter-engine'
 		testImplementation 'org.junit.platform:junit-platform-launcher'
-		testImplementation libs.org.awaitility
+		testImplementation libs.awaitility
 		testImplementation 'org.jetbrains.kotlin:kotlin-reflect'
 		testImplementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
-		testImplementation libs.com.willowtreeapps.assertk
+		testImplementation libs.assertk
 
 		testRuntimeOnly 'org.apache.logging.log4j:log4j-jcl'
 		testRuntimeOnly 'org.apache.logging.log4j:log4j-slf4j-impl'
@@ -281,9 +282,9 @@ project('spring-amqp') {
 		optionalApi 'tools.jackson.module:jackson-module-kotlin'
 		// Spring Data projection message binding support
 		optionalApi 'org.springframework.data:spring-data-commons'
-		optionalApi libs.com.jayway.jsonpath
+		optionalApi libs.jsonpath
 
-		testImplementation libs.org.assertj.core
+		testImplementation libs.assertj
 	}
 
 }
@@ -316,13 +317,13 @@ project('spring-amqp-client') {
 
 	dependencies {
 		api project(':spring-amqp')
-		api libs.org.apache.qpid.protonj2.client
+		api libs.qpid.protonj2.client
 		api 'org.springframework:spring-context'
 		api 'org.springframework:spring-messaging'
 
 		testImplementation project(':spring-rabbit-junit')
 		testImplementation 'io.projectreactor:reactor-core'
-		testImplementation libs.org.jetbrains.kotlinx.coroutines.reactor
+		testImplementation libs.kotlinx.coroutines.reactor
 		testImplementation 'org.testcontainers:testcontainers-rabbitmq'
 		testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
 
@@ -336,7 +337,7 @@ project('spring-rabbit') {
 
 	dependencies {
 		api project(':spring-amqp')
-		api libs.com.rabbitmq.amqp.client
+		api libs.rabbitmq.amqp.client
 		api 'org.springframework:spring-context'
 		api 'org.springframework:spring-messaging'
 		api 'org.springframework:spring-tx'
@@ -344,27 +345,27 @@ project('spring-rabbit') {
 
 		optionalApi 'org.springframework:spring-aop'
 		optionalApi 'org.springframework:spring-webflux'
-		optionalApi libs.apache.httpcomponents.httpclient5
+		optionalApi libs.httpclient5
 		optionalApi 'io.projectreactor:reactor-core'
 		optionalApi 'io.projectreactor.netty:reactor-netty-http'
-		optionalApi libs.ch.qos.logback
+		optionalApi libs.logback
 		optionalApi 'org.apache.logging.log4j:log4j-core'
 		optionalApi 'io.micrometer:micrometer-core'
 		optionalApi 'io.micrometer:micrometer-tracing'
-		optionalApi libs.apache.commons.pool2
-		optionalApi libs.org.jetbrains.kotlinx.coroutines.reactor
+		optionalApi libs.commons.pool2
+		optionalApi libs.kotlinx.coroutines.reactor
 
 		testImplementation project(':spring-rabbit-junit')
 		testImplementation 'org.springframework.data:spring-data-commons'
-		testImplementation libs.com.jayway.jsonpath
-		testImplementation libs.org.hibernate.validator
+		testImplementation libs.jsonpath
+		testImplementation libs.hibernate.validator
 		testImplementation 'io.micrometer:micrometer-observation-test'
 		testImplementation 'io.micrometer:micrometer-tracing-bridge-brave'
 		testImplementation 'io.micrometer:micrometer-tracing-test'
 		testImplementation 'io.micrometer:micrometer-tracing-integration-test'
 		testImplementation 'org.testcontainers:testcontainers-rabbitmq'
 		testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
-		testImplementation libs.apache.httpcomponents.httpclient5
+		testImplementation libs.httpclient5
 
 		testRuntimeOnly 'tools.jackson.core:jackson-databind'
 		testRuntimeOnly 'tools.jackson.dataformat:jackson-dataformat-xml'
@@ -376,7 +377,7 @@ project('spring-rabbit-stream') {
 
 	dependencies {
 		api project(':spring-rabbit')
-		api libs.com.rabbitmq.stream.client
+		api libs.rabbitmq.stream.client
 
 		optionalApi 'io.micrometer:micrometer-core'
 
@@ -399,7 +400,7 @@ project('spring-rabbitmq-client') {
 
 	dependencies {
 		api project(':spring-rabbit')
-		api libs.com.rabbitmq.client.amqp
+		api libs.rabbitmq.client.amqp
 
 		testImplementation project(':spring-rabbit-junit')
 		testImplementation 'io.projectreactor:reactor-core'
@@ -416,14 +417,14 @@ project('spring-rabbit-junit') {
 	dependencies { // no spring-amqp dependencies allowed
 		api 'org.springframework:spring-core'
 		api 'org.springframework:spring-test'
-		api libs.com.rabbitmq.amqp.client
+		api libs.rabbitmq.amqp.client
 		api 'org.springframework:spring-web'
 		api 'org.junit.jupiter:junit-jupiter-api'
-		api libs.org.assertj.core
+		api libs.assertj
 
 		optionalApi 'org.testcontainers:testcontainers-rabbitmq'
 		optionalApi 'org.testcontainers:testcontainers-junit-jupiter'
-		optionalApi libs.ch.qos.logback
+		optionalApi libs.logback
 		optionalApi 'org.apache.logging.log4j:log4j-core'
 	}
 }
@@ -434,8 +435,8 @@ project('spring-rabbit-test') {
 	dependencies {
 		api project(':spring-rabbit')
 		api project(':spring-rabbit-junit')
-		api libs.org.hamcrest
-		api libs.org.mockito.core
+		api libs.hamcrest
+		api 'org.mockito:mockito-core'
 
 		testImplementation project(':spring-rabbit').sourceSets.test.output
 	}
@@ -446,7 +447,7 @@ configurations {
 }
 
 dependencies {
-	micrometerDocs libs.io.micrometer.docs.generator
+	micrometerDocs libs.micrometer.docs.generator
 }
 
 def observationInputDir = file('build/docs/microsources').absolutePath
