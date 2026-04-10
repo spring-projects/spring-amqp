@@ -13,10 +13,10 @@ buildscript {
 plugins {
 	id 'base'
 	id 'idea'
-	id 'org.antora' version '1.0.0'
-	id 'io.spring.antora.generate-antora-yml' version '0.0.1'
-	id 'io.freefair.aggregate-javadoc' version '9.2.0'
-	id 'io.spring.nullability' version '0.0.12' apply false
+	alias(libs.plugins.antora)
+	alias(libs.plugins.spring.antora.generateYml)
+	alias(libs.plugins.aggregate.javadoc)
+	alias(libs.plugins.nullability) apply false
 }
 
 description = 'Spring AMQP'
@@ -28,34 +28,6 @@ ext {
 	linkScmUrl = 'https://github.com/spring-projects/spring-amqp'
 	linkScmConnection = 'git://github.com/spring-projects/spring-amqp.git'
 	linkScmDevConnection = 'git@github.com:spring-projects/spring-amqp.git'
-
-	assertjVersion = '3.27.7'
-	assertkVersion = '0.28.1'
-	awaitilityVersion = '4.3.0'
-	commonsHttpClientVersion = '5.6'
-	commonsPoolVersion = '2.13.0'
-	hamcrestVersion = '3.0'
-	hibernateValidationVersion = '9.1.0.Final'
-	jacksonBomVersion = '2.21.2'
-	jackson3Version = '3.1.1'
-	jaywayJsonPathVersion = '3.0.0'
-	junitJupiterVersion = '6.0.3'
-	kotlinCoroutinesVersion = '1.10.2'
-	log4jVersion = '2.25.4'
-	logbackVersion = '1.5.32'
-	micrometerDocsVersion = '1.0.4'
-	micrometerVersion = '1.17.0-SNAPSHOT'
-	micrometerTracingVersion = '1.7.0-SNAPSHOT'
-	mockitoVersion = '5.23.0'
-	protonjVersion = '1.1.0'
-	rabbitmqAmqpClientVersion = '0.9.0'
-	rabbitmqStreamVersion = '1.5.0'
-	rabbitmqVersion = '5.29.0'
-	reactorVersion = '2025.0.4'
-	springDataVersion = '2026.0.0-SNAPSHOT'
-	springVersion = '7.0.6'
-	testcontainersVersion = '2.0.4'
-
 	javaProjects = subprojects - project(':spring-amqp-bom')
 }
 
@@ -117,16 +89,17 @@ allprojects {
 	}
 
 	dependencies {
-		dependencyManagement(platform("com.fasterxml.jackson:jackson-bom:$jacksonBomVersion"))
-		dependencyManagement(platform("tools.jackson:jackson-bom:$jackson3Version"))
-		dependencyManagement(platform("org.junit:junit-bom:$junitJupiterVersion"))
-		dependencyManagement(platform("org.springframework:spring-framework-bom:$springVersion"))
-		dependencyManagement(platform("io.projectreactor:reactor-bom:$reactorVersion"))
-		dependencyManagement(platform("org.apache.logging.log4j:log4j-bom:$log4jVersion"))
-		dependencyManagement(platform("org.springframework.data:spring-data-bom:$springDataVersion"))
-		dependencyManagement(platform("io.micrometer:micrometer-bom:$micrometerVersion"))
-		dependencyManagement(platform("io.micrometer:micrometer-tracing-bom:$micrometerTracingVersion"))
-		dependencyManagement(platform("org.testcontainers:testcontainers-bom:$testcontainersVersion"))
+		dependencyManagement(platform(libs.fasterxml.jackson.bom))
+		dependencyManagement(platform(libs.tools.jackson.bom))
+		dependencyManagement(platform(libs.junit.bom))
+		dependencyManagement(platform(libs.mockito.bom))
+		dependencyManagement(platform(libs.spring.framework.bom))
+		dependencyManagement(platform(libs.reactor.bom))
+		dependencyManagement(platform(libs.log4j.bom))
+		dependencyManagement(platform(libs.spring.data.bom))
+		dependencyManagement(platform(libs.micrometer.bom))
+		dependencyManagement(platform(libs.micrometer.tracing.bom))
+		dependencyManagement(platform(libs.testcontainers.bom))
 	}
 }
 
@@ -184,18 +157,18 @@ configure(javaProjects) { subproject ->
 		testImplementation spotBugs
 
 		testImplementation 'org.apache.logging.log4j:log4j-core'
-		testImplementation "org.hamcrest:hamcrest-core:$hamcrestVersion"
-		testImplementation "org.mockito:mockito-core:$mockitoVersion"
-		testImplementation "org.mockito:mockito-junit-jupiter:$mockitoVersion"
+		testImplementation libs.hamcrest
+		testImplementation 'org.mockito:mockito-core'
+		testImplementation 'org.mockito:mockito-junit-jupiter'
 		testImplementation 'org.springframework:spring-test'
 		testImplementation 'org.junit.jupiter:junit-jupiter-api'
 		testImplementation 'org.junit.jupiter:junit-jupiter-params'
 		testImplementation 'org.junit.jupiter:junit-jupiter-engine'
 		testImplementation 'org.junit.platform:junit-platform-launcher'
-		testImplementation "org.awaitility:awaitility:$awaitilityVersion"
+		testImplementation libs.awaitility
 		testImplementation 'org.jetbrains.kotlin:kotlin-reflect'
 		testImplementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
-		testImplementation "com.willowtreeapps.assertk:assertk-jvm:$assertkVersion"
+		testImplementation libs.assertk
 
 		testRuntimeOnly 'org.apache.logging.log4j:log4j-jcl'
 		testRuntimeOnly 'org.apache.logging.log4j:log4j-slf4j-impl'
@@ -309,9 +282,9 @@ project('spring-amqp') {
 		optionalApi 'tools.jackson.module:jackson-module-kotlin'
 		// Spring Data projection message binding support
 		optionalApi 'org.springframework.data:spring-data-commons'
-		optionalApi "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
+		optionalApi libs.jsonpath
 
-		testImplementation "org.assertj:assertj-core:$assertjVersion"
+		testImplementation libs.assertj
 	}
 
 }
@@ -344,13 +317,13 @@ project('spring-amqp-client') {
 
 	dependencies {
 		api project(':spring-amqp')
-		api "org.apache.qpid:protonj2-client:$protonjVersion"
+		api libs.qpid.protonj2.client
 		api 'org.springframework:spring-context'
 		api 'org.springframework:spring-messaging'
 
 		testImplementation project(':spring-rabbit-junit')
 		testImplementation 'io.projectreactor:reactor-core'
-		testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$kotlinCoroutinesVersion"
+		testImplementation libs.kotlinx.coroutines.reactor
 		testImplementation 'org.testcontainers:testcontainers-rabbitmq'
 		testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
 
@@ -364,7 +337,7 @@ project('spring-rabbit') {
 
 	dependencies {
 		api project(':spring-amqp')
-		api "com.rabbitmq:amqp-client:$rabbitmqVersion"
+		api libs.rabbitmq.amqp.client
 		api 'org.springframework:spring-context'
 		api 'org.springframework:spring-messaging'
 		api 'org.springframework:spring-tx'
@@ -372,27 +345,27 @@ project('spring-rabbit') {
 
 		optionalApi 'org.springframework:spring-aop'
 		optionalApi 'org.springframework:spring-webflux'
-		optionalApi "org.apache.httpcomponents.client5:httpclient5:$commonsHttpClientVersion"
+		optionalApi libs.httpclient5
 		optionalApi 'io.projectreactor:reactor-core'
 		optionalApi 'io.projectreactor.netty:reactor-netty-http'
-		optionalApi "ch.qos.logback:logback-classic:$logbackVersion"
+		optionalApi libs.logback
 		optionalApi 'org.apache.logging.log4j:log4j-core'
 		optionalApi 'io.micrometer:micrometer-core'
 		optionalApi 'io.micrometer:micrometer-tracing'
-		optionalApi "org.apache.commons:commons-pool2:$commonsPoolVersion"
-		optionalApi "org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$kotlinCoroutinesVersion"
+		optionalApi libs.commons.pool2
+		optionalApi libs.kotlinx.coroutines.reactor
 
 		testImplementation project(':spring-rabbit-junit')
 		testImplementation 'org.springframework.data:spring-data-commons'
-		testImplementation "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
-		testImplementation "org.hibernate.validator:hibernate-validator:$hibernateValidationVersion"
+		testImplementation libs.jsonpath
+		testImplementation libs.hibernate.validator
 		testImplementation 'io.micrometer:micrometer-observation-test'
 		testImplementation 'io.micrometer:micrometer-tracing-bridge-brave'
 		testImplementation 'io.micrometer:micrometer-tracing-test'
 		testImplementation 'io.micrometer:micrometer-tracing-integration-test'
 		testImplementation 'org.testcontainers:testcontainers-rabbitmq'
 		testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
-		testImplementation "org.apache.httpcomponents.client5:httpclient5:$commonsHttpClientVersion"
+		testImplementation libs.httpclient5
 
 		testRuntimeOnly 'tools.jackson.core:jackson-databind'
 		testRuntimeOnly 'tools.jackson.dataformat:jackson-dataformat-xml'
@@ -404,7 +377,7 @@ project('spring-rabbit-stream') {
 
 	dependencies {
 		api project(':spring-rabbit')
-		api "com.rabbitmq:stream-client:$rabbitmqStreamVersion"
+		api libs.rabbitmq.stream.client
 
 		optionalApi 'io.micrometer:micrometer-core'
 
@@ -427,7 +400,7 @@ project('spring-rabbitmq-client') {
 
 	dependencies {
 		api project(':spring-rabbit')
-		api "com.rabbitmq.client:amqp-client:$rabbitmqAmqpClientVersion"
+		api libs.rabbitmq.client.amqp
 
 		testImplementation project(':spring-rabbit-junit')
 		testImplementation 'io.projectreactor:reactor-core'
@@ -444,14 +417,14 @@ project('spring-rabbit-junit') {
 	dependencies { // no spring-amqp dependencies allowed
 		api 'org.springframework:spring-core'
 		api 'org.springframework:spring-test'
-		api "com.rabbitmq:amqp-client:$rabbitmqVersion"
+		api libs.rabbitmq.amqp.client
 		api 'org.springframework:spring-web'
 		api 'org.junit.jupiter:junit-jupiter-api'
-		api "org.assertj:assertj-core:$assertjVersion"
+		api libs.assertj
 
 		optionalApi 'org.testcontainers:testcontainers-rabbitmq'
 		optionalApi 'org.testcontainers:testcontainers-junit-jupiter'
-		optionalApi "ch.qos.logback:logback-classic:$logbackVersion"
+		optionalApi libs.logback
 		optionalApi 'org.apache.logging.log4j:log4j-core'
 	}
 }
@@ -462,9 +435,8 @@ project('spring-rabbit-test') {
 	dependencies {
 		api project(':spring-rabbit')
 		api project(':spring-rabbit-junit')
-		api "org.hamcrest:hamcrest-library:$hamcrestVersion"
-		api "org.hamcrest:hamcrest-core:$hamcrestVersion"
-		api "org.mockito:mockito-core:$mockitoVersion"
+		api libs.hamcrest
+		api 'org.mockito:mockito-core'
 
 		testImplementation project(':spring-rabbit').sourceSets.test.output
 	}
@@ -475,7 +447,7 @@ configurations {
 }
 
 dependencies {
-	micrometerDocs "io.micrometer:micrometer-docs-generator:$micrometerDocsVersion"
+	micrometerDocs libs.micrometer.docs.generator
 }
 
 def observationInputDir = file('build/docs/microsources').absolutePath
@@ -700,12 +672,12 @@ def generateAttributes() {
 	return [
 			'project-version'                                 : project.version,
 			'spring-integration-docs'                         : "$springDocs/spring-integration/reference".toString(),
-			'spring-framework-docs'                           : "$springDocs/spring-framework/reference/${generateVersionWithoutPatch(springVersion)}".toString(),
-			'spring-framework-javadoc'                        : "$springDocs/spring-framework/docs/$springVersion/javadoc-api".toString(),
-			'javadoc-location-org-springframework-transaction': "$springDocs/spring-framework/docs/$springVersion/javadoc-api".toString(),
+			'spring-framework-docs'                           : "$springDocs/spring-framework/reference/${generateVersionWithoutPatch(libs.versions.springVersion.get())}".toString(),
+			'spring-framework-javadoc'                        : "$springDocs/spring-framework/docs/${libs.versions.springVersion.get()}/javadoc-api".toString(),
+			'javadoc-location-org-springframework-transaction': "$springDocs/spring-framework/docs/${libs.versions.springVersion.get()}/javadoc-api".toString(),
 			'javadoc-location-org-springframework-amqp'       : "$springDocs/spring-amqp/docs/$project.version/api".toString(),
-			'micrometer-docs'                                 : "$micrometerDocsPrefix/micrometer/reference/${generateVersionWithoutPatch(micrometerVersion)}".toString(),
-			'micrometer-tracing-docs'                         : "$micrometerDocsPrefix/tracing/reference/${generateVersionWithoutPatch(micrometerTracingVersion)}".toString()
+			'micrometer-docs'                                 : "$micrometerDocsPrefix/micrometer/reference/${generateVersionWithoutPatch(libs.versions.micrometerVersion.get())}".toString(),
+			'micrometer-tracing-docs'                         : "$micrometerDocsPrefix/tracing/reference/${generateVersionWithoutPatch(libs.versions.micrometerTracingVersion.get())}".toString()
 	]
 }
 
