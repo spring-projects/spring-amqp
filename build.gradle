@@ -274,7 +274,7 @@ configure(javaProjects) { subproject ->
 		useJUnitPlatform()
 
 		javaLauncher = javaToolchains.launcherFor {
-			languageVersion = JavaLanguageVersion.of(project.hasProperty('javaVersion') ? project.javaVersion as int : 25)
+			languageVersion = JavaLanguageVersion.of(project.findProperty('testJavaVersion') ?: 25)
 		}
 
 		jvmArgs '--enable-native-access=ALL-UNNAMED'
