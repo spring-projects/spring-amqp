@@ -21,14 +21,15 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.aopalliance.aop.Advice;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.qpid.protonj2.client.ConnectionOptions;
 import org.apache.qpid.protonj2.client.Delivery;
-import org.apache.qpid.protonj2.client.ReconnectOptions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -104,6 +105,7 @@ class AmqpListenerAnnotationTests extends AbstractTestContainerTests {
 		for (String queue : QUEUE_NAMES) {
 			RABBITMQ.execInContainer("rabbitmqadmin", "queues", "declare", "--name", queue.replaceFirst("/queues/", ""));
 		}
+		RABBITMQ.execInContainer("rabbitmqctl", "set_log_level", "debug");
 	}
 
 	@Autowired
@@ -162,7 +164,11 @@ class AmqpListenerAnnotationTests extends AbstractTestContainerTests {
 				.hasSize(8)
 				.doesNotContainNull();
 
-		listenerContainer.stop();
+		CountDownLatch stopLatch = new CountDownLatch(1);
+
+		listenerContainer.stop(stopLatch::countDown);
+
+		assertThat(stopLatch.await(40, TimeUnit.SECONDS)).isTrue();
 	}
 
 	@Autowired
@@ -235,7 +241,7 @@ class AmqpListenerAnnotationTests extends AbstractTestContainerTests {
 		AmqpConnectionFactory amqpConnectionFactory() {
 			return new SingleAmqpConnectionFactory()
 					.setPort(amqpPort())
-					.setReconnectOptions(new ReconnectOptions().reconnectEnabled(true));
+					.setConnectionOptions(new ConnectionOptions().traceFrames(true).reconnectEnabled(true));
 		}
 
 		@Bean
