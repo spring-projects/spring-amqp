@@ -87,6 +87,7 @@ class EnableAmqpTests extends AbstractTestContainerTests {
 		for (String queue : QUEUE_NAMES) {
 			RABBITMQ.execInContainer("rabbitmqadmin", "queues", "declare", "--name", queue.replaceFirst("/queues/", ""));
 		}
+		RABBITMQ.execInContainer("rabbitmqctl", "set_log_level", "debug");
 	}
 
 	@Autowired
