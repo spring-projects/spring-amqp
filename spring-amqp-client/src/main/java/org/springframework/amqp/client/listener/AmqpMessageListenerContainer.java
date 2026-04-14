@@ -468,6 +468,8 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 
 		private final ClientReceiver receiver;
 
+		private final Lock receiverLock = new ReentrantLock();
+
 		private final ProtonReceiver protonReceiver;
 
 		private final ProtonLinkCreditState creditState;
@@ -494,30 +496,36 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 
 		@Override
 		public void run() {
-			while (this.running) {
-				try {
-					Delivery delivery =
-							this.receiver.receive(AmqpMessageListenerContainer.this.receiveTimeout.toMillis(),
-									TimeUnit.MILLISECONDS);
-					if (delivery != null) {
-						doInvokeListener(delivery, this::replenishCredit);
+			this.receiverLock.lock();
+			try {
+				while (this.running) {
+					try {
+						Delivery delivery =
+								this.receiver.receive(AmqpMessageListenerContainer.this.receiveTimeout.toMillis(),
+										TimeUnit.MILLISECONDS);
+						if (delivery != null) {
+							doInvokeListener(delivery, this::replenishCredit);
+						}
 					}
-				}
-				catch (Exception ex) {
-					if (this.running) {
-						AmqpException amqpException = ProtonUtils.toAmqpException(ex);
-						ErrorHandler errorHandlerToUse = AmqpMessageListenerContainer.this.errorHandler;
-						if (errorHandlerToUse != null) {
-							errorHandlerToUse.handleError(amqpException);
+					catch (Exception ex) {
+						if (this.running) {
+							AmqpException amqpException = ProtonUtils.toAmqpException(ex);
+							ErrorHandler errorHandlerToUse = AmqpMessageListenerContainer.this.errorHandler;
+							if (errorHandlerToUse != null) {
+								errorHandlerToUse.handleError(amqpException);
+							}
+							else {
+								throw amqpException;
+							}
 						}
 						else {
-							throw amqpException;
+							LOG.debug(ex, "Consumer stopped");
 						}
 					}
-					else {
-						LOG.debug(ex, "Consumer stopped");
-					}
 				}
+			}
+			finally {
+				this.receiverLock.unlock();
 			}
 		}
 
@@ -534,7 +542,9 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 						if (potentialPrefetch <= AmqpMessageListenerContainer.this.initialCredits * 0.7) {
 							int additionalCredit = AmqpMessageListenerContainer.this.initialCredits - potentialPrefetch;
 
-							this.receiver.addCredit(additionalCredit);
+							if (!this.paused && this.running) {
+								this.receiver.addCredit(additionalCredit);
+							}
 						}
 					}
 				}
@@ -549,7 +559,7 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 		 * so rely on the reflection to imitate behavior with resetting credits to zero.
 		 */
 		void pause() {
-			if (this.running) {
+			if (this.running && !this.paused) {
 				this.paused = true;
 				this.creditState.updateCredit(0);
 				ReflectionUtils.invokeMethod(WRITE_FLOW_METHOD, this.sessionWindow, this.protonReceiver);
@@ -557,7 +567,7 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 		}
 
 		void resume() {
-			if (this.running) {
+			if (this.running && this.paused) {
 				this.paused = false;
 				try {
 					this.receiver.addCredit(AmqpMessageListenerContainer.this.initialCredits);
@@ -576,7 +586,13 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 		@Override
 		public void close() {
 			this.running = false;
-			this.receiver.close();
+			this.receiverLock.lock();
+			try {
+				this.receiver.close();
+			}
+			finally {
+				this.receiverLock.unlock();
+			}
 		}
 
 	}
