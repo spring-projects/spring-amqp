@@ -7,13 +7,13 @@ pluginManagement {
 
 plugins {
 	id 'io.spring.develocity.conventions' version '0.0.25'
+	id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
 
 rootProject.name = 'spring-amqp-dist'
 
-include 'spring-amqp'
-include 'spring-amqp-bom'
-include 'spring-rabbit'
-include 'spring-rabbit-stream'
-include 'spring-rabbit-junit'
-include 'spring-rabbit-test'
+rootDir.eachDir { dir ->
+	if (dir.name.startsWith('spring-')) {
+		include ":${dir.name}"
+	}
+}
