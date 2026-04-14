@@ -525,7 +525,7 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 		 * Logic copied from {@code ClientReceiver#replenishCreditIfNeeded()}.
 		 */
 		private void replenishCredit() {
-			if (!this.paused) {
+			if (!this.paused && this.running) {
 				try {
 					int currentCredit = this.protonReceiver.getCredit();
 					if (currentCredit <= AmqpMessageListenerContainer.this.initialCredits * 0.5) {
@@ -549,18 +549,22 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 		 * so rely on the reflection to imitate behavior with resetting credits to zero.
 		 */
 		void pause() {
-			this.paused = true;
-			this.creditState.updateCredit(0);
-			ReflectionUtils.invokeMethod(WRITE_FLOW_METHOD, this.sessionWindow, this.protonReceiver);
+			if (this.running) {
+				this.paused = true;
+				this.creditState.updateCredit(0);
+				ReflectionUtils.invokeMethod(WRITE_FLOW_METHOD, this.sessionWindow, this.protonReceiver);
+			}
 		}
 
 		void resume() {
-			this.paused = false;
-			try {
-				this.receiver.addCredit(AmqpMessageListenerContainer.this.initialCredits);
-			}
-			catch (ClientException ex) {
-				throw ProtonUtils.toAmqpException(ex);
+			if (this.running) {
+				this.paused = false;
+				try {
+					this.receiver.addCredit(AmqpMessageListenerContainer.this.initialCredits);
+				}
+				catch (ClientException ex) {
+					throw ProtonUtils.toAmqpException(ex);
+				}
 			}
 		}
 

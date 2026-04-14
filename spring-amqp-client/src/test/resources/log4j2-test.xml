@@ -6,8 +6,8 @@
 		</Console>
 	</Appenders>
 	<Loggers>
-		<Logger name="org.springframework.amqp.client" level="info"/>
-		<Logger name="org.apache.qpid.protonj2.client" level="warn"/>
+		<Logger name="org.springframework.amqp.client" level="debug"/>
+		<Logger name="org.apache.qpid.protonj2.client" level="trace"/>
 		<Root level="warn">
 			<AppenderRef ref="STDOUT" />
 		</Root>
