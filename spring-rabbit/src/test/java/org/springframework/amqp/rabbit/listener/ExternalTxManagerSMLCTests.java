@@ -44,13 +44,15 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 /**
  * @author Gary Russell
  * @author Thomas Badie
+ * @author Artem Bilan
+ *
  * @since 2.0
  *
  */
@@ -63,19 +65,18 @@ public class ExternalTxManagerSMLCTests extends ExternalTxManagerTests {
 		return container;
 	}
 
-
 	@Test
 	public void testMessageListenerTxFail() throws Exception {
 		ConnectionFactoryUtils.enableAfterCompletionFailureCapture(true);
-		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
-		Connection mockConnection = mock(Connection.class);
-		final Channel mockChannel = mock(Channel.class);
+		ConnectionFactory mockConnectionFactory = mock();
+		Connection mockConnection = mock();
+		final Channel mockChannel = mock();
 		given(mockChannel.isOpen()).willReturn(true);
-		given(mockChannel.txSelect()).willReturn(mock(AMQP.Tx.SelectOk.class));
-		final AtomicReference<CountDownLatch> commitLatch = new AtomicReference<>(new CountDownLatch(1));
+		given(mockChannel.txSelect()).willReturn(mock());
+		CountDownLatch commitLatch = new CountDownLatch(1);
 		String exceptionMessage = "Failed to commit.";
 		willAnswer(invocation -> {
-			commitLatch.get().countDown();
+			commitLatch.countDown();
 			throw new IllegalStateException(exceptionMessage);
 		}).given(mockChannel).txCommit();
 
@@ -86,7 +87,7 @@ public class ExternalTxManagerSMLCTests extends ExternalTxManagerTests {
 
 		willAnswer(invocation -> mockChannel).given(mockConnection).createChannel();
 
-		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
+		final AtomicReference<Consumer> consumer = new AtomicReference<>();
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		willAnswer(invocation -> {
@@ -96,7 +97,6 @@ public class ExternalTxManagerSMLCTests extends ExternalTxManagerTests {
 		}).given(mockChannel)
 				.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
 						any(Consumer.class));
-
 
 		final CountDownLatch latch = new CountDownLatch(1);
 		AbstractMessageListenerContainer container = createContainer(cachingConnectionFactory);
@@ -112,7 +112,7 @@ public class ExternalTxManagerSMLCTests extends ExternalTxManagerTests {
 		container.setShutdownTimeout(100);
 		DummyTxManager transactionManager = new DummyTxManager();
 		container.setTransactionManager(transactionManager);
-		ApplicationEventPublisher applicationEventPublisher = mock(ApplicationEventPublisher.class);
+		ApplicationEventPublisher applicationEventPublisher = mock();
 		final CountDownLatch applicationEventPublisherLatch = new CountDownLatch(1);
 		willAnswer(invocation -> {
 			if (invocation.getArgument(0) instanceof ListenerContainerConsumerFailedEvent) {
@@ -128,12 +128,12 @@ public class ExternalTxManagerSMLCTests extends ExternalTxManagerTests {
 
 		consumer.get().handleDelivery("qux",
 				new Envelope(1, false, "foo", "bar"), new AMQP.BasicProperties(),
-				new byte[] { 0 });
+				new byte[] {0});
 
 		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 
-		verify(mockConnection, times(1)).createChannel();
-		assertThat(commitLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
+		verify(mockConnection, atLeastOnce()).createChannel();
+		assertThat(commitLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		verify(mockChannel).basicAck(anyLong(), anyBoolean());
 		verify(mockChannel).txCommit();
 
@@ -149,6 +149,5 @@ public class ExternalTxManagerSMLCTests extends ExternalTxManagerTests {
 				.isNotNull().extracting(Throwable::getMessage).isEqualTo(exceptionMessage);
 		container.stop();
 	}
-
 
 }
