@@ -32,7 +32,6 @@ jobs:
           repository: spring-projects/spring-integration
           show-progress: false
 
-
       - name: Set up Gradle
         uses: spring-io/spring-gradle-build-action@v2
 
@@ -50,7 +49,7 @@ jobs:
                   }
                 }" > staging-repo-init.gradle
           
-          sed -i "1,/springAmqpVersion.*/s/springAmqpVersion.*/springAmqpVersion='${{ inputs.releaseVersion }}'/" build.gradle  
+          sed -i "s/springAmqpVersion = .*/springAmqpVersion = \"${{ inputs.releaseVersion }}\"/" libs.versions.toml  
 
       - name: Verify Spring Integration AMQP module against staged release
         run: ./gradlew :spring-integration-amqp:check --init-script staging-repo-init.gradle
