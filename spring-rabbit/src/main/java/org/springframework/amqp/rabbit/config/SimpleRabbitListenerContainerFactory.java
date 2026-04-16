@@ -63,6 +63,8 @@ public class SimpleRabbitListenerContainerFactory
 
 	private @Nullable Boolean enforceImmediateAckForManual;
 
+	private @Nullable Boolean immediateScaleDown;
+
 	/**
 	 * @param batchSize the batch size.
 	 * @since 2.2
@@ -169,6 +171,16 @@ public class SimpleRabbitListenerContainerFactory
 		this.enforceImmediateAckForManual = enforceImmediateAckForManual;
 	}
 
+	/**
+	 * Set to {@code true} to enable immediate scale-down behavior.
+	 * @param immediateScaleDown true to enable immediate scale-down.
+	 * @since 4.1
+	 * @see SimpleMessageListenerContainer#setImmediateScaleDown(boolean)
+	 */
+	public void setImmediateScaleDown(Boolean immediateScaleDown) {
+		this.immediateScaleDown = immediateScaleDown;
+	}
+
 	@Override
 	protected SimpleMessageListenerContainer createContainerInstance() {
 		return new SimpleMessageListenerContainer();
@@ -199,7 +211,8 @@ public class SimpleRabbitListenerContainerFactory
 				.acceptIfNotNull(this.consecutiveIdleTrigger, instance::setConsecutiveIdleTrigger)
 				.acceptIfNotNull(this.receiveTimeout, instance::setReceiveTimeout)
 				.acceptIfNotNull(this.batchReceiveTimeout, instance::setBatchReceiveTimeout)
-				.acceptIfNotNull(this.enforceImmediateAckForManual, instance::setEnforceImmediateAckForManual);
+				.acceptIfNotNull(this.enforceImmediateAckForManual, instance::setEnforceImmediateAckForManual)
+				.acceptIfNotNull(this.immediateScaleDown, instance::setImmediateScaleDown);
 		if (Boolean.TRUE.equals(this.consumerBatchEnabled)) {
 			instance.setConsumerBatchEnabled(true);
 			/*

@@ -89,6 +89,7 @@ import org.springframework.util.backoff.BackOffExecution;
  * @author Java4ye
  * @author Thomas Badie
  * @author Jeongjun Min
+ * @author DoYeon Kim
  *
  * @since 1.0
  */
@@ -146,6 +147,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private boolean enforceImmediateAckForManual;
 
+	private boolean immediateScaleDown;
+
 	private volatile int concurrentConsumers = 1;
 
 	private volatile @Nullable Integer maxConcurrentConsumers;
@@ -196,7 +199,16 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			int delta = this.concurrentConsumers - concurrentConsumers;
 			this.concurrentConsumers = concurrentConsumers;
 			if (isActive()) {
-				adjustConsumers(delta);
+				if (this.immediateScaleDown && delta > 0) {
+					// Defer scale-down to checkAdjust() so that a consumer stops itself
+					// after it finishes processing the current message, instead of
+					// adjustConsumers() arbitrarily cancelling a consumer that may still
+					// be processing.
+					logger.debug("Immediate scale-down: deferring consumer removal to checkAdjust");
+				}
+				else {
+					adjustConsumers(delta);
+				}
 			}
 		}
 		finally {
@@ -529,6 +541,36 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setEnforceImmediateAckForManual(boolean enforceImmediateAckForManual) {
 		this.enforceImmediateAckForManual = enforceImmediateAckForManual;
+	}
+
+	/**
+	 * Set to {@code true} to enable immediate scale-down behavior when the number of
+	 * concurrent consumers is reduced dynamically (for example, by invoking
+	 * {@link #setConcurrentConsumers(int)} or {@link #setConcurrency(String)}
+	 * from within a listener).
+	 * <p>
+	 * When enabled, a scale-down request does not arbitrarily cancel one of the existing
+	 * consumers. Instead, each consumer checks after every message whether it is in
+	 * excess and, if so, stops itself once the current message has been processed. This
+	 * avoids cancelling a consumer that is still actively processing a message while a
+	 * consumer that just finished keeps running.
+	 * <p>
+	 * When enabled, the following properties are bypassed for scale-down decisions
+	 * because the intent is immediate reaction:
+	 * {@link #setConsecutiveIdleTrigger(int) consecutiveIdleTrigger} and
+	 * {@link #setStopConsumerMinInterval(long) stopConsumerMinInterval}.
+	 * Scale-up related properties are not affected.
+	 * <p>
+	 * Has no effect unless {@link #setMaxConcurrentConsumers(int) maxConcurrentConsumers}
+	 * is also configured, because {@code checkAdjust()} is only invoked in that case.
+	 * Default is {@code false}.
+	 * @param immediateScaleDown true to enable immediate scale-down.
+	 * @since 4.1
+	 * @see #setConcurrentConsumers(int)
+	 * @see #setMaxConcurrentConsumers(int)
+	 */
+	public void setImmediateScaleDown(boolean immediateScaleDown) {
+		this.immediateScaleDown = immediateScaleDown;
 	}
 
 	/**
@@ -1297,6 +1339,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		private boolean failedExclusive;
 
+		private volatile boolean markedForStop;
+
 		AsyncMessageProcessingConsumer(BlockingQueueConsumer consumer) {
 			this.consumer = consumer;
 			this.start = new CountDownLatch(1);
@@ -1355,7 +1399,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			try {
 				initialize();
 				SimpleMessageListenerContainer.this.processorThreadsToInterrupt.add(Thread.currentThread());
-				while (isActive(this.consumer) || this.consumer.hasDelivery() || !this.consumer.cancelled()) {
+				while (!this.markedForStop
+						&& (isActive(this.consumer) || this.consumer.hasDelivery() || !this.consumer.cancelled())) {
+
 					mainLoop();
 				}
 			}
@@ -1507,14 +1553,47 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						considerAddingAConsumer();
 						this.consecutiveMessages = 0;
 					}
+					if (SimpleMessageListenerContainer.this.immediateScaleDown) {
+						markForStopIfExcess();
+					}
 				}
 			}
 			else {
 				this.consecutiveMessages = 0;
-				if (this.consecutiveIdles++ > SimpleMessageListenerContainer.this.consecutiveIdleTrigger) {
+				if (SimpleMessageListenerContainer.this.immediateScaleDown) {
+					markForStopIfExcess();
+					this.consecutiveIdles = 0;
+				}
+				else if (this.consecutiveIdles++ > SimpleMessageListenerContainer.this.consecutiveIdleTrigger) {
 					considerStoppingAConsumer(this.consumer);
 					this.consecutiveIdles = 0;
 				}
+			}
+		}
+
+		/**
+		 * When immediate scale-down is enabled, stop this consumer itself if the
+		 * number of active consumers exceeds the configured concurrency. This runs
+		 * after a message has been processed (acked), so the consumer terminates
+		 * cleanly rather than being cancelled mid-processing by another thread.
+		 */
+		private void markForStopIfExcess() {
+			SimpleMessageListenerContainer.this.consumersLock.lock();
+			try {
+				SimpleMessageListenerContainer container = SimpleMessageListenerContainer.this;
+				if (container.consumers != null
+						&& container.consumers.size() > container.concurrentConsumers) {
+
+					this.consumer.basicCancel(true);
+					container.consumers.remove(this.consumer);
+					this.markedForStop = true;
+					if (logger.isDebugEnabled()) {
+						logger.debug("Immediate scale-down: consumer marked for stop: " + this.consumer);
+					}
+				}
+			}
+			finally {
+				SimpleMessageListenerContainer.this.consumersLock.unlock();
 			}
 		}
 
