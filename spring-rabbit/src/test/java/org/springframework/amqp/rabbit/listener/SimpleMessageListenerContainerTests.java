@@ -194,9 +194,9 @@ public class SimpleMessageListenerContainerTests {
 	 */
 	@Test
 	public void testTxSizeAcks() throws Exception {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
-		Connection connection = mock(Connection.class);
-		Channel channel = mock(Channel.class);
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		Channel channel = mock();
 		given(connectionFactory.createConnection()).willReturn(connection);
 		given(connection.createChannel(false)).willReturn(channel);
 		final AtomicReference<Consumer> consumer = new AtomicReference<>();
@@ -246,9 +246,9 @@ public class SimpleMessageListenerContainerTests {
 	 */
 	@Test
 	public void testTxSizeAcksWIthShortSet() throws Exception {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
-		Connection connection = mock(Connection.class);
-		Channel channel = mock(Channel.class);
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		Channel channel = mock();
 		given(connectionFactory.createConnection()).willReturn(connection);
 		given(connection.createChannel(false)).willReturn(channel);
 		final AtomicReference<Consumer> consumer = new AtomicReference<>();
@@ -299,9 +299,9 @@ public class SimpleMessageListenerContainerTests {
 	@SuppressWarnings("unchecked")
 	@Test
 	public void testConsumerArgs() throws Exception {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
-		Connection connection = mock(Connection.class);
-		Channel channel = mock(Channel.class);
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		Channel channel = mock();
 		given(connectionFactory.createConnection()).willReturn(connection);
 		given(connection.createChannel(false)).willReturn(channel);
 		final AtomicReference<Consumer> consumer = new AtomicReference<>();
@@ -335,10 +335,10 @@ public class SimpleMessageListenerContainerTests {
 
 	@Test
 	public void testChangeQueues() throws Exception {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
-		Connection connection = mock(Connection.class);
-		Channel channel1 = mock(Channel.class);
-		Channel channel2 = mock(Channel.class);
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		Channel channel1 = mock();
+		Channel channel2 = mock();
 		given(channel1.isOpen()).willReturn(true);
 		given(channel2.isOpen()).willReturn(true);
 		given(connectionFactory.createConnection()).willReturn(connection);
@@ -371,7 +371,7 @@ public class SimpleMessageListenerContainerTests {
 
 	@Test
 	public void testChangeQueuesSimple() {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		ConnectionFactory connectionFactory = mock();
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setQueueNames("foo");
 		container.setReceiveTimeout(10);
@@ -386,9 +386,9 @@ public class SimpleMessageListenerContainerTests {
 
 	@Test
 	public void testAddQueuesAndStartInCycle() throws Exception {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
-		Connection connection = mock(Connection.class);
-		Channel channel1 = mock(Channel.class);
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		Channel channel1 = mock();
 		given(channel1.isOpen()).willReturn(true);
 		given(connectionFactory.createConnection()).willReturn(connection);
 		given(connection.createChannel(false)).willReturn(channel1);
@@ -443,7 +443,7 @@ public class SimpleMessageListenerContainerTests {
 
 	@Test
 	public void testCallbackIsRunOnStopAlsoWhenNoConsumerIsActive() throws InterruptedException {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		ConnectionFactory connectionFactory = mock();
 
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		ReflectionTestUtils.setField(container, "active", Boolean.TRUE);
@@ -455,7 +455,7 @@ public class SimpleMessageListenerContainerTests {
 
 	@Test
 	public void testCallbackIsRunOnStopAlsoWhenContainerIsStoppingForAbort() throws InterruptedException {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		ConnectionFactory connectionFactory = mock();
 
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		ReflectionTestUtils.setField(container, "containerStoppingForAbort", new AtomicReference<>(new Thread()));
@@ -472,8 +472,8 @@ public class SimpleMessageListenerContainerTests {
 				mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection1 = mock(com.rabbitmq.client.Connection.class);
 		com.rabbitmq.client.Connection mockConnection2 = mock(com.rabbitmq.client.Connection.class);
-		Channel mockChannel1 = mock(Channel.class);
-		Channel mockChannel2 = mock(Channel.class);
+		Channel mockChannel1 = mock();
+		Channel mockChannel2 = mock();
 
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString()))
 				.willReturn(mockConnection1)
@@ -532,9 +532,9 @@ public class SimpleMessageListenerContainerTests {
 
 	@Test
 	public void testConsumerCancel() throws Exception {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
-		Connection connection = mock(Connection.class);
-		Channel channel = mock(Channel.class);
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		Channel channel = mock();
 		given(connectionFactory.createConnection()).willReturn(connection);
 		given(connection.createChannel(false)).willReturn(channel);
 		final AtomicReference<Consumer> consumer = new AtomicReference<>();
@@ -597,7 +597,7 @@ public class SimpleMessageListenerContainerTests {
 
 	@Test
 	public void testPossibleAuthenticationFailureNotFatal() {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		ConnectionFactory connectionFactory = mock();
 
 		given(connectionFactory.createConnection())
 				.willThrow(new AmqpAuthenticationException(new PossibleAuthenticationFailureException("intentional")));
@@ -623,7 +623,7 @@ public class SimpleMessageListenerContainerTests {
 		try {
 			Thread.currentThread().setContextClassLoader(child);
 
-			ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+			ConnectionFactory connectionFactory = mock();
 
 			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
 			container.setConnectionFactory(connectionFactory);
@@ -676,9 +676,9 @@ public class SimpleMessageListenerContainerTests {
 	@SuppressWarnings("unchecked")
 	@Test
 	void setConcurrency() throws Exception {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
-		Connection connection = mock(Connection.class);
-		Channel channel = mock(Channel.class);
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		Channel channel = mock();
 		given(connectionFactory.createConnection()).willReturn(connection);
 		given(connection.createChannel(false)).willReturn(channel);
 		final AtomicReference<Consumer> consumer = new AtomicReference<>();
@@ -701,9 +701,9 @@ public class SimpleMessageListenerContainerTests {
 
 	@Test
 	void testWithConsumerStartWhenNotActive() {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
-		Connection connection = mock(Connection.class);
-		Channel channel = mock(Channel.class);
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		Channel channel = mock();
 		given(connectionFactory.createConnection()).willReturn(connection);
 		given(connection.createChannel(false)).willReturn(channel);
 
@@ -725,9 +725,9 @@ public class SimpleMessageListenerContainerTests {
 
 	@Test
 	void testShutdownWithPendingReplies() {
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
-		Connection connection = mock(Connection.class);
-		Channel channel = mock(Channel.class);
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		Channel channel = mock();
 		given(connectionFactory.createConnection()).willReturn(connection);
 		given(connection.createChannel(false)).willReturn(channel);
 		given(channel.isOpen()).willReturn(true);
