@@ -23,7 +23,7 @@ rabbitmqStreamVersion = "1.5.0"
 rabbitmqVersion = "5.29.0"
 reactorVersion = "2025.0.5"
 springDataVersion = "2026.0.0-SNAPSHOT"
-springVersion = "7.0.6"
+springVersion = "7.0.7"
 testcontainersVersion = "2.0.4"
 
 [libraries]
