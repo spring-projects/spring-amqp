@@ -2032,12 +2032,12 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 		@Bean
 		public org.springframework.amqp.core.Queue sendToReplies() {
-			return new org.springframework.amqp.core.Queue(sendToRepliesBean(), false, false, false);
+			return new org.springframework.amqp.core.Queue(sendToRepliesBean(), true, false, false);
 		}
 
 		@Bean
 		public org.springframework.amqp.core.Queue sendToRepliesSpEL() {
-			return new org.springframework.amqp.core.Queue(sendToRepliesSpELBean(), false, false, true);
+			return new org.springframework.amqp.core.Queue(sendToRepliesSpELBean(), true, false, true);
 		}
 
 		@Bean

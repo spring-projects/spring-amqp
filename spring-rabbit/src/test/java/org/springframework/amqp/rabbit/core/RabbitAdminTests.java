@@ -173,10 +173,10 @@ public class RabbitAdminTests extends NeedsManagementTests {
 		try {
 			ApplicationContext ctx = mock();
 			Map<String, Queue> queues = new HashMap<>();
-			queues.put("nonDurQ", new Queue("testq.nonDur", false, false, false));
+			queues.put("nonDurQ", new Queue("testq.nonDur", false, true, false));
 			queues.put("adQ", new Queue("testq.ad", true, false, true));
 			queues.put("exclQ", new Queue("testq.excl", true, true, false));
-			queues.put("allQ", new Queue("testq.all", false, true, true));
+			queues.put("allQ", new Queue("testq.all", true, true, true));
 			given(ctx.getBeansOfType(Queue.class, false, false)).willReturn(queues);
 			Map<String, Exchange> exchanges = new HashMap<>();
 			exchanges.put("nonDurEx", new DirectExchange("testex.nonDur", false, false));
@@ -198,9 +198,9 @@ public class RabbitAdminTests extends NeedsManagementTests {
 			assertThat(logs.get(1)).contains("(testex.all) durable:false, auto-delete:true");
 			assertThat(logs.get(2)).contains("(testex.nonDur) durable:false, auto-delete:false");
 			assertThat(logs.get(3)).contains("(testq.ad) durable:true, auto-delete:true, exclusive:false");
-			assertThat(logs.get(4)).contains("(testq.all) durable:false, auto-delete:true, exclusive:true");
+			assertThat(logs.get(4)).contains("(testq.all) durable:true, auto-delete:true, exclusive:true");
 			assertThat(logs.get(5)).contains("(testq.excl) durable:true, auto-delete:false, exclusive:true");
-			assertThat(logs.get(6)).contains("(testq.nonDur) durable:false, auto-delete:false, exclusive:false");
+			assertThat(logs.get(6)).contains("(testq.nonDur) durable:false, auto-delete:false, exclusive:true");
 		}
 		finally {
 			cleanQueuesAndExchanges(rabbitAdmin);
@@ -512,7 +512,7 @@ public class RabbitAdminTests extends NeedsManagementTests {
 
 		@Bean
 		public Queue q1() {
-			return new Queue("q1", false, false, true);
+			return new Queue("q1", true, false, true);
 		}
 
 		@Bean
@@ -530,14 +530,14 @@ public class RabbitAdminTests extends NeedsManagementTests {
 		@Bean
 		public Declarables qs() {
 			return new Declarables(
-					new Queue("q2", false, false, true),
-					new Queue("q3", false, false, true));
+					new Queue("q2", true, false, true),
+					new Queue("q3", true, false, true));
 		}
 
 		@Bean
 		@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 		public Declarables prototypes() {
-			return new Declarables(new Queue(this.prototypeQueueName, false, false, true));
+			return new Declarables(new Queue(this.prototypeQueueName, true, false, true));
 		}
 
 		@Bean
@@ -551,7 +551,7 @@ public class RabbitAdminTests extends NeedsManagementTests {
 		public Declarables ds() {
 			return new Declarables(
 					new DirectExchange("e4", false, true),
-					new Queue("q4", false, false, true),
+					new Queue("q4", true, false, true),
 					new Binding("q4", DestinationType.QUEUE, "e4", "k4", null));
 		}
 
