@@ -219,7 +219,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		container.setMessageListener(messageListener);
 
 		RabbitAdmin admin = new RabbitAdmin(template.getConnectionFactory());
-		Queue queueForTest = QueueBuilder.nonDurable("")
+		Queue queueForTest = QueueBuilder.durable("")
 				.autoDelete()
 				.withArgument("x-dead-letter-exchange", "test.DLE")
 				.build();
@@ -312,7 +312,8 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 				assertThat(waited).as("Expected to receive all messages before stop").isTrue();
 			}
 
-			assertThat(this.errorsHandled.await(10, TimeUnit.SECONDS)).as("Not enough error handling, remaining:" + this.errorsHandled.getCount()).isTrue();
+			assertThat(this.errorsHandled.await(10, TimeUnit.SECONDS))
+					.as("Not enough error handling, remaining:" + this.errorsHandled.getCount()).isTrue();
 			assertThat(template.receiveAndConvert(QUEUE.getName())).isNull();
 		}
 		finally {

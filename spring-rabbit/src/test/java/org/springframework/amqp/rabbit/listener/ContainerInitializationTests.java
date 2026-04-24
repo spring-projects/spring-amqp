@@ -88,7 +88,7 @@ public class ContainerInitializationTests {
 		RabbitAdmin admin = context.getBean(RabbitAdmin.class);
 		admin.deleteQueue(TEST_MISMATCH);
 		assertThat(latches[0].await(20, TimeUnit.SECONDS)).isTrue();
-		admin.declareQueue(new Queue(TEST_MISMATCH, false, false, true));
+		admin.declareQueue(new Queue(TEST_MISMATCH, true, false, true));
 		latches[2].countDown(); // let container thread continue to enable restart
 		assertThat(latches[1].await(20, TimeUnit.SECONDS)).isTrue();
 		SimpleMessageListenerContainer container = context.getBean(SimpleMessageListenerContainer.class);
@@ -103,7 +103,7 @@ public class ContainerInitializationTests {
 		RabbitAdmin admin = context.getBean(RabbitAdmin.class);
 		admin.deleteQueue(TEST_MISMATCH);
 		assertThat(latches[0].await(20, TimeUnit.SECONDS)).isTrue();
-		admin.declareQueue(new Queue(TEST_MISMATCH, false, false, true));
+		admin.declareQueue(new Queue(TEST_MISMATCH, true, false, true));
 		latches[2].countDown(); // let container thread continue to enable restart
 		assertThat(latches[1].await(20, TimeUnit.SECONDS)).isTrue();
 		SimpleMessageListenerContainer container = context.getBean(SimpleMessageListenerContainer.class);
@@ -159,7 +159,7 @@ public class ContainerInitializationTests {
 
 		@Bean
 		public Queue queue() {
-			return new Queue(TEST_MISMATCH, false, false, true); // mismatched
+			return new Queue(TEST_MISMATCH, true, false, true);
 		}
 
 	}

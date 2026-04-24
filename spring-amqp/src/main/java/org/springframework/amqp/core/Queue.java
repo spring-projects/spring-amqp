@@ -38,7 +38,7 @@ public class Queue extends AbstractDeclarable implements Cloneable {
 	 * Argument key for the queue leader locator.
 	 * @since 2.1
 	 */
-	public static final String X_QUEUE_LEADER_LOCATOR = "x-queue-master-locator";
+	public static final String X_QUEUE_LEADER_LOCATOR = "x-queaue-leader-locator";
 
 	private final String name;
 
