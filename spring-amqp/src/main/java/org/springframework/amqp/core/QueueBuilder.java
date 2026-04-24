@@ -232,7 +232,7 @@ public final class QueueBuilder extends AbstractBuilder {
 	 * @since 2.2
 	 */
 	public QueueBuilder leaderLocator(LeaderLocator locator) {
-		return withArgument("x-queue-master-locator", locator.getValue());
+		return withArgument(Queue.X_QUEUE_LEADER_LOCATOR, locator.getValue());
 	}
 
 	/**
@@ -331,7 +331,11 @@ public final class QueueBuilder extends AbstractBuilder {
 
 		/**
 		 * Deploy on the node with the fewest queue leaders.
+		 /**
+		 * Deploy on a random node.
+		 * @deprecated in favor of {@link #balanced}
 		 */
+		@Deprecated(since = "3.2.11", forRemoval = true)
 		minLeaders("min-masters"),
 
 		/**
@@ -341,8 +345,17 @@ public final class QueueBuilder extends AbstractBuilder {
 
 		/**
 		 * Deploy on a random node.
+		 * @deprecated in favor of {@link #balanced}
 		 */
-		random("random");
+		@Deprecated(since = "3.2.11", forRemoval = true)
+		random("random"),
+
+		/**
+		 * The leader is placed on the node that currently hosts
+		 * the minimum number of quorum queue leaders to achieve an even distribution.
+		 * @since 3.2.11
+		 */
+		balanced("balanced");
 
 		private final String value;
 

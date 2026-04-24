@@ -140,7 +140,7 @@ public class RabbitAdminIntegrationTests extends NeedsManagementTests {
 		CachingConnectionFactory connectionFactory2 = new CachingConnectionFactory();
 		connectionFactory2.setHost("localhost");
 		connectionFactory2.setPort(BrokerTestUtils.getPort());
-		Queue queue = new Queue("test.queue", false, false, true);
+		Queue queue = new Queue("test.queue", true, false, true);
 		new RabbitAdmin(connectionFactory1).declareQueue(queue);
 		new RabbitAdmin(connectionFactory2).declareQueue(queue);
 		connectionFactory1.destroy();
@@ -175,7 +175,7 @@ public class RabbitAdminIntegrationTests extends NeedsManagementTests {
 	@Test
 	public void testQueueWithoutAutoDelete() throws Exception {
 
-		final Queue queue = new Queue("test.queue", false, false, false);
+		final Queue queue = new Queue("test.queue", true, false, false);
 		context.getBeanFactory().registerSingleton("foo", queue);
 		rabbitAdmin.afterPropertiesSet();
 
@@ -268,7 +268,7 @@ public class RabbitAdminIntegrationTests extends NeedsManagementTests {
 	public void testDeclareBindingWithDefaultExchangeImplicitBinding() throws Exception {
 		Exchange exchange = new DirectExchange(RabbitAdmin.DEFAULT_EXCHANGE_NAME);
 		String queueName = "test.queue";
-		final Queue queue = new Queue(queueName, false, false, false);
+		final Queue queue = new Queue(queueName, true, false, false);
 		rabbitAdmin.declareQueue(queue);
 		Binding binding = new Binding(queueName, DestinationType.QUEUE, exchange.getName(), queueName, null);
 
@@ -283,7 +283,7 @@ public class RabbitAdminIntegrationTests extends NeedsManagementTests {
 		Exchange exchange = new DirectExchange(RabbitAdmin.DEFAULT_EXCHANGE_NAME);
 		context.getBeanFactory().registerSingleton("foo", exchange);
 		String queueName = "test.queue";
-		final Queue queue = new Queue(queueName, false, false, false);
+		final Queue queue = new Queue(queueName, true, false, false);
 		context.getBeanFactory().registerSingleton("bar", queue);
 		Binding binding = new Binding(queueName, DestinationType.QUEUE, exchange.getName(), queueName, null);
 		context.getBeanFactory().registerSingleton("baz", binding);
@@ -298,7 +298,7 @@ public class RabbitAdminIntegrationTests extends NeedsManagementTests {
 	@Test
 	public void testRemoveBindingWithDefaultExchangeImplicitBinding() {
 		String queueName = "test.queue";
-		final Queue queue = new Queue(queueName, false, false, false);
+		final Queue queue = new Queue(queueName, true, false, false);
 		rabbitAdmin.declareQueue(queue);
 		Binding binding = new Binding(queueName, DestinationType.QUEUE, RabbitAdmin.DEFAULT_EXCHANGE_NAME, queueName, null);
 
@@ -311,7 +311,7 @@ public class RabbitAdminIntegrationTests extends NeedsManagementTests {
 	public void testDeclareBindingWithDefaultExchangeNonImplicitBinding() {
 		Exchange exchange = new DirectExchange(RabbitAdmin.DEFAULT_EXCHANGE_NAME);
 		String queueName = "test.queue";
-		final Queue queue = new Queue(queueName, false, false, false);
+		final Queue queue = new Queue(queueName, true, false, false);
 		rabbitAdmin.declareQueue(queue);
 		Binding binding = new Binding(queueName, DestinationType.QUEUE, exchange.getName(), "test.routingKey", null);
 
@@ -335,7 +335,7 @@ public class RabbitAdminIntegrationTests extends NeedsManagementTests {
 		Exchange exchange = new DirectExchange(RabbitAdmin.DEFAULT_EXCHANGE_NAME);
 		context.getBeanFactory().registerSingleton("foo", exchange);
 		String queueName = "test.queue";
-		final Queue queue = new Queue(queueName, false, false, false);
+		final Queue queue = new Queue(queueName, true, false, false);
 		context.getBeanFactory().registerSingleton("bar", queue);
 		Binding binding = new Binding(queueName, DestinationType.QUEUE, exchange.getName(), "test.routingKey", null);
 		context.getBeanFactory().registerSingleton("baz", binding);

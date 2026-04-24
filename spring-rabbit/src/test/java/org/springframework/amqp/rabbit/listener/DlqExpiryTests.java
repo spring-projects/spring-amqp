@@ -95,7 +95,7 @@ public class DlqExpiryTests {
 
 		@Bean
 		public Queue main() {
-			return QueueBuilder.nonDurable("test.expiry.main").autoDelete()
+			return QueueBuilder.durable("test.expiry.main").autoDelete()
 					.withArgument("x-dead-letter-exchange", "")
 					.withArgument("x-dead-letter-routing-key", "test.expiry.dlq")
 					.build();
@@ -103,7 +103,7 @@ public class DlqExpiryTests {
 
 		@Bean
 		public Queue dlq() {
-			return QueueBuilder.nonDurable("test.expiry.dlq").autoDelete()
+			return QueueBuilder.durable("test.expiry.dlq").autoDelete()
 					.withArgument("x-dead-letter-exchange", "")
 					.withArgument("x-dead-letter-routing-key", "test.expiry.main")
 					.withArgument("x-message-ttl", 100)

@@ -871,6 +871,7 @@ public class RabbitTemplatePublisherCallbacksIntegration1Tests {
 	public void testWithFuture() throws Exception {
 		RabbitAdmin admin = new RabbitAdmin(this.connectionFactory);
 		Queue queue = QueueBuilder.nonDurable()
+				.exclusive()
 				.autoDelete()
 				.maxLength(1L)
 				.overflow(Overflow.rejectPublish)

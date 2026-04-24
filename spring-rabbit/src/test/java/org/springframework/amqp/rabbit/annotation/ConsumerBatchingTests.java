@@ -213,7 +213,7 @@ public class ConsumerBatchingTests {
 
 		@Bean
 		public org.springframework.amqp.core.Queue batch3() {
-			return QueueBuilder.nonDurable("c.batch.3")
+			return QueueBuilder.durable("c.batch.3")
 					.autoDelete()
 					.deadLetterExchange("")
 					.deadLetterRoutingKey("c.batch.3.dlq")
@@ -222,14 +222,14 @@ public class ConsumerBatchingTests {
 
 		@Bean
 		public org.springframework.amqp.core.Queue batch3Dlq() {
-			return QueueBuilder.nonDurable("c.batch.3.dlq")
+			return QueueBuilder.durable("c.batch.3.dlq")
 					.autoDelete()
 					.build();
 		}
 
 		@Bean
 		public org.springframework.amqp.core.Queue batch4() {
-			return QueueBuilder.nonDurable("c.batch.4")
+			return QueueBuilder.durable("c.batch.4")
 					.autoDelete()
 					.deadLetterExchange("")
 					.deadLetterRoutingKey("c.batch.4.dlq")
@@ -238,14 +238,14 @@ public class ConsumerBatchingTests {
 
 		@Bean
 		public org.springframework.amqp.core.Queue batch4Dlq() {
-			return QueueBuilder.nonDurable("c.batch.4.dlq")
+			return QueueBuilder.durable("c.batch.4.dlq")
 					.autoDelete()
 					.build();
 		}
 
 		@Bean
 		public org.springframework.amqp.core.Queue batch5() {
-			return QueueBuilder.nonDurable("c.batch.5")
+			return QueueBuilder.durable("c.batch.5")
 					.autoDelete()
 					.deadLetterExchange("")
 					.deadLetterRoutingKey("c.batch.5.dlq")
@@ -254,7 +254,7 @@ public class ConsumerBatchingTests {
 
 		@Bean
 		public org.springframework.amqp.core.Queue batch5Dlq() {
-			return QueueBuilder.nonDurable("c.batch.5.dlq")
+			return QueueBuilder.durable("c.batch.5.dlq")
 					.autoDelete()
 					.build();
 		}

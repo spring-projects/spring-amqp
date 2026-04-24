@@ -95,7 +95,7 @@ public class FixedReplyQueueDeadLetterTests extends NeedsManagementTests {
 		assertThat(arguments.get("x-dead-letter-routing-key")).isEqualTo("reply.dlrk");
 		assertThat(arguments.get("x-max-priority")).isEqualTo(4);
 		assertThat(arguments.get("x-queue-mode")).isEqualTo("lazy");
-		assertThat(arguments.get(Queue.X_QUEUE_LEADER_LOCATOR)).isEqualTo(LeaderLocator.minLeaders.getValue());
+		assertThat(arguments.get(Queue.X_QUEUE_LEADER_LOCATOR)).isEqualTo(LeaderLocator.balanced.getValue());
 		assertThat(arguments.get("x-single-active-consumer")).isEqualTo(Boolean.TRUE);
 	}
 
@@ -128,7 +128,7 @@ public class FixedReplyQueueDeadLetterTests extends NeedsManagementTests {
 		assertThat(arguments.get("x-dead-letter-routing-key")).isEqualTo("reply.dlrk");
 		assertThat(arguments.get("x-max-priority")).isEqualTo(4);
 		assertThat(arguments.get("x-queue-mode")).isEqualTo("lazy");
-		assertThat(arguments.get(Queue.X_QUEUE_LEADER_LOCATOR)).isEqualTo(LeaderLocator.random.getValue());
+		assertThat(arguments.get(Queue.X_QUEUE_LEADER_LOCATOR)).isEqualTo(LeaderLocator.balanced.getValue());
 
 		Map<String, Object> exchange = exchangeInfo("dlx.test.requestEx");
 		assertThat(arguments(exchange).get("alternate-exchange")).isEqualTo("alternate");
@@ -237,7 +237,7 @@ public class FixedReplyQueueDeadLetterTests extends NeedsManagementTests {
 		 */
 		@Bean
 		public Queue requestQueue() {
-			return QueueBuilder.nonDurable("dlx.test.requestQ")
+			return QueueBuilder.durable("dlx.test.requestQ")
 					.autoDelete()
 					.build();
 		}
@@ -247,7 +247,7 @@ public class FixedReplyQueueDeadLetterTests extends NeedsManagementTests {
 		 */
 		@Bean
 		public Queue replyQueue() {
-			return QueueBuilder.nonDurable("dlx.test.replyQ")
+			return QueueBuilder.durable("dlx.test.replyQ")
 				    .autoDelete()
 				    .withArgument("x-dead-letter-exchange", "reply.dlx")
 				    .build();
@@ -258,14 +258,14 @@ public class FixedReplyQueueDeadLetterTests extends NeedsManagementTests {
 		 */
 		@Bean
 		public Queue dlq() {
-			return QueueBuilder.nonDurable("dlx.test.DLQ")
+			return QueueBuilder.durable("dlx.test.DLQ")
 					.autoDelete()
 					.build();
 		}
 
 		@Bean
 		public Queue allArgs1() {
-			return QueueBuilder.nonDurable("all.args.1")
+			return QueueBuilder.durable("all.args.1")
 					.ttl(1000)
 					.expires(200_000)
 					.maxLength(42L)
@@ -275,14 +275,14 @@ public class FixedReplyQueueDeadLetterTests extends NeedsManagementTests {
 					.deadLetterRoutingKey("reply.dlrk")
 					.maxPriority(4)
 					.lazy()
-					.leaderLocator(LeaderLocator.minLeaders)
+					.leaderLocator(LeaderLocator.balanced)
 					.singleActiveConsumer()
 					.build();
 		}
 
 		@Bean
 		public Queue allArgs2() {
-			return QueueBuilder.nonDurable("all.args.2")
+			return QueueBuilder.durable("all.args.2")
 					.ttl(1000)
 					.expires(200_000)
 					.maxLength(42L)
@@ -298,7 +298,7 @@ public class FixedReplyQueueDeadLetterTests extends NeedsManagementTests {
 
 		@Bean
 		public Queue allArgs3() {
-			return QueueBuilder.nonDurable("all.args.3")
+			return QueueBuilder.durable("all.args.3")
 					.ttl(1000)
 					.expires(200_000)
 					.maxLength(42L)
@@ -308,7 +308,7 @@ public class FixedReplyQueueDeadLetterTests extends NeedsManagementTests {
 					.deadLetterRoutingKey("reply.dlrk")
 					.maxPriority(4)
 					.lazy()
-					.leaderLocator(LeaderLocator.random)
+					.leaderLocator(LeaderLocator.balanced)
 					.build();
 		}
 
