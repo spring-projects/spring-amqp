@@ -24,7 +24,7 @@ rabbitmqVersion = "5.29.0"
 reactorVersion = "2025.0.5"
 springDataVersion = "2026.0.0-RC1"
 springVersion = "7.0.7"
-testcontainersVersion = "2.0.4"
+testcontainersVersion = "2.0.5"
 
 [libraries]
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertjVersion" }
