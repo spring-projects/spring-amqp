@@ -196,8 +196,6 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	private final String uuid = UUID.randomUUID().toString();
 
-	private final AtomicInteger messageTagProvider = new AtomicInteger();
-
 	private final StandardEvaluationContext evaluationContext = new StandardEvaluationContext();
 
 	private final ReplyToAddressCallback<?> defaultReplyToAddressCallback =
@@ -1946,7 +1944,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 		return execute(channel -> {
 			final PendingReply pendingReply = new PendingReply();
-			String messageTag = String.valueOf(RabbitTemplate.this.messageTagProvider.incrementAndGet());
+			String messageTag = UUID.randomUUID().toString();
 			RabbitTemplate.this.replyHolder.putIfAbsent(messageTag, pendingReply);
 
 			Assert.isNull(message.getMessageProperties().getReplyTo(),
@@ -2107,7 +2105,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			}
 		}
 		if (messageTag == null) {
-			messageTag = String.valueOf(this.messageTagProvider.incrementAndGet());
+			messageTag = UUID.randomUUID().toString();
 		}
 		saveAndSetProperties(message, pendingReply, messageTag);
 		this.replyHolder.put(messageTag, pendingReply);
