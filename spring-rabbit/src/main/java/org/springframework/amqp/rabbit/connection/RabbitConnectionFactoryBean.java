@@ -28,6 +28,7 @@ import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -162,6 +163,9 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	private String keyStoreAlgorithm = SUN_X509;
 
 	private String trustStoreAlgorithm = SUN_X509;
+
+	@Nullable
+	private URI uri;
 
 	public RabbitConnectionFactoryBean() {
 		this.connectionFactory.setAutomaticRecoveryEnabled(false);
@@ -486,12 +490,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * @see com.rabbitmq.client.ConnectionFactory#setUri(java.net.URI)
 	 */
 	public void setUri(URI uri) {
-		try {
-			this.connectionFactory.setUri(uri);
-		}
-		catch (URISyntaxException | NoSuchAlgorithmException | KeyManagementException e) {
-			throw new IllegalArgumentException("Unable to set uri", e);
-		}
+		this.uri = uri;
 	}
 
 	/**
@@ -499,12 +498,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * @see com.rabbitmq.client.ConnectionFactory#setUri(java.lang.String)
 	 */
 	public void setUri(String uriString) {
-		try {
-			this.connectionFactory.setUri(uriString);
-		}
-		catch (URISyntaxException | NoSuchAlgorithmException | KeyManagementException e) {
-			throw new IllegalArgumentException("Unable to set uri", e);
-		}
+		setUri(URI.create(uriString));
 	}
 
 	/**
@@ -774,8 +768,19 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	@Override
 	protected ConnectionFactory createInstance() {
+		if (this.uri != null && !this.useSSL) {
+			this.useSSL = this.uri.getScheme().toLowerCase(Locale.ROOT).equals("amqps");
+		}
 		if (this.useSSL) {
 			setUpSSL();
+		}
+		if (this.uri != null) {
+			try {
+				this.connectionFactory.setUri(this.uri);
+			}
+			catch (URISyntaxException | NoSuchAlgorithmException | KeyManagementException e) {
+				throw new IllegalArgumentException("Unable to set uri", e);
+			}
 		}
 		return this.connectionFactory;
 	}

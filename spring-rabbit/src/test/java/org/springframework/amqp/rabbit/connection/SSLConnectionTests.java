@@ -24,6 +24,7 @@ import javax.net.ssl.SSLContext;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.SslContextFactory;
 import com.rabbitmq.client.impl.CredentialsProvider;
 import com.rabbitmq.client.impl.CredentialsRefreshService;
 import org.apache.commons.logging.Log;
@@ -254,6 +255,19 @@ public class SSLConnectionTests {
 				.isSameAs(provider);
 		assertThat(TestUtils.getPropertyValue(fb.getRabbitConnectionFactory(), "credentialsRefreshService"))
 				.isSameAs(service);
+	}
+
+	@Test
+	public void sslUriEnablesSslAsWell() throws Exception {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		fb.setUri("amqps://guest:guest@localhost:5671");
+		fb.afterPropertiesSet();
+		ConnectionFactory connectionFactory = fb.getObject();
+		assertThat(connectionFactory.isSSL()).isTrue();
+		SslContextFactory sslContextFactory =
+				(SslContextFactory) TestUtils.getPropertyValue(connectionFactory, "sslContextFactory");
+		SSLContext sslContext = sslContextFactory.create("test");
+		assertThat(sslContext.getProtocol()).isEqualTo("TLSv1.2");
 	}
 
 }
