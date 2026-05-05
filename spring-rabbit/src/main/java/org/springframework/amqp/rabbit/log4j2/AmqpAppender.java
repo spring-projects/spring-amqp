@@ -22,6 +22,7 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Timer;
@@ -640,6 +641,10 @@ public class AmqpAppender extends AbstractAppender {
 					.acceptIfNotNull(this.virtualHost, factoryBean::setVirtualHost)
 					// overrides all preceding items when set
 					.acceptIfNotNull(this.uri, factoryBean::setUri);
+
+			if (this.uri != null && !this.useSsl) {
+				this.useSsl = this.uri.getScheme().toLowerCase(Locale.ROOT).equals("amqps");
+			}
 
 			if (this.useSsl) {
 				factoryBean.setUseSSL(true);

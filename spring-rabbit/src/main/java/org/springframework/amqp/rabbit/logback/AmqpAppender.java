@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.logback;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.Calendar;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -738,6 +739,10 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 				.acceptIfNotNull(this.virtualHost, factoryBean::setVirtualHost)
 				// overrides all preceding items when set
 				.acceptIfNotNull(this.uri, factoryBean::setUri);
+
+		if (this.uri != null && !this.useSsl) {
+			this.useSsl = this.uri.getScheme().toLowerCase(Locale.ROOT).equals("amqps");
+		}
 
 		if (this.useSsl) {
 			factoryBean.setUseSSL(true);
