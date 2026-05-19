@@ -453,7 +453,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 				channel.basicAck(request.getMessageProperties().getDeliveryTag(), false);
 			}
 			catch (IOException e) {
-				this.logger.error("Failed to ack message", e);
+				this.logger.warn("Failed to ack message", e);
 			}
 		}
 	}
