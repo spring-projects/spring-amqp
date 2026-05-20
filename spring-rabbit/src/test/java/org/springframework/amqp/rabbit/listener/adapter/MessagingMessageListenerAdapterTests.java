@@ -30,6 +30,7 @@ import com.rabbitmq.client.Channel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.listener.ListenerExecutionFailedException;
 import org.springframework.amqp.listener.adapter.DelegatingInvocableHandler;
@@ -57,6 +58,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -334,6 +336,29 @@ public class MessagingMessageListenerAdapterTests {
 		listener.onMessage(message, channel);
 		verify(channel).basicPublish(any(), any(), anyBoolean(), any(), any());
 		assertThat(ehCalled.get()).isTrue();
+	}
+
+	@Test
+	void acknowledgeOnErrorDefaultAutoAcksInManualMode() throws Exception {
+		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage("foo");
+		Channel channel = mock(Channel.class);
+		MessagingMessageListenerAdapter listener = getSimpleInstance("fail",
+				(amqpMessage, ch, msg, ex) -> null, false, String.class);
+		listener.containerAckMode(AcknowledgeMode.MANUAL);
+		listener.onMessage(message, channel);
+		verify(channel).basicAck(message.getMessageProperties().getDeliveryTag(), false);
+	}
+
+	@Test
+	void acknowledgeOnErrorFalseSkipsAutoAckInManualMode() throws Exception {
+		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage("foo");
+		Channel channel = mock(Channel.class);
+		MessagingMessageListenerAdapter listener = getSimpleInstance("fail",
+				(amqpMessage, ch, msg, ex) -> null, false, String.class);
+		listener.containerAckMode(AcknowledgeMode.MANUAL);
+		listener.setAcknowledgeOnError(false);
+		listener.onMessage(message, channel);
+		verify(channel, never()).basicAck(message.getMessageProperties().getDeliveryTag(), false);
 	}
 
 	@Test

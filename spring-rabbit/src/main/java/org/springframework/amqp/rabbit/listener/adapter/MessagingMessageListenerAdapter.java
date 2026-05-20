@@ -68,6 +68,8 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 	protected final @Nullable RabbitListenerErrorHandler errorHandler;
 
+	private boolean acknowledgeOnError = true;
+
 	private @Nullable HandlerAdapter handlerAdapter;
 
 	public MessagingMessageListenerAdapter() {
@@ -108,6 +110,19 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 		return new MessagingMessageConverterAdapter(bean, method, batch, Channel.class);
 	}
+
+	/**
+	 * Set to {@code false} to prevent the framework from automatically acknowledging
+	 * messages when the error handler returns {@code null} in MANUAL ack mode. This
+	 * allows the error handler to manage acknowledgment itself (e.g. by calling
+	 * {@code channel.basicReject()}) without causing a duplicate ack error.
+	 * Default is {@code true} (auto-acknowledge on null return from error handler).
+	 * @param acknowledgeOnError false to skip the auto-ack on null return from error handler.
+	 */
+	public void setAcknowledgeOnError(boolean acknowledgeOnError) {
+		this.acknowledgeOnError = acknowledgeOnError;
+	}
+
 	/**
 	 * Set the {@link HandlerAdapter} to use to invoke the method
 	 * processing an incoming {@link org.springframework.amqp.core.Message}.
@@ -212,10 +227,13 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 							: getHandlerAdapter().getInvocationResultFor(errorResult, payload);
 					handleResult(invResult, amqpMessage, channel, message);
 				}
-				else {
-					logger.trace("Error handler returned no result; acknowledging the message.");
-					if (isManualAck()) {
+				else if (isManualAck()) {
+					if (this.acknowledgeOnError) {
+						logger.trace("Error handler returned no result; acknowledging the message.");
 						basicAck(amqpMessage, channel);
+					}
+					else {
+						logger.trace("Error handler returned no result; skipping auto-acknowledgment.");
 					}
 				}
 			}
