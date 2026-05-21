@@ -119,6 +119,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	 * {@code channel.basicReject()}) without causing a duplicate ack error.
 	 * Default is {@code true} (auto-acknowledge on null return from error handler).
 	 * @param acknowledgeOnError false to skip the auto-ack on null return from error handler.
+	 * @since 3.2.11
 	 */
 	public void setAcknowledgeOnError(boolean acknowledgeOnError) {
 		this.acknowledgeOnError = acknowledgeOnError;
