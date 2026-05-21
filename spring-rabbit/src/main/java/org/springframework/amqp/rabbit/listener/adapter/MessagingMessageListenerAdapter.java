@@ -57,6 +57,7 @@ import org.springframework.util.Assert;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Kai Stapel
+ * @author Aram Peres
  *
  * @since 1.4
  */
@@ -117,6 +118,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	 * allows the error handler to manage acknowledgment itself (e.g. by calling
 	 * {@code channel.basicReject()}) without causing a duplicate ack error.
 	 * Default is {@code true} (auto-acknowledge on null return from error handler).
+	 * @since 3.2.11
 	 * @param acknowledgeOnError false to skip the auto-ack on null return from error handler.
 	 */
 	public void setAcknowledgeOnError(boolean acknowledgeOnError) {

@@ -66,6 +66,7 @@ import static org.mockito.Mockito.verify;
  * @author Artem Bilan
  * @author Gary Russell
  * @author Kai Stapel
+ * @author Aram Peres
  */
 public class MessagingMessageListenerAdapterTests {
 

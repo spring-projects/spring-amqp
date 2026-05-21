@@ -47,6 +47,7 @@ import org.springframework.util.Assert;
  * @author Ngoc Nhan
  * @author Artem Bilan
  * @author Stephane Nicoll
+ * @author Aram Peres
  *
  * @since 2.4
  *
@@ -232,6 +233,7 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	 * acknowledgment itself (e.g. via {@code channel.basicReject()}) without causing
 	 * a duplicate-ack error. Default is {@code true}.
 	 * @param acknowledgeOnError false to skip auto-ack on null return from error handler.
+	 * @since 3.2.11
 	 * @see MessagingMessageListenerAdapter#setAcknowledgeOnError(boolean)
 	 */
 	public void setAcknowledgeOnError(boolean acknowledgeOnError) {
