@@ -27,6 +27,7 @@ import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.adapter.AbstractAdaptableMessageListener;
+import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyPostProcessor;
 import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.beans.BeansException;
@@ -44,6 +45,10 @@ import org.springframework.util.Assert;
  *
  * @author Gary Russell
  * @author Ngoc Nhan
+ * @author Artem Bilan
+ * @author Stephane Nicoll
+ * @author Aram Peres
+ *
  * @since 2.4
  *
  */
@@ -65,6 +70,8 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 	private Boolean micrometerEnabled;
 
 	private Boolean observationEnabled;
+
+	private Boolean acknowledgeOnError;
 
 	private ApplicationContext applicationContext;
 
@@ -151,6 +158,10 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 					.acceptIfCondition(this.retryTemplate != null && this.recoveryCallback != null,
 							this.recoveryCallback, messageListener::setRecoveryCallback)
 					.acceptIfNotNull(this.defaultRequeueRejected, messageListener::setDefaultRequeueRejected);
+			if (iml instanceof MessagingMessageListenerAdapter adapter) {
+				JavaUtils.INSTANCE
+						.acceptIfNotNull(this.acknowledgeOnError, adapter::setAcknowledgeOnError);
+			}
 			if (endpoint != null) {
 				JavaUtils.INSTANCE
 						.acceptIfNotNull(endpoint.getReplyPostProcessor(), messageListener::setReplyPostProcessor)
@@ -210,6 +221,20 @@ public abstract class BaseRabbitListenerContainerFactory<C extends MessageListen
 
 	protected Boolean getObservationEnabled() {
 		return this.observationEnabled;
+	}
+
+	/**
+	 * Set to {@code false} to prevent auto-acknowledgment of messages when a
+	 * {@link org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler}
+	 * returns {@code null} in MANUAL ack mode. This lets the error handler manage
+	 * acknowledgment itself (e.g. via {@code channel.basicReject()}) without causing
+	 * a duplicate-ack error. Default is {@code true}.
+	 * @param acknowledgeOnError false to skip auto-ack on null return from error handler.
+	 * @since 3.2.11
+	 * @see MessagingMessageListenerAdapter#setAcknowledgeOnError(boolean)
+	 */
+	public void setAcknowledgeOnError(boolean acknowledgeOnError) {
+		this.acknowledgeOnError = acknowledgeOnError;
 	}
 
 	@Override
