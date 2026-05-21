@@ -341,7 +341,7 @@ public class MessagingMessageListenerAdapterTests {
 
 	@Test
 	void acknowledgeOnErrorDefaultAutoAcksInManualMode() throws Exception {
-		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage("foo");
+		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage("manualAcknowledgeOnErrorDefault");
 		Channel channel = mock(Channel.class);
 		MessagingMessageListenerAdapter listener = getSimpleInstance("fail",
 				(amqpMessage, ch, msg, ex) -> null, false, String.class);
@@ -352,7 +352,7 @@ public class MessagingMessageListenerAdapterTests {
 
 	@Test
 	void acknowledgeOnErrorFalseSkipsAutoAckInManualMode() throws Exception {
-		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage("foo");
+		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage("manualAcknowledgeOnErrorFalse");
 		Channel channel = mock(Channel.class);
 		MessagingMessageListenerAdapter listener = getSimpleInstance("fail",
 				(amqpMessage, ch, msg, ex) -> null, false, String.class);
