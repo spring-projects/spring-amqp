@@ -64,6 +64,7 @@ import org.springframework.util.TypeUtils;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Kai Stapel
+ * @author Aram Peres
  *
  * @since 1.4
  */
@@ -74,6 +75,8 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	protected final boolean returnExceptions;
 
 	protected final @Nullable RabbitListenerErrorHandler errorHandler;
+
+	private boolean acknowledgeOnError = true;
 
 	private @Nullable HandlerAdapter handlerAdapter;
 
@@ -97,6 +100,19 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		this.messagingMessageConverter = new MessagingMessageConverterAdapter(bean, method, batch);
 		this.returnExceptions = returnExceptions;
 		this.errorHandler = errorHandler;
+	}
+
+	/**
+	 * Set to {@code false} to prevent the framework from automatically acknowledging
+	 * messages when the error handler returns {@code null} in MANUAL ack mode. This
+	 * allows the error handler to manage acknowledgment itself (e.g. by calling
+	 * {@code channel.basicReject()}) without causing a duplicate ack error.
+	 * Default is {@code true} (auto-acknowledge on null return from error handler).
+	 * @param acknowledgeOnError false to skip the auto-ack on null return from error handler.
+	 * @since 3.2.11
+	 */
+	public void setAcknowledgeOnError(boolean acknowledgeOnError) {
+		this.acknowledgeOnError = acknowledgeOnError;
 	}
 
 	/**
@@ -199,10 +215,13 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 							: getHandlerAdapter().getInvocationResultFor(errorResult, payload);
 					handleResult(invResult, amqpMessage, channel, message);
 				}
-				else {
-					logger.trace("Error handler returned no result; acknowledging the message.");
-					if (isManualAck()) {
+				else if (isManualAck()) {
+					if (this.acknowledgeOnError) {
+						logger.trace("Error handler returned no result; acknowledging the message.");
 						basicAck(amqpMessage, channel);
+					}
+					else {
+						logger.trace("Error handler returned no result; skipping auto-acknowledgment.");
 					}
 				}
 			}
