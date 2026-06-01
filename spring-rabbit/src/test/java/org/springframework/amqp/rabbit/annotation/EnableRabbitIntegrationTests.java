@@ -255,19 +255,6 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		System.setProperty(RabbitListenerAnnotationBeanPostProcessor.RABBIT_EMPTY_STRING_ARGUMENTS_PROPERTY,
 				"test-empty");
 		System.setProperty("spring.amqp.deserialization.trust.all", "true");
-		RabbitAvailableCondition.getBrokerRunning().removeExchanges("auto.exch.tx",
-				"auto.exch",
-				"auto.exch.fanout",
-				"auto.exch",
-				"auto.exch",
-				"auto.start",
-				"auto.headers",
-				"auto.headers",
-				"auto.internal",
-				"multi.exch",
-				"multi.json.exch",
-				"multi.exch.tx",
-				"test.metaFanout");
 	}
 
 	@AfterAll

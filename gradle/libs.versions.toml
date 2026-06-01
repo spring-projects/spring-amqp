@@ -9,8 +9,8 @@ hibernateValidationVersion = "9.1.0.Final"
 jacksonBomVersion = "2.21.4"
 jackson3Version = "3.1.4"
 jaywayJsonPathVersion = "3.0.0"
-junitJupiterVersion = "6.0.3"
-kotlinCoroutinesVersion = "1.10.2"
+junitJupiterVersion = "6.1.0"
+kotlinCoroutinesVersion = "1.11.0"
 log4jVersion = "2.25.4"
 logbackVersion = "1.5.33"
 micrometerDocsVersion = "1.0.4"
@@ -18,9 +18,9 @@ micrometerVersion = "1.17.0-SNAPSHOT"
 micrometerTracingVersion = "1.7.0-SNAPSHOT"
 mockitoVersion = "5.23.0"
 protonjVersion = "1.1.0"
-rabbitmqAmqpClientVersion = "0.10.0"
-rabbitmqStreamVersion = "1.5.0"
-rabbitmqVersion = "5.29.0"
+rabbitmqAmqpClientVersion = "1.1.0"
+rabbitmqStreamVersion = "1.7.0"
+rabbitmqVersion = "5.31.0"
 reactorVersion = "2025.0.5"
 springDataVersion = "2026.0.0-SNAPSHOT"
 springVersion = "7.0.7"
@@ -55,7 +55,7 @@ testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", version
 tools-jackson-bom = { module = "tools.jackson:jackson-bom", version.ref = "jackson3Version" }
 
 [plugins]
-aggregate-javadoc = { id = "io.freefair.aggregate-javadoc", version = "9.2.0" }
+aggregate-javadoc = { id = "io.freefair.aggregate-javadoc", version = "9.5.0" }
 antora = { id = "org.antora", version = "1.0.0" }
 nullability = { id = "io.spring.nullability", version = "0.0.13" }
 spring-antora-generateYml = { id = "io.spring.antora.generate-antora-yml", version = "0.0.1" }
