@@ -371,8 +371,8 @@ project('spring-rabbit') {
 		testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
 		testImplementation libs.httpclient5
 
-		testRuntimeOnly 'tools.jackson.core:jackson-databind'
-		testRuntimeOnly 'tools.jackson.dataformat:jackson-dataformat-xml'
+		testImplementation 'tools.jackson.core:jackson-databind'
+		testImplementation 'tools.jackson.dataformat:jackson-dataformat-xml'
 	}
 }
 

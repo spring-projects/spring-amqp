@@ -33,10 +33,10 @@ public class JacksonXmlMessageConverter extends AbstractJacksonMessageConverter 
 
 	/**
 	 * Construct with an internal {@link XmlMapper} instance
-	 * and trusted packed to all ({@code *}).
+	 * and no any trusted packed.
 	 */
 	public JacksonXmlMessageConverter() {
-		this("*");
+		this(new String[0]);
 	}
 
 	/**
@@ -55,11 +55,11 @@ public class JacksonXmlMessageConverter extends AbstractJacksonMessageConverter 
 
 	/**
 	 * Construct with the provided {@link XmlMapper} instance
-	 * and trusted packed to all ({@code *}).
+	 * and no any trusted packed.
 	 * @param xmlMapper the {@link XmlMapper} to use.
 	 */
 	public JacksonXmlMessageConverter(XmlMapper xmlMapper) {
-		this(xmlMapper, "*");
+		this(xmlMapper, new String[0]);
 	}
 
 	/**

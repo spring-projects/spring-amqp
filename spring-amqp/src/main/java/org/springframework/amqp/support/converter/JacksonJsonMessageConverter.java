@@ -41,10 +41,10 @@ public class JacksonJsonMessageConverter extends AbstractJacksonMessageConverter
 	private @Nullable JacksonProjectingMessageConverter projectingConverter;
 
 	/**
-	 * Construct with an internal {@link JsonMapper} instance and trusted packed to all ({@code *}).
+	 * Construct with an internal {@link JsonMapper} instance and no any trusted packages.
 	 */
 	public JacksonJsonMessageConverter() {
-		this("*");
+		this(new String[0]);
 	}
 
 	/**
@@ -64,11 +64,11 @@ public class JacksonJsonMessageConverter extends AbstractJacksonMessageConverter
 	}
 
 	/**
-	 * Construct with the provided {@link JsonMapper} instance and trusted packed to all ({@code *}).
+	 * Construct with the provided {@link JsonMapper} instance and no any trusted packages.
 	 * @param jsonMapper the {@link JsonMapper} to use.
 	 */
 	public JacksonJsonMessageConverter(JsonMapper jsonMapper) {
-		this(jsonMapper, "*");
+		this(jsonMapper, new String[0]);
 	}
 
 	/**

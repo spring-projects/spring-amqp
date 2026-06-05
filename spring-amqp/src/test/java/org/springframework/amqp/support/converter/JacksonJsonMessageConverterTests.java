@@ -334,7 +334,7 @@ public class JacksonJsonMessageConverterTests {
 		messageProperties.setHeader("__TypeId__", Buz.class.getName());
 		messageProperties.setInferredArgumentType(Baz.class);
 		Message message = new Message(bytes, messageProperties);
-		JacksonJsonMessageConverter jsonMessageConverter = new JacksonJsonMessageConverter();
+		JacksonJsonMessageConverter jsonMessageConverter = new JacksonJsonMessageConverter("*");
 		Fiz buz = (Fiz) jsonMessageConverter.fromMessage(message);
 		assertThat(((Buz) buz).getField()).isEqualTo("foo");
 	}
@@ -364,7 +364,7 @@ public class JacksonJsonMessageConverterTests {
 		messageProperties.setHeader("__ContentTypeId__", Buz.class.getName());
 		Message message = new Message(bytes, messageProperties);
 		JsonMapper mapper = JsonMapper.builder().addModule(new BazModule()).build();
-		JacksonJsonMessageConverter jsonMessageConverter = new JacksonJsonMessageConverter(mapper);
+		JacksonJsonMessageConverter jsonMessageConverter = new JacksonJsonMessageConverter(mapper, "*");
 		@SuppressWarnings("unchecked")
 		List<Fiz> buzs = (List<Fiz>) jsonMessageConverter.fromMessage(message);
 		assertThat(buzs).hasSize(1);
@@ -407,7 +407,7 @@ public class JacksonJsonMessageConverterTests {
 	@Test
 	void charsetInContentType() {
 		trade.setUserName("John Doe ∫");
-		JacksonJsonMessageConverter converter = new JacksonJsonMessageConverter();
+		JacksonJsonMessageConverter converter = new JacksonJsonMessageConverter("*");
 		String utf8 = "application/json;charset=utf-8";
 		converter.setSupportedContentType(MimeTypeUtils.parseMimeType(utf8));
 		Message message = converter.toMessage(trade, new MessageProperties());
@@ -442,7 +442,7 @@ public class JacksonJsonMessageConverterTests {
 	@Test
 	void noConfigForCharsetInContentType() {
 		trade.setUserName("John Doe ∫");
-		JacksonJsonMessageConverter converter = new JacksonJsonMessageConverter();
+		JacksonJsonMessageConverter converter = new JacksonJsonMessageConverter("*");
 		Message message = converter.toMessage(trade, new MessageProperties());
 		int bodyLength8 = message.getBody().length;
 		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
