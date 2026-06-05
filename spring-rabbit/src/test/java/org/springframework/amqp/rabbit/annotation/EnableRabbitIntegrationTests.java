@@ -2291,7 +2291,9 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		@Bean
 		public JacksonJsonMessageConverter jsonConverter() {
 			JacksonJsonMessageConverter jackson2JsonMessageConverter = new JacksonJsonMessageConverter();
-			DefaultJacksonJavaTypeMapper mapper = TestUtils.getPropertyValue(jackson2JsonMessageConverter, "javaTypeMapper");
+			DefaultJacksonJavaTypeMapper mapper =
+					TestUtils.getPropertyValue(jackson2JsonMessageConverter, "javaTypeMapper",
+							DefaultJacksonJavaTypeMapper.class);
 			mapper.addTrustedPackages("*");
 			mapper = Mockito.spy(mapper);
 			new DirectFieldAccessor(jackson2JsonMessageConverter).setPropertyValue("javaTypeMapper", mapper);
