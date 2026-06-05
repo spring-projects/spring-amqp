@@ -251,8 +251,9 @@ NOTE: This type inference can only be achieved when the `@RabbitListener` annota
 With class-level `@RabbitListener`, the converted type is used to select which `@RabbitHandler` method to invoke.
 For this reason, the infrastructure provides the `targetObject` message property, which you can use in a custom converter to determine the type.
 
-IMPORTANT: Starting with version 1.6.11, `JacksonJsonMessageConverter` and, therefore, `DefaultJacksonJavaTypeMapper` (`DefaultClassMapper`) provide the `trustedPackages` option to overcome https://pivotal.io/security/cve-2017-4995[Serialization Gadgets] vulnerability.
-By default, and for backward compatibility, the `JacksonJsonMessageConverter` trusts all packages -- that is, it uses `*` for the option.
+IMPORTANT: Starting with version 1.6.11, `JacksonJsonMessageConverter` and, therefore, `DefaultJacksonJavaTypeMapper` (`DefaultClassMapper`) provide the `trustedPackages` option to overcome https://spring.io/security/cve-2017-4995[Serialization Gadgets] vulnerability.
+By default, the `JacksonJsonMessageConverter` trusts only to `java.util` and `java.lang` packages.
+The `*` can be used to trust all.
 
 Starting with version 2.4.7, the converter can be configured to return `Optional.empty()` if Jackson returns `null` after deserializing the message body.
 This facilitates `@RabbitListener` s to receive null payloads, in two ways:
@@ -497,4 +498,3 @@ These changes are to avoid unexpected propagation of these properties if the sam
 
 Starting with version 2.2, the `DefaultMessagePropertiesConverter` converts any custom headers with values of type `Class<?>`  using `getName()` instead of `toString()`; this avoids consuming application having to parse the class name out of the `toString()` representation.
 For rolling upgrades, you may need to change your consumers to understand both formats until all producers are upgraded.
-

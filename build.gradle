@@ -407,8 +407,8 @@ project('spring-rabbit') {
 		testImplementation "org.apache.httpcomponents.client5:httpclient5:$commonsHttpClientVersion"
 
 
-		testRuntimeOnly 'tools.jackson.core:jackson-databind'
-		testRuntimeOnly 'tools.jackson.dataformat:jackson-dataformat-xml'
+		testImplementation 'tools.jackson.core:jackson-databind'
+		testImplementation 'tools.jackson.dataformat:jackson-dataformat-xml'
 	}
 }
 
