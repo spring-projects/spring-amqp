@@ -39,12 +39,12 @@ public class Jackson2JsonMessageConverter extends AbstractJackson2MessageConvert
 
 	/**
 	 * Construct with an internal {@link ObjectMapper} instance
-	 * and trusted packed to all ({@code *}).
+	 * and no any trusted packages.
 	 * @since 1.6.11
 	 * @see JacksonUtils#enhancedObjectMapper()
 	 */
 	public Jackson2JsonMessageConverter() {
-		this("*");
+		this(new String[0]);
 	}
 
 	/**
@@ -62,12 +62,12 @@ public class Jackson2JsonMessageConverter extends AbstractJackson2MessageConvert
 
 	/**
 	 * Construct with the provided {@link ObjectMapper} instance
-	 * and trusted packed to all ({@code *}).
+	 * and no any trusted packages.
 	 * @param jsonObjectMapper the {@link ObjectMapper} to use.
 	 * @since 1.6.12
 	 */
 	public Jackson2JsonMessageConverter(ObjectMapper jsonObjectMapper) {
-		this(jsonObjectMapper, "*");
+		this(jsonObjectMapper, new String[0]);
 	}
 
 	/**

@@ -409,10 +409,10 @@ project('spring-rabbit') {
 		testImplementation "org.testcontainers:rabbitmq"
 		testImplementation 'org.testcontainers:junit-jupiter'
 		testImplementation "org.apache.httpcomponents.client5:httpclient5:$commonsHttpClientVersion"
-		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core'
-		testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind'
-		testRuntimeOnly 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
-		testRuntimeOnly 'com.fasterxml.jackson.module:jackson-module-kotlin'
+		testImplementation 'com.fasterxml.jackson.core:jackson-core'
+		testImplementation 'com.fasterxml.jackson.core:jackson-databind'
+		testImplementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
+		testImplementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
 		testRuntimeOnly("junit:junit:$junit4Version") {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
 		}

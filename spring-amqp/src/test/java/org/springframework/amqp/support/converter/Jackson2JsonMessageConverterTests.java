@@ -335,7 +335,7 @@ public class Jackson2JsonMessageConverterTests {
 		messageProperties.setHeader("__TypeId__", Buz.class.getName());
 		messageProperties.setInferredArgumentType(Baz.class);
 		Message message = new Message(bytes, messageProperties);
-		Jackson2JsonMessageConverter j2Converter = new Jackson2JsonMessageConverter();
+		Jackson2JsonMessageConverter j2Converter = new Jackson2JsonMessageConverter("*");
 		Fiz buz = (Fiz) j2Converter.fromMessage(message);
 		assertThat(((Buz) buz).getField()).isEqualTo("foo");
 	}
@@ -367,7 +367,7 @@ public class Jackson2JsonMessageConverterTests {
 		Message message = new Message(bytes, messageProperties);
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.registerModule(new BazModule());
-		Jackson2JsonMessageConverter j2Converter = new Jackson2JsonMessageConverter(mapper);
+		Jackson2JsonMessageConverter j2Converter = new Jackson2JsonMessageConverter(mapper, "*");
 		@SuppressWarnings("unchecked")
 		List<Fiz> buzs = (List<Fiz>) j2Converter.fromMessage(message);
 		assertThat(buzs).hasSize(1);
@@ -410,7 +410,7 @@ public class Jackson2JsonMessageConverterTests {
 	@Test
 	void charsetInContentType() {
 		trade.setUserName("John Doe ∫");
-		Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
+		Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter("*");
 		String utf8 = "application/json;charset=utf-8";
 		converter.setSupportedContentType(MimeTypeUtils.parseMimeType(utf8));
 		Message message = converter.toMessage(trade, new MessageProperties());
@@ -445,7 +445,7 @@ public class Jackson2JsonMessageConverterTests {
 	@Test
 	void noConfigForCharsetInContentType() {
 		trade.setUserName("John Doe ∫");
-		Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
+		Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter("*");
 		Message message = converter.toMessage(trade, new MessageProperties());
 		int bodyLength8 = message.getBody().length;
 		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);

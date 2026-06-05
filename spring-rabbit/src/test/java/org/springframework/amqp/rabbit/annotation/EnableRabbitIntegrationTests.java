@@ -1741,7 +1741,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 			factory.setConnectionFactory(rabbitConnectionFactory());
 			factory.setErrorHandler(errorHandler());
 			factory.setConsumerTagStrategy(consumerTagStrategy());
-			Jackson2JsonMessageConverter messageConverter = new Jackson2JsonMessageConverter();
+			Jackson2JsonMessageConverter messageConverter = new Jackson2JsonMessageConverter("*");
 			DefaultClassMapper classMapper = new DefaultClassMapper();
 			Map<String, Class<?>> idClassMapping = new HashMap<>();
 			idClassMapping.put(
@@ -1760,7 +1760,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 			factory.setConnectionFactory(rabbitConnectionFactory());
 			factory.setErrorHandler(errorHandler());
 			factory.setConsumerTagStrategy(consumerTagStrategy());
-			Jackson2JsonMessageConverter messageConverter = new Jackson2JsonMessageConverter();
+			Jackson2JsonMessageConverter messageConverter = new Jackson2JsonMessageConverter("*");
 			factory.setMessageConverter(messageConverter);
 			factory.setReceiveTimeout(10L);
 			factory.setConcurrentConsumers(2);
@@ -1994,7 +1994,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 		@Bean
 		public RabbitTemplate jsonRabbitTemplate() {
 			RabbitTemplate rabbitTemplate = new RabbitTemplate(rabbitConnectionFactory());
-			rabbitTemplate.setMessageConverter(new Jackson2JsonMessageConverter());
+			rabbitTemplate.setMessageConverter(new Jackson2JsonMessageConverter("*"));
 			return rabbitTemplate;
 		}
 
@@ -2294,6 +2294,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 			Jackson2JsonMessageConverter jackson2JsonMessageConverter = new Jackson2JsonMessageConverter();
 			DefaultJackson2JavaTypeMapper mapper = Mockito.spy(TestUtils.getPropertyValue(jackson2JsonMessageConverter,
 					"javaTypeMapper", DefaultJackson2JavaTypeMapper.class));
+			mapper.addTrustedPackages("*");
 			new DirectFieldAccessor(jackson2JsonMessageConverter).setPropertyValue("javaTypeMapper", mapper);
 			jackson2JsonMessageConverter.setUseProjectionForInterfaces(true);
 			return jackson2JsonMessageConverter;
@@ -2379,7 +2380,7 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 		@Bean
 		public Jackson2XmlMessageConverter xmlConverter() {
-			Jackson2XmlMessageConverter jackson2XmlMessageConverter = new Jackson2XmlMessageConverter();
+			Jackson2XmlMessageConverter jackson2XmlMessageConverter = new Jackson2XmlMessageConverter("*");
 			DefaultJackson2JavaTypeMapper mapper = Mockito.spy(TestUtils.getPropertyValue(jackson2XmlMessageConverter,
 					"javaTypeMapper", DefaultJackson2JavaTypeMapper.class));
 			new DirectFieldAccessor(jackson2XmlMessageConverter).setPropertyValue("javaTypeMapper", mapper);

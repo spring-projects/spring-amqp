@@ -129,7 +129,7 @@ public class EnableRabbitReturnTypesTests {
 
 		@Bean
 		public Jackson2JsonMessageConverter converter() {
-			return new Jackson2JsonMessageConverter();
+			return new Jackson2JsonMessageConverter("*");
 		}
 
 		@Bean
