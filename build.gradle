@@ -45,7 +45,7 @@ ext {
 	junitJupiterVersion = '6.0.3'
 	kotlinCoroutinesVersion = '1.10.2'
 	log4jVersion = '2.25.4'
-	logbackVersion = '1.5.33'
+	logbackVersion = '1.5.34'
 	micrometerDocsVersion = '1.0.4'
 	micrometerVersion = '1.16.5'
 	micrometerTracingVersion = '1.6.5'
