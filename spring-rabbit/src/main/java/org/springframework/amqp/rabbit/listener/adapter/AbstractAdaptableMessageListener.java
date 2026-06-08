@@ -456,7 +456,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	protected void asyncFailure(Message request, Channel channel, Throwable t, Object source) {
 		this.logger.error("Future, Mono, or suspend function was completed with an exception for " + request, t);
 		try {
-			channel.basicNack(request.getMessageProperties().getDeliveryTag(), false,
+			channel.basicReject(request.getMessageProperties().getDeliveryTag(),
 					ContainerUtils.shouldRequeue(this.defaultRequeueRejected, t, this.logger));
 		}
 		catch (IOException e) {

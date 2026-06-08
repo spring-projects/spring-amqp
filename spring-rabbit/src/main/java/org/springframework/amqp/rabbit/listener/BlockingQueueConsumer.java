@@ -862,8 +862,7 @@ public class BlockingQueueConsumer {
 					}
 				}
 				else {
-					this.channel.basicNack(tag, false,
-							ContainerUtils.shouldRequeue(this.defaultRequeueRejected, ex, logger));
+					this.channel.basicReject(tag, ContainerUtils.shouldRequeue(this.defaultRequeueRejected, ex, logger));
 				}
 			}
 		}
