@@ -463,7 +463,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 		this.logger.error("Future, Mono, or suspend function was completed with an exception for " + request, t);
 		Assert.notNull(channel, "'channel' must not be null.");
 		try {
-			channel.basicNack(request.getMessageProperties().getDeliveryTag(), false,
+			channel.basicReject(request.getMessageProperties().getDeliveryTag(),
 					ContainerUtils.shouldRequeue(this.defaultRequeueRejected, t, this.logger));
 		}
 		catch (IOException e) {
