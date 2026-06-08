@@ -162,7 +162,7 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 		this.logger.error("Future, Mono, or suspend function was completed with an exception for " + requests, t);
 		for (org.springframework.amqp.core.Message request : requests) {
 			try {
-				channel.basicNack(request.getMessageProperties().getDeliveryTag(), false,
+				channel.basicReject(request.getMessageProperties().getDeliveryTag(),
 						ContainerUtils.shouldRequeue(isDefaultRequeueRejected(), t, this.logger));
 			}
 			catch (IOException e) {
