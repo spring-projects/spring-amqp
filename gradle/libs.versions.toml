@@ -22,7 +22,7 @@ rabbitmqAmqpClientVersion = "1.1.0"
 rabbitmqStreamVersion = "1.7.0"
 rabbitmqVersion = "5.31.0"
 reactorVersion = "2025.0.6"
-springDataVersion = "2026.0.0-SNAPSHOT"
+springDataVersion = "2026.0.1-SNAPSHOT"
 springVersion = "7.0.8"
 testcontainersVersion = "2.0.5"
 
