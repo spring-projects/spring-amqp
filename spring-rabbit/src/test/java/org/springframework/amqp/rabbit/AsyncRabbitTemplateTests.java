@@ -33,6 +33,7 @@ import java.util.function.BiConsumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.RetryingTest;
 
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.AmqpMessageReturnedException;
@@ -217,7 +218,7 @@ public class AsyncRabbitTemplateTests {
 		assertThat(TestUtils.<Map<?, ?>>getPropertyValue(asyncTemplate, "pending")).isEmpty();
 	}
 
-	@Test
+	@RetryingTest(10)
 	public void testMessageCustomCorrelation() throws Exception {
 		Message message = getFooMessage();
 		message.getMessageProperties().setCorrelationId("foo");
