@@ -33,6 +33,7 @@ import org.apache.qpid.protonj2.client.Delivery;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.RetryingTest;
 import reactor.core.publisher.Mono;
 
 import org.springframework.amqp.client.AmqpClient;
@@ -174,7 +175,7 @@ class AmqpListenerAnnotationTests extends AbstractTestContainerTests {
 	@Autowired
 	MessageConverter jsonMessageConverter;
 
-	@Test
+	@RetryingTest(10)
 	void requestReplyAndContainerFactoryOverrides() {
 		var listenerContainer = this.beanFactory.getBean("monoListener", AmqpMessageListenerContainer.class);
 

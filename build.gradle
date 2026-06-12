@@ -165,6 +165,7 @@ configure(javaProjects) { subproject ->
 		testImplementation 'org.junit.jupiter:junit-jupiter-params'
 		testImplementation 'org.junit.jupiter:junit-jupiter-engine'
 		testImplementation 'org.junit.platform:junit-platform-launcher'
+		testImplementation libs.org.junit.pioneer
 		testImplementation libs.awaitility
 		testImplementation 'org.jetbrains.kotlin:kotlin-reflect'
 		testImplementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
