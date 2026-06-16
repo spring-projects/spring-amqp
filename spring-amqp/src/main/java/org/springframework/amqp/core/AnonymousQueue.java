@@ -64,9 +64,6 @@ public class AnonymousQueue extends Queue {
 	 */
 	public AnonymousQueue(org.springframework.amqp.core.NamingStrategy namingStrategy, Map<String, Object> arguments) {
 		super(namingStrategy.generateName(), false, true, true, arguments);
-		if (!getArguments().containsKey(X_QUEUE_LEADER_LOCATOR)) {
-			setLeaderLocator("client-local");
-		}
 	}
 
 }
