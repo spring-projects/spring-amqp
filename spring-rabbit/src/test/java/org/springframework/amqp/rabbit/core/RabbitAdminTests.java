@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
@@ -360,16 +361,17 @@ public class RabbitAdminTests extends NeedsManagementTests {
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
 		RabbitAdmin admin = new RabbitAdmin(cf);
 		AnonymousQueue queue = new AnonymousQueue();
+		queue.setLeaderLocator("client-local");
 		admin.declareQueue(queue);
 		AnonymousQueue queue1 = queue;
-		Map<String, Object> info = await().until(() -> queueInfo(queue1.getName()), inf -> inf != null);
+		Map<String, Object> info = await().until(() -> queueInfo(queue1.getName()), Objects::nonNull);
 		assertThat(arguments(info).get(Queue.X_QUEUE_LEADER_LOCATOR)).isEqualTo("client-local");
 
 		queue = new AnonymousQueue();
 		queue.setLeaderLocator(null);
 		admin.declareQueue(queue);
 		AnonymousQueue queue2 = queue;
-		info = await().until(() -> queueInfo(queue2.getName()), inf -> inf != null);
+		info = await().until(() -> queueInfo(queue2.getName()), Objects::nonNull);
 		assertThat(arguments(info).get(Queue.X_QUEUE_LEADER_LOCATOR)).isNull();
 		cf.destroy();
 	}
