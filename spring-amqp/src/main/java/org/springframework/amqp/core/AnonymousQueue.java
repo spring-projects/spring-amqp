@@ -70,9 +70,6 @@ public class AnonymousQueue extends Queue {
 			@Nullable Map<String, @Nullable Object> arguments) {
 
 		super(namingStrategy.generateName(), false, true, true, arguments);
-		if (!this.arguments.containsKey(X_QUEUE_LEADER_LOCATOR)) {
-			setLeaderLocator("client-local");
-		}
 	}
 
 }
