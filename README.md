@@ -40,11 +40,7 @@ To build complete distribution including `-dist`, `-docs`, and `-schema` zip fil
 
 	./gradlew dist
 
-To analyze and gather metrics using [Sonar](https://www.sonarqube.org/):
-
-	./gradlew clean build sonar
-
-(Please make sure that you have Sonar running, e.g. on localhost port 9000)
+(Please make sure that you have Sonar running, e.g., on localhost port 9000)
 
 
 # Using Eclipse
@@ -61,7 +57,7 @@ Browse to the *'spring-amqp'* root directory. All projects should import free of
 
 # Using Spring Tools
 
-Using the STS Gradle Support, you can directly import Gradle projects, without having to generate Eclipse metadata first.
+Using the STS Gradle Support, you can directly import Gradle projects without having to generate Eclipse metadata first.
 Please see the [Spring Tools Home Page](https://spring.io/tools).
 
 1. Select *File -> Import -> Existing Gradle Project*
@@ -102,7 +98,7 @@ Active contributors might be asked to join the core team, and given the ability 
 ## Code Conventions and Housekeeping
 None of these is essential for a pull request, but they will all help.  They can also be added after the original pull request but before a merge.
 
-* Use the Spring Framework code format conventions (import `eclipse-code-formatter.xml` from the root of the project if you are using Eclipse).
+* Use the Spring Framework code format conventions from the `src/eclipse` if you are using Eclipse.
 * Make sure all new .java files to have a simple Javadoc class comment with at least an @author tag identifying you, and preferably at least a paragraph on what the class is for.
 * Add the ASF license header comment to all new .java files (copy from existing files in the project)
 * Add yourself as an @author to the .java files that you modify substantially (more than cosmetic changes).

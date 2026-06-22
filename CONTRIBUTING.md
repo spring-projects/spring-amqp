@@ -1,0 +1,311 @@
+# Spring AMQP Contributor Guidelines
+
+Have something you'd like to contribute to **Spring AMQP**?
+We welcome pull requests, but ask that you carefully read this document first to understand how best to submit them;
+what kind of changes are likely to be accepted; and what to expect from the Spring team when evaluating your submission.
+
+Please refer back to this document as a checklist before issuing any pull request; this will save time for everyone!
+
+## Code of Conduct
+
+This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDUCT.adoc).
+By participating, you are expected to uphold this code. Please report unacceptable behavior to
+spring-code-of-conduct@pivotal.io.
+
+## Understand the basics
+
+Not sure what a **pull request** is, or how to submit one? Take a look at GitHub's excellent documentation:
+[Using Pull Requests](https://help.github.com/articles/using-pull-requests/) first.
+
+## Search GitHub (or JIRA) issues first; create one if necessary
+
+Is there already an issue that addresses your concern?
+Search the [GitHub issue tracker](https://github.com/spring-projects/spring-amqp/issues) (and [JIRA issue tracker](https://jira.spring.io/browse/AMQP)) to see if you can find something similar.
+If not, please create a new issue in GitHub before submitting a pull request unless the change is truly trivial, e.g. typo fixes,
+removing compiler warnings, etc.
+
+## Developer Certificate of Origin
+
+All commits must include a _Signed-off-by_ trailer at the end of each commit message to indicate that the contributor agrees to the Developer Certificate of Origin.
+For additional details, please refer to the blog post [Hello DCO, Goodbye CLA: Simplifying Contributions to Spring](https://spring.io/blog/2025/01/06/hello-dco-goodbye-cla-simplifying-contributions-to-spring).
+
+## Fork the Repository
+
+1. Go to [https://github.com/spring-projects/spring-amqp](https://github.com/spring-projects/spring-amqp)
+2. Hit the "fork" button and choose your own github account as the target
+3. For more detail see [Fork A Repo](https://help.github.com/articles/fork-a-repo/).
+
+## Setup your Local Development Environment
+
+1. `git clone --recursive git@github.com:<your-github-username>/spring-amqp.git`
+2. `cd spring-amqp`
+3. `git remote show`
+   _you should see only 'origin' - which is the fork you created for your own github account_
+4. `git remote add upstream git@github.com:spring-projects/spring-amqp.git`
+5. `git remote show`
+   _you should now see 'upstream' in addition to 'origin' where 'upstream' is the Spring repository from which releases are built_
+6. `git fetch --all`
+7. `git branch -a`
+   _you should see branches on origin as well as upstream, including 'main' and 'maint'_
+
+## Building the Project
+
+The project uses the Gradle wrapper (`gradlew` / `gradlew.bat`).
+
+```bash
+# Full build with tests
+./gradlew build
+
+# Run tests only
+./gradlew test
+
+# Run tests including long integration tests
+./gradlew testAll
+
+# Run tests for a specific module
+./gradlew :spring-rabbit:test
+
+# Run a single test class
+./gradlew :spring-rabbit:test --tests "org.springframework.amqp.rabbit.core.RabbitTemplateTests"
+
+# Publish to local Maven repository
+./gradlew publishToMavenLocal
+
+# Generate API Javadoc (output: build/api)
+./gradlew api
+
+# Generate reference documentation (output: build/site)
+./gradlew antora
+
+# Build distribution zips (output: build/distributions)
+./gradlew dist
+```
+
+## Module Structure
+
+The root project (`spring-amqp-dist`) aggregates all `spring-*` directories automatically via `settings.gradle`.
+
+| Module | Purpose |
+|---|---|
+| `spring-amqp` | Core AMQP abstractions: `Message`, `Queue`, `Exchange`, `Binding` |
+| `spring-amqp-bom` | Bill of Materials for dependency management |
+| `spring-amqp-client` | AMQP 1.0 support via Apache Qpid ProtonJ2 (`@AmqpListener`) |
+| `spring-rabbit` | Main RabbitMQ implementation: `RabbitTemplate`, `RabbitAdmin`, `@RabbitListener`, listener containers |
+| `spring-rabbit-stream` | RabbitMQ Streams protocol support |
+| `spring-rabbitmq-client` | RabbitMQ AMQP 1.0 client (modern RabbitMQ client) |
+| `spring-rabbit-junit` | JUnit 5 test utilities: `@RabbitAvailable`, `BrokerRunningCondition` |
+| `spring-rabbit-test` | Combines spring-rabbit with spring-rabbit-junit for test harness |
+
+## Architecture
+
+**Layer design**: `spring-amqp` defines broker-agnostic abstractions (`org.springframework.amqp.core`). `spring-rabbit` implements a client for RabbitMQ 0.9 AMPQ protocol (`com.rabbitmq:amqp-client`). 
+The `spring-rabbit-stream` is for Stream Support on RabbitMQP.
+And `spring-rabbitmq-client` provides a Spring client API for RabbitMQ AMQP 1.0 protocol.
+The `spring-amqp-client` module provides a client API (based on Apache Qpid ProtonJ2) for the AMQP 1.0 protocol with any supporting broker. 
+
+**Key packages in `spring-rabbit`**:
+- `connection` — `ConnectionFactory`, `CachingConnectionFactory`, `RoutingConnectionFactory`
+- `core` — `RabbitTemplate` (send/receive), `RabbitAdmin` (broker management)
+- `listener` — `SimpleMessageListenerContainer`, `DirectMessageListenerContainer`, `@RabbitListener` infrastructure
+- `annotation` — `@RabbitListener`, `@RabbitHandler`, `@EnableRabbit`, `RabbitListenerAnnotationBeanPostProcessor`
+- `config` — XML namespace handlers, Java config support (`AbstractRabbitListenerContainerFactory`)
+- `retry` — Retry/republish message recovery
+- `support.micrometer` — Observation/metrics integration
+- `aot` — GraalVM native image hints
+
+**Message conversion**: `MessageConverter` hierarchy — `SimpleMessageConverter` (default), `JacksonJsonMessageConverter`, `ContentTypeDelegatingMessageConverter`.
+
+**Listener containers**: Two main implementations — `SimpleMessageListenerContainer` (thread-per-queue, older) and `DirectMessageListenerContainer` (consumer-per-queue with shared thread pool, preferred). 
+Both implement `MessageListenerContainer`.
+
+## A Day in the Life of a Contributor
+
+* _Always_ work on topic branches (Typically use the GitHub (or JIRA) issue ID as the branch name).
+  - For example, to create and switch to a new branch for issue #123: `git checkout -b GH-123`
+* You might be working on several different topic branches at any given time, but when at a stopping point for one of those branches, commit (a local operation).
+* Please follow the "Commit Guidelines" described in [this chapter of Pro Git](https://git-scm.com/book/en/Distributed-Git-Contributing-to-a-Project).
+* Then to begin working on another issue (say AMQP-101): `git checkout AMQP-101`. The _-b_ flag is not needed if that branch already exists in your local repository.
+* When ready to resolve an issue or to collaborate with others, you can push your branch to origin (your fork),
+  e.g.: `git push origin GH-123`
+* If you want to collaborate with another contributor, have them fork your repository (add it as a remote) and `git fetch <your-username>` to grab your branch.
+  Alternatively, they can use `git fetch --all` to sync their local state with all of their remotes.
+* If you grant those collaborator(s) push access to your repository, they can even apply their changes to your branch.
+* When ready for your contribution to be reviewed for potential inclusion in the main branch of the canonical spring-amqp repository (what you know as 'upstream'), issue a pull request to the SpringSource repository (for more detail, see [Using pull requests](https://help.github.com/articles/using-pull-requests/)).
+* The project lead may merge your changes into the upstream main branch as-is, he may keep the pull request open yet add a comment about something that should be modified, or he might reject the pull request by closing it.
+* A prerequisite for any pull request is that it will be cleanly merge-able with the upstream main's current state.
+  **This is the responsibility of any contributor.**
+  If your pull request cannot be applied cleanly, the project lead will most likely add a comment requesting that you make it merge-able.
+  For a full explanation, see [the Pro Git section on rebasing](https://git-scm.com/book/en/Git-Branching-Rebasing).
+  As stated there: _"> Often, you'll do this to make sure your commits apply cleanly on a remote branch — perhaps in a project to which you're trying to contribute but that you don't maintain."_
+
+## Keeping your Local Code in Sync
+
+* As mentioned above, you should always work on topic branches (since 'main' is a moving target). However, you do want to always keep your own 'origin' main branch in synch with the 'upstream' main.
+* Within your local working directory, you can sync up all remotes' branches with: `git fetch --all`
+* While on your own local main branch: `git pull upstream main` (which is the equivalent of fetching upstream/main and merging that into the branch you are in currently)
+* Now that you're in synch, switch to the topic branch where you plan to work, e.g.: `git checkout -b AMQP-123`
+* When you get to a stopping point: `git commit`
+* If changes have occurred on the upstream/main while you were working you can synch again:
+  - Switch back to main: `git checkout main`
+  - Then: `git pull upstream main`
+  - Switch back to the topic branch: `git checkout AMQP-123` (no -b needed since the branch already exists)
+  - Rebase the topic branch to minimize the distance between it and your recently synched main branch: `git rebase main`
+    (Again, for more detail see [the Pro Git section on rebasing](https://git-scm.com/book/en/Git-Branching-Rebasing)).
+* **Note** While it is generally recommended to _not_ re-write history by using `push --force`, and we do not do this on `main` (and release) branches in the main repo, we require topic branches for pull requests to be rebased before merging, in order to maintain a clean timeline and avoid "merge" commits.
+* If, while rebasing for the merge, we find significant conflicts, we may ask you to rebase and `push --force` to your topic branch after resolving the conflicts.
+* Assuming your pull request is merged into the 'upstream' main, you will actually end up pulling that change into
+  your own main eventually, and at that time, you may decide to delete the topic branch from your local repository and
+  your fork (origin) if you pushed it there.
+  - to delete the local branch: `git branch -d GH-123`
+  - to delete the branch from your origin: `git push origin :GH-123`
+
+## Maintain a linear commit history
+
+When merging to main, the project _always_ uses fast-forward merges.
+When issuing pull requests, please ensure that your commit history is linear.
+From the command line you can check this using:
+
+```
+log --graph --pretty=oneline
+```
+
+As this may cause lots of typing, we recommend creating a global alias, e.g. `git logg` for this:
+
+```
+git config --global alias.logg 'log --graph --pretty=oneline'
+```
+
+This command will provide the following output, which in this case shows a nice linear history:
+
+```
+* e11821842f22b1a9461ab2209c0be7cd47f5c25e AMQP-566: Add String Version of CorrelationId
+* 59710724e5df4414139f67145152fc943d45baf7 Exclude with modules to meet IO requirements
+* d0f6e61308a020bdeb06992ece63fa3c4bad99d7 AMQP-539: Add AsyncRabbitTemplate
+* 51a56bb2ddcef4d3eee781e295dc608a455ae8ff AMQP-559: Fix Pre-Java8 Compliance
+* 8afa05fd6c262047dca1cea131e69979b44f725a AMQP-559: Remove Lambdas for IO Compat. Build
+* f8809d26e9eb36f2d9ed4d86ce89cb438def71da AMQP-565: Fix NPE in RabbitAdmin
+```
+
+If you see intersecting lines, that usually means that you forgot to rebase you branch.
+As mentioned earlier, **please rebase against main** before issuing a pull request.
+
+## Mind the whitespace
+
+Please carefully follow the whitespace and formatting conventions already present in the framework.
+
+1. Tabs, not spaces
+2. Unix (LF), not DOS (CRLF) line endings
+3. Eliminate all trailing whitespace
+4. Wrap Javadoc at 90 characters
+5. Aim to wrap code at 120 characters, but favor readability over wrapping
+6. Preserve existing formatting; i.e. do not reformat code for its own sake
+7. Search the codebase using `git grep` and other tools to discover common naming conventions, etc.
+8. Latin-1 (ISO-8859-1) encoding for Java sources; use `native2ascii` to convert if necessary
+
+For Eclipse users, use the Spring Framework code format conventions from the `src/eclipse`.
+Checkstyle is enforced at build time using the configuration in `src/checkstyle/`.
+Kotlin code targets JVM 17, and all Kotlin warnings are treated as errors.
+
+## Add Apache license header to all new classes
+
+```java
+/*
+ * Copyright 2026-present the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package ...;
+```
+
+## Use @since tags
+
+Use @since tags for newly-added public API types and methods e.g.
+
+```java
+/**
+ * ...
+ *
+ * @author First Last
+ * 
+ * @since 3.0
+ * 
+ * @see ...
+ */
+```
+
+(Note the blank lines between tag sections for better readability.) 
+
+## Submit JUnit test cases for all behavior changes
+
+Search the codebase to find related unit tests and add additional @Test methods within.
+It is also acceptable to submit test cases on a per GitHub issue basis.
+
+Integration tests require a running RabbitMQ broker with the following plugins enabled: `rabbitmq_stream`, `rabbitmq_management`, `rabbitmq_delayed_message_exchange`.
+Use `@RabbitAvailable` (from `spring-rabbit-junit`) to skip tests when no broker is present.
+TestContainers (`org.testcontainers:rabbitmq`) is available for broker-dependent tests that must always run.
+The test JVM heap is capped at 2GB; `SPRING_AMQP_DESERIALIZATION_TRUST_ALL=true` is set automatically.
+
+## Squash commits
+
+Use `git rebase --interactive`, `git add --patch` and other tools to "squash" multiple commits into atomic changes.
+In addition to the man pages for git, there are many resources online to help you understand how these tools work.
+**Do not** squash commits after a PR is issued against the branch - especially after resolving issues from the review; just add more commits to the branch; it is easier to see what changed since the review.
+The committer will generally squash the commits before the final merge.
+
+## Use your real name in git commits
+
+Please configure git to use your real first and last name for any commits you intend to submit as pull requests.
+For example, this is not acceptable:
+
+    Author: Nickname <user@mail.com>
+
+Rather, please include your first and last name, properly capitalized, as submitted against the SpringIO contributor license agreement:
+
+    Author: First Last <user@mail.com>
+
+This helps ensure traceability against the CLA, and also goes a long way to ensuring useful output from tools like `git shortlog` and others.
+
+You can configure this globally via the account admin area GitHub (useful for fork-and-edit cases); globally with
+
+    git config --global user.name "First Last"
+    git config --global user.email user@mail.com
+
+or locally for the **spring-amqp** repository only by omitting the '--global' flag:
+
+    cd spring-amqp
+    git config user.name "First Last"
+    git config user.email user@mail.com
+
+## Run all tests prior to submission
+
+See the [checking out and building](https://github.com/spring-projects/spring-amqp#checking-out-and-building)
+section of the README for instructions.
+Make sure that all tests pass prior to submitting your pull request.
+
+## Mention your pull request on the associated JIRA issue
+
+If the change is to resolve a legacy JIRA issue, add a comment to the associated JIRA issue(s) linking to your new pull request.
+
+## Provide a Link to the GitHub issue in the associated Pull Request
+
+Add a GitHub issue link to your first commit comment of the pull request, so your commit message
+may look like this:
+
+```
+GH-123: Title up to 50 characters total
+
+Fixes https://github.com/spring-projects/spring-amqp/issues/123
+
+Text about the problem and how it was fixed.
+```
