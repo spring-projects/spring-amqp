@@ -73,7 +73,10 @@ public class RestTemplateNodeLocator implements NodeLocator<RestTemplate> {
 			this.authCache.put(HttpHost.create(theBaseUri), new BasicScheme());
 		}
 		URI uri = theBaseUri
-				.resolve("/api/queues/" + UriUtils.encodePathSegment(vhost, StandardCharsets.UTF_8) + "/" + queue);
+				.resolve("/api/queues/"
+						+ UriUtils.encodePathSegment(vhost, StandardCharsets.UTF_8) + "/"
+						+ UriUtils.encodePathSegment(queue, StandardCharsets.UTF_8));
+
 		ResponseEntity<Map<String, Object>> response =
 				client.exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<>() {
 
