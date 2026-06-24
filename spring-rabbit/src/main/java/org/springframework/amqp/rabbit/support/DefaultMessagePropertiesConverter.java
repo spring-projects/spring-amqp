@@ -27,6 +27,8 @@ import java.util.Map;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.LongString;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.MessageDeliveryMode;
@@ -49,6 +51,8 @@ import org.springframework.util.StringUtils;
  * @since 1.0
  */
 public class DefaultMessagePropertiesConverter implements MessagePropertiesConverter {
+
+	private static final Log LOGGER = LogFactory.getLog(DefaultMessagePropertiesConverter.class);
 
 	private static final int DEFAULT_LONG_STRING_LIMIT = 1024;
 
@@ -96,8 +100,8 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		if (!CollectionUtils.isEmpty(headers)) {
 			for (Map.Entry<String, Object> entry : headers.entrySet()) {
 				String key = entry.getKey();
+				Object value = entry.getValue();
 				if (MessageProperties.X_DELAY.equals(key)) {
-					Object value = entry.getValue();
 					if (value instanceof Number numberValue) {
 						long receivedDelayLongValue = Math.abs(numberValue.longValue());
 						target.setReceivedDelayLong(receivedDelayLongValue);
@@ -105,13 +109,24 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 					}
 				}
 				else if (MessageProperties.RETRY_COUNT.equals(key)) {
-					Object value = entry.getValue();
 					if (value instanceof Number numberValue) {
 						target.setRetryCount(numberValue.longValue());
 					}
 				}
+				else if (MessageProperties.X_DEATH.equals(key)) {
+					Object xDeathValue = convertLongStringIfNecessary(value, charset);
+					if (xDeathValue instanceof List<?> xDeath
+							&& !CollectionUtils.isEmpty(xDeath)
+							&& xDeath.get(0) instanceof Map<?, ?>) {
+
+						target.setHeader(MessageProperties.X_DEATH, xDeathValue);
+					}
+					else {
+						LOGGER.warn("Ignoring 'x-death' header due to inappropriate format: " + xDeathValue);
+					}
+				}
 				else {
-					target.setHeader(key, convertLongStringIfNecessary(entry.getValue(), charset));
+					target.setHeader(key, convertLongStringIfNecessary(value, charset));
 				}
 			}
 		}
