@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 /**
  * Message Properties for an AMQP message.
@@ -63,6 +64,8 @@ public class MessageProperties implements Serializable {
 	public static final String SPRING_AUTO_DECOMPRESS = "springAutoDecompress";
 
 	public static final String X_DELAY = "x-delay";
+
+	public static final String X_DEATH = "x-death";
 
 	/**
 	 * The custom header to represent a number of retries a message is republished.
@@ -627,16 +630,22 @@ public class MessageProperties implements Serializable {
 
 	/**
 	 * Return the x-death header.
+	 * If header value is not a {@link List} or its elements are not a {@link Map},
+	 * ignore and return {@code null}.
 	 * @return the header.
 	 */
 	@SuppressWarnings("unchecked")
 	public List<Map<String, ?>> getXDeathHeader() {
-		try {
-			return (List<Map<String, ?>>) this.headers.get("x-death");
-		}
-		catch (@SuppressWarnings("unused") Exception e) {
+			Object xDeathValue = this.headers.get(X_DEATH);
+
+			if (xDeathValue instanceof List<?> xDeath
+					&& !CollectionUtils.isEmpty(xDeath)
+					&& xDeath.get(0) instanceof Map<?, ?>) {
+
+				return (List<Map<String, ?>>) xDeath;
+			}
+
 			return null;
-		}
 	}
 
 	@Override // NOSONAR complexity
