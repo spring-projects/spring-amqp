@@ -188,7 +188,7 @@ public class MessageProperties implements Serializable {
 		return this.headers;
 	}
 
-	public void setTimestamp(Date timestamp) {
+	public void setTimestamp(@Nullable Date timestamp) {
 		this.timestamp = timestamp; //NOSONAR
 	}
 
@@ -196,7 +196,7 @@ public class MessageProperties implements Serializable {
 		return this.timestamp; //NOSONAR
 	}
 
-	public void setMessageId(String messageId) {
+	public void setMessageId(@Nullable String messageId) {
 		this.messageId = messageId;
 	}
 
@@ -204,7 +204,7 @@ public class MessageProperties implements Serializable {
 		return this.messageId;
 	}
 
-	public void setUserId(String userId) {
+	public void setUserId(@Nullable String userId) {
 		this.userId = userId;
 	}
 
@@ -221,11 +221,11 @@ public class MessageProperties implements Serializable {
 		return this.receivedUserId;
 	}
 
-	public void setReceivedUserId(String receivedUserId) {
+	public void setReceivedUserId(@Nullable String receivedUserId) {
 		this.receivedUserId = receivedUserId;
 	}
 
-	public void setAppId(String appId) {
+	public void setAppId(@Nullable String appId) {
 		this.appId = appId;
 	}
 
@@ -233,7 +233,7 @@ public class MessageProperties implements Serializable {
 		return this.appId;
 	}
 
-	public void setClusterId(String clusterId) {
+	public void setClusterId(@Nullable String clusterId) {
 		this.clusterId = clusterId;
 	}
 
@@ -241,7 +241,7 @@ public class MessageProperties implements Serializable {
 		return this.clusterId;
 	}
 
-	public void setType(String type) {
+	public void setType(@Nullable String type) {
 		this.type = type;
 	}
 
@@ -322,7 +322,7 @@ public class MessageProperties implements Serializable {
 		return this.receivedDeliveryMode;
 	}
 
-	public void setReceivedDeliveryMode(MessageDeliveryMode receivedDeliveryMode) {
+	public void setReceivedDeliveryMode(@Nullable MessageDeliveryMode receivedDeliveryMode) {
 		this.receivedDeliveryMode = receivedDeliveryMode;
 	}
 
@@ -332,7 +332,7 @@ public class MessageProperties implements Serializable {
 	 * milliseconds.
 	 * @param expiration the expiration.
 	 */
-	public void setExpiration(String expiration) {
+	public void setExpiration(@Nullable String expiration) {
 		this.expiration = expiration;
 	}
 
@@ -354,7 +354,7 @@ public class MessageProperties implements Serializable {
 		return this.priority;
 	}
 
-	public void setReceivedExchange(String receivedExchange) {
+	public void setReceivedExchange(@Nullable String receivedExchange) {
 		this.receivedExchange = receivedExchange;
 	}
 
@@ -362,7 +362,7 @@ public class MessageProperties implements Serializable {
 		return this.receivedExchange;
 	}
 
-	public void setReceivedRoutingKey(String receivedRoutingKey) {
+	public void setReceivedRoutingKey(@Nullable String receivedRoutingKey) {
 		this.receivedRoutingKey = receivedRoutingKey;
 	}
 
@@ -388,11 +388,11 @@ public class MessageProperties implements Serializable {
 	 * @since 3.1.2
 	 * @see #setDelayLong(Long)
 	 */
-	public void setReceivedDelayLong(Long receivedDelay) {
+	public void setReceivedDelayLong(@Nullable Long receivedDelay) {
 		this.receivedDelay = receivedDelay;
 	}
 
-	public void setRedelivered(Boolean redelivered) {
+	public void setRedelivered(@Nullable Boolean redelivered) {
 		this.redelivered = redelivered;
 	}
 
@@ -425,7 +425,7 @@ public class MessageProperties implements Serializable {
 	 * @param messageCount the count
 	 * @see #getMessageCount()
 	 */
-	public void setMessageCount(Integer messageCount) {
+	public void setMessageCount(@Nullable Integer messageCount) {
 		this.messageCount = messageCount;
 	}
 
@@ -442,7 +442,7 @@ public class MessageProperties implements Serializable {
 		return this.consumerTag;
 	}
 
-	public void setConsumerTag(String consumerTag) {
+	public void setConsumerTag(@Nullable String consumerTag) {
 		this.consumerTag = consumerTag;
 	}
 
@@ -450,7 +450,7 @@ public class MessageProperties implements Serializable {
 		return this.consumerQueue;
 	}
 
-	public void setConsumerQueue(String consumerQueue) {
+	public void setConsumerQueue(@Nullable String consumerQueue) {
 		this.consumerQueue = consumerQueue;
 	}
 
@@ -551,7 +551,7 @@ public class MessageProperties implements Serializable {
 	 * @param inferredArgumentType the type.
 	 * @since 1.6
 	 */
-	public void setInferredArgumentType(Type inferredArgumentType) {
+	public void setInferredArgumentType(@Nullable Type inferredArgumentType) {
 		this.inferredArgumentType = inferredArgumentType;
 	}
 
@@ -658,7 +658,7 @@ public class MessageProperties implements Serializable {
 	 * @param amqpAcknowledgment the {@link AmqpAcknowledgment} to use in the application.
 	 * @since 4.0
 	 */
-	public void setAmqpAcknowledgment(AmqpAcknowledgment amqpAcknowledgment) {
+	public void setAmqpAcknowledgment(@Nullable AmqpAcknowledgment amqpAcknowledgment) {
 		this.amqpAcknowledgment = amqpAcknowledgment;
 	}
 
