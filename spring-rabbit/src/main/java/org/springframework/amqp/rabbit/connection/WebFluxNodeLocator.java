@@ -35,6 +35,8 @@ import org.springframework.web.util.UriUtils;
  *
  * @author Gary Russell
  * @author Ngoc Nhan
+ * @author Artem Bilan
+ *
  * @since 2.4.8
  *
  */
@@ -46,14 +48,17 @@ public class WebFluxNodeLocator implements NodeLocator<WebClient> {
 			throws URISyntaxException {
 
 		URI uri = new URI(baseUri)
-				.resolve("/api/queues/" + UriUtils.encodePathSegment(vhost, StandardCharsets.UTF_8) + "/" + queue);
+				.resolve("/api/queues/"
+						+ UriUtils.encodePathSegment(vhost, StandardCharsets.UTF_8) + "/"
+						+ UriUtils.encodePathSegment(queue, StandardCharsets.UTF_8));
 		return client.get()
 				.uri(uri)
 				.accept(MediaType.APPLICATION_JSON)
 				.retrieve()
 				.bodyToMono(new ParameterizedTypeReference<HashMap<String, Object>>() {
+
 				})
-				.block(Duration.ofSeconds(10)); // NOSONAR magic#
+				.block(Duration.ofSeconds(10));
 	}
 
 	/**
