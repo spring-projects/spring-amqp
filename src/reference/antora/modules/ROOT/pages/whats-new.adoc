@@ -10,3 +10,7 @@
 
 A new `spring-amqp-client` module has been introduced to provide support for interacting with generic AMQP 1.0 protocol.
 See xref:amqp10-client.adoc[] for more information.
+
+The `spring-rabbitmq-client` module now provides an `AbstractRoutingAmqpConnectionFactory` (and a `SimpleRoutingAmqpConnectionFactory` implementation) to route to one of several `AmqpConnectionFactory` instances based on a runtime `lookupKey`.
+The `RabbitAmqpListenerContainer` is aware of a `RoutingAmqpConnectionFactory` and resolves the target factory from its queue names (optionally prefixed via `setLookupKeyQualifier`).
+See xref:rabbitmq-amqp-client.adoc#amqp-client-routing-connection-factory[Routing Connection Factory] for more information.
