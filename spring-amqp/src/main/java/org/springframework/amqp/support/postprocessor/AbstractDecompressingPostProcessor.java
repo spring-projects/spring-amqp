@@ -26,9 +26,9 @@ import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.core.Ordered;
 import org.springframework.util.Assert;
-import org.springframework.util.FileCopyUtils;
 
 /**
  * Base class for post processors that decompress the message body if the
@@ -40,14 +40,19 @@ import org.springframework.util.FileCopyUtils;
  * @author Gary Russell
  * @author Ngoc Nhan
  * @author Artem Bilan
+ * @author Glenn Renfro
  *
  * @since 1.4.2
  */
 public abstract class AbstractDecompressingPostProcessor implements MessagePostProcessor, Ordered {
 
+	private static final int BUFFER_SIZE = 16384;
+
 	private final boolean alwaysDecompress;
 
 	private int order;
+
+	private long maxDecompressedSize = 1024 * 1024 * 100;
 
 	/**
 	 * Construct a post processor that will decompress the supported content
@@ -82,16 +87,36 @@ public abstract class AbstractDecompressingPostProcessor implements MessagePostP
 		this.order = order;
 	}
 
+	/**
+	 * Set the maximum allowed size of the decompressed message.
+	 * @param maxDecompressedSize the max decompressed size in bytes; defaults to 100MB.
+	 * A value of 0 is unlimited.
+	 * @since 2.4.19
+	 */
+	public void setMaxDecompressedSize(long maxDecompressedSize) {
+		Assert.isTrue(maxDecompressedSize >= 0, "'maxDecompressedSize' must not be a negative number");
+		this.maxDecompressedSize = maxDecompressedSize;
+	}
+
 	@Override
 	public Message postProcessMessage(Message message) throws AmqpException {
 		Object autoDecompress = message.getMessageProperties().getHeaders()
 				.get(MessageProperties.SPRING_AUTO_DECOMPRESS);
 		if (this.alwaysDecompress || (autoDecompress instanceof Boolean isAutoDecompress && isAutoDecompress)) {
 			ByteArrayInputStream zipped = new ByteArrayInputStream(message.getBody());
-			try {
-				InputStream unzipper = getDecompressorStream(zipped);
+			try (InputStream unzipper = getDecompressorStream(zipped)) {
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
-				FileCopyUtils.copy(unzipper, out);
+				byte[] buffer = new byte[BUFFER_SIZE];
+				int bytesRead;
+				long totalBytes = 0L;
+				while ((bytesRead = unzipper.read(buffer)) != -1) {
+					totalBytes += bytesRead;
+					if (this.maxDecompressedSize > 0 && totalBytes > this.maxDecompressedSize) {
+						throw new MessageConversionException("Decompressed message size exceeds the maximum allowed " +
+								"limit of " + this.maxDecompressedSize + " bytes");
+					}
+					out.write(buffer, 0, bytesRead);
+				}
 				MessageProperties messageProperties = message.getMessageProperties();
 				String contentEncoding = messageProperties.getContentEncoding();
 				Assert.hasText(contentEncoding, "The 'encoding' message property is required");
