@@ -21,25 +21,30 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isTrue
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.mock
 import java.lang.reflect.Type
 import java.util.Date
 
 /**
  * @author Ngoc Nhan
+ *
+ * @since 4.0.5
  */
 class KotlinMessagePropertiesTests {
 
 	@Test
 	fun testSetterForNullabilityFields () {
 		val currentDate = Date()
+		val amqpAcknowledgment = mock(AmqpAcknowledgment::class.java)
+		val inferredArgumentType = mock(Type::class.java)
 		val messageProperties = MessageProperties()
-			messageProperties.amqpAcknowledgment = AmqpAcknowledgmentImpl()
+			messageProperties.amqpAcknowledgment = amqpAcknowledgment
 			messageProperties.appId = "appId"
 			messageProperties.clusterId = "clusterId"
 			messageProperties.consumerQueue = "consumerQueue"
 			messageProperties.consumerTag = "consumerTag"
 			messageProperties.expiration = "expiration"
-			messageProperties.inferredArgumentType = TypeImpl()
+			messageProperties.inferredArgumentType = inferredArgumentType
 			messageProperties.messageCount = 1
 			messageProperties.messageId = "messageId"
 			messageProperties.receivedDelayLong = 1
@@ -52,13 +57,13 @@ class KotlinMessagePropertiesTests {
 			messageProperties.type = "type"
 			messageProperties.userId = "userId"
 
-		assertThat(messageProperties.amqpAcknowledgment).isEqualTo(AmqpAcknowledgmentImpl())
+		assertThat(messageProperties.amqpAcknowledgment).isEqualTo(amqpAcknowledgment)
 		assertThat(messageProperties.appId).isEqualTo("appId")
 		assertThat(messageProperties.clusterId).isEqualTo("clusterId")
 		assertThat(messageProperties.consumerQueue).isEqualTo("consumerQueue")
 		assertThat(messageProperties.consumerTag).isEqualTo("consumerTag")
 		assertThat(messageProperties.expiration).isEqualTo("expiration")
-		assertThat(messageProperties.inferredArgumentType).isEqualTo(TypeImpl())
+		assertThat(messageProperties.inferredArgumentType).isEqualTo(inferredArgumentType)
 		assertThat(messageProperties.messageCount).isEqualTo(1)
 		assertThat(messageProperties.messageId).isEqualTo("messageId")
 		assertThat(messageProperties.receivedDelayLong).isEqualTo(1)
@@ -70,32 +75,6 @@ class KotlinMessagePropertiesTests {
 		assertThat(messageProperties.timestamp).isEqualTo(currentDate)
 		assertThat(messageProperties.type).isEqualTo("type")
 		assertThat(messageProperties.userId).isEqualTo("userId")
-	}
-
-	class AmqpAcknowledgmentImpl: AmqpAcknowledgment {
-
-		override fun acknowledge(status: AmqpAcknowledgment.Status) {
-			TODO("Not yet implemented")
-		}
-
-		override fun equals(other: Any?): Boolean {
-			if (this === other) return true
-			if (other !is AmqpAcknowledgmentImpl) return false
-
-			return true
-		}
-
-	}
-
-	class TypeImpl: Type {
-
-		override fun equals(other: Any?): Boolean {
-			if (this === other) return true
-			if (other !is TypeImpl) return false
-
-			return true
-		}
-
 	}
 
 }
