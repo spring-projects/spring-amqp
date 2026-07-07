@@ -746,7 +746,7 @@ public class AmqpAppender extends AbstractAppender {
 		private boolean useSsl;
 
 		@PluginBuilderAttribute("verifyHostname")
-		private boolean verifyHostname;
+		private boolean verifyHostname = true;
 
 		@PluginBuilderAttribute("sslAlgorithm")
 		private @Nullable String sslAlgorithm;
@@ -776,10 +776,10 @@ public class AmqpAppender extends AbstractAppender {
 		private @Nullable String saslConfig;
 
 		@PluginBuilderAttribute("senderPoolSize")
-		private int senderPoolSize;
+		private int senderPoolSize = 2;
 
 		@PluginBuilderAttribute("maxSenderRetries")
-		private int maxSenderRetries;
+		private int maxSenderRetries = AmqpAppender.AmqpManager.DEFAULT_MAX_SENDER_RETRIES;
 
 		@PluginBuilderAttribute("applicationId")
 		private @Nullable String applicationId;
@@ -803,7 +803,7 @@ public class AmqpAppender extends AbstractAppender {
 		private boolean declareExchange;
 
 		@PluginBuilderAttribute("durable")
-		private boolean durable;
+		private boolean durable = true;
 
 		@PluginBuilderAttribute("autoDelete")
 		private boolean autoDelete;
