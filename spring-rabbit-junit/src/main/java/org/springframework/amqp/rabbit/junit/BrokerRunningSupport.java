@@ -436,7 +436,7 @@ public final class BrokerRunningSupport {
 		}
 		if (body == null || !body.contentEquals("{\"status\":\"ok\"}")) {
 			throw new BrokerNotAliveException("Aliveness test failed for " + uri
-					+ " user: " + getAdminUser() + " pw: " + getAdminPassword()
+					+ " user: " + getAdminUser()
 					+ " status: " + response.statusCode() + " body: " + body
 					+ "; management not available");
 		}
