@@ -187,6 +187,10 @@ public class AmqpAppenderTests {
 		assertThat(RabbitUtils.stringToSaslConfig(TestUtils.getPropertyValue(appender, "manager.saslConfig"), mock()))
 				.isInstanceOf(DefaultSaslConfig.class)
 				.hasFieldOrPropertyWithValue("mechanism", "PLAIN");
+		assertThat((Boolean) TestUtils.getPropertyValue(appender, "manager.verifyHostname")).isTrue();
+		assertThat((Boolean) TestUtils.getPropertyValue(appender, "manager.durable")).isTrue();
+		assertThat((Integer) TestUtils.getPropertyValue(appender, "manager.senderPoolSize")).isEqualTo(2);
+		assertThat((Integer) TestUtils.getPropertyValue(appender, "manager.maxSenderRetries")).isEqualTo(30);
 		appender = TestUtils.<Map<String, AmqpAppender>>getPropertyValue(logger, "context.configuration.appenders")
 				.get("sasl2");
 		assertThat(RabbitUtils.stringToSaslConfig(TestUtils.getPropertyValue(appender, "manager.saslConfig"), mock()))
