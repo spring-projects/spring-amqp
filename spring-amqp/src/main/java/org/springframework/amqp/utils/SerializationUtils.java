@@ -144,7 +144,8 @@ public final class SerializationUtils {
 	}
 
 	/**
-	 * Verify that the class is in the allowed list.
+	 * Verify that the class is in the allowed list. For an array class, the check is
+	 * performed against its ultimate component type rather than blanket-allowing every array.
 	 * @param clazz the class.
 	 * @param patterns the patterns.
 	 * @since 2.1
@@ -153,11 +154,20 @@ public final class SerializationUtils {
 		if (TRUST_ALL && ObjectUtils.isEmpty(patterns)) {
 			return;
 		}
-		if (clazz.isArray() || clazz.isPrimitive() || Number.class.isAssignableFrom(clazz)
-				|| String.class.equals(clazz)) {
+
+		Class<?> targetClass = clazz;
+		while (targetClass.isArray()) {
+			targetClass = targetClass.getComponentType();
+		}
+
+		if (targetClass.isPrimitive()
+				|| Number.class.isAssignableFrom(targetClass)
+				|| String.class.equals(targetClass)) {
+
 			return;
 		}
-		String className = clazz.getName();
+
+		String className = targetClass.getName();
 		for (String pattern : patterns) {
 			if (PatternMatchUtils.simpleMatch(pattern, className)) {
 				return;

@@ -235,7 +235,11 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 
 	private long consumeDelay;
 
-	private JavaLangErrorHandler javaLangErrorHandler = error -> System.exit(EXIT_99);
+	private JavaLangErrorHandler javaLangErrorHandler = error -> {
+		if (!(error instanceof StackOverflowError)) {
+			System.exit(EXIT_99);
+		}
+	};
 
 	private volatile List<Queue> queues = new CopyOnWriteArrayList<>();
 
@@ -1140,7 +1144,8 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 
 	/**
 	 * Provide a JavaLangErrorHandler implementation; by default, {@code System.exit(99)}
-	 * is called.
+	 * is called, unless the error is a {@link StackOverflowError}, which is recoverable
+	 * on a per-thread basis and therefore does not terminate the JVM.
 	 * @param javaLangErrorHandler the handler.
 	 * @since 2.2.12
 	 * @deprecated in favor of {@link #setJavaLangErrorHandler(JavaLangErrorHandler)}
@@ -1153,7 +1158,8 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 
 	/**
 	 * Provide a JavaLangErrorHandler implementation; by default, {@code System.exit(99)}
-	 * is called.
+	 * is called, unless the error is a {@link StackOverflowError}, which is recoverable
+	 * on a per-thread basis and therefore does not terminate the JVM.
 	 * @param javaLangErrorHandler the handler.
 	 * @since 4.0.0
 	 */
