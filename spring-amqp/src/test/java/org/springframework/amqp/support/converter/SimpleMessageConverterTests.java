@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
 
@@ -27,6 +28,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -34,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author Mark Fisher
  * @author Gary Russell
  * @author Ngoc Nhan
+ * @author Artem Bilan
  */
 public class SimpleMessageConverterTests extends AllowedListDeserializingMessageConverterTests {
 
@@ -152,6 +155,23 @@ public class SimpleMessageConverterTests extends AllowedListDeserializingMessage
 		assertThatThrownBy(() -> converter.fromMessage(message))
 				.isExactlyInstanceOf(MessageConversionException.class)
 				.hasCauseExactlyInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	public void objectArrayNoLongerBypassesAllowedList() throws Exception {
+		SimpleMessageConverter converter = new SimpleMessageConverter();
+		// non-matching pattern, so the TRUST_ALL env var (set for the test JVM) doesn't short-circuit the check
+		converter.setAllowedListPatterns(Collections.singletonList("does.not.Match"));
+		MessageProperties properties = new MessageProperties();
+		properties.setContentType(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT);
+		ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+		ObjectOutputStream objectStream = new ObjectOutputStream(byteStream);
+		objectStream.writeObject(new Object[] { "test" });
+		objectStream.flush();
+		objectStream.close();
+		Message message = new Message(byteStream.toByteArray(), properties);
+		assertThatExceptionOfType(SecurityException.class)
+				.isThrownBy(() -> converter.fromMessage(message));
 	}
 
 	@Test

@@ -79,6 +79,7 @@ import org.springframework.util.backoff.FixedBackOff;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.with;
 import static org.mockito.ArgumentMatchers.any;
@@ -122,6 +123,17 @@ public class SimpleMessageListenerContainerTests {
 		assertThat(TestUtils.getPropertyValue(container, "transactional", Boolean.class)).isTrue();
 		container.stop();
 		singleConnectionFactory.destroy();
+	}
+
+	@Test
+	void defaultJavaLangErrorHandlerDoesNotExitOnStackOverflowError() {
+		SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory("localhost");
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory);
+		AbstractMessageListenerContainer.JavaLangErrorHandler handler =
+				(AbstractMessageListenerContainer.JavaLangErrorHandler)
+						TestUtils.getPropertyValue(container, "javaLangErrorHandler");
+		assertThatNoException().isThrownBy(() -> handler.handle(new StackOverflowError()));
+		assertThatNoException().isThrownBy(singleConnectionFactory::destroy);
 	}
 
 	@Test
