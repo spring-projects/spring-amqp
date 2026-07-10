@@ -31,10 +31,6 @@ ext {
 	linkScmConnection = 'git://github.com/spring-projects/spring-amqp.git'
 	linkScmDevConnection = 'git@github.com:spring-projects/spring-amqp.git'
 
-	micrometerVersion = libs.versions.micrometerVersion.get()
-	micrometerTracingVersion = libs.versions.micrometerTracingVersion.get()
-	springVersion = libs.versions.springVersion.get()
-
 	javaProjects = subprojects - project(':spring-amqp-bom')
 }
 
@@ -696,6 +692,9 @@ publishing {
 def generateAttributes() {
 	def springDocs = "https://docs.spring.io"
 	def micrometerDocsPrefix = "https://docs.micrometer.io"
+	def springVersion = libs.versions.springVersion.get()
+	def micrometerVersion = libs.versions.micrometerVersion.get()
+	def micrometerTracingVersion = libs.versions.micrometerTracingVersion.get()
 
 	return [
 		'project-version': project.version,
