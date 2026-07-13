@@ -316,7 +316,6 @@ project('spring-amqp') {
 		optionalApi libs.com.jayway.jsonpath
 
 		testImplementation libs.org.assertj.core
-		testImplementation libs.assertk
 	}
 
 }
