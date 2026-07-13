@@ -89,17 +89,17 @@ allprojects {
 	}
 
 	dependencies {
-		dependencyManagement(platform(libs.fasterxml.jackson.bom))
+		dependencyManagement(platform(libs.com.fasterxml.jackson.bom))
 		dependencyManagement(platform(libs.tools.jackson.bom))
-		dependencyManagement(platform(libs.junit.bom))
-		dependencyManagement(platform(libs.mockito.bom))
+		dependencyManagement(platform(libs.org.junit.bom))
+		dependencyManagement(platform(libs.org.mockito.bom))
 		dependencyManagement(platform(libs.spring.framework.bom))
-		dependencyManagement(platform(libs.reactor.bom))
-		dependencyManagement(platform(libs.log4j.bom))
+		dependencyManagement(platform(libs.io.projectreactor.bom))
+		dependencyManagement(platform(libs.apache.logging.log4j.bom))
 		dependencyManagement(platform(libs.spring.data.bom))
-		dependencyManagement(platform(libs.micrometer.bom))
-		dependencyManagement(platform(libs.micrometer.tracing.bom))
-		dependencyManagement(platform(libs.testcontainers.bom))
+		dependencyManagement(platform(libs.io.micrometer.bom))
+		dependencyManagement(platform(libs.io.micrometer.tracing.bom))
+		dependencyManagement(platform(libs.org.testcontainers.bom))
 	}
 }
 
@@ -166,10 +166,10 @@ configure(javaProjects) { subproject ->
 		testImplementation 'org.junit.jupiter:junit-jupiter-engine'
 		testImplementation 'org.junit.platform:junit-platform-launcher'
 		testImplementation libs.org.junit.pioneer
-		testImplementation libs.awaitility
+		testImplementation libs.org.awaitility
 		testImplementation 'org.jetbrains.kotlin:kotlin-reflect'
 		testImplementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
-		testImplementation libs.assertk
+		testImplementation libs.com.willowtreeapps.assertk
 
 		testRuntimeOnly 'org.apache.logging.log4j:log4j-jcl'
 		testRuntimeOnly 'org.apache.logging.log4j:log4j-slf4j2-impl'
@@ -288,9 +288,9 @@ project('spring-amqp') {
 		optionalApi 'tools.jackson.module:jackson-module-kotlin'
 		// Spring Data projection message binding support
 		optionalApi 'org.springframework.data:spring-data-commons'
-		optionalApi libs.jsonpath
+		optionalApi libs.com.jayway.jsonpath
 
-		testImplementation libs.assertj
+		testImplementation libs.org.assertj.core
 	}
 
 }
@@ -363,7 +363,7 @@ project('spring-rabbit') {
 
 		testImplementation project(':spring-rabbit-junit')
 		testImplementation 'org.springframework.data:spring-data-commons'
-		testImplementation libs.jsonpath
+		testImplementation libs.com.jayway.jsonpath
 		testImplementation libs.hibernate.validator
 		testImplementation 'io.micrometer:micrometer-observation-test'
 		testImplementation 'io.micrometer:micrometer-tracing-bridge-brave'
@@ -426,7 +426,7 @@ project('spring-rabbit-junit') {
 		api libs.rabbitmq.amqp.client
 		api 'org.springframework:spring-web'
 		api 'org.junit.jupiter:junit-jupiter-api'
-		api libs.assertj
+		api libs.org.assertj.core
 
 		optionalApi 'org.testcontainers:testcontainers-rabbitmq'
 		optionalApi 'org.testcontainers:testcontainers-junit-jupiter'
