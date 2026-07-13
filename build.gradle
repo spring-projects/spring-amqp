@@ -368,7 +368,6 @@ project('spring-rabbit') {
 
 		testApi project(':spring-rabbit-junit')
 
-		testImplementation(libs.assertk)
 		testImplementation 'org.springframework.data:spring-data-commons'
 		testImplementation libs.com.jayway.jsonpath
 		testImplementation libs.hibernate.validator
@@ -463,7 +462,7 @@ project('spring-rabbit-test') {
 		api project(':spring-rabbit-junit')
 		api libs.hamcrest.library
 		api libs.hamcrest.core
-		api libs.mockito.core
+		api 'org.mockito:mockito-core'
 
 		testImplementation project(':spring-rabbit').sourceSets.test.output
 	}
