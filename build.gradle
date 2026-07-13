@@ -170,10 +170,8 @@ configure(javaProjects) { subproject ->
 
 		testImplementation 'org.apache.logging.log4j:log4j-core'
 		testImplementation libs.hamcrest.core
-		testImplementation(libs.mockito.core) {
-			exclude group: 'org.hamcrest', module: 'hamcrest-core'
-		}
-		testImplementation libs.mockito.junit.jupiter
+		testImplementation 'org.mockito:mockito-core'
+		testImplementation 'org.mockito:mockito-junit-jupiter'
 		testImplementation 'org.springframework:spring-test'
 
 		testRuntimeOnly 'org.apache.logging.log4j:log4j-jcl'
