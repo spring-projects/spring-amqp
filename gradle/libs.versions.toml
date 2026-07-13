@@ -6,9 +6,9 @@ commonsHttpClientVersion = "5.5.2"
 commonsPoolVersion = "2.12.1"
 hamcrestVersion = "3.0"
 hibernateValidationVersion = "9.0.1.Final"
-jacksonBomVersion = "2.20.2"
+jacksonVersion = "2.20.2"
 jackson3Version = "3.0.4"
-jaywayJsonPathVersion = "2.10.0"
+jsonpathVersion = "2.10.0"
 junit4Version = "4.13.2"
 junitJupiterVersion = "6.0.3"
 kotlinCoroutinesVersion = "1.10.2"
@@ -27,33 +27,33 @@ springVersion = "7.0.8"
 testcontainersVersion = "2.0.5"
 
 [libraries]
-assertj = { module = "org.assertj:assertj-core", version.ref = "assertjVersion" }
-assertk = { module = "com.willowtreeapps.assertk:assertk-jvm", version.ref = "assertkVersion" }
-awaitility = { module = "org.awaitility:awaitility", version.ref = "awaitilityVersion" }
+org-assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertjVersion" }
+com-willowtreeapps-assertk = { module = "com.willowtreeapps.assertk:assertk-jvm", version.ref = "assertkVersion" }
+org-awaitility = { module = "org.awaitility:awaitility", version.ref = "awaitilityVersion" }
 commons-pool2 = { module = "org.apache.commons:commons-pool2", version.ref = "commonsPoolVersion" }
-fasterxml-jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jacksonBomVersion" }
+com-fasterxml-jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jacksonVersion" }
 hamcrest-core = { module = "org.hamcrest:hamcrest-core", version.ref = "hamcrestVersion" }
 hamcrest-library = { module = "org.hamcrest:hamcrest-library", version.ref = "hamcrestVersion" }
 hibernate-validator = { module = "org.hibernate.validator:hibernate-validator", version.ref = "hibernateValidationVersion" }
 httpclient5 = { module = "org.apache.httpcomponents.client5:httpclient5", version.ref = "commonsHttpClientVersion" }
-jsonpath = { module = "com.jayway.jsonpath:json-path", version.ref = "jaywayJsonPathVersion" }
+com-jayway-jsonpath = { module = "com.jayway.jsonpath:json-path", version.ref = "jsonpathVersion" }
 junit4 = { module = "junit:junit", version.ref = "junit4Version" }
-junit-bom = { module = "org.junit:junit-bom", version.ref = "junitJupiterVersion" }
+org-junit-bom = { module = "org.junit:junit-bom", version.ref = "junitJupiterVersion" }
 kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor", version.ref = "kotlinCoroutinesVersion" }
-log4j-bom = { module = "org.apache.logging.log4j:log4j-bom", version.ref = "log4jVersion" }
+apache-logging-log4j-bom = { module = "org.apache.logging.log4j:log4j-bom", version.ref = "log4jVersion" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logbackVersion" }
-micrometer-bom = { module = "io.micrometer:micrometer-bom", version.ref = "micrometerVersion" }
+io-micrometer-bom = { module = "io.micrometer:micrometer-bom", version.ref = "micrometerVersion" }
 micrometer-docs-generator = { module = "io.micrometer:micrometer-docs-generator", version.ref = "micrometerDocsVersion" }
-micrometer-tracing-bom = { module = "io.micrometer:micrometer-tracing-bom", version.ref = "micrometerTracingVersion" }
-mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockitoVersion" }
-mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter", version.ref = "mockitoVersion" }
+io-micrometer-tracing-bom = { module = "io.micrometer:micrometer-tracing-bom", version.ref = "micrometerTracingVersion" }
+org-mockito-bom = { module = "org.mockito:mockito-bom", version.ref = "mockitoVersion" }
+
 rabbitmq-amqp-client = { module = "com.rabbitmq:amqp-client", version.ref = "rabbitmqVersion" }
 rabbitmq-client-amqp = { module = "com.rabbitmq.client:amqp-client", version.ref = "rabbitmqAmqpClientVersion" }
 rabbitmq-stream-client = { module = "com.rabbitmq:stream-client", version.ref = "rabbitmqStreamVersion" }
-reactor-bom = { module = "io.projectreactor:reactor-bom", version.ref = "reactorVersion" }
+io-projectreactor-bom = { module = "io.projectreactor:reactor-bom", version.ref = "reactorVersion" }
 spring-data-bom = { module = "org.springframework.data:spring-data-bom", version.ref = "springDataVersion" }
 spring-framework-bom = { module = "org.springframework:spring-framework-bom", version.ref = "springVersion" }
-testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", version.ref = "testcontainersVersion" }
+org-testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", version.ref = "testcontainersVersion" }
 tools-jackson-bom = { module = "tools.jackson:jackson-bom", version.ref = "jackson3Version" }
 
 [plugins]
