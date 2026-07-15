@@ -94,7 +94,9 @@ public class RepublishMessageRecovererTests {
 
 	@Test
 	void shouldIncludeTheStacktraceInTheHeaderOfThePublishedMessage() {
-		recoverer = new RepublishMessageRecoverer(amqpTemplate);
+		recoverer =
+				new RepublishMessageRecoverer(amqpTemplate)
+						.includeStackTrace(true);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		cause.printStackTrace(new PrintStream(baos));
 		final String expectedHeaderValue = baos.toString();

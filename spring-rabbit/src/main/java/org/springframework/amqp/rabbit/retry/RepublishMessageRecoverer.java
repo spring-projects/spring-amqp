@@ -82,7 +82,7 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 
 	private int frameMaxHeadroom = DEFAULT_FRAME_MAX_HEADROOM;
 
-	private volatile Integer maxStackTraceLength = -1;
+	private volatile Integer maxStackTraceLength = 0;
 
 	private MessageDeliveryMode deliveryMode = MessageDeliveryMode.PERSISTENT;
 
@@ -130,9 +130,6 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 		this.errorTemplate = errorTemplate;
 		this.errorExchangeNameExpression = errorExchange != null ? errorExchange : new ValueExpression<>(null);
 		this.errorRoutingKeyExpression = errorRoutingKey != null ? errorRoutingKey : new ValueExpression<>(null);
-		if (!(this.errorTemplate instanceof RabbitTemplate)) {
-			this.maxStackTraceLength = Integer.MAX_VALUE;
-		}
 	}
 
 	/**
@@ -157,6 +154,18 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 	 */
 	public RepublishMessageRecoverer frameMaxHeadroom(int headroom) {
 		this.frameMaxHeadroom = headroom;
+		return this;
+	}
+
+	/**
+	 * Set {@code true} to add header with error stack trace.
+	 * @param includeStackTrace {@code true} to add header with error stack trace.
+	 * @return this.
+	 * @since 4.0.5
+	 */
+	public RepublishMessageRecoverer includeStackTrace(boolean includeStackTrace) {
+		this.maxStackTraceLength =
+				includeStackTrace ? (!(this.errorTemplate instanceof RabbitTemplate) ? Integer.MAX_VALUE : -1) : 0;
 		return this;
 	}
 
@@ -200,7 +209,9 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 			if (truncatedExceptionMessage != null) {
 				exceptionMessage = truncatedExceptionMessage;
 			}
-			headers.put(X_EXCEPTION_STACKTRACE, stackTraceAsString);
+			if (this.maxStackTraceLength > 0) {
+				headers.put(X_EXCEPTION_STACKTRACE, stackTraceAsString);
+			}
 			headers.put(X_EXCEPTION_MESSAGE, exceptionMessage);
 		}
 		headers.put(X_ORIGINAL_EXCHANGE, messageProperties.getReceivedExchange());
