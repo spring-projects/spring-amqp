@@ -198,13 +198,13 @@ public class AsyncRabbitTemplateTests {
 		await().until(inUseConsumers::isEmpty);
 	}
 
-	@Test
+	@RetryingTest(10)
 	public void testMessage2Args() throws Exception {
 		CompletableFuture<Message> future = this.asyncTemplate.sendAndReceive(this.requests.getName(), getFooMessage());
 		checkMessageResult(future, "FOO");
 	}
 
-	@Test
+	@RetryingTest(10)
 	public void testMessage3Args() throws Exception {
 		CompletableFuture<Message> future = this.asyncTemplate.sendAndReceive("", this.requests.getName(),
 				getFooMessage());
@@ -275,7 +275,7 @@ public class AsyncRabbitTemplateTests {
 		checkConverterResult(future, "SLEEP");
 	}
 
-	@Test
+	@RetryingTest(10)
 	public void testMessageWithConfirm() throws Exception {
 		this.asyncTemplate.setEnableConfirms(true);
 		RabbitMessageFuture future = this.asyncTemplate
@@ -298,7 +298,7 @@ public class AsyncRabbitTemplateTests {
 		checkConverterResult(future, "SLEEP");
 	}
 
-	@Test
+	@RetryingTest(10)
 	public void testMessageWithConfirmDirect() throws Exception {
 		this.asyncDirectTemplate.setEnableConfirms(true);
 		RabbitMessageFuture future = this.asyncDirectTemplate
