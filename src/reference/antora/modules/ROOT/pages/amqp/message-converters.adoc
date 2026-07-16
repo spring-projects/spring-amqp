@@ -425,7 +425,7 @@ This applies to both the `SimpleMessageConverter` and `SerializerMessageConverte
 
 By default, the allowed list is empty, meaning no classes will be deserialized.
 
-You can set a list of patterns, such as `thing1.*`, `thing1.thing2.Cat` or `*.MySafeClass`.
+You can set a list of patterns, such as `thing1.\*`, `thing1.thing2.Cat` or `*.MySafeClass`.
 
 The patterns are checked in order until a match is found.
 If there is no match, a `SecurityException` is thrown.
