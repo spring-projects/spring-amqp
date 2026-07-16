@@ -63,7 +63,9 @@ class RepublishMessageRecovererIntegrationTests {
 		this.maxHeaderSize = RabbitUtils.getMaxFrame(template.getConnectionFactory())
 				- RepublishMessageRecoverer.DEFAULT_FRAME_MAX_HEADROOM;
 		assertThat(this.maxHeaderSize).isGreaterThan(0);
-		RepublishMessageRecoverer recoverer = new RepublishMessageRecoverer(template, "", BIG_HEADER_QUEUE);
+		RepublishMessageRecoverer recoverer =
+				new RepublishMessageRecoverer(template, "", BIG_HEADER_QUEUE)
+						.includeStackTrace(true);
 		recoverer.recover(new Message("foo".getBytes(), new MessageProperties()),
 				new ListenerExecutionFailedException("Listener failed",
 						bigCause(new RuntimeException(BIG_EXCEPTION_MESSAGE1))));
@@ -91,7 +93,9 @@ class RepublishMessageRecovererIntegrationTests {
 		this.maxHeaderSize = RabbitUtils.getMaxFrame(template.getConnectionFactory())
 				- RepublishMessageRecoverer.DEFAULT_FRAME_MAX_HEADROOM;
 		assertThat(this.maxHeaderSize).isGreaterThan(0);
-		RepublishMessageRecoverer recoverer = new RepublishMessageRecoverer(template, "", BIG_HEADER_QUEUE);
+		RepublishMessageRecoverer recoverer =
+				new RepublishMessageRecoverer(template, "", BIG_HEADER_QUEUE)
+						.includeStackTrace(true);
 		ListenerExecutionFailedException cause = new ListenerExecutionFailedException("Listener failed",
 				new RuntimeException(new String(new byte[200]).replace('\u0000', 'x')));
 		recoverer.recover(new Message("foo".getBytes(), new MessageProperties()),
@@ -115,7 +119,9 @@ class RepublishMessageRecovererIntegrationTests {
 		this.maxHeaderSize = RabbitUtils.getMaxFrame(template.getConnectionFactory())
 				- RepublishMessageRecoverer.DEFAULT_FRAME_MAX_HEADROOM;
 		assertThat(this.maxHeaderSize).isGreaterThan(0);
-		RepublishMessageRecoverer recoverer = new RepublishMessageRecoverer(template, "", BIG_HEADER_QUEUE);
+		RepublishMessageRecoverer recoverer =
+				new RepublishMessageRecoverer(template, "", BIG_HEADER_QUEUE)
+						.includeStackTrace(true);
 		ListenerExecutionFailedException cause = new ListenerExecutionFailedException("Listener failed",
 				new RuntimeException(new String(new byte[this.maxHeaderSize]).replace('\u0000', 'x'),
 						new IllegalStateException("foo")));

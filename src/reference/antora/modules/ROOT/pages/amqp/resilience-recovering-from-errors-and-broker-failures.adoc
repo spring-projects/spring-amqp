@@ -157,7 +157,9 @@ RetryOperationsInterceptor interceptor() {
 }
 ----
 
-The `RepublishMessageRecoverer` publishes the message with additional information in message headers, such as the exception message, stack trace, original exchange, and routing key.
+The `RepublishMessageRecoverer` publishes the message with additional information in message headers, such as the exception message, original exchange, and routing key.
+The stack trace of the error is not included by default due to its size or sensitive information.
+The `includeStackTrace(true)` option should be used to include a stack trace dedicated header.
 Additional headers can be added by creating a subclass and overriding `additionalHeaders()`.
 The `deliveryMode` (or any other properties) can also be changed in the `additionalHeaders()`, as the following example shows:
 
