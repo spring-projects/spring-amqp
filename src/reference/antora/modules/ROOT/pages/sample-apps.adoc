@@ -295,7 +295,7 @@ In this case, it is much easier to run multiple versions of the client while mak
 We can try that now.
 
 Start by running `org.springframework.amqp.rabbit.stocks.Server` and then `org.springframework.amqp.rabbit.stocks.Client`.
-You should see dummy quotations for `NASDAQ` stocks, because the current value associated with the 'stocks.quote.pattern' key in client.properties is 'app.stock.quotes.nasdaq.*'.
+You should see dummy quotations for `NASDAQ` stocks, because the current value associated with the 'stocks.quote.pattern' key in client.properties is 'app.stock.quotes.nasdaq.\*'.
 Now, while keeping the existing `Server` and `Client` running, change that property value to 'app.stock.quotes.nyse.*' and start a second `Client` instance.
 You should see that the first client still receives NASDAQ quotes while the second client receives NYSE quotes.
 You could instead change the pattern to get all stocks or even an individual ticker.
