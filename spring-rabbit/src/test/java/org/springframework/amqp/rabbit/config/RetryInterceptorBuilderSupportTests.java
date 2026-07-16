@@ -224,10 +224,10 @@ public class RetryInterceptorBuilderSupportTests {
 		MessageProperties messageProperties = message.getMessageProperties();
 		assertThat(messageProperties.getHeaders())
 				.containsKeys(
-						RepublishMessageRecoverer.X_EXCEPTION_STACKTRACE,
 						RepublishMessageRecoverer.X_EXCEPTION_MESSAGE,
 						RepublishMessageRecoverer.X_ORIGINAL_EXCHANGE,
 						RepublishMessageRecoverer.X_ORIGINAL_ROUTING_KEY)
+				.doesNotContainKey(RepublishMessageRecoverer.X_EXCEPTION_STACKTRACE)
 				.containsEntry("fooHeader", "barValue");
 	}
 
