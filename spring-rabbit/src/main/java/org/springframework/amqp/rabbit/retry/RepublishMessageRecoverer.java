@@ -38,8 +38,9 @@ import org.springframework.util.Assert;
 
 /**
  * {@link MessageRecoverer} implementation that republishes recovered messages
- * to a specified exchange with the exception stack trace stored in the
- * message header x-exception.
+ * to a specified exchange with the exception message and stack trace
+ * (if opted-in via {@link #includeStackTrace(boolean)}) stored in the
+ * message headers: {@value X_EXCEPTION_MESSAGE} and {@code X_EXCEPTION_STACKTRACE}.
  * <p>
  * If no routing key is provided, the original routing key for the message,
  * prefixed with {@link #setErrorRoutingKeyPrefix(String)} (default "error.")
