@@ -92,6 +92,9 @@ Only a subset of retry capabilities can be configured this way.
 More advanced features would need the configuration of a `RetryPolicy`.
 See the {spring-framework-javadoc}/org/springframework/core/retry/RetryPolicy.html[`RetryPolicy` Javadoc] for more information about available policies and their configuration.
 
+Starting with version 4.1.1, a `RetryListener` can be registered with the stateless interceptor (via the `RetryInterceptorBuilder.stateless().retryListener()` option or the respective `StatelessRetryOperationsInterceptorFactoryBean` property) to react to retry events such as retry policy exhaustion.
+See the {spring-framework-javadoc}/org/springframework/core/retry/RetryListener.html[`RetryListener` Javadoc] for more information.
+
 [[batch-retry]]
 == Retry with Batch Listeners
 
