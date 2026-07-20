@@ -19,7 +19,6 @@ package org.springframework.amqp.support.converter;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.dataformat.xml.XmlMapper;
 
-import org.springframework.amqp.core.MessageProperties;
 import org.springframework.util.MimeTypeUtils;
 
 /**
@@ -69,7 +68,7 @@ public class JacksonXmlMessageConverter extends AbstractJacksonMessageConverter 
 	 * @see DefaultJacksonJavaTypeMapper#setTrustedPackages(String...)
 	 */
 	public JacksonXmlMessageConverter(XmlMapper xmlMapper, String... trustedPackages) {
-		super(xmlMapper, MimeTypeUtils.parseMimeType(MessageProperties.CONTENT_TYPE_XML), trustedPackages);
+		super(xmlMapper, MimeTypeUtils.parseMimeType("application/*+xml"), trustedPackages);
 	}
 
 }
