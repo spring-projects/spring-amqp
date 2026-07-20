@@ -78,7 +78,7 @@ public class JacksonJsonMessageConverter extends AbstractJacksonMessageConverter
 	 * @see DefaultJacksonJavaTypeMapper#setTrustedPackages(String...)
 	 */
 	public JacksonJsonMessageConverter(JsonMapper jsonMapper, String... trustedPackages) {
-		super(jsonMapper, MimeTypeUtils.parseMimeType(MessageProperties.CONTENT_TYPE_JSON), trustedPackages);
+		super(jsonMapper, MimeTypeUtils.parseMimeType("application/*+json"), trustedPackages);
 	}
 
 	/**

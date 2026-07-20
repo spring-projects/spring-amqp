@@ -90,10 +90,11 @@ public abstract class AbstractJacksonMessageConverter extends AbstractMessageCon
 	/**
 	 * Construct with the provided {@link ObjectMapper} instance.
 	 * @param objectMapper the {@link ObjectMapper} to use.
-	 * @param contentType the supported content type; only the subtype is checked when
-	 * decoding, e.g. *&#47;json, *&#47;xml. If this contains a charset parameter, when
-	 * encoding, the contentType header will not be set, when decoding, the raw bytes are
-	 * passed to Jackson which can dynamically determine the encoding; otherwise the
+	 * @param contentType the supported content type. It is recommended to use a wildcard,
+	 * suffixed subtype, e.g. {@code application/*+json}, so any compatible types are supported.
+	 * If this contains a charset parameter, when
+	 * encoding, the contentType header will not be set; when decoding, the raw bytes are
+	 * passed to Jackson, which can dynamically determine the encoding; otherwise the
 	 * contentEncoding or default charset is used.
 	 * @param trustedPackages the trusted Java packages for deserialization
 	 * @see DefaultJacksonJavaTypeMapper#setTrustedPackages(String...)
@@ -110,10 +111,9 @@ public abstract class AbstractJacksonMessageConverter extends AbstractMessageCon
 	}
 
 	/**
-	 * Get the supported content type; only the subtype is checked when decoding, e.g.
-	 * *&#47;json, *&#47;xml. If this contains a charset parameter, when encoding, the
-	 * contentType header will not be set, when decoding, the raw bytes are passed to
-	 * Jackson which can dynamically determine the encoding; otherwise the contentEncoding
+	 * Get the supported content type. If this contains a charset parameter, when encoding, the
+	 * contentType header will not be set; when decoding, the raw bytes are passed to
+	 * Jackson, which can dynamically determine the encoding; otherwise the contentEncoding
 	 * or default charset is used.
 	 * @return the supportedContentType
 	 */
@@ -275,8 +275,9 @@ public abstract class AbstractJacksonMessageConverter extends AbstractMessageCon
 		Object content = null;
 		MessageProperties properties = message.getMessageProperties();
 		String contentType = properties.getContentType();
-		if (this.assumeSupportedContentType && contentType.equals(MessageProperties.DEFAULT_CONTENT_TYPE)
-				|| contentType.contains(this.supportedContentType.getSubtype())) {
+		if (this.assumeSupportedContentType &&
+				(contentType.equals(MessageProperties.DEFAULT_CONTENT_TYPE)
+						|| this.supportedContentType.isCompatibleWith(MimeType.valueOf(contentType)))) {
 
 			String encoding = determineEncoding(properties, contentType);
 			content = doFromMessage(message, conversionHint, properties, encoding);
@@ -409,7 +410,15 @@ public abstract class AbstractJacksonMessageConverter extends AbstractMessageCon
 		catch (IOException | JacksonException ex) {
 			throw new MessageConversionException("Failed to convert Message content", ex);
 		}
-		messageProperties.setContentType(this.supportedContentType.toString());
+		String contentTypeToUse;
+		if (this.supportedContentType.isWildcardSubtype()) {
+			String subtype = this.supportedContentType.getSubtypeSuffix();
+			contentTypeToUse = this.supportedContentType.getType() + '/' + (subtype != null ? subtype : "*");
+		}
+		else {
+			contentTypeToUse = this.supportedContentType.toString();
+		}
+		messageProperties.setContentType(contentTypeToUse);
 		if (this.supportedCTCharset == null) {
 			messageProperties.setContentEncoding(getDefaultCharset());
 		}
