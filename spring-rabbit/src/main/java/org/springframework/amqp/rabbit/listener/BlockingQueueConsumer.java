@@ -857,11 +857,15 @@ public class BlockingQueueConsumer {
 				RabbitUtils.rollbackIfNecessary(this.channel);
 			}
 			if (ackRequired) {
+				boolean shouldRequeue = ContainerUtils.shouldRequeue(this.defaultRequeueRejected, ex, logger);
 				if (tag < 0) {
-					OptionalLong deliveryTag = this.deliveryTags.stream().mapToLong(l -> l).max();
-					if (deliveryTag.isPresent()) {
-						this.channel.basicNack(deliveryTag.getAsLong(), true,
-								ContainerUtils.shouldRequeue(this.defaultRequeueRejected, ex, logger));
+					for (Long deliveryTag : this.deliveryTags) {
+						try {
+							this.channel.basicReject(deliveryTag, shouldRequeue);
+						}
+						catch (Exception rejectException) {
+							logger.warn("Failed to reject message with delivery tag " + deliveryTag, rejectException);
+						}
 					}
 					if (this.transactional) {
 						// Need to commit the reject (=nack)
@@ -869,7 +873,7 @@ public class BlockingQueueConsumer {
 					}
 				}
 				else {
-					this.channel.basicReject(tag, ContainerUtils.shouldRequeue(this.defaultRequeueRejected, ex, logger));
+					this.channel.basicReject(tag, shouldRequeue);
 				}
 			}
 		}
