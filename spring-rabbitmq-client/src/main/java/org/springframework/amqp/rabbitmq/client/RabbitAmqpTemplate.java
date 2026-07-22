@@ -176,6 +176,14 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 	 * @return the {@link Publisher} for low-level AMQP operations.
 	 */
 	public Publisher getPublisher() {
+		if (this.connectionFactory instanceof RoutingAmqpConnectionFactory) {
+			return this.connectionFactory.getConnection()
+					.publisherBuilder()
+					.listeners(this.stateListeners)
+					.publishTimeout(this.publishTimeout)
+					.build();
+		}
+
 		Publisher publisherToReturn = this.publisher;
 		if (publisherToReturn == null) {
 			this.instanceLock.lock();

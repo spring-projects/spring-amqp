@@ -80,6 +80,61 @@ AmqpConnectionFactory connectionFactory(Environment environment) {
 
 See `SingleAmqpConnectionFactory` setters for all connection-specific setting.
 
+[[amqp-client-routing-connection-factory]]
+== Routing Connection Factory
+
+Similar to the `AbstractRoutingConnectionFactory` for the AMQP 0.9.1 protocol (see xref:amqp/connections.adoc#routing-connection-factory[Routing Connection Factory]), the `spring-rabbitmq-client` module provides an `AbstractRoutingAmqpConnectionFactory` for the AMQP 1.0 protocol.
+This factory provides a mechanism to configure mappings for several `AmqpConnectionFactory` instances and determine a target `AmqpConnectionFactory` by some `lookupKey` at runtime.
+Typically, the implementation checks a thread-bound context.
+For convenience, the `SimpleRoutingAmqpConnectionFactory` is provided, which gets the current thread-bound `lookupKey` from the `SimpleResourceHolder`:
+
+[source,java]
+----
+@Bean
+AmqpConnectionFactory connectionFactory(AmqpConnectionFactory cf1, AmqpConnectionFactory cf2) {
+    SimpleRoutingAmqpConnectionFactory connectionFactory = new SimpleRoutingAmqpConnectionFactory();
+    connectionFactory.setTargetConnectionFactories(Map.of("one", cf1, "two", cf2));
+    return connectionFactory;
+}
+----
+
+The `lookupKey` is bound to (and must be unbound from) the current thread around the target operation:
+
+[source,java]
+----
+public class MyService {
+
+    private final RabbitAmqpTemplate rabbitTemplate;
+
+    private final AmqpConnectionFactory connectionFactory;
+
+    public void service(String key, String payload) {
+        SimpleResourceHolder.bind(this.connectionFactory, key);
+        try {
+            this.rabbitTemplate.convertAndSend("exchange", "routingKey", payload);
+        }
+        finally {
+            SimpleResourceHolder.unbind(this.connectionFactory);
+        }
+    }
+
+}
+----
+
+It is important to unbind the resource after use.
+
+The routing algorithm is as follows: the `determineCurrentLookupKey()` is consulted for a key; if it resolves to a registered target `AmqpConnectionFactory`, that one is used.
+Otherwise, if there is no target for the `lookupKey` (or the key is `null`) and the factory is configured with `lenientFallback = true` (the default), the `defaultTargetConnectionFactory` is used.
+If `lenientFallback = false` and no target matches a non-`null` key, an `IllegalStateException` is thrown.
+
+To implement a custom routing strategy, extend `AbstractRoutingAmqpConnectionFactory` and provide a `determineCurrentLookupKey()` implementation.
+For more information, see the javadoc:org.springframework.amqp.rabbitmq.client.AbstractRoutingAmqpConnectionFactory[JavaDoc] for `AbstractRoutingAmqpConnectionFactory`.
+
+Similar to the AMQP 0.9.1 listener containers, the `RabbitAmqpListenerContainer` is aware of a `RoutingAmqpConnectionFactory`.
+When the container is configured with one, the `lookupKey` is bound to the current thread (via the `SimpleResourceHolder`) while the consumers' `Connection` is obtained, so the routing factory selects the appropriate target `AmqpConnectionFactory`.
+The `lookupKey` is the comma-delimited list of the container queue names, bracketed by `[...]` - for example, `[q1,q2]`.
+A `RabbitAmqpListenerContainer.setLookupKeyQualifier(String)` can be set to prefix this key, e.g. `tenant1[q1,q2]`, which is useful when the same queue names are used to address different brokers.
+
 [[amqp-client-topology]]
 == RabbitMQ Topology Management
 
