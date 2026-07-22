@@ -585,7 +585,9 @@ public class RabbitAmqpListenerContainer
 
 	private class ConsumerMessageHandler implements Consumer.MessageHandler {
 
-		private volatile @Nullable ConsumerBatch consumerBatch;
+		private final Lock lock = new ReentrantLock();
+
+		private @Nullable ConsumerBatch consumerBatch;
 
 		ConsumerMessageHandler() {
 		}
@@ -593,17 +595,23 @@ public class RabbitAmqpListenerContainer
 		@Override
 		public void handle(Consumer.Context context, com.rabbitmq.client.amqp.Message message) {
 			if (RabbitAmqpListenerContainer.this.batchSize > 1) {
-				ConsumerBatch currentBatch = this.consumerBatch;
-				if (currentBatch == null || currentBatch.batchReleaseFuture == null) {
-					currentBatch =
-							new ConsumerBatch(RabbitAmqpListenerContainer.this.batchSize,
-									context.batch(RabbitAmqpListenerContainer.this.batchSize));
-					this.consumerBatch = currentBatch;
+				this.lock.lock();
+				try {
+					ConsumerBatch currentBatch = this.consumerBatch;
+					if (currentBatch == null) {
+						currentBatch =
+								new ConsumerBatch(RabbitAmqpListenerContainer.this.batchSize,
+										context.batch(RabbitAmqpListenerContainer.this.batchSize));
+						this.consumerBatch = currentBatch;
+					}
+					currentBatch.add(context, message);
+					if (currentBatch.batchContext.size() == RabbitAmqpListenerContainer.this.batchSize) {
+						currentBatch.release();
+						this.consumerBatch = null;
+					}
 				}
-				currentBatch.add(context, message);
-				if (currentBatch.batchContext.size() == RabbitAmqpListenerContainer.this.batchSize) {
-					currentBatch.release();
-					this.consumerBatch = null;
+				finally {
+					this.lock.unlock();
 				}
 			}
 			else {
@@ -617,7 +625,9 @@ public class RabbitAmqpListenerContainer
 
 			private final Consumer.BatchContext batchContext;
 
-			private volatile @Nullable ScheduledFuture<?> batchReleaseFuture;
+			private @Nullable ScheduledFuture<?> batchReleaseFuture;
+
+			private boolean released;
 
 			ConsumerBatch(int batchSize, Consumer.BatchContext batchContext) {
 				this.batchContext = batchContext;
@@ -630,22 +640,34 @@ public class RabbitAmqpListenerContainer
 				if (this.batchReleaseFuture == null) {
 					this.batchReleaseFuture =
 							Objects.requireNonNull(RabbitAmqpListenerContainer.this.taskScheduler)
-									.schedule(this::releaseInternal,
+									.schedule(this::scheduledRelease,
 											Instant.now().plus(RabbitAmqpListenerContainer.this.batchReceiveDuration));
 				}
 			}
 
 			void release() {
-				ScheduledFuture<?> currentBatchReleaseFuture = this.batchReleaseFuture;
-				if (currentBatchReleaseFuture != null) {
-					currentBatchReleaseFuture.cancel(true);
+				if (this.batchReleaseFuture != null) {
+					this.batchReleaseFuture.cancel(true);
+				}
+				releaseInternal();
+			}
+
+			private void scheduledRelease() {
+				ConsumerMessageHandler.this.lock.lock();
+				try {
+					if (ConsumerMessageHandler.this.consumerBatch == this) {
+						ConsumerMessageHandler.this.consumerBatch = null;
+					}
 					releaseInternal();
+				}
+				finally {
+					ConsumerMessageHandler.this.lock.unlock();
 				}
 			}
 
 			private void releaseInternal() {
-				if (this.batchReleaseFuture != null) {
-					this.batchReleaseFuture = null;
+				if (!this.released) {
+					this.released = true;
 					invokeBatchListener(this.batchContext, this.batch);
 				}
 			}
