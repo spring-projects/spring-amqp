@@ -63,6 +63,8 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 
 	static final String TEST_QUEUE_FOR_NATIVE_PROTON = "/queues/test_queue_for_native_proton";
 
+	static final String TEST_QUEUE_FOR_ERRORS = "/queues/test_queue_for_errors";
+
 	static final String[] QUEUE_NAMES = {
 			TEST_QUEUE1,
 			TEST_QUEUE2
@@ -70,11 +72,15 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 
 	@BeforeAll
 	static void initQueues() throws IOException, InterruptedException {
-		for (String queue : QUEUE_NAMES) {
+		String[] allQueueNames = {
+				TEST_QUEUE1,
+				TEST_QUEUE2,
+				TEST_QUEUE_FOR_NATIVE_PROTON,
+				TEST_QUEUE_FOR_ERRORS
+		};
+		for (String queue : allQueueNames) {
 			RABBITMQ.execInContainer("rabbitmqadmin", "queues", "declare", "--name", queue.replaceFirst("/queues/", ""));
 		}
-		RABBITMQ.execInContainer("rabbitmqadmin", "queues", "declare", "--name",
-				TEST_QUEUE_FOR_NATIVE_PROTON.replaceFirst("/queues/", ""));
 	}
 
 	@Autowired
@@ -163,6 +169,21 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 		// No need to accept and replenish credits since we are done with the test.
 	}
 
+	@Test
+	void creditIsReplenishedAfterListenerException() throws InterruptedException {
+		for (int i = 0; i < 5; i++) {
+			assertThat(this.amqpClient.to(TEST_QUEUE_FOR_ERRORS).body("fail" + i).send())
+					.succeedsWithin(Duration.ofSeconds(10));
+		}
+		assertThat(this.amqpClient.to(TEST_QUEUE_FOR_ERRORS).body("success").send())
+				.succeedsWithin(Duration.ofSeconds(10));
+
+		Message message = this.testConfig.errorTestSuccesses.poll(10, TimeUnit.SECONDS);
+		assertThat(message)
+				.extracting(Message::getBody)
+				.isEqualTo("success".getBytes());
+	}
+
 	@Configuration(proxyBeanMethods = false)
 	@EnableAmqp
 	static class TestConfig {
@@ -170,6 +191,8 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 		BlockingQueue<Message> receivedMessages = new LinkedBlockingQueue<>();
 
 		BlockingQueue<Delivery> receivedDeliveries = new LinkedBlockingQueue<>();
+
+		BlockingQueue<Message> errorTestSuccesses = new LinkedBlockingQueue<>();
 
 		@Bean
 		AmqpConnectionFactory amqpConnectionFactory() {
@@ -201,6 +224,23 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 			amqpMessageListenerContainer.setQueueNames(TEST_QUEUE_FOR_NATIVE_PROTON);
 			amqpMessageListenerContainer.setAutoAccept(false);
 			amqpMessageListenerContainer.setupMessageListener((ProtonDeliveryListener) this.receivedDeliveries::add);
+			return amqpMessageListenerContainer;
+		}
+
+		@Bean
+		AmqpMessageListenerContainer errorTestListenerContainer(AmqpConnectionFactory connectionFactory) {
+			var amqpMessageListenerContainer = new AmqpMessageListenerContainer(connectionFactory);
+			amqpMessageListenerContainer.setQueueNames(TEST_QUEUE_FOR_ERRORS);
+			amqpMessageListenerContainer.setInitialCredits(3);
+			amqpMessageListenerContainer.setErrorHandler(throwable -> {
+			});
+			amqpMessageListenerContainer.setupMessageListener((Message message) -> {
+				String body = new String(message.getBody());
+				if (body.startsWith("fail")) {
+					throw new IllegalStateException("Simulated listener failure for: " + body);
+				}
+				this.errorTestSuccesses.add(message);
+			});
 			return amqpMessageListenerContainer;
 		}
 
