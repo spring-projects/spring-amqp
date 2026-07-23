@@ -25,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -458,6 +459,7 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 	}
 
 	private void doInvokeListener(Delivery delivery, Runnable replenishCreditOperation) throws Exception {
+		AtomicBoolean acknowledged = new AtomicBoolean();
 		AmqpAcknowledgment amqpAcknowledgment = null;
 		if (!this.autoAccept) {
 			amqpAcknowledgment = (status) -> {
@@ -467,29 +469,43 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 						case REJECT -> delivery.reject(null, null);
 						case REQUEUE -> delivery.release();
 					}
-					replenishCreditOperation.run();
 				}
 				catch (ClientException ex) {
 					throw ProtonUtils.toAmqpException(ex);
 				}
+				finally {
+					acknowledged.set(true);
+					replenishCreditOperation.run();
+				}
 			};
 		}
 
-		if (this.proxy instanceof ProtonDeliveryListener protonDeliveryListener) {
-			if (protonDeliveryListener instanceof AcknowledgingProtonDeliveryListener ackProtonDeliveryListener) {
-				ackProtonDeliveryListener.onDelivery(delivery, amqpAcknowledgment);
+		try {
+			if (this.proxy instanceof ProtonDeliveryListener protonDeliveryListener) {
+				if (protonDeliveryListener instanceof AcknowledgingProtonDeliveryListener ackProtonDeliveryListener) {
+					ackProtonDeliveryListener.onDelivery(delivery, amqpAcknowledgment);
+				}
+				else {
+					protonDeliveryListener.onDelivery(delivery);
+				}
 			}
 			else {
-				protonDeliveryListener.onDelivery(delivery);
+				Message message = ProtonUtils.fromProtonMessage(delivery.message());
+				if (amqpAcknowledgment != null) {
+					message.getMessageProperties()
+							.setAmqpAcknowledgment(amqpAcknowledgment);
+				}
+				this.proxy.onMessage(message);
 			}
 		}
-		else {
-			Message message = ProtonUtils.fromProtonMessage(delivery.message());
-			if (amqpAcknowledgment != null) {
-				message.getMessageProperties()
-						.setAmqpAcknowledgment(amqpAcknowledgment);
+		catch (Exception ex) {
+			if (this.autoAccept) {
+				replenishCreditOperation.run();
 			}
-			this.proxy.onMessage(message);
+			else if (!acknowledged.get()) {
+				releaseFailedDelivery(delivery, replenishCreditOperation);
+			}
+			throw ex;
 		}
 
 		if (this.autoAccept) {
@@ -497,26 +513,15 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 		}
 	}
 
-	/**
-	 * Remove a consumer which has stopped without a chance to recover,
-	 * so the {@link #isRunning()} does not report this container as running
-	 * when all its consumers are gone.
-	 * @param queue the queue the consumer was consuming from.
-	 * @param consumer the consumer to remove.
-	 */
-	private void removeConsumer(String queue, AmqpConsumer consumer) {
-		this.lock.lock();
+	private static void releaseFailedDelivery(Delivery delivery, Runnable replenishCreditOperation) {
 		try {
-			List<AmqpConsumer> consumers = this.queueToConsumers.get(queue);
-			if (consumers != null) {
-				consumers.remove(consumer);
-				if (consumers.isEmpty()) {
-					this.queueToConsumers.remove(queue);
-				}
-			}
+			delivery.release();
+		}
+		catch (ClientException ex) {
+			LOG.debug(ex, "Error releasing delivery after listener exception");
 		}
 		finally {
-			this.lock.unlock();
+			replenishCreditOperation.run();
 		}
 	}
 
