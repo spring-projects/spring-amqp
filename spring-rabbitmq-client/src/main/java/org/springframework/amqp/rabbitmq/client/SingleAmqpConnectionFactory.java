@@ -60,6 +60,17 @@ public class SingleAmqpConnectionFactory implements AmqpConnectionFactory, Dispo
 		return this;
 	}
 
+	/**
+	 * Set the name used to identify the connection.
+	 * @param connectionName the connection name
+	 * @return this connection factory
+	 * @since 4.0.1
+	 */
+	public SingleAmqpConnectionFactory setConnectionName(String connectionName) {
+		this.connectionBuilder.name(connectionName);
+		return this;
+	}
+
 	public SingleAmqpConnectionFactory setPort(int port) {
 		this.connectionBuilder.port(port);
 		return this;
