@@ -41,37 +41,27 @@ public RabbitTemplate rabbitTemplate() {
 ----
 
 Starting with version 1.4, in addition to the `retryTemplate` property, the `recoveryCallback` option is supported on the `RabbitTemplate`.
-It is used as a second argument for the `RetryTemplate.execute(RetryCallback<T, E> retryCallback, RecoveryCallback<T> recoveryCallback)`.
 
 NOTE: The `RecoveryCallback` is somewhat limited, in that the retry context contains only the `lastThrowable` field.
-For more sophisticated use cases, you should use an external `RetryTemplate` so that you can convey additional information to the `RecoveryCallback` through the context's attributes.
-The following example shows how to do so:
+For more sophisticated use cases, you should use an external `RetryTemplate`. The following example shows how to do so:
 
 [source,java]
 ----
-retryTemplate.execute(
-    new RetryCallback<Object, Exception>() {
+retryTemplate.setRetryListener(new RetryListener() {
 
-        @Override
-        public Object doWithRetry(RetryContext context) throws Exception {
-            context.setAttribute("message", message);
-            return rabbitTemplate.convertAndSend(exchange, routingKey, message);
-        }
+    @Override
+    public void onRetryPolicyExhaustion(RetryPolicy retryPolicy, Retryable<?> retryable, RetryException ex) {
+        Throwable lastException = ex.getLastException();
+        // Do something with message
+    }
 
-    }, new RecoveryCallback<Object>() {
+});
 
-        @Override
-        public Object recover(RetryContext context) throws Exception {
-            Object message = context.getAttribute("message");
-            Throwable t = context.getLastThrowable();
-            // Do something with message
-            return null;
-        }
-    });
-}
+retryTemplate.invoke(() -> rabbitTemplate.convertAndSend(exchange, routingKey, message));
 ----
 
 In this case, you would *not* inject a `RetryTemplate` into the `RabbitTemplate`.
+See {spring-framework-docs}/core/resilience.html[Resilience Features] for more information.
 
 [[publishing-is-async]]
 == Publishing is Asynchronous -- How to Detect Successes and Failures
