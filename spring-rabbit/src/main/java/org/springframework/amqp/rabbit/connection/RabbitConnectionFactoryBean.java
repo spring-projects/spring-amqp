@@ -157,8 +157,6 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private boolean skipServerCertificateValidation;
 
-	private boolean enableHostnameVerification = true;
-
 	private String keyStoreAlgorithm = SUN_X509;
 
 	private String trustStoreAlgorithm = SUN_X509;
@@ -678,14 +676,14 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * <code>useSslProtocol</code> methods. Requires amqp-client 5.4.0 or later.
 	 * @param enable false to disable.
 	 * @since 2.0.6
-	 * @deprecated since 4.2 in favor of relying on {@code amqp-client} secure-by-default
+	 * @deprecated since 4.1 in favor of relying on {@code amqp-client} secure-by-default
 	 * TLS behavior. Since {@code amqp-client} 5.33, {@link com.rabbitmq.client.ConnectionFactory#useSslProtocol()}
 	 * and related methods enable hostname verification automatically, so this property has no effect.
 	 * @see com.rabbitmq.client.ConnectionFactory#enableHostnameVerification()
 	 */
-	@Deprecated(since = "4.2", forRemoval = true)
+	@Deprecated(since = "4.1", forRemoval = true)
 	public void setEnableHostnameVerification(boolean enable) {
-		this.enableHostnameVerification = enable;
+		// no-op: amqp-client 5.33+ enables hostname verification in useSslProtocol*
 	}
 
 	/**

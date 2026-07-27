@@ -139,6 +139,7 @@ public class SSLConnectionTests {
 	}
 
 	@Test
+	@SuppressWarnings("deprecation")
 	public void hostnameVerificationIsEnabledByAmqpClientWhenUsingSslProtocol() throws Exception {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
 		ConnectionFactory rabbitCf = mock(ConnectionFactory.class);
