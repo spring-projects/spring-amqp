@@ -121,8 +121,7 @@ public class SSLConnectionTests {
 		fb.setSkipServerCertificateValidation(true);
 		fb.afterPropertiesSet();
 		fb.getObject();
-		verify(rabbitCf).useSslProtocol();
-		verify(rabbitCf).useSslProtocol("TLSv1.2");
+		verify(rabbitCf).useTlsWithNoVerification();
 	}
 
 	@Test
@@ -135,7 +134,21 @@ public class SSLConnectionTests {
 		fb.setSkipServerCertificateValidation(true);
 		fb.afterPropertiesSet();
 		fb.getObject();
-		verify(rabbitCf).useSslProtocol("TLSv1.1");
+		verify(rabbitCf).useTlsWithNoVerification();
+		verify(rabbitCf, never()).useSslProtocol("TLSv1.1");
+	}
+
+	@Test
+	public void hostnameVerificationIsEnabledByAmqpClientWhenUsingSslProtocol() throws Exception {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		ConnectionFactory rabbitCf = mock(ConnectionFactory.class);
+		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
+		fb.setUseSSL(true);
+		fb.setEnableHostnameVerification(false);
+		fb.afterPropertiesSet();
+		fb.getObject();
+		verify(rabbitCf).useSslProtocol(Mockito.any(SSLContext.class));
+		verify(rabbitCf, never()).enableHostnameVerification();
 	}
 
 	@Test

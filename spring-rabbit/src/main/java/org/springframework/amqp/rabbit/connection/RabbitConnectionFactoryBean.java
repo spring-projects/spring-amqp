@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbit.connection;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -185,9 +184,10 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * This would be used if useSSL is set to true and should only be used on dev or Qa regions
 	 * skipServerCertificateValidation should <b> never be set to true in production</b>
 	 * @param skipServerCertificateValidation Flag to override Server side certificate checks;
-	 * if set to {@code true} {@link com.rabbitmq.client.TrustEverythingTrustManager} would be used.
+	 * if set to {@code true} {@link com.rabbitmq.client.ConnectionFactory#useTlsWithNoVerification()}
+	 * would be used.
 	 * @since 1.6.6
-	 * @see com.rabbitmq.client.TrustEverythingTrustManager
+	 * @see com.rabbitmq.client.ConnectionFactory#useTlsWithNoVerification()
 	 */
 	public void setSkipServerCertificateValidation(boolean skipServerCertificateValidation) {
 		this.skipServerCertificateValidation = skipServerCertificateValidation;
@@ -678,8 +678,12 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * <code>useSslProtocol</code> methods. Requires amqp-client 5.4.0 or later.
 	 * @param enable false to disable.
 	 * @since 2.0.6
+	 * @deprecated since 4.2 in favor of relying on {@code amqp-client} secure-by-default
+	 * TLS behavior. Since {@code amqp-client} 5.33, {@link com.rabbitmq.client.ConnectionFactory#useSslProtocol()}
+	 * and related methods enable hostname verification automatically, so this property has no effect.
 	 * @see com.rabbitmq.client.ConnectionFactory#enableHostnameVerification()
 	 */
+	@Deprecated(since = "4.2", forRemoval = true)
 	public void setEnableHostnameVerification(boolean enable) {
 		this.enableHostnameVerification = enable;
 	}
@@ -778,7 +782,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 			try {
 				this.connectionFactory.setUri(this.uri);
 			}
-			catch (URISyntaxException | NoSuchAlgorithmException | KeyManagementException e) {
+			catch (NoSuchAlgorithmException | KeyManagementException e) {
 				throw new IllegalArgumentException("Unable to set uri", e);
 			}
 		}
@@ -811,9 +815,6 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 				SSLContext context = createSSLContext();
 				context.init(keyManagers, trustManagers, this.secureRandom);
 				this.connectionFactory.useSslProtocol(context);
-				if (this.enableHostnameVerification) {
-					this.connectionFactory.enableHostnameVerification();
-				}
 			}
 		}
 		catch (Exception e) {
@@ -823,12 +824,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private void setupBasicSSL() throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException {
 		if (this.skipServerCertificateValidation) {
-			if (this.sslAlgorithmSet) {
-				this.connectionFactory.useSslProtocol(this.sslAlgorithm);
-			}
-			else {
-				this.connectionFactory.useSslProtocol();
-			}
+			this.connectionFactory.useTlsWithNoVerification();
 		}
 		else {
 			useDefaultTrustStoreMechanism();
@@ -903,9 +899,6 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		trustManagerFactory.init((KeyStore) null);
 		sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
 		this.connectionFactory.useSslProtocol(sslContext);
-		if (this.enableHostnameVerification) {
-			this.connectionFactory.enableHostnameVerification();
-		}
 	}
 
 }

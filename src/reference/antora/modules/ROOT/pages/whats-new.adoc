@@ -5,6 +5,14 @@
 [[changes-in-4-1-since-4-0]]
 == Changes in 4.1 Since 4.0
 
+[[x41-tls-hostname-verification]]
+=== TLS Hostname Verification
+
+`RabbitConnectionFactoryBean#setEnableHostnameVerification(boolean)` is deprecated.
+Since `amqp-client` 5.33, hostname verification is enabled automatically when TLS is configured via `useSslProtocol`.
+When `skipServerCertificateValidation` is `true`, the factory bean now delegates to
+`ConnectionFactory#useTlsWithNoVerification()`.
+
 [[x41-amqp10-client]]
 === AMQP 1.0 Client
 

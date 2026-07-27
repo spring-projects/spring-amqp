@@ -21,7 +21,8 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.security.GeneralSecurityException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -290,7 +291,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		try {
 			this.rabbitConnectionFactory.setUri(uri);
 		}
-		catch (URISyntaxException | GeneralSecurityException use) {
+		catch (NoSuchAlgorithmException | KeyManagementException use) {
 			this.logger.info(BAD_URI, use);
 		}
 	}
@@ -304,7 +305,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		try {
 			this.rabbitConnectionFactory.setUri(uri);
 		}
-		catch (URISyntaxException | GeneralSecurityException use) {
+		catch (URISyntaxException | NoSuchAlgorithmException | KeyManagementException use) {
 			this.logger.info(BAD_URI, use);
 		}
 	}
