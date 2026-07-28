@@ -22,6 +22,8 @@ For most use cases, the `CachingConnectionFactory` should be used.
 The `ThreadChannelConnectionFactory` can be used if you want to ensure strict message ordering without the need to use xref:amqp/template.adoc#scoped-operations[Scoped Operations].
 The `PooledChannelConnectionFactory` is similar to the `CachingConnectionFactory` in that it uses a single connection and a pool of channels.
 It's implementation is simpler but it doesn't support correlated publisher confirmations.
+Unlike the `CachingConnectionFactory`, whose channel cache is unbounded by default, the `PooledChannelConnectionFactory` uses bounded pools and blocks when no channel is available.
+See xref:amqp/connections.adoc#pooledchannelconnectionfactory[`PooledChannelConnectionFactory`] for sizing considerations.
 
 Simple publisher confirmations are supported by all three factories.
 
@@ -58,6 +60,15 @@ PooledChannelConnectionFactory pcf() throws Exception {
     return pcf;
 }
 ----
+
+IMPORTANT: The pools use the Apache Pool2 default configuration, which allows a maximum of eight channels per pool and blocks indefinitely when the pool is exhausted.
+Size the pools for the concurrency your application requires; otherwise, threads block with no exception and no log message, which can appear as if the application has stalled.
+When using request/reply with the default `DirectReplyToMessageListenerContainer`, each in-flight request holds a channel for the whole duration of the exchange, so the pool must be at least as large as the number of concurrent requests.
+See xref:amqp/request-reply.adoc#direct-reply-to[RabbitMQ Direct reply-to] for alternatives that do not hold a channel per exchange.
+
+NOTE: This factory is not intended for consumers.
+Listener containers hold their channels for as long as they are running, which permanently removes them from the pool.
+Use a `CachingConnectionFactory` for consumers, or configure a separate connection for the publishing side; see xref:amqp/template.adoc#separate-connection[Using a Separate Connection].
 
 [[threadchannelconnectionfactory]]
 === `ThreadChannelConnectionFactory`

@@ -63,6 +63,9 @@ If you want to revert to the previous behavior, set the `useDirectReplyToContain
 The `AsyncRabbitTemplate` has no such option.
 It always used a `DirectReplyToContainer` for replies when direct reply-to is used.
 
+Note that the container holds a channel for the duration of each in-flight exchange; this matters when the connection factory pools channels.
+See xref:amqp/connections.adoc#pooledchannelconnectionfactory[`PooledChannelConnectionFactory`].
+
 Starting with version 2.3.7, the template has a new property `useChannelForCorrelation`.
 When this is `true`, the server does not have to copy the correlation id from the request message headers to the reply message.
 Instead, the channel used to send the request is used to correlate the reply to the request.
