@@ -124,7 +124,7 @@ See xref:amqp/message-converters.adoc#message-properties-converters[Message Prop
 === Inbound Delivery Mode
 
 The `deliveryMode` property is no longer mapped to the `MessageProperties.deliveryMode`.
-This change avoids unintended propagation if the the same `MessageProperties` object is used to send an outbound message.
+This change avoids unintended propagation if the same `MessageProperties` object is used to send an outbound message.
 Instead, the inbound `deliveryMode` header is mapped to `MessageProperties.receivedDeliveryMode`.
 
 See xref:amqp/message-converters.adoc#message-properties-converters[Message Properties Converters] for more information.
@@ -137,7 +137,7 @@ See xref:amqp/receiving-messages/async-annotation-driven/enable-signature.adoc[A
 === Inbound User ID
 
 The `user_id` property is no longer mapped to the `MessageProperties.userId`.
-This change avoids unintended propagation if the the same `MessageProperties` object is used to send an outbound message.
+This change avoids unintended propagation if the same `MessageProperties` object is used to send an outbound message.
 Instead, the inbound `userId` header is mapped to `MessageProperties.receivedUserId`.
 
 See xref:amqp/message-converters.adoc#message-properties-converters[Message Properties Converters] for more information.

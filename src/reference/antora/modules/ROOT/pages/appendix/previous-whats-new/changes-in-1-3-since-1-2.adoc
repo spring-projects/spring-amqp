@@ -39,7 +39,7 @@ See xref:amqp/broker-configuration.adoc[Configuring the Broker].
 == Direct Exchange Binding
 
 Previously, omitting the `key` attribute from a `binding` element of a `direct-exchange` configuration caused the queue or exchange to be bound with an empty string as the routing key.
-Now it is bound with the the name of the provided `Queue` or `Exchange`.
+Now it is bound with the name of the provided `Queue` or `Exchange`.
 If you wish to bind with an empty string routing key, you need to specify `key=""`.
 
 [[amqptemplate-changes]]
