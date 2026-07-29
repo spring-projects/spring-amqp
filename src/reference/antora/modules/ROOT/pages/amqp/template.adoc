@@ -43,7 +43,8 @@ public RabbitTemplate rabbitTemplate() {
 Starting with version 1.4, in addition to the `retryTemplate` property, the `recoveryCallback` option is supported on the `RabbitTemplate`.
 
 NOTE: The `RecoveryCallback` is somewhat limited, in that the retry context contains only the `lastThrowable` field.
-For more sophisticated use cases, you should use an external `RetryTemplate`. The following example shows how to do so:
+For more sophisticated use cases, you should use an external `RetryTemplate`.
+The following example shows how to do so:
 
 [source,java]
 ----
