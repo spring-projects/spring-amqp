@@ -103,6 +103,11 @@ allprojects {
 	}
 }
 
+apply from: "${rootProject.projectDir}/publish-maven.gradle"
+
+// Only for the private commercial repository; uncomment when this branch has made it over there.
+// apply from: "${rootProject.projectDir}/commercial-settings.gradle"
+
 configure(javaProjects) { subproject ->
 	apply plugin: 'java-library'
 	apply plugin: 'eclipse'
@@ -111,8 +116,6 @@ configure(javaProjects) { subproject ->
 	apply plugin: 'kotlin'
 	apply plugin: 'kotlin-spring'
 	apply plugin: 'io.spring.nullability'
-
-	apply from: "${rootProject.projectDir}/gradle/publish-maven.gradle"
 
 	java {
 		toolchain {
@@ -299,7 +302,6 @@ project('spring-amqp-bom') {
 	description = 'Spring for RabbitMQ (Bill of Materials)'
 
 	apply plugin: 'java-platform'
-	apply from: "${rootDir}/gradle/publish-maven.gradle"
 
 	dependencies {
 		constraints {
@@ -658,8 +660,6 @@ tasks.register('dist') {
 	group = 'Distribution'
 	description = 'Builds -dist, -docs and -schema distribution archives.'
 }
-
-apply from: "${rootProject.projectDir}/gradle/publish-maven.gradle"
 
 publishing {
 	publications {

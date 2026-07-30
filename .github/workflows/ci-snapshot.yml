@@ -7,6 +7,7 @@ on:
     branches:
       - main
       - '*.x'
+      - '*.x-internal'
     paths-ignore:
       - '.github/dependabot.yml'
 
@@ -19,26 +20,14 @@ concurrency:
 
 jobs:
   build-snapshot:
-    runs-on: ubuntu-latest
-    name: CI Build SNAPSHOT for ${{ github.ref_name }}
-    env:
+    uses: spring-io/spring-github-workflows/.github/workflows/spring-artifactory-gradle-snapshot.yml@main
+    with:
+      gradleTasks: ${{ github.event_name == 'schedule' && '--rerun-tasks' || '' }}
+      artifactoryUrl: ${{ vars.COMMERCIAL && 'https://usw1.packages.broadcom.com' }}
+      targetRepository: ${{ vars.COMMERCIAL && 'spring-enterprise-maven-dev-local' }}
+      artifactoryProjectKey: ${{ vars.COMMERCIAL && 'spring' }}
+      runner: ${{ vars.COMMERCIAL && 'ubuntu22-2-8' }}
+    secrets:
       DEVELOCITY_ACCESS_KEY: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
-
-    steps:
-      - name: Start RabbitMQ
-        uses: namoshek/rabbitmq-github-action@v1.2.0
-        with:
-          ports: '5672:5672 15672:15672 5552:5552'
-          plugins: rabbitmq_stream,rabbitmq_management,rabbitmq_delayed_message_exchange,rabbitmq_consistent_hash_exchange
-
-      - uses: actions/checkout@v7
-        with:
-          show-progress: false
-
-      - name: Build and Publish
-        timeout-minutes: 30
-        uses: spring-io/spring-github-workflows/.github/actions/spring-artifactory-gradle-build@main
-        with:
-          gradleTasks: ${{ github.event_name == 'schedule' && '--rerun-tasks' || '' }}
-          artifactoryUsername: ${{ secrets.ARTIFACTORY_USERNAME }}
-          artifactoryPassword: ${{ secrets.ARTIFACTORY_PASSWORD }}
+      ARTIFACTORY_USERNAME: ${{ secrets.COMMERCIAL_ARTIFACTORY_USERNAME || secrets.ARTIFACTORY_USERNAME }}
+      ARTIFACTORY_PASSWORD: ${{ secrets.COMMERCIAL_ARTIFACTORY_PASSWORD || secrets.ARTIFACTORY_PASSWORD }}
