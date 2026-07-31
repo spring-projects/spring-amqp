@@ -1,0 +1,14 @@
+name: Cut Release Branch
+
+on:
+  workflow_dispatch:
+
+jobs:
+  cut-release-branch:
+    if: vars.COMMERCIAL
+    permissions:
+      contents: write
+
+    uses: spring-io/spring-github-workflows/.github/workflows/spring-cut-release-branch.yml@main
+    secrets:
+      GH_ACTIONS_REPO_TOKEN: ${{ secrets.GH_ACTIONS_REPO_TOKEN }}
