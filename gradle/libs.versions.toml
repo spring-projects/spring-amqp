@@ -11,6 +11,7 @@ jackson3Version = "3.0.4"
 jsonpathVersion = "2.10.0"
 junit4Version = "4.13.2"
 junitJupiterVersion = "6.0.3"
+junitPioneerVersion = "2.3.0"
 kotlinCoroutinesVersion = "1.10.2"
 log4jVersion = "2.25.5"
 logbackVersion = "1.5.38"
@@ -39,6 +40,7 @@ httpclient5 = { module = "org.apache.httpcomponents.client5:httpclient5", versio
 com-jayway-jsonpath = { module = "com.jayway.jsonpath:json-path", version.ref = "jsonpathVersion" }
 junit4 = { module = "junit:junit", version.ref = "junit4Version" }
 org-junit-bom = { module = "org.junit:junit-bom", version.ref = "junitJupiterVersion" }
+org-junit-pioneer = { module = "org.junit-pioneer:junit-pioneer", version.ref = "junitPioneerVersion" }
 kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor", version.ref = "kotlinCoroutinesVersion" }
 apache-logging-log4j-bom = { module = "org.apache.logging.log4j:log4j-bom", version.ref = "log4jVersion" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logbackVersion" }
