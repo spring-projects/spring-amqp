@@ -45,6 +45,12 @@ publishing {
 						roles = ['contributor']
 					}
 					developer {
+						id = 'cppwfs'
+						name = 'Glenn Renfro'
+						email = 'glenn.renfro@broadcom.com'
+						roles = ['contributor']
+					}
+					developer {
 						id = 'dsyer'
 						name = 'Dave Syer'
 						email = 'david.syer@broadcom.com'
