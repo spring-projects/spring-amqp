@@ -1,6 +1,6 @@
 buildscript {
 	ext.isCI = System.getenv('GITHUB_ACTION')
-	ext.kotlinVersion = '2.3.21'
+	ext.kotlinVersion = '2.4.10'
 	repositories {
 		mavenCentral()
 		gradlePluginPortal()
@@ -157,7 +157,7 @@ configure(javaProjects) { subproject ->
 
 	// dependencies that are common across all java projects
 	dependencies {
-		def spotBugs = 'com.github.spotbugs:spotbugs-annotations:4.9.8'
+		def spotBugs = 'com.github.spotbugs:spotbugs-annotations:4.10.3'
 		compileOnly spotBugs
 		testImplementation spotBugs
 
@@ -238,7 +238,7 @@ configure(javaProjects) { subproject ->
 
 	checkstyle {
 		configDirectory.set(rootProject.file('src/checkstyle'))
-		toolVersion = '13.3.0'
+		toolVersion = '13.8.0'
 	}
 
 	jar {
@@ -448,7 +448,7 @@ project('spring-rabbit-test') {
 		api libs.hamcrest
 		api 'org.mockito:mockito-core'
 
-		testImplementation project(':spring-rabbit').sourceSets.test.output
+		testImplementation rootProject.project(':spring-rabbit').sourceSets.test.output
 	}
 }
 
