@@ -20,7 +20,6 @@ jobs:
           "micrometerTracingVersion": "micrometer-tracing",
           "reactorVersion": "reactor",
           "springDataVersion": "spring-data-bom",
-          "springRetryVersion": "spring-retry",
           "springVersion": "spring-framework"
         }
     secrets:
