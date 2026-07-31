@@ -5,7 +5,7 @@ on:
 
     inputs:
       milestone-number:
-        description: 'Milestone/RC suffix to append to the release version, e.g. `M2` or `RC1`'
+        description: 'Milestone/RC suffix to append to the release version (if necessary), e.g. `M2` or `RC1`'
         required: false
         type: string
         default: ''
