@@ -119,7 +119,9 @@ ext {
 			'https://jakarta.ee/specifications/platform/11/apidocs/',
 			'https://docs.spring.io/spring-framework/docs/current/javadoc-api/'
 	] as String[]
-}configure(javaProjects) { subproject ->
+}
+
+configure(javaProjects) { subproject ->
 	apply plugin: 'java-library'
 	apply plugin: 'eclipse'
 	apply plugin: 'idea'
