@@ -1,4 +1,5 @@
 buildscript {
+	ext.isCI = System.getenv('GITHUB_ACTION')
 	ext.kotlinVersion = '2.3.21'
 	repositories {
 		mavenCentral()
@@ -105,8 +106,9 @@ allprojects {
 
 apply from: "${rootProject.projectDir}/publish-maven.gradle"
 
-// Only for the private commercial repository; uncomment when this branch has made it over there.
-// apply from: "${rootProject.projectDir}/commercial-settings.gradle"
+if (System.getenv('ARTIFACTORY_USERNAME')) {
+	apply from: "${rootProject.projectDir}/commercial-settings.gradle"
+}
 
 configure(javaProjects) { subproject ->
 	apply plugin: 'java-library'

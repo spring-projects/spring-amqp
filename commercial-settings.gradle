@@ -1,6 +1,3 @@
-// This file is used only by the private commercial repository.
-// See the commented-out `apply from: ".../commercial-settings.gradle"` line in build.gradle;
-
 def artifactoryUsername = System.getenv('ARTIFACTORY_USERNAME')
 def artifactoryPassword = System.getenv('ARTIFACTORY_PASSWORD')
 def isDependabotPr = System.getenv('GITHUB_ACTOR') == 'dependabot[bot]'
