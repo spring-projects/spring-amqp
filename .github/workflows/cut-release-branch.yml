@@ -3,6 +3,13 @@ name: Cut Release Branch
 on:
   workflow_dispatch:
 
+    inputs:
+      milestone-number:
+        description: 'Milestone/RC suffix to append to the release version, e.g. `M2` or `RC1`'
+        required: false
+        type: string
+        default: ''
+
 jobs:
   cut-release-branch:
     if: vars.COMMERCIAL
@@ -10,5 +17,7 @@ jobs:
       contents: write
 
     uses: spring-io/spring-github-workflows/.github/workflows/spring-cut-release-branch.yml@main
+    with:
+      milestone-number: ${{ github.event.inputs.milestone-number }}
     secrets:
       GH_ACTIONS_REPO_TOKEN: ${{ secrets.GH_ACTIONS_REPO_TOKEN }}
