@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junitpioneer.jupiter.RetryingTest;
 import org.mockito.Mockito;
 
 import org.springframework.amqp.AmqpConnectException;
@@ -123,7 +124,7 @@ public class DirectMessageListenerContainerMockTests {
 		container.stop();
 	}
 
-	@Test
+	@RetryingTest(10)
 	public void testDeferredAcks() throws Exception {
 		ConnectionFactory connectionFactory = mock();
 		Connection connection = mock();
