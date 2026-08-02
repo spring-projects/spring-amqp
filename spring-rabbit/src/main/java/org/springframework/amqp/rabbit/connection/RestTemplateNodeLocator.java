@@ -45,7 +45,11 @@ import org.springframework.web.util.UriUtils;
  *
  * @since 3.0
  *
+ * @deprecated since 4.2 in favor of {@link RestClientNodeLocator} since the
+ * {@link RestTemplate} is deprecated in Spring Framework 7.1.
  */
+@Deprecated(since = "4.2", forRemoval = true)
+@SuppressWarnings("removal")
 public class RestTemplateNodeLocator implements NodeLocator<RestTemplate> {
 
 	private final AuthCache authCache = new BasicAuthCache();
