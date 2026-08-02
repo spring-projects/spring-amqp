@@ -34,39 +34,43 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.client.support.BasicAuthenticationInterceptor;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriUtils;
 
 /**
- * A {@link NodeLocator} using the {@link RestTemplate}.
+ * A {@link NodeLocator} using the {@link org.springframework.web.client.RestTemplate}.
  *
  * @author Gary Russell
  * @author Artem Bilan
  *
  * @since 3.0
  *
+ * @deprecated since 4.2 in favor of {@link RestClientNodeLocator} since the
+ * {@link org.springframework.web.client.RestTemplate} is deprecated in Spring Framework 7.1.
  */
-public class RestTemplateNodeLocator implements NodeLocator<RestTemplate> {
+@Deprecated(since = "4.2", forRemoval = true)
+@SuppressWarnings("removal")
+public class RestTemplateNodeLocator implements NodeLocator<org.springframework.web.client.RestTemplate> {
 
 	private final AuthCache authCache = new BasicAuthCache();
 
 	private final AtomicBoolean authSchemeIsSetToCache = new AtomicBoolean(false);
 
 	@Override
-	public RestTemplate createClient(String userName, String password) {
+	public org.springframework.web.client.RestTemplate createClient(String userName, String password) {
 		HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
 		requestFactory.setHttpContextFactory((httpMethod, uri) -> {
 			HttpClientContext context = HttpClientContext.create();
 			context.setAuthCache(this.authCache);
 			return context;
 		});
-		RestTemplate template = new RestTemplate(requestFactory);
+		var template = new org.springframework.web.client.RestTemplate(requestFactory);
 		template.getInterceptors().add(new BasicAuthenticationInterceptor(userName, password));
 		return template;
 	}
 
 	@Override
-	public @Nullable Map<String, Object> restCall(RestTemplate client, String baseUri, String vhost, String queue) {
+	public @Nullable Map<String, Object> restCall(org.springframework.web.client.RestTemplate client, String baseUri,
+			String vhost, String queue) {
 
 		URI theBaseUri = URI.create(baseUri);
 		if (!this.authSchemeIsSetToCache.getAndSet(true)) {

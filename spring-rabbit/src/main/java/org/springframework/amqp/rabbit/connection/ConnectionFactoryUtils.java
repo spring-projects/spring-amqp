@@ -261,7 +261,7 @@ public final class ConnectionFactoryUtils {
 			return new WebFluxNodeLocator();
 		}
 		else {
-			return new RestTemplateNodeLocator();
+			return new RestClientNodeLocator();
 		}
 	}
 

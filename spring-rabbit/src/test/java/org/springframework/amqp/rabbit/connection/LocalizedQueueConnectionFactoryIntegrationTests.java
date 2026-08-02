@@ -112,7 +112,7 @@ public class LocalizedQueueConnectionFactoryIntegrationTests extends AbstractTes
 		ConnectionFactory cf = lqcf.getTargetConnectionFactory("[local]");
 		RabbitAdmin admin = new RabbitAdmin(cf);
 		assertThat(admin.getQueueProperties("local")).isNotNull();
-		lqcf.setNodeLocator(new RestTemplateNodeLocator());
+		lqcf.setNodeLocator(new RestClientNodeLocator());
 		ConnectionFactory cf2 = lqcf.getTargetConnectionFactory("[local]");
 		assertThat(cf2).isSameAs(cf);
 		lqcf.destroy();

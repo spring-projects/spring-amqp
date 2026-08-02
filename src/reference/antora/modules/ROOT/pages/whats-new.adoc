@@ -26,3 +26,10 @@ See xref:amqp/receiving-messages/batch.adoc[] for more information.
 
 The `spring-rabbitmq-client` module now provides an `AbstractRoutingAmqpConnectionFactory` (and a `SimpleRoutingAmqpConnectionFactory` implementation) to route to one of several `AmqpConnectionFactory` instances based on a runtime `lookupKey`.
 See xref:rabbitmq-amqp-client.adoc#amqp-client-routing-connection-factory[Routing Connection Factory] for more information.
+
+[[x42-rest-client-node-locator]]
+=== `RestClientNodeLocator`
+
+A new `RestClientNodeLocator` is now the default non-reactive `NodeLocator` implementation for the `LocalizedQueueConnectionFactory`.
+The `RestTemplateNodeLocator` is deprecated since the `RestTemplate` is deprecated in Spring Framework `7.1`.
+See xref:amqp/connections.adoc#queue-affinity[Queue Affinity and the `LocalizedQueueConnectionFactory`] for more information.
