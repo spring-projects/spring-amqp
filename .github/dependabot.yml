@@ -28,18 +28,6 @@ updates:
           - org.awaitility:awaitility
           - io.freefair.aggregate-javadoc
 
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: weekly
-      day: saturday
-    labels:
-      - 'type: task'
-    groups:
-      development-dependencies:
-        patterns:
-          - '*'
-
   - package-ecosystem: gradle
     target-branch: 3.2.x
     directory: /
@@ -71,11 +59,27 @@ updates:
           - org.awaitility:awaitility
 
   - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: saturday
+    exclude-paths:
+      - '.github/workflows/release-train-*.yml'
+    labels:
+      - 'type: task'
+    groups:
+      development-dependencies:
+        patterns:
+          - '*'
+
+  - package-ecosystem: github-actions
     target-branch: 3.2.x
     directory: /
     schedule:
       interval: weekly
       day: saturday
+    exclude-paths:
+      - '.github/workflows/release-train-*.yml'
     labels:
       - 'type: task'
     groups:
