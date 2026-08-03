@@ -2,7 +2,7 @@
 assertjVersion = "3.27.7"
 assertkVersion = "0.28.1"
 awaitilityVersion = "4.3.0"
-commonsHttpClientVersion = "5.6.2"
+commonsHttpClientVersion = "5.6.3"
 commonsPoolVersion = "2.13.1"
 hamcrestVersion = "3.0"
 hibernateValidationVersion = "9.1.3.Final"
