@@ -62,6 +62,8 @@ updates:
     schedule:
       interval: weekly
       day: saturday
+    exclude-paths:
+      - '.github/workflows/release-train-*.yml'
     labels:
       - 'type: task'
     groups:
@@ -75,6 +77,8 @@ updates:
     schedule:
       interval: weekly
       day: saturday
+    exclude-paths:
+      - '.github/workflows/release-train-*.yml'
     labels:
       - 'type: task'
     groups:
