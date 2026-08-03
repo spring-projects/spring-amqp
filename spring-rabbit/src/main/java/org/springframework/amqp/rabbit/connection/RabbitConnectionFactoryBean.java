@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbit.connection;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -48,7 +47,6 @@ import com.rabbitmq.client.SaslConfig;
 import com.rabbitmq.client.SocketConfigurator;
 import com.rabbitmq.client.impl.CredentialsProvider;
 import com.rabbitmq.client.impl.CredentialsRefreshService;
-import com.rabbitmq.client.impl.nio.NioParams;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
@@ -124,7 +122,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private static final String TRUST_STORE_DEFAULT_TYPE = "JKS";
 
-	protected final ConnectionFactory connectionFactory = new ConnectionFactory(); // NOSONAR
+	protected final ConnectionFactory connectionFactory = new ConnectionFactory();
 
 	private final Properties sslProperties = new Properties();
 
@@ -152,13 +150,9 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private String sslAlgorithm = DEFAULT_PROTOCOL;
 
-	private boolean sslAlgorithmSet;
-
 	private @Nullable SecureRandom secureRandom;
 
 	private boolean skipServerCertificateValidation;
-
-	private boolean enableHostnameVerification = true;
 
 	private String keyStoreAlgorithm = SUN_X509;
 
@@ -185,16 +179,17 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * This would be used if useSSL is set to true and should only be used on dev or Qa regions
 	 * skipServerCertificateValidation should <b> never be set to true in production</b>
 	 * @param skipServerCertificateValidation Flag to override Server side certificate checks;
-	 * if set to {@code true} {@link com.rabbitmq.client.TrustEverythingTrustManager} would be used.
+	 * if set to {@code true} {@link com.rabbitmq.client.ConnectionFactory#useTlsWithNoVerification()}
+	 * would be used (in which case {@link #setSslAlgorithm(String) sslAlgorithm} is ignored).
 	 * @since 1.6.6
-	 * @see com.rabbitmq.client.TrustEverythingTrustManager
+	 * @see com.rabbitmq.client.ConnectionFactory#useTlsWithNoVerification()
 	 */
 	public void setSkipServerCertificateValidation(boolean skipServerCertificateValidation) {
 		this.skipServerCertificateValidation = skipServerCertificateValidation;
 	}
 
 	/**
-	 * Whether or not the factory should be configured to use SSL.
+	 * Whether the factory should be configured to use SSL.
 	 * @param useSSL true to use SSL.
 	 */
 	public void setUseSSL(boolean useSSL) {
@@ -215,7 +210,6 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 */
 	public void setSslAlgorithm(String sslAlgorithm) {
 		this.sslAlgorithm = sslAlgorithm;
-		this.sslAlgorithmSet = true;
 	}
 
 	/**
@@ -460,7 +454,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	}
 
 	/**
-	 * Set a credentials provider (e.g. OAUTH2).
+	 * Set a {@link CredentialsProvider} (e.g. OAUTH2).
 	 * @param provider the provider.
 	 * @since 2.3
 	 */
@@ -591,22 +585,6 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	}
 
 	/**
-	 * Whether the factory should be configured to use Java NIO.
-	 * @param useNio true to use Java NIO, false to use blocking IO
-	 * @deprecated since 4.0 in favor of {@link #setUseNetty(boolean)}
-	 * @see com.rabbitmq.client.ConnectionFactory#useNio()
-	 */
-	@Deprecated(since = "4.0", forRemoval = true)
-	public void setUseNio(boolean useNio) {
-		if (useNio) {
-			this.connectionFactory.useNio();
-		}
-		else {
-			this.connectionFactory.useBlockingIo();
-		}
-	}
-
-	/**
 	 * Whether the factory should be configured to use Netty.
 	 * @param useNetty true to use Netty, false to use blocking IO
 	 * @see com.rabbitmq.client.ConnectionFactory#netty()
@@ -618,16 +596,6 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		else {
 			this.connectionFactory.useBlockingIo();
 		}
-	}
-
-	/**
-	 * @param nioParams the NIO parameters
-	 * @deprecated since 4.0 in favor of {@link #setUseNetty(boolean)}
-	 * @see com.rabbitmq.client.ConnectionFactory#setNioParams(com.rabbitmq.client.impl.nio.NioParams)
-	 */
-	@Deprecated(since = "4.0", forRemoval = true)
-	public void setNioParams(NioParams nioParams) {
-		this.connectionFactory.setNioParams(nioParams);
 	}
 
 	/**
@@ -678,10 +646,14 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * <code>useSslProtocol</code> methods. Requires amqp-client 5.4.0 or later.
 	 * @param enable false to disable.
 	 * @since 2.0.6
-	 * @see com.rabbitmq.client.ConnectionFactory#enableHostnameVerification()
+	 * @deprecated since 4.2 in favor of relying on {@code amqp-client}'s secure-by-default TLS behavior.
+	 * Since {@code amqp-client} 5.33, {@link ConnectionFactory#useSslProtocol()}
+	 * and related methods enable hostname verification automatically, so this property has no effect.
+	 * @see ConnectionFactory#enableHostnameVerification()
 	 */
+	@Deprecated(since = "4.2", forRemoval = true)
 	public void setEnableHostnameVerification(boolean enable) {
-		this.enableHostnameVerification = enable;
+		// no-op: amqp-client 5.33+ enables hostname verification in useSslProtocol*
 	}
 
 	/**
@@ -756,8 +728,8 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		try {
 			super.afterPropertiesSet();
 		}
-		catch (Exception e) {
-			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+		catch (Exception ex) {
+			throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
 		}
 	}
 
@@ -778,8 +750,8 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 			try {
 				this.connectionFactory.setUri(this.uri);
 			}
-			catch (URISyntaxException | NoSuchAlgorithmException | KeyManagementException e) {
-				throw new IllegalArgumentException("Unable to set uri", e);
+			catch (NoSuchAlgorithmException | KeyManagementException ex) {
+				throw new IllegalArgumentException("Unable to set uri", ex);
 			}
 		}
 		return this.connectionFactory;
@@ -791,8 +763,9 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 */
 	protected void setUpSSL() {
 		try {
-			if (this.sslPropertiesLocation == null && this.keyStore == null && this.trustStore == null // NOSONAR boolean complexity
+			if (this.sslPropertiesLocation == null && this.keyStore == null && this.trustStore == null
 					&& this.keyStoreResource == null && this.trustStoreResource == null) {
+
 				setupBasicSSL();
 			}
 			else {
@@ -811,9 +784,6 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 				SSLContext context = createSSLContext();
 				context.init(keyManagers, trustManagers, this.secureRandom);
 				this.connectionFactory.useSslProtocol(context);
-				if (this.enableHostnameVerification) {
-					this.connectionFactory.enableHostnameVerification();
-				}
 			}
 		}
 		catch (Exception e) {
@@ -823,12 +793,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private void setupBasicSSL() throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException {
 		if (this.skipServerCertificateValidation) {
-			if (this.sslAlgorithmSet) {
-				this.connectionFactory.useSslProtocol(this.sslAlgorithm);
-			}
-			else {
-				this.connectionFactory.useSslProtocol();
-			}
+			this.connectionFactory.useTlsWithNoVerification();
 		}
 		else {
 			useDefaultTrustStoreMechanism();
@@ -903,9 +868,6 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		trustManagerFactory.init((KeyStore) null);
 		sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
 		this.connectionFactory.useSslProtocol(sslContext);
-		if (this.enableHostnameVerification) {
-			this.connectionFactory.enableHostnameVerification();
-		}
 	}
 
 }

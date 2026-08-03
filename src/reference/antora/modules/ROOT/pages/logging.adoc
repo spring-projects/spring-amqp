@@ -77,7 +77,8 @@ See xref:amqp/connections.adoc#rabbitconnectionfactorybean-configuring-ssl[`Rabb
 
 | verifyHostname
 | true
-| Enable server hostname verification for TLS connections.
+| Deprecated since 4.2; has no effect.
+Since `amqp-client` 5.33, hostname verification is enabled automatically whenever TLS is configured.
 See xref:amqp/connections.adoc#rabbitconnectionfactorybean-configuring-ssl[`RabbitConnectionFactoryBean` and Configuring SSL]
 
 | sslAlgorithm

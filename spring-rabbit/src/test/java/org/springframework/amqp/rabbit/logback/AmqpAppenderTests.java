@@ -23,14 +23,13 @@ import com.rabbitmq.client.DefaultSaslConfig;
 import com.rabbitmq.client.JDKSaslConfig;
 import com.rabbitmq.client.SaslConfig;
 import com.rabbitmq.client.impl.CRDemoMechanism;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.UncategorizedAmqpException;
 import org.springframework.amqp.rabbit.connection.RabbitConnectionFactoryBean;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -50,7 +49,6 @@ import static org.mockito.Mockito.verify;
  *
  * @since 2.0
  */
-@Disabled("Temporary")
 public class AmqpAppenderTests {
 
 	@Test
@@ -110,7 +108,6 @@ public class AmqpAppenderTests {
 	public void testSslConfigurationWithAlgorithm() {
 		AmqpAppender appender = new AmqpAppender();
 		appender.setUseSsl(true);
-		appender.setVerifyHostname(false);
 		String sslAlgorithm = "TLSv2";
 		appender.setSslAlgorithm(sslAlgorithm);
 
@@ -120,7 +117,6 @@ public class AmqpAppenderTests {
 		verifyDefaultHostProperties(bean);
 		verify(bean).setUseSSL(true);
 		verify(bean).setSslAlgorithm(sslAlgorithm);
-		verify(bean).setEnableHostnameVerification(false);
 	}
 
 	@Test
@@ -199,7 +195,7 @@ public class AmqpAppenderTests {
 		appender.setKeyStore("foo");
 		appender.start();
 
-		assertThat((boolean) ReflectionTestUtils.getField(appender, "started")).isFalse();
+		assertThat(TestUtils.<Boolean>getPropertyValue(appender, "started")).isFalse();
 	}
 
 	@Test
@@ -236,13 +232,13 @@ public class AmqpAppenderTests {
 				.isInstanceOf(CRDemoMechanism.CRDemoSaslConfig.class);
 		appender.setSaslConfig("junk");
 		assertThatThrownBy(() -> appender.configureRabbitConnectionFactory(bean))
-			.isInstanceOf(UncategorizedAmqpException.class)
-			.hasCauseInstanceOf(IllegalStateException.class)
-			.withFailMessage("Unrecognized SaslConfig: junk");
+				.isInstanceOf(UncategorizedAmqpException.class)
+				.cause()
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("Unrecognized SaslConfig: junk");
 	}
 
-
-	private void verifyDefaultHostProperties(RabbitConnectionFactoryBean bean) {
+	private static void verifyDefaultHostProperties(RabbitConnectionFactoryBean bean) {
 		verify(bean, never()).setHost("localhost");
 		verify(bean, never()).setPort(5672);
 		verify(bean, never()).setUsername("guest");

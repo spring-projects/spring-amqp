@@ -17,18 +17,14 @@
 package org.springframework.amqp.rabbit.connection;
 
 import java.security.SecureRandom;
-import java.util.Collections;
 
 import javax.net.ssl.SSLContext;
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.SslContextFactory;
 import com.rabbitmq.client.impl.CredentialsProvider;
 import com.rabbitmq.client.impl.CredentialsRefreshService;
 import org.apache.commons.logging.Log;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -56,22 +52,6 @@ import static org.mockito.Mockito.verify;
  *
  */
 public class SSLConnectionTests {
-
-	@Test
-	@Disabled
-	public void test() throws Exception {
-		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
-		fb.setUseSSL(true);
-		fb.setSslPropertiesLocation(new ClassPathResource("ssl.properties"));
-		fb.setClientProperties(Collections.singletonMap("foo", "bar"));
-		fb.afterPropertiesSet();
-		ConnectionFactory cf = fb.getObject();
-		assertThat(cf.getClientProperties().get("foo")).isEqualTo("bar");
-		Connection conn = cf.newConnection();
-		Channel chan = conn.createChannel();
-		chan.close();
-		conn.close();
-	}
 
 	@Test
 	public void testAlgNoProps() throws Exception {
@@ -121,8 +101,7 @@ public class SSLConnectionTests {
 		fb.setSkipServerCertificateValidation(true);
 		fb.afterPropertiesSet();
 		fb.getObject();
-		verify(rabbitCf).useSslProtocol();
-		verify(rabbitCf).useSslProtocol("TLSv1.2");
+		verify(rabbitCf).useTlsWithNoVerification();
 	}
 
 	@Test
@@ -135,7 +114,19 @@ public class SSLConnectionTests {
 		fb.setSkipServerCertificateValidation(true);
 		fb.afterPropertiesSet();
 		fb.getObject();
-		verify(rabbitCf).useSslProtocol("TLSv1.1");
+		verify(rabbitCf).useTlsWithNoVerification();
+		verify(rabbitCf, never()).useSslProtocol("TLSv1.1");
+	}
+
+	@Test
+	public void testDeprecatedEnableHostnameVerificationFlagHasNoEffect() throws Exception {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		ConnectionFactory rabbitCf = spy(TestUtils.<ConnectionFactory>getPropertyValue(fb, "connectionFactory"));
+		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
+		fb.setUseSSL(true);
+		fb.afterPropertiesSet();
+		fb.getObject();
+		verify(rabbitCf).useSslProtocol(Mockito.any(SSLContext.class));
 	}
 
 	@Test

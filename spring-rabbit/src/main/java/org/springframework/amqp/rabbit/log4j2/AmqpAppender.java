@@ -463,8 +463,6 @@ public class AmqpAppender extends AbstractAppender {
 		 */
 		private boolean useSsl;
 
-		private boolean verifyHostname = true;
-
 		/**
 		 * The SSL algorithm to use.
 		 */
@@ -643,7 +641,6 @@ public class AmqpAppender extends AbstractAppender {
 
 			if (this.useSsl) {
 				factoryBean.setUseSSL(true);
-				factoryBean.setEnableHostnameVerification(this.verifyHostname);
 				if (this.sslAlgorithm != null) {
 					factoryBean.setSslAlgorithm(this.sslAlgorithm);
 				}
@@ -745,6 +742,11 @@ public class AmqpAppender extends AbstractAppender {
 		@PluginBuilderAttribute("useSsl")
 		private boolean useSsl;
 
+		/**
+		 * @deprecated since 4.2 in favor of relying on {@code amqp-client}'s secure-by-default
+		 * TLS behavior; this attribute has no effect.
+		 */
+		@Deprecated(since = "4.2", forRemoval = true)
 		@PluginBuilderAttribute("verifyHostname")
 		private boolean verifyHostname;
 
@@ -900,6 +902,14 @@ public class AmqpAppender extends AbstractAppender {
 			return this;
 		}
 
+		/**
+		 * Enable server hostname verification for TLS connections.
+		 * @param verifyHostname false to disable.
+		 * @return this builder.
+		 * @deprecated since 4.2 in favor of relying on {@code amqp-client}'s secure-by-default
+		 * TLS behavior; this attribute has no effect.
+		 */
+		@Deprecated(since = "4.2", forRemoval = true)
 		public Builder setVerifyHostname(boolean verifyHostname) {
 			this.verifyHostname = verifyHostname;
 			return this;
@@ -1070,7 +1080,6 @@ public class AmqpAppender extends AbstractAppender {
 					.acceptIfNotNull(this.password, value -> manager.password = value)
 					.acceptIfNotNull(this.virtualHost, value -> manager.virtualHost = value)
 					.acceptIfNotNull(this.useSsl, value -> manager.useSsl = value)
-					.acceptIfNotNull(this.verifyHostname, value -> manager.verifyHostname = value)
 					.acceptIfNotNull(this.sslAlgorithm, value -> manager.sslAlgorithm = value)
 					.acceptIfNotNull(this.sslPropertiesLocation, value -> manager.sslPropertiesLocation = value)
 					.acceptIfNotNull(this.keyStore, value -> manager.keyStore = value)

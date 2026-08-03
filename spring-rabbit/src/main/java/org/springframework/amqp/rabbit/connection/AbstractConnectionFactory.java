@@ -290,7 +290,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		try {
 			this.rabbitConnectionFactory.setUri(uri);
 		}
-		catch (URISyntaxException | GeneralSecurityException use) {
+		catch (GeneralSecurityException use) {
 			this.logger.info(BAD_URI, use);
 		}
 	}

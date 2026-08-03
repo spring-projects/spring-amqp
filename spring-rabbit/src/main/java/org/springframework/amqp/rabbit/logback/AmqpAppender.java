@@ -412,8 +412,10 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 * Enable server hostname verification for TLS connections.
 	 * @param enable false to disable.
 	 * @since 2.1.6
-	 * @see RabbitConnectionFactoryBean#setEnableHostnameVerification(boolean)
+	 * @deprecated since 4.2 in favor of relying on {@code amqp-client}'s secure-by-default
+	 * TLS behavior; this property has no effect.
 	 */
+	@Deprecated(since = "4.2", forRemoval = true)
 	public void setVerifyHostname(boolean enable) {
 		this.verifyHostname = enable;
 	}
@@ -422,7 +424,9 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 * Return true (default) if TLS hostname verification is enabled.
 	 * @return true (default) if TLS hostname verification is enabled.
 	 * @since 2.1.6
+	 * @deprecated since 4.2; this property has no effect.
 	 */
+	@Deprecated(since = "4.2", forRemoval = true)
 	public boolean isVerifyHostname() {
 		return this.verifyHostname;
 	}
@@ -753,7 +757,6 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 		if (this.useSsl) {
 			factoryBean.setUseSSL(true);
-			factoryBean.setEnableHostnameVerification(this.verifyHostname);
 			if (this.sslAlgorithm != null) {
 				factoryBean.setSslAlgorithm(this.sslAlgorithm);
 			}
