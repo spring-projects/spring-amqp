@@ -4,3 +4,10 @@
 
 [[changes-in-4-2-since-4-1]]
 == Changes in 4.2 Since 4.1
+
+[[x42-rest-client-node-locator]]
+=== `RestClientNodeLocator`
+
+A new `RestClientNodeLocator` is now the default non-reactive `NodeLocator` implementation for the `LocalizedQueueConnectionFactory`.
+The `RestTemplateNodeLocator` is deprecated since the `RestTemplate` is deprecated in Spring Framework `7.1`.
+See xref:amqp/connections.adoc#queue-affinity[Queue Affinity and the `LocalizedQueueConnectionFactory`] for more information.
