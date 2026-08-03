@@ -30,14 +30,14 @@ import static org.mockito.Mockito.verify;
  *
  * @author Movindu Jayathilake
  *
- * @since 4.0.1
+ * @since 4.0.5
  */
 class SingleAmqpConnectionFactoryTests {
 
 	@Test
 	void setConnectionNameDelegatesToConnectionBuilder() {
-		Environment environment = mock(Environment.class);
-		ConnectionBuilder connectionBuilder = mock(ConnectionBuilder.class);
+		Environment environment = mock();
+		ConnectionBuilder connectionBuilder = mock();
 
 		given(environment.connectionBuilder()).willReturn(connectionBuilder);
 
