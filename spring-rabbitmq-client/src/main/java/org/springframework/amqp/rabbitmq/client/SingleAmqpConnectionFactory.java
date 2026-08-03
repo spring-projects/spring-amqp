@@ -40,7 +40,7 @@ import org.springframework.beans.factory.DisposableBean;
  * The {@link AmqpConnectionFactory} implementation to hold a single, shared {@link Connection} instance.
  *
  * @author Artem Bilan
- *
+ * @author Movindu Jayathilake
  * @since 4.0
  */
 public class SingleAmqpConnectionFactory implements AmqpConnectionFactory, DisposableBean {
@@ -57,6 +57,17 @@ public class SingleAmqpConnectionFactory implements AmqpConnectionFactory, Dispo
 
 	public SingleAmqpConnectionFactory setHost(String host) {
 		this.connectionBuilder.host(host);
+		return this;
+	}
+
+	/**
+	 * Set the name used to identify the connection.
+	 * @param connectionName the connection name
+	 * @return this connection factory
+	 * @since 4.0.5
+	 */
+	public SingleAmqpConnectionFactory setConnectionName(String connectionName) {
+		this.connectionBuilder.name(connectionName);
 		return this;
 	}
 
