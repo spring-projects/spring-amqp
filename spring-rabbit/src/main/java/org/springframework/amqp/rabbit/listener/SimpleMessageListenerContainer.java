@@ -1106,7 +1106,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private boolean doReceiveAndExecute(BlockingQueueConsumer consumer) throws Exception { //NOSONAR
 
-		Channel channel = consumer.getChannel();
+		Channel channel = consumer.getChannelForListener();
 
 		List<Message> messages = null;
 		long deliveryTag = 0;

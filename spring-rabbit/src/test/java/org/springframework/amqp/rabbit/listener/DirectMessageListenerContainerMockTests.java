@@ -168,7 +168,7 @@ public class DirectMessageListenerContainerMockTests {
 		willAnswer(i -> {
 			latch4.countDown();
 			return null;
-		}).given(channel).basicNack(19L, true, true);
+		}).given(channel).basicReject(19L, true);
 
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(connectionFactory);
 		container.setQueueNames("test");
@@ -204,9 +204,9 @@ public class DirectMessageListenerContainerMockTests {
 		consumer.get().handleDelivery("consumerTag", envelope(18), props, body);
 		consumer.get().handleDelivery("consumerTag", envelope(19), props, body);
 		assertThat(latch4.await(30, TimeUnit.SECONDS)).isTrue();
-		// pending acks before nack
+		// pending acks before the reject
 		verify(channel).basicAck(18L, true);
-		verify(channel).basicNack(19L, true, true);
+		verify(channel).basicReject(19L, true);
 		consumer.get().handleDelivery("consumerTag", envelope(20), props, body);
 		final CountDownLatch latch5 = new CountDownLatch(1);
 		willAnswer(i -> {

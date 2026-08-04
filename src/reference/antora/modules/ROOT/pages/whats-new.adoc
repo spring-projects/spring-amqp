@@ -27,6 +27,16 @@ See xref:amqp/receiving-messages/batch.adoc[] for more information.
 The `spring-rabbitmq-client` module now provides an `AbstractRoutingAmqpConnectionFactory` (and a `SimpleRoutingAmqpConnectionFactory` implementation) to route to one of several `AmqpConnectionFactory` instances based on a runtime `lookupKey`.
 See xref:rabbitmq-amqp-client.adoc#amqp-client-routing-connection-factory[Routing Connection Factory] for more information.
 
+[[x42-per-delivery-reject]]
+=== Individual Rejects on Listener Failures
+
+When a listener throws an exception, the `SimpleMessageListenerContainer` and the `DirectMessageListenerContainer` now reject each unsettled delivery individually, instead of issuing a `basic.nack` with `multiple=true`.
+RabbitMQ only counts deliveries rejected individually, so a quorum queue `x-delivery-limit` is now reached (and the message dead-lettered) rather than the message being redelivered forever.
+
+As a consequence, the `Channel` handed to a `ChannelAwareMessageListener` (or injected into a `@RabbitListener` method) is now a `ChannelProxy` which tracks the deliveries the listener settles itself.
+Such deliveries are excluded from the container's rejects, so a manual `basicAck()`/`basicReject()` in the listener no longer risks the broker closing the channel with `PRECONDITION_FAILED - unknown delivery tag`.
+Application code that compares the exposed `Channel` by identity has to unwrap it via `ChannelProxy.getTargetChannel()`.
+
 [[x42-rest-client-node-locator]]
 === `RestClientNodeLocator`
 
