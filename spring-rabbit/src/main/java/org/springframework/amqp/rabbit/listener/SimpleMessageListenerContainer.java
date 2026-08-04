@@ -1021,6 +1021,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		consumer.setShutdownTimeout(getShutdownTimeout());
 		consumer.setApplicationEventPublisher(getApplicationEventPublisher());
 		consumer.setMessageAckListener(getMessageAckListener());
+		consumer.setListenerMaySettleDelivery(this::listenerMaySettleDelivery);
 		return consumer;
 	}
 

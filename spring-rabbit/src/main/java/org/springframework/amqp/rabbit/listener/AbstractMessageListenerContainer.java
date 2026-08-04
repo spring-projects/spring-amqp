@@ -66,6 +66,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.RoutingConnectionFactory;
+import org.springframework.amqp.rabbit.listener.adapter.AbstractAdaptableMessageListener;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareBatchMessageListener;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
@@ -463,6 +464,28 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	@Override
 	public @Nullable MessageListener getMessageListener() {
 		return this.messageListener;
+	}
+
+	/**
+	 * Return true when the listener may settle a delivery itself, which happens only if it
+	 * is given the consumer {@link Channel}. The container cannot then reject a failed
+	 * delivery individually: re-settling an already settled delivery is a protocol
+	 * violation which closes the whole channel.
+	 * @return true if the listener may settle a delivery itself.
+	 * @since 4.2
+	 * @see AbstractAdaptableMessageListener#maySettleDelivery()
+	 */
+	boolean listenerMaySettleDelivery() {
+		MessageListener listener = getMessageListener();
+		if (!(listener instanceof ChannelAwareMessageListener) || !isExposeListenerChannel()) {
+			// A plain MessageListener is not given any channel; a not exposed one is not the consumer channel.
+			return false;
+		}
+		if (listener instanceof AbstractAdaptableMessageListener adaptableListener) {
+			return adaptableListener.maySettleDelivery();
+		}
+		// An arbitrary ChannelAwareMessageListener does whatever it wants with the channel.
+		return true;
 	}
 
 	/**

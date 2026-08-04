@@ -37,6 +37,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 import com.rabbitmq.client.AMQP;
@@ -116,6 +117,8 @@ public class BlockingQueueConsumer {
 
 	@SuppressWarnings("NullAway.Init")
 	private RabbitResourceHolder resourceHolder;
+
+	private BooleanSupplier listenerMaySettleDelivery = () -> false;
 
 	private final ConcurrentMap<String, InternalConsumer> consumers = new ConcurrentHashMap<>();
 
@@ -318,6 +321,20 @@ public class BlockingQueueConsumer {
 
 	public Channel getChannel() {
 		return this.channel;
+	}
+
+	/**
+	 * Set a supplier which returns false when the listener cannot settle a delivery
+	 * itself, so this consumer is the only party which settles what it has outstanding.
+	 * It is consulted when a delivery has to be rejected.
+	 * @param listenerMaySettleDelivery the supplier; a consumer without a listener - not
+	 * driven by a container - returns false by default.
+	 * @since 4.2
+	 * @see AbstractMessageListenerContainer#listenerMaySettleDelivery()
+	 * @see #rollbackOnExceptionIfNecessary(Throwable, long)
+	 */
+	void setListenerMaySettleDelivery(BooleanSupplier listenerMaySettleDelivery) {
+		this.listenerMaySettleDelivery = listenerMaySettleDelivery;
 	}
 
 	public Collection<String> getConsumerTags() {
@@ -858,10 +875,34 @@ public class BlockingQueueConsumer {
 			}
 			if (ackRequired) {
 				if (tag < 0) {
-					OptionalLong deliveryTag = this.deliveryTags.stream().mapToLong(l -> l).max();
-					if (deliveryTag.isPresent()) {
-						this.channel.basicNack(deliveryTag.getAsLong(), true,
-								ContainerUtils.shouldRequeue(this.defaultRequeueRejected, ex, logger));
+					boolean requeue = ContainerUtils.shouldRequeue(this.defaultRequeueRejected, ex, logger);
+					if (this.deliveryTags.size() == 1 && !this.listenerMaySettleDelivery.getAsBoolean()) {
+						/*
+						 * Reject the delivery individually, rather than with a cumulative
+						 * 'basic.nack': RabbitMQ counts only individually rejected deliveries
+						 * towards 'x-delivery-count', so a quorum queue 'x-delivery-limit' would
+						 * never be reached otherwise, and the message would be redelivered forever
+						 * instead of being dead-lettered.
+						 */
+						this.channel.basicReject(this.deliveryTags.iterator().next(), requeue);
+					}
+					else {
+						/*
+						 * Either there are several outstanding deliveries, or the listener may have
+						 * settled one itself - a consumer batch acking a part of it and then
+						 * throwing (see ConsumerBatchingTests) is both. Re-settling an already
+						 * settled delivery individually is a protocol violation - the broker answers
+						 * it with 'PRECONDITION_FAILED - unknown delivery tag' and closes the whole
+						 * channel, failing everything else in progress on it. A cumulative nack
+						 * tolerates such a delivery instead - it settles whatever is still
+						 * outstanding up to the given tag - hence it is used here; a listener which
+						 * needs every delivery counted can reject them individually itself, which is
+						 * anyway the way to control its deliveries one by one.
+						 */
+						OptionalLong deliveryTag = this.deliveryTags.stream().mapToLong(l -> l).max();
+						if (deliveryTag.isPresent()) {
+							this.channel.basicNack(deliveryTag.getAsLong(), true, requeue);
+						}
 					}
 					if (this.transactional) {
 						// Need to commit the reject (=nack)

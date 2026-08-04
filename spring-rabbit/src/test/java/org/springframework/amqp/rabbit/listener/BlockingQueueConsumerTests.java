@@ -63,6 +63,7 @@ import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -258,7 +259,35 @@ public class BlockingQueueConsumerTests {
 		deliveryTags.add(1L);
 		dfa.setPropertyValue("deliveryTags", deliveryTags);
 		blockingQueueConsumer.rollbackOnExceptionIfNecessary(ex);
-		verify(channel).basicNack(1L, true, expectedRequeue);
+		verify(channel).basicReject(1L, expectedRequeue);
+	}
+
+	@Test
+	void listenerWhichMaySettleDeliveryKeepsTheCumulativeNack() throws Exception {
+		Channel channel = mock(Channel.class);
+		BlockingQueueConsumer consumer = new BlockingQueueConsumer(mock(ConnectionFactory.class),
+				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<>(),
+				AcknowledgeMode.AUTO, false, 1, "testQ");
+		DirectFieldAccessor dfa = new DirectFieldAccessor(consumer);
+		dfa.setPropertyValue("channel", channel);
+		Set<Long> deliveryTags = new HashSet<>();
+		deliveryTags.add(1L);
+		dfa.setPropertyValue("deliveryTags", deliveryTags);
+
+		// The listener is given the channel and may have settled the delivery itself:
+		// an individual reject of an already settled delivery would close the whole channel.
+		consumer.setListenerMaySettleDelivery(() -> true);
+		consumer.rollbackOnExceptionIfNecessary(new RuntimeException());
+		verify(channel).basicNack(1L, true, true);
+		verify(channel, never()).basicReject(1L, true);
+
+		// The tags are cleared by the rollback; add the next outstanding delivery.
+		deliveryTags.add(2L);
+		// The listener cannot settle a delivery: reject it individually for the 'x-delivery-count'.
+		consumer.setListenerMaySettleDelivery(() -> false);
+		consumer.rollbackOnExceptionIfNecessary(new RuntimeException());
+		verify(channel).basicReject(2L, true);
+		verify(channel, never()).basicNack(2L, true, true);
 	}
 
 	@Test

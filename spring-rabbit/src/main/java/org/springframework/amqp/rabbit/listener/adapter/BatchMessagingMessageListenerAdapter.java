@@ -62,6 +62,15 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 		this.batchingStrategy = batchingStrategy == null ? new SimpleBatchingStrategy(0, 0, 0L) : batchingStrategy;
 	}
 
+	/**
+	 * This adapter rejects a message it fails to convert, so a delivery of the batch may
+	 * be settled independently of the container.
+	 */
+	@Override
+	public boolean maySettleDelivery() {
+		return true;
+	}
+
 	@Override
 	public void onMessageBatch(List<org.springframework.amqp.core.Message> messages, @Nullable Channel channel) {
 		Message<?> converted;

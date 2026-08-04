@@ -162,7 +162,9 @@ public abstract class LocallyTransactedTests {
 				new byte[] { 0 });
 		assertThat(commitLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(rollbackLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
-		verify(onlyChannel).basicNack(anyLong(), anyBoolean(), anyBoolean());
+		// The single outstanding delivery is rejected individually, so that RabbitMQ counts it
+		// towards 'x-delivery-count'.
+		verify(onlyChannel).basicReject(anyLong(), anyBoolean());
 		verify(onlyChannel, times(1)).txRollback();
 
 		// ImmediateAck tests
@@ -176,7 +178,7 @@ public abstract class LocallyTransactedTests {
 				new byte[] { 0 });
 		assertThat(rollbackLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(commitLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
-		verify(onlyChannel, times(2)).basicNack(anyLong(), anyBoolean(), anyBoolean());
+		verify(onlyChannel, times(2)).basicReject(anyLong(), anyBoolean());
 		verify(onlyChannel, times(2)).txRollback();
 
 		container.setMessageListener(m -> {
