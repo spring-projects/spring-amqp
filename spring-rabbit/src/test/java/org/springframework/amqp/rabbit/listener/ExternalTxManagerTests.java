@@ -327,12 +327,9 @@ public abstract class ExternalTxManagerTests {
 		assertThat(rejectLatch.await(10, TimeUnit.SECONDS)).isTrue();
 
 		assertThat(rollbackLatch.await(10, TimeUnit.SECONDS)).isTrue();
-		if (propagation != TransactionDefinition.PROPAGATION_NEVER) {
-			verify(channel).basicReject(anyLong(), eq(expectRequeue));
-		}
-		else {
-			verify(channel).basicNack(anyLong(), eq(Boolean.TRUE), eq(expectRequeue));
-		}
+		// The single outstanding delivery is rejected individually, so that RabbitMQ counts it
+		// towards 'x-delivery-count'.
+		verify(channel).basicReject(anyLong(), eq(expectRequeue));
 		container.stop();
 	}
 
