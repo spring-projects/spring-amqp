@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -377,6 +378,33 @@ public class MessagingMessageListenerAdapterTests {
 		verify(channel).basicPublish(any(), any(), anyBoolean(), any(), any());
 	}
 
+	@Test
+	void maySettleDeliveryOnlyWhenTheListenerHasTheChannel() {
+		// The listener method cannot settle a delivery without a 'Channel' argument.
+		assertThat(getSimpleInstance("fail", String.class).maySettleDelivery()).isFalse();
+		assertThat(getSimpleInstance("withChannel", String.class, Channel.class).maySettleDelivery()).isTrue();
+
+		// The error handler is given the channel as well.
+		assertThat(getSimpleInstance("fail", mock(RabbitListenerErrorHandler.class), false, String.class)
+				.maySettleDelivery())
+				.isTrue();
+
+		// In the manual ack mode the message is acknowledged for an error handler returning nothing.
+		MessagingMessageListenerAdapter manualAckAdapter = getSimpleInstance("fail", String.class);
+		manualAckAdapter.containerAckMode(AcknowledgeMode.MANUAL);
+		assertThat(manualAckAdapter.maySettleDelivery()).isTrue();
+
+		// An async reply is acknowledged when it completes.
+		assertThat(getSimpleInstance("asyncFail", String.class).maySettleDelivery()).isTrue();
+
+		// A '@RabbitHandler' method is not known upfront.
+		assertThat(getMultiInstance("fail", "wrongParam", false, String.class, Integer.class).maySettleDelivery())
+				.isTrue();
+
+		// A batch adapter rejects a message it fails to convert.
+		assertThat(getBatchInstance("withFooBatch").maySettleDelivery()).isTrue();
+	}
+
 	protected MessagingMessageListenerAdapter getSimpleInstance(String methodName, Class<?>... parameterTypes) {
 		return getSimpleInstance(methodName, null, false, parameterTypes);
 	}
@@ -458,6 +486,16 @@ public class MessagingMessageListenerAdapterTests {
 		@SuppressWarnings("unused")
 		public void fail(String input) {
 			throw new IllegalArgumentException("Expected test exception");
+		}
+
+		@SuppressWarnings("unused")
+		public void withChannel(String input, Channel channel) {
+			this.payload = input;
+		}
+
+		@SuppressWarnings("unused")
+		public CompletableFuture<Void> asyncFail(String input) {
+			return CompletableFuture.failedFuture(new IllegalArgumentException("Expected test exception"));
 		}
 
 		@SuppressWarnings("unused")

@@ -50,6 +50,7 @@ import org.springframework.amqp.rabbit.connection.AutoRecoverConnectionNotCurren
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.backoff.FixedBackOff;
@@ -67,6 +68,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -168,7 +170,7 @@ public class DirectMessageListenerContainerMockTests {
 		willAnswer(i -> {
 			latch4.countDown();
 			return null;
-		}).given(channel).basicNack(19L, true, true);
+		}).given(channel).basicReject(19L, true);
 
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(connectionFactory);
 		container.setQueueNames("test");
@@ -204,9 +206,9 @@ public class DirectMessageListenerContainerMockTests {
 		consumer.get().handleDelivery("consumerTag", envelope(18), props, body);
 		consumer.get().handleDelivery("consumerTag", envelope(19), props, body);
 		assertThat(latch4.await(30, TimeUnit.SECONDS)).isTrue();
-		// pending acks before nack
+		// pending acks before the reject
 		verify(channel).basicAck(18L, true);
-		verify(channel).basicNack(19L, true, true);
+		verify(channel).basicReject(19L, true);
 		consumer.get().handleDelivery("consumerTag", envelope(20), props, body);
 		final CountDownLatch latch5 = new CountDownLatch(1);
 		willAnswer(i -> {
@@ -218,6 +220,58 @@ public class DirectMessageListenerContainerMockTests {
 		assertThat(latch5.await(30, TimeUnit.SECONDS)).isTrue();
 		// pending acks on stop
 		verify(channel).basicAck(20L, true);
+	}
+
+	@Test
+	void listenerWhichMaySettleDeliveryKeepsTheCumulativeNack() throws Exception {
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		ChannelProxy channel = mock();
+		AutorecoveringChannel rabbitChannel = mock();
+		given(channel.getTargetChannel()).willReturn(rabbitChannel);
+
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(anyBoolean())).willReturn(channel);
+		given(channel.isOpen()).willReturn(true);
+		given(channel.queueDeclarePassive(Mockito.anyString()))
+				.willAnswer(invocation -> mock(AMQP.Queue.DeclareOk.class));
+		AtomicReference<Consumer> consumer = new AtomicReference<>();
+		CountDownLatch consumeLatch = new CountDownLatch(1);
+		willAnswer(i -> {
+			consumer.set(i.getArgument(6));
+			consumer.get().handleConsumeOk("consumerTag");
+			consumeLatch.countDown();
+			return "consumerTag";
+		}).given(channel)
+				.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+						anyMap(), any(Consumer.class));
+		CountDownLatch nackLatch = new CountDownLatch(1);
+		willAnswer(i -> {
+			nackLatch.countDown();
+			return null;
+		}).given(channel).basicNack(1L, true, true);
+		willAnswer(i -> {
+			consumer.get().handleCancelOk("consumerTag");
+			return null;
+		}).given(channel).basicCancel("consumerTag");
+
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(connectionFactory);
+		container.setQueueNames("test");
+		// A ChannelAwareMessageListener is given the channel, so it may settle the delivery itself.
+		container.setMessageListener((ChannelAwareMessageListener) (message, channelForListener) -> {
+			throw new RuntimeException("test");
+		});
+		container.afterPropertiesSet();
+		container.start();
+
+		assertThat(consumeLatch.await(30, TimeUnit.SECONDS)).isTrue();
+		consumer.get().handleDelivery("consumerTag", envelope(1), new BasicProperties(), new byte[1]);
+		assertThat(nackLatch.await(30, TimeUnit.SECONDS)).isTrue();
+
+		// An individual reject of a delivery settled by the listener would close the whole channel.
+		verify(channel, never()).basicReject(anyLong(), anyBoolean());
+		verify(channel).basicNack(1L, true, true);
+		container.stop();
 	}
 
 	@Test

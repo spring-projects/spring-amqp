@@ -334,6 +334,22 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	}
 
 	/**
+	 * Return true when this listener, or the code it delegates to, may settle a delivery
+	 * itself - by calling {@code basicAck()}, {@code basicNack()} or
+	 * {@code basicReject()} on the channel it is given. The container needs to know that
+	 * because it cannot reject an already settled delivery individually: such a
+	 * re-settlement is a protocol violation which closes the whole channel.
+	 * <p>
+	 * Returns true unconditionally by default; a subclass which knows better should
+	 * override this method.
+	 * @return true if this listener may settle a delivery itself.
+	 * @since 4.0.6
+	 */
+	public boolean maySettleDelivery() {
+		return true;
+	}
+
+	/**
 	 * Handle the given exception that arose during listener execution.
 	 * The default implementation logs the exception at error level.
 	 * <p>
