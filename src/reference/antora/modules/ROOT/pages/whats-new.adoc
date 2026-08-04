@@ -14,3 +14,9 @@ See xref:amqp/connections.adoc[] for more information.
 
 For the same reason, the `verifyHostname` property on the Logback and Log4j 2 `AmqpAppender` s is also deprecated now.
 See xref:logging.adoc[] for more information.
+
+[[x42-listener-batch-overrides]]
+=== `@RabbitListener` Batch Overrides
+
+The `@RabbitListener` annotation has new `batchSize()` and `batchReceiveTimeout()` attributes to override the respective container factory properties for a single listener.
+See xref:amqp/receiving-messages/batch.adoc[] for more information.

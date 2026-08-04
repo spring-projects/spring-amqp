@@ -63,6 +63,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Stephane Nicoll
  * @author Juergen Hoeller
  * @author Alex Panchenko
+ * @author Martin Ferret
  */
 public class RabbitListenerAnnotationBeanPostProcessorTests {
 
@@ -334,6 +335,42 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		}
 	}
 
+	@Test
+	public void batchOverridesNotSetByDefault() {
+		try (ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
+				getConfigClass(), SimpleMessageListenerTestBean.class)) {
+
+			RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
+			RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
+			assertThat(endpoint.getBatchSize()).isNull();
+			assertThat(endpoint.getBatchReceiveTimeout()).isNull();
+		}
+	}
+
+	@Test
+	public void batchOverridesResolved() {
+		try (ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
+				getConfigClass(), BatchOverridesTestBean.class)) {
+
+			RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
+			RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
+			assertThat(endpoint.getBatchSize()).isEqualTo(5);
+			assertThat(endpoint.getBatchReceiveTimeout()).isEqualTo(1500L);
+		}
+	}
+
+	@Test
+	public void batchOverridesResolvedFromExpressionAndPlaceholder() {
+		try (ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
+				getConfigClass(), BatchOverridesExpressionTestBean.class)) {
+
+			RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
+			RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
+			assertThat(endpoint.getBatchSize()).isEqualTo(7);
+			assertThat(endpoint.getBatchReceiveTimeout()).isEqualTo(2500L);
+		}
+	}
+
 	static class BeanForConcurrencyTesting {
 		public void a() {
 		}
@@ -350,6 +387,25 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 
 		@RabbitListener(queues = "testQueue")
 		public void handleIt(String body) {
+		}
+
+	}
+
+	@Component
+	static class BatchOverridesTestBean {
+
+		@RabbitListener(queues = "testQueue", batch = "true", batchSize = "5", batchReceiveTimeout = "1500")
+		public void handleIt(List<String> body) {
+		}
+
+	}
+
+	@Component
+	static class BatchOverridesExpressionTestBean {
+
+		@RabbitListener(queues = "testQueue", batch = "true", batchSize = "${batch.size}",
+				batchReceiveTimeout = "#{'${batch.receive.timeout}'}")
+		public void handleIt(List<String> body) {
 		}
 
 	}

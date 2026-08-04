@@ -97,6 +97,7 @@ import org.springframework.validation.Validator;
  * @author Alex Panchenko
  * @author Artem Bilan
  * @author Ngoc Nhan
+ * @author Martin Ferret
  *
  * @since 1.4
  *
@@ -327,6 +328,15 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		resolveReplyContentType(endpoint, rabbitListener);
 		if (StringUtils.hasText(rabbitListener.batch())) {
 			endpoint.setBatchListener(Boolean.parseBoolean(rabbitListener.batch()));
+		}
+		Integer batchSize = resolveExpressionToInteger(rabbitListener.batchSize(), "batchSize");
+		if (batchSize != null) {
+			endpoint.setBatchSize(batchSize);
+		}
+		Long batchReceiveTimeout =
+				resolveExpressionToLong(rabbitListener.batchReceiveTimeout(), "batchReceiveTimeout");
+		if (batchReceiveTimeout != null) {
+			endpoint.setBatchReceiveTimeout(batchReceiveTimeout);
 		}
 		RabbitListenerContainerFactory<?> factory = resolveContainerFactory(rabbitListener, target, beanName);
 

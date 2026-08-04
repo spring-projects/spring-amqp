@@ -222,6 +222,10 @@ The `RabbitAmqpMessageListener` can handle and settle messages in batches when `
 For this purpose the `MessageListener.onMessageBatch()` contract must be implemented.
 The `batchReceiveDuration` option is used to schedule a force release for not full batches to avoid memory and https://www.rabbitmq.com/blog/2024/09/02/amqp-flow-control[consumer credits] exhausting.
 
+Starting with version 4.2, the `batchSize` and `batchReceiveTimeout` options of the `RabbitAmqpListenerContainerFactory` can be overridden for an individual listener via the respective `@RabbitListener` annotation attributes.
+Since a `batchSize` greater than 1 is what turns the listener into a batch listener, setting only the annotation attribute is enough to consume in batches.
+See xref:amqp/receiving-messages/batch.adoc#batch-annotation-overrides[Overriding Batch Properties Per Listener] for more information.
+
 Usually, the `RabbitAmqpMessageListener` class is not used directly in the target project, and POJO method annotation configuration via `@RabbitListener` is chosen for declarative consumer configuration.
 The `RabbitAmqpListenerContainerFactory` must be registered under the `RabbitListenerAnnotationBeanPostProcessor.DEFAULT_RABBIT_LISTENER_CONTAINER_FACTORY_BEAN_NAME`, and `@RabbitListener` annotation process will register `RabbitAmqpMessageListener` instance into the `RabbitListenerEndpointRegistry`.
 The target POJO method invocation is handled by specific `RabbitAmqpMessageListenerAdapter` implementation, which extends a `MessagingMessageListenerAdapter` and reuses a lot of its functionality, including request-reply scenarios (async or not).

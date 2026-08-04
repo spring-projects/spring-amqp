@@ -95,6 +95,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
  *
  * @author Stephane Nicoll
  * @author Gary Russell
+ * @author Martin Ferret
  * @since 1.4
  * @see EnableRabbit
  * @see RabbitListenerAnnotationBeanPostProcessor
@@ -345,5 +346,32 @@ public @interface RabbitListener {
 	 * @see Boolean#parseBoolean(String)
 	 */
 	String batch() default "";
+
+	/**
+	 * Override the container factory's {@code batchSize} property. Ignored by container
+	 * factories that have no such property, such as the
+	 * {@code DirectRabbitListenerContainerFactory}. This overrides the value only; it
+	 * does not enable {@code consumerBatchEnabled}, which stays a container factory
+	 * property - refer to the reference documentation.
+	 * @return the batch size for this listener. If not set, the container factory setting
+	 * is used. SpEL {@code #{...}} and property place holders {@code ${...}} are
+	 * supported.
+	 * @since 4.2
+	 * @see #batchReceiveTimeout()
+	 */
+	String batchSize() default "";
+
+	/**
+	 * Override the container factory's {@code batchReceiveTimeout} property; the number
+	 * of milliseconds a batch gathering process should go on before a partial batch is
+	 * released. Ignored by container factories that have no such property, such as the
+	 * {@code DirectRabbitListenerContainerFactory}.
+	 * @return the batch receive timeout for this listener. If not set, the container
+	 * factory setting is used. SpEL {@code #{...}} and property place holders
+	 * {@code ${...}} are supported.
+	 * @since 4.2
+	 * @see #batchSize()
+	 */
+	String batchReceiveTimeout() default "";
 
 }

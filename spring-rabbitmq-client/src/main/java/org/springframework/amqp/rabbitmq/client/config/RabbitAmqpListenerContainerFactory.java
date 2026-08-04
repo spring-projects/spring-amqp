@@ -42,6 +42,7 @@ import org.springframework.util.ErrorHandler;
  * {@link org.springframework.amqp.rabbit.annotation.RabbitListenerAnnotationBeanPostProcessor#DEFAULT_RABBIT_LISTENER_CONTAINER_FACTORY_BEAN_NAME}.
  *
  * @author Artem Bilan
+ * @author Martin Ferret
  *
  * @since 4.0
  *
@@ -155,9 +156,21 @@ public class RabbitAmqpListenerContainerFactory
 
 	@Override
 	public RabbitAmqpListenerContainer createListenerContainer(@Nullable RabbitListenerEndpoint endpoint) {
+		Integer batchSizeToUse = this.batchSize;
+		Long batchReceiveTimeoutToUse = this.batchReceiveTimeout;
+		if (endpoint != null) { // endpoint settings overriding default factory settings
+			Integer endpointBatchSize = endpoint.getBatchSize();
+			if (endpointBatchSize != null) {
+				batchSizeToUse = endpointBatchSize;
+			}
+			Long endpointBatchReceiveTimeout = endpoint.getBatchReceiveTimeout();
+			if (endpointBatchReceiveTimeout != null) {
+				batchReceiveTimeoutToUse = endpointBatchReceiveTimeout;
+			}
+		}
 		if (endpoint instanceof MethodRabbitListenerEndpoint methodRabbitListenerEndpoint) {
 			JavaUtils.INSTANCE
-					.acceptIfCondition(this.batchSize != null && this.batchSize > 1,
+					.acceptIfCondition(batchSizeToUse != null && batchSizeToUse > 1,
 							true,
 							methodRabbitListenerEndpoint::setBatchListener);
 
@@ -173,8 +186,8 @@ public class RabbitAmqpListenerContainerFactory
 				.acceptIfNotNull(getAdviceChain(), container::setAdviceChain)
 				.acceptIfNotNull(getDefaultRequeueRejected(), container::setDefaultRequeue)
 				.acceptIfNotNull(this.afterReceivePostProcessors, container::setAfterReceivePostProcessors)
-				.acceptIfNotNull(this.batchSize, container::setBatchSize)
-				.acceptIfNotNull(this.batchReceiveTimeout, container::setBatchReceiveTimeout)
+				.acceptIfNotNull(batchSizeToUse, container::setBatchSize)
+				.acceptIfNotNull(batchReceiveTimeoutToUse, container::setBatchReceiveTimeout)
 				.acceptIfNotNull(this.taskScheduler, container::setTaskScheduler)
 				.acceptIfNotNull(this.errorHandler, container::setErrorHandler)
 				.acceptIfNotNull(this.applicationEventPublisher, container::setApplicationEventPublisher);

@@ -35,6 +35,7 @@ import org.springframework.amqp.utils.JavaUtils;
  * @author Artem Bilan
  * @author Dustin Schultz
  * @author Jeonggi Kim
+ * @author Martin Ferret
  *
  * @since 1.4
  */
@@ -192,13 +193,13 @@ public class SimpleRabbitListenerContainerFactory
 
 		super.initializeContainer(instance, endpoint);
 
+		// endpoint settings override the default factory settings
+		Integer endpointBatchSize = endpoint != null ? endpoint.getBatchSize() : null;
+		Long endpointBatchReceiveTimeout = endpoint != null ? endpoint.getBatchReceiveTimeout() : null;
+		String concurrency = endpoint != null ? endpoint.getConcurrency() : null;
 		JavaUtils javaUtils = JavaUtils.INSTANCE
-				.acceptIfNotNull(this.batchSize, instance::setBatchSize);
-		String concurrency = null;
-		if (endpoint != null) {
-			concurrency = endpoint.getConcurrency();
-			javaUtils.acceptIfNotNull(concurrency, instance::setConcurrency);
-		}
+				.acceptOrElseIfNotNull(endpointBatchSize, this.batchSize, instance::setBatchSize)
+				.acceptIfNotNull(concurrency, instance::setConcurrency);
 		javaUtils
 				.acceptIfCondition(concurrency == null && this.concurrentConsumers != null, this.concurrentConsumers,
 						instance::setConcurrentConsumers)
@@ -210,7 +211,8 @@ public class SimpleRabbitListenerContainerFactory
 				.acceptIfNotNull(this.consecutiveActiveTrigger, instance::setConsecutiveActiveTrigger)
 				.acceptIfNotNull(this.consecutiveIdleTrigger, instance::setConsecutiveIdleTrigger)
 				.acceptIfNotNull(this.receiveTimeout, instance::setReceiveTimeout)
-				.acceptIfNotNull(this.batchReceiveTimeout, instance::setBatchReceiveTimeout)
+				.acceptOrElseIfNotNull(endpointBatchReceiveTimeout, this.batchReceiveTimeout,
+						instance::setBatchReceiveTimeout)
 				.acceptIfNotNull(this.enforceImmediateAckForManual, instance::setEnforceImmediateAckForManual)
 				.acceptIfNotNull(this.immediateScaleDown, instance::setImmediateScaleDown);
 		if (Boolean.TRUE.equals(this.consumerBatchEnabled)) {
