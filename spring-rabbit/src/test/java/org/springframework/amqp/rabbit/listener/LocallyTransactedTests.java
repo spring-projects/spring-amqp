@@ -49,6 +49,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
@@ -64,14 +65,14 @@ import static org.mockito.Mockito.verify;
 public abstract class LocallyTransactedTests {
 
 	/**
-	 * Verifies that an up-stack transactional RabbitTemplate uses the listener's
+	 * Verify that an up-stack transactional RabbitTemplate uses the listener's
 	 * channel (MessageListener).
 	 */
 	@Test
 	public void testMessageListener() throws Exception {
-		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
-		Connection mockConnection = mock(Connection.class);
-		final Channel onlyChannel = mock(Channel.class);
+		ConnectionFactory mockConnectionFactory = mock();
+		Connection mockConnection = mock();
+		final Channel onlyChannel = mock();
 		given(onlyChannel.isOpen()).willReturn(true);
 
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(mockConnectionFactory);
@@ -80,7 +81,7 @@ public abstract class LocallyTransactedTests {
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
 
-		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
+		final AtomicReference<Exception> tooManyChannels = new AtomicReference<>();
 
 		AtomicBoolean done = new AtomicBoolean();
 		willAnswer(invocation -> {
@@ -93,7 +94,7 @@ public abstract class LocallyTransactedTests {
 			return channel;
 		}).given(mockConnection).createChannel();
 
-		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
+		final AtomicReference<Consumer> consumer = new AtomicReference<>();
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		willAnswer(invocation -> {
@@ -124,7 +125,7 @@ public abstract class LocallyTransactedTests {
 			RabbitTemplate rabbitTemplate = new RabbitTemplate(cachingConnectionFactory);
 			rabbitTemplate.setChannelTransacted(true);
 			// should use same channel as container
-			rabbitTemplate.convertAndSend("foo", "bar", "baz");
+			rabbitTemplate.convertAndSend("test.exchange", "test.key", "test");
 			latch.countDown();
 		});
 		container.setQueueNames("queue");
@@ -134,8 +135,8 @@ public abstract class LocallyTransactedTests {
 		container.start();
 		assertThat(consumerLatch.await(10, TimeUnit.SECONDS)).isTrue();
 
-		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
-				new byte[] { 0 });
+		consumer.get().handleDelivery("qux", new Envelope(1, false, "test.exchange", "test.key"), new BasicProperties(),
+				new byte[] {0});
 
 		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 
@@ -147,8 +148,8 @@ public abstract class LocallyTransactedTests {
 		verify(mockConnection, times(1)).createChannel();
 		assertThat(commitLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
 		verify(onlyChannel).txCommit();
-		verify(onlyChannel).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
-				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+		verify(onlyChannel)
+				.basicPublish(anyString(), anyString(), anyBoolean(), any(BasicProperties.class), any(byte[].class));
 
 		DirectFieldAccessor dfa = new DirectFieldAccessor(cachingConnectionFactory);
 		List<?> channels = (List<?>) dfa.getPropertyValue("cachedChannelsTransactional");
@@ -158,36 +159,55 @@ public abstract class LocallyTransactedTests {
 			throw new RuntimeException();
 		});
 		commitLatch.set(new CountDownLatch(1));
-		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
-				new byte[] { 0 });
+		consumer.get().handleDelivery("qux", new Envelope(1, false, "test.exchange", "test.key"), new BasicProperties(),
+				new byte[] {0});
 		assertThat(commitLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(rollbackLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
-		verify(onlyChannel).basicNack(anyLong(), anyBoolean(), anyBoolean());
+		// The single outstanding delivery is rejected individually, so that RabbitMQ counts it
+		// towards 'x-delivery-count'.
+		verify(onlyChannel).basicReject(anyLong(), anyBoolean());
 		verify(onlyChannel, times(1)).txRollback();
 
 		// ImmediateAck tests
 
 		container.setMessageListener(m -> {
-			throw new AmqpRejectAndDontRequeueException("foo", new ImmediateAcknowledgeAmqpException("bar"));
+			throw new AmqpRejectAndDontRequeueException("test", new ImmediateAcknowledgeAmqpException("immediate ack"));
 		});
 		commitLatch.set(new CountDownLatch(1));
 		rollbackLatch.set(new CountDownLatch(1));
-		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
-				new byte[] { 0 });
+		consumer.get().handleDelivery("qux", new Envelope(1, false, "test.exchange", "test.key"), new BasicProperties(),
+				new byte[] {0});
 		assertThat(rollbackLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(commitLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
-		verify(onlyChannel, times(2)).basicNack(anyLong(), anyBoolean(), anyBoolean());
+		verify(onlyChannel, times(2)).basicReject(anyLong(), anyBoolean());
 		verify(onlyChannel, times(2)).txRollback();
 
 		container.setMessageListener(m -> {
 			// NOSONAR
 		});
 		commitLatch.set(new CountDownLatch(1));
-		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
-				new byte[] { 0 });
+		consumer.get().handleDelivery("qux", new Envelope(1, false, "test.exchange", "test.key"), new BasicProperties(),
+				new byte[] {0});
 		assertThat(commitLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
 		verify(onlyChannel, times(2)).basicAck(anyLong(), anyBoolean());
 		verify(onlyChannel, times(4)).txCommit();
+
+		// A ChannelAwareMessageListener is given the channel, hence it may have settled the
+		// delivery itself: the cumulative nack, which tolerates that, is kept for it.
+		container.setMessageListener((ChannelAwareMessageListener) (m, channel) -> {
+			throw new RuntimeException();
+		});
+		commitLatch.set(new CountDownLatch(1));
+		rollbackLatch.set(new CountDownLatch(1));
+		consumer.get().handleDelivery("qux", new Envelope(1, false, "test.exchange", "test.key"), new BasicProperties(),
+				new byte[] {0});
+		assertThat(rollbackLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
+		// The cumulative nack is committed like any other reject, so wait for that too:
+		// otherwise the assertions below can race ahead of the container thread.
+		assertThat(commitLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
+		verify(onlyChannel).basicNack(anyLong(), eq(true), anyBoolean());
+		// No more individual rejects than the two from the plain MessageListener above.
+		verify(onlyChannel, times(2)).basicReject(anyLong(), anyBoolean());
 
 		container.stop();
 	}
@@ -197,9 +217,9 @@ public abstract class LocallyTransactedTests {
 	 */
 	@Test
 	public void testMessageListenerRollback() throws Exception {
-		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
-		Connection mockConnection = mock(Connection.class);
-		final Channel channel = mock(Channel.class);
+		ConnectionFactory mockConnectionFactory = mock();
+		Connection mockConnection = mock();
+		final Channel channel = mock();
 		given(channel.isOpen()).willReturn(true);
 
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(mockConnectionFactory);
@@ -208,11 +228,11 @@ public abstract class LocallyTransactedTests {
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
 
-		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
+		final AtomicReference<Exception> tooManyChannels = new AtomicReference<>();
 
 		willAnswer(invocation -> channel).given(mockConnection).createChannel();
 
-		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
+		final AtomicReference<Consumer> consumer = new AtomicReference<>();
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		willAnswer(invocation -> {
@@ -242,8 +262,8 @@ public abstract class LocallyTransactedTests {
 		container.start();
 		assertThat(consumerLatch.await(10, TimeUnit.SECONDS)).isTrue();
 
-		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
-				new byte[] { 0 });
+		consumer.get().handleDelivery("qux", new Envelope(1, false, "test.exchange", "test.key"), new BasicProperties(),
+				new byte[] {0});
 
 		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 
@@ -258,13 +278,13 @@ public abstract class LocallyTransactedTests {
 	}
 
 	/**
-	 * Verifies that an up-stack non-transactional RabbitTemplate does not use the
+	 * Verify that an up-stack non-transactional RabbitTemplate does not use the
 	 * listener's channel (MessageListener).
 	 */
 	@Test
 	public void testSeparateTx() throws Exception {
-		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
-		Connection mockConnection = mock(Connection.class);
+		ConnectionFactory mockConnectionFactory = mock();
+		Connection mockConnection = mock();
 
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(mockConnectionFactory);
 		cachingConnectionFactory.setExecutor(mock(ExecutorService.class));
@@ -272,12 +292,12 @@ public abstract class LocallyTransactedTests {
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
 
-		Channel channel1 = mock(Channel.class);
+		Channel channel1 = mock();
 		given(channel1.isOpen()).willReturn(true);
-		Channel channel2 = mock(Channel.class);
+		Channel channel2 = mock();
 		given(channel2.isOpen()).willReturn(true);
 
-		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
+		final AtomicReference<Exception> tooManyChannels = new AtomicReference<>();
 
 		willAnswer(new Answer<Channel>() {
 
@@ -299,7 +319,7 @@ public abstract class LocallyTransactedTests {
 			}
 		}).given(mockConnection).createChannel();
 
-		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
+		final AtomicReference<Consumer> consumer = new AtomicReference<>();
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		willAnswer(invocation -> {
@@ -321,7 +341,7 @@ public abstract class LocallyTransactedTests {
 			RabbitTemplate rabbitTemplate = new RabbitTemplate(cachingConnectionFactory);
 			rabbitTemplate.setChannelTransacted(false);
 			// should NOT use same channel as container
-			rabbitTemplate.convertAndSend("foo", "bar", "baz");
+			rabbitTemplate.convertAndSend("test.exchange", "test.key", "test");
 			latch.countDown();
 		});
 		container.setQueueNames("queue");
@@ -331,8 +351,8 @@ public abstract class LocallyTransactedTests {
 		container.start();
 		assertThat(consumerLatch.await(10, TimeUnit.SECONDS)).isTrue();
 
-		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
-				new byte[] { 0 });
+		consumer.get().handleDelivery("qux", new Envelope(1, false, "test.exchange", "test.key"), new BasicProperties(),
+				new byte[] {0});
 
 		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 
@@ -344,10 +364,10 @@ public abstract class LocallyTransactedTests {
 		verify(mockConnection, times(2)).createChannel();
 		assertThat(commitLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		verify(channel1).txCommit();
-		verify(channel1, never()).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
-				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
-		verify(channel2).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
-				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+		verify(channel1, never())
+				.basicPublish(anyString(), anyString(), anyBoolean(), any(BasicProperties.class), any(byte[].class));
+		verify(channel2)
+				.basicPublish(anyString(), anyString(), anyBoolean(), any(BasicProperties.class), any(byte[].class));
 
 		// verify close() was never called on the channel
 		DirectFieldAccessor dfa = new DirectFieldAccessor(cachingConnectionFactory);
@@ -364,9 +384,9 @@ public abstract class LocallyTransactedTests {
 	 */
 	@Test
 	public void testChannelAwareMessageListener() throws Exception {
-		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
-		Connection mockConnection = mock(Connection.class);
-		final Channel onlyChannel = mock(Channel.class);
+		ConnectionFactory mockConnectionFactory = mock();
+		Connection mockConnection = mock();
+		final Channel onlyChannel = mock();
 		given(onlyChannel.isOpen()).willReturn(true);
 
 		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory(mockConnectionFactory);
@@ -375,10 +395,12 @@ public abstract class LocallyTransactedTests {
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
 
-		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
+		final AtomicReference<Exception> tooManyChannels = new AtomicReference<>();
 
 		willAnswer(new Answer<Channel>() {
+
 			boolean done;
+
 			@Override
 			public Channel answer(InvocationOnMock invocation) {
 				if (!done) {
@@ -392,7 +414,7 @@ public abstract class LocallyTransactedTests {
 			}
 		}).given(mockConnection).createChannel();
 
-		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
+		final AtomicReference<Consumer> consumer = new AtomicReference<>();
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		willAnswer(invocation -> {
@@ -410,14 +432,14 @@ public abstract class LocallyTransactedTests {
 		}).given(onlyChannel).txCommit();
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		final AtomicReference<Channel> exposed = new AtomicReference<Channel>();
+		final AtomicReference<Channel> exposed = new AtomicReference<>();
 		AbstractMessageListenerContainer container = createContainer(singleConnectionFactory);
 		container.setMessageListener((ChannelAwareMessageListener) (message, channel) -> {
 			exposed.set(channel);
 			RabbitTemplate rabbitTemplate = new RabbitTemplate(singleConnectionFactory);
 			rabbitTemplate.setChannelTransacted(true);
 			// should use same channel as container
-			rabbitTemplate.convertAndSend("foo", "bar", "baz");
+			rabbitTemplate.convertAndSend("test.exchange", "test.key", "test");
 			latch.countDown();
 		});
 		container.setQueueNames("queue");
@@ -427,8 +449,8 @@ public abstract class LocallyTransactedTests {
 		container.start();
 		assertThat(consumerLatch.await(10, TimeUnit.SECONDS)).isTrue();
 
-		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
-				new byte[] { 0 });
+		consumer.get().handleDelivery("qux", new Envelope(1, false, "test.exchange", "test.key"), new BasicProperties(),
+				new byte[] {0});
 
 		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 
@@ -437,11 +459,11 @@ public abstract class LocallyTransactedTests {
 			throw e;
 		}
 
-		verify(mockConnection, Mockito.times(1)).createChannel();
+		verify(mockConnection).createChannel();
 		assertThat(commitLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		verify(onlyChannel).txCommit();
-		verify(onlyChannel).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
-				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+		verify(onlyChannel)
+				.basicPublish(anyString(), anyString(), anyBoolean(), any(BasicProperties.class), any(byte[].class));
 
 		// verify close() was never called on the channel
 		verify(onlyChannel, Mockito.never()).close();
@@ -452,17 +474,17 @@ public abstract class LocallyTransactedTests {
 	}
 
 	/**
-	 * Verifies that the listener channel is not exposed when so configured and
+	 * Verify that the listener channel is not exposed when so configured and
 	 * up-stack RabbitTemplate uses the additional channel.
 	 * created when exposeListenerChannel is false (ChannelAwareMessageListener).
 	 */
 	@Test
 	public void testChannelAwareMessageListenerDontExpose() throws Exception {
-		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
-		Connection mockConnection = mock(Connection.class);
-		final Channel firstChannel = mock(Channel.class);
+		ConnectionFactory mockConnectionFactory = mock();
+		Connection mockConnection = mock();
+		final Channel firstChannel = mock();
 		given(firstChannel.isOpen()).willReturn(true);
-		final Channel secondChannel = mock(Channel.class);
+		final Channel secondChannel = mock();
 		given(secondChannel.isOpen()).willReturn(true);
 
 		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory(mockConnectionFactory);
@@ -471,7 +493,7 @@ public abstract class LocallyTransactedTests {
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
 
-		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
+		final AtomicReference<Exception> tooManyChannels = new AtomicReference<>();
 
 		AtomicBoolean done = new AtomicBoolean();
 		willAnswer(invocation -> {
@@ -481,7 +503,7 @@ public abstract class LocallyTransactedTests {
 			return secondChannel;
 		}).given(mockConnection).createChannel();
 
-		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
+		final AtomicReference<Consumer> consumer = new AtomicReference<>();
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		willAnswer(invocation -> {
@@ -489,7 +511,7 @@ public abstract class LocallyTransactedTests {
 			consumerLatch.countDown();
 			return "consumerTag";
 		}).given(firstChannel)
-			.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
+				.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 
 		final CountDownLatch commitLatch = new CountDownLatch(1);
 		willAnswer(invocation -> {
@@ -498,14 +520,14 @@ public abstract class LocallyTransactedTests {
 		}).given(firstChannel).txCommit();
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		final AtomicReference<Channel> exposed = new AtomicReference<Channel>();
+		final AtomicReference<Channel> exposed = new AtomicReference<>();
 		AbstractMessageListenerContainer container = createContainer(singleConnectionFactory);
 		container.setMessageListener((ChannelAwareMessageListener) (message, channel) -> {
 			exposed.set(channel);
 			RabbitTemplate rabbitTemplate = new RabbitTemplate(singleConnectionFactory);
 			rabbitTemplate.setChannelTransacted(true);
 			// should use same channel as container
-			rabbitTemplate.convertAndSend("foo", "bar", "baz");
+			rabbitTemplate.convertAndSend("test.exchange", "test.key", "test");
 			latch.countDown();
 		});
 		container.setQueueNames("queue");
@@ -516,7 +538,8 @@ public abstract class LocallyTransactedTests {
 		container.start();
 		assertThat(consumerLatch.await(10, TimeUnit.SECONDS)).isTrue();
 
-		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(), new byte[] {0});
+		consumer.get().handleDelivery("qux", new Envelope(1, false, "test.exchange", "test.key"),
+				new BasicProperties(), new byte[] {0});
 
 		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 
@@ -530,13 +553,13 @@ public abstract class LocallyTransactedTests {
 		assertThat(commitLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		verify(firstChannel).txCommit();
 		verify(secondChannel).txCommit();
-		verify(secondChannel).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
-				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+		verify(secondChannel)
+				.basicPublish(anyString(), anyString(), anyBoolean(), any(BasicProperties.class), any(byte[].class));
 
 		assertThat(exposed.get()).isSameAs(secondChannel);
 
 		verify(firstChannel, Mockito.never()).close();
-		verify(secondChannel, Mockito.times(1)).close();
+		verify(secondChannel).close();
 		container.stop();
 	}
 

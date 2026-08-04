@@ -1328,11 +1328,46 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 							this.lock.unlock();
 						}
 					}
-					getChannel().basicNack(deliveryTag, !isAsyncReplies(),
-							ContainerUtils.shouldRequeue(isDefaultRequeueRejected(), e, this.logger));
+					if (getAcknowledgeMode().isAutoAck()) {
+						/*
+						 * There is nothing to settle: the broker settled the delivery when it sent
+						 * it. Rejecting it would be a protocol violation - the broker answers with
+						 * 'PRECONDITION_FAILED - unknown delivery tag' and closes the whole channel.
+						 */
+						if (this.logger.isDebugEnabled()) {
+							this.logger.debug("Cannot reject a delivery in auto-ack mode: " + deliveryTag);
+						}
+					}
+					else if (listenerMaySettleDelivery()) {
+						/*
+						 * The listener may have settled this delivery itself - it is given the
+						 * channel and the delivery tag. Re-settling an already settled delivery
+						 * individually is a protocol violation - the broker answers it with
+						 * 'PRECONDITION_FAILED - unknown delivery tag' and closes the whole channel,
+						 * failing everything else in progress on it. A cumulative nack tolerates
+						 * such a delivery instead - it settles whatever is still outstanding up to
+						 * the given tag. Hence, the nack is left exactly as it was before, including
+						 * the individual one for an async reply: that one is settled by the listener
+						 * adapter when it completes, so a listener which threw instead has not
+						 * settled anything.
+						 */
+						getChannel().basicNack(deliveryTag, !isAsyncReplies(),
+								ContainerUtils.shouldRequeue(isDefaultRequeueRejected(), e, this.logger));
+					}
+					else {
+						/*
+						 * Reject the delivery individually, rather than with a cumulative
+						 * 'basic.nack': RabbitMQ counts only individually rejected deliveries
+						 * towards 'x-delivery-count', so a quorum queue 'x-delivery-limit' would
+						 * never be reached otherwise, and the message would be redelivered forever
+						 * instead of being dead-lettered.
+						 */
+						getChannel().basicReject(deliveryTag,
+								ContainerUtils.shouldRequeue(isDefaultRequeueRejected(), e, this.logger));
+					}
 				}
 				catch (Exception e1) {
-					this.logger.error("Failed to nack message", e1);
+					this.logger.error("Failed to reject message", e1);
 				}
 			}
 			if (isChannelTransacted()) {

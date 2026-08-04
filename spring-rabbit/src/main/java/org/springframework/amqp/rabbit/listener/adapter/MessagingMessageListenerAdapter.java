@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.listener.adapter;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 
 import com.rabbitmq.client.Channel;
 import org.jspecify.annotations.Nullable;
@@ -143,6 +144,27 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	public boolean isAsyncReplies() {
 		Assert.notNull(this.handlerAdapter, "The 'handlerAdapter' is required");
 		return this.handlerAdapter.isAsyncReplies();
+	}
+
+	/**
+	 * Only a listener method with a {@link Channel} parameter can settle a delivery
+	 * itself. In addition, an async reply is acknowledged when it completes, a
+	 * {@link RabbitListenerErrorHandler} is given the channel as well, and the message is
+	 * acknowledged for an error handler which returns nothing in the manual ack mode.
+	 * A handler method which cannot be determined upfront - a {@code @RabbitHandler} one -
+	 * is assumed to settle.
+	 * @return true when {@link #errorHandler} is provided, or {@link #isManualAck()}, or {@link #isAsyncReplies()},
+	 * or target POJO method expects a {@link Channel} as one of its arguments.
+	 * @since 4.0.6
+	 */
+	@Override
+	public boolean maySettleDelivery() {
+		if (this.errorHandler != null || isManualAck() || isAsyncReplies()) {
+			return true;
+		}
+		Method method = this.messagingMessageConverter.getMethod();
+		return method == null
+				|| Arrays.stream(method.getParameterTypes()).anyMatch(Channel.class::isAssignableFrom);
 	}
 
 	/**
