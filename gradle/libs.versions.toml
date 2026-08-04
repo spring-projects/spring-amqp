@@ -1,10 +1,10 @@
 [versions]
 # Spring Portfolio dependencies. Usually managed by release train
-micrometerVersion = "1.18.0-SNAPSHOT"
-micrometerTracingVersion = "1.8.0-SNAPSHOT"
-reactorVersion = "2026.0.0-SNAPSHOT"
+micrometerVersion = "1.18.0-INTERNAL-SNAPSHOT"
+micrometerTracingVersion = "1.8.0-INTERNAL-SNAPSHOT"
+reactorVersion = "2026.0.0-INTERNAL-SNAPSHOT"
 springDataVersion = "2026.1.0-SNAPSHOT"
-springVersion = "7.1.0-SNAPSHOT"
+springVersion = "7.1.0-INTERNAL-SNAPSHOT"
 
 # Third-party dependencies
 assertjVersion = "3.27.7"
@@ -23,16 +23,11 @@ kotlinCoroutinesVersion = "1.11.0"
 log4jVersion = "2.26.1"
 logbackVersion = "1.5.38"
 micrometerDocsVersion = "1.0.4"
-micrometerVersion = "1.18.0-INTERNAL-SNAPSHOT"
-micrometerTracingVersion = "1.8.0-INTERNAL-SNAPSHOT"
 mockitoVersion = "5.23.0"
 protonjVersion = "1.1.0"
 rabbitmqAmqpClientVersion = "1.2.0"
 rabbitmqStreamVersion = "1.8.0"
 rabbitmqVersion = "5.34.0"
-reactorVersion = "2026.0.0-INTERNAL-SNAPSHOT"
-springDataVersion = "2026.1.0-SNAPSHOT"
-springVersion = "7.1.0-INTERNAL-SNAPSHOT"
 testcontainersVersion = "2.0.5"
 
 [libraries]
