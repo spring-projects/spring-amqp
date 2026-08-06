@@ -193,10 +193,14 @@ public class SimpleRabbitListenerContainerFactory
 
 		super.initializeContainer(instance, endpoint);
 
-		// endpoint settings override the default factory settings
-		Integer endpointBatchSize = endpoint != null ? endpoint.getBatchSize() : null;
-		Long endpointBatchReceiveTimeout = endpoint != null ? endpoint.getBatchReceiveTimeout() : null;
-		String concurrency = endpoint != null ? endpoint.getConcurrency() : null;
+		Integer endpointBatchSize = null;
+		Long endpointBatchReceiveTimeout = null;
+		String concurrency = null;
+		if (endpoint != null) { // endpoint settings overriding default factory settings
+			endpointBatchSize = endpoint.getBatchSize();
+			endpointBatchReceiveTimeout = endpoint.getBatchReceiveTimeout();
+			concurrency = endpoint.getConcurrency();
+		}
 		JavaUtils javaUtils = JavaUtils.INSTANCE
 				.acceptOrElseIfNotNull(endpointBatchSize, this.batchSize, instance::setBatchSize)
 				.acceptIfNotNull(concurrency, instance::setConcurrency);

@@ -120,6 +120,18 @@ public class RabbitListenerContainerFactoryTests {
 	}
 
 	@Test
+	public void factoryBatchSettingsAppliedWithoutEndpoint() {
+		setBasicConfig(this.factory);
+		this.factory.setBatchSize(10);
+		this.factory.setBatchReceiveTimeout(1500L);
+
+		SimpleMessageListenerContainer container = this.factory.createListenerContainer();
+
+		assertThat(TestUtils.<Integer>getPropertyValue(container, "batchSize")).isEqualTo(10);
+		assertThat(TestUtils.<Long>getPropertyValue(container, "batchReceiveTimeout")).isEqualTo(1500L);
+	}
+
+	@Test
 	public void endpointBatchOverridesIgnoredByDirectContainerFactory() {
 		setBasicConfig(this.direct);
 
