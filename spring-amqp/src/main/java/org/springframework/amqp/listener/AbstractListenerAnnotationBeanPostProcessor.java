@@ -65,6 +65,7 @@ import org.springframework.util.StringUtils;
  * @param <A> the listener annotation type.
  *
  * @author Artem Bilan
+ * @author Martin Ferret
  *
  * @since 4.1
  */
@@ -253,6 +254,30 @@ public abstract class AbstractListenerAnnotationBeanPostProcessor<A extends Anno
 		}
 		else {
 			throw new IllegalStateException("The [" + attribute + "] must resolve to a Integer. "
+					+ "Resolved to [" + resolved + "] for [" + value + "]");
+		}
+	}
+
+	/**
+	 * Resolve the provided attribute value to a {@link Long}.
+	 * @param value the attribute value to resolve.
+	 * @param attribute the attribute name, for error reporting.
+	 * @return the resolved value, or {@code null} if the attribute has no length.
+	 * @since 4.2
+	 */
+	protected @Nullable Long resolveExpressionToLong(String value, String attribute) {
+		if (!StringUtils.hasLength(value)) {
+			return null;
+		}
+		Object resolved = resolveExpression(value);
+		if (resolved instanceof String str) {
+			return Long.parseLong(str);
+		}
+		else if (resolved instanceof Number number) {
+			return number.longValue();
+		}
+		else {
+			throw new IllegalStateException("The [" + attribute + "] must resolve to a Long. "
 					+ "Resolved to [" + resolved + "] for [" + value + "]");
 		}
 	}

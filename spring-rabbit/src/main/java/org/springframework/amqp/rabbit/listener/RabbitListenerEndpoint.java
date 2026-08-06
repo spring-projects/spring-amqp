@@ -32,6 +32,7 @@ import org.springframework.core.task.TaskExecutor;
  *
  * @author Stephane Nicoll
  * @author Gary Russell
+ * @author Martin Ferret
  * @since 1.4
  */
 public interface RabbitListenerEndpoint {
@@ -127,6 +128,28 @@ public interface RabbitListenerEndpoint {
 	 */
 	@Nullable
 	Boolean getBatchListener();
+
+	/**
+	 * Override the container factory's {@code batchSize} property for this endpoint.
+	 * @return the batch size, or {@code null} to use the container factory setting.
+	 * @since 4.2
+	 * @see #getBatchReceiveTimeout()
+	 */
+	default @Nullable Integer getBatchSize() {
+		return null;
+	}
+
+	/**
+	 * Override the container factory's {@code batchReceiveTimeout} property for this
+	 * endpoint.
+	 * @return the batch receive timeout in milliseconds, or {@code null} to use the
+	 * container factory setting.
+	 * @since 4.2
+	 * @see #getBatchSize()
+	 */
+	default @Nullable Long getBatchReceiveTimeout() {
+		return null;
+	}
 
 	/**
 	 * Set a {@link BatchingStrategy} to use when debatching messages.

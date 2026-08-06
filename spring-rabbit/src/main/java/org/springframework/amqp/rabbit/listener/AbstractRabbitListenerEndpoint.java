@@ -49,6 +49,7 @@ import org.springframework.util.Assert;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Ngoc Nhan
+ * @author Martin Ferret
  *
  * @since 1.4
  *
@@ -88,6 +89,10 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	private @Nullable TaskExecutor taskExecutor;
 
 	private @Nullable Boolean batchListener;
+
+	private @Nullable Integer batchSize;
+
+	private @Nullable Long batchReceiveTimeout;
 
 	private @Nullable BatchingStrategy batchingStrategy;
 
@@ -324,6 +329,37 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	}
 
 	@Override
+	public @Nullable Integer getBatchSize() {
+		return this.batchSize;
+	}
+
+	/**
+	 * Override the container factory's {@code batchSize} property for this endpoint.
+	 * @param batchSize the batch size.
+	 * @since 4.2
+	 * @see #setBatchReceiveTimeout(Long)
+	 */
+	public void setBatchSize(Integer batchSize) {
+		this.batchSize = batchSize;
+	}
+
+	@Override
+	public @Nullable Long getBatchReceiveTimeout() {
+		return this.batchReceiveTimeout;
+	}
+
+	/**
+	 * Override the container factory's {@code batchReceiveTimeout} property for this
+	 * endpoint.
+	 * @param batchReceiveTimeout the timeout in milliseconds for gathering a batch.
+	 * @since 4.2
+	 * @see #setBatchSize(Integer)
+	 */
+	public void setBatchReceiveTimeout(Long batchReceiveTimeout) {
+		this.batchReceiveTimeout = batchReceiveTimeout;
+	}
+
+	@Override
 	public @Nullable BatchingStrategy getBatchingStrategy() {
 		return this.batchingStrategy;
 	}
@@ -444,6 +480,9 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 				append("' | queueNames='").append(this.queueNames).
 				append("' | exclusive='").append(this.exclusive).
 				append("' | priority='").append(this.priority).
+				append("' | batchListener='").append(this.batchListener).
+				append("' | batchSize='").append(this.batchSize).
+				append("' | batchReceiveTimeout='").append(this.batchReceiveTimeout).
 				append("' | admin='").append(this.admin).append("'");
 	}
 

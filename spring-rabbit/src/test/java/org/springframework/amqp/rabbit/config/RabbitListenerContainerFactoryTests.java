@@ -49,6 +49,7 @@ import static org.mockito.Mockito.mock;
  * @author Joris Kuipers
  * @author Gary Russell
  * @author Sud Ramasamy
+ * @author Martin Ferret
  *
  */
 public class RabbitListenerContainerFactoryTests {
@@ -82,6 +83,67 @@ public class RabbitListenerContainerFactoryTests {
 		assertThat(container.getMessageListener()).isEqualTo(messageListener);
 		assertThat(container.getQueueNames()[0]).isEqualTo("myQueue");
 		assertThat(TestUtils.<BatchingStrategy>getPropertyValue(container, "batchingStrategy")).isSameAs(bs2);
+	}
+
+	@Test
+	public void endpointBatchOverridesWinOverFactory() {
+		setBasicConfig(this.factory);
+		this.factory.setBatchSize(10);
+		this.factory.setBatchReceiveTimeout(1500L);
+
+		SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
+		endpoint.setMessageListener(this.messageListener);
+		endpoint.setQueueNames("myQueue");
+		endpoint.setBatchSize(5);
+		endpoint.setBatchReceiveTimeout(2500L);
+
+		SimpleMessageListenerContainer container = this.factory.createListenerContainer(endpoint);
+
+		assertThat(TestUtils.<Integer>getPropertyValue(container, "batchSize")).isEqualTo(5);
+		assertThat(TestUtils.<Long>getPropertyValue(container, "batchReceiveTimeout")).isEqualTo(2500L);
+	}
+
+	@Test
+	public void factoryBatchSettingsUsedWhenEndpointDoesNotOverride() {
+		setBasicConfig(this.factory);
+		this.factory.setBatchSize(10);
+		this.factory.setBatchReceiveTimeout(1500L);
+
+		SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
+		endpoint.setMessageListener(this.messageListener);
+		endpoint.setQueueNames("myQueue");
+
+		SimpleMessageListenerContainer container = this.factory.createListenerContainer(endpoint);
+
+		assertThat(TestUtils.<Integer>getPropertyValue(container, "batchSize")).isEqualTo(10);
+		assertThat(TestUtils.<Long>getPropertyValue(container, "batchReceiveTimeout")).isEqualTo(1500L);
+	}
+
+	@Test
+	public void factoryBatchSettingsAppliedWithoutEndpoint() {
+		setBasicConfig(this.factory);
+		this.factory.setBatchSize(10);
+		this.factory.setBatchReceiveTimeout(1500L);
+
+		SimpleMessageListenerContainer container = this.factory.createListenerContainer();
+
+		assertThat(TestUtils.<Integer>getPropertyValue(container, "batchSize")).isEqualTo(10);
+		assertThat(TestUtils.<Long>getPropertyValue(container, "batchReceiveTimeout")).isEqualTo(1500L);
+	}
+
+	@Test
+	public void endpointBatchOverridesIgnoredByDirectContainerFactory() {
+		setBasicConfig(this.direct);
+
+		SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
+		endpoint.setMessageListener(this.messageListener);
+		endpoint.setQueueNames("myQueue");
+		endpoint.setBatchSize(5);
+		endpoint.setBatchReceiveTimeout(2500L);
+
+		DirectMessageListenerContainer container = this.direct.createListenerContainer(endpoint);
+
+		assertThat(container.getQueueNames()[0]).isEqualTo("myQueue");
 	}
 
 	@Test
