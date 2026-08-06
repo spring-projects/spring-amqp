@@ -60,6 +60,9 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.util.backoff.BackOff;
+import org.springframework.util.backoff.BackOffExecution;
+import org.springframework.util.backoff.FixedBackOff;
 
 /**
  * The {@link MessageListenerContainer} implementation for AMQP 1.0 protocol.
@@ -79,6 +82,10 @@ import org.springframework.util.StringUtils;
 public class AmqpMessageListenerContainer implements MessageListenerContainer, BeanNameAware {
 
 	private static final LogAccessor LOG = new LogAccessor(AmqpMessageListenerContainer.class);
+
+	private static final Duration DEFAULT_RECOVERY_INTERVAL = Duration.ofSeconds(5);
+
+	private static final long RECOVERY_SLEEP_SLICE = 100;
 
 	private final Lock lock = new ReentrantLock();
 
@@ -107,6 +114,9 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 	private Duration receiveTimeout = Duration.ofSeconds(1);
 
 	private Duration gracefulShutdownPeriod = Duration.ofSeconds(30);
+
+	private BackOff recoveryBackOff =
+			new FixedBackOff(DEFAULT_RECOVERY_INTERVAL.toMillis(), FixedBackOff.UNLIMITED_ATTEMPTS);
 
 	private Executor taskExecutor = new SimpleAsyncTaskExecutor();
 
@@ -239,6 +249,32 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 		this.receiveTimeout = receiveTimeout;
 	}
 
+	/**
+	 * Set an interval between recovery attempts of a failed consumer.
+	 * Default 5 seconds.
+	 * @param recoveryInterval the interval between recovery attempts.
+	 * @since 4.1.1
+	 * @see #setRecoveryBackOff(BackOff)
+	 */
+	public void setRecoveryInterval(Duration recoveryInterval) {
+		setRecoveryBackOff(new FixedBackOff(recoveryInterval.toMillis(), FixedBackOff.UNLIMITED_ATTEMPTS));
+	}
+
+	/**
+	 * Specify the {@link BackOff} for a failed consumer recovery.
+	 * The receiver link is not restored by the ProtonJ client itself, even when the connection
+	 * is re-established, so the consumer re-opens its receiver according to this {@link BackOff}.
+	 * The consumer is stopped when the {@link BackOff} returns {@link BackOffExecution#STOP},
+	 * and then the {@link #isRunning()} returns {@code false}
+	 * as soon as no consumers are left in this container.
+	 * The default is {@link FixedBackOff} with a 5-second interval and unlimited attempts.
+	 * @param recoveryBackOff the {@link BackOff} to use for the consumer recovery.
+	 * @since 4.1.1
+	 */
+	public void setRecoveryBackOff(BackOff recoveryBackOff) {
+		this.recoveryBackOff = recoveryBackOff;
+	}
+
 	@Override
 	public void afterPropertiesSet() {
 		Assert.state(this.queues != null, "At least one queue has to be provided for consuming.");
@@ -272,37 +308,57 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 		this.lock.lock();
 		try {
 			if (this.queueToConsumers.isEmpty()) {
-				ReceiverOptions receiverOptions =
-						new ReceiverOptions()
-								// Since 'AmqpConsumer' implements pause/resume logic,
-								// the auto-replenishment for the credit window is disabled.
-								.creditWindow(0)
-								.autoAccept(this.autoAccept);
-
 				for (String queue : this.queues) {
 					for (int i = 0; i < this.consumersPerQueue; i++) {
-						try {
-							Future<Receiver> openFuture =
-									this.connectionFactory.getConnection()
-											.openReceiver(queue, receiverOptions)
-											.openFuture();
-							ClientReceiver receiver =
-									(ClientReceiver) ProtonUtils.toSupplier(openFuture, receiverOptions.openTimeout())
-											.get()
-											.addCredit(this.initialCredits);
-							AmqpConsumer consumer = new AmqpConsumer(receiver);
-							this.queueToConsumers.add(queue, consumer);
-							this.taskExecutor.execute(consumer);
-						}
-						catch (ClientException ex) {
-							throw ProtonUtils.toAmqpException(ex);
-						}
+						AmqpConsumer consumer = new AmqpConsumer(queue, openReceiver(queue));
+						this.queueToConsumers.add(queue, consumer);
+						this.taskExecutor.execute(consumer);
 					}
 				}
 			}
 		}
 		finally {
 			this.lock.unlock();
+		}
+	}
+
+	/**
+	 * Open a new receiver link for the provided queue with the initial credits granted.
+	 * @param queue the queue to consume from.
+	 * @return a newly opened receiver.
+	 */
+	private ClientReceiver openReceiver(String queue) {
+		ReceiverOptions receiverOptions =
+				new ReceiverOptions()
+						// Since 'AmqpConsumer' implements pause/resume logic,
+						// the auto-replenishment for the credit window is disabled.
+						.creditWindow(0)
+						.autoAccept(this.autoAccept);
+
+		Receiver receiver;
+		try {
+			receiver = this.connectionFactory.getConnection().openReceiver(queue, receiverOptions);
+		}
+		catch (ClientException ex) {
+			throw ProtonUtils.toAmqpException(ex);
+		}
+
+		try {
+			Future<Receiver> openFuture = receiver.openFuture();
+			return (ClientReceiver) ProtonUtils.toSupplier(openFuture, receiverOptions.openTimeout())
+					.get()
+					.addCredit(this.initialCredits);
+		}
+		catch (Exception ex) {
+			// The link has been created locally but has not reached a usable state:
+			// close it, so a failed recovery attempt does not leak a link into the session.
+			try {
+				receiver.close();
+			}
+			catch (Exception closeEx) {
+				LOG.debug(closeEx, () -> "Failed to close a not opened receiver for: " + queue);
+			}
+			throw ProtonUtils.toAmqpException(ex);
 		}
 	}
 
@@ -441,6 +497,29 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 		}
 	}
 
+	/**
+	 * Remove a consumer which has stopped without a chance to recover,
+	 * so the {@link #isRunning()} does not report this container as running
+	 * when all its consumers are gone.
+	 * @param queue the queue the consumer was consuming from.
+	 * @param consumer the consumer to remove.
+	 */
+	private void removeConsumer(String queue, AmqpConsumer consumer) {
+		this.lock.lock();
+		try {
+			List<AmqpConsumer> consumers = this.queueToConsumers.get(queue);
+			if (consumers != null) {
+				consumers.remove(consumer);
+				if (consumers.isEmpty()) {
+					this.queueToConsumers.remove(queue);
+				}
+			}
+		}
+		finally {
+			this.lock.unlock();
+		}
+	}
+
 	private class AmqpConsumer implements SchedulingAwareRunnable, AutoCloseable {
 
 		@SuppressWarnings("NullAway")
@@ -466,24 +545,42 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 			ReflectionUtils.makeAccessible(WRITE_FLOW_METHOD);
 		}
 
-		private final ClientReceiver receiver;
+		private final String queue;
 
 		private final Lock receiverLock = new ReentrantLock();
 
-		private final ProtonReceiver protonReceiver;
+		@SuppressWarnings("NullAway.Init")
+		private volatile ClientReceiver receiver;
 
-		private final ProtonLinkCreditState creditState;
+		@SuppressWarnings("NullAway.Init")
+		private volatile ProtonReceiver protonReceiver;
 
-		private final ProtonSessionIncomingWindow sessionWindow;
+		@SuppressWarnings("NullAway.Init")
+		private volatile ProtonLinkCreditState creditState;
+
+		@SuppressWarnings("NullAway.Init")
+		private volatile ProtonSessionIncomingWindow sessionWindow;
+
+		private @Nullable BackOffExecution backOffExecution;
 
 		private volatile boolean paused;
 
 		private volatile boolean running = true;
 
+		AmqpConsumer(String queue, ClientReceiver receiver) {
+			this.queue = queue;
+			assignReceiver(receiver);
+		}
+
+		/**
+		 * Adopt the provided receiver together with its internal ProtonJ state,
+		 * which is used for the {@code pause()}/{@code resume()} and credit top-up logic.
+		 * @param receiverToUse the receiver to consume from.
+		 */
 		@SuppressWarnings("NullAway")
-		AmqpConsumer(ClientReceiver receiver) {
-			this.receiver = receiver;
-			this.protonReceiver = (ProtonReceiver) ReflectionUtils.invokeMethod(PROTON_RECEIVER_METHOD, receiver);
+		private void assignReceiver(ClientReceiver receiverToUse) {
+			this.receiver = receiverToUse;
+			this.protonReceiver = (ProtonReceiver) ReflectionUtils.invokeMethod(PROTON_RECEIVER_METHOD, receiverToUse);
 			this.creditState =
 					(ProtonLinkCreditState) ReflectionUtils.invokeMethod(CREDIT_STATE_METHOD, this.protonReceiver);
 			this.sessionWindow =
@@ -491,7 +588,14 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 		}
 
 		int queuedDeliveries() {
-			return (int) this.receiver.queuedDeliveries();
+			try {
+				return (int) this.receiver.queuedDeliveries();
+			}
+			catch (Exception ex) {
+				// A closed or broken receiver has nothing pending to wait for on stop.
+				LOG.debug(ex, () -> "Failed to obtain queued deliveries for: " + this.queue);
+				return 0;
+			}
 		}
 
 		@Override
@@ -499,33 +603,141 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 			this.receiverLock.lock();
 			try {
 				while (this.running) {
+					Delivery delivery;
 					try {
-						Delivery delivery =
-								this.receiver.receive(AmqpMessageListenerContainer.this.receiveTimeout.toMillis(),
-										TimeUnit.MILLISECONDS);
-						if (delivery != null) {
-							doInvokeListener(delivery, this::replenishCredit);
-						}
+						delivery = this.receiver.receive(AmqpMessageListenerContainer.this.receiveTimeout.toMillis(),
+								TimeUnit.MILLISECONDS);
+						// A completed receive (even with no delivery) means the link is healthy again.
+						this.backOffExecution = null;
 					}
 					catch (Exception ex) {
-						if (this.running) {
-							AmqpException amqpException = ProtonUtils.toAmqpException(ex);
-							ErrorHandler errorHandlerToUse = AmqpMessageListenerContainer.this.errorHandler;
-							if (errorHandlerToUse != null) {
-								errorHandlerToUse.handleError(amqpException);
+						if (!this.running) {
+							LOG.debug(ex, "Consumer stopped");
+							break;
+						}
+						AmqpException amqpException = ProtonUtils.toAmqpException(ex);
+						if (!handleError(amqpException)) {
+							LOG.error(amqpException, () -> "Failed to receive from: " + this.queue);
+						}
+						// The receiver link is broken and is not restored by the ProtonJ client:
+						// re-open it with a back off instead of spinning on the same failure.
+						if (!recoverReceiver()) {
+							break;
+						}
+						continue;
+					}
+
+					if (delivery != null) {
+						try {
+							doInvokeListener(delivery, this::replenishCredit);
+						}
+						catch (Exception ex) {
+							if (this.running) {
+								AmqpException amqpException = ProtonUtils.toAmqpException(ex);
+								if (!handleError(amqpException)) {
+									throw amqpException;
+								}
 							}
 							else {
-								throw amqpException;
+								LOG.debug(ex, "Consumer stopped");
 							}
-						}
-						else {
-							LOG.debug(ex, "Consumer stopped");
 						}
 					}
 				}
 			}
 			finally {
 				this.receiverLock.unlock();
+				if (this.running) {
+					// This consumer has given up: deregister it so the container does not
+					// report itself as running while nothing is consuming anymore.
+					this.running = false;
+					closeReceiver();
+					removeConsumer(this.queue, this);
+				}
+			}
+		}
+
+		/**
+		 * Invoke the container {@link ErrorHandler}, if any.
+		 * @param ex the exception to handle.
+		 * @return true if the exception has been handled by an {@link ErrorHandler}.
+		 */
+		private boolean handleError(AmqpException ex) {
+			ErrorHandler errorHandlerToUse = AmqpMessageListenerContainer.this.errorHandler;
+			if (errorHandlerToUse != null) {
+				errorHandlerToUse.handleError(ex);
+				return true;
+			}
+			return false;
+		}
+
+		/**
+		 * Close the broken receiver and open a new one for the same queue,
+		 * according to the {@code recoveryBackOff}.
+		 * @return true if a new receiver has been opened; false if this consumer has to stop.
+		 */
+		private boolean recoverReceiver() {
+			closeReceiver();
+
+			BackOffExecution backOffExecutionToUse = this.backOffExecution;
+			if (backOffExecutionToUse == null) {
+				backOffExecutionToUse = AmqpMessageListenerContainer.this.recoveryBackOff.start();
+				this.backOffExecution = backOffExecutionToUse;
+			}
+
+			while (this.running) {
+				long interval = backOffExecutionToUse.nextBackOff();
+				if (interval == BackOffExecution.STOP) {
+					LOG.error(() -> "Cannot recover a consumer for: " + this.queue + ". Stopping it.");
+					return false;
+				}
+				if (!sleep(interval)) {
+					return false;
+				}
+				try {
+					assignReceiver(openReceiver(this.queue));
+					if (this.paused) {
+						doPause();
+					}
+					this.backOffExecution = null;
+					LOG.info(() -> "Recovered a consumer for: " + this.queue);
+					return true;
+				}
+				catch (Exception ex) {
+					LOG.debug(ex, () -> "Failed to recover a consumer for: " + this.queue);
+				}
+			}
+			return false;
+		}
+
+		/**
+		 * Sleep for the provided interval in short slices to remain responsive to a container stop.
+		 * @param interval how long to sleep, in milliseconds.
+		 * @return true if the whole interval has elapsed and this consumer is still running.
+		 */
+		private boolean sleep(long interval) {
+			long deadline = System.currentTimeMillis() + interval;
+			try {
+				while (this.running) {
+					long remaining = deadline - System.currentTimeMillis();
+					if (remaining <= 0) {
+						return true;
+					}
+					Thread.sleep(Math.min(remaining, RECOVERY_SLEEP_SLICE));
+				}
+			}
+			catch (InterruptedException ex) {
+				Thread.currentThread().interrupt();
+			}
+			return false;
+		}
+
+		private void closeReceiver() {
+			try {
+				this.receiver.close();
+			}
+			catch (Exception ex) {
+				LOG.debug(ex, () -> "Failed to close a receiver for: " + this.queue);
 			}
 		}
 
@@ -561,9 +773,13 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 		void pause() {
 			if (this.running && !this.paused) {
 				this.paused = true;
-				this.creditState.updateCredit(0);
-				ReflectionUtils.invokeMethod(WRITE_FLOW_METHOD, this.sessionWindow, this.protonReceiver);
+				doPause();
 			}
+		}
+
+		private void doPause() {
+			this.creditState.updateCredit(0);
+			ReflectionUtils.invokeMethod(WRITE_FLOW_METHOD, this.sessionWindow, this.protonReceiver);
 		}
 
 		void resume() {
@@ -588,7 +804,7 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 			this.running = false;
 			this.receiverLock.lock();
 			try {
-				this.receiver.close();
+				closeReceiver();
 			}
 			finally {
 				this.receiverLock.unlock();

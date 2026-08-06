@@ -170,6 +170,11 @@ The `AmqpMessageListenerContainer.taskExecutor` property is set to a `SimpleAsyn
 
 The message processing errors can be handled by the `ErrorHandler` configuration.
 
+When a `Receiver.receive()` operation fails, the receiver link is broken and the ProtonJ client does not restore it, even if the connection itself is re-established.
+The consumer reports such a failure to the `ErrorHandler` (or logs it as an error when no `ErrorHandler` is provided) and then re-opens its receiver link according to the `recoveryBackOff` option, which is a `FixedBackOff` with a `5 seconds` interval and unlimited attempts by default.
+The `setRecoveryInterval(Duration)` is a convenient option to change only the interval between recovery attempts.
+If the configured `BackOff` runs out of attempts, the consumer is stopped and removed from the container, so the `AmqpMessageListenerContainer.isRunning()` returns `false` when no consumers are left.
+
 The `MessageListener` can be proxied in the `AmqpMessageListenerContainer` if some AOP interceptors are provided, e.g. `TransactionInterceptor`.
 
 The `AmqpMessageListenerContainer` also provides `pause()` and `resume()` API to set AMQP link credits to `0` and replenish, respectively.

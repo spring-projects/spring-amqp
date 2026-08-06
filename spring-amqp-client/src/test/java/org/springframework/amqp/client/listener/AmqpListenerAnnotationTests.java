@@ -26,14 +26,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.aopalliance.aop.Advice;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.qpid.protonj2.client.ConnectionOptions;
 import org.apache.qpid.protonj2.client.Delivery;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.RetryingTest;
 import reactor.core.publisher.Mono;
 
 import org.springframework.amqp.client.AmqpClient;
@@ -84,8 +81,6 @@ import static org.mockito.Mockito.mockingDetails;
 @DirtiesContext
 class AmqpListenerAnnotationTests extends AbstractTestContainerTests {
 
-	static final Log LOG = LogFactory.getLog(AmqpListenerAnnotationTests.class);
-
 	static final String TEST_QUEUE1 = "/queues/listener_annotation1";
 
 	static final String TEST_QUEUE2 = "/queues/listener_annotation2";
@@ -106,7 +101,6 @@ class AmqpListenerAnnotationTests extends AbstractTestContainerTests {
 		for (String queue : QUEUE_NAMES) {
 			RABBITMQ.execInContainer("rabbitmqadmin", "queues", "declare", "--name", queue.replaceFirst("/queues/", ""));
 		}
-		RABBITMQ.execInContainer("rabbitmqctl", "set_log_level", "debug");
 	}
 
 	@Autowired
@@ -175,7 +169,7 @@ class AmqpListenerAnnotationTests extends AbstractTestContainerTests {
 	@Autowired
 	MessageConverter jsonMessageConverter;
 
-	@RetryingTest(10)
+	@Test
 	void requestReplyAndContainerFactoryOverrides() {
 		var listenerContainer = this.beanFactory.getBean("monoListener", AmqpMessageListenerContainer.class);
 
@@ -209,24 +203,18 @@ class AmqpListenerAnnotationTests extends AbstractTestContainerTests {
 
 		DataIn dataIn = new DataIn("test_data");
 
-		try {
-			this.amqpClient.to(TEST_QUEUE2)
-					.body(dataIn)
-					.replyTo(TEST_REPLY_TO)
-					.send();
+		this.amqpClient.to(TEST_QUEUE2)
+				.body(dataIn)
+				.replyTo(TEST_REPLY_TO)
+				.send();
 
-			CompletableFuture<DataOut> dataOut =
-					this.amqpClient.from(TEST_REPLY_TO)
-							.receiveAndConvert();
+		CompletableFuture<DataOut> dataOut =
+				this.amqpClient.from(TEST_REPLY_TO)
+						.receiveAndConvert();
 
-			assertThat(dataOut)
-					.succeedsWithin(Duration.ofSeconds(30))
-					.isEqualTo(new DataOut(dataIn.data + "_out"));
-		}
-		catch (Exception e) {
-			LOG.error("LOGS FROM RABBITMQ CONTAINER: " + RABBITMQ.getLogs());
-			throw e;
-		}
+		assertThat(dataOut)
+				.succeedsWithin(Duration.ofSeconds(30))
+				.isEqualTo(new DataOut(dataIn.data + "_out"));
 	}
 
 	@Configuration(proxyBeanMethods = false)
@@ -242,7 +230,7 @@ class AmqpListenerAnnotationTests extends AbstractTestContainerTests {
 		AmqpConnectionFactory amqpConnectionFactory() {
 			return new SingleAmqpConnectionFactory()
 					.setPort(amqpPort())
-					.setConnectionOptions(new ConnectionOptions().traceFrames(true).reconnectEnabled(true));
+					.setConnectionOptions(new ConnectionOptions().reconnectEnabled(true));
 		}
 
 		@Bean
