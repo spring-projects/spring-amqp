@@ -1,7 +1,7 @@
 [[amqp10-client]]
 = Generic AMQP 1.0 Support
 
-Version 4.1 introduces `spring-amqp-client` module for https://www.amqp.org/resources/specifications[AMQP 1.0] protocol support.
+Version 4.1 introduces `spring-amqp-client` module for https://www.amqp.org/resources/specifications.html[AMQP 1.0] protocol support.
 
 This artifact is based on the https://github.com/apache/qpid-protonj2/blob/main/protonj2-client/README.md[Qpid ProtonJ2 Client Library] and can work with any peers supporting AMQP 1.0 protocol, including RabbitMQ broker.
 
