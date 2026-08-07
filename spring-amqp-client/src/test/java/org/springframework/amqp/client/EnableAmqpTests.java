@@ -26,8 +26,6 @@ import java.util.concurrent.TimeUnit;
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.qpid.protonj2.client.Client;
 import org.apache.qpid.protonj2.client.ConnectionOptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -61,6 +59,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThatObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockingDetails;
+import static org.mockito.Mockito.withSettings;
 
 /**
  * @author Artem Bilan
@@ -70,8 +69,6 @@ import static org.mockito.Mockito.mockingDetails;
 @SpringJUnitConfig(EnableAmqpTests.TestConfig.class)
 @DirtiesContext
 class EnableAmqpTests extends AbstractTestContainerTests {
-
-	static final Log LOG = LogFactory.getLog(EnableAmqpTests.class);
 
 	static final String TEST_QUEUE1 = "/queues/enable_amqp_queue1";
 
@@ -87,7 +84,6 @@ class EnableAmqpTests extends AbstractTestContainerTests {
 		for (String queue : QUEUE_NAMES) {
 			RABBITMQ.execInContainer("rabbitmqadmin", "queues", "declare", "--name", queue.replaceFirst("/queues/", ""));
 		}
-		RABBITMQ.execInContainer("rabbitmqctl", "set_log_level", "debug");
 	}
 
 	@Autowired
@@ -131,32 +127,26 @@ class EnableAmqpTests extends AbstractTestContainerTests {
 				.satisfies(errorHandler ->
 						assertThat(mockingDetails(errorHandler).isMock()).isTrue());
 
-		try {
-			listenerContainer.start();
+		listenerContainer.start();
 
-			this.amqpClient.to(TEST_QUEUE1)
-					.body("test_data")
-					.send();
+		this.amqpClient.to(TEST_QUEUE1)
+				.body("test_data")
+				.send();
 
-			Message message = receivedMessages.poll(10, TimeUnit.SECONDS);
-			assertThat(message)
-					.extracting(Message::getBody)
-					.isEqualTo("test_data".getBytes());
+		Message message = receivedMessages.poll(10, TimeUnit.SECONDS);
+		assertThat(message)
+				.extracting(Message::getBody)
+				.isEqualTo("test_data".getBytes());
 
-			CountDownLatch stopLatch = new CountDownLatch(1);
+		CountDownLatch stopLatch = new CountDownLatch(1);
 
-			listenerContainer.stop(stopLatch::countDown);
+		listenerContainer.stop(stopLatch::countDown);
 
-			assertThat(stopLatch.await(40, TimeUnit.SECONDS)).isTrue();
-		}
-		catch (Exception e) {
-			LOG.error("LOGS FROM RABBITMQ CONTAINER: " + RABBITMQ.getLogs());
-			throw e;
-		}
+		assertThat(stopLatch.await(40, TimeUnit.SECONDS)).isTrue();
 	}
 
 	@Test
-	void simpleEndpointOverridesContainerFactoryOptions() throws Throwable {
+	void simpleEndpointOverridesContainerFactoryOptions() throws InterruptedException {
 		BlockingQueue<Message> receivedMessages = new LinkedBlockingQueue<>();
 		MessageListener messageListener = receivedMessages::add;
 		String containerId = "test-endpoint";
@@ -173,46 +163,40 @@ class EnableAmqpTests extends AbstractTestContainerTests {
 		simpleAmqpListenerEndpoint.setReceiveTimeout(Duration.ofSeconds(7));
 		simpleAmqpListenerEndpoint.setGracefulShutdownPeriod(Duration.ofSeconds(17));
 
-		try {
-			this.registry.registerListenerEndpoints(new AmqpListenerEndpointRegistration(simpleAmqpListenerEndpoint));
+		this.registry.registerListenerEndpoints(new AmqpListenerEndpointRegistration(simpleAmqpListenerEndpoint));
 
-			var listenerContainer = this.beanFactory.getBean(containerId, AmqpMessageListenerContainer.class);
+		var listenerContainer = this.beanFactory.getBean(containerId, AmqpMessageListenerContainer.class);
 
-			assertThat(listenerContainer.isAutoStartup()).isTrue();
-			assertThat(listenerContainer.getListenerId()).isEqualTo(containerId);
-			assertThat(TestUtils.<Boolean>getPropertyValue(listenerContainer, "autoAccept")).isTrue();
-			assertThat(TestUtils.<Integer>getPropertyValue(listenerContainer, "consumersPerQueue")).isEqualTo(5);
-			assertThat(TestUtils.<Integer>getPropertyValue(listenerContainer, "initialCredits")).isEqualTo(11);
-			assertThat(TestUtils.<String[]>getPropertyValue(listenerContainer, "queues")).containsExactly(TEST_QUEUE2);
-			assertThat(TestUtils.<Advice[]>getPropertyValue(listenerContainer, "adviceChain")[0]).isSameAs(mockInterceptor);
-			assertThatObject(TestUtils.getPropertyValue(listenerContainer, "taskExecutor")).isSameAs(testTaskExecutor);
-			assertThat(TestUtils.<Duration>getPropertyValue(listenerContainer, "receiveTimeout"))
-					.isEqualTo(Duration.ofSeconds(7));
-			assertThat(TestUtils.<Duration>getPropertyValue(listenerContainer, "gracefulShutdownPeriod"))
-					.isEqualTo(Duration.ofSeconds(17));
-			assertThat(TestUtils.<ErrorHandler>getPropertyValue(listenerContainer, "errorHandler"))
-					.satisfies(errorHandler ->
-							assertThat(mockingDetails(errorHandler).isMock()).isTrue());
+		assertThat(listenerContainer.isAutoStartup()).isTrue();
+		assertThat(listenerContainer.getListenerId()).isEqualTo(containerId);
+		assertThat(TestUtils.<Boolean>getPropertyValue(listenerContainer, "autoAccept")).isTrue();
+		assertThat(TestUtils.<Integer>getPropertyValue(listenerContainer, "consumersPerQueue")).isEqualTo(5);
+		assertThat(TestUtils.<Integer>getPropertyValue(listenerContainer, "initialCredits")).isEqualTo(11);
+		assertThat(TestUtils.<String[]>getPropertyValue(listenerContainer, "queues")).containsExactly(TEST_QUEUE2);
+		assertThat(TestUtils.<Advice[]>getPropertyValue(listenerContainer, "adviceChain")[0]).isSameAs(mockInterceptor);
+		assertThatObject(TestUtils.getPropertyValue(listenerContainer, "taskExecutor")).isSameAs(testTaskExecutor);
+		assertThat(TestUtils.<Duration>getPropertyValue(listenerContainer, "receiveTimeout"))
+				.isEqualTo(Duration.ofSeconds(7));
+		assertThat(TestUtils.<Duration>getPropertyValue(listenerContainer, "gracefulShutdownPeriod"))
+				.isEqualTo(Duration.ofSeconds(17));
+		assertThat(TestUtils.<ErrorHandler>getPropertyValue(listenerContainer, "errorHandler"))
+				.satisfies(errorHandler ->
+						assertThat(mockingDetails(errorHandler).isMock()).isTrue());
 
-			this.amqpClient.to(TEST_QUEUE2)
-					.body("test_data2")
-					.send();
+		this.amqpClient.to(TEST_QUEUE2)
+				.body("test_data2")
+				.send();
 
-			Message message = receivedMessages.poll(10, TimeUnit.SECONDS);
-			assertThat(message)
-					.extracting(Message::getBody)
-					.isEqualTo("test_data2".getBytes());
+		Message message = receivedMessages.poll(10, TimeUnit.SECONDS);
+		assertThat(message)
+				.extracting(Message::getBody)
+				.isEqualTo("test_data2".getBytes());
 
-			CountDownLatch stopLatch = new CountDownLatch(1);
+		CountDownLatch stopLatch = new CountDownLatch(1);
 
-			listenerContainer.stop(stopLatch::countDown);
+		listenerContainer.stop(stopLatch::countDown);
 
-			assertThat(stopLatch.await(40, TimeUnit.SECONDS)).isTrue();
-		}
-		catch (Exception e) {
-			LOG.error("LOGS FROM RABBITMQ CONTAINER: " + RABBITMQ.getLogs());
-			throw e;
-		}
+		assertThat(stopLatch.await(40, TimeUnit.SECONDS)).isTrue();
 	}
 
 	@Test
@@ -237,7 +221,7 @@ class EnableAmqpTests extends AbstractTestContainerTests {
 		AmqpConnectionFactory amqpConnectionFactory() {
 			return new SingleAmqpConnectionFactory(Client.create())
 					.setPort(amqpPort())
-					.setConnectionOptions(new ConnectionOptions().traceFrames(true).reconnectEnabled(true));
+					.setConnectionOptions(new ConnectionOptions().reconnectEnabled(true));
 		}
 
 		@Bean
@@ -263,7 +247,9 @@ class EnableAmqpTests extends AbstractTestContainerTests {
 			containerFactory.setInitialCredits(55);
 			containerFactory.setTaskExecutor(taskExecutor);
 			containerFactory.setAdviceChain(new DebugInterceptor());
-			containerFactory.setErrorHandler(mock());
+			// A 'stubOnly' mock does not record invocations: the container error handler
+			// can be called a lot, and retaining every exception would exhaust the test heap.
+			containerFactory.setErrorHandler(mock(ErrorHandler.class, withSettings().stubOnly()));
 			return containerFactory;
 		}
 
