@@ -27,6 +27,8 @@ import org.springframework.amqp.client.AmqpConnectionFactory;
 import org.springframework.amqp.client.listener.AmqpMessageListenerContainer;
 import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.util.ErrorHandler;
+import org.springframework.util.backoff.BackOff;
+import org.springframework.util.backoff.FixedBackOff;
 
 /**
  * The configuration factory to produce {@link AmqpMessageListenerContainer} instance
@@ -57,6 +59,8 @@ public class AmqpMessageListenerContainerFactory {
 	private @Nullable Duration receiveTimeout;
 
 	private @Nullable Duration gracefulShutdownPeriod;
+
+	private @Nullable BackOff recoveryBackOff;
 
 	private Advice @Nullable [] adviceChain;
 
@@ -141,6 +145,27 @@ public class AmqpMessageListenerContainerFactory {
 	}
 
 	/**
+	 * The default recovery interval for container instances created by this factory.
+	 * @param recoveryInterval the interval between consumer recovery attempts.
+	 * @since 4.1.1
+	 * @see AmqpMessageListenerContainer#setRecoveryInterval(Duration)
+	 */
+	public void setRecoveryInterval(Duration recoveryInterval) {
+		setRecoveryBackOff(new FixedBackOff(recoveryInterval.toMillis(), FixedBackOff.UNLIMITED_ATTEMPTS));
+	}
+
+	/**
+	 * The default {@link BackOff} for a failed consumer recovery
+	 * in container instances created by this factory.
+	 * @param recoveryBackOff the {@link BackOff} to use for the consumer recovery.
+	 * @since 4.1.1
+	 * @see AmqpMessageListenerContainer#setRecoveryBackOff(BackOff)
+	 */
+	public void setRecoveryBackOff(BackOff recoveryBackOff) {
+		this.recoveryBackOff = recoveryBackOff;
+	}
+
+	/**
 	 * Set The default advice chain for container instances created by this factory.
 	 * Can be overridden by {@link AmqpListenerEndpoint#getAdviceChain()}.
 	 * @param advices the advice chain.
@@ -168,6 +193,7 @@ public class AmqpMessageListenerContainerFactory {
 		listenerContainer.setQueueNames(listenerEndpoint.getAddresses());
 		JavaUtils.INSTANCE
 				.acceptIfNotNull(this.errorHandler, listenerContainer::setErrorHandler)
+				.acceptIfNotNull(this.recoveryBackOff, listenerContainer::setRecoveryBackOff)
 				.acceptIfNotNull(listenerEndpoint.getId(), listenerContainer::setBeanName)
 				.acceptOrElseIfNotNull(
 						listenerEndpoint.getConcurrency(), this.concurrency,
