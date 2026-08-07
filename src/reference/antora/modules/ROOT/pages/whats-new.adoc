@@ -20,3 +20,9 @@ See xref:logging.adoc[] for more information.
 
 The `@RabbitListener` annotation has new `batchSize()` and `batchReceiveTimeout()` attributes to override the respective container factory properties for a single listener.
 See xref:amqp/receiving-messages/batch.adoc[] for more information.
+
+[[x42-routing-amqp-connection-factory]]
+=== Routing AMQP Connection Factory
+
+The `spring-rabbitmq-client` module now provides an `AbstractRoutingAmqpConnectionFactory` (and a `SimpleRoutingAmqpConnectionFactory` implementation) to route to one of several `AmqpConnectionFactory` instances based on a runtime `lookupKey`.
+See xref:rabbitmq-amqp-client.adoc#amqp-client-routing-connection-factory[Routing Connection Factory] for more information.
