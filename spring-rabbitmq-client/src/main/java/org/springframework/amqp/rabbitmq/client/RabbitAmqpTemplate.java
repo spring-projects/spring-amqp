@@ -56,6 +56,7 @@ import org.springframework.util.StringUtils;
  * A Spring-friendly wrapper around {@link Environment#connectionBuilder()};
  *
  * @author Artem Bilan
+ * @author Robin Collard
  *
  * @since 4.0
  */
@@ -176,6 +177,14 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 	 * @return the {@link Publisher} for low-level AMQP operations.
 	 */
 	public Publisher getPublisher() {
+		if (this.connectionFactory instanceof RoutingAmqpConnectionFactory) {
+			return this.connectionFactory.getConnection()
+					.publisherBuilder()
+					.listeners(this.stateListeners)
+					.publishTimeout(this.publishTimeout)
+					.build();
+		}
+
 		Publisher publisherToReturn = this.publisher;
 		if (publisherToReturn == null) {
 			this.instanceLock.lock();
@@ -238,12 +247,18 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 	private CompletableFuture<Boolean> doSend(@Nullable String exchange, @Nullable String routingKey,
 			@Nullable String queue, Message message) {
 
+		Publisher publisherToUse = getPublisher();
+
 		com.rabbitmq.client.amqp.Message amqpMessage =
-				toAmqpMessage(exchange, routingKey, queue, message, getPublisher()::message);
+				toAmqpMessage(exchange, routingKey, queue, message, publisherToUse::message);
 
 		CompletableFuture<Boolean> publishResult = new CompletableFuture<>();
 
-		getPublisher().publish(amqpMessage,
+		if (publisherToUse != this.publisher) {
+			publishResult.whenComplete((result, ex) -> publisherToUse.close());
+		}
+
+		publisherToUse.publish(amqpMessage,
 				(context) -> {
 					switch (context.status()) {
 						case ACCEPTED -> publishResult.complete(true);
@@ -426,11 +441,15 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 							rpcFuture.complete(false);
 						}
 						else {
-							com.rabbitmq.client.amqp.Message replyMessage = getPublisher().message();
+							Publisher publisherToUse = getPublisher();
+							com.rabbitmq.client.amqp.Message replyMessage = publisherToUse.message();
 							RabbitAmqpUtils.toAmqpMessage(reply, replyMessage);
 							replyMessage.correlationId(messageId);
 							replyMessage.to(replyTo);
-							getPublisher().publish(replyMessage, (ctx) -> {
+							publisherToUse.publish(replyMessage, (ctx) -> {
+								if (publisherToUse != this.publisher) {
+									publisherToUse.close();
+								}
 							});
 							context.accept();
 							rpcFuture.complete(true);
