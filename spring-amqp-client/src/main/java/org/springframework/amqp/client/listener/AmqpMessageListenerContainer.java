@@ -513,6 +513,29 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 		}
 	}
 
+	/**
+	 * Remove a consumer which has stopped without a chance to recover,
+	 * so the {@link #isRunning()} does not report this container as running
+	 * when all its consumers are gone.
+	 * @param queue the queue the consumer was consuming from.
+	 * @param consumer the consumer to remove.
+	 */
+	private void removeConsumer(String queue, AmqpConsumer consumer) {
+		this.lock.lock();
+		try {
+			List<AmqpConsumer> consumers = this.queueToConsumers.get(queue);
+			if (consumers != null) {
+				consumers.remove(consumer);
+				if (consumers.isEmpty()) {
+					this.queueToConsumers.remove(queue);
+				}
+			}
+		}
+		finally {
+			this.lock.unlock();
+		}
+	}
+
 	private static void releaseFailedDelivery(Delivery delivery, Runnable replenishCreditOperation) {
 		try {
 			delivery.release();
