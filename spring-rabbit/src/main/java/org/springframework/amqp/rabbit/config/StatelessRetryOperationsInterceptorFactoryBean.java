@@ -25,6 +25,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.retry.MessageBatchRecoverer;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
+import org.springframework.core.retry.RetryListener;
 import org.springframework.core.retry.RetryOperations;
 import org.springframework.core.retry.RetryPolicy;
 import org.springframework.core.retry.Retryable;
@@ -42,6 +43,7 @@ import org.springframework.core.retry.Retryable;
  * @author Dave Syer
  * @author Gary Russell
  * @author Stephane Nicoll
+ * @author Jun Cho
  *
  * @see RetryOperations#execute(Retryable)
  */
@@ -49,9 +51,27 @@ public class StatelessRetryOperationsInterceptorFactoryBean extends AbstractRetr
 
 	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR
 
+	private @Nullable RetryListener retryListener;
+
+	/**
+	 * Set a {@link RetryListener} for the target stateless interceptor. If multiple
+	 * listeners are needed, use a
+	 * {@link org.springframework.core.retry.support.CompositeRetryListener}.
+	 * @param retryListener the retry listener to use
+	 * @since 4.1.1
+	 */
+	public void setRetryListener(RetryListener retryListener) {
+		this.retryListener = retryListener;
+	}
+
 	@Override
 	public StatelessRetryOperationsInterceptor getObject() {
-		return new StatelessRetryOperationsInterceptor(getRetryPolicy(), this::recover);
+		StatelessRetryOperationsInterceptor interceptor =
+				new StatelessRetryOperationsInterceptor(getRetryPolicy(), this::recover);
+		if (this.retryListener != null) {
+			interceptor.setRetryListener(this.retryListener);
+		}
+		return interceptor;
 	}
 
 	@SuppressWarnings("unchecked")
