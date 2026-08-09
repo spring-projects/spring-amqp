@@ -579,10 +579,10 @@ public class AmqpAppender extends AbstractAppender {
 			if (rabbitConnectionFactory != null) {
 				Assert.state(this.applicationId != null, "applicationId is required");
 				this.routingKeyLayout = PatternLayout.newBuilder()
-						.withPattern(this.routingKeyPattern.replaceAll("%X\\{applicationId}", this.applicationId))
-						.withCharset(Charset.forName(this.charset))
-						.withAlwaysWriteExceptions(false)
-						.withNoConsoleNoAnsi(true)
+						.setPattern(this.routingKeyPattern.replaceAll("%X\\{applicationId}", this.applicationId))
+						.setCharset(Charset.forName(this.charset))
+						.setAlwaysWriteExceptions(false)
+						.setNoConsoleNoAnsi(true)
 						.build();
 				this.connectionFactory = new CachingConnectionFactory(rabbitConnectionFactory);
 				this.connectionFactory.setApplicationContext(this.context);
