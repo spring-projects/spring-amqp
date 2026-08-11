@@ -3,7 +3,7 @@
 micrometerVersion = "1.16.7-INTERNAL-SNAPSHOT"
 micrometerTracingVersion = "1.6.7-INTERNAL-SNAPSHOT"
 reactorVersion = "2025.0.7-INTERNAL-SNAPSHOT"
-springDataVersion = "2025.1.6"
+springDataVersion = "2025.1.7-INTERNAL-SNAPSHOT"
 springVersion = "7.0.9-INTERNAL-SNAPSHOT"
 
 # Third-party dependencies
