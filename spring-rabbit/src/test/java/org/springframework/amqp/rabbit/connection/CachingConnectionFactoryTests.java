@@ -83,6 +83,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -718,6 +719,47 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		open.set(true);
 		rabbitTemplate.convertAndSend("foo", "bar");
 		verify(mockChannel, times(2)).basicPublish(any(), any(), anyBoolean(), any(), any());
+	}
+
+	@Test
+	public void testPublisherConfirmsUnexpectedWaitFailureClosesChannelWhenCheckoutTimeoutZero() throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
+		com.rabbitmq.client.Connection mockConnection = mock();
+		Channel mockChannel = mock();
+		Channel mockChannel2 = mock();
+
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
+		given(mockConnection.createChannel()).willReturn(mockChannel, mockChannel2);
+		given(mockConnection.isOpen()).willReturn(true);
+		given(mockChannel.isOpen()).willReturn(true);
+		given(mockChannel2.isOpen()).willReturn(true);
+		given(mockChannel.getNextPublishSeqNo()).willReturn(1L);
+		given(mockChannel2.getNextPublishSeqNo()).willReturn(1L);
+
+		CountDownLatch closeLatch = new CountDownLatch(1);
+		willThrow(new IllegalStateException("channel closed during broker crash"))
+				.given(mockChannel).waitForConfirms(anyLong());
+		willAnswer(invoc -> {
+			closeLatch.countDown();
+			return null;
+		}).given(mockChannel).close();
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ExecutorService exec = Executors.newCachedThreadPool();
+		ccf.setExecutor(exec);
+		ccf.setChannelCacheSize(1);
+		ccf.setPublisherConfirmType(ConfirmType.CORRELATED);
+
+		RabbitTemplate rabbitTemplate = new RabbitTemplate(ccf);
+		rabbitTemplate.convertAndSend("foo", "bar");
+
+		assertThat(closeLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		verify(mockChannel, timeout(5000)).close();
+
+		rabbitTemplate.convertAndSend("foo", "bar");
+		verify(mockChannel2, timeout(5000)).basicPublish(any(), any(), anyBoolean(), any(), any());
+
+		exec.shutdownNow();
 	}
 
 	@Test

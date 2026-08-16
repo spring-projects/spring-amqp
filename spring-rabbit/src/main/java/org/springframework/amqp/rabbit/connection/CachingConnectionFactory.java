@@ -1328,21 +1328,30 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 								}
 								catch (InterruptedException ex) {
 									Thread.currentThread().interrupt();
+									closeAfterFailedConfirmWait();
 								}
-								catch (ShutdownSignalException | TimeoutException ex) {
+								catch (Exception ex) {
 									// The channel didn't handle confirms, so close it altogether to avoid
 									// memory leaks for pending confirms
-									try {
-										physicalClose();
-									}
-									catch (@SuppressWarnings(UNUSED) Exception e) {
-									}
+									closeAfterFailedConfirmWait();
 								}
 							});
 				}
 			}
 			else {
 				doReturnToCache(proxy);
+			}
+		}
+
+		private void closeAfterFailedConfirmWait() {
+			Channel targetChannel = this.target;
+			if (targetChannel != null) {
+				this.theConnection.channelsAwaitingAcks.remove(targetChannel);
+			}
+			try {
+				physicalClose();
+			}
+			catch (@SuppressWarnings(UNUSED) Exception e) {
 			}
 		}
 
