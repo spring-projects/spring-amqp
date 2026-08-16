@@ -83,6 +83,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -718,6 +719,168 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		open.set(true);
 		rabbitTemplate.convertAndSend("foo", "bar");
 		verify(mockChannel, times(2)).basicPublish(any(), any(), anyBoolean(), any(), any());
+	}
+
+	@Test
+	public void testPublisherConfirmsUnexpectedWaitFailureClosesChannelWhenCheckoutTimeoutZero() throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
+		com.rabbitmq.client.Connection mockConnection = mock();
+		Channel mockChannel = mock();
+		Channel mockChannel2 = mock();
+
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
+		given(mockConnection.createChannel()).willReturn(mockChannel, mockChannel2);
+		given(mockConnection.isOpen()).willReturn(true);
+		AtomicBoolean open = new AtomicBoolean(true);
+		willAnswer(invoc -> open.get()).given(mockChannel).isOpen();
+		given(mockChannel2.isOpen()).willReturn(true);
+		given(mockChannel.getNextPublishSeqNo()).willReturn(1L);
+		given(mockChannel2.getNextPublishSeqNo()).willReturn(1L);
+
+		CountDownLatch closeLatch = new CountDownLatch(1);
+		willAnswer(invoc -> {
+			open.set(false);
+			throw new IllegalStateException("channel closed during broker crash");
+		}).given(mockChannel).waitForConfirms(anyLong());
+		willAnswer(invoc -> {
+			closeLatch.countDown();
+			return null;
+		}).given(mockChannel).close();
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ExecutorService exec = Executors.newCachedThreadPool();
+		ccf.setExecutor(exec);
+		ccf.setChannelCacheSize(1);
+		ccf.setPublisherConfirmType(ConfirmType.CORRELATED);
+
+		RabbitTemplate rabbitTemplate = new RabbitTemplate(ccf);
+		rabbitTemplate.convertAndSend("foo", "bar");
+
+		assertThat(closeLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		verify(mockChannel, timeout(5000)).close();
+		verify(mockChannel, never()).waitForConfirmsOrDie(anyLong());
+		verify(mockChannel2, never()).close();
+
+		rabbitTemplate.convertAndSend("foo", "bar");
+		verify(mockChannel2, timeout(5000)).basicPublish(any(), any(), anyBoolean(), any(), any());
+		verify(mockChannel2, never()).close();
+
+		exec.shutdownNow();
+	}
+
+	@Test
+	public void testPublisherConfirmsFailedWaitDoesNotCloseWhenAckAlreadyReturnedChannel() throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
+		com.rabbitmq.client.Connection mockConnection = mock();
+		Channel mockChannel = mock();
+
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
+		given(mockConnection.createChannel()).willReturn(mockChannel);
+		given(mockConnection.isOpen()).willReturn(true);
+		given(mockChannel.isOpen()).willReturn(true);
+		given(mockChannel.getNextPublishSeqNo()).willReturn(1L);
+
+		AtomicReference<ConfirmListener> confirmListener = new AtomicReference<>();
+		willAnswer(invoc -> {
+			confirmListener.set(invoc.getArgument(0));
+			return null;
+		}).given(mockChannel).addConfirmListener(any());
+
+		CountDownLatch waitStarted = new CountDownLatch(1);
+		CountDownLatch failWait = new CountDownLatch(1);
+		willAnswer(invoc -> {
+			waitStarted.countDown();
+			assertThat(failWait.await(10, TimeUnit.SECONDS)).isTrue();
+			throw new IllegalStateException("wait failed after ack already processed");
+		}).given(mockChannel).waitForConfirms(anyLong());
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ExecutorService exec = Executors.newCachedThreadPool();
+		ccf.setExecutor(exec);
+		ccf.setChannelCacheSize(1);
+		ccf.setPublisherConfirmType(ConfirmType.CORRELATED);
+
+		RabbitTemplate rabbitTemplate = new RabbitTemplate(ccf);
+		rabbitTemplate.convertAndSend("foo", "bar");
+
+		assertThat(waitStarted.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(confirmListener.get()).isNotNull();
+		confirmListener.get().handleAck(1L, false);
+
+		int n = 0;
+		Map<?, ?> awaiting = TestUtils.getPropertyValue(ccf, "connection.channelsAwaitingAcks");
+		while (awaiting != null && !awaiting.isEmpty() && n++ < 100) {
+			Thread.sleep(50);
+		}
+		assertThat(awaiting).isEmpty();
+
+		failWait.countDown();
+		Thread.sleep(200);
+		verify(mockChannel, never()).close();
+
+		rabbitTemplate.convertAndSend("foo", "bar");
+		verify(mockConnection, times(1)).createChannel();
+
+		exec.shutdownNow();
+	}
+
+	@Test
+	public void testPublisherConfirmsInterruptedWaitClosesWhenExecutorRejectsAsyncClose() throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
+		com.rabbitmq.client.Connection mockConnection = mock();
+		Channel mockChannel = mock();
+		Channel mockChannel2 = mock();
+
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
+		given(mockConnection.createChannel()).willReturn(mockChannel, mockChannel2);
+		given(mockConnection.isOpen()).willReturn(true);
+		given(mockChannel.isOpen()).willReturn(true);
+		given(mockChannel2.isOpen()).willReturn(true);
+		given(mockChannel.getNextPublishSeqNo()).willReturn(1L);
+		given(mockChannel2.getNextPublishSeqNo()).willReturn(1L);
+
+		CountDownLatch closeLatch = new CountDownLatch(1);
+		willAnswer(invoc -> {
+			closeLatch.countDown();
+			return null;
+		}).given(mockChannel).close();
+
+		ExecutorService delegate = Executors.newCachedThreadPool();
+		AtomicBoolean rejectFurther = new AtomicBoolean();
+		ExecutorService exec = mock(ExecutorService.class);
+		willAnswer(invoc -> {
+			if (rejectFurther.get()) {
+				throw new RejectedExecutionException("shutdown");
+			}
+			delegate.execute(invoc.getArgument(0));
+			return null;
+		}).given(exec).execute(any());
+
+		willAnswer(invoc -> {
+			rejectFurther.set(true);
+			throw new InterruptedException("channels executor shutdown");
+		}).given(mockChannel).waitForConfirms(anyLong());
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setExecutor(exec);
+		ccf.setChannelCacheSize(1);
+		ccf.setChannelCheckoutTimeout(1000);
+		ccf.setPublisherConfirmType(ConfirmType.CORRELATED);
+
+		RabbitTemplate rabbitTemplate = new RabbitTemplate(ccf);
+		rabbitTemplate.convertAndSend("foo", "bar");
+
+		assertThat(closeLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		verify(mockChannel, timeout(5000)).close();
+		verify(mockChannel, never()).waitForConfirmsOrDie(anyLong());
+
+		Connection con = ccf.createConnection();
+		Channel channel2 = con.createChannel(false);
+		assertThat(channel2).isNotNull();
+		channel2.close();
+		verify(mockChannel2, never()).close();
+
+		delegate.shutdownNow();
 	}
 
 	@Test
