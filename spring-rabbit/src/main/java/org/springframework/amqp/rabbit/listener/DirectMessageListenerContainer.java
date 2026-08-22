@@ -1030,6 +1030,20 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		private final @Nullable Channel targetChannel;
 
+		/**
+		 * The {@link Channel} to expose to listener code. A proxy around
+		 * {@link #getChannel()}, to learn whether the listener has settled the delivery in
+		 * progress itself: the container must not reject such a delivery again, since the
+		 * broker treats re-settling as a protocol violation and closes the channel.
+		 * <p>
+		 * With auto-ack there are no deliveries to settle, so listener code is given the
+		 * consumer's channel itself. That matters, because callers may match the channel they
+		 * are handed against the consumer's: {@link DirectReplyToMessageListenerContainer}
+		 * tracks its in-use consumers by it, and {@code RabbitTemplate} correlates direct
+		 * replies by it.
+		 */
+		private final Channel listenerChannel = createListenerChannel();
+
 		private final Lock lock = new ReentrantLock();
 
 		private final AtomicInteger epoch = new AtomicInteger(0);
@@ -1039,6 +1053,21 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		private long lastAck = System.currentTimeMillis();
 
 		private long latestDeferredDeliveryTag;
+
+		/**
+		 * The delivery tag currently being processed by the listener. This consumer handles
+		 * one delivery at a time, and a producer-created batch is a single delivery whose
+		 * de-batched messages all carry this very tag, hence tracking one tag covers
+		 * everything the listener can settle for the invocation in progress.
+		 */
+		private volatile long currentDeliveryTag = -1;
+
+		/**
+		 * Whether the listener has settled {@link #currentDeliveryTag} itself, through the
+		 * {@link #listenerChannel} proxy. Consulted by {@link #rollback} only: on the success
+		 * path the delivery is acknowledged as before.
+		 */
+		private volatile boolean currentDeliverySettledByListener;
 
 		@SuppressWarnings("NullAway.Init")
 		private volatile String consumerTag;
@@ -1137,6 +1166,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				this.logger.debug(this + " received " + message);
 			}
 			updateLastReceive();
+			this.currentDeliveryTag = deliveryTag;
+			this.currentDeliverySettledByListener = false;
 			Object data = message;
 			List<Message> debatched = debatch(message);
 			if (debatched != null) {
@@ -1205,7 +1236,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		private void callExecuteListener(Object data, long deliveryTag) { // NOSONAR (complex)
 			boolean channelLocallyTransacted = isChannelLocallyTransacted();
 			try {
-				executeListener(getChannel(), data);
+				executeListener(this.listenerChannel, data);
 				handleAck(deliveryTag, channelLocallyTransacted);
 			}
 			catch (ImmediateAcknowledgeAmqpException e) {
@@ -1328,15 +1359,46 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 							this.lock.unlock();
 						}
 					}
-					getChannel().basicNack(deliveryTag, !isAsyncReplies(),
-							ContainerUtils.shouldRequeue(isDefaultRequeueRejected(), e, this.logger));
+					// Re-settling a delivery is a protocol violation which has the broker close the
+					// whole channel, so skip the reject when it is already settled - by the
+					// listener itself, or by the broker on delivery when acks are not used.
+					if (this.currentDeliverySettledByListener || getAcknowledgeMode().isAutoAck()) {
+						if (this.logger.isDebugEnabled()) {
+							this.logger.debug("The delivery is settled already, not rejecting it: " + deliveryTag);
+						}
+					}
+					else {
+						// Reject individually (rather than a multiple-nack) so that RabbitMQ bumps
+						// x-delivery-count for this delivery and a quorum queue delivery limit is
+						// eventually reached.
+						getChannel().basicReject(deliveryTag,
+								ContainerUtils.shouldRequeue(isDefaultRequeueRejected(), e, this.logger));
+					}
 				}
 				catch (Exception e1) {
-					this.logger.error("Failed to nack message", e1);
+					this.logger.error("Failed to reject message", e1);
 				}
 			}
 			if (isChannelTransacted()) {
 				RabbitUtils.commitIfNecessary(getChannel());
+			}
+		}
+
+		private Channel createListenerChannel() {
+			return getAcknowledgeMode().isAutoAck()
+					? getChannel()
+					: ListenerChannelProxy.create(this::getChannel, this::settledByListener);
+		}
+
+		/**
+		 * Record that the listener has settled the delivery in progress itself, so that
+		 * {@link #rollback} does not attempt to reject it again.
+		 * @param deliveryTag the settled delivery tag.
+		 * @param multiple whether all the tags up to and including {@code deliveryTag} are settled.
+		 */
+		private void settledByListener(long deliveryTag, boolean multiple) {
+			if (multiple ? deliveryTag >= this.currentDeliveryTag : deliveryTag == this.currentDeliveryTag) {
+				this.currentDeliverySettledByListener = true;
 			}
 		}
 

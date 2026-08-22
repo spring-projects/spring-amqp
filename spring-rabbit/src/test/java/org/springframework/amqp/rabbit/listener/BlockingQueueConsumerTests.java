@@ -258,7 +258,7 @@ public class BlockingQueueConsumerTests {
 		deliveryTags.add(1L);
 		dfa.setPropertyValue("deliveryTags", deliveryTags);
 		blockingQueueConsumer.rollbackOnExceptionIfNecessary(ex);
-		verify(channel).basicNack(1L, true, expectedRequeue);
+		verify(channel).basicReject(1L, expectedRequeue);
 	}
 
 	@Test

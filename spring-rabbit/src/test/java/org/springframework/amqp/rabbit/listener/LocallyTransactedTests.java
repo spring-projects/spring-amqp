@@ -38,6 +38,7 @@ import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
@@ -162,7 +163,8 @@ public abstract class LocallyTransactedTests {
 				new byte[] { 0 });
 		assertThat(commitLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(rollbackLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
-		verify(onlyChannel).basicNack(anyLong(), anyBoolean(), anyBoolean());
+		// Deliveries are rejected individually, so that RabbitMQ bumps 'x-delivery-count' for each.
+		verify(onlyChannel).basicReject(anyLong(), anyBoolean());
 		verify(onlyChannel, times(1)).txRollback();
 
 		// ImmediateAck tests
@@ -176,7 +178,7 @@ public abstract class LocallyTransactedTests {
 				new byte[] { 0 });
 		assertThat(rollbackLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(commitLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
-		verify(onlyChannel, times(2)).basicNack(anyLong(), anyBoolean(), anyBoolean());
+		verify(onlyChannel, times(2)).basicReject(anyLong(), anyBoolean());
 		verify(onlyChannel, times(2)).txRollback();
 
 		container.setMessageListener(m -> {
@@ -448,7 +450,13 @@ public abstract class LocallyTransactedTests {
 
 		container.stop();
 
-		assertThat(exposed.get()).isSameAs(onlyChannel);
+		Channel exposedChannel = exposed.get();
+		if (exposedChannel instanceof ChannelProxy channelProxy) {
+			// SimpleMessageListenerContainer exposes a tracking proxy around the
+			// consumer's channel; unwrap to compare the actual target channel.
+			exposedChannel = channelProxy.getTargetChannel();
+		}
+		assertThat(exposedChannel).isSameAs(onlyChannel);
 	}
 
 	/**
