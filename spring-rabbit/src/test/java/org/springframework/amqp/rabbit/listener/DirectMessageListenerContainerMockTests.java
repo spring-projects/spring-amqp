@@ -254,6 +254,11 @@ public class DirectMessageListenerContainerMockTests {
 		final CountDownLatch latch2 = new CountDownLatch(2);
 		willAnswer(i -> {
 			latch2.countDown();
+			if (latch2.getCount() == 0) {
+				// Avoid a race with the monitor task restarting test2 while isOpen is still false,
+				// which would cause it to be immediately cancelled and restarted again.
+				isOpen.set(true);
+			}
 			return null;
 		}).given(channel).basicCancel("consumerTag");
 
