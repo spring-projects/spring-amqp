@@ -157,7 +157,7 @@ configure(javaProjects) { subproject ->
 
 	// dependencies that are common across all java projects
 	dependencies {
-		def spotBugs = 'com.github.spotbugs:spotbugs-annotations:4.10.3'
+		def spotBugs = 'com.github.spotbugs:spotbugs-annotations:4.10.4'
 		compileOnly spotBugs
 		testImplementation spotBugs
 
