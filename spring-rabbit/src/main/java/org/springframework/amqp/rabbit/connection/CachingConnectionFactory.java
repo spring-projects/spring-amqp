@@ -1312,7 +1312,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					&& this.publisherConfirms
 					&& proxy instanceof PublisherCallbackChannel publisherCallbackChannel) {
 
-				this.theConnection.channelsAwaitingAcks.put(this.target, proxy);
+				Channel channelAwaitingAcks = this.target;
+				this.theConnection.channelsAwaitingAcks.put(channelAwaitingAcks, proxy);
 				AtomicBoolean ackCallbackCalledImmediately = new AtomicBoolean();
 				publisherCallbackChannel
 						.setAfterAckCallback(c -> {
@@ -1328,12 +1329,12 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 								}
 								catch (InterruptedException ex) {
 									Thread.currentThread().interrupt();
-									closeAfterFailedConfirmWait();
+									closeAfterFailedConfirmWait(channelAwaitingAcks);
 								}
 								catch (Exception ex) {
 									// The channel didn't handle confirms, so close it altogether to avoid
 									// memory leaks for pending confirms
-									closeAfterFailedConfirmWait();
+									closeAfterFailedConfirmWait(channelAwaitingAcks);
 								}
 							});
 				}
@@ -1343,13 +1344,12 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 		}
 
-		private void closeAfterFailedConfirmWait() {
-			Channel targetChannel = this.target;
-			if (targetChannel != null) {
-				this.theConnection.channelsAwaitingAcks.remove(targetChannel);
+		private void closeAfterFailedConfirmWait(@Nullable Channel channelAwaitingAcks) {
+			if (channelAwaitingAcks != null) {
+				this.theConnection.channelsAwaitingAcks.remove(channelAwaitingAcks);
 			}
 			try {
-				physicalClose();
+				physicalClose(channelAwaitingAcks);
 			}
 			catch (@SuppressWarnings(UNUSED) Exception e) {
 			}
@@ -1413,13 +1413,17 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 		}
 
-		@SuppressWarnings("NullAway") // Dataflow analysis limitation
 		private void physicalClose() throws IOException, TimeoutException {
+			physicalClose(this.target);
+		}
+
+		@SuppressWarnings("NullAway") // Dataflow analysis limitation
+		private void physicalClose(@Nullable Channel channelToClose) throws IOException, TimeoutException {
 			if (logger.isDebugEnabled()) {
-				logger.debug("Closing cached Channel: " + this.target);
+				logger.debug("Closing cached Channel: " + channelToClose);
 			}
 			RabbitUtils.clearPhysicalCloseRequired();
-			if (this.target == null) {
+			if (channelToClose == null) {
 				return;
 			}
 			boolean async = false;
@@ -1428,22 +1432,24 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 						(ConfirmType.CORRELATED.equals(CachingConnectionFactory.this.confirmType) ||
 								CachingConnectionFactory.this.publisherReturns)) {
 					async = true;
-					asyncClose();
+					asyncClose(channelToClose);
 				}
 				else {
-					this.target.close();
-					if (this.target instanceof AutorecoveringChannel auto) {
+					channelToClose.close();
+					if (channelToClose instanceof AutorecoveringChannel auto) {
 						ClosingRecoveryListener.removeChannel(auto);
 					}
 				}
 			}
 			catch (AlreadyClosedException e) {
 				if (logger.isTraceEnabled()) {
-					logger.trace(this.target + " is already closed", e);
+					logger.trace(channelToClose + " is already closed", e);
 				}
 			}
 			finally {
-				this.target = null;
+				if (this.target == channelToClose) {
+					this.target = null;
+				}
 				if (!async) {
 					releasePermitIfNecessary();
 				}
@@ -1451,9 +1457,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 
 		@SuppressWarnings("NullAway") // Dataflow analysis limitation
-		private void asyncClose() {
+		private void asyncClose(Channel channel) {
 			ExecutorService executorService = getChannelsExecutor();
-			final Channel channel = CachedChannelInvocationHandler.this.target;
 			CachingConnectionFactory.this.inFlightAsyncCloses.add(channel);
 			try {
 				executorService.execute(() -> {

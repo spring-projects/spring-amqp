@@ -731,14 +731,17 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.createChannel()).willReturn(mockChannel, mockChannel2);
 		given(mockConnection.isOpen()).willReturn(true);
-		given(mockChannel.isOpen()).willReturn(true);
+		AtomicBoolean open = new AtomicBoolean(true);
+		willAnswer(invoc -> open.get()).given(mockChannel).isOpen();
 		given(mockChannel2.isOpen()).willReturn(true);
 		given(mockChannel.getNextPublishSeqNo()).willReturn(1L);
 		given(mockChannel2.getNextPublishSeqNo()).willReturn(1L);
 
 		CountDownLatch closeLatch = new CountDownLatch(1);
-		willThrow(new IllegalStateException("channel closed during broker crash"))
-				.given(mockChannel).waitForConfirms(anyLong());
+		willAnswer(invoc -> {
+			open.set(false);
+			throw new IllegalStateException("channel closed during broker crash");
+		}).given(mockChannel).waitForConfirms(anyLong());
 		willAnswer(invoc -> {
 			closeLatch.countDown();
 			return null;
@@ -755,9 +758,11 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 		assertThat(closeLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		verify(mockChannel, timeout(5000)).close();
+		verify(mockChannel2, never()).close();
 
 		rabbitTemplate.convertAndSend("foo", "bar");
 		verify(mockChannel2, timeout(5000)).basicPublish(any(), any(), anyBoolean(), any(), any());
+		verify(mockChannel2, never()).close();
 
 		exec.shutdownNow();
 	}
