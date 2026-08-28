@@ -18,7 +18,6 @@ package org.springframework.amqp.rabbit.listener;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.amqp.core.MessageListenerContainer;
 import org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
 import org.springframework.context.event.ContextRefreshedEvent;
