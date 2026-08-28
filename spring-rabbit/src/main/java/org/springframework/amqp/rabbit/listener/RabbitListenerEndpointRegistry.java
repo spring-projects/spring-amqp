@@ -249,6 +249,7 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 
 	@Override
 	public void stop() {
+		this.contextRefreshed = false;
 		for (MessageListenerContainer listenerContainer : getListenerContainers()) {
 			listenerContainer.stop();
 		}
@@ -256,6 +257,7 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 
 	@Override
 	public void stop(Runnable callback) {
+		this.contextRefreshed = false;
 		Collection<MessageListenerContainer> containers = getListenerContainers();
 		if (!containers.isEmpty()) {
 			AggregatingCallback aggregatingCallback = new AggregatingCallback(containers.size(), callback);
