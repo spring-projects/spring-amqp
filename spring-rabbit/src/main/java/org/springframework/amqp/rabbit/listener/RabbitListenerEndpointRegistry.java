@@ -306,15 +306,10 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 		}
 	}
 
-	private static final class AggregatingCallback implements Runnable {
+	private record AggregatingCallback(AtomicInteger count, Runnable finishCallback) implements Runnable {
 
-		private final AtomicInteger count;
-
-		private final Runnable finishCallback;
-
-		AggregatingCallback(int count, Runnable finishCallback) {
-			this.count = new AtomicInteger(count);
-			this.finishCallback = finishCallback;
+		private AggregatingCallback(int count, Runnable finishCallback) {
+			this(new AtomicInteger(count), finishCallback);
 		}
 
 		@Override
