@@ -87,7 +87,7 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory
 	private ThreadChannelConnectionFactory(ConnectionFactory rabbitConnectionFactory, boolean isPublisher) {
 		super(rabbitConnectionFactory);
 		if (!isPublisher) {
-			setPublisherConnectionFactory(new ThreadChannelConnectionFactory(rabbitConnectionFactory, true));
+			doSetPublisherConnectionFactory(new ThreadChannelConnectionFactory(rabbitConnectionFactory, true));
 		}
 		else {
 			this.defaultPublisherFactory = false;
