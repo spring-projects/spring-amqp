@@ -45,9 +45,12 @@ import org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory
 import org.springframework.amqp.rabbit.listener.AbstractRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.BeanCreationException;
+import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -64,6 +67,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Juergen Hoeller
  * @author Alex Panchenko
  * @author Martin Ferret
+ * @author Burak KALAYCI
  */
 public class RabbitListenerAnnotationBeanPostProcessorTests {
 
@@ -369,6 +373,24 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 			assertThat(endpoint.getBatchSize()).isEqualTo(7);
 			assertThat(endpoint.getBatchReceiveTimeout()).isEqualTo(2500L);
 		}
+	}
+
+	@Test
+	public void configurerOverridesDefaultContainerFactoryBeanName() {
+		RabbitListenerAnnotationBeanPostProcessor postProcessor = new RabbitListenerAnnotationBeanPostProcessor();
+		StaticListableBeanFactory beanFactory = new StaticListableBeanFactory();
+		beanFactory.addBean("configurer", (RabbitListenerConfigurer) registrar ->
+				registrar.setContainerFactoryBeanName("customFactory"));
+		postProcessor.setBeanFactory(beanFactory);
+		postProcessor.setEndpointRegistry(new RabbitListenerEndpointRegistry());
+
+		postProcessor.afterSingletonsInstantiated();
+
+		RabbitListenerEndpointRegistrar registrar =
+				TestUtils.getPropertyValue(postProcessor, "registrar");
+		assertThat(registrar).isNotNull();
+		String containerFactoryBeanName = TestUtils.getPropertyValue(registrar, "containerFactoryBeanName");
+		assertThat(containerFactoryBeanName).isEqualTo("customFactory");
 	}
 
 	static class BeanForConcurrencyTesting {
