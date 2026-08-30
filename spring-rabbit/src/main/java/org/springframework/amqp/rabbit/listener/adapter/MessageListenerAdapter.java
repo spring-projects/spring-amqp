@@ -260,7 +260,7 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	 * @return the method name that was removed, or null.
 	 * @since 1.5
 	 */
-	public String removeQueueOrTagToMethodName(String queueOrTag) {
+	public @Nullable String removeQueueOrTagToMethodName(String queueOrTag) {
 		return this.queueOrTagToMethodName.remove(queueOrTag);
 	}
 

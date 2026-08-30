@@ -984,11 +984,11 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 * method to remove an argument from those passed into the {@code basicConsume}
 	 * operation.
 	 * @param arg the argument name.
-	 * @return the previous value.
+	 * @return the previous value, or {@code null} if there was none for the argument name.
 	 * @since 2.4.8
 	 * @see #addConsumerArg(String, Object)
 	 */
-	public Object removeConsumerArg(String arg) {
+	public @Nullable Object removeConsumerArg(String arg) {
 		return this.consumerArgs.remove(arg);
 	}
 
