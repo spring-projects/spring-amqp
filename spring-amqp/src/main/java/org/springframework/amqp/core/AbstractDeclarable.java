@@ -134,7 +134,7 @@ public abstract class AbstractDeclarable implements Declarable {
 	}
 
 	@Override
-	public Object removeArgument(String name) {
+	public @Nullable Object removeArgument(String name) {
 		this.lock.lock();
 		try {
 			return this.arguments.remove(name);

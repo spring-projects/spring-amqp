@@ -19,6 +19,8 @@ package org.springframework.amqp.support.postprocessor;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -79,7 +81,7 @@ public class DelegatingDecompressingPostProcessor implements MessagePostProcesso
 	 * @param contentEncoding the content encoding.
 	 * @return the decompressor if it was present.
 	 */
-	public MessagePostProcessor removeDecompressor(String contentEncoding) {
+	public @Nullable MessagePostProcessor removeDecompressor(String contentEncoding) {
 		return this.decompressors.remove(contentEncoding);
 	}
 
