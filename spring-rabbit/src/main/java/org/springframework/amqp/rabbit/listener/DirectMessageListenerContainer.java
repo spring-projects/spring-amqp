@@ -117,7 +117,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private final Set<String> removedQueues = ConcurrentHashMap.newKeySet();
 
-	private final MultiValueMap<String, @Nullable SimpleConsumer> consumersByQueue = new LinkedMultiValueMap<>();
+	private final MultiValueMap<String, SimpleConsumer> consumersByQueue = new LinkedMultiValueMap<>();
 
 	private final ActiveObjectCounter<SimpleConsumer> cancellationLock = new ActiveObjectCounter<>();
 
@@ -347,7 +347,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				while (isActive() &&
 						(this.consumersByQueue.get(queue) == null
 								|| this.consumersByQueue.get(queue).size() < newCount)) { // NOSONAR never null
-					List<@Nullable SimpleConsumer> cBQ = this.consumersByQueue.get(queue);
+					List<SimpleConsumer> cBQ = this.consumersByQueue.get(queue);
 					int index = 0;
 					if (cBQ != null) {
 						// find a gap or set the index to the end
@@ -373,7 +373,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	private void reduceConsumersIfIdle(int newCount, String queue) {
-		List<@Nullable SimpleConsumer> consumerList = this.consumersByQueue.get(queue);
+		List<SimpleConsumer> consumerList = this.consumersByQueue.get(queue);
 		if (consumerList != null && consumerList.size() > newCount) {
 			int delta = consumerList.size() - newCount;
 			for (int i = 0; i < delta; i++) {
@@ -738,7 +738,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	private void consumeFromQueue(String queue) {
-		List<@Nullable SimpleConsumer> list = this.consumersByQueue.get(queue);
+		List<SimpleConsumer> list = this.consumersByQueue.get(queue);
 		// Possible race with setConsumersPerQueue and the task launched by start()
 		if (CollectionUtils.isEmpty(list)) {
 			for (int i = 0; i < this.consumersPerQueue; i++) {
@@ -1409,7 +1409,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			publishConsumerFailedEvent(eventMessage, true, null);
 			DirectMessageListenerContainer.this.consumersLock.lock();
 			try {
-				List<@Nullable SimpleConsumer> list =
+				List<SimpleConsumer> list =
 						DirectMessageListenerContainer.this.consumersByQueue.get(this.queue);
 				if (list != null) {
 					list.remove(this);

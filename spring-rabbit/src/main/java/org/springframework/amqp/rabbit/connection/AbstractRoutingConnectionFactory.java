@@ -273,9 +273,9 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	/**
 	 * Removes the {@link ConnectionFactory} associated with the given lookup key and returns it.
 	 * @param key the lookup key
-	 * @return the {@link ConnectionFactory} that was removed
+	 * @return the {@link ConnectionFactory} that was removed, or {@code null} if there was none for the key
 	 */
-	protected ConnectionFactory removeTargetConnectionFactory(Object key) {
+	protected @Nullable ConnectionFactory removeTargetConnectionFactory(Object key) {
 		return this.targetConnectionFactories.remove(key);
 	}
 

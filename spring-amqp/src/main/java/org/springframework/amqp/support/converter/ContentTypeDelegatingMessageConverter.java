@@ -20,6 +20,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 
@@ -83,9 +85,9 @@ public class ContentTypeDelegatingMessageConverter implements MessageConverter {
 	/**
 	 * Remove the delegate for the content type.
 	 * @param contentType the content type key to remove {@link MessageConverter} from delegates.
-	 * @return the remove {@link MessageConverter}.
+	 * @return the removed {@link MessageConverter}, or {@code null} if there was none for the content type.
 	 */
-	public MessageConverter removeDelegate(String contentType) {
+	public @Nullable MessageConverter removeDelegate(String contentType) {
 		return this.delegates.remove(contentType);
 	}
 
