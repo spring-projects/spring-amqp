@@ -25,6 +25,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.amqp.rabbit.retry.MessageKeyGenerator;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbit.retry.NewMessageIdentifier;
+import org.springframework.core.retry.RetryListener;
 import org.springframework.core.retry.RetryPolicy;
 import org.springframework.util.Assert;
 
@@ -63,6 +64,7 @@ import org.springframework.util.Assert;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Stephane Nicoll
+ * @author Jun Cho
  *
  * @since 1.3
  *
@@ -230,12 +232,30 @@ public abstract class RetryInterceptorBuilder<B extends RetryInterceptorBuilder<
 		private final StatelessRetryOperationsInterceptorFactoryBean factoryBean =
 				new StatelessRetryOperationsInterceptorFactoryBean();
 
+		private @Nullable RetryListener retryListener;
+
 		StatelessRetryInterceptorBuilder() {
+		}
+
+		/**
+		 * Apply a {@link RetryListener} to the stateless interceptor. If multiple
+		 * listeners are needed, use a
+		 * {@link org.springframework.core.retry.support.CompositeRetryListener}.
+		 * @param retryListener the retry listener to use.
+		 * @return this.
+		 * @since 4.1.1
+		 */
+		public StatelessRetryInterceptorBuilder retryListener(RetryListener retryListener) {
+			this.retryListener = retryListener;
+			return this;
 		}
 
 		@Override
 		public StatelessRetryOperationsInterceptor build() {
 			this.applyCommonSettings(this.factoryBean);
+			if (this.retryListener != null) {
+				this.factoryBean.setRetryListener(this.retryListener);
+			}
 			return this.factoryBean.getObject();
 		}
 
