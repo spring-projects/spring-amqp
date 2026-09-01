@@ -47,7 +47,9 @@ import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.BeanCreationException;
+import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -63,6 +65,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Stephane Nicoll
  * @author Juergen Hoeller
  * @author Alex Panchenko
+ * @author Burak Kalayci
  */
 public class RabbitListenerAnnotationBeanPostProcessorTests {
 
@@ -332,6 +335,21 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		finally {
 			executorService.shutdown();
 		}
+	}
+
+	@Test
+	public void configurerOverridesDefaultContainerFactoryBeanName() {
+		RabbitListenerAnnotationBeanPostProcessor postProcessor = new RabbitListenerAnnotationBeanPostProcessor();
+		StaticListableBeanFactory beanFactory = new StaticListableBeanFactory();
+		beanFactory.addBean("configurer", (RabbitListenerConfigurer) registrar ->
+				registrar.setContainerFactoryBeanName("customFactory"));
+		postProcessor.setBeanFactory(beanFactory);
+		postProcessor.setEndpointRegistry(new RabbitListenerEndpointRegistry());
+
+		postProcessor.afterSingletonsInstantiated();
+
+		assertThat((String) TestUtils.getPropertyValue(postProcessor, "registrar.containerFactoryBeanName"))
+				.isEqualTo("customFactory");
 	}
 
 	static class BeanForConcurrencyTesting {

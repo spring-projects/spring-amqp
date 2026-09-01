@@ -121,6 +121,7 @@ import org.springframework.validation.Validator;
  * @author Alex Panchenko
  * @author Artem Bilan
  * @author Ngoc Nhan
+ * @author Burak Kalayci
  *
  * @since 1.4
  *
@@ -264,6 +265,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	@Override
 	public void afterSingletonsInstantiated() {
 		this.registrar.setBeanFactory(this.beanFactory);
+		this.registrar.setContainerFactoryBeanName(this.defaultContainerFactoryBeanName);
 
 		if (this.beanFactory instanceof ListableBeanFactory lbf) {
 			Map<String, RabbitListenerConfigurer> instances =
@@ -281,8 +283,6 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			}
 			this.registrar.setEndpointRegistry(this.endpointRegistry);
 		}
-
-		this.registrar.setContainerFactoryBeanName(this.defaultContainerFactoryBeanName);
 
 		// Set the custom handler method factory once resolved by the configurer
 		MessageHandlerMethodFactory handlerMethodFactory = this.registrar.getMessageHandlerMethodFactory();
