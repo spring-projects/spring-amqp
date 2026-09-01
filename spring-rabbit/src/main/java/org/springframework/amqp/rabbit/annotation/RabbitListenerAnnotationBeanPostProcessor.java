@@ -98,7 +98,7 @@ import org.springframework.validation.Validator;
  * @author Artem Bilan
  * @author Ngoc Nhan
  * @author Martin Ferret
- * @author Burak KALAYCI
+ * @author Burak Kalayci
  *
  * @since 1.4
  *
