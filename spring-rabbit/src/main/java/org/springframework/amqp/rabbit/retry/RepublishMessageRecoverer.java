@@ -50,6 +50,7 @@ import org.springframework.util.Assert;
  * @author James Carr
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Rene Choi
  *
  * @since 1.3
  */
@@ -82,6 +83,8 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 	private String errorRoutingKeyPrefix = "error.";
 
 	private int frameMaxHeadroom = DEFAULT_FRAME_MAX_HEADROOM;
+
+	private volatile boolean includeStackTrace;
 
 	private volatile Integer maxStackTraceLength = 0;
 
@@ -165,6 +168,7 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 	 * @since 4.0.5
 	 */
 	public RepublishMessageRecoverer includeStackTrace(boolean includeStackTrace) {
+		this.includeStackTrace = includeStackTrace;
 		this.maxStackTraceLength =
 				includeStackTrace ? (!(this.errorTemplate instanceof RabbitTemplate) ? Integer.MAX_VALUE : -1) : 0;
 		return this;
@@ -210,7 +214,7 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 			if (truncatedExceptionMessage != null) {
 				exceptionMessage = truncatedExceptionMessage;
 			}
-			if (this.maxStackTraceLength > 0) {
+			if (this.includeStackTrace) {
 				headers.put(X_EXCEPTION_STACKTRACE, stackTraceAsString);
 			}
 			headers.put(X_EXCEPTION_MESSAGE, exceptionMessage);
