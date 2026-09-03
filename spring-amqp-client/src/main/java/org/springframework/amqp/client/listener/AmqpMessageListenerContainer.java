@@ -22,6 +22,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +36,7 @@ import org.apache.qpid.protonj2.client.Receiver;
 import org.apache.qpid.protonj2.client.ReceiverOptions;
 import org.apache.qpid.protonj2.client.exceptions.ClientException;
 import org.apache.qpid.protonj2.client.impl.ClientReceiver;
+import org.apache.qpid.protonj2.engine.Scheduler;
 import org.apache.qpid.protonj2.engine.impl.ProtonLinkCreditState;
 import org.apache.qpid.protonj2.engine.impl.ProtonReceiver;
 import org.apache.qpid.protonj2.engine.impl.ProtonSessionIncomingWindow;
@@ -87,6 +89,8 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 	private static final Duration DEFAULT_RECOVERY_INTERVAL = Duration.ofSeconds(5);
 
 	private static final long RECOVERY_SLEEP_SLICE = 100;
+
+	private static final long PAUSE_TIMEOUT_MILLIS = 10_000;
 
 	private final Lock lock = new ReentrantLock();
 
@@ -566,11 +570,15 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 		private static final Method WRITE_FLOW_METHOD =
 				ReflectionUtils.findMethod(ProtonSessionIncomingWindow.class, "writeFlow", ProtonReceiver.class);
 
+		@SuppressWarnings("NullAway")
+		private static final Field SCHEDULER_FIELD = ReflectionUtils.findField(ClientReceiver.class, "executor");
+
 		static {
 			ReflectionUtils.makeAccessible(PROTON_RECEIVER_METHOD);
 			ReflectionUtils.makeAccessible(CREDIT_STATE_METHOD);
 			ReflectionUtils.makeAccessible(SESSION_WINDOW_FIELD);
 			ReflectionUtils.makeAccessible(WRITE_FLOW_METHOD);
+			ReflectionUtils.makeAccessible(SCHEDULER_FIELD);
 		}
 
 		private final String queue;
@@ -588,6 +596,13 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 
 		@SuppressWarnings("NullAway.Init")
 		private volatile ProtonSessionIncomingWindow sessionWindow;
+
+		/**
+		 * The session serializer this receiver is bound to.
+		 * Every mutation of the ProtonJ engine state has to be performed on this thread.
+		 */
+		@SuppressWarnings("NullAway.Init")
+		private volatile Scheduler executor;
 
 		private @Nullable BackOffExecution backOffExecution;
 
@@ -613,6 +628,7 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 					(ProtonLinkCreditState) ReflectionUtils.invokeMethod(CREDIT_STATE_METHOD, this.protonReceiver);
 			this.sessionWindow =
 					(ProtonSessionIncomingWindow) ReflectionUtils.getField(SESSION_WINDOW_FIELD, this.protonReceiver);
+			this.executor = (Scheduler) ReflectionUtils.getField(SCHEDULER_FIELD, receiverToUse);
 		}
 
 		int queuedDeliveries() {
@@ -805,9 +821,47 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 			}
 		}
 
+		/**
+		 * Zero out the link credit and push the resulting {@code flow} frame to the broker.
+		 * <p>
+		 * This has to be performed on the session serializer thread: the {@code ProtonSession}
+		 * writes every {@code flow} through a single mutable {@code cachedFlow} instance which it
+		 * resets, populates and only then hands over to the engine.
+		 * Performing that from any other thread lets a concurrent reset land between the field
+		 * population and the write, putting an empty {@code flow} performative on the wire.
+		 * The mandatory fields of such a frame are all null, so the broker rejects it with an
+		 * internal error and closes the whole session, taking down every other link on it.
+		 * <p>
+		 * The caller is blocked until the credit is really withdrawn, since the {@code pause()}
+		 * contract is that no more messages are delivered as soon as it returns.
+		 */
 		private void doPause() {
-			this.creditState.updateCredit(0);
-			ReflectionUtils.invokeMethod(WRITE_FLOW_METHOD, this.sessionWindow, this.protonReceiver);
+			CountDownLatch pauseLatch = new CountDownLatch(1);
+			try {
+				this.executor.execute(() -> {
+					try {
+						this.creditState.updateCredit(0);
+						ReflectionUtils.invokeMethod(WRITE_FLOW_METHOD, this.sessionWindow, this.protonReceiver);
+					}
+					finally {
+						pauseLatch.countDown();
+					}
+				});
+			}
+			catch (RuntimeException ex) {
+				// The session serializer is gone (the connection is closing): nothing left to pause.
+				LOG.debug(ex, () -> "Failed to pause a consumer for: " + this.queue);
+				return;
+			}
+
+			try {
+				if (!pauseLatch.await(PAUSE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
+					LOG.debug(() -> "Timed out waiting to pause a consumer for: " + this.queue);
+				}
+			}
+			catch (InterruptedException ex) {
+				Thread.currentThread().interrupt();
+			}
 		}
 
 		void resume() {
