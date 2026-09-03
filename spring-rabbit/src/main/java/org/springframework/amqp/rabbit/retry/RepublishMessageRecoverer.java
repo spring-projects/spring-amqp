@@ -84,7 +84,7 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 
 	private int frameMaxHeadroom = DEFAULT_FRAME_MAX_HEADROOM;
 
-	private volatile boolean includeStackTrace;
+	private boolean includeStackTrace;
 
 	private volatile Integer maxStackTraceLength = 0;
 
@@ -163,6 +163,8 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 
 	/**
 	 * Set {@code true} to add header with error stack trace.
+	 * When the truncation limit cannot be resolved from the negotiated {@code frame_max},
+	 * the stack trace is published untruncated.
 	 * @param includeStackTrace {@code true} to add header with error stack trace.
 	 * @return this.
 	 * @since 4.0.5

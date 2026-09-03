@@ -114,9 +114,9 @@ public class RepublishMessageRecovererTests {
 
 	@Test
 	void shouldIncludeTheStacktraceWhenTheFrameMaxCannotBeDetermined() {
-		RabbitTemplate rabbitTemplate = mock(RabbitTemplate.class);
-		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
-		Connection connection = mock(Connection.class);
+		RabbitTemplate rabbitTemplate = mock();
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
 		given(rabbitTemplate.getConnectionFactory()).willReturn(connectionFactory);
 		given(connectionFactory.createConnection()).willReturn(connection);
 		// connection.getDelegate() is null, so RabbitUtils.getMaxFrame() returns -1
@@ -129,7 +129,8 @@ public class RepublishMessageRecovererTests {
 
 		recoverer.recover(message, cause);
 
-		assertThat(message.getMessageProperties().getHeaders().get("x-exception-stacktrace")).isEqualTo(expectedHeaderValue);
+		assertThat(message.getMessageProperties().getHeaders())
+				.containsEntry(RepublishMessageRecoverer.X_EXCEPTION_STACKTRACE, expectedHeaderValue);
 	}
 
 	@Test
