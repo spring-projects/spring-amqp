@@ -816,7 +816,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		confirmListener.get().handleAck(1L, false);
 
 		int n = 0;
-		Map<?, ?> awaiting = TestUtils.getPropertyValue(ccf, "connection.channelsAwaitingAcks");
+		Map<?, ?> awaiting = (Map<?, ?>) TestUtils.getPropertyValue(ccf, "connection.channelsAwaitingAcks", Map.class);
 		while (awaiting != null && !awaiting.isEmpty() && n++ < 100) {
 			Thread.sleep(50);
 		}
