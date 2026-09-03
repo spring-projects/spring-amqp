@@ -30,15 +30,21 @@ import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.rabbit.connection.Connection;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 /**
  * @author James Carr
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Rene Choi
  *
  * @since 1.3
  */
@@ -104,6 +110,27 @@ public class RepublishMessageRecovererTests {
 		recoverer.recover(message, cause);
 
 		assertThat(message.getMessageProperties().getHeaders().get("x-exception-stacktrace")).isEqualTo(expectedHeaderValue);
+	}
+
+	@Test
+	void shouldIncludeTheStacktraceWhenTheFrameMaxCannotBeDetermined() {
+		RabbitTemplate rabbitTemplate = mock();
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		given(rabbitTemplate.getConnectionFactory()).willReturn(connectionFactory);
+		given(connectionFactory.createConnection()).willReturn(connection);
+		// connection.getDelegate() is null, so RabbitUtils.getMaxFrame() returns -1
+		recoverer =
+				new RepublishMessageRecoverer(rabbitTemplate)
+						.includeStackTrace(true);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		cause.printStackTrace(new PrintStream(baos));
+		final String expectedHeaderValue = baos.toString();
+
+		recoverer.recover(message, cause);
+
+		assertThat(message.getMessageProperties().getHeaders())
+				.containsEntry(RepublishMessageRecoverer.X_EXCEPTION_STACKTRACE, expectedHeaderValue);
 	}
 
 	@Test
