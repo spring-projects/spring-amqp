@@ -61,6 +61,12 @@ public class AmqpRuntimeHints implements RuntimeHintsRegistrar {
 		if (sessionWindow != null) {
 			reflection.registerField(sessionWindow);
 		}
+
+		// The session serializer the pause/resume logic has to write its 'flow' frames on.
+		Field executor = ReflectionUtils.findField(ClientReceiver.class, "executor");
+		if (executor != null) {
+			reflection.registerField(executor);
+		}
 	}
 
 }
