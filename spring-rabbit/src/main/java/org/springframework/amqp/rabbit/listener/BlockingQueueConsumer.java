@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -31,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -114,6 +114,21 @@ public class BlockingQueueConsumer {
 	@SuppressWarnings("NullAway.Init")
 	private Channel channel;
 
+	/**
+	 * A {@link Channel} proxy exposed to listener code (e.g. via
+	 * {@code ChannelAwareMessageListener} or {@code @RabbitListener}), instead of
+	 * {@link #channel} directly. It tracks delivery tags settled by the listener itself
+	 * (manual {@code basicAck}/{@code basicNack}/{@code basicReject} calls) by removing
+	 * them from {@link #deliveryTags}, so that a subsequent rollback or commit performed
+	 * by the container does not attempt to re-settle an already-settled tag, which the
+	 * broker treats as a protocol violation and closes the channel.
+	 * <p>
+	 * The proxy resolves {@link #channel} on each invocation, hence it can be created
+	 * eagerly, before this consumer is started.
+	 */
+	private final Channel listenerChannel =
+			ListenerChannelProxy.create(() -> this.channel, this::settledByListener);
+
 	@SuppressWarnings("NullAway.Init")
 	private RabbitResourceHolder resourceHolder;
 
@@ -139,7 +154,22 @@ public class BlockingQueueConsumer {
 
 	private final boolean exclusive;
 
-	private final Set<Long> deliveryTags = new LinkedHashSet<>();
+	/**
+	 * Delivery tags for messages delivered, but not settled yet. A concurrent, naturally
+	 * ordered set: delivery tags increase monotonically on a channel, so iteration order
+	 * matches delivery order, while the listener may settle a tag from another thread -
+	 * for example, when completing the future returned by an async listener method.
+	 */
+	private final Set<Long> deliveryTags = new ConcurrentSkipListSet<>();
+
+	/**
+	 * Whether any message has been delivered since {@link #deliveryTags} was last reset.
+	 * Unlike checking {@link #deliveryTags} for emptiness, this remains {@code true} even
+	 * if the listener itself already settled every outstanding tag (via the proxy from
+	 * {@link #getChannelForListener()}), so {@link #commitIfNecessary} still performs the
+	 * local transaction commit those settlements need.
+	 */
+	private boolean hasDeliveries;
 
 	private final boolean defaultRequeueRejected;
 
@@ -320,6 +350,24 @@ public class BlockingQueueConsumer {
 		return this.channel;
 	}
 
+	/**
+	 * Return the {@link Channel} to expose specifically to listener invocation code
+	 * (e.g. {@code ChannelAwareMessageListener} or {@code @RabbitListener} methods),
+	 * as opposed to {@link #getChannel()}, which callers such as
+	 * {@code RabbitResourceHolder} and the connection/channel registries rely on to
+	 * return the actual, unwrapped channel. This is a tracking proxy around that channel:
+	 * calls to {@code basicAck}/{@code basicNack}/{@code basicReject} made through it
+	 * (typically by listener code performing a manual acknowledgment) are removed from
+	 * {@link #deliveryTags} once the broker has accepted them, so a subsequent rollback
+	 * or commit performed internally by this consumer does not attempt to re-settle an
+	 * already-settled tag.
+	 * NOTE: This method is not intended to be public.
+	 * @return the channel to hand to listener invocation code.
+	 */
+	Channel getChannelForListener() {
+		return this.listenerChannel;
+	}
+
 	public Collection<String> getConsumerTags() {
 		return this.consumers.values().stream()
 				.map(DefaultConsumer::getConsumerTag)
@@ -434,6 +482,7 @@ public class BlockingQueueConsumer {
 	 */
 	public void clearDeliveryTags() {
 		this.deliveryTags.clear();
+		this.hasDeliveries = false;
 	}
 
 	/**
@@ -525,6 +574,7 @@ public class BlockingQueueConsumer {
 			logger.debug("Received message: " + message);
 		}
 		this.deliveryTags.add(messageProperties.getDeliveryTag());
+		this.hasDeliveries = true;
 		if (this.transactional && !this.locallyTransacted) {
 			ConnectionFactoryUtils.registerDeliveryTag(this.connectionFactory, this.channel,
 					delivery.getEnvelope().getDeliveryTag());
@@ -637,6 +687,7 @@ public class BlockingQueueConsumer {
 					"Authentication failure", e);
 		}
 		this.deliveryTags.clear();
+		this.hasDeliveries = false;
 		this.activeObjectCounter.add(this);
 
 		passiveDeclarations();
@@ -826,6 +877,7 @@ public class BlockingQueueConsumer {
 		RabbitUtils.setPhysicalCloseRequired(this.channel, true);
 		ConnectionFactoryUtils.releaseResources(this.resourceHolder);
 		this.deliveryTags.clear();
+		this.hasDeliveries = false;
 		this.consumers.clear();
 		this.queue.clear(); // in case we still have a client thread blocked
 	}
@@ -858,13 +910,16 @@ public class BlockingQueueConsumer {
 			}
 			if (ackRequired) {
 				if (tag < 0) {
-					OptionalLong deliveryTag = this.deliveryTags.stream().mapToLong(l -> l).max();
-					if (deliveryTag.isPresent()) {
-						this.channel.basicNack(deliveryTag.getAsLong(), true,
-								ContainerUtils.shouldRequeue(this.defaultRequeueRejected, ex, logger));
+					boolean requeue = ContainerUtils.shouldRequeue(this.defaultRequeueRejected, ex, logger);
+					// Reject individually (rather than a single multiple-nack) so that RabbitMQ
+					// bumps x-delivery-count per rejected delivery; tags the listener already
+					// settled itself (via the proxy from getChannelForListener()) are no longer
+					// in this set, so we never re-settle one and get the channel closed.
+					for (Long deliveryTag : this.deliveryTags) {
+						this.channel.basicReject(deliveryTag, requeue);
 					}
 					if (this.transactional) {
-						// Need to commit the reject (=nack)
+						// Need to commit the reject
 						RabbitUtils.commitIfNecessary(this.channel);
 					}
 				}
@@ -880,8 +935,12 @@ public class BlockingQueueConsumer {
 		finally {
 			if (tag < 0) {
 				this.deliveryTags.clear();
+				this.hasDeliveries = false;
 			}
 			else {
+				// Only this delivery is settled; 'hasDeliveries' is deliberately left alone so
+				// that a locally transacted channel is still committed for the other deliveries
+				// of this batch, even when the listener has settled all of them itself already.
 				this.deliveryTags.remove(tag);
 			}
 		}
@@ -896,7 +955,7 @@ public class BlockingQueueConsumer {
 	 * @since 3.1.2
 	 */
 	boolean commitIfNecessary(boolean localTx, boolean forceAck) {
-		if (this.deliveryTags.isEmpty()) {
+		if (!this.hasDeliveries) {
 			return false;
 		}
 
@@ -931,6 +990,7 @@ public class BlockingQueueConsumer {
 		}
 		finally {
 			this.deliveryTags.clear();
+			this.hasDeliveries = false;
 		}
 
 		return true;
@@ -960,6 +1020,22 @@ public class BlockingQueueConsumer {
 				+ "tags=[" + getConsumerTags()
 				+ "], channel=" + this.channel
 				+ ", acknowledgeMode=" + this.acknowledgeMode + " local queue size=" + this.queue.size();
+	}
+
+	/**
+	 * Discard the delivery tags the listener has settled itself through the proxy from
+	 * {@link #getChannelForListener()}, honoring the {@code multiple} flag the same way the
+	 * broker does - cumulatively settling everything up to and including the given tag.
+	 * @param deliveryTag the settled delivery tag.
+	 * @param multiple whether all the tags up to and including {@code deliveryTag} are settled.
+	 */
+	private void settledByListener(long deliveryTag, boolean multiple) {
+		if (multiple) {
+			this.deliveryTags.removeIf(tag -> tag <= deliveryTag);
+		}
+		else {
+			this.deliveryTags.remove(deliveryTag);
+		}
 	}
 
 	private final class InternalConsumer extends DefaultConsumer {
@@ -998,6 +1074,7 @@ public class BlockingQueueConsumer {
 			BlockingQueueConsumer.this.shutdown = sig;
 			// The delivery tags will be invalid if the channel shuts down
 			BlockingQueueConsumer.this.deliveryTags.clear();
+			BlockingQueueConsumer.this.hasDeliveries = false;
 			BlockingQueueConsumer.this.activeObjectCounter.release(BlockingQueueConsumer.this);
 		}
 

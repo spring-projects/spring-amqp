@@ -39,6 +39,7 @@ import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
@@ -327,12 +328,8 @@ public abstract class ExternalTxManagerTests {
 		assertThat(rejectLatch.await(10, TimeUnit.SECONDS)).isTrue();
 
 		assertThat(rollbackLatch.await(10, TimeUnit.SECONDS)).isTrue();
-		if (propagation != TransactionDefinition.PROPAGATION_NEVER) {
-			verify(channel).basicReject(anyLong(), eq(expectRequeue));
-		}
-		else {
-			verify(channel).basicNack(anyLong(), eq(Boolean.TRUE), eq(expectRequeue));
-		}
+		// Deliveries are rejected individually, so that RabbitMQ bumps 'x-delivery-count' for each.
+		verify(channel).basicReject(anyLong(), eq(expectRequeue));
 		container.stop();
 	}
 
@@ -594,7 +591,13 @@ public abstract class ExternalTxManagerTests {
 
 		container.stop();
 
-		assertThat(exposed.get()).isSameAs(onlyChannel);
+		Channel exposedChannel = exposed.get();
+		if (exposedChannel instanceof ChannelProxy channelProxy) {
+			// SimpleMessageListenerContainer exposes a tracking proxy around the
+			// consumer's channel; unwrap to compare the actual target channel.
+			exposedChannel = channelProxy.getTargetChannel();
+		}
+		assertThat(exposedChannel).isSameAs(onlyChannel);
 	}
 
 	/**
@@ -675,7 +678,13 @@ public abstract class ExternalTxManagerTests {
 
 		container.stop();
 
-		assertThat(exposed.get()).isSameAs(onlyChannel);
+		Channel exposedChannel = exposed.get();
+		if (exposedChannel instanceof ChannelProxy channelProxy) {
+			// SimpleMessageListenerContainer exposes a tracking proxy around the
+			// consumer's channel; unwrap to compare the actual target channel.
+			exposedChannel = channelProxy.getTargetChannel();
+		}
+		assertThat(exposedChannel).isSameAs(onlyChannel);
 	}
 
 	/**

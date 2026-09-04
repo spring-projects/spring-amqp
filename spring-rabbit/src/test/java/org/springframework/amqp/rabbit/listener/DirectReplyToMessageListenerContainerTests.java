@@ -52,6 +52,36 @@ public class DirectReplyToMessageListenerContainerTests {
 	public static final String TEST_RELEASE_CONSUMER_Q = "test.release.consumer";
 
 	@Test
+	public void testConsumerReleasedForChannelAwareListener() throws Exception {
+		CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
+		DirectReplyToMessageListenerContainer container = new DirectReplyToMessageListenerContainer(connectionFactory);
+		CountDownLatch latch = new CountDownLatch(1);
+		// The listener has to be given the consumer's channel itself: this container releases
+		// the consumer it is holding by that very channel.
+		container.setMessageListener((ChannelAwareMessageListener) (message, channel) -> latch.countDown());
+		container.start();
+
+		ChannelHolder channelHolder = container.getChannelHolder();
+		Map<?, ?> inUse = TestUtils.getPropertyValue(container, "inUseConsumerChannels");
+		assertThat(inUse).hasSize(1);
+
+		BasicProperties props = new BasicProperties().builder().replyTo(Address.AMQ_RABBITMQ_REPLY_TO).build();
+		channelHolder.getChannel().basicPublish("", TEST_RELEASE_CONSUMER_Q, props, "foo".getBytes());
+		Channel replyChannel = connectionFactory.createConnection().createChannel(false);
+		GetResponse request = await()
+				.pollDelay(Duration.ZERO)
+				.until(() -> replyChannel.basicGet(TEST_RELEASE_CONSUMER_Q, true), req -> req != null);
+		replyChannel.basicPublish("", request.getProps().getReplyTo(), new BasicProperties(), "bar".getBytes());
+		replyChannel.close();
+
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		await().untilAsserted(() -> assertThat(inUse).isEmpty());
+
+		container.stop();
+		connectionFactory.destroy();
+	}
+
+	@Test
 	public void testReleaseConsumerRace() throws Exception {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
 		DirectReplyToMessageListenerContainer container = new DirectReplyToMessageListenerContainer(connectionFactory);
