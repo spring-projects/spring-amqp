@@ -67,7 +67,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	 */
 	public void setTargetConnectionFactories(Map<Object, ConnectionFactory> targetConnectionFactories) {
 		Assert.notNull(targetConnectionFactories, "'targetConnectionFactories' must not be null.");
-		Assert.noNullElements(targetConnectionFactories.values().toArray(),
+		Assert.noNullElements(targetConnectionFactories.values(),
 				"'targetConnectionFactories' cannot have null values.");
 		this.targetConnectionFactories.putAll(targetConnectionFactories);
 		targetConnectionFactories.values().forEach(this::checkConfirmsAndReturns);
