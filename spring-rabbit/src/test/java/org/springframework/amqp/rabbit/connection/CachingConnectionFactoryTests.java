@@ -2133,6 +2133,21 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertThat(ccf.isPublisherConfirms()).isFalse();
 	}
 
+	@Test
+	void channelListenersPropagateToDefaultPublisherFactory() {
+		CachingConnectionFactory ccf = new CachingConnectionFactory("someHost", 1234);
+		AtomicInteger created = new AtomicInteger();
+		ccf.setChannelListeners(List.of((channel, transactional) -> created.incrementAndGet()));
+
+		AbstractConnectionFactory publisher = (AbstractConnectionFactory) ccf.getPublisherConnectionFactory();
+		assertThat(publisher).isNotNull();
+		publisher.getChannelListener().onCreate(mock(Channel.class), false);
+
+		assertThat(created.get())
+				.as("channel listeners must reach the default publisher sub-factory")
+				.isEqualTo(1);
+	}
+
 	private static Semaphore firstSemaphoreFromCheckoutPermits(CachingConnectionFactory ccf) {
 		return TestUtils.<Map<?, Semaphore>>getPropertyValue(ccf, "checkoutPermits")
 				.values()
