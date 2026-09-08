@@ -32,6 +32,7 @@ import org.springframework.util.Assert;
  * thread-bound context.
  *
  * @author Robin Collard
+ * @author Ngoc Nhan
  *
  * @since 4.2
  */
@@ -53,7 +54,7 @@ public abstract class AbstractRoutingAmqpConnectionFactory
 	 */
 	public void setTargetConnectionFactories(Map<Object, AmqpConnectionFactory> targetConnectionFactories) {
 		Assert.notNull(targetConnectionFactories, "'targetConnectionFactories' must not be null.");
-		Assert.noNullElements(targetConnectionFactories.values().toArray(),
+		Assert.noNullElements(targetConnectionFactories.values(),
 				"'targetConnectionFactories' cannot have null values.");
 		this.targetConnectionFactories.putAll(targetConnectionFactories);
 	}
