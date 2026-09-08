@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.config;
 
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
 import org.aopalliance.intercept.MethodInvocation;
@@ -24,7 +25,11 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import org.springframework.core.retry.RetryException;
+import org.springframework.core.retry.RetryListener;
 import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryState;
+import org.springframework.core.retry.Retryable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
@@ -36,9 +41,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 
 /**
- * Tests fpr {@link StatelessRetryOperationsInterceptor}.
+ * Tests for {@link StatelessRetryOperationsInterceptor}.
  *
  * @author Stephane Nicoll
+ * @author Jun Cho
  */
 class StatelessRetryOperationsInterceptorTests {
 
@@ -107,6 +113,69 @@ class StatelessRetryOperationsInterceptorTests {
 		StatelessRetryOperationsInterceptor noRecovererInterceptor = new StatelessRetryOperationsInterceptor(retryPolicy, null);
 		assertThatException().isThrownBy(() -> noRecovererInterceptor.invoke(invocation))
 				.isSameAs(LastException);
+	}
+
+	@Test
+	void invokeWithRetryListenerInvokesCallbacks() throws Throwable {
+		RetryPolicy retryPolicy = RetryPolicy.builder().maxRetries(2).delay(Duration.ZERO).build();
+		Object[] arguments = new Object[] { "message" };
+		MethodInvocation invocation = mock(MethodInvocation.class);
+		given(invocation.getArguments()).willReturn(arguments);
+		given(invocation.proceed()).willThrow(new IllegalStateException("initial"))
+				.willThrow(new IllegalStateException("retry-1")).willThrow(new IllegalStateException("retry-2"));
+		given(this.recoverer.apply(eq(arguments), any())).willReturn("recovered");
+		AtomicInteger beforeRetryCalls = new AtomicInteger();
+		AtomicInteger retryFailureCalls = new AtomicInteger();
+		AtomicInteger exhaustionCalls = new AtomicInteger();
+		StatelessRetryOperationsInterceptor interceptor = createInterceptor(retryPolicy);
+		interceptor.setRetryListener(new RetryListener() {
+
+			@Override
+			public void beforeRetry(RetryPolicy policy, Retryable<?> retryable, RetryState retryState) {
+				beforeRetryCalls.incrementAndGet();
+			}
+
+			@Override
+			public void onRetryFailure(RetryPolicy policy, Retryable<?> retryable, Throwable throwable) {
+				retryFailureCalls.incrementAndGet();
+			}
+
+			@Override
+			public void onRetryPolicyExhaustion(RetryPolicy policy, Retryable<?> retryable,
+					RetryException retryException) {
+
+				exhaustionCalls.incrementAndGet();
+			}
+
+		});
+		assertThat(interceptor.invoke(invocation)).isEqualTo("recovered");
+		assertThat(beforeRetryCalls).hasValue(2);
+		assertThat(retryFailureCalls).hasValue(2);
+		assertThat(exhaustionCalls).hasValue(1);
+	}
+
+	@Test
+	void invokeWithRetryListenerAppliedViaFactoryBean() throws Throwable {
+		AtomicInteger exhaustionCalls = new AtomicInteger();
+		StatelessRetryOperationsInterceptorFactoryBean factoryBean =
+				new StatelessRetryOperationsInterceptorFactoryBean();
+		factoryBean.setRetryPolicy(RetryPolicy.builder().maxRetries(1).delay(Duration.ZERO).build());
+		factoryBean.setRetryListener(new RetryListener() {
+
+			@Override
+			public void onRetryPolicyExhaustion(RetryPolicy policy, Retryable<?> retryable,
+					RetryException retryException) {
+
+				exhaustionCalls.incrementAndGet();
+			}
+
+		});
+		MethodInvocation invocation = mock(MethodInvocation.class);
+		given(invocation.getArguments()).willReturn(new Object[] { "channel", "message" });
+		given(invocation.proceed()).willThrow(new IllegalStateException("initial"))
+				.willThrow(new IllegalStateException("retry-1"));
+		assertThat(factoryBean.getObject().invoke(invocation)).isNull();
+		assertThat(exhaustionCalls).hasValue(1);
 	}
 
 	private StatelessRetryOperationsInterceptor createInterceptor(@Nullable RetryPolicy retryPolicy) {

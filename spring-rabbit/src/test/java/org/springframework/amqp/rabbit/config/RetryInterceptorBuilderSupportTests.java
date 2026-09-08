@@ -37,7 +37,11 @@ import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.aop.Pointcut;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
+import org.springframework.core.retry.RetryException;
+import org.springframework.core.retry.RetryListener;
 import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryState;
+import org.springframework.core.retry.Retryable;
 import org.springframework.util.backoff.BackOff;
 import org.springframework.util.backoff.FixedBackOff;
 
@@ -50,6 +54,7 @@ import static org.mockito.Mockito.verify;
 /**
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Jun Cho
  *
  * @since 1.3
  *
@@ -279,6 +284,39 @@ public class RetryInterceptorBuilderSupportTests {
 				.isThrownBy(() -> delegate.onMessage("", message));
 
 		assertThat(count).hasValue(4);
+	}
+
+	@Test
+	public void testStatelessRetryListener() {
+		AtomicInteger beforeRetryCalls = new AtomicInteger();
+		AtomicInteger exhaustionCalls = new AtomicInteger();
+		StatelessRetryOperationsInterceptor interceptor = RetryInterceptorBuilder.stateless()
+				.configureRetryPolicy((retryPolicy) -> retryPolicy.delay(Duration.ZERO))
+				.retryListener(new RetryListener() {
+
+					@Override
+					public void beforeRetry(RetryPolicy retryPolicy, Retryable<?> retryable, RetryState retryState) {
+						beforeRetryCalls.incrementAndGet();
+					}
+
+					@Override
+					public void onRetryPolicyExhaustion(RetryPolicy retryPolicy, Retryable<?> retryable,
+							RetryException retryException) {
+
+						exhaustionCalls.incrementAndGet();
+					}
+
+				})
+				.build();
+
+		final AtomicInteger count = new AtomicInteger();
+		Foo delegate = createDelegate(interceptor, count);
+		Message message = MessageBuilder.withBody("".getBytes()).build();
+		delegate.onMessage("", message);
+
+		assertThat(count).hasValue(4);
+		assertThat(beforeRetryCalls).hasValue(3);
+		assertThat(exhaustionCalls).hasValue(1);
 	}
 
 	private Foo createDelegate(MethodInterceptor interceptor, final AtomicInteger count) {

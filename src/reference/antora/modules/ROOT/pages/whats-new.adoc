@@ -33,3 +33,9 @@ See xref:rabbitmq-amqp-client.adoc#amqp-client-routing-connection-factory[Routin
 A new `RestClientNodeLocator` is now the default non-reactive `NodeLocator` implementation for the `LocalizedQueueConnectionFactory`.
 The `RestTemplateNodeLocator` is deprecated since the `RestTemplate` is deprecated in Spring Framework `7.1`.
 See xref:amqp/connections.adoc#queue-affinity[Queue Affinity and the `LocalizedQueueConnectionFactory`] for more information.
+
+[[x42-stateless-retry-listener]]
+=== `RetryListener` on Stateless Retry Interceptor
+
+The `StatelessRetryOperationsInterceptor` (and its `StatelessRetryOperationsInterceptorFactoryBean`) now supports registering a `RetryListener` .
+See xref:amqp/resilience-recovering-from-errors-and-broker-failures.adoc#retry[Failures in Synchronous Operations and Options for Retry] for more information.
