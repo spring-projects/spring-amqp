@@ -438,6 +438,9 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	public void setChannelListeners(List<? extends ChannelListener> listeners) {
 		this.channelListener.setDelegates(listeners);
+		if (this.publisherConnectionFactory != null) {
+			this.publisherConnectionFactory.setChannelListeners(listeners);
+		}
 	}
 
 	/**
