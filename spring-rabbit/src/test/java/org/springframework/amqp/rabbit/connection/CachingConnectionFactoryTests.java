@@ -2181,13 +2181,6 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 				.isEqualTo(1);
 	}
 
-	private static Semaphore firstSemaphoreFromCheckoutPermits(CachingConnectionFactory ccf) {
-		return TestUtils.<Map<?, Semaphore>>getPropertyValue(ccf, "checkoutPermits")
-				.values()
-				.iterator()
-				.next();
-	}
-
 	// GH-3625
 	@Test
 	public void testPublisherConfirmsDelayedWaitDoesNotCreateReplacementChannel() throws Exception {
