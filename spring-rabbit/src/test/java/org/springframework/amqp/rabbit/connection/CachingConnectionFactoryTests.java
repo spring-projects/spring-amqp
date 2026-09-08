@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -2163,6 +2164,139 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ccf.setPublisherConfirmType(ConfirmType.NONE);
 
 		assertThat(ccf.isPublisherConfirms()).isFalse();
+	}
+
+	// GH-3625
+	@Test
+	public void testPublisherConfirmsDelayedWaitDoesNotCreateReplacementChannel() throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		Channel physicalChannelA = mock(Channel.class);
+		Channel physicalChannelB = mock(Channel.class);
+		Channel physicalChannelC = mock(Channel.class);
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
+		given(mockConnection.isOpen()).willReturn(true);
+		given(mockConnection.createChannel()).willReturn(physicalChannelA, physicalChannelB, physicalChannelC);
+		given(physicalChannelA.isOpen()).willReturn(true);
+		given(physicalChannelB.isOpen()).willReturn(true);
+		given(physicalChannelC.isOpen()).willReturn(true);
+
+		CountDownLatch originalChannelClosed = new CountDownLatch(1);
+		CountDownLatch confirmWaitCompleted = new CountDownLatch(1);
+		willAnswer(invocation -> {
+			originalChannelClosed.countDown();
+			return null;
+		}).given(physicalChannelA).close();
+		willAnswer(invocation -> {
+			confirmWaitCompleted.countDown();
+			return true;
+		}).given(physicalChannelA).waitForConfirms(anyLong());
+		willAnswer(invocation -> {
+			confirmWaitCompleted.countDown();
+			return true;
+		}).given(physicalChannelC).waitForConfirms(anyLong());
+
+		WaitTaskGateExecutor executor = new WaitTaskGateExecutor();
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setExecutor(executor);
+		ccf.setChannelCacheSize(1);
+		ccf.setPublisherConfirmType(ConfirmType.CORRELATED);
+		try {
+			Connection connection = ccf.createConnection();
+			Channel channelA = connection.createChannel(false);
+			PublisherCallbackChannelImpl publisherChannelA =
+					(PublisherCallbackChannelImpl) ((ChannelProxy) channelA).getTargetChannel();
+			PublisherCallbackChannel.Listener listener = mock(PublisherCallbackChannel.Listener.class);
+			given(listener.getUUID()).willReturn("delayed-confirm-wait");
+			publisherChannelA.addListener(listener);
+			publisherChannelA.addPendingConfirm(listener, 1L, new PendingConfirm(null, System.currentTimeMillis()));
+			channelA.basicPublish("", "delayed-confirm-wait", null, new byte[0]);
+
+			Channel channelB = connection.createChannel(false);
+			channelA.close();
+			assertThat(executor.awaitWaitTaskReady()).isTrue();
+
+			channelB.close();
+			publisherChannelA.handleAck(1L, false);
+			assertThat(originalChannelClosed.await(10, TimeUnit.SECONDS)).isTrue();
+			assertThat(((ChannelProxy) channelA).getTargetChannel()).isNull();
+
+			executor.releaseWaitTask();
+			assertThat(confirmWaitCompleted.await(10, TimeUnit.SECONDS)).isTrue();
+
+			verify(mockConnection, times(2)).createChannel();
+			assertThat(connection.createChannel(false)).isSameAs(channelB);
+		}
+		finally {
+			executor.releaseWaitTask();
+			ccf.destroy();
+			executor.shutdownNow();
+			assertThat(executor.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
+		}
+	}
+
+	private static final class WaitTaskGateExecutor extends AbstractExecutorService {
+
+		private final AtomicBoolean firstTask = new AtomicBoolean(true);
+
+		private final CountDownLatch waitTaskReady = new CountDownLatch(1);
+
+		private final CountDownLatch releaseWaitTask = new CountDownLatch(1);
+
+		private final ExecutorService delegate = Executors.newFixedThreadPool(2);
+
+		@Override
+		public void execute(Runnable command) {
+			this.delegate.execute(() -> {
+				if (this.firstTask.compareAndSet(true, false)) {
+					this.waitTaskReady.countDown();
+					try {
+						if (!this.releaseWaitTask.await(10, TimeUnit.SECONDS)) {
+							throw new IllegalStateException("Timed out waiting to release confirm wait task");
+						}
+					}
+					catch (InterruptedException ex) {
+						Thread.currentThread().interrupt();
+						return;
+					}
+				}
+				command.run();
+			});
+		}
+
+		boolean awaitWaitTaskReady() throws InterruptedException {
+			return this.waitTaskReady.await(10, TimeUnit.SECONDS);
+		}
+
+		void releaseWaitTask() {
+			this.releaseWaitTask.countDown();
+		}
+
+		@Override
+		public void shutdown() {
+			this.delegate.shutdown();
+		}
+
+		@Override
+		public List<Runnable> shutdownNow() {
+			return this.delegate.shutdownNow();
+		}
+
+		@Override
+		public boolean isShutdown() {
+			return this.delegate.isShutdown();
+		}
+
+		@Override
+		public boolean isTerminated() {
+			return this.delegate.isTerminated();
+		}
+
+		@Override
+		public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+			return this.delegate.awaitTermination(timeout, unit);
+		}
+
 	}
 
 }

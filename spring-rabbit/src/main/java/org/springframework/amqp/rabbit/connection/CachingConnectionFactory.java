@@ -1329,7 +1329,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					getChannelsExecutor()
 							.execute(() -> {
 								try {
-									publisherCallbackChannel.waitForConfirms(getCloseTimeout());
+									channelAwaitingAcks.waitForConfirms(getCloseTimeout());
 								}
 								catch (InterruptedException ex) {
 									Thread.currentThread().interrupt();
