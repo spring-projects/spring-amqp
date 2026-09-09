@@ -344,7 +344,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	 * Returns true unconditionally by default; a subclass which knows better should
 	 * override this method.
 	 * @return true if this listener may settle a delivery itself.
-	 * @since 4.2
+	 * @since 4.0.6
 	 */
 	public boolean maySettleDelivery() {
 		return true;

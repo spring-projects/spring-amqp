@@ -65,6 +65,8 @@ public class BatchMessagingMessageListenerAdapter extends MessagingMessageListen
 	/**
 	 * This adapter rejects a message it fails to convert, so a delivery of the batch may
 	 * be settled independently of the container.
+	 * @return always true.
+	 * @since 4.0.6
 	 */
 	@Override
 	public boolean maySettleDelivery() {

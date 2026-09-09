@@ -202,6 +202,25 @@ See xref:amqp/connections.adoc#cf-pub-conf-ret[Publisher Confirms and Returns] f
 
 Starting with version 2.1, an `ImmediateRequeueMessageRecoverer` is  added to throw an `ImmediateRequeueAmqpException`, which notifies a listener container to requeue the current failed message.
 
+[[broker-delivery-limit]]
+== Broker Delivery Limits
+
+Instead of limiting re-deliveries on the client, a quorum queue can be declared with an `x-delivery-limit` argument - see `QueueBuilder.deliveryLimit()`.
+The broker dead-letters a message once its `x-delivery-count` exceeds that limit.
+However, the broker counts only a delivery which is settled individually - with a `basic.reject`, or a `basic.nack` for a single delivery tag; a cumulative `basic.nack` (the one with a `multiple` flag) is not counted.
+
+Starting with version 4.0.6, the listener containers reject a failed delivery individually, so it is counted towards such a delivery limit and the message is eventually dead-lettered instead of being redelivered endlessly.
+The cumulative `basic.nack` is retained only when the container is not the only party which settles the delivery:
+
+* the listener is given the consumer `Channel` (the default `exposeListenerChannel = true`) and may have settled the delivery itself - a `ChannelAwareMessageListener`, a `@RabbitListener` method with a `Channel` parameter, a `RabbitListenerErrorHandler`, an async reply, or the `AcknowledgeMode.MANUAL`.
+Settling an already settled delivery is a protocol violation: the broker replies with a `PRECONDITION_FAILED - unknown delivery tag` and closes the whole channel, failing everything else in progress on it.
+* several deliveries are outstanding - with consumer batching, or a `batchSize` greater than `1` on the `SimpleMessageListenerContainer` - since such deliveries are rolled back together.
+
+In other words, a listener which is given the channel is in charge of its deliveries: if every failed delivery has to be counted towards the queue delivery limit, that listener (or its `RabbitListenerErrorHandler`) must reject the delivery individually itself, which is anyway the way to settle deliveries one by one.
+See xref:amqp/receiving-messages/async-annotation-driven/error-handling.adoc[Handling Exceptions] for an example of such a manual rejection.
+
+NOTE: With the `AcknowledgeMode.NONE` there is nothing to settle: the broker settles a delivery as soon as it sends it, hence a failed delivery is neither rejected nor counted.
+
 [[exception-classification-for-spring-retry]]
 == Exception Classification for Spring Retry
 

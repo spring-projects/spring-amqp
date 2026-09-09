@@ -153,6 +153,9 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	 * acknowledged for an error handler which returns nothing in the manual ack mode.
 	 * A handler method which cannot be determined upfront - a {@code @RabbitHandler} one -
 	 * is assumed to settle.
+	 * @return true when {@link #errorHandler} is provided, or {@link #isManualAck()}, or {@link #isAsyncReplies()},
+	 * or target POJO method expects a {@link Channel} as one of its arguments.
+	 * @since 4.0.6
 	 */
 	@Override
 	public boolean maySettleDelivery() {

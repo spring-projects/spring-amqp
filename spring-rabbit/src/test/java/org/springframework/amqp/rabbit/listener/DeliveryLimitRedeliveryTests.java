@@ -29,8 +29,7 @@ import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.RabbitAvailable;
-import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
+import org.springframework.amqp.rabbit.junit.AbstractTestContainerTests;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -49,8 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @see <a href="https://github.com/spring-projects/spring-amqp/issues/3507">GH-3507</a>
  */
-@RabbitAvailable
-public class DeliveryLimitRedeliveryTests {
+class DeliveryLimitRedeliveryTests extends AbstractTestContainerTests {
 
 	private static final int DELIVERY_LIMIT = 3;
 
@@ -58,14 +56,13 @@ public class DeliveryLimitRedeliveryTests {
 
 	private static final String DLQ = QUEUE + ".dlq";
 
-	private final CachingConnectionFactory connectionFactory =
-			new CachingConnectionFactory(RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
+	private final CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost", amqpPort());
 
 	private final RabbitAdmin admin = new RabbitAdmin(this.connectionFactory);
 
 	@BeforeEach
 	void declareQueues() {
-		// A quorum queue cannot be auto-delete or exclusive, hence the explicit clean up.
+		// A quorum queue cannot be auto-delete or exclusive, hence the explicit clean-up.
 		this.admin.deleteQueue(QUEUE);
 		this.admin.deleteQueue(DLQ);
 		this.admin.declareQueue(QueueBuilder.durable(QUEUE)

@@ -472,7 +472,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 * delivery individually: re-settling an already settled delivery is a protocol
 	 * violation which closes the whole channel.
 	 * @return true if the listener may settle a delivery itself.
-	 * @since 4.2
+	 * @since 4.0.6
 	 * @see AbstractAdaptableMessageListener#maySettleDelivery()
 	 */
 	boolean listenerMaySettleDelivery() {

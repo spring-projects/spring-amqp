@@ -329,7 +329,7 @@ public class BlockingQueueConsumer {
 	 * It is consulted when a delivery has to be rejected.
 	 * @param listenerMaySettleDelivery the supplier; a consumer without a listener - not
 	 * driven by a container - returns false by default.
-	 * @since 4.2
+	 * @since 4.0.6
 	 * @see AbstractMessageListenerContainer#listenerMaySettleDelivery()
 	 * @see #rollbackOnExceptionIfNecessary(Throwable, long)
 	 */
