@@ -53,7 +53,7 @@ public final class SimpleMessageListenerWithRabbitMQ {
 		assertThat(connectionFactory).isNotNull();
 
 		MessageConverter messageConverter = new SimpleMessageConverter();
-		MessageProperties  messageProperties = new MessageProperties();
+		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN);
 
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();

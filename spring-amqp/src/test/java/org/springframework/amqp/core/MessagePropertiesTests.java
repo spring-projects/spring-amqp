@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Gary Russell
  * @author Csaba Soti
  * @author Raylax Grey
+ * @author Ngoc Nhan
  *
  */
 public class MessagePropertiesTests {
@@ -76,10 +77,10 @@ public class MessagePropertiesTests {
 	}
 
 	 @Test
-	  public void tesNoNullPointerInHashCode() {
-	    Set<MessageProperties> messageList = new HashSet<>();
-	    messageList.add(new MessageProperties());
-	    assertThat(messageList).hasSize(1);
-	  }
+		public void tesNoNullPointerInHashCode() {
+			Set<MessageProperties> messageList = new HashSet<>();
+			messageList.add(new MessageProperties());
+			assertThat(messageList).hasSize(1);
+		}
 
 }
