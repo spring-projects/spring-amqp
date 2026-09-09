@@ -64,7 +64,7 @@ import org.springframework.amqp.rabbit.support.ActiveObjectCounter;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.ListenerContainerAware;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
-import org.springframework.amqp.support.ConsumerTagStrategy;
+import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.log.LogMessage;
 import org.springframework.jmx.export.annotation.ManagedMetric;
@@ -994,34 +994,31 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	protected BlockingQueueConsumer createBlockingQueueConsumer() {
-		BlockingQueueConsumer consumer;
-		String[] queues = getQueueNames();
 		// There's no point prefetching less than the tx size, otherwise the consumer will stall because the broker
 		// didn't get an ack for delivered messages
 		int actualPrefetchCount = Math.max(getPrefetchCount(), this.batchSize);
-		consumer = new BlockingQueueConsumer(getConnectionFactory(), getMessagePropertiesConverter(),
-				this.cancellationLock, getAcknowledgeMode(), isChannelTransacted(), actualPrefetchCount,
-				isDefaultRequeueRejected(), getConsumerArguments(), isNoLocal(), isExclusive(), queues);
+		BlockingQueueConsumer consumer =
+				new BlockingQueueConsumer(getConnectionFactory(), getMessagePropertiesConverter(),
+						this.cancellationLock, getAcknowledgeMode(), isChannelTransacted(), actualPrefetchCount,
+						isDefaultRequeueRejected(), getConsumerArguments(), isNoLocal(), isExclusive(), getQueueNames());
 		consumer.setGlobalQos(isGlobalQos());
 		consumer.setMissingQueuePublisher(this::publishMissingQueueEvent);
-		if (this.declarationRetries != null) {
-			consumer.setDeclarationRetries(this.declarationRetries);
-		}
-		if (getFailedDeclarationRetryInterval() > 0) {
-			consumer.setFailedDeclarationRetryInterval(getFailedDeclarationRetryInterval());
-		}
-		if (this.retryDeclarationInterval != null) {
-			consumer.setRetryDeclarationInterval(this.retryDeclarationInterval);
-		}
-		ConsumerTagStrategy consumerTagStrategy = getConsumerTagStrategy();
-		if (consumerTagStrategy != null) {
-			consumer.setTagStrategy(consumerTagStrategy);
-		}
 		consumer.setBackOffExecution(getRecoveryBackOff().start());
 		consumer.setShutdownTimeout(getShutdownTimeout());
 		consumer.setApplicationEventPublisher(getApplicationEventPublisher());
 		consumer.setMessageAckListener(getMessageAckListener());
 		consumer.setListenerMaySettleDelivery(this::listenerMaySettleDelivery);
+
+		JavaUtils.INSTANCE
+				.acceptIfNotNull(this.declarationRetries, consumer::setDeclarationRetries)
+				.acceptIfNotNull(this.retryDeclarationInterval, consumer::setRetryDeclarationInterval)
+				.acceptIfNotNull(getConsumerTagStrategy(), consumer::setTagStrategy);
+
+		long failedDeclarationRetryInterval = getFailedDeclarationRetryInterval();
+		if (failedDeclarationRetryInterval > 0) {
+			consumer.setFailedDeclarationRetryInterval(failedDeclarationRetryInterval);
+		}
+
 		return consumer;
 	}
 
@@ -1598,21 +1595,18 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 
-		private void initialize() throws Throwable { // NOSONAR
+		private void initialize() throws Throwable {
 			try {
 				redeclareElementsIfNecessary();
 				this.consumer.start();
 				this.start.countDown();
 			}
-			catch (QueuesNotAvailableException e) {
-				if (isMissingQueuesFatal()) {
-					throw e;
-				}
-				else {
+			catch (QueuesNotAvailableException ex) {
+				if (!isMissingQueuesFatal()) {
 					this.start.countDown();
 					handleStartupFailure(this.consumer.getBackOffExecution());
-					throw e;
 				}
+				throw ex;
 			}
 			catch (FatalListenerStartupException ex) {
 				if (isPossibleAuthenticationFailureFatal()) {
