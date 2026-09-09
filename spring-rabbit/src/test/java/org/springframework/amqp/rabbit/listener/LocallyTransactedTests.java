@@ -49,6 +49,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
@@ -190,6 +191,23 @@ public abstract class LocallyTransactedTests {
 		assertThat(commitLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
 		verify(onlyChannel, times(2)).basicAck(anyLong(), anyBoolean());
 		verify(onlyChannel, times(4)).txCommit();
+
+		// A ChannelAwareMessageListener is given the channel, hence it may have settled the
+		// delivery itself: the cumulative nack, which tolerates that, is kept for it.
+		container.setMessageListener((ChannelAwareMessageListener) (m, channel) -> {
+			throw new RuntimeException();
+		});
+		commitLatch.set(new CountDownLatch(1));
+		rollbackLatch.set(new CountDownLatch(1));
+		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
+				new byte[] { 0 });
+		assertThat(rollbackLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
+		// The cumulative nack is committed like any other reject, so wait for that too:
+		// otherwise the assertions below can race ahead of the container thread.
+		assertThat(commitLatch.get().await(10, TimeUnit.SECONDS)).isTrue();
+		verify(onlyChannel).basicNack(anyLong(), eq(true), anyBoolean());
+		// No more individual rejects than the two from the plain MessageListener above.
+		verify(onlyChannel, times(2)).basicReject(anyLong(), anyBoolean());
 
 		container.stop();
 	}

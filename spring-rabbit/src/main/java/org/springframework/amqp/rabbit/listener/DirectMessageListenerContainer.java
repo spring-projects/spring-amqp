@@ -1344,9 +1344,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						 * channel and the delivery tag. Re-settling an already settled delivery
 						 * individually is a protocol violation - the broker answers it with
 						 * 'PRECONDITION_FAILED - unknown delivery tag' and closes the whole channel,
-						 * failing everything else in progress on it. A cumulative nack tolerates such
-						 * a delivery instead - it settles whatever is still outstanding up to the
-						 * given tag - hence the previous nack is retained here as it was.
+						 * failing everything else in progress on it. A cumulative nack tolerates
+						 * such a delivery instead - it settles whatever is still outstanding up to
+						 * the given tag. Hence, the nack is left exactly as it was before, including
+						 * the individual one for an async reply: that one is settled by the listener
+						 * adapter when it completes, so a listener which threw instead has not
+						 * settled anything.
 						 */
 						getChannel().basicNack(deliveryTag, !isAsyncReplies(),
 								ContainerUtils.shouldRequeue(isDefaultRequeueRejected(), e, this.logger));
