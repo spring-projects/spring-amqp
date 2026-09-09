@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 2.1.5
  *
  */
@@ -53,7 +54,7 @@ public class LazyContainerTests {
 	private ObjectProvider<LazyListener> lazyListenerProvider;
 
 	@Autowired
-	private  RabbitTemplate rabbitTemplate;
+	private RabbitTemplate rabbitTemplate;
 
 	@Test
 	void lazy() {

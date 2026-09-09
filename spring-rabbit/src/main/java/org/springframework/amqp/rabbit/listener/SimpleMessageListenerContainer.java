@@ -90,6 +90,7 @@ import org.springframework.util.backoff.BackOffExecution;
  * @author Thomas Badie
  * @author Jeongjun Min
  * @author DoYeon Kim
+ * @author Ngoc Nhan
  *
  * @since 1.0
  */
@@ -763,7 +764,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
-				logger.warn("Interrupted waiting for workers.  Continuing with shutdown.");
+				logger.warn("Interrupted waiting for workers. Continuing with shutdown.");
 			}
 
 			this.consumersLock.lock();
