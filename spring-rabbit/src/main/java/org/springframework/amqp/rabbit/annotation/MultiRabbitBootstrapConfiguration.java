@@ -33,6 +33,7 @@ import org.springframework.core.type.AnnotationMetadata;
  *
  * @author Wander Costa
  * @author Artem Bilan
+ * @author Ngoc Nhan
  *
  * @since 1.4
  *
@@ -59,7 +60,7 @@ public class MultiRabbitBootstrapConfiguration implements ImportBeanDefinitionRe
 	}
 
 	private boolean isMultiRabbitEnabled() {
-		final String isMultiEnabledStr =  this.environment.getProperty(
+		final String isMultiEnabledStr = this.environment.getProperty(
 				RabbitListenerConfigUtils.MULTI_RABBIT_ENABLED_PROPERTY);
 		return Boolean.parseBoolean(isMultiEnabledStr);
 	}
