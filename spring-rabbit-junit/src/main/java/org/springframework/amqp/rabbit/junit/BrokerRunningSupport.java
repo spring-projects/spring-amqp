@@ -61,6 +61,7 @@ import org.springframework.web.util.UriUtils;
  * @author Dave Syer
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Ngoc Nhan
  *
  * @since 2.2
  */
@@ -460,10 +461,10 @@ public final class BrokerRunningSupport {
 	 */
 	public String generateId() {
 		UUID uuid = UUID.randomUUID();
-		ByteBuffer bb = ByteBuffer.wrap(new byte[SIXTEEN]);
-		bb.putLong(uuid.getMostSignificantBits())
+		ByteBuffer bb = ByteBuffer.wrap(new byte[SIXTEEN])
+				.putLong(uuid.getMostSignificantBits())
 				.putLong(uuid.getLeastSignificantBits());
-		return "SpringBrokerRunning." + Base64.getUrlEncoder().encodeToString(bb.array()).replaceAll("=", "");
+		return "SpringBrokerRunning." + Base64.getUrlEncoder().withoutPadding().encodeToString(bb.array());
 	}
 
 	private boolean isDefaultQueue(String queue) {
