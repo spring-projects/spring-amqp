@@ -314,6 +314,21 @@ public class JacksonJsonMessageConverterTests {
 	}
 
 	@Test
+	public void testExplicitContentTypeWhenNotAssumingSupportedContentType() {
+		byte[] bytes = "{\"name\" : \"foo\" }".getBytes();
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setContentType("application/json");
+		Message message = new Message(bytes, messageProperties);
+		JacksonJsonMessageConverter jsonMessageConverter = new JacksonJsonMessageConverter();
+		DefaultClassMapper classMapper = new DefaultClassMapper();
+		classMapper.setDefaultType(Foo.class);
+		jsonMessageConverter.setClassMapper(classMapper);
+		jsonMessageConverter.setAssumeSupportedContentType(false);
+		Object foo = jsonMessageConverter.fromMessage(message);
+		assertThat(foo).isInstanceOf(Foo.class);
+	}
+
+	@Test
 	void customAbstractClass() {
 		byte[] bytes = "{\"field\" : \"foo\" }".getBytes();
 		MessageProperties messageProperties = new MessageProperties();

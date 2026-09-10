@@ -180,6 +180,20 @@ public class JacksonXmlMessageConverterTests {
 	}
 
 	@Test
+	public void testExplicitContentTypeWhenNotAssumingSupportedContentType() {
+		byte[] bytes = "<root><name>foo</name></root>".getBytes();
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setContentType("application/xml");
+		Message message = new Message(bytes, messageProperties);
+		DefaultClassMapper classMapper = new DefaultClassMapper();
+		classMapper.setDefaultType(Foo.class);
+		this.converter.setClassMapper(classMapper);
+		this.converter.setAssumeSupportedContentType(false);
+		Object foo = this.converter.fromMessage(message);
+		assertThat(foo).isInstanceOf(Foo.class);
+	}
+
+	@Test
 	public void testNoJsonContentType() {
 		byte[] bytes = "<root><name>foo</name><root/>".getBytes();
 		MessageProperties messageProperties = new MessageProperties();

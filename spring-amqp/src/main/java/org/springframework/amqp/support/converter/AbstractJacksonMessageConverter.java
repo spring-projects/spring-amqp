@@ -275,9 +275,8 @@ public abstract class AbstractJacksonMessageConverter extends AbstractMessageCon
 		Object content = null;
 		MessageProperties properties = message.getMessageProperties();
 		String contentType = properties.getContentType();
-		if (this.assumeSupportedContentType &&
-				(contentType.equals(MessageProperties.DEFAULT_CONTENT_TYPE)
-						|| this.supportedContentType.isCompatibleWith(MimeType.valueOf(contentType)))) {
+		if ((this.assumeSupportedContentType && contentType.equals(MessageProperties.DEFAULT_CONTENT_TYPE))
+				|| this.supportedContentType.isCompatibleWith(MimeType.valueOf(contentType))) {
 
 			String encoding = determineEncoding(properties, contentType);
 			content = doFromMessage(message, conversionHint, properties, encoding);
