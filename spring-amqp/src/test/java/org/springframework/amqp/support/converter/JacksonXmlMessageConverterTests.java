@@ -39,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Mohammad Hewedy
  * @author Gary Russell
  * @author Artem Bilan
+ * @author kdelay
  *
  * @since 2.1
  */
@@ -180,17 +181,17 @@ public class JacksonXmlMessageConverterTests {
 	}
 
 	@Test
-	public void testExplicitContentTypeWhenNotAssumingSupportedContentType() {
-		byte[] bytes = "<root><name>foo</name></root>".getBytes();
+	void explicitContentTypeConvertedWhenNotAssumingSupportedContentType() {
+		byte[] bytes = "<root><name>trade-1</name></root>".getBytes();
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setContentType("application/xml");
 		Message message = new Message(bytes, messageProperties);
 		DefaultClassMapper classMapper = new DefaultClassMapper();
-		classMapper.setDefaultType(Foo.class);
+		classMapper.setDefaultType(TestData.class);
 		this.converter.setClassMapper(classMapper);
 		this.converter.setAssumeSupportedContentType(false);
-		Object foo = this.converter.fromMessage(message);
-		assertThat(foo).isInstanceOf(Foo.class);
+		Object converted = this.converter.fromMessage(message);
+		assertThat(converted).isEqualTo(new TestData("trade-1"));
 	}
 
 	@Test
@@ -279,6 +280,10 @@ public class JacksonXmlMessageConverterTests {
 		Object value = ((Map<?, ?>) map.get("qux")).get("baz");
 		assertThat(value).isInstanceOf(Bar.class);
 		assertThat(((Bar) value).getFoo()).isEqualTo(new Foo("bar"));
+	}
+
+	public record TestData(String name) {
+
 	}
 
 	public static class Foo {

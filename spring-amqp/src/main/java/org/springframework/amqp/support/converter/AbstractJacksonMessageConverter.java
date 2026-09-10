@@ -43,6 +43,7 @@ import org.springframework.util.MimeTypeUtils;
  * Abstract Jackson 3 message converter.
  *
  * @author Artem Bilan
+ * @author kdelay
  *
  * @since 4.0
  */

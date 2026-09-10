@@ -50,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Gary Russell
  * @author Andreas Asplund
  * @author Artem Bilan
+ * @author kdelay
  */
 @SpringJUnitConfig
 @DirtiesContext
@@ -314,18 +315,18 @@ public class JacksonJsonMessageConverterTests {
 	}
 
 	@Test
-	public void testExplicitContentTypeWhenNotAssumingSupportedContentType() {
-		byte[] bytes = "{\"name\" : \"foo\" }".getBytes();
+	void explicitContentTypeConvertedWhenNotAssumingSupportedContentType() {
+		byte[] bytes = "{\"name\" : \"trade-1\" }".getBytes();
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setContentType("application/json");
 		Message message = new Message(bytes, messageProperties);
 		JacksonJsonMessageConverter jsonMessageConverter = new JacksonJsonMessageConverter();
 		DefaultClassMapper classMapper = new DefaultClassMapper();
-		classMapper.setDefaultType(Foo.class);
+		classMapper.setDefaultType(TestData.class);
 		jsonMessageConverter.setClassMapper(classMapper);
 		jsonMessageConverter.setAssumeSupportedContentType(false);
-		Object foo = jsonMessageConverter.fromMessage(message);
-		assertThat(foo).isInstanceOf(Foo.class);
+		Object converted = jsonMessageConverter.fromMessage(message);
+		assertThat(converted).isEqualTo(new TestData("trade-1"));
 	}
 
 	@Test
@@ -493,6 +494,10 @@ public class JacksonJsonMessageConverterTests {
 
 	public List<Fiz> fizLister() {
 		return null;
+	}
+
+	public record TestData(String name) {
+
 	}
 
 	public static class Foo {
