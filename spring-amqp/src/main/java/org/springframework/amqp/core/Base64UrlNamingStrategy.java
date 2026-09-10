@@ -26,9 +26,10 @@ import org.springframework.util.Assert;
  * Generates names with the form {@code <prefix><base64url>} where 'prefix' is
  * 'spring.gen-' by default (e.g. spring.gen-eIwaZAYgQv6LvwaDCfVTNQ); the 'base64url'
  * String is generated from a UUID. The base64 alphabet is the "URL and Filename Safe
- * Alphabet"; see RFC-4648. Trailing padding characters (@code =) are removed.
+ * Alphabet"; see RFC-4648. Trailing padding characters ({@code =}) are removed.
  *
  * @author Gary Russell
+ * @author Ngoc Nhan
  *
  * @since 2.1
  */
@@ -55,19 +56,17 @@ public class Base64UrlNamingStrategy implements NamingStrategy {
 	 * @param prefix The prefix.
 	 */
 	public Base64UrlNamingStrategy(String prefix) {
-		Assert.notNull(prefix, "'prefix' cannot be null; use an empty String ");
+		Assert.notNull(prefix, "'prefix' cannot be null; use an empty String");
 		this.prefix = prefix;
 	}
 
 	@Override
 	public String generateName() {
 		UUID uuid = UUID.randomUUID();
-		ByteBuffer bb = ByteBuffer.wrap(new byte[SIXTEEN]);
-		bb.putLong(uuid.getMostSignificantBits())
-		  .putLong(uuid.getLeastSignificantBits());
-		// Convert to base64 and remove trailing =
-		return this.prefix + Base64.getUrlEncoder().encodeToString(bb.array())
-								.replaceAll("=", "");
+		ByteBuffer bb = ByteBuffer.wrap(new byte[SIXTEEN])
+				.putLong(uuid.getMostSignificantBits())
+				.putLong(uuid.getLeastSignificantBits());
+		return this.prefix + Base64.getUrlEncoder().withoutPadding().encodeToString(bb.array());
 	}
 
 }
