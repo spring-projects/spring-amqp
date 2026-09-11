@@ -20,6 +20,7 @@ import java.util.Set;
 
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.util.MimeType;
 
 /**
@@ -39,7 +40,8 @@ public final class JacksonUtils {
 	/**
 	 * Wildcards supported for JSON content.
 	 */
-	public static Set<MimeType> JSON_WILDCARDS = Set.of(APPLICATION_JSON_WILDCARD, MimeType.valueOf("text/x-json"));
+	public static Set<MimeType> JSON_WILDCARDS = Set.of(APPLICATION_JSON_WILDCARD,
+			MimeType.valueOf(MessageProperties.CONTENT_TYPE_JSON_ALT));
 
 	private JacksonUtils() {
 	}
