@@ -22,6 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import tools.jackson.core.JacksonException;
@@ -50,6 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Gary Russell
  * @author Andreas Asplund
  * @author Artem Bilan
+ * @author Ngoc Nhan
  */
 @SpringJUnitConfig
 @DirtiesContext
@@ -464,6 +466,26 @@ public class JacksonJsonMessageConverterTests {
 		assertThat(converter.fromMessage(message2)).isEqualTo(trade);
 	}
 
+	@Test
+	public void convertMessageWhenContentTypeIsSupported() {
+
+		byte[] bytes = "{\"message\" : \"Hello, World\"}".getBytes();
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setContentType("application/json");
+		Message message = new Message(bytes, messageProperties);
+
+		DefaultClassMapper classMapper = new DefaultClassMapper();
+		classMapper.setDefaultType(TestData.class);
+		JacksonJsonMessageConverter converter = new JacksonJsonMessageConverter();
+		converter.setAssumeSupportedContentType(false);
+		converter.setClassMapper(classMapper);
+
+		Object foo = converter.fromMessage(message);
+		assertThat(foo).isExactlyInstanceOf(TestData.class)
+				.extracting("message", InstanceOfAssertFactories.STRING)
+				.isEqualTo("Hello, World");
+	}
+
 	public List<Foo> fooLister() {
 		return null;
 	}
@@ -478,6 +500,10 @@ public class JacksonJsonMessageConverterTests {
 
 	public List<Fiz> fizLister() {
 		return null;
+	}
+
+	record TestData(String message) {
+
 	}
 
 	public static class Foo {
