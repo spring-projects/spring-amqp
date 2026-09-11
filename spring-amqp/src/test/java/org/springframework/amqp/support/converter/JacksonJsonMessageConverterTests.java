@@ -472,8 +472,11 @@ public class JacksonJsonMessageConverterTests {
 	@ParameterizedTest
 	@CsvSource(textBlock = """
 			text/x-json,application/json
+			application/json,text/x-json
 			application/json,application/json
 			text/x-json,text/x-json
+			application/problem+json,text/x-json
+			text/x-json,application/problem+json
 			""")
 	public void convertMessageWhenContentTypeIsSupported(String contentType, String supportedContentType) {
 
@@ -494,26 +497,6 @@ public class JacksonJsonMessageConverterTests {
 		assertThat(foo).isExactlyInstanceOf(TestData.class)
 				.extracting("message", InstanceOfAssertFactories.STRING)
 				.isEqualTo("Hello, World");
-	}
-
-	@Test
-	public void returnMessageBodyWhenContentTypeIsNotSupported() {
-
-		byte[] bytes = "{\"message\" : \"Hello, World\"}".getBytes();
-		MessageProperties messageProperties = new MessageProperties();
-		messageProperties.setContentType("application/json");
-		Message message = new Message(bytes, messageProperties);
-
-		DefaultClassMapper classMapper = new DefaultClassMapper();
-		classMapper.setDefaultType(TestData.class);
-
-		JacksonJsonMessageConverter converter = new JacksonJsonMessageConverter();
-		converter.setAssumeSupportedContentType(false);
-		converter.setSupportedContentType(MimeType.valueOf("text/x-json"));
-		converter.setClassMapper(classMapper);
-
-		Object foo = converter.fromMessage(message);
-		assertThat(foo).isNotExactlyInstanceOf(TestData.class).isSameAs(bytes);
 	}
 
 	public List<Foo> fooLister() {

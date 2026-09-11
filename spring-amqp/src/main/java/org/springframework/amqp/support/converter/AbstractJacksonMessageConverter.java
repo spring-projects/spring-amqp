@@ -32,6 +32,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.utils.JacksonUtils;
 import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.Assert;
@@ -307,13 +308,12 @@ public abstract class AbstractJacksonMessageConverter extends AbstractMessageCon
 	 */
 	private boolean isSupportedContentType(String contentType) {
 
-		MimeType propertiesMimeType = MimeType.valueOf(contentType);
-		if (MimeTypeUtils.APPLICATION_JSON.isCompatibleWith(this.supportedContentType)) {
+		MimeType mimeType = MimeType.valueOf(contentType);
+		if (JacksonUtils.isJsonSupported(this.supportedContentType)) {
 
-			return this.supportedContentType.isCompatibleWith(propertiesMimeType)
-					|| MimeType.valueOf(MessageProperties.CONTENT_TYPE_JSON_ALT).isCompatibleWith(propertiesMimeType);
+			return JacksonUtils.isJsonSupported(mimeType);
 		}
-		return this.supportedContentType.isCompatibleWith(propertiesMimeType);
+		return this.supportedContentType.isCompatibleWith(mimeType);
 	}
 
 

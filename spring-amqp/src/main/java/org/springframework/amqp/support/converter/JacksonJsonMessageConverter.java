@@ -26,13 +26,14 @@ import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.utils.JacksonUtils;
 import org.springframework.util.ClassUtils;
-import org.springframework.util.MimeTypeUtils;
 
 /**
  * JSON converter that uses the Jackson 3.
  *
  * @author Artem Bilan
+ * @author Ngoc Nhan
  *
  * @since 4.0
  */
@@ -78,7 +79,7 @@ public class JacksonJsonMessageConverter extends AbstractJacksonMessageConverter
 	 * @see DefaultJacksonJavaTypeMapper#setTrustedPackages(String...)
 	 */
 	public JacksonJsonMessageConverter(JsonMapper jsonMapper, String... trustedPackages) {
-		super(jsonMapper, MimeTypeUtils.parseMimeType("application/*+json"), trustedPackages);
+		super(jsonMapper, JacksonUtils.APPLICATION_JSON_WILDCARD, trustedPackages);
 	}
 
 	/**
