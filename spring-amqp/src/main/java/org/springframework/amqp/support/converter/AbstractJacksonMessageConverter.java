@@ -43,6 +43,7 @@ import org.springframework.util.MimeTypeUtils;
  * Abstract Jackson 3 message converter.
  *
  * @author Artem Bilan
+ * @author Ngoc Nhan
  *
  * @since 4.0
  */
@@ -275,9 +276,8 @@ public abstract class AbstractJacksonMessageConverter extends AbstractMessageCon
 		Object content = null;
 		MessageProperties properties = message.getMessageProperties();
 		String contentType = properties.getContentType();
-		if (this.assumeSupportedContentType &&
-				(contentType.equals(MessageProperties.DEFAULT_CONTENT_TYPE)
-						|| this.supportedContentType.isCompatibleWith(MimeType.valueOf(contentType)))) {
+		if (this.assumeSupportedContentType && contentType.equals(MessageProperties.DEFAULT_CONTENT_TYPE)
+				|| this.isSupportedContentType(contentType)) {
 
 			String encoding = determineEncoding(properties, contentType);
 			content = doFromMessage(message, conversionHint, properties, encoding);
@@ -298,6 +298,24 @@ public abstract class AbstractJacksonMessageConverter extends AbstractMessageCon
 		}
 		return content;
 	}
+
+	/**
+	 * Check whether {@code contentType} is compatible with the {@link #supportedContentType}.
+	 *
+	 * @param contentType the content type from {@link MessageProperties#getContentType()}
+	 * @return {@code true} if {@code contentType} is supported, otherwise {@code false}
+	 */
+	private boolean isSupportedContentType(String contentType) {
+
+		MimeType propertiesMimeType = MimeType.valueOf(contentType);
+		if (MimeTypeUtils.APPLICATION_JSON.isCompatibleWith(this.supportedContentType)) {
+
+			return this.supportedContentType.isCompatibleWith(propertiesMimeType)
+					|| MimeType.valueOf(MessageProperties.CONTENT_TYPE_JSON_ALT).isCompatibleWith(propertiesMimeType);
+		}
+		return this.supportedContentType.isCompatibleWith(propertiesMimeType);
+	}
+
 
 	private @Nullable String determineEncoding(MessageProperties properties, @Nullable String contentType) {
 		String encoding = properties.getContentEncoding();

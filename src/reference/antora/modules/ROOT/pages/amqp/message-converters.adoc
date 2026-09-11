@@ -218,6 +218,9 @@ Starting with version 2.2, `application/json` is assumed if there is no `content
 To revert to the previous behavior (return an unconverted `byte[]`), set the converter's `assumeSupportedContentType` property to `false`.
 If the content type is not supported, a `WARN` log message `Could not convert incoming message with content-type [...]`, is emitted and `message.getBody()` is returned as is -- as a `byte[]`.
 So, to meet the `JacksonJsonMessageConverter` requirements on the consumer side, the producer must add the `contentType` message property -- for example, as `application/json` or `text/x-json` or by using the `JacksonJsonMessageConverter`, which sets the header automatically.
+
+NOTE: With the Jackson 3.x library, when converting from the `Message`, `MessageProperties.getContentType()` must be JSON-compatible (`"application/{asterisk}+json".isCompatibleWith(contentType)` is used by `MimeType` for this check).
+
 The following listing shows a number of converter calls:
 
 [source, java]

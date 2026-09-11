@@ -22,8 +22,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonParser;
 import tools.jackson.databind.DeserializationContext;
@@ -39,6 +42,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.web.JsonPath;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,6 +54,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Gary Russell
  * @author Andreas Asplund
  * @author Artem Bilan
+ * @author Ngoc Nhan
  */
 @SpringJUnitConfig
 @DirtiesContext
@@ -464,6 +469,53 @@ public class JacksonJsonMessageConverterTests {
 		assertThat(converter.fromMessage(message2)).isEqualTo(trade);
 	}
 
+	@ParameterizedTest
+	@CsvSource(textBlock = """
+			text/x-json,application/json
+			application/json,application/json
+			text/x-json,text/x-json
+			""")
+	public void convertMessageWhenContentTypeIsSupported(String contentType, String supportedContentType) {
+
+		byte[] bytes = "{\"message\" : \"Hello, World\"}".getBytes();
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setContentType(contentType);
+		Message message = new Message(bytes, messageProperties);
+
+		DefaultClassMapper classMapper = new DefaultClassMapper();
+		classMapper.setDefaultType(TestData.class);
+
+		JacksonJsonMessageConverter converter = new JacksonJsonMessageConverter();
+		converter.setAssumeSupportedContentType(false);
+		converter.setSupportedContentType(MimeType.valueOf(supportedContentType));
+		converter.setClassMapper(classMapper);
+
+		Object foo = converter.fromMessage(message);
+		assertThat(foo).isExactlyInstanceOf(TestData.class)
+				.extracting("message", InstanceOfAssertFactories.STRING)
+				.isEqualTo("Hello, World");
+	}
+
+	@Test
+	public void returnMessageBodyWhenContentTypeIsNotSupported() {
+
+		byte[] bytes = "{\"message\" : \"Hello, World\"}".getBytes();
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setContentType("application/json");
+		Message message = new Message(bytes, messageProperties);
+
+		DefaultClassMapper classMapper = new DefaultClassMapper();
+		classMapper.setDefaultType(TestData.class);
+
+		JacksonJsonMessageConverter converter = new JacksonJsonMessageConverter();
+		converter.setAssumeSupportedContentType(false);
+		converter.setSupportedContentType(MimeType.valueOf("text/x-json"));
+		converter.setClassMapper(classMapper);
+
+		Object foo = converter.fromMessage(message);
+		assertThat(foo).isNotExactlyInstanceOf(TestData.class).isSameAs(bytes);
+	}
+
 	public List<Foo> fooLister() {
 		return null;
 	}
@@ -478,6 +530,10 @@ public class JacksonJsonMessageConverterTests {
 
 	public List<Fiz> fizLister() {
 		return null;
+	}
+
+	record TestData(String message) {
+
 	}
 
 	public static class Foo {
