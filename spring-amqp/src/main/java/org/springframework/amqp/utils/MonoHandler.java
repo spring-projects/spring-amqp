@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.utils;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import org.jspecify.annotations.Nullable;
@@ -26,6 +27,7 @@ import reactor.core.publisher.Mono;
  *
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Arnab Nandy
  *
  * @since 4.1
  */
@@ -47,6 +49,16 @@ public final class MonoHandler {
 			Consumer<? super Throwable> failure, Runnable completeConsumer) {
 
 		((Mono<? super Object>) returnValue).subscribe(success, failure, completeConsumer);
+	}
+
+	/**
+	 * Convert a {@link Mono} to a {@link CompletableFuture}.
+	 * @param returnValue the return value (expected to be a Mono)
+	 * @return the CompletableFuture
+	 * @since 4.2
+	 */
+	public static CompletableFuture<?> toCompletableFuture(Object returnValue) {
+		return ((Mono<?>) returnValue).toFuture();
 	}
 
 }

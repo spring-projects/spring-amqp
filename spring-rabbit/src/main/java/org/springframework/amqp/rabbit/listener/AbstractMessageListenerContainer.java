@@ -108,6 +108,7 @@ import org.springframework.util.backoff.FixedBackOff;
  * @author Artem Bilan
  * @author Mohammad Hewedy
  * @author Mat Jaggard
+ * @author Arnab Nandy
  */
 public abstract class AbstractMessageListenerContainer extends ObservableListenerContainer
 		implements ApplicationEventPublisherAware {
@@ -1456,6 +1457,15 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		}
 		finally {
 			this.lazyLoad = false;
+		}
+	}
+
+	@Override
+	protected void checkObservation() {
+		super.checkObservation();
+		ObservationRegistry registry = getObservationRegistry();
+		if (!registry.isNoop() && this.messageListener instanceof AbstractAdaptableMessageListener adaptable) {
+			adaptable.setupObservationRegistry(registry, getListenerId());
 		}
 	}
 

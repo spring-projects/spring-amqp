@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.listener.adapter;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +29,21 @@ import java.util.stream.Collectors;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationHandler;
+import io.micrometer.observation.tck.TestObservationRegistry;
+import io.micrometer.tracing.Span;
+import io.micrometer.tracing.TraceContext;
+import io.micrometer.tracing.handler.DefaultTracingObservationHandler;
+import io.micrometer.tracing.handler.PropagatingReceiverTracingObservationHandler;
+import io.micrometer.tracing.handler.PropagatingSenderTracingObservationHandler;
+import io.micrometer.tracing.propagation.Propagator;
+import io.micrometer.tracing.test.simple.SimpleSpan;
+import io.micrometer.tracing.test.simple.SimpleTracer;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.MessageProperties;
@@ -38,6 +52,8 @@ import org.springframework.amqp.listener.adapter.DelegatingInvocableHandler;
 import org.springframework.amqp.listener.adapter.HandlerAdapter;
 import org.springframework.amqp.listener.adapter.ReplyFailureException;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitListenerObservation;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitMessageReceiverContext;
 import org.springframework.amqp.rabbit.test.MessageTestUtils;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
@@ -55,6 +71,7 @@ import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
@@ -68,8 +85,13 @@ import static org.mockito.Mockito.verify;
  * @author Gary Russell
  * @author Kai Stapel
  * @author Aram Peres
+ * @author Arnab Nandy
  */
 public class MessagingMessageListenerAdapterTests {
+
+	private static final String TRACE_ID = "4bf92f3577b34da6a3ce929d0e0e4736";
+
+	private static final String SPAN_ID = "00f067aa0ba902b7";
 
 	private final DefaultMessageHandlerMethodFactory factory = new DefaultMessageHandlerMethodFactory();
 
@@ -409,6 +431,169 @@ public class MessagingMessageListenerAdapterTests {
 		assertThat(getBatchInstance("withFooBatch").maySettleDelivery()).isTrue();
 	}
 
+	@Test
+	public void asyncObservationPropagation() throws Exception {
+		SimpleTracer tracer = new SimpleTracer();
+		Propagator propagator = createPropagator(tracer);
+		TestObservationRegistry registry = createObservationRegistry(tracer, propagator);
+
+		Channel channel = mock();
+		MessagingMessageListenerAdapter listener = getSimpleInstance("asyncEcho", String.class);
+		listener.setupObservationRegistry(registry, "testListener");
+
+		org.springframework.amqp.core.Message message =
+				org.springframework.amqp.core.MessageBuilder.withBody("testPayload".getBytes())
+						.setReplyTo("testExchange/testRoutingKey")
+						.setHeader("X-B3-TraceId", TRACE_ID)
+						.setHeader("X-B3-SpanId", SPAN_ID)
+						.build();
+
+		RabbitMessageReceiverContext receiverContext = new RabbitMessageReceiverContext(message, "testListener");
+		Observation receiverObservation = RabbitListenerObservation.LISTENER_OBSERVATION.observation(null,
+				RabbitListenerObservation.DefaultRabbitListenerObservationConvention.INSTANCE,
+				() -> receiverContext, registry);
+		receiverObservation.observeChecked(() -> listener.onMessage(message, channel));
+
+		ArgumentCaptor<BasicProperties> propsCaptor = ArgumentCaptor.captor();
+		await().untilAsserted(() ->
+				verify(channel)
+						.basicPublish(eq("testExchange"), eq("testRoutingKey"), eq(false), propsCaptor.capture(), any()));
+
+		BasicProperties props = propsCaptor.getValue();
+		assertThat(props.getHeaders()).containsKey("X-B3-TraceId");
+		String sentTraceId = props.getHeaders().get("X-B3-TraceId").toString();
+		assertThat(sentTraceId).isEqualTo(TRACE_ID);
+
+		await().untilAsserted(() -> assertThat(tracer.getSpans()).hasSize(2));
+		Deque<SimpleSpan> spans = tracer.getSpans();
+		assertThat(spans).allMatch(span -> span.context().traceId().equals(TRACE_ID));
+	}
+
+	@Test
+	public void syncObservationPropagation() throws Exception {
+		SimpleTracer tracer = new SimpleTracer();
+		Propagator propagator = createPropagator(tracer);
+		TestObservationRegistry registry = createObservationRegistry(tracer, propagator);
+
+		Channel channel = mock();
+		MessagingMessageListenerAdapter listener = getSimpleInstance("echo", Message.class);
+		listener.setupObservationRegistry(registry, "testListener");
+
+		org.springframework.amqp.core.Message message =
+				org.springframework.amqp.core.MessageBuilder.withBody("testPayload".getBytes())
+						.setReplyTo("testExchange/testRoutingKey")
+						.setHeader("X-B3-TraceId", TRACE_ID)
+						.setHeader("X-B3-SpanId", SPAN_ID)
+						.build();
+
+		RabbitMessageReceiverContext receiverContext = new RabbitMessageReceiverContext(message, "testListener");
+		Observation receiverObservation = RabbitListenerObservation.LISTENER_OBSERVATION.observation(null,
+				RabbitListenerObservation.DefaultRabbitListenerObservationConvention.INSTANCE,
+				() -> receiverContext, registry);
+		receiverObservation.observeChecked(() -> listener.onMessage(message, channel));
+
+		ArgumentCaptor<BasicProperties> propsCaptor = ArgumentCaptor.captor();
+		verify(channel)
+				.basicPublish(eq("testExchange"), eq("testRoutingKey"), eq(false), propsCaptor.capture(), any());
+
+		BasicProperties props = propsCaptor.getValue();
+		assertThat(props.getHeaders()).containsKey("X-B3-TraceId");
+		String sentTraceId = props.getHeaders().get("X-B3-TraceId").toString();
+		assertThat(sentTraceId).isEqualTo(TRACE_ID);
+	}
+
+	@Test
+	public void observationDisabledDoesNotPropagateTracingHeaders() throws Exception {
+		SimpleTracer tracer = new SimpleTracer();
+		Propagator propagator = createPropagator(tracer);
+		TestObservationRegistry registry = createObservationRegistry(tracer, propagator);
+
+		Channel channel = mock();
+		MessagingMessageListenerAdapter listener = getSimpleInstance("echo", Message.class);
+
+		org.springframework.amqp.core.Message message =
+				org.springframework.amqp.core.MessageBuilder.withBody("testPayload".getBytes())
+						.setReplyTo("testExchange/testRoutingKey")
+						.setHeader("X-B3-TraceId", TRACE_ID)
+						.setHeader("X-B3-SpanId", SPAN_ID)
+						.build();
+
+		RabbitMessageReceiverContext receiverContext = new RabbitMessageReceiverContext(message, "testListener");
+		Observation receiverObservation = RabbitListenerObservation.LISTENER_OBSERVATION.observation(null,
+				RabbitListenerObservation.DefaultRabbitListenerObservationConvention.INSTANCE,
+				() -> receiverContext, registry);
+		receiverObservation.observeChecked(() -> listener.onMessage(message, channel));
+
+		ArgumentCaptor<BasicProperties> propsCaptor = ArgumentCaptor.captor();
+		verify(channel)
+				.basicPublish(eq("testExchange"), eq("testRoutingKey"), eq(false), propsCaptor.capture(), any());
+
+		BasicProperties props = propsCaptor.getValue();
+		assertThat(props.getHeaders()).doesNotContainKey("X-B3-TraceId");
+	}
+
+	@Test
+	public void asyncObservationErrorOnFailure() throws Exception {
+		SimpleTracer tracer = new SimpleTracer();
+		Propagator propagator = createPropagator(tracer);
+		TestObservationRegistry registry = createObservationRegistry(tracer, propagator);
+
+		Channel channel = mock();
+		MessagingMessageListenerAdapter listener = getSimpleInstance("asyncFail", String.class);
+		listener.setupObservationRegistry(registry, "testListener");
+
+		var message = new org.springframework.amqp.core.Message("testPayload".getBytes());
+
+		RabbitMessageReceiverContext receiverContext = new RabbitMessageReceiverContext(message, "testListener");
+		Observation receiverObservation = RabbitListenerObservation.LISTENER_OBSERVATION.observation(null,
+				RabbitListenerObservation.DefaultRabbitListenerObservationConvention.INSTANCE,
+				() -> receiverContext, registry);
+		receiverObservation.observeChecked(() -> listener.onMessage(message, channel));
+
+		await().untilAsserted(() -> assertThat(receiverContext.getError()).isInstanceOf(IllegalArgumentException.class));
+	}
+
+	private static Propagator createPropagator(SimpleTracer tracer) {
+		return new Propagator() {
+
+			@Override
+			public List<String> fields() {
+				return List.of("X-B3-TraceId", "X-B3-SpanId");
+			}
+
+			@Override
+			public <C> void inject(TraceContext context, @Nullable C carrier, Setter<C> setter) {
+				setter.set(carrier, "X-B3-TraceId", context.traceId());
+				setter.set(carrier, "X-B3-SpanId", context.spanId());
+			}
+
+			@Override
+			public <C> Span.Builder extract(C carrier, Getter<C> getter) {
+				String traceId = getter.get(carrier, "X-B3-TraceId");
+				String spanId = getter.get(carrier, "X-B3-SpanId");
+				if (traceId != null) {
+					TraceContext parent = tracer.traceContextBuilder()
+							.traceId(traceId)
+							.spanId(spanId != null ? spanId : "0000000000000001")
+							.build();
+					return tracer.spanBuilder().setParent(parent);
+				}
+				return tracer.spanBuilder();
+			}
+
+		};
+	}
+
+	private static TestObservationRegistry createObservationRegistry(SimpleTracer tracer, Propagator propagator) {
+		TestObservationRegistry registry = TestObservationRegistry.create();
+		registry.observationConfig().observationHandler(
+				new ObservationHandler.FirstMatchingCompositeObservationHandler(
+						new PropagatingSenderTracingObservationHandler<>(tracer, propagator),
+						new PropagatingReceiverTracingObservationHandler<>(tracer, propagator),
+						new DefaultTracingObservationHandler(tracer)));
+		return registry;
+	}
+
 	protected MessagingMessageListenerAdapter getSimpleInstance(String methodName, Class<?>... parameterTypes) {
 		return getSimpleInstance(methodName, null, false, parameterTypes);
 	}
@@ -485,6 +670,11 @@ public class MessagingMessageListenerAdapterTests {
 			return MessageBuilder.withPayload(input.getPayload())
 					.setHeader(AmqpHeaders.TYPE, "reply")
 					.build();
+		}
+
+		@SuppressWarnings("unused")
+		public CompletableFuture<String> asyncEcho(String input) {
+			return CompletableFuture.supplyAsync(() -> "reply:" + input);
 		}
 
 		@SuppressWarnings("unused")

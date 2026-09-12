@@ -195,7 +195,8 @@ public class RabbitListenerTests extends AbstractTestContainerTests {
 		@Bean
 		ObservationRegistry obsReg(MeterRegistry meterRegistry) {
 			ObservationRegistry registry = ObservationRegistry.create();
-			registry.observationConfig().observationHandler(new DefaultMeterObservationHandler(meterRegistry));
+			registry.observationConfig()
+					.observationHandler(DefaultMeterObservationHandler.builder(meterRegistry).build());
 			return registry;
 		}
 

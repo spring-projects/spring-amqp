@@ -22,8 +22,11 @@ import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 import com.rabbitmq.client.Channel;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
@@ -43,6 +46,9 @@ import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitMessageSenderContext;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitTemplateObservation;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitTemplateObservation.DefaultRabbitTemplateObservationConvention;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
@@ -68,6 +74,7 @@ import org.springframework.util.Assert;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Johan Haleby
+ * @author Arnab Nandy
  *
  * @since 1.4
  *
@@ -121,6 +128,10 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	private @Nullable String replyContentType;
 
 	private boolean converterWinsContentType = true;
+
+	private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
+
+	private String listenerId = "rabbitListenerReply";
 
 	/**
 	 * Set the routing key to use when sending response messages.
@@ -335,6 +346,22 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	}
 
 	/**
+	 * Set up the {@link ObservationRegistry} and listener id to use for observing reply messages.
+	 * @param observationRegistry the observation registry.
+	 * @param listenerId the listener id.
+	 * @since 4.2
+	 */
+	public void setupObservationRegistry(ObservationRegistry observationRegistry, String listenerId) {
+		this.observationRegistry = observationRegistry;
+		this.listenerId = listenerId;
+	}
+
+	private Observation getCurrentObservation() {
+		Observation currentObservation = this.observationRegistry.getCurrentObservation();
+		return currentObservation == null ? Observation.NOOP : currentObservation;
+	}
+
+	/**
 	 * Return true when this listener, or the code it delegates to, may settle a delivery
 	 * itself - by calling {@code basicAck()}, {@code basicNack()} or
 	 * {@code basicReject()} on the channel it is given. The container needs to know that
@@ -405,30 +432,37 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 			@Nullable Channel channel, @Nullable Object source) {
 
 		if (resultArg != null) {
+			CompletableFuture<?> completableFutureResult = null;
 			if (resultArg.getReturnValue() instanceof CompletableFuture<?> completable) {
 				if (!this.isManualAck) {
 					this.logger.warn("Container AcknowledgeMode must be MANUAL for a Future<?> return type; "
 							+ "otherwise the container will ack the message immediately");
 				}
-				completable.whenComplete((r, t) -> {
-					if (t == null) {
-						asyncSuccess(resultArg, request, channel, source, r);
-						basicAck(request, channel);
-					}
-					else {
-						asyncFailure(request, channel, t, source);
-					}
-				});
+				completableFutureResult = completable;
 			}
 			else if (JavaUtils.MONO_PRESENT && MonoHandler.isMono(resultArg.getReturnValue())) {
 				if (!this.isManualAck) {
 					this.logger.warn("Container AcknowledgeMode must be MANUAL for a Mono<?> return type" +
 							"(or Kotlin suspend function); otherwise the container will ack the message immediately");
 				}
-				MonoHandler.subscribe(resultArg.getReturnValue(),
-						r -> asyncSuccess(resultArg, request, channel, source, r),
-						t -> asyncFailure(request, channel, t, source),
-						() -> basicAck(request, channel));
+				completableFutureResult = MonoHandler.toCompletableFuture(resultArg.getReturnValue());
+			}
+
+			if (completableFutureResult != null) {
+				Observation observation = getCurrentObservation();
+				completableFutureResult.whenComplete((r, t) ->
+						observation.scoped(() -> {
+							if (t == null) {
+								asyncSuccess(resultArg, request, channel, source, r);
+								basicAck(request, channel);
+							}
+							else {
+								Throwable cause = t instanceof CompletionException ? t.getCause() : t;
+								cause = cause == null ? t : cause;
+								observation.error(cause);
+								asyncFailure(request, channel, cause, source);
+							}
+						}));
 			}
 			else {
 				doHandleResult(resultArg, request, channel, source);
@@ -654,7 +688,6 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	 * @see #postProcessResponse(Message, Message)
 	 * @see #setReplyPostProcessor(ReplyPostProcessor)
 	 */
-	@SuppressWarnings("removal")
 	protected void sendResponse(@Nullable Channel channel, Address replyTo, Message messageIn) {
 		Assert.notNull(channel, "'channel' must not be null.");
 		Message message = messageIn;
@@ -666,34 +699,63 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 		postProcessChannel(channel, message);
 
 		try {
-			this.logger.debug("Publishing response to exchange = [" + replyTo.getExchangeName() + "], routingKey = ["
-					+ replyTo.getRoutingKey() + "]");
-			if (this.retryTemplate == null) {
-				doPublish(channel, replyTo, message);
+			String exchange = replyTo.getExchangeName();
+			String routingKey = replyTo.getRoutingKey();
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug(
+						"Publishing response to exchange = [" + exchange + "], routingKey = [" + routingKey + "]");
+			}
+			if (!this.observationRegistry.isNoop()) {
+				Message messageToSend = message;
+				Observation replyObservation = RabbitTemplateObservation.TEMPLATE_OBSERVATION.observation(null,
+						DefaultRabbitTemplateObservationConvention.INSTANCE,
+						() -> new RabbitMessageSenderContext(messageToSend, this.listenerId, exchange, routingKey),
+						this.observationRegistry);
+				replyObservation.observe(() -> publish(channel, replyTo, messageToSend, replyObservation));
 			}
 			else {
-				final Message messageToSend = message;
-				try {
-					this.retryTemplate.<@Nullable Object>execute(() -> {
-						doPublish(channel, replyTo, messageToSend);
-						return null;
-					});
-				}
-				catch (RetryException ex) {
-					if (this.recoveryCallback != null) {
-						this.recoveryCallback.recover(messageToSend,
-								new ReplyFailureException(
-										"Failed to produce reply as '" + messageToSend + "' during retry", replyTo,
-										ex.getCause()));
-					}
-					else {
-						throw RabbitExceptionTranslator.convertRabbitAccessException(ex.getCause());
-					}
-				}
+				publish(channel, replyTo, message, null);
 			}
 		}
 		catch (Exception ex) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
+		}
+	}
+
+	@SuppressWarnings("removal")
+	private void publish(Channel channel, Address replyTo, Message message, @Nullable Observation observation) {
+		if (this.retryTemplate == null) {
+			try {
+				doPublish(channel, replyTo, message);
+			}
+			catch (IOException ex) {
+				throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
+			}
+		}
+		else {
+			try {
+				this.retryTemplate.<@Nullable Object>execute(() -> {
+					doPublish(channel, replyTo, message);
+					return null;
+				});
+			}
+			catch (RetryException ex) {
+				ReplyFailureException replyFailureException = new ReplyFailureException(
+						"Failed to produce reply as '" + message + "' during retry", replyTo,
+						ex.getCause());
+				if (observation != null) {
+					observation.error(replyFailureException);
+				}
+				if (this.recoveryCallback != null) {
+					this.recoveryCallback.recover(message, replyFailureException);
+				}
+				else {
+					throw RabbitExceptionTranslator.convertRabbitAccessException(ex.getCause());
+				}
+			}
+			catch (Exception ex) {
+				throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
+			}
 		}
 	}
 
