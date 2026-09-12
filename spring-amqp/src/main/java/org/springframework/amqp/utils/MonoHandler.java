@@ -42,11 +42,30 @@ public final class MonoHandler {
 		return Mono.class.isAssignableFrom(resultType);
 	}
 
-	@SuppressWarnings("unchecked")
 	public static void subscribe(Object returnValue, @Nullable Consumer<? super Object> success,
 			Consumer<? super Throwable> failure, Runnable completeConsumer) {
 
-		((Mono<? super Object>) returnValue).subscribe(success, failure, completeConsumer);
+		subscribe(returnValue, success, failure, completeConsumer, null);
+	}
+
+	/**
+	 * Subscribe to the {@link Mono} with success, failure, completion, and cancellation callbacks.
+	 * @param returnValue the return value (expected to be a Mono)
+	 * @param success the success callback
+	 * @param failure the failure callback
+	 * @param completeConsumer the completion callback
+	 * @param cancelConsumer the cancellation callback
+	 * @since 4.2
+	 */
+	@SuppressWarnings("unchecked")
+	public static void subscribe(Object returnValue, @Nullable Consumer<? super Object> success,
+			Consumer<? super Throwable> failure, Runnable completeConsumer, @Nullable Runnable cancelConsumer) {
+
+		Mono<? super Object> mono = (Mono<? super Object>) returnValue;
+		if (cancelConsumer != null) {
+			mono = mono.doOnCancel(cancelConsumer);
+		}
+		mono.subscribe(success, failure, completeConsumer);
 	}
 
 }

@@ -62,4 +62,24 @@ public class RabbitMessageReceiverContext extends ReceiverContext<Message> {
 		return this.message.getMessageProperties().getConsumerQueue();
 	}
 
+	private boolean async;
+
+	/**
+	 * Mark whether this context is being processed asynchronously.
+	 * @param async true if asynchronous
+	 * @since 4.2
+	 */
+	public void setAsync(boolean async) {
+		this.async = async;
+	}
+
+	/**
+	 * Return whether this context is being processed asynchronously.
+	 * @return true if asynchronous
+	 * @since 4.2
+	 */
+	public boolean isAsync() {
+		return this.async;
+	}
+
 }

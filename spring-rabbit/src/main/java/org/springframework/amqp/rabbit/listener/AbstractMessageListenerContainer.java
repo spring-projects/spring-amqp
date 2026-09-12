@@ -440,6 +440,33 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		this.isBatchListener = messageListener instanceof BatchMessageListener
 				|| messageListener instanceof ChannelAwareBatchMessageListener;
 		this.asyncReplies = messageListener.isAsyncReplies();
+		configureListenerObservation(messageListener);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * If enabled on an already running container, an attempt will be made to resolve
+	 * the {@link ObservationRegistry} from the {@link ApplicationContext} if not already resolved,
+	 * and configure the message listener accordingly.
+	 */
+	@Override
+	public void setObservationEnabled(boolean observationEnabled) {
+		super.setObservationEnabled(observationEnabled);
+		if (isRunning()) {
+			checkObservation();
+		}
+		else {
+			configureListenerObservation(getMessageListener());
+		}
+	}
+
+	private void configureListenerObservation(@Nullable MessageListener messageListener) {
+		if (messageListener instanceof AbstractAdaptableMessageListener adaptable) {
+			adaptable.setObservationRegistry(getObservationRegistry());
+			adaptable.setObservationEnabled(isObservationEnabled());
+			adaptable.setBeanName(getListenerId());
+		}
 	}
 
 	/**
@@ -1459,6 +1486,12 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		}
 	}
 
+	@Override
+	protected void checkObservation() {
+		super.checkObservation();
+		configureListenerObservation(getMessageListener());
+	}
+
 	/**
 	 * Start this container, and notify all invoker tasks.
 	 */
@@ -1542,10 +1575,25 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		Observation observation;
 		ObservationRegistry registry = getObservationRegistry();
 		if (data instanceof Message message && !registry.isNoop()) {
+			RabbitMessageReceiverContext context = new RabbitMessageReceiverContext(message, getListenerId());
 			observation = RabbitListenerObservation.LISTENER_OBSERVATION.observation(this.observationConvention,
 					DefaultRabbitListenerObservationConvention.INSTANCE,
-					() -> new RabbitMessageReceiverContext(message, getListenerId()), registry);
-			observation.observe(() -> executeListenerAndHandleException(channel, data));
+					() -> context, registry);
+			observation.start();
+			Observation.Scope scope = observation.openScope();
+			try {
+				executeListenerAndHandleException(channel, data);
+			}
+			catch (Throwable ex) {
+				observation.error(ex);
+				throw ex;
+			}
+			finally {
+				scope.close();
+				if (!context.isAsync()) {
+					observation.stop();
+				}
+			}
 		}
 		else {
 			executeListenerAndHandleException(channel, data);
