@@ -99,6 +99,7 @@ import org.springframework.util.backoff.BackOffExecution;
  * @author Artem Bilan
  * @author Nicolas Ristock
  * @author Cao Weibo
+ * @author Ngoc Nhan
  *
  * @since 2.0
  *
@@ -838,7 +839,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			@Nullable SimpleConsumer consumerArg, Exception ex) {
 
 		SimpleConsumer consumer = consumerArg;
-		if (RabbitUtils.exclusiveAccesssRefused(ex)) {
+		if (RabbitUtils.exclusiveAccessRefused(ex)) {
 			getExclusiveConsumerExceptionLogger().log(logger, "Exclusive consumer failure", ex.getCause());
 			publishConsumerFailedEvent("Consumer raised exception, attempting restart", false, ex);
 		}

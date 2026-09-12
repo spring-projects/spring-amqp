@@ -1455,7 +1455,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			catch (AmqpIOException e) {
-				if (RabbitUtils.exclusiveAccesssRefused(e)) {
+				if (RabbitUtils.exclusiveAccessRefused(e)) {
 					this.failedExclusive = true;
 					Throwable cause = e.getCause();
 					if (cause != null) {
