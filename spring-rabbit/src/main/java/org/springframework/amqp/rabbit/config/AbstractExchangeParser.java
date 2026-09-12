@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.config;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.jspecify.annotations.Nullable;
 import org.w3c.dom.Element;
@@ -40,7 +41,7 @@ import org.springframework.util.xml.DomUtils;
  */
 public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitionParser {
 
-	private static final ThreadLocal<@Nullable Element> CURRENT_ELEMENT = new ThreadLocal<>();
+	private static final Map<Thread, Element> CURRENT_ELEMENT = new ConcurrentHashMap<>();
 
 	private static final String ARGUMENTS_ELEMENT = "exchange-arguments";
 
@@ -69,13 +70,8 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 
 	@Override
 	protected boolean shouldParseNameAsAliases() {
-		Element element = CURRENT_ELEMENT.get();
-		try {
-			return element == null || !element.hasAttribute(ID_ATTRIBUTE);
-		}
-		finally {
-			CURRENT_ELEMENT.remove();
-		}
+		Element element = CURRENT_ELEMENT.remove(Thread.currentThread());
+		return element == null || !element.hasAttribute(ID_ATTRIBUTE);
 	}
 
 	@Override
@@ -93,7 +89,7 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 		parseArguments(element, ARGUMENTS_ELEMENT, parserContext, builder, null);
 
 		NamespaceUtils.parseDeclarationControls(element, builder);
-		CURRENT_ELEMENT.set(element);
+		CURRENT_ELEMENT.put(Thread.currentThread(), element);
 	}
 
 	protected void parseBindings(Element element, ParserContext parserContext, BeanDefinitionBuilder builder,

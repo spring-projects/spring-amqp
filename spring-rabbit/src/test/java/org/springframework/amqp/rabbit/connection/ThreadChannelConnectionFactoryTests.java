@@ -77,7 +77,8 @@ public class ThreadChannelConnectionFactoryTests {
 		assertThat(chann2).isSameAs(chann1);
 		chann2.close();
 		conn.closeThreadChannel();
-		assertThat(TestUtils.<ThreadLocal<?>>getPropertyValue(conn, "channels").get()).isNull();
+		assertThat(TestUtils.<Map<Thread, Channel>>getPropertyValue(conn, "channels").get(Thread.currentThread()))
+				.isNull();
 		chann2 = conn.createChannel(false);
 		assertThat(chann2).isNotSameAs(chann1);
 		chann2.close();
@@ -88,12 +89,16 @@ public class ThreadChannelConnectionFactoryTests {
 		chann2 = conn.createChannel(true);
 		assertThat(chann2).isSameAs(chann1);
 		chann2.close();
-		assertThat(TestUtils.<ThreadLocal<?>>getPropertyValue(conn, "channels").get()).isNotNull();
-		assertThat(TestUtils.<ThreadLocal<?>>getPropertyValue(conn, "txChannels").get()).isNotNull();
+		assertThat(TestUtils.<Map<Thread, Channel>>getPropertyValue(conn, "channels").get(Thread.currentThread()))
+				.isNotNull();
+		assertThat(TestUtils.<Map<Thread, Channel>>getPropertyValue(conn, "txChannels").get(Thread.currentThread()))
+				.isNotNull();
 		conn.closeThreadChannel();
-		assertThat(TestUtils.<ThreadLocal<?>>getPropertyValue(conn, "txChannels").get()).isNull();
+		assertThat(TestUtils.<Map<Thread, Channel>>getPropertyValue(conn, "txChannels").get(Thread.currentThread()))
+				.isNull();
 		chann2 = conn.createChannel(true);
-		assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn, "txChannels").get().isOpen())
+		assertThat(TestUtils.<Map<Thread, Channel>>getPropertyValue(conn, "txChannels").get(Thread.currentThread())
+				.isOpen())
 				.isTrue();
 		chann2.close();
 		chann2 = conn.createChannel(false);
@@ -105,9 +110,11 @@ public class ThreadChannelConnectionFactoryTests {
 		assertThat(((ChannelProxy) chann1).isConfirmSelected()).isTrue();
 		chann1.close();
 		tccf.destroy();
-		assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn, "channels").get().isOpen())
+		assertThat(TestUtils.<Map<Thread, Channel>>getPropertyValue(conn, "channels").get(Thread.currentThread())
+				.isOpen())
 				.isFalse();
-		assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn, "txChannels").get().isOpen())
+		assertThat(TestUtils.<Map<Thread, Channel>>getPropertyValue(conn, "txChannels").get(Thread.currentThread())
+				.isOpen())
 				.isFalse();
 	}
 
@@ -171,8 +178,10 @@ public class ThreadChannelConnectionFactoryTests {
 			tx.set(conn.createChannel(true));
 			Object ctx = tccf.prepareSwitchContext();
 			assertThat(tccf.prepareSwitchContext()).isNull();
-			assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn, "channels").get()).isNull();
-			assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn, "txChannels").get()).isNull();
+			assertThat(TestUtils.<Map<Thread, Channel>>getPropertyValue(conn, "channels").get(Thread.currentThread()))
+					.isNull();
+			assertThat(TestUtils.<Map<Thread, Channel>>getPropertyValue(conn, "txChannels").get(Thread.currentThread()))
+					.isNull();
 			context.add(ctx);
 		});
 		Object ctx = context.poll(10, TimeUnit.SECONDS);
@@ -207,8 +216,10 @@ public class ThreadChannelConnectionFactoryTests {
 			tx.set(conn.createChannel(true));
 			Object ctx = tccf.prepareSwitchContext();
 			assertThat(tccf.prepareSwitchContext()).isNull();
-			assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn, "channels").get()).isNull();
-			assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn, "txChannels").get()).isNull();
+			assertThat(TestUtils.<Map<Thread, Channel>>getPropertyValue(conn, "channels").get(Thread.currentThread()))
+					.isNull();
+			assertThat(TestUtils.<Map<Thread, Channel>>getPropertyValue(conn, "txChannels").get(Thread.currentThread()))
+					.isNull();
 			conn.createChannel(false);
 			context.add(ctx);
 			context.add(tccf.prepareSwitchContext());
@@ -253,10 +264,14 @@ public class ThreadChannelConnectionFactoryTests {
 			tx2.set(conn2.createChannel(true));
 			Object ctx = tccf.prepareSwitchContext();
 			assertThat(tccf.prepareSwitchContext()).isNull();
-			assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn1, "channels").get()).isNull();
-			assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn1, "txChannels").get()).isNull();
-			assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn2, "channels").get()).isNull();
-			assertThat(TestUtils.<ThreadLocal<Channel>>getPropertyValue(conn2, "txChannels").get()).isNull();
+			assertThat(TestUtils.<Map<Thread, Channel>>getPropertyValue(conn1, "channels").get(Thread.currentThread()))
+					.isNull();
+			assertThat(TestUtils.<Map<Thread, Channel>>getPropertyValue(conn1, "txChannels").get(Thread.currentThread()))
+					.isNull();
+			assertThat(TestUtils.<Map<Thread, Channel>>getPropertyValue(conn2, "channels").get(Thread.currentThread()))
+					.isNull();
+			assertThat(TestUtils.<Map<Thread, Channel>>getPropertyValue(conn2, "txChannels").get(Thread.currentThread()))
+					.isNull();
 			context.add(ctx);
 		});
 		Object ctx = context.poll(10, TimeUnit.SECONDS);

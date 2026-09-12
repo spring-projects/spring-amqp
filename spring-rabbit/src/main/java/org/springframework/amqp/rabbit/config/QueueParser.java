@@ -17,8 +17,8 @@
 package org.springframework.amqp.rabbit.config;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import org.jspecify.annotations.Nullable;
 import org.w3c.dom.Element;
 
 import org.springframework.amqp.core.AnonymousQueue;
@@ -39,7 +39,7 @@ import org.springframework.util.xml.DomUtils;
  */
 public class QueueParser extends AbstractSingleBeanDefinitionParser {
 
-	private static final ThreadLocal<@Nullable Element> CURRENT_ELEMENT = new ThreadLocal<>();
+	private static final Map<Thread, Element> CURRENT_ELEMENT = new ConcurrentHashMap<>();
 
 	/**  Element OR attribute. */
 	private static final String ARGUMENTS = "queue-arguments";
@@ -61,13 +61,8 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 
 	@Override
 	protected boolean shouldParseNameAsAliases() {
-		Element element = CURRENT_ELEMENT.get();
-		try {
-			return element == null || !element.hasAttribute(ID_ATTRIBUTE);
-		}
-		finally {
-			CURRENT_ELEMENT.remove();
-		}
+		Element element = CURRENT_ELEMENT.remove(Thread.currentThread());
+		return element == null || !element.hasAttribute(ID_ATTRIBUTE);
 	}
 
 	@Override
@@ -117,7 +112,7 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 		parseArguments(element, parserContext, builder);
 
 		NamespaceUtils.parseDeclarationControls(element, builder);
-		CURRENT_ELEMENT.set(element);
+		CURRENT_ELEMENT.put(Thread.currentThread(), element);
 	}
 
 	private void parseArguments(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {

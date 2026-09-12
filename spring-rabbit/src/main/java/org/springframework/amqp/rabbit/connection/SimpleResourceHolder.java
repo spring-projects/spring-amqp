@@ -21,12 +21,12 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.core.NamedThreadLocal;
 import org.springframework.util.Assert;
 
 /**
@@ -57,11 +57,9 @@ public final class SimpleResourceHolder {
 
 	private static final Log LOGGER = LogFactory.getLog(SimpleResourceHolder.class);
 
-	private static final ThreadLocal<@Nullable Map<Object, Object>> RESOURCES =
-			new NamedThreadLocal<>("Simple resources");
+	private static final Map<Thread, Map<Object, Object>> RESOURCES = new ConcurrentHashMap<>();
 
-	private static final ThreadLocal<@Nullable Map<Object, Deque<@Nullable Object>>> STACK =
-			new NamedThreadLocal<>("Simple resources");
+	private static final Map<Thread, Map<Object, Deque<@Nullable Object>>> STACK = new ConcurrentHashMap<>();
 
 	/**
 	 * Return all resources that are bound to the current thread.
@@ -73,7 +71,7 @@ public final class SimpleResourceHolder {
 	 * @see #has
 	 */
 	public static Map<Object, Object> getResources() {
-		Map<Object, Object> map = RESOURCES.get();
+		Map<Object, Object> map = RESOURCES.get(Thread.currentThread());
 		return (map != null ? Collections.unmodifiableMap(map) : Collections.emptyMap());
 	}
 
@@ -108,7 +106,7 @@ public final class SimpleResourceHolder {
 	 * @return the resource object.
 	 */
 	private static @Nullable Object doGet(Object actualKey) {
-		Map<Object, Object> map = RESOURCES.get();
+		Map<Object, Object> map = RESOURCES.get(Thread.currentThread());
 		if (map == null) {
 			return null;
 		}
@@ -123,19 +121,15 @@ public final class SimpleResourceHolder {
 	 */
 	public static void bind(Object key, Object value) {
 		Assert.notNull(value, "Value must not be null");
-		Map<Object, Object> map = RESOURCES.get();
-		// set ThreadLocal Map if none found
-		if (map == null) {
-			map = new HashMap<>();
-			RESOURCES.set(map);
-		}
+		Thread currentThread = Thread.currentThread();
+		Map<Object, Object> map = RESOURCES.computeIfAbsent(currentThread, k -> new HashMap<>());
 		Object oldValue = map.put(key, value);
 		Assert.isNull(oldValue, () -> "Already value [" + oldValue + FOR_KEY + key + BOUND_TO_THREAD
-				+ Thread.currentThread().getName() + "]");
+				+ currentThread.getName() + "]");
 
 		if (LOGGER.isTraceEnabled()) {
 			LOGGER.trace(
-					"Bound value [" + value + FOR_KEY + key + "] to thread [" + Thread.currentThread().getName() + "]");
+					"Bound value [" + value + FOR_KEY + key + "] to thread [" + currentThread.getName() + "]");
 		}
 	}
 
@@ -151,13 +145,11 @@ public final class SimpleResourceHolder {
 			bind(key, value);
 		}
 		else {
-			Map<Object, Deque<@Nullable Object>> stack = STACK.get();
-			if (stack == null) {
-				stack = new HashMap<>();
-				STACK.set(stack);
-			}
-			stack.computeIfAbsent(key, k -> new LinkedList<>());
-			stack.get(key).push(currentValue);
+			Thread currentThread = Thread.currentThread();
+			Map<Object, Deque<@Nullable Object>> stack =
+					STACK.computeIfAbsent(currentThread, k -> new HashMap<>());
+			Deque<@Nullable Object> deque = stack.computeIfAbsent(key, k -> new LinkedList<>());
+			deque.push(currentValue);
 			unbind(key);
 			bind(key, value);
 		}
@@ -171,7 +163,8 @@ public final class SimpleResourceHolder {
 	 */
 	public static Object pop(Object key) {
 		Object popped = unbind(key);
-		Map<Object, Deque<@Nullable Object>> stack = STACK.get();
+		Thread currentThread = Thread.currentThread();
+		Map<Object, Deque<@Nullable Object>> stack = STACK.get(currentThread);
 		if (stack != null) {
 			Deque<@Nullable Object> deque = stack.get(key);
 			if (deque != null && !deque.isEmpty()) {
@@ -180,8 +173,11 @@ public final class SimpleResourceHolder {
 					bind(key, previousValue);
 				}
 				if (deque.isEmpty()) {
-					STACK.remove();
+					stack.remove(key);
 				}
+			}
+			if (stack.isEmpty()) {
+				STACK.remove(currentThread);
 			}
 		}
 		return popped;
@@ -206,19 +202,20 @@ public final class SimpleResourceHolder {
 	 * @return the previously bound value, or <code>null</code> if none bound
 	 */
 	public static @Nullable Object unbindIfPossible(Object key) {
-		Map<Object, Object> map = RESOURCES.get();
+		Thread currentThread = Thread.currentThread();
+		Map<Object, Object> map = RESOURCES.get(currentThread);
 		if (map == null) {
 			return null;
 		}
 		Object value = map.remove(key);
-		// Remove entire ThreadLocal if empty...
+		// Remove entire thread entry if empty...
 		if (map.isEmpty()) {
-			RESOURCES.remove();
+			RESOURCES.remove(currentThread);
 		}
 
 		if (value != null && LOGGER.isTraceEnabled()) {
 			LOGGER.trace("Removed value [" + value + FOR_KEY + key + "] from thread ["
-					+ Thread.currentThread().getName() + "]");
+					+ currentThread.getName() + "]");
 		}
 		return value;
 	}
@@ -227,8 +224,9 @@ public final class SimpleResourceHolder {
 	 * Clear resources for the current thread.
 	 */
 	public static void clear() {
-		RESOURCES.remove();
-		STACK.remove();
+		Thread currentThread = Thread.currentThread();
+		RESOURCES.remove(currentThread);
+		STACK.remove(currentThread);
 	}
 
 	private SimpleResourceHolder() {

@@ -18,6 +18,8 @@ package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AlreadyClosedException;
@@ -82,7 +84,7 @@ public abstract class RabbitUtils {
 
 	private static final Log LOGGER = LogFactory.getLog(RabbitUtils.class);
 
-	private static final ThreadLocal<@Nullable Boolean> physicalCloseRequired = new ThreadLocal<>(); // NOSONAR - lower case
+	private static final Map<Thread, Boolean> physicalCloseRequired = new ConcurrentHashMap<>(); // NOSONAR - lower case
 
 	/**
 	 * Close the given RabbitMQ Connection and ignore any thrown exception. This is useful for typical
@@ -211,30 +213,30 @@ public abstract class RabbitUtils {
 	}
 
 	/**
-	 * Sets a ThreadLocal indicating the channel MUST be physically closed.
+	 * Sets a flag indicating the channel MUST be physically closed.
 	 * @param channel the channel.
 	 * @param b true if the channel must be closed (if it's a proxy).
 	 */
 	public static void setPhysicalCloseRequired(Channel channel, boolean b) {
 		if (channel instanceof ChannelProxy) {
-			physicalCloseRequired.set(b);
+			physicalCloseRequired.put(Thread.currentThread(), b);
 		}
 	}
 
 	/**
-	 * Gets and removes a ThreadLocal indicating the channel MUST be physically closed.
+	 * Gets a flag indicating the channel MUST be physically closed.
 	 * @return true if the channel must be physically closed
 	 */
 	public static boolean isPhysicalCloseRequired() {
-		Boolean mustClose = physicalCloseRequired.get();
-		return mustClose != null && mustClose;
+		Boolean mustClose = physicalCloseRequired.get(Thread.currentThread());
+		return Boolean.TRUE.equals(mustClose);
 	}
 
 	/**
 	 * Clear the physicalCloseRequired flag.
 	 */
 	public static void clearPhysicalCloseRequired() {
-		physicalCloseRequired.remove();
+		physicalCloseRequired.remove(Thread.currentThread());
 	}
 
 	/**

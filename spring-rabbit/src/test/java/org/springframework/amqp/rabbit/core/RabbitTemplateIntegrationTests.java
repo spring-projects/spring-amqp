@@ -1585,8 +1585,8 @@ public class RabbitTemplateIntegrationTests {
 			});
 			return null;
 		});
-		ThreadLocal<?> tl = TestUtils.getPropertyValue(this.template, "dedicatedChannels");
-		assertThat(tl.get()).isNull();
+		Map<?, ?> dc = TestUtils.getPropertyValue(this.template, "dedicatedChannels");
+		assertThat(dc.get(Thread.currentThread())).isNull();
 	}
 
 	@Test

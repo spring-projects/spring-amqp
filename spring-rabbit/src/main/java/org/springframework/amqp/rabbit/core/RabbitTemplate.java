@@ -188,9 +188,9 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	private static final SpelExpressionParser PARSER = new SpelExpressionParser();
 
 	/*
-	 * Not static as normal since we want this TL to be scoped within the template instance.
+	 * Not static as normal since we want this map to be scoped within the template instance.
 	 */
-	private final ThreadLocal<@Nullable Channel> dedicatedChannels = new ThreadLocal<>();
+	private final Map<Thread, Channel> dedicatedChannels = new ConcurrentHashMap<>();
 
 	private final AtomicInteger activeTemplateCallbacks = new AtomicInteger();
 
@@ -2218,9 +2218,9 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 		Assert.notNull(action, "Callback object must not be null");
 		Channel channel = null;
 		boolean invokeScope = false;
-		// No need to check the thread local if we know that no invokes are in process
+		// No need to check the thread-bound map if we know that no invokes are in process
 		if (this.activeTemplateCallbacks.get() > 0) {
-			channel = this.dedicatedChannels.get();
+			channel = this.dedicatedChannels.get(Thread.currentThread());
 		}
 		RabbitResourceHolder resourceHolder = null;
 		Connection connection = null; // NOSONAR (close)
@@ -2295,7 +2295,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	public <T extends @Nullable Object> T invoke(OperationsCallback<T> action,
 			com.rabbitmq.client.@Nullable ConfirmCallback acks, com.rabbitmq.client.@Nullable ConfirmCallback nacks) {
 
-		final Channel currentChannel = this.dedicatedChannels.get();
+		Thread currentThread = Thread.currentThread();
+		final Channel currentChannel = this.dedicatedChannels.get(currentThread);
 		Assert.state(currentChannel == null, () -> "Nested invoke() calls are not supported; channel '" + currentChannel
 				+ "' is already associated with this thread");
 		this.activeTemplateCallbacks.incrementAndGet();
@@ -2322,7 +2323,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 				if (!connectionFactory.isPublisherConfirms() && !connectionFactory.isSimplePublisherConfirms()) {
 					RabbitUtils.setPhysicalCloseRequired(channel, true);
 				}
-				this.dedicatedChannels.set(channel);
+				this.dedicatedChannels.put(currentThread, channel);
 			}
 			catch (RuntimeException e) {
 				RabbitUtils.closeConnection(connection);
@@ -2356,7 +2357,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			channel.removeConfirmListener(listener);
 		}
 		this.activeTemplateCallbacks.decrementAndGet();
-		this.dedicatedChannels.remove();
+		this.dedicatedChannels.remove(Thread.currentThread());
 		if (resourceHolder != null) {
 			ConnectionFactoryUtils.releaseResources(resourceHolder);
 		}
@@ -2368,7 +2369,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	@Override
 	public boolean waitForConfirms(long timeout) {
-		Channel channel = this.dedicatedChannels.get();
+		Channel channel = this.dedicatedChannels.get(Thread.currentThread());
 		Assert.state(channel != null, "This operation is only available within the scope of an invoke operation");
 		try {
 			return channel.waitForConfirms(timeout);
@@ -2384,7 +2385,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 
 	@Override
 	public void waitForConfirmsOrDie(long timeout) {
-		Channel channel = this.dedicatedChannels.get();
+		Channel channel = this.dedicatedChannels.get(Thread.currentThread());
 		Assert.state(channel != null, "This operation is only available within the scope of an invoke operation");
 		try {
 			channel.waitForConfirmsOrDie(timeout);

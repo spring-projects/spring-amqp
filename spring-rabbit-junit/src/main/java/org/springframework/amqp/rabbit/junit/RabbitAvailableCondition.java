@@ -17,7 +17,9 @@
 package org.springframework.amqp.rabbit.junit;
 
 import java.lang.reflect.AnnotatedElement;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.rabbitmq.client.ConnectionFactory;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -50,7 +52,7 @@ public class RabbitAvailableCondition
 	private static final ConditionEvaluationResult ENABLED = ConditionEvaluationResult.enabled(
 			"@RabbitAvailable is not present");
 
-	private static final ThreadLocal<BrokerRunningSupport> BROKER_RUNNING_HOLDER = new ThreadLocal<>();
+	private static final Map<Thread, BrokerRunningSupport> BROKER_RUNNING_HOLDER = new ConcurrentHashMap<>();
 
 	@Override
 	public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
@@ -73,7 +75,7 @@ public class RabbitAvailableCondition
 				}
 				brokerRunning.setPurgeAfterEach(rabbit.purgeAfterEach());
 				brokerRunning.test();
-				BROKER_RUNNING_HOLDER.set(brokerRunning);
+				BROKER_RUNNING_HOLDER.put(Thread.currentThread(), brokerRunning);
 				Store store = getStore(context);
 				store.put(BROKER_RUNNING_BEAN, brokerRunning);
 				store.put("queuesToDelete", queues);
@@ -91,7 +93,7 @@ public class RabbitAvailableCondition
 
 	@Override
 	public void afterEach(ExtensionContext context) {
-		BrokerRunningSupport brokerRunning = BROKER_RUNNING_HOLDER.get();
+		BrokerRunningSupport brokerRunning = BROKER_RUNNING_HOLDER.get(Thread.currentThread());
 		if (brokerRunning != null && brokerRunning.isPurgeAfterEach()) {
 			brokerRunning.purgeTestQueues();
 		}
@@ -99,7 +101,7 @@ public class RabbitAvailableCondition
 
 	@Override
 	public void afterAll(ExtensionContext context) {
-		BROKER_RUNNING_HOLDER.remove();
+		BROKER_RUNNING_HOLDER.remove(Thread.currentThread());
 		Store store = getStore(context);
 		BrokerRunningSupport brokerRunning = store.remove(BROKER_RUNNING_BEAN, BrokerRunningSupport.class);
 		if (brokerRunning != null) {
@@ -138,7 +140,9 @@ public class RabbitAvailableCondition
 	}
 
 	public static BrokerRunningSupport getBrokerRunning() {
-		return BROKER_RUNNING_HOLDER.get();
+		BrokerRunningSupport running = BROKER_RUNNING_HOLDER.get(Thread.currentThread());
+		Assert.state(running != null, "Could not find brokerRunning instance on current thread");
+		return running;
 	}
 
 }

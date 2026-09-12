@@ -17,6 +17,8 @@
 package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 import com.rabbitmq.client.Channel;
@@ -48,7 +50,7 @@ public final class ConnectionFactoryUtils {
 			ClassUtils.isPresent("org.springframework.web.reactive.function.client.WebClient",
 					ConnectionFactoryUtils.class.getClassLoader());
 
-	private static final ThreadLocal<@Nullable AfterCompletionFailedException> COMPLETION_EXCEPTIONS = new ThreadLocal<>();
+	private static final Map<Thread, AfterCompletionFailedException> COMPLETION_EXCEPTIONS = new ConcurrentHashMap<>();
 
 	private static boolean captureAfterCompletionExceptions;
 
@@ -197,15 +199,15 @@ public final class ConnectionFactoryUtils {
 
 	private static void completionFailed(AfterCompletionFailedException ex) {
 		if (captureAfterCompletionExceptions) {
-			COMPLETION_EXCEPTIONS.set(ex);
+			COMPLETION_EXCEPTIONS.put(Thread.currentThread(), ex);
 		}
 	}
 
 	/**
 	 * Call this method to enable capturing {@link AfterCompletionFailedException}s
-	 * when using transaction synchronization. Exceptions are stored in a {@link ThreadLocal}
-	 * which must be cleared by calling {@link #checkAfterCompletion()} after the transaction
-	 * has completed.
+	 * when using transaction synchronization. Exceptions are stored in a map keyed by
+	 * thread which must be cleared by calling {@link #checkAfterCompletion()} after the
+	 * transaction has completed.
 	 * @param enable true to enable capture.
 	 */
 	public static void enableAfterCompletionFailureCapture(boolean enable) {
@@ -219,9 +221,8 @@ public final class ConnectionFactoryUtils {
 	 * @since 2.3.10
 	 */
 	public static void checkAfterCompletion() {
-		AfterCompletionFailedException ex = COMPLETION_EXCEPTIONS.get();
+		AfterCompletionFailedException ex = COMPLETION_EXCEPTIONS.remove(Thread.currentThread());
 		if (ex != null) {
-			COMPLETION_EXCEPTIONS.remove();
 			throw ex;
 		}
 	}

@@ -16,6 +16,9 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import com.rabbitmq.client.Channel;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -37,7 +40,7 @@ public final class ConsumerChannelRegistry {
 
 	private static final Log logger = LogFactory.getLog(ConsumerChannelRegistry.class); // NOSONAR - lower case
 
-	private static final ThreadLocal<@Nullable ChannelHolder> CONSUMER_CHANNEL = new ThreadLocal<>();
+	private static final Map<Thread, ChannelHolder> CONSUMER_CHANNEL = new ConcurrentHashMap<>();
 
 	private ConsumerChannelRegistry() {
 	}
@@ -58,7 +61,7 @@ public final class ConsumerChannelRegistry {
 			logger.debug("Registering consumer channel" + channel + " from factory " +
 					connectionFactory);
 		}
-		CONSUMER_CHANNEL.set(new ChannelHolder(channel, connectionFactory));
+		CONSUMER_CHANNEL.put(Thread.currentThread(), new ChannelHolder(channel, connectionFactory));
 	}
 
 	/**
@@ -66,10 +69,11 @@ public final class ConsumerChannelRegistry {
 	 * the channel when the consumer exits.
 	 */
 	public static void unRegisterConsumerChannel() {
+		Thread currentThread = Thread.currentThread();
 		if (logger.isDebugEnabled()) {
-			logger.debug("Unregistering consumer channel" + CONSUMER_CHANNEL.get());
+			logger.debug("Unregistering consumer channel" + CONSUMER_CHANNEL.get(currentThread));
 		}
-		CONSUMER_CHANNEL.remove();
+		CONSUMER_CHANNEL.remove(currentThread);
 	}
 
 	/**
@@ -79,7 +83,7 @@ public final class ConsumerChannelRegistry {
 	 * @return The channel.
 	 */
 	public static @Nullable Channel getConsumerChannel() {
-		ChannelHolder channelHolder = CONSUMER_CHANNEL.get();
+		ChannelHolder channelHolder = CONSUMER_CHANNEL.get(Thread.currentThread());
 		return channelHolder != null
 				? channelHolder.channel()
 				: null;
@@ -93,7 +97,7 @@ public final class ConsumerChannelRegistry {
 	 * @return The channel.
 	 */
 	public static @Nullable Channel getConsumerChannel(ConnectionFactory connectionFactory) {
-		ChannelHolder channelHolder = CONSUMER_CHANNEL.get();
+		ChannelHolder channelHolder = CONSUMER_CHANNEL.get(Thread.currentThread());
 		Channel channel = null;
 		if (channelHolder != null && channelHolder.connectionFactory().equals(connectionFactory)) {
 			channel = channelHolder.channel();

@@ -284,9 +284,9 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory
 		/*
 		 * Intentionally not static.
 		 */
-		private final ThreadLocal<@Nullable Channel> channels = new ThreadLocal<>();
+		private final Map<Thread, Channel> channels = new ConcurrentHashMap<>();
 
-		private final ThreadLocal<@Nullable Channel> txChannels = new ThreadLocal<>();
+		private final Map<Thread, Channel> txChannels = new ConcurrentHashMap<>();
 
 		ConnectionWrapper(com.rabbitmq.client.Connection delegate, int closeTimeout) {
 			super(delegate, closeTimeout);
@@ -295,7 +295,9 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory
 		@SuppressWarnings("resource")
 		@Override
 		public Channel createChannel(boolean transactional) {
-			Channel channel = transactional ? this.txChannels.get() : this.channels.get();
+			Thread currentThread = Thread.currentThread();
+			Map<Thread, Channel> channelMap = transactional ? this.txChannels : this.channels;
+			Channel channel = channelMap.get(currentThread);
 			if (channel == null || !channel.isOpen()) {
 				channel = createProxy(super.createChannel(transactional), transactional);
 				if (transactional) {
@@ -305,7 +307,7 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory
 					catch (IOException e) {
 						throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 					}
-					this.txChannels.set(channel);
+					this.txChannels.put(currentThread, channel);
 				}
 				else {
 					if (ThreadChannelConnectionFactory.this.simplePublisherConfirms) {
@@ -316,7 +318,7 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory
 							throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 						}
 					}
-					this.channels.set(channel);
+					this.channels.put(currentThread, channel);
 				}
 				getChannelListener().onCreate(channel, transactional);
 			}
@@ -358,18 +360,15 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory
 		}
 
 		private void handleClose(Channel channel, boolean transactional) {
-			if ((transactional && this.txChannels.get() == null) || (!transactional && this.channels.get() == null)) {
+			Thread currentThread = Thread.currentThread();
+			Map<Thread, Channel> channelMap = transactional ? this.txChannels : this.channels;
+			if (channelMap.get(currentThread) == null) {
 				physicalClose(channel);
 			}
 			else {
 				if (RabbitUtils.isPhysicalCloseRequired()) {
 					physicalClose(channel);
-					if (transactional) {
-						this.txChannels.remove();
-					}
-					else {
-						this.channels.remove();
-					}
+					channelMap.remove(currentThread);
 				}
 			}
 		}
@@ -384,10 +383,9 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory
 			doClose(this.txChannels);
 		}
 
-		private void doClose(ThreadLocal<@Nullable Channel> channelsTL) {
-			Channel channel = channelsTL.get();
+		private void doClose(Map<Thread, Channel> channelMap) {
+			Channel channel = channelMap.remove(Thread.currentThread());
 			if (channel != null) {
-				channelsTL.remove();
 				physicalClose(channel);
 			}
 		}
@@ -412,9 +410,8 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory
 		}
 
 		Context prepareSwitchContext() {
-			Context context = new Context(this.channels.get(), this.txChannels.get());
-			this.channels.remove();
-			this.txChannels.remove();
+			Thread currentThread = Thread.currentThread();
+			Context context = new Context(this.channels.remove(currentThread), this.txChannels.remove(currentThread));
 			return context;
 		}
 
@@ -429,13 +426,14 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory
 			}
 		}
 
-		private void doSwitch(Channel channel, ThreadLocal<@Nullable Channel> channelTL) {
-			Channel toClose = channelTL.get();
+		private void doSwitch(Channel channel, Map<Thread, Channel> channelMap) {
+			Thread currentThread = Thread.currentThread();
+			Channel toClose = channelMap.get(currentThread);
 			if (toClose != null) {
 				RabbitUtils.setPhysicalCloseRequired(channel, true);
 				physicalClose(toClose);
 			}
-			channelTL.set(channel);
+			channelMap.put(currentThread, channel);
 		}
 
 	}
