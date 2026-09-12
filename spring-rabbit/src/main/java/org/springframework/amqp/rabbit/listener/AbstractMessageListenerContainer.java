@@ -1459,6 +1459,15 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 		}
 	}
 
+	@Override
+	protected void checkObservation() {
+		super.checkObservation();
+		ObservationRegistry registry = getObservationRegistry();
+		if (!registry.isNoop() && this.messageListener instanceof AbstractAdaptableMessageListener adaptable) {
+			adaptable.setupObservationRegistry(registry, getListenerId());
+		}
+	}
+
 	/**
 	 * Start this container, and notify all invoker tasks.
 	 */
