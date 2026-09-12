@@ -15,6 +15,9 @@ The default implementations add the `name` tag for template observations and `li
 
 You can either subclass `DefaultRabbitTemplateObservationConvention` or `DefaultRabbitListenerObservationConvention` or provide completely new implementations.
 
+Starting with version 4.2, listener reply messages are observed using `RabbitTemplateObservation.TEMPLATE_OBSERVATION` when observation is enabled, propagating distributed tracing context (such as `traceparent`) to reply messages.
+For asynchronous listener return types (`CompletableFuture` or `Mono`), the listener receiver observation remains open until the asynchronous computation completes, ensuring trace context is propagated across threads to the reply message.
+
 See xref:appendix/micrometer.adoc[Micrometer Observation Documentation] for more details.
 
 WARNING: Due to ambiguity in how traces should be handled in a batch, observations are *NOT* created for xref:amqp/receiving-messages/batch.adoc[Batch Listener Containers].

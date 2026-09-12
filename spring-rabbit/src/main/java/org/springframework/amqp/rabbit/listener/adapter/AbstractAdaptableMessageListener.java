@@ -22,8 +22,11 @@ import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.rabbitmq.client.Channel;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
@@ -43,6 +46,10 @@ import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitMessageReceiverContext;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitMessageSenderContext;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitTemplateObservation;
+import org.springframework.amqp.rabbit.support.micrometer.RabbitTemplateObservation.DefaultRabbitTemplateObservationConvention;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
@@ -121,6 +128,12 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	private @Nullable String replyContentType;
 
 	private boolean converterWinsContentType = true;
+
+	private @Nullable ObservationRegistry observationRegistry;
+
+	private boolean observationEnabled;
+
+	private @Nullable String beanName;
 
 	/**
 	 * Set the routing key to use when sending response messages.
@@ -335,6 +348,51 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	}
 
 	/**
+	 * Set the {@link ObservationRegistry} to use for observing reply messages.
+	 * @param observationRegistry the observation registry.
+	 * @since 4.2
+	 */
+	public void setObservationRegistry(@Nullable ObservationRegistry observationRegistry) {
+		this.observationRegistry = observationRegistry;
+	}
+
+	/**
+	 * Set whether observation is enabled.
+	 * @param observationEnabled true to enable observation.
+	 * @since 4.2
+	 */
+	public void setObservationEnabled(boolean observationEnabled) {
+		this.observationEnabled = observationEnabled;
+	}
+
+	/**
+	 * Return whether observation is enabled.
+	 * @return true if observation is enabled.
+	 * @since 4.2
+	 */
+	public boolean isObservationEnabled() {
+		return this.observationEnabled;
+	}
+
+	/**
+	 * Set the bean name or listener id to associate with reply observations.
+	 * @param beanName the bean name.
+	 * @since 4.2
+	 */
+	public void setBeanName(@Nullable String beanName) {
+		this.beanName = beanName;
+	}
+
+	/**
+	 * Return the bean name or listener id to associate with reply observations.
+	 * @return the bean name.
+	 * @since 4.2
+	 */
+	public @Nullable String getBeanName() {
+		return this.beanName;
+	}
+
+	/**
 	 * Return true when this listener, or the code it delegates to, may settle a delivery
 	 * itself - by calling {@code basicAck()}, {@code basicNack()} or
 	 * {@code basicReject()} on the channel it is given. The container needs to know that
@@ -410,13 +468,39 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 					this.logger.warn("Container AcknowledgeMode must be MANUAL for a Future<?> return type; "
 							+ "otherwise the container will ack the message immediately");
 				}
+				Observation observation = (isObservationEnabled() && this.observationRegistry != null)
+						? this.observationRegistry.getCurrentObservation() : null;
+				if (observation != null
+						&& observation.getContext() instanceof RabbitMessageReceiverContext receiverContext) {
+					receiverContext.setAsync(true);
+				}
 				completable.whenComplete((r, t) -> {
-					if (t == null) {
-						asyncSuccess(resultArg, request, channel, source, r);
-						basicAck(request, channel);
+					try {
+						scoped(observation, () -> {
+							if (t == null) {
+								try {
+									asyncSuccess(resultArg, request, channel, source, r);
+									basicAck(request, channel);
+								}
+								catch (Throwable ex) {
+									if (observation != null) {
+										observation.error(ex);
+									}
+									asyncFailure(request, channel, ex, source);
+								}
+							}
+							else {
+								if (observation != null) {
+									observation.error(t);
+								}
+								asyncFailure(request, channel, t, source);
+							}
+						});
 					}
-					else {
-						asyncFailure(request, channel, t, source);
+					finally {
+						if (observation != null) {
+							observation.stop();
+						}
 					}
 				});
 			}
@@ -425,14 +509,76 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 					this.logger.warn("Container AcknowledgeMode must be MANUAL for a Mono<?> return type" +
 							"(or Kotlin suspend function); otherwise the container will ack the message immediately");
 				}
+				Observation observation = (isObservationEnabled() && this.observationRegistry != null)
+						? this.observationRegistry.getCurrentObservation() : null;
+				if (observation != null
+						&& observation.getContext() instanceof RabbitMessageReceiverContext receiverContext) {
+					receiverContext.setAsync(true);
+				}
+				AtomicBoolean observationStopped = new AtomicBoolean();
+				Runnable stopObservation = () -> {
+					if (observation != null && observationStopped.compareAndSet(false, true)) {
+						observation.stop();
+					}
+				};
 				MonoHandler.subscribe(resultArg.getReturnValue(),
-						r -> asyncSuccess(resultArg, request, channel, source, r),
-						t -> asyncFailure(request, channel, t, source),
-						() -> basicAck(request, channel));
+						r -> scoped(observation, () -> {
+							try {
+								asyncSuccess(resultArg, request, channel, source, r);
+							}
+							catch (Throwable ex) {
+								if (observation != null) {
+									observation.error(ex);
+								}
+								asyncFailure(request, channel, ex, source);
+								stopObservation.run();
+							}
+						}),
+						t -> {
+							try {
+								scoped(observation, () -> {
+									if (observation != null) {
+										observation.error(t);
+									}
+									asyncFailure(request, channel, t, source);
+								});
+							}
+							finally {
+								stopObservation.run();
+							}
+						},
+						() -> {
+							try {
+								scoped(observation, () -> {
+									try {
+										basicAck(request, channel);
+									}
+									catch (Throwable ex) {
+										if (observation != null) {
+											observation.error(ex);
+										}
+										asyncFailure(request, channel, ex, source);
+									}
+								});
+							}
+							finally {
+								stopObservation.run();
+							}
+						},
+						stopObservation);
 			}
 			else {
 				doHandleResult(resultArg, request, channel, source);
 			}
+		}
+	}
+
+	private void scoped(@Nullable Observation observation, Runnable runnable) {
+		if (observation != null) {
+			observation.scoped(runnable);
+		}
+		else {
+			runnable.run();
 		}
 	}
 
@@ -668,32 +814,59 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 		try {
 			this.logger.debug("Publishing response to exchange = [" + replyTo.getExchangeName() + "], routingKey = ["
 					+ replyTo.getRoutingKey() + "]");
-			if (this.retryTemplate == null) {
-				doPublish(channel, replyTo, message);
+			if (isObservationEnabled() && this.observationRegistry != null && !this.observationRegistry.isNoop()) {
+				Message messageToSend = message;
+				Observation replyObservation = RabbitTemplateObservation.TEMPLATE_OBSERVATION.observation(null,
+								DefaultRabbitTemplateObservationConvention.INSTANCE,
+								() -> new RabbitMessageSenderContext(messageToSend,
+										this.beanName != null ? this.beanName : "rabbitListenerReply",
+										replyTo.getExchangeName(), replyTo.getRoutingKey()),
+								this.observationRegistry);
+				replyObservation.observe(() -> publish(channel, replyTo, messageToSend, replyObservation));
 			}
 			else {
-				final Message messageToSend = message;
-				try {
-					this.retryTemplate.<@Nullable Object>execute(() -> {
-						doPublish(channel, replyTo, messageToSend);
-						return null;
-					});
-				}
-				catch (RetryException ex) {
-					if (this.recoveryCallback != null) {
-						this.recoveryCallback.recover(messageToSend,
-								new ReplyFailureException(
-										"Failed to produce reply as '" + messageToSend + "' during retry", replyTo,
-										ex.getCause()));
-					}
-					else {
-						throw RabbitExceptionTranslator.convertRabbitAccessException(ex.getCause());
-					}
-				}
+				publish(channel, replyTo, message, null);
 			}
 		}
 		catch (Exception ex) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
+		}
+	}
+
+	@SuppressWarnings("removal")
+	private void publish(Channel channel, Address replyTo, Message message, @Nullable Observation observation) {
+		if (this.retryTemplate == null) {
+			try {
+				doPublish(channel, replyTo, message);
+			}
+			catch (IOException ex) {
+				throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
+			}
+		}
+		else {
+			try {
+				this.retryTemplate.<@Nullable Object>execute(() -> {
+					doPublish(channel, replyTo, message);
+					return null;
+				});
+			}
+			catch (RetryException ex) {
+				ReplyFailureException replyFailureException = new ReplyFailureException(
+						"Failed to produce reply as '" + message + "' during retry", replyTo,
+						ex.getCause());
+				if (observation != null) {
+					observation.error(replyFailureException);
+				}
+				if (this.recoveryCallback != null) {
+					this.recoveryCallback.recover(message, replyFailureException);
+				}
+				else {
+					throw RabbitExceptionTranslator.convertRabbitAccessException(ex.getCause());
+				}
+			}
+			catch (Exception ex) {
+				throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
+			}
 		}
 	}
 

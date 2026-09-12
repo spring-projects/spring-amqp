@@ -103,6 +103,15 @@ public abstract class ObservableListenerContainer extends RabbitAccessor
 		this.observationEnabled = observationEnabled;
 	}
 
+	/**
+	 * Return whether observation is enabled.
+	 * @return true if observation is enabled.
+	 * @since 4.2
+	 */
+	public boolean isObservationEnabled() {
+		return this.observationEnabled;
+	}
+
 	protected void checkMicrometer() {
 		try {
 			if (this.micrometerHolder == null && MICROMETER_PRESENT && this.micrometerEnabled
