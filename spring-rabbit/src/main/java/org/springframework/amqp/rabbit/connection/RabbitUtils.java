@@ -42,6 +42,7 @@ import org.springframework.util.Assert;
  * @author Mark Pollack
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Ngoc Nhan
  */
 public abstract class RabbitUtils {
 
@@ -222,7 +223,7 @@ public abstract class RabbitUtils {
 	}
 
 	/**
-	 * Gets and removes a ThreadLocal indicating the channel MUST be physically closed.
+	 * Determine whether a ThreadLocal indicating the channel MUST be physically closed.
 	 * @return true if the channel must be physically closed
 	 */
 	public static boolean isPhysicalCloseRequired() {
@@ -401,8 +402,24 @@ public abstract class RabbitUtils {
 	 * @param exception the exception.
 	 * @return true if access refused.
 	 * @since 3.1
+	 * @deprecated since 4.2 in favor of {@link #exclusiveAccessRefused(Exception)}.
 	 */
+	@Deprecated(since = "4.2", forRemoval = true)
 	public static boolean exclusiveAccesssRefused(Exception exception) {
+		return exception.getCause() instanceof IOException
+				&& exception.getCause().getCause() instanceof ShutdownSignalException sse1
+				&& isExclusiveUseChannelClose(sse1)
+				|| exception.getCause() instanceof ShutdownSignalException sse2
+						&& isExclusiveUseChannelClose(sse2);
+	}
+
+	/**
+	 * Determine whether the exception is due to an access refused for an exclusive consumer.
+	 * @param exception the exception.
+	 * @return true if access refused.
+	 * @since 4.2
+	 */
+	public static boolean exclusiveAccessRefused(Exception exception) {
 		return exception.getCause() instanceof IOException
 				&& exception.getCause().getCause() instanceof ShutdownSignalException sse1
 				&& isExclusiveUseChannelClose(sse1)
