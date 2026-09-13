@@ -23,7 +23,7 @@ The following example shows how to do so:
 public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
     SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
     ...
-    factory.setMessageConverter(new Jackson2JsonMessageConverter());
+    factory.setMessageConverter(new JacksonJsonMessageConverter());
     ...
     return factory;
 }
@@ -38,8 +38,8 @@ Starting with version 2.3, you can override the factory converter by specifying 
 [source, java]
 ----
 @Bean
-public Jackson2JsonMessageConverter jsonConverter() {
-    return new Jackson2JsonMessageConverter();
+public JacksonJsonMessageConverter jsonConverter() {
+    return new JacksonJsonMessageConverter();
 }
 
 @RabbitListener(..., messageConverter = "jsonConverter")
@@ -60,7 +60,7 @@ method arguments.
 
 NOTE: This type inference works only for `@RabbitListener` at the method level.
 
-See xref:amqp/message-converters.adoc#json-message-converter[`Jackson2JsonMessageConverter`] for more information.
+See xref:amqp/message-converters.adoc#json-message-converter[`JacksonJsonMessageConverter`] for more information.
 
 If you wish to customize the method argument converter, you can do so as follows:
 

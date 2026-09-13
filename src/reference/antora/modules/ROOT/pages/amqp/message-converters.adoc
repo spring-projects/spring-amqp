@@ -170,8 +170,8 @@ public DefaultClassMapper classMapper() {
 Now, if the sending system sets the header to `thing1`, the converter creates a `Thing1` object, and so on.
 See the xref:sample-apps.adoc#spring-rabbit-json[Receiving JSON from Non-Spring Applications] sample application for a complete discussion about converting messages from non-Spring applications.
 
-Starting with version 2.4.3, the converter will not add a `contentEncoding` message property if the `supportedMediaType` has a `charset` parameter; this is also used for the encoding.
-A new method `setSupportedMediaType` has been added:
+Starting with version 2.4.3, the converter will not add a `contentEncoding` message property if the `supportedContentType` has a `charset` parameter; this is also used for the encoding.
+A new method `setSupportedContentType` has been added:
 
 [source, java]
 ----
@@ -185,8 +185,8 @@ converter.setSupportedContentType(MimeTypeUtils.parseMimeType(utf16));
 Inbound messages are converted to objects according to the type information added to headers by the sending system.
 
 Starting with version 2.4.3, if there is no `contentEncoding` message property, the converter will attempt to detect a `charset` parameter in the `contentType` message property and use that.
-If neither exist, if the `supportedMediaType` has a `charset` parameter, it will be used for decoding, with a final fallback to the `defaultCharset` property.
-A new method `setSupportedMediaType` has been added:
+If neither exist, if the `supportedContentType` has a `charset` parameter, it will be used for decoding, with a final fallback to the `defaultCharset` property.
+A new method `setSupportedContentType` has been added:
 
 [source, java]
 ----
@@ -218,6 +218,10 @@ Starting with version 2.2, `application/json` is assumed if there is no `content
 To revert to the previous behavior (return an unconverted `byte[]`), set the converter's `assumeSupportedContentType` property to `false`.
 If the content type is not supported, a `WARN` log message `Could not convert incoming message with content-type [...]`, is emitted and `message.getBody()` is returned as is -- as a `byte[]`.
 So, to meet the `JacksonJsonMessageConverter` requirements on the consumer side, the producer must add the `contentType` message property -- for example, as `application/json` or `text/x-json` or by using the `JacksonJsonMessageConverter`, which sets the header automatically.
+
+NOTE: With the Jackson 3.x library, when converting from the `Message`, an incoming `MessageProperties.getContentType()` must be JSON-compliant, `"application/{asterisk}+json".isCompatibleWith(contentType)` is used by `MimeType` to perform this check.
+See https://github.com/spring-projects/spring-amqp/issues/3520[gh-3520]
+
 The following listing shows a number of converter calls:
 
 [source, java]
