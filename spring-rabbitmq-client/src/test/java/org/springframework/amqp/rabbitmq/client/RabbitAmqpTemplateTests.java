@@ -163,12 +163,40 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 				.isEqualTo(new byte[0]);
 	}
 
+	@Test
+	void sendWithReplyToPropertyRespectsRequestedDestination() {
+		Message message =
+				MessageBuilder.withBody("with-reply-to".getBytes(StandardCharsets.UTF_8))
+						.setContentType(MimeTypeUtils.TEXT_PLAIN_VALUE)
+						.setReplyTo("/queues/q3")
+						.build();
+
+		assertThat(this.template.send("q2", message)).succeedsWithin(Duration.ofSeconds(20));
+
+		assertThat(this.template.receive("q2"))
+				.succeedsWithin(Duration.ofSeconds(20))
+				.satisfies((received) -> {
+					assertThat(received.getBody()).isEqualTo("with-reply-to".getBytes(StandardCharsets.UTF_8));
+					assertThat(received.getMessageProperties().getReplyTo()).isEqualTo("/queues/q3");
+				});
+	}
+
 	@Configuration
 	static class Config {
 
 		@Bean
 		DirectExchange e1() {
 			return new DirectExchange("e1");
+		}
+
+		@Bean
+		Queue q2() {
+			return new Queue("q2");
+		}
+
+		@Bean
+		Queue q3() {
+			return new Queue("q3");
 		}
 
 		@Bean
