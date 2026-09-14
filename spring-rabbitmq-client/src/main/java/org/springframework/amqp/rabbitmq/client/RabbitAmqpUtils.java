@@ -82,7 +82,7 @@ public final class RabbitAmqpUtils {
 
 	/**
 	 * Convert {@link Message} into {@link com.rabbitmq.client.amqp.Message}.
-	 * The {@link MessageProperties#getReplyTo()} is set into {@link com.rabbitmq.client.amqp.Message#to(String)}.
+	 * The {@link MessageProperties#getReplyTo()} is set into {@link com.rabbitmq.client.amqp.Message#replyTo(String)}.
 	 * The {@link com.rabbitmq.client.amqp.Message#correlationId(long)} is set to
 	 * {@link MessageProperties#getCorrelationId()} if present, or to {@link MessageProperties#getMessageId()}.
 	 * @param message the {@link Message} convert from.
@@ -108,7 +108,7 @@ public final class RabbitAmqpUtils {
 						new Date(), (timestamp) -> amqpMessage.creationTime(timestamp.getTime()))
 				.acceptIfNotNull(messageProperties.getUserId(),
 						(userId) -> amqpMessage.userId(userId.getBytes(StandardCharsets.UTF_8)))
-				.acceptIfNotNull(messageProperties.getReplyTo(), amqpMessage::to);
+				.acceptIfNotNull(messageProperties.getReplyTo(), amqpMessage::replyTo);
 
 		String expiration = messageProperties.getExpiration();
 		if (StringUtils.hasText(expiration)) {
