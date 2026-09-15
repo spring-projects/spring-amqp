@@ -213,13 +213,11 @@ To handle this situation, set the `TypePrecedence` property on the `JacksonJsonM
 (The property is actually on the converter's `DefaultJacksonJavaTypeMapper`, but a setter is provided on the converter for convenience.)
 If you inject a custom type mapper, you should set the property on the mapper instead.
 
-NOTE: When converting from the `Message`, an incoming `MessageProperties.getContentType()` must be JSON-compliant (`contentType.contains("json")` is used to check).
+NOTE: When converting from the `Message`, an incoming `MessageProperties.getContentType()` must be JSON-compliant, `"application/{asterisk}+json".isCompatibleWith(contentType)` is used by `MimeType` to perform this check.
 Starting with version 2.2, `application/json` is assumed if there is no `contentType` property, or it has the default value `application/octet-stream`.
 To revert to the previous behavior (return an unconverted `byte[]`), set the converter's `assumeSupportedContentType` property to `false`.
 If the content type is not supported, a `WARN` log message `Could not convert incoming message with content-type [...]`, is emitted and `message.getBody()` is returned as is -- as a `byte[]`.
 So, to meet the `JacksonJsonMessageConverter` requirements on the consumer side, the producer must add the `contentType` message property -- for example, as `application/json` or `text/x-json` or by using the `JacksonJsonMessageConverter`, which sets the header automatically.
-
-NOTE: With the Jackson 3.x library, when converting from the `Message`, an incoming `MessageProperties.getContentType()` must be JSON-compliant, `"application/{asterisk}+json".isCompatibleWith(contentType)` is used by `MimeType` to perform this check.
 
 The following listing shows a number of converter calls:
 
