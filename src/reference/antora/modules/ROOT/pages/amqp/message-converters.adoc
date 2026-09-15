@@ -220,7 +220,6 @@ If the content type is not supported, a `WARN` log message `Could not convert in
 So, to meet the `JacksonJsonMessageConverter` requirements on the consumer side, the producer must add the `contentType` message property -- for example, as `application/json` or `text/x-json` or by using the `JacksonJsonMessageConverter`, which sets the header automatically.
 
 NOTE: With the Jackson 3.x library, when converting from the `Message`, an incoming `MessageProperties.getContentType()` must be JSON-compliant, `"application/{asterisk}+json".isCompatibleWith(contentType)` is used by `MimeType` to perform this check.
-See https://github.com/spring-projects/spring-amqp/issues/3520[gh-3520]
 
 The following listing shows a number of converter calls:
 
