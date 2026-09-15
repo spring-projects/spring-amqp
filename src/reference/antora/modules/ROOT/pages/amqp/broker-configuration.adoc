@@ -264,8 +264,8 @@ public abstract class AbstractStockAppRabbitConfiguration {
     }
 
     @Bean
-    public Jackson2JsonMessageConverter jsonMessageConverter() {
-        return new Jackson2JsonMessageConverter();
+    public JacksonJsonMessageConverter jsonMessageConverter() {
+        return new JacksonJsonMessageConverter();
     }
 
     @Bean
