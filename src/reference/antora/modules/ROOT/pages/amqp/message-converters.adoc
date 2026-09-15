@@ -217,7 +217,7 @@ NOTE: When converting from the `Message`, an incoming `MessageProperties.getCont
 Starting with version 2.2, `application/json` is assumed if there is no `contentType` property, or it has the default value `application/octet-stream`.
 To revert to the previous behavior (return an unconverted `byte[]`), set the converter's `assumeSupportedContentType` property to `false`.
 If the content type is not supported, a `WARN` log message `Could not convert incoming message with content-type [...]`, is emitted and `message.getBody()` is returned as is -- as a `byte[]`.
-So, to meet the `JacksonJsonMessageConverter` requirements on the consumer side, the producer must add the `contentType` message property -- for example, as `application/json` or `text/x-json` or by using the `JacksonJsonMessageConverter`, which sets the header automatically.
+So, to meet the `JacksonJsonMessageConverter` requirements on the consumer side, the producer must add the `contentType` message property -- for example, as `application/json` or `application/vnd.api+json` or by using the `JacksonJsonMessageConverter`, which sets the header automatically.
 
 The following listing shows a number of converter calls:
 
