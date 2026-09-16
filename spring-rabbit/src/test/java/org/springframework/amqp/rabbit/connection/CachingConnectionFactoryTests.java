@@ -2149,17 +2149,16 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 				.isEqualTo(1);
 	}
 
-	// GH-3653
 	@Test
 	void addressShuffleModePropagatesToDefaultPublisherFactory() {
 		CachingConnectionFactory ccf = new CachingConnectionFactory("someHost", 1234);
 		ccf.setAddresses("host1:5672,host2:5672");
 		ccf.setAddressShuffleMode(AddressShuffleMode.NONE);
 
-		AbstractConnectionFactory publisher = (AbstractConnectionFactory) ccf.getPublisherConnectionFactory();
+		var publisher = ccf.getPublisherConnectionFactory();
 		assertThat(publisher).isNotNull();
 
-		assertThat(TestUtils.getPropertyValue(publisher, "addressShuffleMode", AddressShuffleMode.class))
+		assertThatObject(TestUtils.getPropertyValue(publisher, "addressShuffleMode"))
 				.as("address shuffle mode must reach the default publisher sub-factory")
 				.isEqualTo(AddressShuffleMode.NONE);
 	}
