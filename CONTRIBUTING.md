@@ -24,6 +24,9 @@ Search the [GitHub issue tracker](https://github.com/spring-projects/spring-amqp
 If not, please create a new issue in GitHub before submitting a pull request unless the change is truly trivial, e.g. typo fixes,
 removing compiler warnings, etc.
 
+If you already have a fix or an idea worked out, feel free to open a pull request directly — there is no need to create an issue upfront just so it can be closed by that same pull request.
+An issue and a pull request are equal entities on GitHub: we can discuss the proposed solution right in the pull request, and it gets folded into the release notes just as easily as an issue would.
+
 ## Developer Certificate of Origin
 
 All commits must include a _Signed-off-by_ trailer at the end of each commit message to indicate that the contributor agrees to the Developer Certificate of Origin.
@@ -201,6 +204,10 @@ Please carefully follow the whitespace and formatting conventions already presen
 6. Preserve existing formatting; i.e. do not reformat code for its own sake
 7. Search the codebase using `git grep` and other tools to discover common naming conventions, etc.
 8. Latin-1 (ISO-8859-1) encoding for Java sources; use `native2ascii` to convert if necessary
+
+Generic placeholder names such as `foo`, `bar` and `baz` are not acceptable anywhere in the codebase — production code, tests, javadoc or commit messages.
+Use names that describe the actual domain concept instead (e.g. `payload`, `channel`, `connectionFactory`).
+Simple placeholders like `test`, `test1`, `this` or `that` remain fine where a descriptive name genuinely isn't needed.
 
 For Eclipse users, use the Spring Framework code format conventions from the `src/eclipse`.
 Checkstyle is enforced at build time using the configuration in `src/checkstyle/`.
