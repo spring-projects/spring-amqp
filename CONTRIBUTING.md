@@ -17,10 +17,10 @@ spring-code-of-conduct@pivotal.io.
 Not sure what a **pull request** is, or how to submit one? Take a look at GitHub's excellent documentation:
 [Using Pull Requests](https://help.github.com/articles/using-pull-requests/) first.
 
-## Search GitHub (or JIRA) issues first; create one if necessary
+## Search GitHub issues first; create one if necessary
 
 Is there already an issue that addresses your concern?
-Search the [GitHub issue tracker](https://github.com/spring-projects/spring-amqp/issues) (and [JIRA issue tracker](https://jira.spring.io/browse/AMQP)) to see if you can find something similar.
+Search the [GitHub issue tracker](https://github.com/spring-projects/spring-amqp/issues) to see if you can find something similar.
 If not, please create a new issue in GitHub before submitting a pull request unless the change is truly trivial, e.g. typo fixes,
 removing compiler warnings, etc.
 
@@ -123,11 +123,11 @@ Both implement `MessageListenerContainer`.
 
 ## A Day in the Life of a Contributor
 
-* _Always_ work on topic branches (Typically use the GitHub (or JIRA) issue ID as the branch name).
+* _Always_ work on topic branches (Typically use the GitHub issue ID as the branch name).
   - For example, to create and switch to a new branch for issue #123: `git checkout -b GH-123`
 * You might be working on several different topic branches at any given time, but when at a stopping point for one of those branches, commit (a local operation).
 * Please follow the "Commit Guidelines" described in [this chapter of Pro Git](https://git-scm.com/book/en/Distributed-Git-Contributing-to-a-Project).
-* Then to begin working on another issue (say AMQP-101): `git checkout AMQP-101`. The _-b_ flag is not needed if that branch already exists in your local repository.
+* Then to begin working on another issue (say 101): `git checkout GH-101`. The _-b_ flag is not needed if that branch already exists in your local repository.
 * When ready to resolve an issue or to collaborate with others, you can push your branch to origin (your fork),
   e.g.: `git push origin GH-123`
 * If you want to collaborate with another contributor, have them fork your repository (add it as a remote) and `git fetch <your-username>` to grab your branch.
@@ -146,12 +146,12 @@ Both implement `MessageListenerContainer`.
 * As mentioned above, you should always work on topic branches (since 'main' is a moving target). However, you do want to always keep your own 'origin' main branch in synch with the 'upstream' main.
 * Within your local working directory, you can sync up all remotes' branches with: `git fetch --all`
 * While on your own local main branch: `git pull upstream main` (which is the equivalent of fetching upstream/main and merging that into the branch you are in currently)
-* Now that you're in synch, switch to the topic branch where you plan to work, e.g.: `git checkout -b AMQP-123`
+* Now that you're in synch, switch to the topic branch where you plan to work, e.g.: `git checkout -b GH-123`
 * When you get to a stopping point: `git commit`
 * If changes have occurred on the upstream/main while you were working you can synch again:
   - Switch back to main: `git checkout main`
   - Then: `git pull upstream main`
-  - Switch back to the topic branch: `git checkout AMQP-123` (no -b needed since the branch already exists)
+  - Switch back to the topic branch: `git checkout GH-123` (no -b needed since the branch already exists)
   - Rebase the topic branch to minimize the distance between it and your recently synched main branch: `git rebase main`
     (Again, for more detail see [the Pro Git section on rebasing](https://git-scm.com/book/en/Git-Branching-Rebasing)).
 * **Note** While it is generally recommended to _not_ re-write history by using `push --force`, and we do not do this on `main` (and release) branches in the main repo, we require topic branches for pull requests to be rebased before merging, in order to maintain a clean timeline and avoid "merge" commits.
@@ -181,12 +181,11 @@ git config --global alias.logg 'log --graph --pretty=oneline'
 This command will provide the following output, which in this case shows a nice linear history:
 
 ```
-* e11821842f22b1a9461ab2209c0be7cd47f5c25e AMQP-566: Add String Version of CorrelationId
-* 59710724e5df4414139f67145152fc943d45baf7 Exclude with modules to meet IO requirements
-* d0f6e61308a020bdeb06992ece63fa3c4bad99d7 AMQP-539: Add AsyncRabbitTemplate
-* 51a56bb2ddcef4d3eee781e295dc608a455ae8ff AMQP-559: Fix Pre-Java8 Compliance
-* 8afa05fd6c262047dca1cea131e69979b44f725a AMQP-559: Remove Lambdas for IO Compat. Build
-* f8809d26e9eb36f2d9ed4d86ce89cb438def71da AMQP-565: Fix NPE in RabbitAdmin
+* fc404f095cbd4f894f638b16c68e5834770eb2da GH-2608: Fix observation propagation for replies
+* 96336c25fa9500e6b4a2c9635c61b79aa61b654e Update docs for current JSON converter logic
+* f7ab25de786244af633843112e0e47bffbd311cf GH-3649: Map 'replyTo' to the AMQP 1.0 'reply-to' field
+* 4d3f3ca1ca83728d5957fe74ba30855136d2d17b Fix typos in the `RabbitUtils`
+* fa5687175c8d960933bd8725dcdb9c8cf86fe15f Bump kotlinVersion from 2.4.10 to 2.4.20 (#3644)
 ```
 
 If you see intersecting lines, that usually means that you forgot to rebase you branch.
@@ -300,19 +299,24 @@ See the [checking out and building](https://github.com/spring-projects/spring-am
 section of the README for instructions.
 Make sure that all tests pass prior to submitting your pull request.
 
-## Mention your pull request on the associated JIRA issue
+## Provide a Link to the GitHub issue in the Associated Pull Request
 
-If the change is to resolve a legacy JIRA issue, add a comment to the associated JIRA issue(s) linking to your new pull request.
-
-## Provide a Link to the GitHub issue in the associated Pull Request
-
-Add a GitHub issue link to your first commit comment of the pull request, so your commit message
-may look like this:
+Add a GitHub issue link to your first commit message as `Fixes: <issue_url>`.
+Prefix this commit headline with `GH-<issue_number>: `.
+The commit message body should talk briefly about the problem and summarize fixes as items, desirable in a "why?" style.
+For example:
 
 ```
-GH-123: Title up to 50 characters total
+GH-123: Fix connection leak in CachingConnectionFactory
 
-Fixes https://github.com/spring-projects/spring-amqp/issues/123
+Fixes: https://github.com/spring-projects/spring-amqp/issues/123
 
-Text about the problem and how it was fixed.
+A channel obtained during `destroy()` was not returned to the cache, leaking a physical
+connection to the broker on every context refresh.
+
+* Return the channel to the cache before closing the target connection in `destroy()`
 ```
+
+NOTE: The code snippets (especially, Java annotations) in the commit message must be wrapped with back-ticks for better readability and to avoid inviting GitHub users via its mentioning (`@`) mechanism.
+
+Please, follow Chris Beams' recommendations in regard to the good commit message: [How to Write a Git Commit Message](https://chris.beams.io/posts/git-commit).
