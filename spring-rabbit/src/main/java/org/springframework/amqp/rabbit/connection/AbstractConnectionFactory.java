@@ -564,6 +564,9 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	public void setAddressShuffleMode(AddressShuffleMode addressShuffleMode) {
 		Assert.notNull(addressShuffleMode, "'addressShuffleMode' cannot be null");
 		this.addressShuffleMode = addressShuffleMode; // NOSONAR - sync inconsistency
+		if (this.publisherConnectionFactory != null) {
+			this.publisherConnectionFactory.setAddressShuffleMode(addressShuffleMode);
+		}
 	}
 
 	public boolean hasPublisherConnectionFactory() {
