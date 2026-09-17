@@ -23,9 +23,8 @@ import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.MessageBuilder;
@@ -60,10 +59,10 @@ public class OptionalPayloadTests {
 
 	@Test
 	void optionals(@Autowired RabbitTemplate template, @Autowired Listener listener)
-			throws JsonProcessingException, AmqpException, InterruptedException {
+			throws AmqpException, InterruptedException {
 
 		ObjectMapper objectMapper = new ObjectMapper();
-		template.send("op.1", MessageBuilder.withBody(objectMapper.writeValueAsBytes("foo"))
+		template.send("op.1", MessageBuilder.withBody(objectMapper.writeValueAsBytes("test1"))
 				.andProperties(MessagePropertiesBuilder.newInstance()
 						.setContentType("application/json")
 						.build())
@@ -73,7 +72,7 @@ public class OptionalPayloadTests {
 						.setContentType("application/json")
 						.build())
 				.build());
-		template.send("op.2", MessageBuilder.withBody(objectMapper.writeValueAsBytes("bar"))
+		template.send("op.2", MessageBuilder.withBody(objectMapper.writeValueAsBytes("test2"))
 				.andProperties(MessagePropertiesBuilder.newInstance()
 						.setContentType("application/json")
 						.build())
@@ -86,7 +85,7 @@ public class OptionalPayloadTests {
 		assertThat(listener.latch.await(10, TimeUnit.SECONDS)).isTrue();
 
 		synchronized (listener.deOptionaled) {
-			assertThat(listener.deOptionaled).containsExactlyInAnyOrder("foo", null, "bar", "baz");
+			assertThat(listener.deOptionaled).containsExactlyInAnyOrder("test1", null, "test2", "test3");
 		}
 	}
 
@@ -140,7 +139,7 @@ public class OptionalPayloadTests {
 
 		@RabbitListener(queues = "op.2")
 		void listen(Optional<String> optional) {
-			this.deOptionaled.add(optional.orElse("baz"));
+			this.deOptionaled.add(optional.orElse("test3"));
 			this.latch.countDown();
 		}
 
