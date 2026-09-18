@@ -28,6 +28,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
+import org.springframework.util.ObjectUtils;
 
 /**
  * Base class for {@link Declarable} classes.
@@ -104,22 +105,15 @@ public abstract class AbstractDeclarable implements Declarable {
 	}
 
 	@Override
-	@SuppressWarnings("NullAway") // Dataflow analysis limitation
-	public void setAdminsThatShouldDeclare(@Nullable Object @Nullable ... adminArgs) {
-		if (adminArgs != null) {
-			if (adminArgs.length > 1) {
-				Assert.noNullElements(adminArgs, "'admins' cannot contain null elements");
-			}
-			if (adminArgs.length > 0 && !(adminArgs.length == 1 && adminArgs[0] == null)) {
-				this.declaringAdmins = Arrays.asList(adminArgs);
-			}
-			else {
-				this.declaringAdmins = Collections.emptyList();
-			}
-		}
-		else {
+	public void setAdminsThatShouldDeclare(@Nullable Object @Nullable... adminArgs) {
+		if (ObjectUtils.isEmpty(adminArgs)
+				|| adminArgs.length == 1 && adminArgs[0] == null) {
 			this.declaringAdmins = Collections.emptyList();
+			return;
 		}
+
+		Assert.noNullElements(adminArgs, "'admins' cannot contain null elements");
+		this.declaringAdmins = Arrays.asList(adminArgs);
 	}
 
 	@Override

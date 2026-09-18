@@ -27,6 +27,7 @@ import org.jspecify.annotations.Nullable;
  *
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Ngoc Nhan
  *
  * @since 1.2
  *
@@ -56,7 +57,8 @@ public interface Declarable {
 	/**
 	 * The {@code AmqpAdmin}s that should declare this object; default is
 	 * all admins.
-	 * <br><br>A null argument, or an array/varArg with a single null argument, clears the collection
+	 * <p>
+	 * A null argument, or an array/varArg with a single null argument, clears the collection
 	 * ({@code setAdminsThatShouldDeclare((AmqpAdmin) null)} or
 	 * {@code setAdminsThatShouldDeclare((AmqpAdmin[]) null)}). Clearing the collection resets
 	 * the behavior such that all admins will declare the object.
