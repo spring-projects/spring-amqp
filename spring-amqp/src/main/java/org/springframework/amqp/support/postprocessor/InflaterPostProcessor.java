@@ -35,10 +35,12 @@ public class InflaterPostProcessor extends AbstractDecompressingPostProcessor {
 		super(alwaysDecompress);
 	}
 
+	@Override
 	protected InputStream getDecompressorStream(InputStream zipped) {
 		return new InflaterInputStream(zipped);
 	}
 
+	@Override
 	protected String getEncoding() {
 		return "deflate";
 	}

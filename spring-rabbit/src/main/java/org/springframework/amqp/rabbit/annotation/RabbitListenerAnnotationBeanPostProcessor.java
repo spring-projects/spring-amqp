@@ -250,6 +250,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		return processListener(endpoint, rabbitListener, bean, methodToUse, beanName);
 	}
 
+	@Override
 	protected void processMultiMethodListeners(List<RabbitListener> classLevelListeners, List<Method> multiMethods,
 			Object bean, String beanName) {
 

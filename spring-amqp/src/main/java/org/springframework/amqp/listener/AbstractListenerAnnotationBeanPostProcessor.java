@@ -98,6 +98,7 @@ public abstract class AbstractListenerAnnotationBeanPostProcessor<A extends Anno
 		return LOWEST_PRECEDENCE;
 	}
 
+	@Override
 	public void setEnvironment(Environment environment) {
 		this.environment = environment;
 	}
