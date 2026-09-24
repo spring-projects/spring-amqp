@@ -35,6 +35,7 @@ import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
+import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.context.annotation.Bean;
@@ -178,6 +179,25 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 				.satisfies((received) -> {
 					assertThat(received.getBody()).isEqualTo("with-reply-to".getBytes(StandardCharsets.UTF_8));
 					assertThat(received.getMessageProperties().getReplyTo()).isEqualTo("/queues/q3");
+				});
+	}
+
+	@Test
+	void priorityAndDeliveryModeAreMappedBothWays() {
+		Message message =
+				MessageBuilder.withBody("non-persistent".getBytes(StandardCharsets.UTF_8))
+						.setPriority(7)
+						.setDeliveryMode(MessageDeliveryMode.NON_PERSISTENT)
+						.build();
+
+		assertThat(this.template.send("q2", message)).succeedsWithin(Duration.ofSeconds(20));
+
+		assertThat(this.template.receive("q2"))
+				.succeedsWithin(Duration.ofSeconds(20))
+				.satisfies((received) -> {
+					assertThat(received.getMessageProperties().getPriority()).isEqualTo(7);
+					assertThat(received.getMessageProperties().getDeliveryMode())
+							.isEqualTo(MessageDeliveryMode.NON_PERSISTENT);
 				});
 	}
 
