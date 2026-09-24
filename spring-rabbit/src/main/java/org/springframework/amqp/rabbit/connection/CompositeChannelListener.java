@@ -32,6 +32,7 @@ public class CompositeChannelListener implements ChannelListener {
 
 	private List<ChannelListener> delegates = new ArrayList<>();
 
+	@Override
 	public void onCreate(Channel channel, boolean transactional) {
 		for (ChannelListener delegate : this.delegates) {
 			delegate.onCreate(channel, transactional);

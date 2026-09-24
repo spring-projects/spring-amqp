@@ -28,6 +28,7 @@ import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
  */
 public class RabbitNamespaceHandler extends NamespaceHandlerSupport {
 
+	@Override
 	public void init() {
 		registerBeanDefinitionParser("queue", new QueueParser());
 		registerBeanDefinitionParser("direct-exchange", new DirectExchangeParser());
