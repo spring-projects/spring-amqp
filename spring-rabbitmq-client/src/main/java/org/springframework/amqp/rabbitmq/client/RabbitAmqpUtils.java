@@ -25,6 +25,7 @@ import com.rabbitmq.client.amqp.Consumer;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.utils.JavaUtils;
 import org.springframework.util.StringUtils;
@@ -53,6 +54,11 @@ public final class RabbitAmqpUtils {
 				.acceptIfNotNull(amqpMessage.contentType(), messageProperties::setContentType)
 				.acceptIfNotNull(amqpMessage.contentEncoding(), messageProperties::setContentEncoding)
 				.acceptIfNotNull(amqpMessage.replyTo(), messageProperties::setReplyTo);
+
+		messageProperties.setPriority(Byte.valueOf(amqpMessage.priority()).intValue());
+		messageProperties.setDeliveryMode(amqpMessage.durable()
+				? MessageDeliveryMode.PERSISTENT
+				: MessageDeliveryMode.NON_PERSISTENT);
 
 		long creationTime = amqpMessage.creationTime();
 		if (creationTime <= 0) {
@@ -96,7 +102,8 @@ public final class RabbitAmqpUtils {
 				.contentEncoding(messageProperties.getContentEncoding())
 				.contentType(messageProperties.getContentType())
 				.messageId(messageProperties.getMessageId())
-				.priority(messageProperties.getPriority().byteValue());
+				.priority(messageProperties.getPriority().byteValue())
+				.durable(MessageDeliveryMode.PERSISTENT.equals(messageProperties.getDeliveryMode()));
 
 		Map<String, @Nullable Object> headers = messageProperties.getHeaders();
 		headers.forEach((key, val) -> mapProp(key, val, amqpMessage));
