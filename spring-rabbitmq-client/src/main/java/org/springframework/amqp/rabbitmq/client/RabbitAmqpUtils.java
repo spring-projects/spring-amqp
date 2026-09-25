@@ -160,6 +160,9 @@ public final class RabbitAmqpUtils {
 		else if (val instanceof Boolean booleanValue) {
 			amqpMessage.property(key, booleanValue);
 		}
+		else if (val instanceof Date date) {
+			amqpMessage.propertyTimestamp(key, date.getTime());
+		}
 	}
 
 	private RabbitAmqpUtils() {

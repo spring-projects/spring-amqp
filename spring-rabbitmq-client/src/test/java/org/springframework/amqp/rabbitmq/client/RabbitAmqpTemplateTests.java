@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbitmq.client;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -199,6 +200,23 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 					assertThat(received.getMessageProperties().getDeliveryMode())
 							.isEqualTo(MessageDeliveryMode.NON_PERSISTENT);
 				});
+	}
+
+	@Test
+	void dateHeaderIsMappedToTimestampProperty() {
+		Date sentAt = new Date(1_700_000_000_000L);
+		Message message =
+				MessageBuilder.withBody("with-date-header".getBytes(StandardCharsets.UTF_8))
+						.setHeader("sentAt", sentAt)
+						.build();
+
+		assertThat(this.template.send("q2", message)).succeedsWithin(Duration.ofSeconds(20));
+
+		assertThat(this.template.receive("q2"))
+				.succeedsWithin(Duration.ofSeconds(20))
+				.satisfies((received) ->
+						assertThat(received.getMessageProperties().<Object>getHeader("sentAt"))
+								.isEqualTo(sentAt.getTime()));
 	}
 
 	@Configuration
