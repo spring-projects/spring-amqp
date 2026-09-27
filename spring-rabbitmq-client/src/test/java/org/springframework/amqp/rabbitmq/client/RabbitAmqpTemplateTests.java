@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.rabbitmq.client.amqp.Publisher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -217,6 +218,28 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 				.satisfies((received) ->
 						assertThat(received.getMessageProperties().<Object>getHeader("sentAt"))
 								.isEqualTo(sentAt.getTime()));
+	}
+
+	@Test
+	void nonStringMessageIdAndCorrelationIdAreMappedAsStrings() {
+		UUID messageId = UUID.randomUUID();
+		CompletableFuture<Publisher.Status> publishResult = new CompletableFuture<>();
+		try (Publisher publisher = this.connectionFactory.getConnection().publisherBuilder().queue("q2").build()) {
+			publisher.publish(
+					publisher.message("with-uuid-message-id".getBytes(StandardCharsets.UTF_8))
+							.messageId(messageId)
+							.correlationId(42L),
+					(context) -> publishResult.complete(context.status()));
+
+			assertThat(publishResult).succeedsWithin(Duration.ofSeconds(20)).isEqualTo(Publisher.Status.ACCEPTED);
+		}
+
+		assertThat(this.template.receive("q2"))
+				.succeedsWithin(Duration.ofSeconds(20))
+				.satisfies((received) -> {
+					assertThat(received.getMessageProperties().getMessageId()).isEqualTo(messageId.toString());
+					assertThat(received.getMessageProperties().getCorrelationId()).isEqualTo("42");
+				});
 	}
 
 	@Configuration
