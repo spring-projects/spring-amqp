@@ -266,10 +266,7 @@ public class ThreadChannelConnectionFactory extends AbstractConnectionFactory
 
 	@SuppressWarnings("resource")
 	boolean doSwitch(Object toSwitch) {
-		boolean switched = false;
-		if (getPublisherConnectionFactory() instanceof ThreadChannelConnectionFactory tccf) {
-			switched = tccf.doSwitch(toSwitch); // NOSONAR
-		}
+		boolean switched = getPublisherConnectionFactory() instanceof ThreadChannelConnectionFactory tccf && tccf.doSwitch(toSwitch);
 		Context context = this.contextSwitches.remove(toSwitch);
 		this.switchesInProgress.remove(toSwitch);
 		if (context != null) {
