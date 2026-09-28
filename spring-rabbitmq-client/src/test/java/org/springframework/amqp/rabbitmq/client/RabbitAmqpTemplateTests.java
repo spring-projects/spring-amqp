@@ -257,7 +257,6 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 						assertThat(received.getMessageProperties().getExpiration()).isEqualTo("60000"));
 	}
 
-  
 	@Test
 	void nonStringMessageIdAndCorrelationIdAreMappedAsStrings() {
 		UUID messageId = UUID.randomUUID();
@@ -279,7 +278,6 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 					assertThat(received.getMessageProperties().getCorrelationId()).isEqualTo("42");
 				});
 	}
-  
 	@Configuration
 	static class Config {
 
