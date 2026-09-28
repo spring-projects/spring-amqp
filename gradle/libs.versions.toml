@@ -1,10 +1,10 @@
 [versions]
 # Spring Portfolio dependencies. Usually managed by release train
-micrometerVersion = "1.16.7"
-micrometerTracingVersion = "1.6.7"
-reactorVersion = "2025.0.7"
-springDataVersion = "2025.1.7"
-springVersion = "7.0.9"
+micrometerVersion = "1.16.8-SNAPSHOT"
+micrometerTracingVersion = "1.6.8-SNAPSHOT"
+reactorVersion = "2025.0.8-SNAPSHOT"
+springDataVersion = "2025.1.8-SNAPSHOT"
+springVersion = "7.0.10-SNAPSHOT"
 
 # Third-party dependencies
 assertjVersion = "3.27.7"
