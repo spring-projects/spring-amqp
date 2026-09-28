@@ -109,6 +109,7 @@ import org.springframework.util.backoff.FixedBackOff;
  * @author Mohammad Hewedy
  * @author Mat Jaggard
  * @author Arnab Nandy
+ * @author Ngoc Nhan
  */
 public abstract class AbstractMessageListenerContainer extends ObservableListenerContainer
 		implements ApplicationEventPublisherAware {
@@ -580,10 +581,7 @@ public abstract class AbstractMessageListenerContainer extends ObservableListene
 	 */
 	public boolean removeAfterReceivePostProcessor(MessagePostProcessor afterReceivePostProcessor) {
 		Assert.notNull(afterReceivePostProcessor, "'afterReceivePostProcessor' cannot be null");
-		if (this.afterReceivePostProcessors != null) {
-			return this.afterReceivePostProcessors.remove(afterReceivePostProcessor);
-		}
-		return false;
+		return this.afterReceivePostProcessors != null && this.afterReceivePostProcessors.remove(afterReceivePostProcessor);
 	}
 
 	/**

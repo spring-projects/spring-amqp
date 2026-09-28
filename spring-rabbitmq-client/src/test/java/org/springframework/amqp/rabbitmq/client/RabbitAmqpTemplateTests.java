@@ -50,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 /**
  * @author Artem Bilan
+ * @author Jan Mohr
  *
  * @since 4.0
  */
@@ -221,6 +222,43 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 	}
 
 	@Test
+	void expiredMessageIsNotDelivered() {
+		Message expiring =
+				MessageBuilder.withBody("expiring".getBytes(StandardCharsets.UTF_8))
+						.setExpiration("1")
+						.build();
+		Message regular =
+				MessageBuilder.withBody("regular".getBytes(StandardCharsets.UTF_8))
+						.build();
+
+		assertThat(this.template.send("q2", expiring)).succeedsWithin(Duration.ofSeconds(20));
+		assertThat(this.template.send("q2", regular)).succeedsWithin(Duration.ofSeconds(20));
+
+		assertThat(this.template.receive("q2"))
+				.succeedsWithin(Duration.ofSeconds(20))
+				.satisfies((received) -> {
+					assertThat(received.getBody()).isEqualTo("regular".getBytes(StandardCharsets.UTF_8));
+					assertThat(received.getMessageProperties().getExpiration()).isNull();
+				});
+	}
+
+	@Test
+	void expirationIsMappedBothWays() {
+		Message message =
+				MessageBuilder.withBody("with-expiration".getBytes(StandardCharsets.UTF_8))
+						.setExpiration("60000")
+						.build();
+
+		assertThat(this.template.send("q2", message)).succeedsWithin(Duration.ofSeconds(20));
+
+		assertThat(this.template.receive("q2"))
+				.succeedsWithin(Duration.ofSeconds(20))
+				.satisfies((received) ->
+						assertThat(received.getMessageProperties().getExpiration()).isEqualTo("60000"));
+	}
+
+  
+	@Test
 	void nonStringMessageIdAndCorrelationIdAreMappedAsStrings() {
 		UUID messageId = UUID.randomUUID();
 		CompletableFuture<Publisher.Status> publishResult = new CompletableFuture<>();
@@ -241,7 +279,7 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 					assertThat(received.getMessageProperties().getCorrelationId()).isEqualTo("42");
 				});
 	}
-
+  
 	@Configuration
 	static class Config {
 

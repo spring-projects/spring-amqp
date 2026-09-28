@@ -692,10 +692,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 */
 	public boolean removeBeforePublishPostProcessor(MessagePostProcessor beforePublishPostProcessor) {
 		Assert.notNull(beforePublishPostProcessor, "'beforePublishPostProcessor' cannot be null");
-		if (this.beforePublishPostProcessors != null) {
-			return this.beforePublishPostProcessors.remove(beforePublishPostProcessor);
-		}
-		return false;
+		return this.beforePublishPostProcessors != null && this.beforePublishPostProcessors.remove(beforePublishPostProcessor);
 	}
 
 	/**
@@ -753,10 +750,7 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 	 */
 	public boolean removeAfterReceivePostProcessor(MessagePostProcessor afterReceivePostProcessor) {
 		Assert.notNull(afterReceivePostProcessor, "'afterReceivePostProcessor' cannot be null");
-		if (this.afterReceivePostProcessors != null) {
-			return this.afterReceivePostProcessors.remove(afterReceivePostProcessor);
-		}
-		return false;
+		return this.afterReceivePostProcessors != null && this.afterReceivePostProcessors.remove(afterReceivePostProcessor);
 	}
 
 	/**

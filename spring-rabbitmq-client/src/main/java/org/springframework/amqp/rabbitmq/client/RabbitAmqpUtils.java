@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbitmq.client;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
@@ -34,6 +35,8 @@ import org.springframework.util.StringUtils;
  * The utilities for RabbitMQ AMQP 1.0 protocol API.
  */
 public final class RabbitAmqpUtils {
+
+	private static final long NO_TTL = 0xFFFF_FFFFL;
 
 	/**
 	 * Convert {@link com.rabbitmq.client.amqp.Message} into {@link Message}.
@@ -68,9 +71,9 @@ public final class RabbitAmqpUtils {
 		}
 		messageProperties.setTimestamp(new Date(creationTime));
 
-		long absoluteExpiryTime = amqpMessage.absoluteExpiryTime();
-		if (absoluteExpiryTime > creationTime) {
-			messageProperties.setExpiration(Long.toString(absoluteExpiryTime - creationTime));
+		long ttl = amqpMessage.ttl().toMillis();
+		if (ttl != NO_TTL) {
+			messageProperties.setExpiration(Long.toString(ttl));
 		}
 
 		amqpMessage.forEachProperty(messageProperties::setHeader);
@@ -121,7 +124,7 @@ public final class RabbitAmqpUtils {
 
 		String expiration = messageProperties.getExpiration();
 		if (StringUtils.hasText(expiration)) {
-			amqpMessage.absoluteExpiryTime(amqpMessage.creationTime() + Long.parseLong(expiration));
+			amqpMessage.ttl(Duration.ofMillis(Long.parseLong(expiration)));
 		}
 	}
 
