@@ -50,10 +50,12 @@ public final class RabbitAmqpUtils {
 		MessageProperties messageProperties = new MessageProperties();
 
 		JavaUtils.INSTANCE
-				.acceptIfNotNull(amqpMessage.messageIdAsString(), messageProperties::setMessageId)
+				.acceptIfNotNull(amqpMessage.messageId(),
+						(messageId) -> messageProperties.setMessageId(messageId.toString()))
 				.acceptIfNotNull(amqpMessage.userId(),
 						(usr) -> messageProperties.setUserId(new String(usr, StandardCharsets.UTF_8)))
-				.acceptIfNotNull(amqpMessage.correlationIdAsString(), messageProperties::setCorrelationId)
+				.acceptIfNotNull(amqpMessage.correlationId(),
+						(correlationId) -> messageProperties.setCorrelationId(correlationId.toString()))
 				.acceptIfNotNull(amqpMessage.contentType(), messageProperties::setContentType)
 				.acceptIfNotNull(amqpMessage.contentEncoding(), messageProperties::setContentEncoding)
 				.acceptIfNotNull(amqpMessage.replyTo(), messageProperties::setReplyTo);
