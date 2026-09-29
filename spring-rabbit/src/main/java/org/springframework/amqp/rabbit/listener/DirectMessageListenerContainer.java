@@ -551,7 +551,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 							logger.debug("Error closing consumer " + consumer, e);
 						}
 					}
-					this.logger.error("Consumer canceled - channel closed " + consumer);
+				this.logger.warn("Consumer canceled - channel closed " + consumer);
 					consumer.cancelConsumer("Consumer " + consumer + " channel closed");
 				});
 	}
