@@ -278,6 +278,19 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 					assertThat(received.getMessageProperties().getCorrelationId()).isEqualTo("42");
 				});
 	}
+
+	@Test
+	void receivedExchangeAndRoutingKeyAreMapped() {
+		assertThat(this.template.convertAndSend("e1", "k1", "routed")).succeedsWithin(Duration.ofSeconds(20));
+
+		assertThat(this.template.receive("q1"))
+				.succeedsWithin(Duration.ofSeconds(20))
+				.satisfies((received) -> {
+					assertThat(received.getMessageProperties().getReceivedExchange()).isEqualTo("e1");
+					assertThat(received.getMessageProperties().getReceivedRoutingKey()).isEqualTo("k1");
+				});
+	}
+
 	@Configuration
 	static class Config {
 

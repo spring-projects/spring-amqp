@@ -58,7 +58,11 @@ public final class RabbitAmqpUtils {
 						(correlationId) -> messageProperties.setCorrelationId(correlationId.toString()))
 				.acceptIfNotNull(amqpMessage.contentType(), messageProperties::setContentType)
 				.acceptIfNotNull(amqpMessage.contentEncoding(), messageProperties::setContentEncoding)
-				.acceptIfNotNull(amqpMessage.replyTo(), messageProperties::setReplyTo);
+				.acceptIfNotNull(amqpMessage.replyTo(), messageProperties::setReplyTo)
+				.acceptIfNotNull(amqpMessage.annotation("x-exchange"),
+						(exchange) -> messageProperties.setReceivedExchange(exchange.toString()))
+				.acceptIfNotNull(amqpMessage.annotation("x-routing-key"),
+						(routingKey) -> messageProperties.setReceivedRoutingKey(routingKey.toString()));
 
 		messageProperties.setPriority(Byte.valueOf(amqpMessage.priority()).intValue());
 		messageProperties.setDeliveryMode(amqpMessage.durable()
