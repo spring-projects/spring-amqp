@@ -4,9 +4,12 @@
 
 package org.springframework.amqp.support;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
 import org.jspecify.annotations.Nullable;
@@ -43,6 +46,36 @@ import org.springframework.util.StringUtils;
  * @since 1.4
  */
 public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperties> implements AmqpHeaderMapper {
+
+	/**
+	 * The headers derived from the {@link MessageProperties} in the {@link #toHeaders(MessageProperties)}.
+	 * They must not be overridden by the custom (publisher-supplied) headers of the AMQP message.
+	 */
+	private static final Set<String> MESSAGE_PROPERTIES_HEADERS = new HashSet<>(Arrays.asList(
+			AmqpHeaders.APP_ID,
+			AmqpHeaders.CLUSTER_ID,
+			AmqpHeaders.CONTENT_ENCODING,
+			AmqpHeaders.CONTENT_LENGTH,
+			AmqpHeaders.CONTENT_TYPE,
+			AmqpHeaders.CORRELATION_ID,
+			AmqpHeaders.RECEIVED_DELIVERY_MODE,
+			AmqpHeaders.DELIVERY_TAG,
+			AmqpHeaders.EXPIRATION,
+			AmqpHeaders.MESSAGE_COUNT,
+			AmqpHeaders.MESSAGE_ID,
+			AmqpMessageHeaderAccessor.PRIORITY,
+			AmqpHeaders.RECEIVED_DELAY,
+			AmqpHeaders.RECEIVED_EXCHANGE,
+			AmqpHeaders.RECEIVED_ROUTING_KEY,
+			AmqpHeaders.REDELIVERED,
+			AmqpHeaders.REPLY_TO,
+			AmqpHeaders.TIMESTAMP,
+			AmqpHeaders.TYPE,
+			AmqpHeaders.RECEIVED_USER_ID,
+			AmqpHeaders.CONSUMER_TAG,
+			AmqpHeaders.CONSUMER_QUEUE,
+			AmqpHeaders.LAST_IN_BATCH,
+			AmqpHeaders.RETRY_COUNT));
 
 	@Override
 	@SuppressWarnings("removal")
@@ -160,8 +193,10 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 			headers.put(AmqpHeaders.LAST_IN_BATCH, amqpMessageProperties.isLastInBatch());
 			headers.put(AmqpHeaders.RETRY_COUNT, amqpMessageProperties.getRetryCount());
 
-			// Map custom headers
-			headers.putAll(amqpMessageProperties.getHeaders());
+			// Map custom headers, but don't let them override the ones derived from the message properties
+			Map<String, Object> customHeaders = new HashMap<>(amqpMessageProperties.getHeaders());
+			customHeaders.keySet().removeAll(MESSAGE_PROPERTIES_HEADERS);
+			headers.putAll(customHeaders);
 		}
 		catch (Exception e) {
 			if (logger.isWarnEnabled()) {
