@@ -180,6 +180,27 @@ public class SimpleAmqpHeaderMapperTests {
 		assertThat(headerMap.get(AmqpHeaders.CONSUMER_QUEUE)).isEqualTo("consumer.queue");
 	}
 
+	@Test
+	public void customHeadersDoNotOverrideMessagePropertiesHeaders() {
+		SimpleAmqpHeaderMapper headerMapper = new SimpleAmqpHeaderMapper();
+		MessageProperties amqpProperties = new MessageProperties();
+		amqpProperties.setReceivedUserId("tenantA");
+		amqpProperties.setConsumerQueue("tenantA.queue");
+		amqpProperties.setHeader(AmqpHeaders.RECEIVED_USER_ID, "tenantB");
+		amqpProperties.setHeader(AmqpHeaders.CONSUMER_QUEUE, "tenantB.queue");
+		amqpProperties.setHeader(AmqpHeaders.REDELIVERED, true);
+		amqpProperties.setHeader(AmqpHeaders.RECEIVED_EXCHANGE, "spoofed.exchange");
+		amqpProperties.setHeader(AmqpHeaders.BATCH_SIZE, 2);
+		amqpProperties.setHeader("customHeader", "customValue");
+		Map<String, Object> headerMap = headerMapper.toHeaders(amqpProperties);
+		assertThat(headerMap)
+				.containsEntry(AmqpHeaders.RECEIVED_USER_ID, "tenantA")
+				.containsEntry(AmqpHeaders.CONSUMER_QUEUE, "tenantA.queue")
+				.doesNotContainKeys(AmqpHeaders.REDELIVERED, AmqpHeaders.RECEIVED_EXCHANGE)
+				.containsEntry(AmqpHeaders.BATCH_SIZE, 2)
+				.containsEntry("customHeader", "customValue");
+	}
+
 	@Test // INT-2090
 	public void jsonTypeIdNotOverwritten() {
 		SimpleAmqpHeaderMapper headerMapper = new SimpleAmqpHeaderMapper();
