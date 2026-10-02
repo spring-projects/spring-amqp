@@ -6,6 +6,7 @@ package org.springframework.amqp.rabbit.support;
 
 import java.io.DataInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -236,6 +237,40 @@ public class DefaultMessagePropertiesConverterTests {
 		MessageProperties messageProperties = messagePropertiesConverter.toMessageProperties(source, envelope, "UTF-8");
 		assertThat(messageProperties.getXDeathHeader()).isNull();
 		assertThat(messageProperties.getHeaders()).doesNotContainKey(MessageProperties.X_DEATH);
+	}
+
+	@Test
+	public void tooDeeplyNestedHeaderIsIgnored() {
+		Object tooDeep = new ArrayList<>();
+		for (int i = 0; i < 10_000; i++) {
+			tooDeep = List.of(tooDeep);
+		}
+		Object allowed = LongStringHelper.asLongString("allowed");
+		for (int i = 0; i < 16; i++) {
+			allowed = List.of(Map.of("nested", allowed));
+		}
+
+		Map<String, Object> headers = new HashMap<>();
+		headers.put("tooDeep", tooDeep);
+		headers.put("x-death", tooDeep);
+		headers.put("allowed", allowed);
+		headers.put("simple", "value");
+
+		BasicProperties source = new BasicProperties.Builder()
+				.headers(headers)
+				.build();
+
+		MessageProperties messageProperties = messagePropertiesConverter.toMessageProperties(source, envelope, "UTF-8");
+		assertThat(messageProperties.getHeaders())
+				.doesNotContainKeys("tooDeep", MessageProperties.X_DEATH)
+				.containsEntry("simple", "value")
+				.containsKey("allowed");
+
+		Object converted = messageProperties.getHeader("allowed");
+		for (int i = 0; i < 16; i++) {
+			converted = ((Map<?, ?>) ((List<?>) converted).get(0)).get("nested");
+		}
+		assertThat(converted).isEqualTo("allowed");
 	}
 
 	private static class Foo {
