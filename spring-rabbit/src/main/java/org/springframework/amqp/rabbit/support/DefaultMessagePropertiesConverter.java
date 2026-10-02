@@ -21,6 +21,7 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -43,6 +44,12 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	private static final Log LOGGER = LogFactory.getLog(DefaultMessagePropertiesConverter.class);
 
 	private static final int DEFAULT_LONG_STRING_LIMIT = 1024;
+
+	/**
+	 * The maximum nesting depth of field tables/arrays in header values,
+	 * aligned with the RabbitMQ Java client.
+	 */
+	private static final int MAX_NESTING_DEPTH = 32;
 
 	private final int longStringLimit;
 
@@ -88,33 +95,38 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		if (!CollectionUtils.isEmpty(headers)) {
 			for (Map.Entry<String, Object> entry : headers.entrySet()) {
 				String key = entry.getKey();
-				Object value = entry.getValue();
-				if (MessageProperties.X_DELAY.equals(key)) {
-					if (value instanceof Number numberValue) {
-						long receivedDelayLongValue = Math.abs(numberValue.longValue());
-						target.setReceivedDelayLong(receivedDelayLongValue);
-						target.setHeader(key, receivedDelayLongValue);
+				try {
+					Object value = entry.getValue();
+					if (MessageProperties.X_DELAY.equals(key)) {
+						if (value instanceof Number numberValue) {
+							long receivedDelayLongValue = Math.abs(numberValue.longValue());
+							target.setReceivedDelayLong(receivedDelayLongValue);
+							target.setHeader(key, receivedDelayLongValue);
+						}
 					}
-				}
-				else if (MessageProperties.RETRY_COUNT.equals(key)) {
-					if (value instanceof Number numberValue) {
-						target.setRetryCount(numberValue.longValue());
+					else if (MessageProperties.RETRY_COUNT.equals(key)) {
+						if (value instanceof Number numberValue) {
+							target.setRetryCount(numberValue.longValue());
+						}
 					}
-				}
-				else if (MessageProperties.X_DEATH.equals(key)) {
-					Object xDeathValue = convertLongStringIfNecessary(value, charset);
-					if (xDeathValue instanceof List<?> xDeath
-							&& !CollectionUtils.isEmpty(xDeath)
-							&& xDeath.get(0) instanceof Map<?, ?>) {
+					else if (MessageProperties.X_DEATH.equals(key)) {
+						Object xDeathValue = convertLongStringIfNecessary(value, charset);
+						if (xDeathValue instanceof List<?> xDeath
+								&& !CollectionUtils.isEmpty(xDeath)
+								&& xDeath.get(0) instanceof Map<?, ?>) {
 
-						target.setHeader(MessageProperties.X_DEATH, xDeathValue);
+							target.setHeader(MessageProperties.X_DEATH, xDeathValue);
+						}
+						else {
+							LOGGER.warn("Ignoring 'x-death' header due to inappropriate format: " + xDeathValue);
+						}
 					}
 					else {
-						LOGGER.warn("Ignoring 'x-death' header due to inappropriate format: " + xDeathValue);
+						target.setHeader(key, convertLongStringIfNecessary(value, charset));
 					}
 				}
-				else {
-					target.setHeader(key, convertLongStringIfNecessary(value, charset));
+				catch (IllegalStateException ex) {
+					LOGGER.warn("Ignoring '" + key + "' header: " + ex.getMessage());
 				}
 			}
 		}
@@ -291,22 +303,32 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	 * @param valueArg the value.
 	 * @param charset the charset.
 	 * @return the converted string.
+	 * @throws IllegalStateException if Lists or Maps are nested deeper than {@value #MAX_NESTING_DEPTH}.
 	 */
 	private Object convertLongStringIfNecessary(Object valueArg, String charset) {
+		return convertLongStringIfNecessary(valueArg, charset, 0);
+	}
+
+	private Object convertLongStringIfNecessary(Object valueArg, String charset, int depth) {
 		if (valueArg instanceof LongString longStr) {
 			return convertLongString(longStr, charset);
 		}
 
+		if (valueArg instanceof List<?> || valueArg instanceof Map<?, ?>) {
+			Assert.state(depth < MAX_NESTING_DEPTH,
+					() -> "the value nesting depth exceeds the maximum of " + MAX_NESTING_DEPTH);
+		}
+
 		if (valueArg instanceof List<?> values) {
 			List<Object> convertedList = new ArrayList<>(values.size());
-			values.forEach(value -> convertedList.add(this.convertLongStringIfNecessary(value, charset)));
+			values.forEach(value -> convertedList.add(this.convertLongStringIfNecessary(value, charset, depth + 1)));
 			return convertedList;
 		}
 
 		if (valueArg instanceof Map<?, ?> originalMap) {
 			Map<String, Object> convertedMap = new HashMap<>();
-			originalMap.forEach(
-					(key, value) -> convertedMap.put((String) key, this.convertLongStringIfNecessary(value, charset)));
+			originalMap.forEach((key, value) ->
+					convertedMap.put((String) key, this.convertLongStringIfNecessary(value, charset, depth + 1)));
 			return convertedMap;
 		}
 
