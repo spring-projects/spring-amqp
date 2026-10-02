@@ -574,12 +574,10 @@ public class AmqpMessagingListenerAdapter implements AcknowledgingProtonDelivery
 						.connection()
 						.openSender(replyTo)
 						.openFuture();
-		Tracker tracker =
-				ProtonUtils.toSupplier(openFuture, ConnectionOptions.DEFAULT_OPEN_TIMEOUT)
-						.get()
-						.send(protonMessage)
-						.settlementFuture()
-						.get();
+		Tracker tracker;
+		try (Sender sender = ProtonUtils.toSupplier(openFuture, ConnectionOptions.DEFAULT_OPEN_TIMEOUT).get()) {
+			tracker = sender.send(protonMessage).settlementFuture().get();
+		}
 
 		DeliveryState.Type deliveryStateType = tracker.remoteState().getType();
 		if (!DeliveryState.Type.ACCEPTED.equals(deliveryStateType)) {
