@@ -65,11 +65,10 @@ public class Address implements Serializable {
 	private final String routingKey;
 
 	/**
-	 * Create an Address instance from a structured String with the form
+	 * Create an Address instance from a structured String with the form:
 	 * <pre class="code">
 	 * (exchange)/(routingKey)
 	 * </pre>
-	 * .
 	 * If exchange is parsed to an empty string, then a routing key is treated as a queue name.
 	 * The {@link #AMQ_RABBITMQ_REPLY_TO} matching address is treated as a routing key.
 	 * @param address a structured string.
