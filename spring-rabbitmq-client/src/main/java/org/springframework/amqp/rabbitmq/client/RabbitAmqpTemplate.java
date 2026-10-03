@@ -297,7 +297,10 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 	public CompletableFuture<Boolean> convertAndSend(Object message,
 			@Nullable MessagePostProcessor messagePostProcessor) {
 
-		return doConvertAndSend(null, null, null, message, messagePostProcessor);
+		Assert.state(this.defaultExchange != null || this.defaultQueue != null,
+				"For send with defaults, an 'exchange' (and optional 'routingKey') or 'queue' must be provided");
+		return doConvertAndSend(this.defaultExchange, this.defaultRoutingKey, this.defaultQueue, message,
+				messagePostProcessor);
 	}
 
 	@Override
@@ -311,7 +314,8 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 	public CompletableFuture<Boolean> convertAndSend(String exchange, @Nullable String routingKey, Object message,
 			@Nullable MessagePostProcessor messagePostProcessor) {
 
-		return doConvertAndSend(exchange, routingKey, null, message, messagePostProcessor);
+		return doConvertAndSend(exchange, routingKey != null ? routingKey : this.defaultRoutingKey, null, message,
+				messagePostProcessor);
 	}
 
 	private CompletableFuture<Boolean> doConvertAndSend(@Nullable String exchange, @Nullable String routingKey,
