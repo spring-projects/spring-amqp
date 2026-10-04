@@ -29,6 +29,7 @@ rabbitmqAmqpClientVersion = "1.5.0"
 rabbitmqStreamVersion = "1.11.0"
 rabbitmqVersion = "5.37.0"
 testcontainersVersion = "2.0.5"
+mockwebserverVersion = "5.5.0"
 
 [libraries]
 org-assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertjVersion" }
@@ -58,6 +59,7 @@ spring-data-bom = { module = "org.springframework.data:spring-data-bom", version
 spring-framework-bom = { module = "org.springframework:spring-framework-bom", version.ref = "springVersion" }
 org-testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", version.ref = "testcontainersVersion" }
 tools-jackson-bom = { module = "tools.jackson:jackson-bom", version.ref = "jackson3Version" }
+squareup-okhttp3-mockwebserver3 = { module = "com.squareup.okhttp3:mockwebserver3-junit5", version.ref = "mockwebserverVersion" }
 
 [plugins]
 aggregate-javadoc = { id = "io.freefair.aggregate-javadoc", version = "9.8.0" }

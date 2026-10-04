@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import java.net.URISyntaxException;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -26,12 +27,15 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Rene Choi
+ * @author Ngoc Nhaan
  *
  * @since 4.2
  *
@@ -41,7 +45,7 @@ public class RestClientNodeLocatorTests {
 	private final RestClientNodeLocator nodeLocator = new RestClientNodeLocator();
 
 	@Test
-	void queueInfoIsRetrievedFromEncodedUri() {
+	void queueInfoIsRetrievedFromEncodedUri() throws URISyntaxException {
 		RestClient.Builder builder = RestClient.builder();
 		MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
 		server.expect(MockRestRequestMatchers.requestTo("http://localhost:15672/api/queues/%2F/some%20queue"))
@@ -58,7 +62,7 @@ public class RestClientNodeLocatorTests {
 	}
 
 	@Test
-	void apiPathIsResolvedAgainstTheHost() {
+	void apiPathIsResolvedAgainstTheHost() throws URISyntaxException {
 		RestClient.Builder builder = RestClient.builder();
 		MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
 		server.expect(MockRestRequestMatchers.requestTo("http://localhost:15672/api/queues/vhost/queue"))
@@ -69,6 +73,22 @@ public class RestClientNodeLocatorTests {
 				this.nodeLocator.restCall(builder.build(), "http://localhost:15672/api/", "vhost", "queue");
 
 		assertThat(queueInfo).containsEntry("node", "rabbit@host");
+		server.verify();
+	}
+
+	@Test
+	void badRequestResponseThrowsException() {
+		RestClient.Builder builder = RestClient.builder();
+		MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+		server.expect(MockRestRequestMatchers
+				.requestTo("http://localhost:15672/api/queues/vhost/error%20queue"))
+				.andRespond(MockRestResponseCreators.withBadRequest()
+						.body("{\"error\":\"Object Not Found\",\"reason\":\"Not Found\"}"));
+
+		assertThatExceptionOfType(HttpClientErrorException.class)
+				.isThrownBy(() -> this.nodeLocator.restCall(builder.build(),
+						"http://localhost:15672/api/", "vhost", "error queue"))
+				.withMessage("400 Bad Request: \"{\"error\":\"Object Not Found\",\"reason\":\"Not Found\"}\"");
 		server.verify();
 	}
 
