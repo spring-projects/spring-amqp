@@ -109,6 +109,38 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 	}
 
 	@Test
+	void defaultExchangeAndRoutingKeyWithPostProcessor() {
+		this.rabbitAmqpTemplate.setExchange("e1");
+		this.rabbitAmqpTemplate.setRoutingKey("k1");
+
+		assertThat(this.rabbitAmqpTemplate.convertAndSend("test3",
+				(message) -> {
+					message.getMessageProperties().setHeader("processed", "yes");
+					return message;
+				}))
+				.succeedsWithin(Duration.ofSeconds(20));
+
+		assertThat(this.rabbitAmqpTemplate.receive("q1"))
+				.succeedsWithin(Duration.ofSeconds(20))
+				.satisfies((received) -> {
+					assertThat(received.getBody()).isEqualTo("test3".getBytes(StandardCharsets.UTF_8));
+					assertThat(received.getMessageProperties().<String>getHeader("processed")).isEqualTo("yes");
+				});
+	}
+
+	@Test
+	void defaultRoutingKeyWithExplicitExchangeAndPostProcessor() {
+		this.rabbitAmqpTemplate.setRoutingKey("k1");
+
+		assertThat(this.rabbitAmqpTemplate.convertAndSend("e1", null, "test4", (message) -> message))
+				.succeedsWithin(Duration.ofSeconds(20));
+
+		assertThat(this.rabbitAmqpTemplate.receiveAndConvert("q1"))
+				.succeedsWithin(Duration.ofSeconds(20))
+				.isEqualTo("test4");
+	}
+
+	@Test
 	void verifyRpc() {
 		String testRequest = "rpc-request";
 		String testReply = "rpc-reply";
