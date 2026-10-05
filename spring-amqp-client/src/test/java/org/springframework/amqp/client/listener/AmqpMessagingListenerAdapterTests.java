@@ -6,8 +6,13 @@ package org.springframework.amqp.client.listener;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.apache.qpid.protonj2.client.Connection;
 import org.apache.qpid.protonj2.client.Delivery;
+import org.apache.qpid.protonj2.client.DeliveryState;
 import org.apache.qpid.protonj2.client.Message;
+import org.apache.qpid.protonj2.client.Receiver;
+import org.apache.qpid.protonj2.client.Sender;
+import org.apache.qpid.protonj2.client.Tracker;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
@@ -16,22 +21,66 @@ import org.springframework.amqp.client.config.MethodAmqpListenerEndpoint;
 import org.springframework.amqp.client.config.MethodAmqpMessageListenerContainerFactory;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AmqpAcknowledgment;
+import org.springframework.amqp.listener.adapter.HandlerAdapter;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
+import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.util.ReflectionUtils;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 /**
+ * @author Artem Bilan
  * @author WooSeung Kim
  *
  * @since 4.1.3
  */
-public class AmqpMessagingListenerAdapterTests {
+class AmqpMessagingListenerAdapterTests {
 
-	private final AmqpAcknowledgment acknowledgment = mock();
+	final AmqpAcknowledgment acknowledgment = mock();
+
+	@Test
+	void replySenderIsClosedAfterEachReply() throws Exception {
+		DefaultMessageHandlerMethodFactory handlerMethodFactory = new DefaultMessageHandlerMethodFactory();
+		handlerMethodFactory.afterPropertiesSet();
+		HandlerAdapter handlerAdapter =
+				new HandlerAdapter(handlerMethodFactory.createInvocableHandlerMethod(new TestListener(),
+						TestListener.class.getMethod("handle", byte[].class)));
+		AmqpMessagingListenerAdapter listenerAdapter = new AmqpMessagingListenerAdapter(handlerAdapter);
+
+		Tracker tracker = mock();
+		given(tracker.remoteState()).willReturn(DeliveryState.accepted());
+		willReturn(CompletableFuture.completedFuture(tracker)).given(tracker).settlementFuture();
+
+		Sender sender = mock();
+		willReturn(CompletableFuture.completedFuture(sender)).given(sender).openFuture();
+		willReturn(tracker).given(sender).send(any());
+
+		Connection connection = mock();
+		given(connection.openSender(anyString())).willReturn(sender);
+
+		Receiver receiver = mock();
+		given(receiver.connection()).willReturn(connection);
+
+		Delivery delivery = mock();
+		given(delivery.receiver()).willReturn(receiver);
+		given(delivery.settled()).willReturn(true);
+		willReturn(Message.create("test".getBytes()).replyTo("some_address"),
+				Message.create("test".getBytes()).replyTo("some_address"))
+				.given(delivery).message();
+
+		listenerAdapter.onDelivery(delivery, null);
+		listenerAdapter.onDelivery(delivery, null);
+
+		verify(connection, times(2)).openSender("some_address");
+		verify(sender, times(2)).close();
+	}
 
 	@Test
 	void completableFutureReplyFailureRejectsDelivery() throws Exception {
@@ -93,6 +142,14 @@ public class AmqpMessagingListenerAdapterTests {
 		// No reply-to and no default response address, so the reply cannot be sent
 		given(delivery.<byte[]>message()).willReturn(Message.create("test data".getBytes()));
 		return delivery;
+	}
+
+	public static class TestListener {
+
+		public String handle(byte[] payload) {
+			return new String(payload).toUpperCase();
+		}
+
 	}
 
 	static class ReplyingBean {
