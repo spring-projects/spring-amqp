@@ -139,7 +139,7 @@ public class RabbitAmqpMessageListenerAdapter extends MessagingMessageListenerAd
 
 		this.logger.error("Future, Mono, or suspend function was completed with an exception for " + request, t);
 		AmqpAcknowledgment amqpAcknowledgment = request.getMessageProperties().getAmqpAcknowledgment();
-		Assert.notNull(amqpAcknowledgment, "'(amqpAcknowledgment' must be provided into request message.");
+		Assert.notNull(amqpAcknowledgment, "'amqpAcknowledgment' must be provided into request message.");
 
 		if (ContainerUtils.shouldRequeue(isDefaultRequeueRejected(), t, this.logger)) {
 			amqpAcknowledgment.acknowledge(AmqpAcknowledgment.Status.REQUEUE);
@@ -176,7 +176,7 @@ public class RabbitAmqpMessageListenerAdapter extends MessagingMessageListenerAd
 	@Override
 	protected void basicAck(Message request, @Nullable Channel channel) {
 		AmqpAcknowledgment amqpAcknowledgment = request.getMessageProperties().getAmqpAcknowledgment();
-		Assert.notNull(amqpAcknowledgment, "'(amqpAcknowledgment' must be provided into request message.");
+		Assert.notNull(amqpAcknowledgment, "'amqpAcknowledgment' must be provided into request message.");
 		amqpAcknowledgment.acknowledge();
 	}
 

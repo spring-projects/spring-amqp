@@ -6,7 +6,7 @@ Batched messages (created by a producer) are automatically de-batched by listene
 Rejecting any message from a batch causes the entire batch to be rejected.
 See xref:amqp/sending-messages.adoc#template-batching[Batching] for more information about batching.
 
-Starting with version 2.2, the `SimpleMessageListenerContainer` can be use to create batches on the consumer side (where the producer sent discrete messages).
+Starting with version 2.2, the `SimpleMessageListenerContainer` can be used to create batches on the consumer side (where the producer sent discrete messages).
 
 Set the container property `consumerBatchEnabled` to enable this feature.
 `deBatchingEnabled` must also be true so that the container is responsible for processing batches of both types.
