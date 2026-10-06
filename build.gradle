@@ -376,7 +376,6 @@ project('spring-rabbit') {
 		testImplementation 'org.testcontainers:testcontainers-rabbitmq'
 		testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
 		testImplementation libs.httpclient5
-		testImplementation libs.squareup.okhttp3.mockwebserver3
 
 		testImplementation 'tools.jackson.core:jackson-databind'
 		testImplementation 'tools.jackson.dataformat:jackson-dataformat-xml'
