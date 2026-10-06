@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
@@ -32,6 +33,7 @@ import org.springframework.web.util.UriUtils;
  * A {@link NodeLocator} using the {@link RestClient}.
  *
  * @author Rene Choi
+ * @author Ngoc Nhaan
  *
  * @since 4.2
  *
@@ -46,8 +48,9 @@ public class RestClientNodeLocator implements NodeLocator<RestClient> {
 	}
 
 	@Override
-	public @Nullable Map<String, Object> restCall(RestClient client, String baseUri, String vhost, String queue) {
-		URI uri = URI.create(baseUri)
+	public @Nullable Map<String, Object> restCall(RestClient client, String baseUri, String vhost, String queue)
+			throws URISyntaxException {
+		URI uri = new URI(baseUri)
 				.resolve("/api/queues/"
 						+ UriUtils.encodePathSegment(vhost, StandardCharsets.UTF_8) + "/"
 						+ UriUtils.encodePathSegment(queue, StandardCharsets.UTF_8));

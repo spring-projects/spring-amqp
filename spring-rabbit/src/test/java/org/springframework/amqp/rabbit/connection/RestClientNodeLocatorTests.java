@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import java.net.URISyntaxException;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Rene Choi
+ * @author Ngoc Nhaan
  *
  * @since 4.2
  *
@@ -41,7 +43,7 @@ public class RestClientNodeLocatorTests {
 	private final RestClientNodeLocator nodeLocator = new RestClientNodeLocator();
 
 	@Test
-	void queueInfoIsRetrievedFromEncodedUri() {
+	void queueInfoIsRetrievedFromEncodedUri() throws URISyntaxException {
 		RestClient.Builder builder = RestClient.builder();
 		MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
 		server.expect(MockRestRequestMatchers.requestTo("http://localhost:15672/api/queues/%2F/some%20queue"))
@@ -58,7 +60,7 @@ public class RestClientNodeLocatorTests {
 	}
 
 	@Test
-	void apiPathIsResolvedAgainstTheHost() {
+	void apiPathIsResolvedAgainstTheHost() throws URISyntaxException {
 		RestClient.Builder builder = RestClient.builder();
 		MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
 		server.expect(MockRestRequestMatchers.requestTo("http://localhost:15672/api/queues/vhost/queue"))
