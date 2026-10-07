@@ -1,6 +1,6 @@
 [versions]
 # Spring Portfolio dependencies. Usually managed by release train
-micrometerVersion = "1.17.2-SNAPSHOT"
+micrometerVersion = "1.17.2-INTERNAL-SNAPSHOT"
 micrometerTracingVersion = "1.7.2-SNAPSHOT"
 reactorVersion = "2025.0.8-INTERNAL-SNAPSHOT"
 springDataVersion = "2026.0.2-INTERNAL-SNAPSHOT"
