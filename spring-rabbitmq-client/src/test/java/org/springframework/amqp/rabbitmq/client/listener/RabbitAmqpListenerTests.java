@@ -200,6 +200,26 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 		await().until(() -> !container.isRunning());
 	}
 
+	@Test
+	void containerCanBeRestartedRightAfterStop() {
+		this.admin.declareQueue(new Queue("restartQueue"));
+		RabbitAmqpListenerContainer container = new RabbitAmqpListenerContainer(this.connectionFactory);
+		container.setQueueNames("restartQueue");
+		List<String> received = Collections.synchronizedList(new ArrayList<>());
+		container.setupMessageListener((message) -> received.add(new String(message.getBody())));
+		container.afterPropertiesSet();
+		container.start();
+
+		container.stop();
+		container.start();
+
+		this.template.convertAndSend("restartQueue", "after restart");
+		await().untilAsserted(() -> assertThat(received).containsExactly("after restart"));
+		assertThat(container.isRunning()).isTrue();
+
+		container.stop();
+	}
+
 	@Configuration
 	@EnableRabbit
 	static class Config {

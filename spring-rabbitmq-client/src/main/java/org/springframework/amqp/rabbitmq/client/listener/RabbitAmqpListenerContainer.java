@@ -525,12 +525,11 @@ public class RabbitAmqpListenerContainer
 									}))
 							.toArray(CompletableFuture[]::new);
 
+			this.queueToConsumers.clear();
+
 			CompletableFuture.allOf(completableFutures)
 					.orTimeout(this.gracefulShutdownPeriod.toMillis(), TimeUnit.MILLISECONDS)
-					.whenComplete((unused, throwable) -> {
-						this.queueToConsumers.clear();
-						callback.run();
-					});
+					.whenComplete((unused, throwable) -> callback.run());
 		}
 		finally {
 			this.lock.unlock();
