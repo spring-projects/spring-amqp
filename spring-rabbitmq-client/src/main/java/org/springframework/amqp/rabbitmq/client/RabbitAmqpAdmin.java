@@ -54,6 +54,7 @@ import org.springframework.util.Assert;
  * The {@link AmqpAdmin} implementation for RabbitMQ AMQP 1.0 client.
  *
  * @author Artem Bilan
+ * @author Ngoc Nhan
  *
  * @since 4.0
  */
@@ -321,8 +322,6 @@ public class RabbitAmqpAdmin
 					management.queue()
 							.autoDelete(true)
 							.exclusive(true)
-							.classic()
-							.queue()
 							.declare();
 
 			return new Queue(queueInfo.name(), false, true, true);
@@ -345,9 +344,7 @@ public class RabbitAmqpAdmin
 				management.queue(queue.getName())
 						.autoDelete(queue.isAutoDelete())
 						.exclusive(queue.isExclusive())
-						.arguments(queue.getArguments())
-						.classic()
-						.queue();
+						.arguments(queue.getArguments());
 
 		try {
 			String actualName = queueSpecification.declare().name();

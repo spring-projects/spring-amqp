@@ -20,6 +20,8 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
@@ -27,6 +29,8 @@ import org.springframework.amqp.core.Declarables;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.core.QueueInformation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -37,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Artem Bilan
+ * @author Ngoc Nhan
  *
  * @since 4.0
  */
@@ -76,6 +81,32 @@ public class RabbitAmqpAdminTests extends RabbitAmqpTestBase {
 				.hasSize(1)
 				.extracting(Binding::getDestination)
 				.contains("q4");
+	}
+
+	@ParameterizedTest
+	@CsvSource(textBlock = """
+			q1,classic
+			quorum-queue,quorum
+			""")
+	void shouldReturnExpectedQueueType(String queueName, String expectedQueueType) {
+
+		assertThat(admin.getQueueInfo(queueName)).isNotNull()
+				.extracting(QueueInformation::getType)
+				.isEqualTo(expectedQueueType);
+	}
+
+	@Test
+	void shouldDeclareClassicQueueWithGeneratedName() {
+
+		Queue queue = admin.declareQueue();
+
+		assertThat(queue).isNotNull()
+				.extracting(Queue::getActualName)
+				.isNotNull();
+
+		assertThat(admin.getQueueInfo(queue.getActualName())).isNotNull()
+				.extracting(QueueInformation::getType)
+				.isEqualTo("classic");
 	}
 
 	@Configuration
@@ -123,6 +154,11 @@ public class RabbitAmqpAdminTests extends RabbitAmqpTestBase {
 					new DirectExchange("e4"),
 					new Queue("q4"),
 					new Binding("q4", Binding.DestinationType.QUEUE, "e4", "k4", null));
+		}
+
+		@Bean
+		Queue quorum() {
+			return QueueBuilder.durable("quorum-queue").quorum().build();
 		}
 
 	}
