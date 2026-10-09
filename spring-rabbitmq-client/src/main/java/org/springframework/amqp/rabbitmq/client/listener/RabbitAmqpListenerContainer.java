@@ -395,7 +395,7 @@ public class RabbitAmqpListenerContainer
 
 	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	private void doInvokeListener(Consumer.Context context, com.rabbitmq.client.amqp.Message amqpMessage) {
-		Consumer.@Nullable Context contextToUse = this.autoSettle ? null : context;
+		Consumer.Context contextToUse = this.autoSettle ? null : context;
 		if (this.proxy instanceof RabbitAmqpMessageListener amqpMessageListener) {
 			amqpMessageListener.onAmqpMessage(amqpMessage, contextToUse);
 		}
@@ -406,7 +406,7 @@ public class RabbitAmqpListenerContainer
 	}
 
 	private void invokeBatchListener(Consumer.Context context, List<com.rabbitmq.client.amqp.Message> batch) {
-		Consumer.@Nullable Context contextToUse = this.autoSettle ? null : context;
+		Consumer.Context contextToUse = this.autoSettle ? null : context;
 		List<Message> messages =
 				batch.stream()
 						.map((amqpMessage) -> RabbitAmqpUtils.fromAmqpMessage(amqpMessage, contextToUse))
