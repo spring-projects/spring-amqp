@@ -6,6 +6,7 @@ package org.springframework.amqp.rabbit.listener.adapter;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedHashMap;
@@ -58,6 +59,7 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
@@ -74,6 +76,7 @@ import static org.mockito.Mockito.verify;
  * @author Kai Stapel
  * @author Aram Peres
  * @author Arnab Nandy
+ * @author Ngoc Nhan
  */
 public class MessagingMessageListenerAdapterTests {
 
@@ -539,6 +542,39 @@ public class MessagingMessageListenerAdapterTests {
 		receiverObservation.observeChecked(() -> listener.onMessage(message, channel));
 
 		await().untilAsserted(() -> assertThat(receiverContext.getError()).isInstanceOf(IllegalArgumentException.class));
+	}
+
+	@Test
+	public void buildMessageWithMessageInstanceAndDefaultConverter() {
+
+		MessagingMessageListenerAdapter listener = getSimpleInstance("echo", Message.class);
+
+		org.springframework.amqp.core.Message message = new org.springframework.amqp.core.Message("Hello World".getBytes(StandardCharsets.UTF_8));
+		org.springframework.amqp.core.Message replyMessage = listener.buildMessage(null, message, null);
+
+		assertThat(replyMessage).as("reply should never be null").isNotNull();
+		assertThat(new String(replyMessage.getBody())).isEqualTo("Hello World");
+	}
+
+	@Test
+	public void buildMessageWithoutConverterThrowsException() {
+
+		MessagingMessageListenerAdapter listener = getSimpleInstance("echo", Message.class);
+		listener.setMessageConverter(null);
+
+		assertThatExceptionOfType(org.springframework.messaging.converter.MessageConversionException.class)
+				.isThrownBy(() -> listener.buildMessage(null, null, null));
+	}
+
+	@Test
+	public void buildMessageWithDefaultConverter() {
+
+		MessagingMessageListenerAdapter listener = getSimpleInstance("echo", Message.class);
+
+		org.springframework.amqp.core.Message replyMessage = listener.buildMessage(null, null, null);
+
+		assertThat(replyMessage).as("reply should never be null").isNotNull();
+		assertThat(replyMessage.getBody()).isEmpty();
 	}
 
 	private static Propagator createPropagator(SimpleTracer tracer) {
