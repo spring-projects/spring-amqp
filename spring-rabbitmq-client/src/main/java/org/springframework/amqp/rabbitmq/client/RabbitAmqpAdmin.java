@@ -465,6 +465,9 @@ public class RabbitAmqpAdmin
 			queueInformation.setType(queueInfo.type().name().toLowerCase());
 			return queueInformation;
 		}
+		catch (AmqpException.AmqpEntityDoesNotExistException ex) {
+			return null;
+		}
 	}
 
 	private Management getManagement() {
