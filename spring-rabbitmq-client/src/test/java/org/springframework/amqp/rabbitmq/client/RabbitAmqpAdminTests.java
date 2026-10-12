@@ -97,6 +97,12 @@ public class RabbitAmqpAdminTests extends RabbitAmqpTestBase {
 				.isEqualTo("classic");
 	}
 
+	@Test
+	void shouldReturnNullForNonExistentQueue() {
+		assertThat(admin.getQueueInfo("non-existent-queue")).isNull();
+		assertThat(admin.getQueueProperties("non-existent-queue")).isNull();
+	}
+
 	@Configuration
 	public static class Config {
 
