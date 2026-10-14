@@ -15,6 +15,8 @@ public interface AmqpAdmin {
 
     void declareExchange(Exchange exchange);
 
+    void declareExchanges(Exchange... exchanges);
+
     void deleteExchange(String exchangeName);
 
     // Queue Operations
@@ -22,6 +24,8 @@ public interface AmqpAdmin {
     Queue declareQueue();
 
     String declareQueue(Queue queue);
+
+    void declareQueues(Queue... queues);
 
     boolean deleteQueue(String queueName);
 
@@ -32,6 +36,8 @@ public interface AmqpAdmin {
     // Binding Operations
 
     void declareBinding(Binding binding);
+
+    void declareBindings(Binding... bindings);
 
     void removeBinding(Binding binding);
 
@@ -58,6 +64,11 @@ That name is returned to the caller.
 That name is also added to the `actualName` property of the `Queue`.
 You can use this functionality programmatically only by invoking the `RabbitAdmin` directly.
 When using auto-declaration by the admin when defining a queue declaratively in the application context, you can set the name property to `""` (the empty string).
+
+Starting with version 4.2, the `declareExchanges()`, `declareQueues()` and `declareBindings()` methods declare several objects in one call.
+The `RabbitAdmin` declares them on a single channel, as it does for the beans of the application context.
+When `ignoreDeclarationExceptions` is `true` (on the admin or on the object), a failure to declare one of the objects is logged and the next one is declared; otherwise, the failure is rethrown and the remaining objects are not declared.
+The name that the broker assigns to a queue declared with an empty name is available from `getActualName()` afterwards.
 The broker then creates the name.
 Starting with version 2.1, listener containers can use queues of this type.
 See xref:amqp/containers-and-broker-named-queues.adoc[Containers and Broker-Named queues] for more information.

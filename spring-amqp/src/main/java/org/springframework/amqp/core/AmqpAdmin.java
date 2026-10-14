@@ -17,6 +17,7 @@ import org.jspecify.annotations.Nullable;
  * @author Dave Syer
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Sharang Gupta
  */
 public interface AmqpAdmin {
 
@@ -99,6 +100,44 @@ public interface AmqpAdmin {
 	 * @param binding a description of the binding to remove.
 	 */
 	void removeBinding(Binding binding);
+
+	/**
+	 * Declare the given exchanges.
+	 * The default implementation declares them one by one with {@link #declareExchange(Exchange)}.
+	 * @param exchanges the exchanges to declare.
+	 * @since 4.2
+	 */
+	default void declareExchanges(Exchange... exchanges) {
+		for (Exchange exchange : exchanges) {
+			declareExchange(exchange);
+		}
+	}
+
+	/**
+	 * Declare the given queues.
+	 * The name that the broker assigns to a queue declared with an empty name is available
+	 * from {@link Queue#getActualName()} afterwards.
+	 * The default implementation declares them one by one with {@link #declareQueue(Queue)}.
+	 * @param queues the queues to declare.
+	 * @since 4.2
+	 */
+	default void declareQueues(Queue... queues) {
+		for (Queue queue : queues) {
+			declareQueue(queue);
+		}
+	}
+
+	/**
+	 * Declare the given bindings.
+	 * The default implementation declares them one by one with {@link #declareBinding(Binding)}.
+	 * @param bindings the bindings to declare.
+	 * @since 4.2
+	 */
+	default void declareBindings(Binding... bindings) {
+		for (Binding binding : bindings) {
+			declareBinding(binding);
+		}
+	}
 
 	/**
 	 * Returns an implementation-specific Map of properties if the queue exists.

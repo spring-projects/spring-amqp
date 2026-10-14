@@ -15,6 +15,12 @@ See xref:amqp/connections.adoc[] for more information.
 For the same reason, the `verifyHostname` property on the Logback and Log4j 2 `AmqpAppender` s is also deprecated now.
 See xref:logging.adoc[] for more information.
 
+[[x42-admin-batch-declarations]]
+=== Declaring Several Objects at Once
+
+The `AmqpAdmin` now has `declareExchanges()`, `declareQueues()` and `declareBindings()` methods to declare several objects in one call; the `RabbitAdmin` declares them on a single channel.
+See xref:amqp/broker-configuration.adoc[Configuring the Broker] for more information.
+
 [[x42-listener-batch-overrides]]
 === `@RabbitListener` Batch Overrides
 

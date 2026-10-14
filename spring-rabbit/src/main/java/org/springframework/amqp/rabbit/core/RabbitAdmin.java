@@ -7,6 +7,7 @@ package org.springframework.amqp.rabbit.core;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -71,6 +72,7 @@ import org.springframework.util.StringUtils;
  * @author Artem Bilan
  * @author Christian Tzolov
  * @author Ngoc Nhan
+ * @author Sharang Gupta
  */
 @ManagedResource(description = "Admin Tasks")
 public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, ApplicationEventPublisherAware,
@@ -235,6 +237,36 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		}
 	}
 
+	/**
+	 * Declare the given exchanges on a single channel.
+	 * A failure to declare one of them is handled like a failure of
+	 * {@link #declareExchange(Exchange)}: it is logged and the next exchange is declared when
+	 * {@link #setIgnoreDeclarationExceptions(boolean) ignoreDeclarationExceptions} is true for
+	 * the admin or the exchange, otherwise it is rethrown and the remaining exchanges are not declared.
+	 * @param exchanges the exchanges to declare.
+	 * @since 4.2
+	 */
+	@Override
+	@ManagedOperation(description = "Declare exchanges on the broker (this operation is not available remotely)")
+	public void declareExchanges(final Exchange... exchanges) {
+		Assert.noNullElements(exchanges, "'exchanges' must not contain null elements");
+		if (exchanges.length == 0) {
+			return;
+		}
+		try {
+			this.rabbitTemplate.<@Nullable Object>execute(channel -> {
+				declareExchanges(channel, exchanges);
+				if (this.redeclareManualDeclarations) {
+					this.manualDeclarables.addAll(Arrays.asList(exchanges));
+				}
+				return null;
+			});
+		}
+		catch (AmqpException e) {
+			logOrRethrowBatchDeclarationException(exchanges, "exchanges", e);
+		}
+	}
+
 	@Override
 	@ManagedOperation(description = "Delete an exchange from the broker")
 	@SuppressWarnings("NullAway") // Dataflow analysis limitation
@@ -301,6 +333,38 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		catch (AmqpException e) {
 			logOrRethrowDeclarationException(queue, "queue", e);
 			return null;
+		}
+	}
+
+	/**
+	 * Declare the given queues on a single channel.
+	 * The name that the broker assigns to a queue declared with an empty name is available
+	 * from {@link Queue#getActualName()} afterwards.
+	 * A failure to declare one of them is handled like a failure of {@link #declareQueue(Queue)}:
+	 * it is logged and the next queue is declared when
+	 * {@link #setIgnoreDeclarationExceptions(boolean) ignoreDeclarationExceptions} is true for
+	 * the admin or the queue, otherwise it is rethrown and the remaining queues are not declared.
+	 * @param queues the queues to declare.
+	 * @since 4.2
+	 */
+	@Override
+	@ManagedOperation(description = "Declare queues on the broker (this operation is not available remotely)")
+	public void declareQueues(final Queue... queues) {
+		Assert.noNullElements(queues, "'queues' must not contain null elements");
+		if (queues.length == 0) {
+			return;
+		}
+		try {
+			this.rabbitTemplate.<@Nullable Object>execute(channel -> {
+				declareQueues(channel, queues);
+				if (this.redeclareManualDeclarations) {
+					this.manualDeclarables.addAll(Arrays.asList(queues));
+				}
+				return null;
+			});
+		}
+		catch (AmqpException e) {
+			logOrRethrowBatchDeclarationException(queues, "queues", e);
 		}
 	}
 
@@ -410,6 +474,36 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		}
 		catch (AmqpException e) {
 			logOrRethrowDeclarationException(binding, "binding", e);
+		}
+	}
+
+	/**
+	 * Declare the given bindings on a single channel.
+	 * A failure to declare one of them is handled like a failure of
+	 * {@link #declareBinding(Binding)}: it is logged and the next binding is declared when
+	 * {@link #setIgnoreDeclarationExceptions(boolean) ignoreDeclarationExceptions} is true for
+	 * the admin or the binding, otherwise it is rethrown and the remaining bindings are not declared.
+	 * @param bindings the bindings to declare.
+	 * @since 4.2
+	 */
+	@Override
+	@ManagedOperation(description = "Declare bindings on the broker (this operation is not available remotely)")
+	public void declareBindings(final Binding... bindings) {
+		Assert.noNullElements(bindings, "'bindings' must not contain null elements");
+		if (bindings.length == 0) {
+			return;
+		}
+		try {
+			this.rabbitTemplate.<@Nullable Object>execute(channel -> {
+				declareBindings(channel, bindings);
+				if (this.redeclareManualDeclarations) {
+					this.manualDeclarables.addAll(Arrays.asList(bindings));
+				}
+				return null;
+			});
+		}
+		catch (AmqpException e) {
+			logOrRethrowBatchDeclarationException(bindings, "bindings", e);
 		}
 	}
 
@@ -907,6 +1001,25 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			catch (IOException e) {
 				logOrRethrowDeclarationException(binding, "binding", e);
 			}
+		}
+	}
+
+	private <T extends Throwable> void logOrRethrowBatchDeclarationException(Declarable[] elements, String elementType,
+			T t) throws T {
+
+		publishDeclarationExceptionEvent(null, t);
+		if (this.ignoreDeclarationExceptions) {
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("Failed to declare " + elementType + ": " + Arrays.toString(elements)
+						+ ", continuing...", t);
+			}
+			else if (this.logger.isWarnEnabled()) {
+				this.logger.warn("Failed to declare " + elementType + ": " + Arrays.toString(elements)
+						+ ", continuing... " + t);
+			}
+		}
+		else {
+			throw t;
 		}
 	}
 
