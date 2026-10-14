@@ -4,6 +4,7 @@
 
 package org.springframework.amqp.rabbit.core;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,6 +25,7 @@ import org.apache.commons.logging.Log;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.UncategorizedAmqpException;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Binding;
@@ -64,12 +66,14 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -287,6 +291,129 @@ public class RabbitAdminTests extends NeedsManagementTests {
 		assertThat(events.get(3).getThrowable().getCause()).isSameAs(toBeThrown);
 
 		assertThat(admin.getLastDeclarationExceptionEvent()).isSameAs(events.get(3));
+	}
+
+	@Test
+	public void declareQueuesUsesASingleChannel() throws Exception {
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		given(connectionFactory.createConnection()).willReturn(connection);
+		Channel channel = mock();
+		given(connection.createChannel(false)).willReturn(channel);
+		DeclareOk declareOk = mock();
+		given(channel.queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), any())).willReturn(declareOk);
+		RabbitAdmin admin = new RabbitAdmin(new RabbitTemplate(connectionFactory));
+
+		admin.declareQueues(new Queue("q1"), new Queue("q2"), new Queue("q3"));
+
+		verify(connection, times(1)).createChannel(false);
+		verify(channel).queueDeclare(eq("q1"), anyBoolean(), anyBoolean(), anyBoolean(), any());
+		verify(channel).queueDeclare(eq("q2"), anyBoolean(), anyBoolean(), anyBoolean(), any());
+		verify(channel).queueDeclare(eq("q3"), anyBoolean(), anyBoolean(), anyBoolean(), any());
+		verify(channel, times(1)).close();
+	}
+
+	@Test
+	public void declareExchangesAndBindingsUseASingleChannelEach() throws Exception {
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		given(connectionFactory.createConnection()).willReturn(connection);
+		Channel channel = mock();
+		given(connection.createChannel(false)).willReturn(channel);
+		RabbitAdmin admin = new RabbitAdmin(new RabbitTemplate(connectionFactory));
+		DirectExchange exchange1 = new DirectExchange("e1");
+		DirectExchange exchange2 = new DirectExchange("e2");
+
+		admin.declareExchanges(exchange1, exchange2);
+		admin.declareBindings(BindingBuilder.bind(new Queue("q1")).to(exchange1).with("k1"),
+				BindingBuilder.bind(new Queue("q2")).to(exchange2).with("k2"));
+
+		verify(connection, times(2)).createChannel(false);
+		verify(channel).exchangeDeclare(eq("e1"), eq("direct"), anyBoolean(), anyBoolean(), anyBoolean(), any());
+		verify(channel).exchangeDeclare(eq("e2"), eq("direct"), anyBoolean(), anyBoolean(), anyBoolean(), any());
+		verify(channel).queueBind(eq("q1"), eq("e1"), eq("k1"), any());
+		verify(channel).queueBind(eq("q2"), eq("e2"), eq("k2"), any());
+		verify(channel, times(2)).close();
+	}
+
+	@Test
+	public void declareQueuesContinuesAfterAFailureWhenDeclarationExceptionsAreIgnored() throws Exception {
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		given(connectionFactory.createConnection()).willReturn(connection);
+		Channel channel = mock();
+		given(connection.createChannel(false)).willReturn(channel);
+		DeclareOk declareOk = mock();
+		given(channel.queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), any())).willReturn(declareOk);
+		IOException failure = new IOException("rejected by the broker");
+		given(channel.queueDeclare(eq("bad"), anyBoolean(), anyBoolean(), anyBoolean(), any())).willThrow(failure);
+		RabbitAdmin admin = new RabbitAdmin(new RabbitTemplate(connectionFactory));
+		admin.setIgnoreDeclarationExceptions(true);
+		ApplicationEventPublisher publisher = mock();
+		admin.setApplicationEventPublisher(publisher);
+
+		admin.declareQueues(new Queue("q1"), new Queue("bad"), new Queue("q2"));
+
+		verify(channel).queueDeclare(eq("q2"), anyBoolean(), anyBoolean(), anyBoolean(), any());
+		ArgumentCaptor<ApplicationEvent> event = ArgumentCaptor.forClass(ApplicationEvent.class);
+		verify(publisher).publishEvent(event.capture());
+		DeclarationExceptionEvent declarationException = (DeclarationExceptionEvent) event.getValue();
+		assertThat(declarationException.getDeclarable()).isInstanceOf(Queue.class)
+				.extracting(declarable -> ((Queue) declarable).getName()).isEqualTo("bad");
+		assertThat(declarationException.getThrowable()).isSameAs(failure);
+	}
+
+	@Test
+	public void declareQueuesStopsAtTheFirstFailureWhenDeclarationExceptionsAreNotIgnored() throws Exception {
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		given(connectionFactory.createConnection()).willReturn(connection);
+		Channel channel = mock();
+		given(connection.createChannel(false)).willReturn(channel);
+		DeclareOk declareOk = mock();
+		given(channel.queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), any())).willReturn(declareOk);
+		given(channel.queueDeclare(eq("bad"), anyBoolean(), anyBoolean(), anyBoolean(), any()))
+				.willThrow(new IOException("rejected by the broker"));
+		RabbitAdmin admin = new RabbitAdmin(new RabbitTemplate(connectionFactory));
+
+		assertThatThrownBy(() -> admin.declareQueues(new Queue("q1"), new Queue("bad"), new Queue("q2")))
+				.isInstanceOf(AmqpException.class);
+
+		verify(channel).queueDeclare(eq("q1"), anyBoolean(), anyBoolean(), anyBoolean(), any());
+		verify(channel, never()).queueDeclare(eq("q2"), anyBoolean(), anyBoolean(), anyBoolean(), any());
+		assertThat(admin.getLastDeclarationExceptionEvent()).isNotNull();
+	}
+
+	@Test
+	public void declareMultipleDeclarablesOnTheBroker() {
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory();
+		connectionFactory.setHost("localhost");
+		RabbitAdmin rabbitAdmin = new RabbitAdmin(connectionFactory);
+		String suffix = "." + System.currentTimeMillis();
+		Queue queue1 = new Queue("test.declareQueues.1" + suffix);
+		Queue queue2 = new Queue("test.declareQueues.2" + suffix);
+		AnonymousQueue anonymousQueue = new AnonymousQueue();
+		DirectExchange exchange = new DirectExchange("test.declareExchanges" + suffix);
+		try {
+			rabbitAdmin.declareQueues(queue1, queue2, anonymousQueue);
+			rabbitAdmin.declareExchanges(exchange);
+			rabbitAdmin.declareBindings(BindingBuilder.bind(queue1).to(exchange).with("k1"),
+					BindingBuilder.bind(queue2).to(exchange).with("k2"));
+
+			assertThat(rabbitAdmin.getQueueInfo(queue1.getName())).isNotNull();
+			assertThat(rabbitAdmin.getQueueInfo(queue2.getName())).isNotNull();
+			assertThat(rabbitAdmin.getQueueInfo(anonymousQueue.getActualName())).isNotNull();
+			RabbitTemplate template = new RabbitTemplate(connectionFactory);
+			template.convertAndSend(exchange.getName(), "k2", "routed");
+			assertThat(template.receiveAndConvert(queue2.getName(), 10_000)).isEqualTo("routed");
+		}
+		finally {
+			rabbitAdmin.deleteQueue(queue1.getName());
+			rabbitAdmin.deleteQueue(queue2.getName());
+			rabbitAdmin.deleteQueue(anonymousQueue.getActualName());
+			rabbitAdmin.deleteExchange(exchange.getName());
+			connectionFactory.destroy();
+		}
 	}
 
 	@Test
