@@ -62,5 +62,6 @@ tools-jackson-bom = { module = "tools.jackson:jackson-bom", version.ref = "jacks
 [plugins]
 aggregate-javadoc = { id = "io.freefair.aggregate-javadoc", version = "9.8.0" }
 antora = { id = "org.antora", version = "1.0.0" }
+node-gradle = { id = "com.github.node-gradle.node", version = "7.1.0" }
 nullability = { id = "io.spring.nullability", version = "0.0.17" }
 spring-antora-generateYml = { id = "io.spring.antora.generate-antora-yml", version = "0.0.1" }
