@@ -10,10 +10,10 @@ springVersion = "7.1.0-SNAPSHOT"
 assertjVersion = "3.27.7"
 assertkVersion = "0.28.1"
 awaitilityVersion = "4.3.0"
-commonsHttpClientVersion = "5.6.4"
+commonsHttpClientVersion = "5.6.5"
 commonsPoolVersion = "2.13.0"
 hamcrestVersion = "3.0"
-hibernateValidationVersion = "9.1.4.Final"
+hibernateValidationVersion = "9.1.5.Final"
 jacksonVersion = "2.22.3"
 jackson3Version = "3.2.3"
 jsonpathVersion = "3.0.0"
@@ -60,7 +60,7 @@ org-testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", ver
 tools-jackson-bom = { module = "tools.jackson:jackson-bom", version.ref = "jackson3Version" }
 
 [plugins]
-aggregate-javadoc = { id = "io.freefair.aggregate-javadoc", version = "9.8.0" }
+aggregate-javadoc = { id = "io.freefair.aggregate-javadoc", version = "9.8.2" }
 antora = { id = "org.antora", version = "1.0.0" }
 node-gradle = { id = "com.github.node-gradle.node", version = "7.1.0" }
 nullability = { id = "io.spring.nullability", version = "0.0.17" }
