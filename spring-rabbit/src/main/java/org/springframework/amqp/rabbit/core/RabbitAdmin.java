@@ -114,9 +114,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	public static final String DELAYED_MESSAGE_EXCHANGE = "x-delayed-message";
 
 	/** Logger available to subclasses. */
-	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR
-
-	private final Lock lock = new ReentrantLock();
+	protected final Log logger = LogFactory.getLog(getClass());
 
 	private final RabbitTemplate rabbitTemplate;
 
@@ -249,7 +247,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@Override
 	@ManagedOperation(description = "Declare exchanges on the broker (this operation is not available remotely)")
 	public void declareExchanges(final Exchange... exchanges) {
-		Assert.noNullElements(exchanges, "'exchanges' must not contain null elements");
+
 		if (exchanges.length == 0) {
 			return;
 		}
@@ -350,7 +348,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@Override
 	@ManagedOperation(description = "Declare queues on the broker (this operation is not available remotely)")
 	public void declareQueues(final Queue... queues) {
-		Assert.noNullElements(queues, "'queues' must not contain null elements");
+
 		if (queues.length == 0) {
 			return;
 		}
@@ -489,7 +487,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@Override
 	@ManagedOperation(description = "Declare bindings on the broker (this operation is not available remotely)")
 	public void declareBindings(final Binding... bindings) {
-		Assert.noNullElements(bindings, "'bindings' must not contain null elements");
+
 		if (bindings.length == 0) {
 			return;
 		}
