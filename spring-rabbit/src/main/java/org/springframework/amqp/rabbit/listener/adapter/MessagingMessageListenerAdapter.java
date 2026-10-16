@@ -47,6 +47,7 @@ import org.springframework.util.Assert;
  * @author Artem Bilan
  * @author Kai Stapel
  * @author Aram Peres
+ * @author Ngoc Nhan
  *
  * @since 1.4
  */
@@ -361,24 +362,20 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	protected org.springframework.amqp.core.Message buildMessage(@Nullable Channel channel, @Nullable Object result,
 			@Nullable Type genericType) {
 
+		if (result instanceof org.springframework.amqp.core.Message msg) {
+			return msg;
+		}
+
 		MessageConverter converter = getMessageConverter();
-		if (converter != null && !(result instanceof org.springframework.amqp.core.Message)) {
-			if (result instanceof org.springframework.messaging.Message) {
+		if (converter != null) {
+			if (result instanceof Message) {
 				return this.messagingMessageConverter.toMessage(result, new MessageProperties());
 			}
-			else {
-				return convert(result, genericType, converter);
-			}
+
+			return convert(result, genericType, converter);
 		}
-		else {
-			if (result instanceof org.springframework.amqp.core.Message msg) {
-				return msg;
-			}
-			else {
-				throw new MessageConversionException("No MessageConverter specified - cannot handle message ["
-						+ result + "]");
-			}
-		}
+
+		throw new MessageConversionException("No MessageConverter specified - cannot handle message [" + result + "]");
 	}
 
 }
