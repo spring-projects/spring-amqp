@@ -58,6 +58,7 @@ import org.springframework.core.task.TaskExecutor;
 import org.springframework.jmx.export.annotation.ManagedOperation;
 import org.springframework.jmx.export.annotation.ManagedResource;
 import org.springframework.util.Assert;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -114,9 +115,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	public static final String DELAYED_MESSAGE_EXCHANGE = "x-delayed-message";
 
 	/** Logger available to subclasses. */
-	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR
-
-	private final Lock lock = new ReentrantLock();
+	protected final Log logger = LogFactory.getLog(getClass());
 
 	private final RabbitTemplate rabbitTemplate;
 
@@ -243,16 +242,19 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 * {@link #declareExchange(Exchange)}: it is logged and the next exchange is declared when
 	 * {@link #setIgnoreDeclarationExceptions(boolean) ignoreDeclarationExceptions} is true for
 	 * the admin or the exchange, otherwise it is rethrown and the remaining exchanges are not declared.
-	 * @param exchanges the exchanges to declare.
+	 * @param exchanges the exchanges to declare, may be {@code null} or empty
+	 * but must not contain {@code null} elements.
 	 * @since 4.2
 	 */
 	@Override
 	@ManagedOperation(description = "Declare exchanges on the broker (this operation is not available remotely)")
 	public void declareExchanges(final Exchange... exchanges) {
-		Assert.noNullElements(exchanges, "'exchanges' must not contain null elements");
-		if (exchanges.length == 0) {
+
+		if (ObjectUtils.isEmpty(exchanges)) {
 			return;
 		}
+		Assert.noNullElements(exchanges, "'exchanges' must not contain null elements");
+
 		try {
 			this.rabbitTemplate.<@Nullable Object>execute(channel -> {
 				declareExchanges(channel, exchanges);
@@ -344,16 +346,19 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 * it is logged and the next queue is declared when
 	 * {@link #setIgnoreDeclarationExceptions(boolean) ignoreDeclarationExceptions} is true for
 	 * the admin or the queue, otherwise it is rethrown and the remaining queues are not declared.
-	 * @param queues the queues to declare.
+	 * @param queues the queues to declare, may be {@code null} or empty
+	 * but must not contain {@code null} elements.
 	 * @since 4.2
 	 */
 	@Override
 	@ManagedOperation(description = "Declare queues on the broker (this operation is not available remotely)")
 	public void declareQueues(final Queue... queues) {
-		Assert.noNullElements(queues, "'queues' must not contain null elements");
-		if (queues.length == 0) {
+
+		if (ObjectUtils.isEmpty(queues)) {
 			return;
 		}
+		Assert.noNullElements(queues, "'queues' must not contain null elements");
+
 		try {
 			this.rabbitTemplate.<@Nullable Object>execute(channel -> {
 				declareQueues(channel, queues);
@@ -483,16 +488,19 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 * {@link #declareBinding(Binding)}: it is logged and the next binding is declared when
 	 * {@link #setIgnoreDeclarationExceptions(boolean) ignoreDeclarationExceptions} is true for
 	 * the admin or the binding, otherwise it is rethrown and the remaining bindings are not declared.
-	 * @param bindings the bindings to declare.
+	 * @param bindings the bindings to declare, may be {@code null} or empty
+	 * but must not contain {@code null} elements.
 	 * @since 4.2
 	 */
 	@Override
 	@ManagedOperation(description = "Declare bindings on the broker (this operation is not available remotely)")
 	public void declareBindings(final Binding... bindings) {
-		Assert.noNullElements(bindings, "'bindings' must not contain null elements");
-		if (bindings.length == 0) {
+
+		if (ObjectUtils.isEmpty(bindings)) {
 			return;
 		}
+		Assert.noNullElements(bindings, "'bindings' must not contain null elements");
+
 		try {
 			this.rabbitTemplate.<@Nullable Object>execute(channel -> {
 				declareBindings(channel, bindings);

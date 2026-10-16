@@ -61,6 +61,7 @@ import org.springframework.core.retry.RetryTemplate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
@@ -414,6 +415,41 @@ public class RabbitAdminTests extends NeedsManagementTests {
 			rabbitAdmin.deleteExchange(exchange.getName());
 			connectionFactory.destroy();
 		}
+	}
+
+	@Test
+	void declareExchangesQueuesAndBindingsShouldDoNothingWhenNullOrEmpty() {
+
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory();
+		connectionFactory.setHost("localhost");
+		RabbitAdmin rabbitAdmin = new RabbitAdmin(connectionFactory);
+		assertThatNoException()
+				.isThrownBy(() -> {
+
+					rabbitAdmin.declareExchanges((Exchange[]) null);
+					rabbitAdmin.declareQueues((Queue[]) null);
+					rabbitAdmin.declareBindings((Binding[]) null);
+
+					rabbitAdmin.declareExchanges();
+					rabbitAdmin.declareQueues();
+					rabbitAdmin.declareBindings();
+				});
+	}
+
+	@Test
+	void declareExchangesQueuesAndBindingsShouldThrowIllegalArgumentExceptionWhenContainNullElements() {
+
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory();
+		connectionFactory.setHost("localhost");
+		RabbitAdmin rabbitAdmin = new RabbitAdmin(connectionFactory);
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> rabbitAdmin.declareExchanges((Exchange) null));
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> rabbitAdmin.declareQueues((Queue) null));
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> rabbitAdmin.declareBindings((Binding) null));
 	}
 
 	@Test

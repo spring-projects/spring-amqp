@@ -26,6 +26,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 
 /**
  * @author Artem Bilan
@@ -101,6 +103,57 @@ public class RabbitAmqpAdminTests extends RabbitAmqpTestBase {
 	void shouldReturnNullForNonExistentQueue() {
 		assertThat(admin.getQueueInfo("non-existent-queue")).isNull();
 		assertThat(admin.getQueueProperties("non-existent-queue")).isNull();
+	}
+
+	@Test
+	void declareExchangesQueuesAndBindings() {
+
+		DirectExchange exchange1 = new DirectExchange("e1");
+		DirectExchange exchange2 = new DirectExchange("e2");
+		Queue q1 = new Queue("q1");
+		Queue q2 = new Queue("q1");
+
+		admin.declareExchanges(exchange1, exchange2);
+		admin.declareQueues(q1, q2);
+		admin.declareBindings(
+				BindingBuilder.bind(q1).to(exchange1).with("k1"),
+				BindingBuilder.bind(q2).to(exchange2).with("k2")
+		);
+
+		assertThat(admin.getQueueInfo("q1")).isNotNull();
+		assertThat(admin.getQueueInfo("q2")).isNotNull();
+
+		assertThat(admin.deleteExchange("e1")).isTrue();
+		assertThat(admin.deleteExchange("e2")).isTrue();
+	}
+
+	@Test
+	void declareExchangesQueuesAndBindingsShouldDoNothingWhenNullOrEmpty() {
+
+		assertThatNoException()
+				.isThrownBy(() -> {
+
+					admin.declareExchanges((Exchange[]) null);
+					admin.declareQueues((Queue[]) null);
+					admin.declareBindings((Binding[]) null);
+
+					admin.declareExchanges();
+					admin.declareQueues();
+					admin.declareBindings();
+				});
+	}
+
+	@Test
+	void declareExchangesQueuesAndBindingsShouldThrowIllegalArgumentExceptionWhenContainNullElements() {
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> admin.declareExchanges((Exchange) null));
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> admin.declareQueues((Queue) null));
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> admin.declareBindings((Binding) null));
 	}
 
 	@Configuration

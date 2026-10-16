@@ -10,6 +10,9 @@ import java.util.Set;
 
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.util.Assert;
+import org.springframework.util.ObjectUtils;
+
 /**
  * Specifies a basic set of portable AMQP administrative operations for AMQP &gt; 0.9.
  *
@@ -18,6 +21,7 @@ import org.jspecify.annotations.Nullable;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Sharang Gupta
+ * @author Ngoc Nhan
  */
 public interface AmqpAdmin {
 
@@ -104,10 +108,17 @@ public interface AmqpAdmin {
 	/**
 	 * Declare the given exchanges.
 	 * The default implementation declares them one by one with {@link #declareExchange(Exchange)}.
-	 * @param exchanges the exchanges to declare.
+	 * @param exchanges the exchanges to declare, may be {@code null} or empty
+	 * but must not contain {@code null} elements.
 	 * @since 4.2
 	 */
 	default void declareExchanges(Exchange... exchanges) {
+
+		if (ObjectUtils.isEmpty(exchanges)) {
+			return;
+		}
+		Assert.noNullElements(exchanges, "'exchanges' must not contain null elements");
+
 		for (Exchange exchange : exchanges) {
 			declareExchange(exchange);
 		}
@@ -118,10 +129,17 @@ public interface AmqpAdmin {
 	 * The name that the broker assigns to a queue declared with an empty name is available
 	 * from {@link Queue#getActualName()} afterwards.
 	 * The default implementation declares them one by one with {@link #declareQueue(Queue)}.
-	 * @param queues the queues to declare.
+	 * @param queues the queues to declare, may be {@code null} or empty
+	 * but must not contain {@code null} elements.
 	 * @since 4.2
 	 */
 	default void declareQueues(Queue... queues) {
+
+		if (ObjectUtils.isEmpty(queues)) {
+			return;
+		}
+		Assert.noNullElements(queues, "'queues' must not contain null elements");
+
 		for (Queue queue : queues) {
 			declareQueue(queue);
 		}
@@ -130,10 +148,17 @@ public interface AmqpAdmin {
 	/**
 	 * Declare the given bindings.
 	 * The default implementation declares them one by one with {@link #declareBinding(Binding)}.
-	 * @param bindings the bindings to declare.
+	 * @param bindings the bindings to declare, may be {@code null} or empty
+	 * but must not contain {@code null} elements.
 	 * @since 4.2
 	 */
 	default void declareBindings(Binding... bindings) {
+
+		if (ObjectUtils.isEmpty(bindings)) {
+			return;
+		}
+		Assert.noNullElements(bindings, "'bindings' must not contain null elements");
+
 		for (Binding binding : bindings) {
 			declareBinding(binding);
 		}
