@@ -56,6 +56,7 @@ import org.springframework.util.Assert;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Johan Haleby
+ * @author Ngoc Nhan
  *
  * @since 1.4
  *
@@ -508,26 +509,24 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	/**
 	 * Build a Rabbit message to be sent as a response based on the given result object.
 	 * @param channel the Rabbit Channel to operate on.
-	 *                Can be null if implementation does not support AMQP 0.9.1.
+	 *                Can be {@code null} if implementation does not support AMQP 0.9.1.
 	 * @param result the content of the message, as returned from the listener method.
 	 * @param genericType the generic type to populate type headers.
 	 * @return the Rabbit <code>Message</code> (never <code>null</code>).
 	 * @see #setMessageConverter
 	 */
 	protected Message buildMessage(@Nullable Channel channel, @Nullable Object result, @Nullable Type genericType) {
+
+		if (result instanceof Message msg) {
+			return msg;
+		}
+
 		MessageConverter converter = getMessageConverter();
-		if (converter != null && !(result instanceof Message)) {
+		if (converter != null) {
 			return convert(result, genericType, converter);
 		}
-		else {
-			if (result instanceof Message msg) {
-				return msg;
-			}
-			else {
-				throw new MessageConversionException("No MessageConverter specified - cannot handle message ["
-						+ result + "]");
-			}
-		}
+
+		throw new MessageConversionException("No MessageConverter specified - cannot handle message [" + result + "]");
 	}
 
 	/**
