@@ -58,7 +58,6 @@ import org.springframework.core.task.TaskExecutor;
 import org.springframework.jmx.export.annotation.ManagedOperation;
 import org.springframework.jmx.export.annotation.ManagedResource;
 import org.springframework.util.Assert;
-import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -242,19 +241,16 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 * {@link #declareExchange(Exchange)}: it is logged and the next exchange is declared when
 	 * {@link #setIgnoreDeclarationExceptions(boolean) ignoreDeclarationExceptions} is true for
 	 * the admin or the exchange, otherwise it is rethrown and the remaining exchanges are not declared.
-	 * @param exchanges the exchanges to declare, may be {@code null} or empty
-	 * but must not contain {@code null} elements.
+	 * @param exchanges the exchanges to declare.
 	 * @since 4.2
 	 */
 	@Override
 	@ManagedOperation(description = "Declare exchanges on the broker (this operation is not available remotely)")
 	public void declareExchanges(final Exchange... exchanges) {
 
-		if (ObjectUtils.isEmpty(exchanges)) {
+		if (exchanges.length == 0) {
 			return;
 		}
-		Assert.noNullElements(exchanges, "'exchanges' must not contain null elements");
-
 		try {
 			this.rabbitTemplate.<@Nullable Object>execute(channel -> {
 				declareExchanges(channel, exchanges);
@@ -346,19 +342,16 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 * it is logged and the next queue is declared when
 	 * {@link #setIgnoreDeclarationExceptions(boolean) ignoreDeclarationExceptions} is true for
 	 * the admin or the queue, otherwise it is rethrown and the remaining queues are not declared.
-	 * @param queues the queues to declare, may be {@code null} or empty
-	 * but must not contain {@code null} elements.
+	 * @param queues the queues to declare.
 	 * @since 4.2
 	 */
 	@Override
 	@ManagedOperation(description = "Declare queues on the broker (this operation is not available remotely)")
 	public void declareQueues(final Queue... queues) {
 
-		if (ObjectUtils.isEmpty(queues)) {
+		if (queues.length == 0) {
 			return;
 		}
-		Assert.noNullElements(queues, "'queues' must not contain null elements");
-
 		try {
 			this.rabbitTemplate.<@Nullable Object>execute(channel -> {
 				declareQueues(channel, queues);
@@ -488,19 +481,16 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 * {@link #declareBinding(Binding)}: it is logged and the next binding is declared when
 	 * {@link #setIgnoreDeclarationExceptions(boolean) ignoreDeclarationExceptions} is true for
 	 * the admin or the binding, otherwise it is rethrown and the remaining bindings are not declared.
-	 * @param bindings the bindings to declare, may be {@code null} or empty
-	 * but must not contain {@code null} elements.
+	 * @param bindings the bindings to declare.
 	 * @since 4.2
 	 */
 	@Override
 	@ManagedOperation(description = "Declare bindings on the broker (this operation is not available remotely)")
 	public void declareBindings(final Binding... bindings) {
 
-		if (ObjectUtils.isEmpty(bindings)) {
+		if (bindings.length == 0) {
 			return;
 		}
-		Assert.noNullElements(bindings, "'bindings' must not contain null elements");
-
 		try {
 			this.rabbitTemplate.<@Nullable Object>execute(channel -> {
 				declareBindings(channel, bindings);
