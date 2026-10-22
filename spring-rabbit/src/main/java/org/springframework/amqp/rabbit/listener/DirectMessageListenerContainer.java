@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -88,6 +87,7 @@ import org.springframework.util.backoff.BackOffExecution;
  * @author Nicolas Ristock
  * @author Cao Weibo
  * @author Ngoc Nhan
+ * @author Hyunsik Kang
  *
  * @since 2.0
  *
@@ -103,8 +103,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	protected final List<SimpleConsumer> consumers = new LinkedList<>(); // NOSONAR
 
 	private final Set<SimpleConsumer> consumersToRestart = new LinkedHashSet<>();
-
-	private final Set<String> removedQueues = ConcurrentHashMap.newKeySet();
 
 	private final MultiValueMap<String, SimpleConsumer> consumersByQueue = new LinkedMultiValueMap<>();
 
@@ -248,7 +246,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		Assert.notNull(queueNames, "'queueNames' cannot be null");
 		Assert.noNullElements(queueNames, "'queueNames' cannot contain null elements");
 		try {
-			Arrays.stream(queueNames).forEach(this.removedQueues::remove);
 			addQueues(Arrays.stream(queueNames));
 		}
 		catch (AmqpIOException e) {
@@ -262,9 +259,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		Assert.notNull(queues, "'queues' cannot be null");
 		Assert.noNullElements(queues, "'queues' cannot contain null elements");
 		try {
-			Arrays.stream(queues)
-					.map(Queue::getActualName)
-					.forEach(this.removedQueues::remove);
 			addQueues(Arrays.stream(queues).map(Queue::getName));
 		}
 		catch (AmqpIOException e) {
@@ -313,7 +307,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			try {
 				checkStartState();
 				queueNames.map(queue -> {
-							this.removedQueues.add(queue);
+							this.consumersToRestart.removeIf(consumer -> consumer.getQueue().equals(queue));
 							return this.consumersByQueue.remove(queue);
 						})
 						.filter(Objects::nonNull)
@@ -508,12 +502,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						while (iterator.hasNext()) {
 							SimpleConsumer consumer = iterator.next();
 							iterator.remove();
-							if (DirectMessageListenerContainer.this.removedQueues.contains(consumer.getQueue())) {
-								if (this.logger.isDebugEnabled()) {
-									this.logger.debug("Skipping restart of consumer, queue removed " + consumer);
-								}
-								continue;
-							}
 							if (this.logger.isDebugEnabled()) {
 								this.logger.debug("Attempting to restart consumer " + consumer);
 							}
@@ -1074,8 +1062,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 
 		/**
-		 * Set to true to indicate this consumer is canceled and should send any pending
-		 * acks.
+		 * Set to true to indicate this consumer is canceled by the container and should send
+		 * any pending acks; a canceled consumer is never scheduled for restart.
 		 * @param canceled the canceled to set
 		 */
 		void setCanceled(boolean canceled) {
@@ -1439,7 +1427,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					list.remove(this);
 				}
 				DirectMessageListenerContainer.this.consumers.remove(this);
-				addConsumerToRestart(this);
+				if (!this.canceled) {
+					addConsumerToRestart(this);
+				}
 			}
 			finally {
 				DirectMessageListenerContainer.this.consumersLock.unlock();
