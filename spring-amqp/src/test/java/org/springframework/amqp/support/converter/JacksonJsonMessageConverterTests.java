@@ -40,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Andreas Asplund
  * @author Artem Bilan
  * @author Ngoc Nhan
+ * @author Sharang Gupta
  */
 @SpringJUnitConfig
 @DirtiesContext
@@ -188,6 +189,16 @@ public class JacksonJsonMessageConverterTests {
 		this.jsonConverterWithDefaultType.setAssumeSupportedContentType(false);
 		Object foo = this.jsonConverterWithDefaultType.fromMessage(message);
 		assertThat(foo).isEqualTo(bytes);
+	}
+
+	@Test
+	void malformedContentTypeIsTreatedAsUnsupported() {
+		byte[] bytes = "{\"ticker\" : \"VMW\" }".getBytes();
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setContentType("json");
+		Message message = new Message(bytes, messageProperties);
+		Object content = this.converter.fromMessage(message);
+		assertThat(content).isSameAs(bytes);
 	}
 
 	@Test
