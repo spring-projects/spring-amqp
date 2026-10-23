@@ -29,12 +29,12 @@ To send a delayed message, you can set the `x-delay` header through `MessageProp
 MessageProperties properties = new MessageProperties();
 properties.setDelay(15000);
 template.send(exchange, routingKey,
-        MessageBuilder.withBody("foo".getBytes()).andProperties(properties).build());
+        MessageBuilder.withBody("thing1".getBytes()).andProperties(properties).build());
 ----
 
 [source, java]
 ----
-rabbitTemplate.convertAndSend(exchange, routingKey, "foo", new MessagePostProcessor() {
+rabbitTemplate.convertAndSend(exchange, routingKey, "thing1", new MessagePostProcessor() {
 
     @Override
     public Message postProcessMessage(Message message) throws AmqpException {

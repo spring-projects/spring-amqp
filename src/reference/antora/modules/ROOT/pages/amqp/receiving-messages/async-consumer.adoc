@@ -262,7 +262,7 @@ The following example shows how to do so:
 </rabbit:direct-exchange>
 
 <rabbit:listener-container id="container2" auto-startup="false">
-    <rabbit:listener id="listener2" ref="foo" queues="otherAnon" admin="containerAdmin" />
+    <rabbit:listener id="listener2" ref="thing1" queues="otherAnon" admin="containerAdmin" />
 </rabbit:listener-container>
 
 <rabbit:admin id="containerAdmin" connection-factory="rabbitConnectionFactory"

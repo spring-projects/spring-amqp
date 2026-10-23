@@ -179,7 +179,7 @@ The following example shows how to configure a `CorrelationData` instance:
 [source, java]
 ----
 CorrelationData cd1 = new CorrelationData();
-this.templateWithConfirmsEnabled.convertAndSend("exchange", queue.getName(), "foo", cd1);
+this.templateWithConfirmsEnabled.convertAndSend("exchange", queue.getName(), "thing1", cd1);
 assertTrue(cd1.getFuture().get(10, TimeUnit.SECONDS).isAck());
 ReturnedMessage = cd1.getReturn();
 ...

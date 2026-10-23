@@ -61,8 +61,8 @@ ConnectionFactory connectionFactory = new CachingConnectionFactory();
 AmqpAdmin admin = new RabbitAdmin(connectionFactory);
 admin.declareQueue(new Queue("myqueue"));
 AmqpTemplate template = new RabbitTemplate(connectionFactory);
-template.convertAndSend("myqueue", "foo");
-String foo = (String) template.receiveAndConvert("myqueue");
+template.convertAndSend("myqueue", "thing1");
+String thing1 = (String) template.receiveAndConvert("myqueue");
 ----
 
 Note that there is also a `ConnectionFactory` in the native Java Rabbit client.
@@ -81,8 +81,8 @@ The following example is the same as the preceding example but externalizes the 
 ApplicationContext context =
     new GenericXmlApplicationContext("classpath:/rabbit-context.xml");
 AmqpTemplate template = context.getBean(AmqpTemplate.class);
-template.convertAndSend("myqueue", "foo");
-String foo = (String) template.receiveAndConvert("myqueue");
+template.convertAndSend("myqueue", "thing1");
+String thing1 = (String) template.receiveAndConvert("myqueue");
 ----
 
 [source,xml]
@@ -121,8 +121,8 @@ The following example repeats the same example as the preceding example but with
 ApplicationContext context =
     new AnnotationConfigApplicationContext(RabbitConfiguration.class);
 AmqpTemplate template = context.getBean(AmqpTemplate.class);
-template.convertAndSend("myqueue", "foo");
-String foo = (String) template.receiveAndConvert("myqueue");
+template.convertAndSend("myqueue", "thing1");
+String thing1 = (String) template.receiveAndConvert("myqueue");
 
 ........
 
@@ -167,7 +167,7 @@ public class Application {
 
     @Bean
     public ApplicationRunner runner(AmqpTemplate template) {
-        return args -> template.convertAndSend("myqueue", "foo");
+        return args -> template.convertAndSend("myqueue", "thing1");
     }
 
     @Bean

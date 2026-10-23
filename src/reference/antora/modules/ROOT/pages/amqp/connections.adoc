@@ -232,7 +232,7 @@ The following example with a custom thread factory that prefixes thread names wi
 
 [source, xml]
 ----
-<rabbit:connection-factory id="multiHost" virtual-host="/bar" addresses="host1:1234,host2,host3:4567"
+<rabbit:connection-factory id="multiHost" virtual-host="/myVhost" addresses="host1:1234,host2,host3:4567"
     thread-factory="tf"
     channel-cache-size="10" username="user" password="password" />
 

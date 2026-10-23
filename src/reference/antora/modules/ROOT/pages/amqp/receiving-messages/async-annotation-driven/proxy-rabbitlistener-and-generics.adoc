@@ -13,7 +13,7 @@ interface TxService<P> {
 
 }
 
-static class TxServiceImpl implements TxService<Foo> {
+static class TxServiceImpl implements TxService<Thing1> {
 
     @Override
     @RabbitListener(...)
@@ -32,12 +32,12 @@ And in this case, all annotations have to be declared on the target method in th
 
 [source, java]
 ----
-static class TxServiceImpl implements TxService<Foo> {
+static class TxServiceImpl implements TxService<Thing1> {
 
     @Override
     @Transactional
     @RabbitListener(...)
-    public String handle(@Payload Foo foo, @Header("amqp_receivedRoutingKey") String rk) {
+    public String handle(@Payload Thing1 thing1, @Header("amqp_receivedRoutingKey") String rk) {
         ...
     }
 

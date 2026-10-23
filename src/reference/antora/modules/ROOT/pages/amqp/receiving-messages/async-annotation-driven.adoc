@@ -103,7 +103,7 @@ and bindings, as the following example shows:
                 @Argument(name = "thing2")
         })
 )
-public String handleWithHeadersExchange(String foo) {
+public String handleWithHeadersExchange(String thing1) {
     ...
 }
 ----

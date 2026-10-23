@@ -39,7 +39,7 @@ The following example shows how to define an outbound channel adapter:
 ----
 <amqp:outbound-channel-adapter channel="toAMQP"
                                exchange-name="some.exchange"
-                               routing-key="foo"
+                               routing-key="thing1"
                                amqp-template="rabbitTemplate"/>
 ----
 
@@ -69,6 +69,6 @@ The following example shows how to define an outbound gateway:
 <amqp:outbound-gateway request-channel="toAMQP"
                        reply-channel="fromAMQP"
                        exchange-name="some.exchange"
-                       routing-key="foo"
+                       routing-key="thing1"
                        amqp-template="rabbitTemplate"/>
 ----

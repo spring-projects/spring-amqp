@@ -98,8 +98,8 @@ Starting with version 1.5, the `@SendTo` value can be a bean initialization SpEL
 ----
 @RabbitListener(queues = "test.sendTo.spel")
 @SendTo("#{spelReplyTo}")
-public String capitalizeWithSendToSpel(String foo) {
-    return foo.toUpperCase();
+public String capitalizeWithSendToSpel(String thing1) {
+    return thing1.toUpperCase();
 }
 ...
 @Bean
@@ -123,8 +123,8 @@ and reply, as the following example shows:
 ----
 @RabbitListener(queues = "test.sendTo.spel")
 @SendTo("!{'some.reply.queue.with.' + result.queueName}")
-public Bar capitalizeWithSendToSpel(Foo foo) {
-    return processTheFooAndReturnABar(foo);
+public Thing2 capitalizeWithSendToSpel(Thing1 thing1) {
+    return processTheThing1AndReturnAThing2(thing1);
 }
 ----
 
@@ -148,7 +148,7 @@ With earlier versions, the following can be used as a work around, as the follow
 
 [source, java]
 ----
-@RabbitListener(queues = "foo")
+@RabbitListener(queues = "thing1")
 @SendTo("#{environment['my.send.to']}")
 public String listen(Message in) {
     ...

@@ -18,7 +18,7 @@ The following example shows how to do so in XML and in Java (for both a `SimpleM
         idle-event-interval="60000"
         ...
         >
-    <rabbit:listener id="container1" queue-names="foo" ref="myListener" method="handle" />
+    <rabbit:listener id="container1" queue-names="thing1" ref="myListener" method="handle" />
 </rabbit:listener-container>
 ----
 
@@ -74,8 +74,8 @@ The following example shows how to create listeners by using both the `@RabbitLi
 public class Listener {
 
     @RabbitListener(id="someId", queues="#{queue.name}")
-    public String listen(String foo) {
-        return foo.toUpperCase();
+    public String listen(String thing1) {
+        return thing1.toUpperCase();
     }
 
     @EventListener(condition = "event.listenerId == 'someId'")

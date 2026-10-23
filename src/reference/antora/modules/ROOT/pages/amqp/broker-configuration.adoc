@@ -232,8 +232,8 @@ The following example shows how to do so:
     <rabbit:bindings>
         <rabbit:binding queue="bucket">
             <rabbit:binding-arguments>
-                <entry key="foo" value="bar"/>
-                <entry key="baz" value="qux"/>
+                <entry key="thing1" value="thing2"/>
+                <entry key="thing3" value="thing4"/>
                 <entry key="x-match" value="all"/>
             </rabbit:binding-arguments>
         </rabbit:binding>
@@ -355,19 +355,19 @@ The following example shows how to use it:
 ----
 @Bean
 public Queue queue() {
-    return QueueBuilder.nonDurable("foo")
+    return QueueBuilder.nonDurable("thing1")
         .autoDelete()
         .exclusive()
-        .withArgument("foo", "bar")
+        .withArgument("thing1", "thing2")
         .build();
 }
 
 @Bean
 public Exchange exchange() {
-  return ExchangeBuilder.directExchange("foo")
+  return ExchangeBuilder.directExchange("thing1")
       .autoDelete()
       .internal()
-      .withArgument("foo", "bar")
+      .withArgument("thing1", "thing2")
       .build();
 }
 ----
@@ -533,7 +533,7 @@ The properties are available as attributes in the namespace, as shown in the fol
 
 <rabbit:direct-exchange name="direct" declared-by="admin1, admin2">
     <rabbit:bindings>
-        <rabbit:binding key="foo" queue="bar"/>
+        <rabbit:binding key="thing1" queue="thing2"/>
     </rabbit:bindings>
 </rabbit:direct-exchange>
 ----
@@ -557,21 +557,21 @@ public RabbitAdmin admin2() {
 
 @Bean
 public Queue queue() {
-    Queue queue = new Queue("foo");
+    Queue queue = new Queue("thing1");
     queue.setAdminsThatShouldDeclare(admin1());
     return queue;
 }
 
 @Bean
 public Exchange exchange() {
-    DirectExchange exchange = new DirectExchange("bar");
+    DirectExchange exchange = new DirectExchange("thing2");
     exchange.setAdminsThatShouldDeclare(admin1());
     return exchange;
 }
 
 @Bean
 public Binding binding() {
-    Binding binding = new Binding("foo", DestinationType.QUEUE, exchange().getName(), "foo", null);
+    Binding binding = new Binding("thing1", DestinationType.QUEUE, exchange().getName(), "thing1", null);
     binding.setAdminsThatShouldDeclare(admin1());
     return binding;
 }

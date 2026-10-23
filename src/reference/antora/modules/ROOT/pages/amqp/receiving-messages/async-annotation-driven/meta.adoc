@@ -18,12 +18,12 @@ public @interface MyAnonFanoutListener {
 public class MetaListener {
 
     @MyAnonFanoutListener
-    public void handle1(String foo) {
+    public void handle1(String thing1) {
         ...
     }
 
     @MyAnonFanoutListener
-    public void handle2(String foo) {
+    public void handle2(String thing1) {
         ...
     }
 

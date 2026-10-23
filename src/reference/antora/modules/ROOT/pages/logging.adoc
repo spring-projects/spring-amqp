@@ -177,7 +177,7 @@ The following example shows how to configure a Log4j 2 appender:
 <Appenders>
     ...
     <RabbitMQ name="rabbitmq"
-        addresses="foo:5672,bar:5672" user="guest" password="guest" virtualHost="/"
+        addresses="host1:5672,host2:5672" user="guest" password="guest" virtualHost="/"
         exchange="log4j2" exchangeType="topic" declareExchange="true" durable="true" autoDelete="false"
         applicationId="myAppId" routingKeyPattern="%X{applicationId}.%c.%p"
         contentType="text/plain" contentEncoding="UTF-8" generateId="true" deliveryMode="NON_PERSISTENT"
@@ -210,7 +210,7 @@ The following example shows how to configure a logback appender:
     <layout>
         <pattern><![CDATA[ %d %p %t [%c] - <%m>%n ]]></pattern>
     </layout>
-    <addresses>foo:5672,bar:5672</addresses>
+    <addresses>host1:5672,host2:5672</addresses>
     <abbreviation>36</abbreviation>
     <includeCallerData>false</includeCallerData>
     <applicationId>myApplication</applicationId>
@@ -262,7 +262,7 @@ public class MyEnhancedAppender extends AmqpAppender {
 
     @Override
     public Message postProcessMessageBeforeSend(Message message, Event event) {
-        message.getMessageProperties().setHeader("foo", "bar");
+        message.getMessageProperties().setHeader("thing1", "thing2");
         return message;
     }
 
@@ -278,12 +278,12 @@ Starting with 2.2.4, the log4j2 `AmqpAppender` can be extended using `@PluginBui
 public class MyEnhancedAppender extends AmqpAppender {
 
 	public MyEnhancedAppender(String name, Filter filter, Layout<? extends Serializable> layout,
-			boolean ignoreExceptions, AmqpManager manager, BlockingQueue<Event> eventQueue, String foo, String bar) {
+			boolean ignoreExceptions, AmqpManager manager, BlockingQueue<Event> eventQueue, String thing1, String thing2) {
 		super(name, filter, layout, ignoreExceptions, manager, eventQueue);
 
 	@Override
 	public Message postProcessMessageBeforeSend(Message message, Event event) {
-			message.getMessageProperties().setHeader("foo", "bar");
+			message.getMessageProperties().setHeader("thing1", "thing2");
 		return message;
 	}
 

@@ -94,11 +94,11 @@ The following example shows its usage:
 ----
 
 @ClassRule
-public static BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues("foo", "bar");
+public static BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues("thing1", "thing2");
 
 @AfterClass
 public static void tearDown() {
-    brokerRunning.removeTestQueues("some.other.queue.too"); // removes foo, bar as well
+    brokerRunning.removeTestQueues("some.other.queue.too"); // removes thing1, thing2 as well
 }
 ----
 

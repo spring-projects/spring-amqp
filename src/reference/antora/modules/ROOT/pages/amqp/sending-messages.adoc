@@ -31,7 +31,7 @@ The following example is functionally equivalent to the previous example:
 [source,java]
 ----
 amqpTemplate.setExchange("marketData.topic");
-amqpTemplate.send("quotes.nasdaq.FOO", new Message("12.34".getBytes(), someProperties));
+amqpTemplate.send("quotes.nasdaq.AVGO", new Message("12.34".getBytes(), someProperties));
 ----
 
 If both the `exchange` and `routingKey` properties are set on the template, you can use the method that accepts only the `Message`.
@@ -40,7 +40,7 @@ The following example shows how to do so:
 [source,java]
 ----
 amqpTemplate.setExchange("marketData.topic");
-amqpTemplate.setRoutingKey("quotes.nasdaq.FOO");
+amqpTemplate.setRoutingKey("quotes.nasdaq.AVGO");
 amqpTemplate.send(new Message("12.34".getBytes(), someProperties));
 ----
 
@@ -81,10 +81,10 @@ The following examples show the fluent API in action:
 
 [source,java]
 ----
-Message message = MessageBuilder.withBody("foo".getBytes())
+Message message = MessageBuilder.withBody("thing1".getBytes())
     .setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN)
     .setMessageId("123")
-    .setHeader("bar", "baz")
+    .setHeader("thing2", "thing3")
     .build();
 ----
 
@@ -93,9 +93,9 @@ Message message = MessageBuilder.withBody("foo".getBytes())
 MessageProperties props = MessagePropertiesBuilder.newInstance()
     .setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN)
     .setMessageId("123")
-    .setHeader("bar", "baz")
+    .setHeader("thing2", "thing3")
     .build();
-Message message = MessageBuilder.withBody("foo".getBytes())
+Message message = MessageBuilder.withBody("thing1".getBytes())
     .andProperties(props)
     .build();
 ----

@@ -233,10 +233,10 @@ public void thing1(@Payload Thing1 thing1, @Header("amqp_consumerQueue") String 
 public void thing1(Thing1 thing1, o.s.amqp.core.Message message) {...}
 
 @RabbitListener
-public void thing1(Thing1 thing1, o.s.messaging.Message<Foo> message) {...}
+public void thing1(Thing1 thing1, o.s.messaging.Message<Thing1> message) {...}
 
 @RabbitListener
-public void thing1(Thing1 thing1, String bar) {...}
+public void thing1(Thing1 thing1, String thing2) {...}
 
 @RabbitListener
 public void thing1(Thing1 thing1, o.s.messaging.Message<?> message) {...}
@@ -381,7 +381,7 @@ The following example configures a `JacksonJsonMessageConverter`:
         class="org.springframework.amqp.support.converter.JacksonXmlMessageConverter">
     <property name="classMapper">
         <bean class="org.springframework.amqp.support.converter.DefaultClassMapper">
-            <property name="defaultType" value="foo.PurchaseOrder"/>
+            <property name="defaultType" value="com.example.PurchaseOrder"/>
         </bean>
     </property>
 </bean>

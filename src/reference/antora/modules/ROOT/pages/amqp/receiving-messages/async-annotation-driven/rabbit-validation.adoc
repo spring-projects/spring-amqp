@@ -40,12 +40,12 @@ To validate:
 ----
 public static class ValidatedClass {
   @Max(10)
-  private int bar;
-  public int getBar() {
-    return this.bar;
+  private int thing2;
+  public int getThing2() {
+    return this.thing2;
   }
-  public void setBar(int bar) {
-    this.bar = bar;
+  public void setThing2(int thing2) {
+    this.thing2 = thing2;
   }
 }
 ----

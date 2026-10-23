@@ -152,9 +152,9 @@ We provide a `BindingBuilder` to facilitate a "fluent API" style, as the followi
 ----
 Queue queue = ...;
 // bind a queue to a DirectExchange with a fixed routing key
-Binding directBinding = BindingBuilder.bind(queue).to(new DirectExchange("someDirectExchange")).with("foo.bar");
+Binding directBinding = BindingBuilder.bind(queue).to(new DirectExchange("someDirectExchange")).with("thing1.thing2");
 // bind a queue to a TopicExchange with a routing pattern
-Binding topicBinding = BindingBuilder.bind(queue).to(new TopicExchange("someTopicExchange")).with("foo.*");
+Binding topicBinding = BindingBuilder.bind(queue).to(new TopicExchange("someTopicExchange")).with("thing1.*");
 // bind a queue to a FanoutExchange with no routing key
 Binding fanoutBinding = BindingBuilder.bind(queue).to(new FanoutExchange("someFanoutExchange"));
 ----

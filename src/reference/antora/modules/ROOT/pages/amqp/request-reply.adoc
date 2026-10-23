@@ -150,8 +150,8 @@ The following listing shows examples of how to manually wire up the beans:
 ----
 <bean id="amqpTemplate" class="org.springframework.amqp.rabbit.core.RabbitTemplate">
     <constructor-arg ref="connectionFactory" />
-    <property name="exchange" value="foo.exchange" />
-    <property name="routingKey" value="foo" />
+    <property name="exchange" value="thing1.exchange" />
+    <property name="routingKey" value="thing1" />
     <property name="replyQueue" ref="replyQ" />
     <property name="replyTimeout" value="600000" />
     <property name="useDirectReplyToContainer" value="false" />
@@ -229,7 +229,7 @@ public void doSomeWorkAndGetResultLater() {
 
     ...
 
-    CompletableFuture<String> future = this.template.convertSendAndReceive("foo");
+    CompletableFuture<String> future = this.template.convertSendAndReceive("thing1");
 
     // do some more work
 
@@ -249,7 +249,7 @@ public void doSomeWorkAndGetResultAsync() {
 
     ...
 
-    RabbitConverterFuture<String> future = this.template.convertSendAndReceive("foo");
+    RabbitConverterFuture<String> future = this.template.convertSendAndReceive("thing1");
     future.whenComplete((result, ex) -> {
         if (ex == null) {
             // success

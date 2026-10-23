@@ -71,7 +71,7 @@ The following example shows how to use `LatchCountDownAndCallRealMethodAnswer`:
 ----
 LatchCountDownAndCallRealMethodAnswer answer = this.harness.getLatchAnswerFor("myListener", 2);
 doAnswer(answer)
-    .when(listener).foo(anyString(), anyString());
+    .when(listener).thing1(anyString(), anyString());
 
 ...
 
@@ -156,13 +156,13 @@ public class Config {
 
 public class Listener {
 
-    @RabbitListener(id="foo", queues="#{queue1.name}")
-    public String foo(String foo) {
-        return foo.toUpperCase();
+    @RabbitListener(id="thing1", queues="#{queue1.name}")
+    public String thing1(String thing1) {
+        return thing1.toUpperCase();
     }
 
-    @RabbitListener(id="bar", queues="#{queue2.name}")
-    public void foo(@Payload String foo, @Header("amqp_receivedRoutingKey") String rk) {
+    @RabbitListener(id="thing2", queues="#{queue2.name}")
+    public void thing1(@Payload String thing1, @Header("amqp_receivedRoutingKey") String rk) {
         ...
     }
 
@@ -176,27 +176,27 @@ public class MyTests {
 
     @Test
     public void testTwoWay() throws Exception {
-        assertEquals("FOO", this.rabbitTemplate.convertSendAndReceive(this.queue1.getName(), "foo"));
+        assertEquals("THING1", this.rabbitTemplate.convertSendAndReceive(this.queue1.getName(), "thing1"));
 
-        Listener listener = this.harness.getSpy("foo"); <2>
+        Listener listener = this.harness.getSpy("thing1"); <2>
         assertNotNull(listener);
-        verify(listener).foo("foo");
+        verify(listener).thing1("thing1");
     }
 
     @Test
     public void testOneWay() throws Exception {
-        Listener listener = this.harness.getSpy("bar");
+        Listener listener = this.harness.getSpy("thing2");
         assertNotNull(listener);
 
-        LatchCountDownAndCallRealMethodAnswer answer = this.harness.getLatchAnswerFor("bar", 2); <3>
-        doAnswer(answer).when(listener).foo(anyString(), anyString()); <4>
+        LatchCountDownAndCallRealMethodAnswer answer = this.harness.getLatchAnswerFor("thing2", 2); <3>
+        doAnswer(answer).when(listener).thing1(anyString(), anyString()); <4>
 
-        this.rabbitTemplate.convertAndSend(this.queue2.getName(), "bar");
-        this.rabbitTemplate.convertAndSend(this.queue2.getName(), "baz");
+        this.rabbitTemplate.convertAndSend(this.queue2.getName(), "thing2");
+        this.rabbitTemplate.convertAndSend(this.queue2.getName(), "thing3");
 
         assertTrue(answer.await(10));
-        verify(listener).foo("bar", this.queue2.getName());
-        verify(listener).foo("baz", this.queue2.getName());
+        verify(listener).thing1("thing2", this.queue2.getName());
+        verify(listener).thing1("thing3", this.queue2.getName());
     }
 
 }
@@ -231,16 +231,16 @@ public class Listener {
 
     private boolean failed;
 
-    @RabbitListener(id="foo", queues="#{queue1.name}")
-    public String foo(String foo) {
-        return foo.toUpperCase();
+    @RabbitListener(id="thing1", queues="#{queue1.name}")
+    public String thing1(String thing1) {
+        return thing1.toUpperCase();
     }
 
-    @RabbitListener(id="bar", queues="#{queue2.name}")
-    public void foo(@Payload String foo, @Header("amqp_receivedRoutingKey") String rk) {
-        if (!failed && foo.equals("ex")) {
+    @RabbitListener(id="thing2", queues="#{queue2.name}")
+    public void thing1(@Payload String thing1, @Header("amqp_receivedRoutingKey") String rk) {
+        if (!failed && thing1.equals("ex")) {
             failed = true;
-            throw new RuntimeException(foo);
+            throw new RuntimeException(thing1);
         }
         failed = false;
     }
@@ -255,31 +255,31 @@ public class MyTests {
 
     @Test
     public void testTwoWay() throws Exception {
-        assertEquals("FOO", this.rabbitTemplate.convertSendAndReceive(this.queue1.getName(), "foo"));
+        assertEquals("THING1", this.rabbitTemplate.convertSendAndReceive(this.queue1.getName(), "thing1"));
 
         InvocationData invocationData =
-            this.harness.getNextInvocationDataFor("foo", 0, TimeUnit.SECONDS); <2>
-        assertThat(invocationData.getArguments()[0], equalTo("foo"));     <3>
-        assertThat((String) invocationData.getResult(), equalTo("FOO"));
+            this.harness.getNextInvocationDataFor("thing1", 0, TimeUnit.SECONDS); <2>
+        assertThat(invocationData.getArguments()[0], equalTo("thing1"));     <3>
+        assertThat((String) invocationData.getResult(), equalTo("THING1"));
     }
 
     @Test
     public void testOneWay() throws Exception {
-        this.rabbitTemplate.convertAndSend(this.queue2.getName(), "bar");
-        this.rabbitTemplate.convertAndSend(this.queue2.getName(), "baz");
+        this.rabbitTemplate.convertAndSend(this.queue2.getName(), "thing2");
+        this.rabbitTemplate.convertAndSend(this.queue2.getName(), "thing3");
         this.rabbitTemplate.convertAndSend(this.queue2.getName(), "ex");
 
         InvocationData invocationData =
-            this.harness.getNextInvocationDataFor("bar", 10, TimeUnit.SECONDS); <4>
+            this.harness.getNextInvocationDataFor("thing2", 10, TimeUnit.SECONDS); <4>
         Object[] args = invocationData.getArguments();
-        assertThat((String) args[0], equalTo("bar"));
+        assertThat((String) args[0], equalTo("thing2"));
         assertThat((String) args[1], equalTo(queue2.getName()));
 
-        invocationData = this.harness.getNextInvocationDataFor("bar", 10, TimeUnit.SECONDS);
+        invocationData = this.harness.getNextInvocationDataFor("thing2", 10, TimeUnit.SECONDS);
         args = invocationData.getArguments();
-        assertThat((String) args[0], equalTo("baz"));
+        assertThat((String) args[0], equalTo("thing3"));
 
-        invocationData = this.harness.getNextInvocationDataFor("bar", 10, TimeUnit.SECONDS);
+        invocationData = this.harness.getNextInvocationDataFor("thing2", 10, TimeUnit.SECONDS);
         args = invocationData.getArguments();
         assertThat((String) args[0], equalTo("ex"));
         assertEquals("ex", invocationData.getThrowable().getMessage()); <5>
@@ -328,28 +328,28 @@ public class TestRabbitTemplateTests {
 
     @Test
     public void testSimpleSends() {
-        this.template.convertAndSend("foo", "hello1");
-        assertThat(this.config.fooIn, equalTo("foo:hello1"));
-        this.template.convertAndSend("bar", "hello2");
-        assertThat(this.config.barIn, equalTo("bar:hello2"));
+        this.template.convertAndSend("thing1", "hello1");
+        assertThat(this.config.thing1In, equalTo("thing1:hello1"));
+        this.template.convertAndSend("thing2", "hello2");
+        assertThat(this.config.thing2In, equalTo("thing2:hello2"));
         assertThat(this.config.smlc1In, equalTo("smlc1:"));
-        this.template.convertAndSend("foo", "hello3");
-        assertThat(this.config.fooIn, equalTo("foo:hello1"));
-        this.template.convertAndSend("bar", "hello4");
-        assertThat(this.config.barIn, equalTo("bar:hello2"));
+        this.template.convertAndSend("thing1", "hello3");
+        assertThat(this.config.thing1In, equalTo("thing1:hello1"));
+        this.template.convertAndSend("thing2", "hello4");
+        assertThat(this.config.thing2In, equalTo("thing2:hello2"));
         assertThat(this.config.smlc1In, equalTo("smlc1:hello3hello4"));
 
         this.template.setBroadcast(true);
-        this.template.convertAndSend("foo", "hello5");
-        assertThat(this.config.fooIn, equalTo("foo:hello1foo:hello5"));
-        this.template.convertAndSend("bar", "hello6");
-        assertThat(this.config.barIn, equalTo("bar:hello2bar:hello6"));
+        this.template.convertAndSend("thing1", "hello5");
+        assertThat(this.config.thing1In, equalTo("thing1:hello1thing1:hello5"));
+        this.template.convertAndSend("thing2", "hello6");
+        assertThat(this.config.thing2In, equalTo("thing2:hello2thing2:hello6"));
         assertThat(this.config.smlc1In, equalTo("smlc1:hello3hello4hello5hello6"));
     }
 
     @Test
     public void testSendAndReceive() {
-        assertThat(this.template.convertSendAndReceive("baz", "hello"), equalTo("baz:hello"));
+        assertThat(this.template.convertSendAndReceive("thing3", "hello"), equalTo("thing3:hello"));
     }
 
 }
@@ -361,9 +361,9 @@ public class TestRabbitTemplateTests {
 @EnableRabbit
 public static class Config {
 
-    public String fooIn = "";
+    public String thing1In = "";
 
-    public String barIn = "";
+    public String thing2In = "";
 
     public String smlc1In = "smlc1:";
 
@@ -390,25 +390,25 @@ public static class Config {
         return factory;
     }
 
-    @RabbitListener(queues = "foo")
-    public void foo(String in) {
-        this.fooIn += "foo:" + in;
+    @RabbitListener(queues = "thing1")
+    public void thing1(String in) {
+        this.thing1In += "thing1:" + in;
     }
 
-    @RabbitListener(queues = "bar")
-    public void bar(String in) {
-        this.barIn += "bar:" + in;
+    @RabbitListener(queues = "thing2")
+    public void thing2(String in) {
+        this.thing2In += "thing2:" + in;
     }
 
-    @RabbitListener(queues = "baz")
-    public String baz(String in) {
-        return "baz:" + in;
+    @RabbitListener(queues = "thing3")
+    public String thing3(String in) {
+        return "thing3:" + in;
     }
 
     @Bean
     public SimpleMessageListenerContainer smlc1() throws IOException {
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
-        container.setQueueNames("foo", "bar");
+        container.setQueueNames("thing1", "thing2");
         container.setMessageListener(new MessageListenerAdapter(new Object() {
 
             @SuppressWarnings("unused")
@@ -615,7 +615,7 @@ public class RabbitTemplateMPPIntegrationTests {
         }
 
         @RabbitListener(queues = QUEUE)
-        public byte[] foo(byte[] in) {
+        public byte[] thing1(byte[] in) {
             return in;
         }
 
