@@ -22,6 +22,7 @@ import org.springframework.beans.factory.DisposableBean;
  * If instance is created without a {@link Client}, a {@link Client#create() default client} is used internally.
  *
  * @author Artem Bilan
+ * @author Ngoc Nhan
  *
  * @since 4.1
  */
@@ -95,7 +96,7 @@ public class SingleAmqpConnectionFactory implements AmqpConnectionFactory, Dispo
 	/**
 	 * Set the {@link ReconnectOptions} for the AMQP connection.
 	 * The convenient top-level property for the {@link ConnectionOptions#reconnectOptions()}.
-	 * If a {@link ConnectionOptions} is provided expictily, the {@link ReconnectOptions} has to be set over there.
+	 * If a {@link ConnectionOptions} is provided explicitly, the {@link ReconnectOptions} has to be set over there.
 	 * @param reconnectOptions the {@link ReconnectOptions} to use.
 	 * @return the factory instance.
 	 * @see #setConnectionOptions(ConnectionOptions)

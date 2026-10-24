@@ -60,7 +60,7 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * A {@link ConnectionFactory} implementation that (when the cache mode is {@link CacheMode#CHANNEL} (default)
+ * A {@link ConnectionFactory} implementation that when the cache mode is {@link CacheMode#CHANNEL} (default)
  * returns the same Connection from all {@link #createConnection()}
  * calls, and ignores calls to {@link com.rabbitmq.client.Connection#close()} and caches
  * {@link com.rabbitmq.client.Channel}.
@@ -90,6 +90,7 @@ import org.springframework.util.StringUtils;
  * @author Will Droste
  * @author Leonardo Ferreira
  * @author Alexei Sischin
+ * @author Ngoc Nhan
  */
 @ManagedResource
 public class CachingConnectionFactory extends AbstractConnectionFactory

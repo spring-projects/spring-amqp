@@ -856,7 +856,7 @@ public class PublisherCallbackChannelImpl
 				return 0;
 			}
 			else {
-				return pendingConfirmsForListener.entrySet().size();
+				return pendingConfirmsForListener.size();
 			}
 		}
 		finally {
