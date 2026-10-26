@@ -24,6 +24,7 @@ import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
+import org.springframework.util.InvalidMimeTypeException;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 
@@ -32,6 +33,7 @@ import org.springframework.util.MimeTypeUtils;
  *
  * @author Artem Bilan
  * @author Ngoc Nhan
+ * @author Sharang Gupta
  *
  * @since 4.0
  */
@@ -265,7 +267,7 @@ public abstract class AbstractJacksonMessageConverter extends AbstractMessageCon
 		MessageProperties properties = message.getMessageProperties();
 		String contentType = properties.getContentType();
 		if (this.assumeSupportedContentType && contentType.equals(MessageProperties.DEFAULT_CONTENT_TYPE)
-				|| this.supportedContentType.isCompatibleWith(MimeType.valueOf(contentType))) {
+				|| isSupportedContentType(contentType)) {
 
 			String encoding = determineEncoding(properties, contentType);
 			content = doFromMessage(message, conversionHint, properties, encoding);
@@ -285,6 +287,15 @@ public abstract class AbstractJacksonMessageConverter extends AbstractMessageCon
 			}
 		}
 		return content;
+	}
+
+	private boolean isSupportedContentType(String contentType) {
+		try {
+			return this.supportedContentType.isCompatibleWith(MimeType.valueOf(contentType));
+		}
+		catch (InvalidMimeTypeException ex) {
+			return false;
+		}
 	}
 
 	private @Nullable String determineEncoding(MessageProperties properties, @Nullable String contentType) {
