@@ -21,3 +21,4 @@ src/ant/.ant-targets-upload-dist.xml
 target
 .sts4-cache
 .vscode
+/.claude

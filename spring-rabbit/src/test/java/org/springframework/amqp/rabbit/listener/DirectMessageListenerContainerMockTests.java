@@ -4,8 +4,11 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -55,6 +58,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -326,6 +330,90 @@ public class DirectMessageListenerContainerMockTests {
 				anyMap(), any(Consumer.class));
 		verify(channel, times(2)).basicConsume(eq("test2"), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
 				anyMap(), any(Consumer.class));
+
+		container.stop();
+	}
+
+	@Test
+	void lateCancelOfConsumerOfRemovedQueueDoesNotRestartItAfterQueueIsAddedBack() throws Exception {
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		ChannelProxy channel = mock();
+		AutorecoveringChannel rabbitChannel = mock();
+		given(channel.getTargetChannel()).willReturn(rabbitChannel);
+
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(anyBoolean())).willReturn(channel);
+		given(channel.isOpen()).willReturn(true);
+		given(channel.queueDeclarePassive(Mockito.anyString()))
+				.willAnswer(invocation -> mock(AMQP.Queue.DeclareOk.class));
+		List<Consumer> replyConsumers = new CopyOnWriteArrayList<>();
+		willAnswer(i -> {
+			if ("replies".equals(i.getArgument(0))) {
+				replyConsumers.add(i.getArgument(6));
+			}
+			return "consumerTag";
+		}).given(channel)
+				.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+						anyMap(), any(Consumer.class));
+
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(connectionFactory);
+		container.setQueueNames("requests");
+		container.setMonitorInterval(100);
+		container.setFailedDeclarationRetryInterval(100);
+		container.afterPropertiesSet();
+		container.start();
+
+		container.addQueueNames("replies");
+		await().until(() -> replyConsumers.size() == 1);
+		container.removeQueueNames("replies");
+		container.addQueueNames("replies");
+		await().until(() -> replyConsumers.size() == 2);
+
+		// The broker cancels the consumer that was canceled by the removal only after the queue was added back
+		replyConsumers.get(0).handleCancel("consumerTag");
+
+		verify(channel, after(1000).times(2)).basicConsume(eq("replies"), anyBoolean(), anyString(), anyBoolean(),
+				anyBoolean(), anyMap(), any(Consumer.class));
+
+		container.stop();
+	}
+
+	@Test
+	void consumerAwaitingRestartIsNotRestartedOnceItsQueueIsRemoved() throws Exception {
+		ConnectionFactory connectionFactory = mock();
+		Connection connection = mock();
+		ChannelProxy channel = mock();
+		AutorecoveringChannel rabbitChannel = mock();
+		given(channel.getTargetChannel()).willReturn(rabbitChannel);
+
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(anyBoolean())).willReturn(channel);
+		given(channel.isOpen()).willReturn(true);
+		given(channel.queueDeclarePassive(Mockito.anyString()))
+				.willAnswer(invocation -> mock(AMQP.Queue.DeclareOk.class));
+		CountDownLatch missingQueueLatch = new CountDownLatch(2);
+		willAnswer(i -> {
+			missingQueueLatch.countDown();
+			throw new IOException("intended - missing queue");
+		}).given(channel).queueDeclarePassive("missing");
+		given(channel.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+				anyMap(), any(Consumer.class))).willReturn("consumerTag");
+
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(connectionFactory);
+		container.setQueueNames("requests");
+		container.setMonitorInterval(100);
+		container.setFailedDeclarationRetryInterval(100);
+		container.afterPropertiesSet();
+		container.start();
+
+		container.addQueueNames("missing");
+		// The monitor keeps retrying the consumer of the missing queue
+		assertThat(missingQueueLatch.await(30, TimeUnit.SECONDS)).isTrue();
+		container.removeQueueNames("missing");
+		Mockito.clearInvocations(channel);
+
+		verify(channel, after(1000).never()).queueDeclarePassive("missing");
 
 		container.stop();
 	}
