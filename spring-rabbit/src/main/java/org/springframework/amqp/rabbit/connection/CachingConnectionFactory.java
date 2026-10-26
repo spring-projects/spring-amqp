@@ -450,9 +450,14 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 * @param publisherChannelFactory the factory.
 	 * @since 2.1.6
 	 */
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	public void setPublisherChannelFactory(PublisherCallbackChannelFactory publisherChannelFactory) {
 		Assert.notNull(publisherChannelFactory, "'publisherChannelFactory' cannot be null");
 		this.publisherChannelFactory = publisherChannelFactory;
+		if (this.defaultPublisherFactory) {
+			((CachingConnectionFactory) getPublisherConnectionFactory())
+					.setPublisherChannelFactory(publisherChannelFactory);
+		}
 	}
 
 	@Override
