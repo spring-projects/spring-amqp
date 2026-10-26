@@ -267,6 +267,9 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	 */
 	public void setAddressResolver(AddressResolver addressResolver) {
 		this.addressResolver = addressResolver; // NOSONAR - sync inconsistency
+		if (this.publisherConnectionFactory != null) {
+			this.publisherConnectionFactory.setAddressResolver(addressResolver);
+		}
 	}
 
 	/**
@@ -571,6 +574,9 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	 */
 	public void setConnectionCreatingBackOff(@Nullable BackOff backOff) {
 		this.connectionCreatingBackOff = backOff;
+		if (this.publisherConnectionFactory != null) {
+			this.publisherConnectionFactory.setConnectionCreatingBackOff(backOff);
+		}
 	}
 
 	@Override
