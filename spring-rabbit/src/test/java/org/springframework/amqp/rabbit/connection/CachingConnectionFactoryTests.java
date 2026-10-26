@@ -50,6 +50,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.util.backoff.FixedBackOff;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatObject;
@@ -2149,6 +2150,48 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertThatObject(TestUtils.getPropertyValue(publisher, "addressShuffleMode"))
 				.as("address shuffle mode must reach the default publisher sub-factory")
 				.isEqualTo(AddressShuffleMode.NONE);
+	}
+
+	@Test
+	void addressResolverIsPropagatedToDefaultPublisherFactory() {
+		CachingConnectionFactory ccf = new CachingConnectionFactory("someHost", 1234);
+		AddressResolver addressResolver = () -> List.of(new Address("host1", 5672));
+		ccf.setAddressResolver(addressResolver);
+
+		var publisher = ccf.getPublisherConnectionFactory();
+		assertThat(publisher).isNotNull();
+
+		assertThatObject(TestUtils.getPropertyValue(publisher, "addressResolver"))
+				.as("address resolver must reach the default publisher sub-factory")
+				.isSameAs(addressResolver);
+	}
+
+	@Test
+	void connectionCreatingBackOffIsPropagatedToDefaultPublisherFactory() {
+		CachingConnectionFactory ccf = new CachingConnectionFactory("someHost", 1234);
+		FixedBackOff backOff = new FixedBackOff(100, 2);
+		ccf.setConnectionCreatingBackOff(backOff);
+
+		var publisher = ccf.getPublisherConnectionFactory();
+		assertThat(publisher).isNotNull();
+
+		assertThatObject(TestUtils.getPropertyValue(publisher, "connectionCreatingBackOff"))
+				.as("connection creating back off must reach the default publisher sub-factory")
+				.isSameAs(backOff);
+	}
+
+	@Test
+	void publisherChannelFactoryIsPropagatedToDefaultPublisherFactory() {
+		CachingConnectionFactory ccf = new CachingConnectionFactory("someHost", 1234);
+		PublisherCallbackChannelFactory publisherChannelFactory = PublisherCallbackChannelImpl::new;
+		ccf.setPublisherChannelFactory(publisherChannelFactory);
+
+		var publisher = ccf.getPublisherConnectionFactory();
+		assertThat(publisher).isNotNull();
+
+		assertThatObject(TestUtils.getPropertyValue(publisher, "publisherChannelFactory"))
+				.as("publisher channel factory must reach the default publisher sub-factory")
+				.isSameAs(publisherChannelFactory);
 	}
 
 	private static Semaphore firstSemaphoreFromCheckoutPermits(CachingConnectionFactory ccf) {
