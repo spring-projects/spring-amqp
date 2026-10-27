@@ -64,6 +64,7 @@ import org.springframework.util.Assert;
  * @author Johan Haleby
  * @author Arnab Nandy
  * @author Ngoc Nhan
+ * @author WooSeung Kim
  *
  * @since 1.4
  *
@@ -442,7 +443,14 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 				completableFutureResult.whenComplete((r, t) ->
 						observation.scoped(() -> {
 							if (t == null) {
-								asyncSuccess(resultArg, request, channel, source, r);
+								try {
+									asyncSuccess(resultArg, request, channel, source, r);
+								}
+								catch (RuntimeException ex) {
+									observation.error(ex);
+									asyncFailure(request, channel, ex, source);
+									return;
+								}
 								basicAck(request, channel);
 							}
 							else {

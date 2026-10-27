@@ -30,10 +30,12 @@ import org.springframework.core.retry.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -42,6 +44,7 @@ import static org.mockito.Mockito.verify;
  * @author Gary Russell
  * @author Cai Kun
  * @author Artem Bilan
+ * @author WooSeung Kim
  *
  */
 public class MessageListenerAdapterTests {
@@ -256,6 +259,46 @@ public class MessageListenerAdapterTests {
 		Channel mockChannel = mock(Channel.class);
 		this.adapter.onMessage(new Message("foo".getBytes(), this.messageProperties), mockChannel);
 		verify(mockChannel).basicAck(anyLong(), eq(false));
+	}
+
+	@Test
+	public void testCompletableFutureReturnReplyFailureRejected() throws Exception {
+		class Delegate {
+
+			@SuppressWarnings("unused")
+			public CompletableFuture<String> myPojoMessageMethod(String input) {
+				return CompletableFuture.completedFuture("processed " + input);
+			}
+
+		}
+		this.adapter = new MessageListenerAdapter(new Delegate(), "myPojoMessageMethod");
+		verifyReplyFailureRejected();
+	}
+
+	@Test
+	public void testMonoReturnReplyFailureRejected() throws Exception {
+		class Delegate {
+
+			@SuppressWarnings("unused")
+			public Mono<String> myPojoMessageMethod(String input) {
+				return Mono.just("processed " + input);
+			}
+
+		}
+		this.adapter = new MessageListenerAdapter(new Delegate(), "myPojoMessageMethod");
+		verifyReplyFailureRejected();
+	}
+
+	private void verifyReplyFailureRejected() throws Exception {
+		this.adapter.containerAckMode(AcknowledgeMode.MANUAL);
+		this.adapter.setResponseExchange("default");
+		Channel mockChannel = mock();
+		willThrow(new IOException("Channel closed")).given(mockChannel)
+				.basicPublish(eq("default"), any(), eq(Boolean.FALSE), any(), any());
+		this.messageProperties.setDeliveryTag(42L);
+		this.adapter.onMessage(new Message("payload".getBytes(), this.messageProperties), mockChannel);
+		verify(mockChannel).basicReject(42L, true);
+		verify(mockChannel, never()).basicAck(anyLong(), anyBoolean());
 	}
 
 	public interface Service {

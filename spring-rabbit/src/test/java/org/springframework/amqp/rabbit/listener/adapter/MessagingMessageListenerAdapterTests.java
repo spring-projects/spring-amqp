@@ -64,6 +64,7 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -77,6 +78,7 @@ import static org.mockito.Mockito.verify;
  * @author Aram Peres
  * @author Arnab Nandy
  * @author Ngoc Nhan
+ * @author WooSeung Kim
  */
 public class MessagingMessageListenerAdapterTests {
 
@@ -542,6 +544,18 @@ public class MessagingMessageListenerAdapterTests {
 		receiverObservation.observeChecked(() -> listener.onMessage(message, channel));
 
 		await().untilAsserted(() -> assertThat(receiverContext.getError()).isInstanceOf(IllegalArgumentException.class));
+	}
+
+	@Test
+	void asyncReplyFailureRejectsDelivery() throws Exception {
+		Channel channel = mock();
+		MessagingMessageListenerAdapter listener = getSimpleInstance("asyncEcho", String.class);
+		listener.containerAckMode(AcknowledgeMode.MANUAL);
+		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage("noReplyTo");
+		message.getMessageProperties().setDeliveryTag(42L);
+		listener.onMessage(message, channel);
+		await().untilAsserted(() -> verify(channel).basicReject(42L, true));
+		verify(channel, never()).basicAck(anyLong(), anyBoolean());
 	}
 
 	@Test
