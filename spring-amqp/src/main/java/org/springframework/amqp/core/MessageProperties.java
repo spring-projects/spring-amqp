@@ -8,6 +8,7 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -53,6 +54,18 @@ public class MessageProperties implements Serializable {
 
 	public static final String SPRING_AUTO_DECOMPRESS = "springAutoDecompress";
 
+	/**
+	 * The RabbitMQ 4.4 native message delivery-time header. The value is an absolute Unix timestamp in
+	 * milliseconds, unlike {@link #X_DELAY}, which is a relative delay used by the delayed-message-exchange plugin.
+	 * @since 4.2
+	 */
+	public static final String DELIVERY_TIME = "x-opt-delivery-time";
+
+	/**
+	 * The header used by the delayed-message-exchange plugin.
+	 * @deprecated Since 4.2, in favor of {@link #DELIVERY_TIME} for RabbitMQ 4.4 quorum queues.
+	 */
+	@Deprecated(since = "4.2", forRemoval = true)
 	public static final String X_DELAY = "x-delay";
 
 	public static final String X_DEATH = "x-death";
@@ -73,7 +86,9 @@ public class MessageProperties implements Serializable {
 	/**
 	 * The maximum value of x-delay header.
 	 * @since 3.1.2
+	 * @deprecated Since 4.2, for removal with the delayed-message-exchange plugin support.
 	 */
+	@Deprecated(since = "4.2", forRemoval = true)
 	public static final long X_DELAY_MAX = 0xffffffffL;
 
 	private final HashMap<String, @Nullable Object> headers = new HashMap<>();
@@ -366,8 +381,10 @@ public class MessageProperties implements Serializable {
 	 * received message contains the delay.
 	 * @return the received delay.
 	 * @since 3.1.2
+	 * @deprecated Since 4.2, for removal with the delayed-message-exchange plugin support.
 	 * @see #getDelayLong()
 	 */
+	@Deprecated(since = "4.2", forRemoval = true)
 	public @Nullable Long getReceivedDelayLong() {
 		return this.receivedDelay;
 	}
@@ -377,8 +394,10 @@ public class MessageProperties implements Serializable {
 	 * received message contains the delay.
 	 * @param receivedDelay the received delay.
 	 * @since 3.1.2
+	 * @deprecated Since 4.2, for removal with the delayed-message-exchange plugin support.
 	 * @see #setDelayLong(Long)
 	 */
+	@Deprecated(since = "4.2", forRemoval = true)
 	public void setReceivedDelayLong(@Nullable Long receivedDelay) {
 		this.receivedDelay = receivedDelay;
 	}
@@ -446,10 +465,60 @@ public class MessageProperties implements Serializable {
 	}
 
 	/**
-	 * Get the x-delay header long value.
-	 * @return the delay.
-	 * @since 3.1.2
+	 * Return the native RabbitMQ delivery time as an {@link Instant}.
+	 * @return the delivery time, or {@code null} if it is not set or is not encoded as a {@link Long}.
+	 * @since 4.2
+	 * @see #setDeliveryTime(Instant)
 	 */
+	public @Nullable Instant getDeliveryTime() {
+		Long deliveryTime = getDeliveryTimeEpochMillis();
+		return deliveryTime == null ? null : Instant.ofEpochMilli(deliveryTime);
+	}
+
+	/**
+	 * Return the native RabbitMQ delivery time as Unix epoch milliseconds.
+	 * @return the delivery time, or {@code null} if it is not set or is not encoded as a {@link Long}.
+	 * @since 4.2
+	 */
+	public @Nullable Long getDeliveryTimeEpochMillis() {
+		Object deliveryTime = this.headers.get(DELIVERY_TIME);
+		return deliveryTime instanceof Long deliveryTimeLong ? deliveryTimeLong : null;
+	}
+
+	/**
+	 * Set the native RabbitMQ delivery time. The value is encoded as a {@link Long} containing Unix epoch
+	 * milliseconds. RabbitMQ 4.4 applies this header to quorum queues; it is not a relative delay.
+	 * @param deliveryTime the absolute delivery time, or {@code null} to remove the header.
+	 * @since 4.2
+	 * @see #getDeliveryTime()
+	 */
+	public void setDeliveryTime(@Nullable Instant deliveryTime) {
+		if (deliveryTime == null) {
+			this.headers.remove(DELIVERY_TIME);
+		}
+		else {
+			setDeliveryTime(deliveryTime.toEpochMilli());
+		}
+	}
+
+	/**
+	 * Set the native RabbitMQ delivery time as Unix epoch milliseconds.
+	 * @param epochMillis the absolute delivery time.
+	 * @since 4.2
+	 * @see #getDeliveryTimeEpochMillis()
+	 */
+	public void setDeliveryTime(long epochMillis) {
+		this.headers.put(DELIVERY_TIME, epochMillis);
+	}
+
+	/**
+	 * Get the x-delay header long value used by the delayed-message-exchange plugin.
+	 * @return the relative delay.
+	 * @since 3.1.2
+	 * @deprecated Since 4.2, for removal with the delayed-message-exchange plugin support. RabbitMQ 4.4 quorum queues
+	 * use {@link #getDeliveryTime()} instead.
+	 */
+	@Deprecated(since = "4.2", forRemoval = true)
 	public @Nullable Long getDelayLong() {
 		Object delay = this.headers.get(X_DELAY);
 		if (delay instanceof Long delayLong) {
@@ -459,10 +528,13 @@ public class MessageProperties implements Serializable {
 	}
 
 	/**
-	 * Set the x-delay header to a long value.
-	 * @param delay the delay.
+	 * Set the x-delay header to a long value for the delayed-message-exchange plugin.
+	 * @param delay the relative delay.
 	 * @since 3.1.2
+	 * @deprecated Since 4.2, for removal with the delayed-message-exchange plugin support. RabbitMQ 4.4 quorum queues
+	 * use {@link #setDeliveryTime(Instant)} instead.
 	 */
+	@Deprecated(since = "4.2", forRemoval = true)
 	public void setDelayLong(@Nullable Long delay) {
 		if (delay == null || delay < 0) {
 			this.headers.remove(X_DELAY);

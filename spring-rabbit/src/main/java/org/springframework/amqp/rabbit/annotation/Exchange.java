@@ -76,7 +76,9 @@ public @interface Exchange {
 	 * 'x-delayed-message' exchange. Requires the delayed message exchange
 	 * plugin on the broker.
 	 * @since 1.6.4
+	 * @deprecated Since 4.2, for removal with support for the delayed-message-exchange plugin.
 	 */
+	@Deprecated(since = "4.2", forRemoval = true)
 	String delayed() default FALSE;
 
 	/**

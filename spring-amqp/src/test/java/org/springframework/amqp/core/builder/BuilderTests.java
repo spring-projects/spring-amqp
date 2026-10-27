@@ -12,7 +12,6 @@ import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.ExchangeBuilder;
 import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.HeadersExchange;
-import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
 
@@ -22,18 +21,19 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 /**
  * @author Gary Russell
  * @author Artem Bilan
+ *
  * @since 1.6
  */
 public class BuilderTests {
 
 	@Test
 	public void testQueueBuilder() {
-		Queue queue = QueueBuilder.durable("foo").autoDelete().exclusive().withArgument("foo", "bar").build();
-		assertThat(queue.getName()).isEqualTo("foo");
+		var queue = QueueBuilder.durable("durable").autoDelete().exclusive().withArgument("key", "value").build();
+		assertThat(queue.getName()).isEqualTo("durable");
 		assertThat(queue.isAutoDelete()).isTrue();
 		assertThat(queue.isExclusive()).isTrue();
 		assertThat(queue.isDurable()).isTrue();
-		assertThat((String) queue.getArguments().get("foo")).isEqualTo("bar");
+		assertThat((String) queue.getArguments().get("key")).isEqualTo("value");
 
 		queue = QueueBuilder.nonDurable().build();
 		assertThat(queue.getName()).startsWith("spring.gen-");
@@ -50,37 +50,33 @@ public class BuilderTests {
 
 	@Test
 	public void testExchangeBuilder() {
-		Exchange exchange = ExchangeBuilder.directExchange("foo").autoDelete().delayed().internal()
-				.withArgument("foo", "bar").build();
+		Exchange exchange = ExchangeBuilder.directExchange("direct").autoDelete().internal()
+				.withArgument("key", "value").build();
 		assertThat(exchange).isInstanceOf(DirectExchange.class);
 		assertThat(exchange.isAutoDelete()).isTrue();
 		assertThat(exchange.isDurable()).isTrue();
 		assertThat(exchange.isInternal()).isTrue();
-		assertThat(exchange.isDelayed()).isTrue();
-		assertThat((String) exchange.getArguments().get("foo")).isEqualTo("bar");
+		assertThat((String) exchange.getArguments().get("key")).isEqualTo("value");
 
-		exchange = ExchangeBuilder.topicExchange("foo").durable(false).build();
+		exchange = ExchangeBuilder.topicExchange("topic").durable(false).build();
 		assertThat(exchange).isInstanceOf(TopicExchange.class);
 		assertThat(exchange.isAutoDelete()).isFalse();
 		assertThat(exchange.isDurable()).isFalse();
 		assertThat(exchange.isInternal()).isFalse();
-		assertThat(exchange.isDelayed()).isFalse();
 
-		exchange = ExchangeBuilder.fanoutExchange("foo").build();
+		exchange = ExchangeBuilder.fanoutExchange("fanout").build();
 		assertThat(exchange).isInstanceOf(FanoutExchange.class);
 		assertThat(exchange.isAutoDelete()).isFalse();
 		assertThat(exchange.isDurable()).isTrue();
 		assertThat(exchange.isInternal()).isFalse();
-		assertThat(exchange.isDelayed()).isFalse();
 
-		exchange = ExchangeBuilder.headersExchange("foo").build();
+		exchange = ExchangeBuilder.headersExchange("headers").build();
 		assertThat(exchange).isInstanceOf(HeadersExchange.class);
 		assertThat(exchange.isAutoDelete()).isFalse();
 		assertThat(exchange.isDurable()).isTrue();
 		assertThat(exchange.isInternal()).isFalse();
-		assertThat(exchange.isDelayed()).isFalse();
 
-		exchange = ExchangeBuilder.consistentHashExchange("foo")
+		exchange = ExchangeBuilder.consistentHashExchange("consistent")
 				.ignoreDeclarationExceptions()
 				.hashHeader("my_header")
 				.build();

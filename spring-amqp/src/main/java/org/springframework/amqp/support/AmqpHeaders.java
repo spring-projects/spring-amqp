@@ -41,6 +41,10 @@ public abstract class AmqpHeaders {
 
 	public static final String CORRELATION_ID = PREFIX + "correlationId";
 
+	/**
+	 * @deprecated Since 4.2, for removal with support for the delayed-message-exchange plugin.
+	 */
+	@Deprecated(since = "4.2", forRemoval = true)
 	public static final String DELAY = PREFIX + "delay";
 
 	public static final String DELIVERY_MODE = PREFIX + "deliveryMode";
@@ -53,6 +57,10 @@ public abstract class AmqpHeaders {
 
 	public static final String MESSAGE_ID = PREFIX + "messageId";
 
+	/**
+	 * @deprecated Since 4.2, for removal with support for the delayed-message-exchange plugin.
+	 */
+	@Deprecated(since = "4.2", forRemoval = true)
 	public static final String RECEIVED_DELAY = PREFIX + "receivedDelay";
 
 	public static final String RECEIVED_DELIVERY_MODE = PREFIX + "receivedDeliveryMode";

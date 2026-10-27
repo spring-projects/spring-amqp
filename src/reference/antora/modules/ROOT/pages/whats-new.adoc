@@ -5,6 +5,15 @@
 [[changes-in-4-2-since-4-1]]
 == Changes in 4.2 Since 4.1
 
+[[x42-rabbitmq-native-delivery-time]]
+=== RabbitMQ Native Delayed Messages
+
+RabbitMQ 4.4+ quorum queues support producer-scheduled delayed messages using the `x-opt-delivery-time` header.
+`MessageProperties` now provides `setDeliveryTime(Instant)` and `setDeliveryTime(long)` to set the absolute delivery time.
+Use `getDeliveryTime()` and `getDeliveryTimeEpochMillis()` to read it.
+The old delayed-message-exchange plugin APIs are deprecated for removal.
+See xref:amqp/delayed-message-exchange.adoc[] for details.
+
 [[x42-tls-hostname-verification]]
 === TLS Hostname Verification
 

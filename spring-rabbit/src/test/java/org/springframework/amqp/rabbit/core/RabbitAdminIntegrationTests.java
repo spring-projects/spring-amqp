@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 import com.rabbitmq.client.Channel;
@@ -26,13 +25,8 @@ import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.ExchangeTypes;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageBuilder;
-import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.connection.AutoRecoverConnectionNotCurrentlyOpenException;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.context.support.GenericApplicationContext;
@@ -110,7 +104,7 @@ public class RabbitAdminIntegrationTests extends NeedsManagementTests {
 		new RabbitAdmin(connectionFactory1).declareQueue(queue);
 		try {
 			assertThatThrownBy((() -> new RabbitAdmin(connectionFactory2).declareQueue((Queue) queue.clone())))
-				.isInstanceOf(AmqpIOException.class);
+					.isInstanceOf(AmqpIOException.class);
 		}
 		finally {
 			// Need to release the connection so the exclusive queue is deleted
@@ -354,59 +348,6 @@ public class RabbitAdminIntegrationTests extends NeedsManagementTests {
 		queue = new Queue(queue.getName());
 		assertThat(this.rabbitAdmin.declareQueue(queue)).isNull();
 		this.rabbitAdmin.deleteQueue(queue.getName());
-	}
-
-	@Test
-	public void testDeclareDelayedExchange() {
-		DirectExchange exchange = new DirectExchange("test.delayed.exchange");
-		exchange.setDelayed(true);
-		Queue queue = new Queue(UUID.randomUUID().toString(), true, false, false);
-		String exchangeName = exchange.getName();
-		Binding binding = new Binding(queue.getName(), DestinationType.QUEUE, exchangeName, queue.getName(), null);
-
-		try {
-			this.rabbitAdmin.declareExchange(exchange);
-		}
-		catch (AmqpIOException e) {
-			if (RabbitUtils.isExchangeDeclarationFailure(e)
-					&& e.getCause().getCause().getMessage().contains("exchange type 'x-delayed-message'")) {
-				return;
-			}
-			else {
-				throw e;
-			}
-		}
-		catch (@SuppressWarnings("unused") AutoRecoverConnectionNotCurrentlyOpenException e) {
-			return;
-		}
-		this.rabbitAdmin.declareQueue(queue);
-		this.rabbitAdmin.declareBinding(binding);
-
-		RabbitTemplate template = new RabbitTemplate(this.connectionFactory);
-		template.setReceiveTimeout(10000);
-		template.convertAndSend(exchangeName, queue.getName(), "foo", message -> {
-			message.getMessageProperties().setDelayLong(1000L);
-			return message;
-		});
-		MessageProperties properties = new MessageProperties();
-		properties.setDelayLong(500L);
-		template.send(exchangeName, queue.getName(),
-				MessageBuilder.withBody("foo".getBytes()).andProperties(properties).build());
-		long t1 = System.currentTimeMillis();
-		Message received = template.receive(queue.getName());
-		assertThat(received).isNotNull();
-		assertThat(received.getMessageProperties().getDelayLong()).isEqualTo(500L);
-		received = template.receive(queue.getName());
-		assertThat(received).isNotNull();
-		assertThat(received.getMessageProperties().getDelayLong()).isEqualTo(1000L);
-		assertThat(System.currentTimeMillis() - t1).isGreaterThan(950L);
-
-		Map<String, Object> exchange2 = getExchange(exchangeName);
-		assertThat(arguments(exchange2).get("x-delayed-type")).isEqualTo(ExchangeTypes.DIRECT);
-		assertThat(exchange2.get("type")).isEqualTo("x-delayed-message");
-
-		this.rabbitAdmin.deleteQueue(queue.getName());
-		this.rabbitAdmin.deleteExchange(exchangeName);
 	}
 
 	private Map<String, Object> getExchange(String exchangeName) {

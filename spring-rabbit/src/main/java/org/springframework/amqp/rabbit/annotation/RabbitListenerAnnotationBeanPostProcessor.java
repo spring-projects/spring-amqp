@@ -229,6 +229,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		processAmqpListener(listenerAnnotation, method, bean, beanName);
 	}
 
+	@SuppressWarnings("removal")
 	protected Collection<Declarable> processAmqpListener(RabbitListener rabbitListener, Method method, Object bean,
 			String beanName) {
 
@@ -604,7 +605,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		return queueName;
 	}
 
-	@SuppressWarnings("NullAway") // Dataflow analysis limitation
+	@SuppressWarnings({"NullAway", "removal"}) // Dataflow analysis limitation
 	private void declareExchangeAndBinding(QueueBinding binding, String queueName, Collection<Declarable> declarables) {
 		org.springframework.amqp.rabbit.annotation.Exchange bindingExchange = binding.exchange();
 		String exchangeName = resolveExpressionAsString(bindingExchange.value(), "@Exchange.exchange");

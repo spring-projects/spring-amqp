@@ -45,6 +45,7 @@ import org.springframework.util.StringUtils;
 public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperties> implements AmqpHeaderMapper {
 
 	@Override
+	@SuppressWarnings("removal")
 	public void fromHeaders(MessageHeaders headers, MessageProperties amqpMessageProperties) {
 		JavaUtils javaUtils = JavaUtils.INSTANCE
 			.acceptIfHasText(getHeaderIfAvailable(headers, AmqpHeaders.APP_ID, String.class),
@@ -115,6 +116,7 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 	}
 
 	@Override
+	@SuppressWarnings("removal")
 	public MessageHeaders toHeaders(MessageProperties amqpMessageProperties) {
 		Map<String, Object> headers = new HashMap<>();
 		try {

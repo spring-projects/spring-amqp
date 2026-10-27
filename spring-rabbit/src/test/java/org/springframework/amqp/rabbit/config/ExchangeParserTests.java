@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Gary Russell
  * @author Felipe Gutierrez
  * @author Artem Bilan
+ *
  * @since 1.0
  *
  */
@@ -41,7 +42,7 @@ public final class ExchangeParserTests {
 	}
 
 	@Test
-	public void testDirectExchange() throws Exception {
+	public void testDirectExchange() {
 		DirectExchange exchange = beanFactory.getBean("direct", DirectExchange.class);
 		assertThat(exchange).isNotNull();
 		assertThat(exchange.getName()).isEqualTo("direct");
@@ -63,7 +64,7 @@ public final class ExchangeParserTests {
 	}
 
 	@Test
-	public void testAliasDirectExchange() throws Exception {
+	public void testAliasDirectExchange() {
 		DirectExchange exchange = beanFactory.getBean("alias", DirectExchange.class);
 		assertThat(exchange).isNotNull();
 		assertThat(exchange.getName()).isEqualTo("direct-alias");
@@ -72,34 +73,32 @@ public final class ExchangeParserTests {
 	}
 
 	@Test
-	public void testTopicExchange() throws Exception {
+	public void testTopicExchange() {
 		TopicExchange exchange = beanFactory.getBean("topic", TopicExchange.class);
 		assertThat(exchange).isNotNull();
 		assertThat(exchange.getName()).isEqualTo("topic");
 		assertThat(exchange.isDurable()).isTrue();
 		assertThat(exchange.isAutoDelete()).isFalse();
 		assertThat(exchange.shouldDeclare()).isTrue();
-		assertThat(exchange.isDelayed()).isTrue();
 		assertThat(exchange.isInternal()).isTrue();
 		assertThat(exchange.getDeclaringAdmins()).hasSize(1);
 
 	}
 
 	@Test
-	public void testFanoutExchange() throws Exception {
+	public void testFanoutExchange() {
 		FanoutExchange exchange = beanFactory.getBean("fanout", FanoutExchange.class);
 		assertThat(exchange).isNotNull();
 		assertThat(exchange.getName()).isEqualTo("fanout");
 		assertThat(exchange.isDurable()).isTrue();
 		assertThat(exchange.isAutoDelete()).isFalse();
 		assertThat(exchange.shouldDeclare()).isTrue();
-		assertThat(exchange.isDelayed()).isFalse();
 		assertThat(exchange.getDeclaringAdmins()).hasSize(1);
 
 	}
 
 	@Test
-	public void testHeadersExchange() throws Exception {
+	public void testHeadersExchange() {
 		HeadersExchange exchange = beanFactory.getBean("headers", HeadersExchange.class);
 		assertThat(exchange).isNotNull();
 		assertThat(exchange.getName()).isEqualTo("headers");
@@ -111,7 +110,7 @@ public final class ExchangeParserTests {
 	}
 
 	@Test
-	public void testDirectExchangeOverride() throws Exception {
+	public void testDirectExchangeOverride() {
 		DirectExchange exchange = beanFactory.getBean("direct-override", DirectExchange.class);
 		assertThat(exchange).isNotNull();
 		assertThat(exchange.getName()).isEqualTo("direct-override");
@@ -120,7 +119,7 @@ public final class ExchangeParserTests {
 	}
 
 	@Test
-	public void testDirectExchangeWithArguments() throws Exception {
+	public void testDirectExchangeWithArguments() {
 		DirectExchange exchange = beanFactory.getBean("direct-arguments", DirectExchange.class);
 		assertThat(exchange).isNotNull();
 		assertThat(exchange.getName()).isEqualTo("direct-arguments");
@@ -128,7 +127,7 @@ public final class ExchangeParserTests {
 	}
 
 	@Test
-	public void testDirectExchangeWithReferencedArguments() throws Exception {
+	public void testDirectExchangeWithReferencedArguments() {
 		DirectExchange exchange = beanFactory.getBean("direct-ref-arguments", DirectExchange.class);
 		assertThat(exchange).isNotNull();
 		assertThat(exchange.getName()).isEqualTo("direct-ref-arguments");

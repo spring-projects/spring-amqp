@@ -52,10 +52,12 @@ public interface Exchange extends Declarable {
 	Map<String, Object> getArguments();
 
 	/**
-	 * Is a delayed message exchange; currently requires a broker plugin.
+	 * Is a delayed message exchange; requires the delayed-message-exchange plugin.
 	 * @return true if delayed.
 	 * @since 1.6
+	 * @deprecated Since 4.2, for removal with support for the delayed-message-exchange plugin.
 	 */
+	@Deprecated(since = "4.2", forRemoval = true)
 	boolean isDelayed();
 
 	/**

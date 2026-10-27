@@ -81,7 +81,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	}
 
 	@Override
-	@SuppressWarnings("NullAway") // Dataflow analysis limitation
+	@SuppressWarnings({"NullAway", "removal"}) // Dataflow analysis limitation
 	public MessageProperties toMessageProperties(BasicProperties source, @Nullable Envelope envelope, String charset) {
 		MessageProperties target = new MessageProperties();
 		Map<String, Object> headers = source.getHeaders();

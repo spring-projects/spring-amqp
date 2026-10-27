@@ -111,6 +111,10 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 */
 	public static final Object QUEUE_CONSUMER_COUNT = "QUEUE_CONSUMER_COUNT";
 
+	/**
+	 * @deprecated Since 4.2, for removal with support for the delayed-message-exchange plugin.
+	 */
+	@Deprecated(since = "4.2", forRemoval = true)
 	public static final String DELAYED_MESSAGE_EXCHANGE = "x-delayed-message";
 
 	/** Logger available to subclasses. */
@@ -898,6 +902,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	// private methods for declaring Exchanges, Queues, and Bindings on a Channel
 
+	@SuppressWarnings("removal")
 	private void declareExchanges(final Channel channel, final Exchange... exchanges) throws IOException {
 		for (final Exchange exchange : exchanges) {
 			if (this.logger.isDebugEnabled()) {

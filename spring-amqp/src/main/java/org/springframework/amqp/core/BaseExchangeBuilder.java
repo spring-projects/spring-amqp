@@ -110,9 +110,11 @@ public abstract class BaseExchangeBuilder<B extends BaseExchangeBuilder<B>> exte
 	}
 
 	/**
-	 * Set the delayed flag.
+	 * Set the delayed flag for an exchange that uses the delayed-message-exchange plugin.
 	 * @return the builder.
+	 * @deprecated Since 4.2, for removal with support for the delayed-message-exchange plugin.
 	 */
+	@Deprecated(since = "4.2", forRemoval = true)
 	public B delayed() {
 		this.delayed = true;
 		return _this();
@@ -164,6 +166,7 @@ public abstract class BaseExchangeBuilder<B extends BaseExchangeBuilder<B>> exte
 		return (T) configureExchange(exchange);
 	}
 
+	@SuppressWarnings("removal")
 	protected <T extends AbstractExchange> T configureExchange(T exchange) {
 		exchange.setInternal(this.internal);
 		exchange.setDelayed(this.delayed);

@@ -1,51 +1,36 @@
 [[delayed-message-exchange]]
-= Delayed Message Exchange
+= Delayed Message Delivery
 
-Version 1.6 introduces support for the
-https://www.rabbitmq.com/blog/2015/04/16/scheduling-messages-with-rabbitmq/[Delayed Message Exchange Plugin]
+== Native delivery time with RabbitMQ 4.4+
 
-NOTE: The plugin is currently marked as experimental but has been available for over a year (at the time of writing).
-If changes to the plugin make it necessary, we plan to add support for such changes as soon as practical.
-For that reason, this support in Spring AMQP should be considered experimental, too.
-This functionality was tested with RabbitMQ 3.6.0 and version 0.0.1 of the plugin.
+Starting with RabbitMQ 4.4, quorum queues support producer-scheduled delayed delivery without an exchange plugin.
+Set an absolute Unix timestamp in milliseconds in the `x-opt-delivery-time` header.
+The broker routes and stores the message when it is published, but does not make it available to consumers until the specified time.
 
-To use a `RabbitAdmin` to declare an exchange as delayed, you can set the `delayed` property on the exchange bean to
-`true`.
-The `RabbitAdmin` uses the exchange type (`Direct`, `Fanout`, and so on) to set the `x-delayed-type` argument and
-declare the exchange with type `x-delayed-message`.
-
-The `delayed` property (default: `false`) is also available when configuring exchange beans using XML.
-The following example shows how to use it:
-
-[source, xml]
-----
-<rabbit:topic-exchange name="topic" delayed="true" />
-----
-
-To send a delayed message, you can set the `x-delay` header through `MessageProperties`, as the following examples show:
+The `MessageProperties` API exposes this header as an `Instant` or epoch-millisecond value:
 
 [source, java]
 ----
-MessageProperties properties = new MessageProperties();
-properties.setDelay(15000);
-template.send(exchange, routingKey,
-        MessageBuilder.withBody("thing1".getBytes()).andProperties(properties).build());
-----
-
-[source, java]
-----
-rabbitTemplate.convertAndSend(exchange, routingKey, "thing1", new MessagePostProcessor() {
-
-    @Override
-    public Message postProcessMessage(Message message) throws AmqpException {
-        message.getMessageProperties().setDelay(15000);
-        return message;
-    }
-
+rabbitTemplate.convertAndSend("orders", "payload", message -> {
+    message.getMessageProperties().setDeliveryTime(Instant.now().plus(Duration.ofMinutes(15)));
+    return message;
 });
 ----
 
-To check if a message was delayed, use the `getReceivedDelay()` method on the `MessageProperties`.
-It is a separate property to avoid unintended propagation to an output message generated from an input message.
+You can also use `setDeliveryTime(long)` when the timestamp is already available in milliseconds.
+The header value is encoded as an AMQP `long` and can be read with `getDeliveryTime()` or `getDeliveryTimeEpochMillis()`.
+Ensure that the message is routed to a quorum queue; this feature requires RabbitMQ 4.4 or later and does not apply to classic queues.
+For AMQP 1.0, the `x-opt-delivery-time` message annotation is defined by the https://docs.oasis-open.org/amqp/schdmsg/v1.0/schdmsg-v1.0.html[OASIS scheduling extension].
+
+== Legacy delayed-message-exchange plugin
+
+The delayed-message-exchange plugin uses a different mechanism: `x-delay` is a relative delay on an `x-delayed-message` exchange.
+This plugin is no longer maintained.
+Its `MessageProperties#setDelayLong`, `Exchange#isDelayed`, exchange builder `delayed()` and `@Exchange#delayed` APIs are deprecated for removal as of Spring AMQP 4.2.
+They remain available for existing applications, but do not provide native quorum-queue delayed delivery and are not converted automatically to `x-opt-delivery-time`.
+
+For RabbitMQ versions before 4.4 that still use this plugin, `setDelayLong(long)` continues to set the `x-delay` header.
+`getReceivedDelayLong()` reports the delay returned by the plugin.
+Do not use these APIs for native delayed messages.
 
 
