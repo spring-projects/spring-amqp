@@ -29,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @since 1.0
  *
  */
+@SuppressWarnings("removal")
 public final class ExchangeParserTests {
 
 	private DefaultListableBeanFactory beanFactory;

@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  * @author Artem Bilan
  * @since 1.6
  */
+@SuppressWarnings("removal")
 public class BuilderTests {
 
 	@Test

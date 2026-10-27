@@ -18,6 +18,7 @@ import java.util.Date
  *
  * @since 4.0.5
  */
+@Suppress("DEPRECATION")
 class KotlinMessagePropertiesTests {
 
 	@Test

@@ -6,6 +6,7 @@ package org.springframework.amqp.rabbit.support;
 
 import java.io.DataInputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -110,6 +111,20 @@ public class DefaultMessagePropertiesConverterTests {
 		MessageProperties messageProperties = messagePropertiesConverter.toMessageProperties(source, envelope, "UTF-8");
 
 		assertThat(messageProperties.getRetryCount()).isEqualTo(2);
+	}
+
+	@Test
+	public void testDeliveryTimeHeaderRoundTripsAsLong() {
+		Instant deliveryTime = Instant.ofEpochMilli(1_800_000_000_123L);
+		MessageProperties properties = new MessageProperties();
+		properties.setDeliveryTime(deliveryTime);
+
+		BasicProperties basicProperties = this.messagePropertiesConverter.fromMessageProperties(properties, "UTF-8");
+		assertThat(basicProperties.getHeaders()).containsEntry(MessageProperties.DELIVERY_TIME,
+				deliveryTime.toEpochMilli());
+
+		MessageProperties converted = this.messagePropertiesConverter.toMessageProperties(basicProperties, null, "UTF-8");
+		assertThat(converted.getDeliveryTime()).isEqualTo(deliveryTime);
 	}
 
 	@Test

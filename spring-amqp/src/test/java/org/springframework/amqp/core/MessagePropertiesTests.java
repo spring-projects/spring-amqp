@@ -4,6 +4,7 @@
 
 package org.springframework.amqp.core;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -22,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Ngoc Nhan
  *
  */
+@SuppressWarnings("removal")
 public class MessagePropertiesTests {
 
 
@@ -48,6 +50,26 @@ public class MessagePropertiesTests {
 		assertThat(properties.getHeaders().get(MessageProperties.X_DELAY)).isEqualTo(delay);
 		properties.setDelayLong(null);
 		assertThat(properties.getHeaders().containsKey(MessageProperties.X_DELAY)).isFalse();
+	}
+
+	@Test
+	public void testNativeDeliveryTimeHeader() {
+		MessageProperties properties = new MessageProperties();
+		Instant deliveryTime = Instant.ofEpochMilli(1_800_000_000_123L);
+
+		properties.setDeliveryTime(deliveryTime);
+
+		assertThat(properties.getHeaders().get(MessageProperties.DELIVERY_TIME))
+				.isEqualTo(deliveryTime.toEpochMilli());
+		assertThat(properties.getDeliveryTime()).isEqualTo(deliveryTime);
+		assertThat(properties.getDeliveryTimeEpochMillis()).isEqualTo(deliveryTime.toEpochMilli());
+
+		properties.setDeliveryTime(1_800_000_000_456L);
+		assertThat(properties.getDeliveryTime()).isEqualTo(Instant.ofEpochMilli(1_800_000_000_456L));
+
+		properties.setDeliveryTime((Instant) null);
+		assertThat(properties.getHeaders()).doesNotContainKey(MessageProperties.DELIVERY_TIME);
+		assertThat(properties.getDeliveryTime()).isNull();
 	}
 
 	@Test

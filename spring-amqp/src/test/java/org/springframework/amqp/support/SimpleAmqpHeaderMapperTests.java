@@ -29,6 +29,7 @@ import static org.assertj.core.api.Assertions.fail;
  * @author Raylax Grey
  * @author Artem Bilan
  */
+@SuppressWarnings("removal")
 public class SimpleAmqpHeaderMapperTests {
 
 	@Test

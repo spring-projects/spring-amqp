@@ -176,6 +176,7 @@ import static org.mockito.Mockito.verify;
 		"manual.acks.1", "manual.acks.2", "erit.batch.1", "erit.batch.2", "erit.batch.3", "erit.mp.arg",
 		"no.such.method"},
 		purgeAfterEach = false)
+@SuppressWarnings("removal")
 public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 	@Autowired

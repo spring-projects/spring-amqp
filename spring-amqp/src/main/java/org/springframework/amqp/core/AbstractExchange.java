@@ -88,6 +88,8 @@ public abstract class AbstractExchange extends AbstractDeclarable implements Exc
 	}
 
 	@Override
+	@Deprecated(since = "4.2", forRemoval = true)
+	@SuppressWarnings("removal")
 	public boolean isDelayed() {
 		return this.delayed;
 	}
@@ -96,8 +98,10 @@ public abstract class AbstractExchange extends AbstractDeclarable implements Exc
 	 * Set the delayed flag.
 	 * @param delayed the delayed.
 	 * @since 1.6
+	 * @deprecated Since 4.2, for removal with support for the delayed-message-exchange plugin.
 	 * @see Exchange#isDelayed()
 	 */
+	@Deprecated(since = "4.2", forRemoval = true)
 	public void setDelayed(boolean delayed) {
 		this.delayed = delayed;
 	}

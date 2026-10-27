@@ -52,6 +52,7 @@ import static org.awaitility.Awaitility.await;
  * @author Raylax Grey
  */
 @RabbitAvailable(management = true)
+@SuppressWarnings("removal")
 public class RabbitAdminIntegrationTests extends NeedsManagementTests {
 
 	private final CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
