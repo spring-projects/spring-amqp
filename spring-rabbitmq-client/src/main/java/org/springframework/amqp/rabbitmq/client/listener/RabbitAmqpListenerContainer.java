@@ -431,23 +431,27 @@ public class RabbitAmqpListenerContainer
 		try {
 			this.errorHandler.handleError(ex);
 			// If error handler does not re-throw an exception, re-check original error.
-			// If it is not special, treat the error handler outcome as a successful processing result.
+			// If it is not special, settle the message according to the 'defaultRequeue' option.
 			if (!handleSpecialErrors(ex, context)) {
-				context.accept();
+				settleFailedMessage(context);
 			}
 		}
 		catch (Exception rethrow) {
 			if (!handleSpecialErrors(rethrow, context)) {
-				if (this.defaultRequeue) {
-					context.requeue();
-				}
-				else {
-					context.discard();
-				}
+				settleFailedMessage(context);
 				LOG.error(rethrow, () ->
 						"The 'errorHandler' has thrown an exception. The '" + messageOrBatch + "' is "
 								+ (this.defaultRequeue ? "re-queued." : "discarded."));
 			}
+		}
+	}
+
+	private void settleFailedMessage(Consumer.Context context) {
+		if (this.defaultRequeue) {
+			context.requeue();
+		}
+		else {
+			context.discard();
 		}
 	}
 
