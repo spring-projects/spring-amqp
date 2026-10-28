@@ -345,7 +345,10 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 							}
 						}
 					}
-					doConsumeFromQueue(queue, index);
+					if (!doConsumeFromQueue(queue, index)) {
+						// The consumer is scheduled for restart: do not retry it in a loop.
+						break;
+					}
 				}
 				reduceConsumersIfIdle(newCount, queue);
 			}
@@ -724,12 +727,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
-	private void doConsumeFromQueue(String queue, int index) {
+	private boolean doConsumeFromQueue(String queue, int index) {
 		if (!isActive()) {
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug("Consume from queue " + queue + " ignore, container stopping");
 			}
-			return;
+			return false;
 		}
 		String routingLookupKey = getRoutingLookupKey();
 		RoutingConnectionFactory routingConnectionFactory = null;
@@ -769,6 +772,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					applicationEventPublisher.publishEvent(new AsyncConsumerStartedEvent(this, consumer));
 				}
 			}
+			return consumer != null;
 		}
 		finally {
 			this.consumersLock.unlock();

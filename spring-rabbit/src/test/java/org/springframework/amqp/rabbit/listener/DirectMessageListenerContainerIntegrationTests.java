@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -880,6 +881,32 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.stop();
 		admin.deleteQueue(MISSING);
 		cf.destroy();
+	}
+
+	@Test
+	void consumersPerQueueCanBeChangedWhileQueueIsMissing() {
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		RabbitAdmin admin = new RabbitAdmin(cf);
+		admin.deleteQueue(MISSING);
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
+		container.setQueueNames(MISSING);
+		container.setBeanName("consumersPerQueueWhileMissing");
+		container.setMonitorInterval(500);
+		container.setFailedDeclarationRetryInterval(500);
+		container.afterPropertiesSet();
+		container.start();
+		try {
+			CompletableFuture<Void> adjustment = CompletableFuture.runAsync(() -> container.setConsumersPerQueue(2));
+
+			assertThat(adjustment).succeedsWithin(Duration.ofSeconds(10));
+		}
+		finally {
+			// Lets a call that does not return finish.
+			admin.declareQueue(new Queue(MISSING));
+			container.stop();
+			admin.deleteQueue(MISSING);
+			cf.destroy();
+		}
 	}
 
 	@Test
