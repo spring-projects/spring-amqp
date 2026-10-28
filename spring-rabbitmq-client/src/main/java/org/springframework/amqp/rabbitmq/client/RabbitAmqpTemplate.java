@@ -236,24 +236,33 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 			@Nullable String queue, Message message) {
 
 		Publisher publisherToUse = getPublisher();
-
-		com.rabbitmq.client.amqp.Message amqpMessage =
-				toAmqpMessage(exchange, routingKey, queue, message, publisherToUse::message);
+		boolean temporaryPublisher = publisherToUse != this.publisher;
 
 		CompletableFuture<Boolean> publishResult = new CompletableFuture<>();
 
-		if (publisherToUse != this.publisher) {
+		if (temporaryPublisher) {
 			publishResult.whenComplete((result, ex) -> publisherToUse.close());
 		}
 
-		publisherToUse.publish(amqpMessage,
-				(context) -> {
-					switch (context.status()) {
-						case ACCEPTED -> publishResult.complete(true);
-						case REJECTED, RELEASED -> publishResult.completeExceptionally(
-								new AmqpNackReceivedException("The message was rejected", message));
-					}
-				});
+		try {
+			com.rabbitmq.client.amqp.Message amqpMessage =
+					toAmqpMessage(exchange, routingKey, queue, message, publisherToUse::message);
+
+			publisherToUse.publish(amqpMessage,
+					(context) -> {
+						switch (context.status()) {
+							case ACCEPTED -> publishResult.complete(true);
+							case REJECTED, RELEASED -> publishResult.completeExceptionally(
+									new AmqpNackReceivedException("The message was rejected", message));
+						}
+					});
+		}
+		catch (RuntimeException ex) {
+			if (temporaryPublisher) {
+				publisherToUse.close();
+			}
+			throw ex;
+		}
 
 		return publishResult;
 	}
@@ -563,13 +572,19 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 						.replyToQueue(replyToQueue)
 						.build();
 
-		com.rabbitmq.client.amqp.Message amqpMessage =
-				toAmqpMessage(exchange, routingKey, queue, message, rpcClient::message);
+		try {
+			com.rabbitmq.client.amqp.Message amqpMessage =
+					toAmqpMessage(exchange, routingKey, queue, message, rpcClient::message);
 
-		return rpcClient.publish(amqpMessage)
-				.thenApply((reply) -> RabbitAmqpUtils.fromAmqpMessage(reply, null))
-				.orTimeout(this.completionTimeout.toMillis(), TimeUnit.MILLISECONDS)
-				.whenComplete((replyMessage, exception) -> rpcClient.close());
+			return rpcClient.publish(amqpMessage)
+					.thenApply((reply) -> RabbitAmqpUtils.fromAmqpMessage(reply, null))
+					.orTimeout(this.completionTimeout.toMillis(), TimeUnit.MILLISECONDS)
+					.whenComplete((replyMessage, exception) -> rpcClient.close());
+		}
+		catch (RuntimeException ex) {
+			rpcClient.close();
+			throw ex;
+		}
 	}
 
 	@Override
