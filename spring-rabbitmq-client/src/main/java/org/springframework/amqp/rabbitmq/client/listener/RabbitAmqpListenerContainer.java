@@ -424,16 +424,27 @@ public class RabbitAmqpListenerContainer
 			amqpMessageListener.onAmqpMessage(amqpMessage, contextToUse);
 		}
 		else {
-			Message message = RabbitAmqpUtils.fromAmqpMessage(amqpMessage, contextToUse);
+			Message message = postProcessReceivedMessage(RabbitAmqpUtils.fromAmqpMessage(amqpMessage, contextToUse));
 			this.proxy.onMessage(message);
 		}
+	}
+
+	private Message postProcessReceivedMessage(Message message) {
+		Message messageToUse = message;
+		if (this.afterReceivePostProcessors != null) {
+			for (MessagePostProcessor processor : this.afterReceivePostProcessors) {
+				messageToUse = processor.postProcessMessage(messageToUse);
+			}
+		}
+		return messageToUse;
 	}
 
 	private void invokeBatchListener(Consumer.Context context, List<com.rabbitmq.client.amqp.Message> batch) {
 		Consumer.Context contextToUse = this.autoSettle ? null : context;
 		List<Message> messages =
 				batch.stream()
-						.map((amqpMessage) -> RabbitAmqpUtils.fromAmqpMessage(amqpMessage, contextToUse))
+						.map((amqpMessage) ->
+								postProcessReceivedMessage(RabbitAmqpUtils.fromAmqpMessage(amqpMessage, contextToUse)))
 						.toList();
 		try {
 			doInvokeBatchListener(messages);
