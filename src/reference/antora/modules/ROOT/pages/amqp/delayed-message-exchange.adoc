@@ -3,9 +3,9 @@
 
 == Native delivery time with RabbitMQ 4.4
 
-RabbitMQ 4.4 supports delayed messages on quorum queues without an exchange plugin. Set an absolute Unix timestamp in
-milliseconds in the `x-opt-delivery-time` header. The broker routes and stores the message when it is published, but
-does not make it available to consumers until the specified time.
+RabbitMQ 4.4 supports delayed messages on quorum queues without an exchange plugin.
+Set an absolute Unix timestamp in milliseconds in the `x-opt-delivery-time` header.
+The broker routes and stores the message when it is published, but does not make it available to consumers until the specified time.
 
 The `MessageProperties` API exposes this header as an `Instant` or epoch-millisecond value:
 
@@ -17,21 +17,20 @@ rabbitTemplate.convertAndSend("orders", "payload", message -> {
 });
 ----
 
-You can also use `setDeliveryTime(long)` when the timestamp is already available in milliseconds. The header value is
-encoded as an AMQP `long` and can be read with `getDeliveryTime()` or `getDeliveryTimeEpochMillis()`. Ensure that the
-message is routed to a quorum queue; this feature requires RabbitMQ 4.4 or later and does not apply to classic queues.
+You can also use `setDeliveryTime(long)` when the timestamp is already available in milliseconds.
+The header value is encoded as an AMQP `long` and can be read with `getDeliveryTime()` or `getDeliveryTimeEpochMillis()`.
+Ensure that the message is routed to a quorum queue; this feature requires RabbitMQ 4.4 or later and does not apply to classic queues.
 See the https://www.rabbitmq.com/blog/2026/10/20/rabbitmq-4.4-release[RabbitMQ 4.4 release notes] for more details.
 
 == Legacy delayed-message-exchange plugin
 
-The delayed-message-exchange plugin uses a different mechanism: `x-delay` is a relative delay on an
-`x-delayed-message` exchange. This plugin is no longer maintained, and its `MessageProperties#setDelayLong`,
-`Exchange#isDelayed`, exchange builder `delayed()` and `@Exchange#delayed` APIs are deprecated for removal as of
-Spring AMQP 4.2. They remain available for existing applications, but do not provide native quorum-queue delayed
-delivery and are not converted automatically to `x-opt-delivery-time`.
+The delayed-message-exchange plugin uses a different mechanism: `x-delay` is a relative delay on an `x-delayed-message` exchange.
+This plugin is no longer maintained.
+Its `MessageProperties#setDelayLong`, `Exchange#isDelayed`, exchange builder `delayed()` and `@Exchange#delayed` APIs are deprecated for removal as of Spring AMQP 4.2.
+They remain available for existing applications, but do not provide native quorum-queue delayed delivery and are not converted automatically to `x-opt-delivery-time`.
 
-For RabbitMQ versions before 4.4 that still use this plugin, `setDelayLong(long)` continues to set the `x-delay`
-header. `getReceivedDelayLong()` reports the delay returned by the plugin. Do not use these APIs for native delayed
-messages.
+For RabbitMQ versions before 4.4 that still use this plugin, `setDelayLong(long)` continues to set the `x-delay` header.
+`getReceivedDelayLong()` reports the delay returned by the plugin.
+Do not use these APIs for native delayed messages.
 
 

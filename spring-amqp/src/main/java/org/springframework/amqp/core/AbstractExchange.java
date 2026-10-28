@@ -89,7 +89,6 @@ public abstract class AbstractExchange extends AbstractDeclarable implements Exc
 
 	@Override
 	@Deprecated(since = "4.2", forRemoval = true)
-	@SuppressWarnings("removal")
 	public boolean isDelayed() {
 		return this.delayed;
 	}

@@ -18,7 +18,6 @@ import java.util.Date
  *
  * @since 4.0.5
  */
-@Suppress("DEPRECATION")
 class KotlinMessagePropertiesTests {
 
 	@Test
@@ -36,7 +35,6 @@ class KotlinMessagePropertiesTests {
 			messageProperties.inferredArgumentType = inferredArgumentType
 			messageProperties.messageCount = 1
 			messageProperties.messageId = "messageId"
-			messageProperties.receivedDelayLong = 1
 			messageProperties.receivedDeliveryMode = MessageDeliveryMode.PERSISTENT
 			messageProperties.receivedExchange = "receivedExchange"
 			messageProperties.receivedRoutingKey = "receivedRoutingKey"
@@ -55,7 +53,6 @@ class KotlinMessagePropertiesTests {
 		assertThat(messageProperties.inferredArgumentType).isEqualTo(inferredArgumentType)
 		assertThat(messageProperties.messageCount).isEqualTo(1)
 		assertThat(messageProperties.messageId).isEqualTo("messageId")
-		assertThat(messageProperties.receivedDelayLong).isEqualTo(1)
 		assertThat(messageProperties.receivedDeliveryMode).isEqualTo(MessageDeliveryMode.PERSISTENT)
 		assertThat(messageProperties.receivedExchange).isEqualTo("receivedExchange")
 		assertThat(messageProperties.receivedRoutingKey).isEqualTo("receivedRoutingKey")

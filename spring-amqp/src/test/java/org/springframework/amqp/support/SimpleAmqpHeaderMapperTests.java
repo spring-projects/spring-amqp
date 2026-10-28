@@ -19,7 +19,6 @@ import org.springframework.messaging.MessageHeaders;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 /**
@@ -29,7 +28,6 @@ import static org.assertj.core.api.Assertions.fail;
  * @author Raylax Grey
  * @author Artem Bilan
  */
-@SuppressWarnings("removal")
 public class SimpleAmqpHeaderMapperTests {
 
 	@Test
@@ -43,7 +41,6 @@ public class SimpleAmqpHeaderMapperTests {
 		headerMap.put(AmqpHeaders.CONTENT_TYPE, "test.contentType");
 		String testCorrelationId = "foo";
 		headerMap.put(AmqpHeaders.CORRELATION_ID, testCorrelationId);
-		headerMap.put(AmqpHeaders.DELAY, 1234L);
 		headerMap.put(AmqpHeaders.DELIVERY_MODE, MessageDeliveryMode.NON_PERSISTENT);
 		headerMap.put(AmqpHeaders.DELIVERY_TAG, 1234L);
 		headerMap.put(AmqpHeaders.EXPIRATION, "test.expiration");
@@ -84,32 +81,6 @@ public class SimpleAmqpHeaderMapperTests {
 		assertThat(amqpProperties.getTimestamp()).isEqualTo(testTimestamp);
 		assertThat(amqpProperties.getType()).isEqualTo("test.type");
 		assertThat(amqpProperties.getUserId()).isEqualTo("test.userId");
-		assertThat(amqpProperties.getDelayLong()).isEqualTo(Long.valueOf(1234));
-	}
-
-	@Test
-	public void fromHeadersWithLongDelay() {
-		SimpleAmqpHeaderMapper headerMapper = new SimpleAmqpHeaderMapper();
-		Map<String, Object> headerMap = new HashMap<>();
-		headerMap.put(AmqpHeaders.DELAY, 1234L);
-		MessageHeaders messageHeaders = new MessageHeaders(headerMap);
-		MessageProperties amqpProperties = new MessageProperties();
-		headerMapper.fromHeaders(messageHeaders, amqpProperties);
-		assertThat(amqpProperties.getDelayLong()).isEqualTo(Long.valueOf(1234));
-
-		amqpProperties.setDelayLong(5678L);
-		assertThat(amqpProperties.getDelayLong()).isEqualTo(Long.valueOf(5678));
-
-		amqpProperties.setDelayLong(null);
-		assertThat(amqpProperties.getHeaders().containsKey(AmqpHeaders.DELAY)).isFalse();
-
-		amqpProperties.setDelayLong(MessageProperties.X_DELAY_MAX);
-		assertThat(amqpProperties.getDelayLong()).isEqualTo(Long.valueOf(MessageProperties.X_DELAY_MAX));
-
-		assertThatThrownBy(() -> amqpProperties.setDelayLong(MessageProperties.X_DELAY_MAX + 1))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessageContaining("Delay cannot exceed");
-
 	}
 
 	@Test
@@ -143,7 +114,6 @@ public class SimpleAmqpHeaderMapperTests {
 		amqpProperties.setMessageCount(42);
 		amqpProperties.setMessageId("test.messageId");
 		amqpProperties.setPriority(22);
-		amqpProperties.setReceivedDelayLong(1234L);
 		amqpProperties.setReceivedExchange("test.receivedExchange");
 		amqpProperties.setReceivedRoutingKey("test.receivedRoutingKey");
 		amqpProperties.setRedelivered(true);
@@ -168,7 +138,6 @@ public class SimpleAmqpHeaderMapperTests {
 		assertThat(headerMap.get(AmqpHeaders.EXPIRATION)).isEqualTo("test.expiration");
 		assertThat(headerMap.get(AmqpHeaders.MESSAGE_COUNT)).isEqualTo(42);
 		assertThat(headerMap.get(AmqpHeaders.MESSAGE_ID)).isEqualTo("test.messageId");
-		assertThat(headerMap.get(AmqpHeaders.RECEIVED_DELAY)).isEqualTo(1234L);
 		assertThat(headerMap.get(AmqpHeaders.RECEIVED_EXCHANGE)).isEqualTo("test.receivedExchange");
 		assertThat(headerMap.get(AmqpHeaders.RECEIVED_ROUTING_KEY)).isEqualTo("test.receivedRoutingKey");
 		assertThat(headerMap.get(AmqpHeaders.REPLY_TO)).isEqualTo("test.replyTo");

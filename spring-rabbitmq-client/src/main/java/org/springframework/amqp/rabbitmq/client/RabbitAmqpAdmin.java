@@ -265,6 +265,7 @@ public class RabbitAmqpAdmin
 		}
 	}
 
+	@SuppressWarnings("removal")
 	private void doDeclareExchange(Management management, Exchange exchange) {
 		Management.ExchangeSpecification exchangeSpecification =
 				management.exchange(exchange.getName())

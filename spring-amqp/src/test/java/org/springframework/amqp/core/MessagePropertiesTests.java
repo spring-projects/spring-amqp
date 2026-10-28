@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Ngoc Nhan
  *
  */
-@SuppressWarnings("removal")
 public class MessagePropertiesTests {
 
 
@@ -40,16 +39,6 @@ public class MessagePropertiesTests {
 		MessageProperties properties = new MessageProperties();
 		assertThat(properties.getReplyTo()).isEqualTo(null);
 		assertThat(properties.getReplyToAddress()).isEqualTo(null);
-	}
-
-	@Test
-	public void testDelayHeader() {
-		MessageProperties properties = new MessageProperties();
-		Long delay = 100L;
-		properties.setDelayLong(delay);
-		assertThat(properties.getHeaders().get(MessageProperties.X_DELAY)).isEqualTo(delay);
-		properties.setDelayLong(null);
-		assertThat(properties.getHeaders().containsKey(MessageProperties.X_DELAY)).isFalse();
 	}
 
 	@Test

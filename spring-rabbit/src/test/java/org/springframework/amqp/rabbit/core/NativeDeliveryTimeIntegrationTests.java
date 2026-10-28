@@ -6,39 +6,32 @@ package org.springframework.amqp.rabbit.core;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.rabbitmq.RabbitMQContainer;
-import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.junit.AbstractTestContainerTests;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Verifies native delivery-time support introduced in RabbitMQ 4.4.
  *
- * @author 樊孔缘
+ * @author Fan Kongyuan
  */
-@Testcontainers(disabledWithoutDocker = true)
-class NativeDeliveryTimeIntegrationTests {
+class NativeDeliveryTimeIntegrationTests extends AbstractTestContainerTests {
 
 	private static final String QUEUE = "test.native.delivery.time";
 
-	@Container
-	static final RabbitMQContainer RABBIT_MQ_CONTAINER =
-			new RabbitMQContainer(DockerImageName.parse("rabbitmq:4.4.0-management"));
-
 	private final CachingConnectionFactory connectionFactory =
-			new CachingConnectionFactory("localhost", RABBIT_MQ_CONTAINER.getAmqpPort());
+			new CachingConnectionFactory("localhost", amqpPort());
 
 	private final RabbitAdmin rabbitAdmin = new RabbitAdmin(this.connectionFactory);
 
@@ -58,7 +51,7 @@ class NativeDeliveryTimeIntegrationTests {
 
 	@Test
 	void nativeDeliveryTimeDelaysAMessageForAQuorumQueue() {
-		Instant deliveryTime = Instant.now().plusSeconds(3);
+		Instant deliveryTime = Instant.now().plusSeconds(3).truncatedTo(ChronoUnit.MILLIS);
 		MessageProperties properties = new MessageProperties();
 		properties.setDeliveryTime(deliveryTime);
 		Message message = MessageBuilder.withBody("delayed".getBytes(StandardCharsets.UTF_8))
