@@ -348,8 +348,14 @@ public class RabbitAmqpAdmin
 	@Override
 	@ManagedOperation(description = "Delete a queue from the broker")
 	public boolean deleteQueue(String queueName) {
-		deleteQueue(queueName, false, false);
-		return true;
+		try (Management management = getManagement()) {
+			management.queueInfo(queueName);
+			management.queueDelete(queueName);
+			return true;
+		}
+		catch (AmqpException.AmqpEntityDoesNotExistException ex) {
+			return false;
+		}
 	}
 
 	@Override
@@ -363,6 +369,9 @@ public class RabbitAmqpAdmin
 
 				management.queueDelete(queueName);
 			}
+		}
+		catch (AmqpException.AmqpEntityDoesNotExistException ex) {
+			LOG.debug(() -> "The queue '" + queueName + "' does not exist: nothing to delete.");
 		}
 	}
 
