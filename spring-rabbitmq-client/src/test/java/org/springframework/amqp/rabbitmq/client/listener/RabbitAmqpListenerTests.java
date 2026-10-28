@@ -25,6 +25,7 @@ import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.core.QueueInformation;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -50,10 +51,12 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatException;
 import static org.awaitility.Awaitility.await;
 
 /**
  * @author Artem Bilan
+ * @author Sharang Gupta
  *
  * @since 4.0
  */
@@ -207,6 +210,34 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 		assertThat(container.isRunning()).isTrue();
 
 		container.stop();
+	}
+
+	@Test
+	void startFailureForMissingQueueCanBeRetried() {
+		admin.declareQueue(new Queue("start.existing"));
+		RabbitAmqpListenerContainer container = new RabbitAmqpListenerContainer(connectionFactory);
+		container.setQueueNames("start.existing", "start.missing");
+		container.setupMessageListener(message -> {
+		});
+		container.afterPropertiesSet();
+		try {
+			assertThatException().isThrownBy(container::start);
+			assertThat(container.isRunning()).isFalse();
+
+			admin.declareQueue(new Queue("start.missing"));
+			container.start();
+
+			assertThat(container.isRunning()).isTrue();
+			await().untilAsserted(() -> {
+				assertThat(admin.getQueueInfo("start.existing")).extracting(QueueInformation::getConsumerCount)
+						.isEqualTo(1);
+				assertThat(admin.getQueueInfo("start.missing")).extracting(QueueInformation::getConsumerCount)
+						.isEqualTo(1);
+			});
+		}
+		finally {
+			container.stop();
+		}
 	}
 
 	@Configuration

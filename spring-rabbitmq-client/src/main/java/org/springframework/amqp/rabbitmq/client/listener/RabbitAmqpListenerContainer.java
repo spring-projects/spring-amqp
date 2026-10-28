@@ -354,29 +354,53 @@ public class RabbitAmqpListenerContainer
 	}
 
 	@Override
-	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	public void start() {
 		this.lock.lock();
 		try {
 			if (this.queueToConsumers.isEmpty()) {
-				Connection connection = this.connectionFactory.getConnection();
-				for (String queue : this.queues) {
-					for (int i = 0; i < this.consumersPerQueue; i++) {
-						Consumer consumer =
-								connection.consumerBuilder()
-										.queue(queue)
-										.priority(this.priority)
-										.initialCredits(this.initialCredits)
-										.listeners(this.stateListeners)
-										.messageHandler(new ConsumerMessageHandler())
-										.build();
-						this.queueToConsumers.add(queue, consumer);
-					}
-				}
+				this.queueToConsumers.addAll(buildConsumers());
 			}
 		}
 		finally {
 			this.lock.unlock();
+		}
+	}
+
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
+	private MultiValueMap<String, Consumer> buildConsumers() {
+		Connection connection = this.connectionFactory.getConnection();
+		MultiValueMap<String, Consumer> consumers = new LinkedMultiValueMap<>();
+		try {
+			for (String queue : this.queues) {
+				for (int i = 0; i < this.consumersPerQueue; i++) {
+					Consumer consumer =
+							connection.consumerBuilder()
+									.queue(queue)
+									.priority(this.priority)
+									.initialCredits(this.initialCredits)
+									.listeners(this.stateListeners)
+									.messageHandler(new ConsumerMessageHandler())
+									.build();
+					consumers.add(queue, consumer);
+				}
+			}
+			return consumers;
+		}
+		catch (RuntimeException ex) {
+			consumers.values()
+					.stream()
+					.flatMap(List::stream)
+					.forEach((consumer) -> closeQuietly(consumer, ex));
+			throw ex;
+		}
+	}
+
+	private static void closeQuietly(Consumer consumer, RuntimeException startException) {
+		try {
+			consumer.close();
+		}
+		catch (RuntimeException ex) {
+			startException.addSuppressed(ex);
 		}
 	}
 
