@@ -10,9 +10,9 @@ import com.rabbitmq.client.amqp.Consumer;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.AcknowledgeMode;
-import org.springframework.amqp.listener.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
+import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbitmq.client.AmqpConnectionFactory;
 import org.springframework.amqp.rabbitmq.client.config.RabbitAmqpListenerContainerFactory;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
