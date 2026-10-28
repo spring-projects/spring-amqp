@@ -8,8 +8,6 @@ import com.rabbitmq.client.amqp.AmqpException;
 import com.rabbitmq.client.amqp.Connection;
 import com.rabbitmq.client.amqp.Publisher;
 import com.rabbitmq.client.amqp.PublisherBuilder;
-import com.rabbitmq.client.amqp.Requester;
-import com.rabbitmq.client.amqp.RequesterBuilder;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Message;
@@ -27,29 +25,11 @@ import static org.mockito.Mockito.withSettings;
 /**
  * @author Sharang Gupta
  *
- * @since 4.2
+ * @since 4.0.7
  */
 public class RabbitAmqpTemplateUnitTests {
 
 	private final Connection connection = mock();
-
-	@Test
-	void requesterIsClosedWhenPublishFails() {
-		AmqpConnectionFactory connectionFactory = mock();
-		given(connectionFactory.getConnection()).willReturn(this.connection);
-		RequesterBuilder requesterBuilder = mock(RequesterBuilder.class, RETURNS_SELF);
-		Requester requester = mock();
-		given(this.connection.requesterBuilder()).willReturn(requesterBuilder);
-		given(requesterBuilder.build()).willReturn(requester);
-		given(requester.message()).willReturn(mock(com.rabbitmq.client.amqp.Message.class, RETURNS_DEEP_STUBS));
-		given(requester.publish(any())).willThrow(new AmqpException("The requester is closed"));
-		RabbitAmqpTemplate template = new RabbitAmqpTemplate(connectionFactory);
-
-		assertThatExceptionOfType(AmqpException.class)
-				.isThrownBy(() -> template.sendAndReceive("test.queue", new Message("request".getBytes())));
-
-		verify(requester).close();
-	}
 
 	@Test
 	void temporaryPublisherIsClosedWhenPublishFails() {

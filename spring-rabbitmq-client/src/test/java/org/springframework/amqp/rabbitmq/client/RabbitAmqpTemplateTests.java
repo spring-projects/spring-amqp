@@ -28,17 +28,21 @@ import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.core.QueueInformation;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.awaitility.Awaitility.await;
 
 /**
  * @author Artem Bilan
  * @author Jan Mohr
+ * @author Sharang Gupta
  *
  * @since 4.0
  */
@@ -309,6 +313,25 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 					assertThat(received.getMessageProperties().getReceivedExchange()).isEqualTo("e1");
 					assertThat(received.getMessageProperties().getReceivedRoutingKey()).isEqualTo("k1");
 				});
+	}
+
+	@Test
+	void requesterIsClosedWhenRequestCannotBeConverted() {
+		String replyQueue = "rpc.reply";
+		this.admin.declareQueue(new Queue(replyQueue));
+		Message request =
+				MessageBuilder.withBody("request".getBytes(StandardCharsets.UTF_8))
+						.setExpiration("not-a-number")
+						.setReplyTo(replyQueue)
+						.build();
+
+		assertThatExceptionOfType(NumberFormatException.class)
+				.isThrownBy(() -> this.template.sendAndReceive("q2", request));
+
+		await().untilAsserted(() ->
+				assertThat(this.admin.getQueueInfo(replyQueue))
+						.extracting(QueueInformation::getConsumerCount)
+						.isEqualTo(0));
 	}
 
 	@Configuration
