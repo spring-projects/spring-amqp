@@ -21,6 +21,7 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.listener.ContainerUtils;
 import org.springframework.amqp.listener.ListenerExecutionFailedException;
 import org.springframework.amqp.listener.adapter.InvocationResult;
+import org.springframework.amqp.listener.adapter.ReplyFailureException;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbitmq.client.AmqpConnectionFactory;
@@ -95,8 +96,9 @@ public class RabbitAmqpMessageListenerAdapter extends MessagingMessageListenerAd
 				springMessage = processor.postProcessMessage(springMessage);
 			}
 		}
+		org.springframework.messaging.Message<?> messagingMessage = null;
 		try {
-			org.springframework.messaging.Message<?> messagingMessage = toMessagingMessage(springMessage);
+			messagingMessage = toMessagingMessage(springMessage);
 			InvocationResult result = getHandlerAdapter()
 					.invoke(messagingMessage,
 							springMessage, springMessage.getMessageProperties().getAmqpAcknowledgment(),
@@ -107,7 +109,25 @@ public class RabbitAmqpMessageListenerAdapter extends MessagingMessageListenerAd
 						"The 'connectionFactory' must be provided for handling replies.");
 				handleResult(result, springMessage, null, messagingMessage);
 			}
+		}
+		catch (ReplyFailureException ex) {
+			throw ex;
+		}
+		catch (Exception ex) {
+			handleListenerException(springMessage, messagingMessage,
+					new ListenerExecutionFailedException("Failed to invoke listener", ex, springMessage));
+		}
+	}
 
+	private void handleListenerException(Message springMessage,
+			org.springframework.messaging.@Nullable Message<?> messagingMessage,
+			ListenerExecutionFailedException listenerException) {
+
+		try {
+			handleException(springMessage, null, messagingMessage, listenerException);
+		}
+		catch (RuntimeException ex) {
+			throw ex;
 		}
 		catch (Exception ex) {
 			throw new ListenerExecutionFailedException("Failed to invoke listener", ex, springMessage);
