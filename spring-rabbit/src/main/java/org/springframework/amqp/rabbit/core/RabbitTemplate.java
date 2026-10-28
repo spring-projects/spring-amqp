@@ -2092,6 +2092,8 @@ public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count
 			if (noCorrelation) {
 				this.replyHolder.remove(channel);
 			}
+			// The reply, a timeout or a failure: nothing is pending for this request anymore.
+			this.pendingRepliesCounter.release(pendingReply);
 		}
 		return reply;
 	}
