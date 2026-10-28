@@ -1205,6 +1205,30 @@ public class RabbitTemplateIntegrationTests {
 	}
 
 	@Test
+	void pendingReplyIsReleasedWhenReplyTimesOutWithCorrelationKey() {
+		RabbitTemplate template = createSendAndReceiveRabbitTemplate(this.connectionFactory);
+		template.setReplyAddress(REPLY_QUEUE.getName());
+		template.setReplyTimeout(200);
+		template.setCorrelationKey("CorrelationKey");
+
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+		container.setConnectionFactory(template.getConnectionFactory());
+		container.setQueues(REPLY_QUEUE);
+		container.setMessageListener(template);
+		container.start();
+		try {
+			// Nobody consumes from the ROUTE queue: no reply comes back.
+			Message reply = template.sendAndReceive("", ROUTE, new Message("request".getBytes()));
+
+			assertThat(reply).isNull();
+			assertThat(template.getPendingReplyCounter().getCount()).isZero();
+		}
+		finally {
+			container.stop();
+		}
+	}
+
+	@Test
 	public void testSymmetricalReceiveAndReply() throws InterruptedException {
 		RabbitTemplate template = createSendAndReceiveRabbitTemplate(this.connectionFactory);
 		template.setDefaultReceiveQueue(ROUTE);
