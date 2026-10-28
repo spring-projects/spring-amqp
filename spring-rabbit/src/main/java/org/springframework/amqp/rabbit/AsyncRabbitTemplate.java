@@ -634,6 +634,8 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 			RabbitFuture<?> future = this.pending.remove(correlationId);
 			if (future != null) {
 				future.completeExceptionally(new AmqpMessageReturnedException("Message returned", returned));
+				// No reply comes for a returned request: give its direct reply-to consumer back.
+				releaseConsumer(future.getChannelHolder());
 			}
 			else {
 				if (this.logger.isWarnEnabled()) {
@@ -683,6 +685,10 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 	private void canceler(String correlationId, @Nullable ChannelHolder channelHolder) {
 		this.pending.remove(correlationId);
+		releaseConsumer(channelHolder);
+	}
+
+	private void releaseConsumer(@Nullable ChannelHolder channelHolder) {
 		if (channelHolder != null && this.directReplyToContainer != null) {
 			this.directReplyToContainer
 					.releaseConsumerFor(channelHolder, false, null); // NOSONAR
