@@ -357,12 +357,25 @@ public class RabbitAmqpAdmin
 			"Delete a queue from the broker if unused and empty (when corresponding arguments are true")
 	public void deleteQueue(String queueName, boolean unused, boolean empty) {
 		try (Management management = getManagement()) {
-			Management.QueueInfo queueInfo = management.queueInfo(queueName);
-			if ((!unused || queueInfo.consumerCount() == 0)
-					&& (!empty || queueInfo.messageCount() == 0)) {
-
+			if (isDeletable(management, queueName, unused, empty)) {
 				management.queueDelete(queueName);
 			}
+		}
+	}
+
+	private static boolean isDeletable(Management management, String queueName, boolean unused, boolean empty) {
+		if (!unused && !empty) {
+			// The broker deletes a missing queue without failing: no need to check it first.
+			return true;
+		}
+		try {
+			Management.QueueInfo queueInfo = management.queueInfo(queueName);
+			return (!unused || queueInfo.consumerCount() == 0)
+					&& (!empty || queueInfo.messageCount() == 0);
+		}
+		catch (AmqpException.AmqpEntityDoesNotExistException ex) {
+			LOG.debug(() -> "The queue '" + queueName + "' does not exist: nothing to delete.");
+			return false;
 		}
 	}
 

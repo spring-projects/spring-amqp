@@ -26,10 +26,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 
 /**
  * @author Artem Bilan
  * @author Ngoc Nhan
+ * @author Sharang Gupta
  *
  * @since 4.0
  */
@@ -101,6 +103,24 @@ public class RabbitAmqpAdminTests extends RabbitAmqpTestBase {
 	void shouldReturnNullForNonExistentQueue() {
 		assertThat(admin.getQueueInfo("non-existent-queue")).isNull();
 		assertThat(admin.getQueueProperties("non-existent-queue")).isNull();
+	}
+
+	@Test
+	void shouldDeleteQueue() {
+		String queueName = "queue-to-delete";
+		admin.declareQueue(new Queue(queueName));
+		assertThat(admin.getQueueInfo(queueName)).isNotNull();
+
+		assertThat(admin.deleteQueue(queueName)).isTrue();
+
+		assertThat(admin.getQueueInfo(queueName)).isNull();
+	}
+
+	@Test
+	void shouldNotFailToDeleteNonExistentQueue() {
+		assertThatNoException().isThrownBy(() -> admin.deleteQueue("non-existent-queue"));
+		assertThatNoException().isThrownBy(() -> admin.deleteQueue("non-existent-queue", false, false));
+		assertThatNoException().isThrownBy(() -> admin.deleteQueue("non-existent-queue", true, true));
 	}
 
 	@Configuration
