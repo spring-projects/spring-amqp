@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
@@ -23,6 +24,7 @@ import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.QueueInformation;
@@ -238,6 +240,75 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 		finally {
 			container.stop();
 		}
+	}
+
+	@Test
+	void afterReceivePostProcessorsAreAppliedForPlainListener() {
+		admin.declareQueue(new Queue("post.processed.plain"));
+		List<Message> received = new CopyOnWriteArrayList<>();
+		RabbitAmqpListenerContainer container = new RabbitAmqpListenerContainer(connectionFactory);
+		container.setQueueNames("post.processed.plain");
+		container.setAfterReceivePostProcessors(markAsProcessed());
+		container.setupMessageListener((MessageListener) received::add);
+		container.afterPropertiesSet();
+		container.start();
+		try {
+			template.convertAndSend("post.processed.plain", "data");
+
+			await().untilAsserted(() ->
+					assertThat(received).singleElement().satisfies(this::assertProcessed));
+		}
+		finally {
+			container.stop();
+		}
+	}
+
+	@Test
+	void afterReceivePostProcessorsAreAppliedForBatchListener() {
+		admin.declareQueue(new Queue("post.processed.batch"));
+		List<Message> received = new CopyOnWriteArrayList<>();
+		RabbitAmqpListenerContainer container = new RabbitAmqpListenerContainer(connectionFactory);
+		container.setQueueNames("post.processed.batch");
+		container.setBatchSize(2);
+		container.setAfterReceivePostProcessors(markAsProcessed());
+		container.setupMessageListener(new MessageListener() {
+
+			@Override
+			public void onMessage(Message message) {
+				throw new IllegalStateException("A batch is expected");
+			}
+
+			@Override
+			public void onMessageBatch(List<Message> messages) {
+				received.addAll(messages);
+			}
+
+		});
+		container.afterPropertiesSet();
+		container.start();
+		try {
+			template.convertAndSend("post.processed.batch", "data1");
+			template.convertAndSend("post.processed.batch", "data2");
+
+			await().untilAsserted(() -> {
+				assertThat(received).hasSize(2);
+				received.forEach(this::assertProcessed);
+			});
+		}
+		finally {
+			container.stop();
+		}
+	}
+
+	private static MessagePostProcessor markAsProcessed() {
+		return (message) -> {
+			message.getMessageProperties().setHeader("processed", true);
+			return message;
+		};
+	}
+
+	private void assertProcessed(Message message) {
+		assertThat(message.getMessageProperties().getHeaders()).containsEntry("processed", true);
 	}
 
 	@Configuration
