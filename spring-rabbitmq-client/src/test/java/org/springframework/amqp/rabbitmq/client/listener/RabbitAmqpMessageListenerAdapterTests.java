@@ -30,7 +30,7 @@ import static org.mockito.Mockito.verify;
 /**
  * @author Sharang Gupta
  *
- * @since 4.2
+ * @since 4.0.7
  */
 public class RabbitAmqpMessageListenerAdapterTests {
 
