@@ -361,9 +361,6 @@ public class RabbitAmqpAdmin
 				management.queueDelete(queueName);
 			}
 		}
-		catch (AmqpException.AmqpEntityDoesNotExistException ex) {
-			LOG.debug(() -> "The queue '" + queueName + "' does not exist: nothing to delete.");
-		}
 	}
 
 	private static boolean isDeletable(Management management, String queueName, boolean unused, boolean empty) {
@@ -371,9 +368,15 @@ public class RabbitAmqpAdmin
 			// The broker deletes a missing queue without failing: no need to check it first.
 			return true;
 		}
-		Management.QueueInfo queueInfo = management.queueInfo(queueName);
-		return (!unused || queueInfo.consumerCount() == 0)
-				&& (!empty || queueInfo.messageCount() == 0);
+		try {
+			Management.QueueInfo queueInfo = management.queueInfo(queueName);
+			return (!unused || queueInfo.consumerCount() == 0)
+					&& (!empty || queueInfo.messageCount() == 0);
+		}
+		catch (AmqpException.AmqpEntityDoesNotExistException ex) {
+			LOG.debug(() -> "The queue '" + queueName + "' does not exist: nothing to delete.");
+			return false;
+		}
 	}
 
 	@Override
