@@ -1,9 +1,9 @@
 [[delayed-message-exchange]]
 = Delayed Message Delivery
 
-== Native delivery time with RabbitMQ 4.4
+== Native delivery time with RabbitMQ 4.4+
 
-RabbitMQ 4.4 supports delayed messages on quorum queues without an exchange plugin.
+Starting with RabbitMQ 4.4, quorum queues support producer-scheduled delayed delivery without an exchange plugin.
 Set an absolute Unix timestamp in milliseconds in the `x-opt-delivery-time` header.
 The broker routes and stores the message when it is published, but does not make it available to consumers until the specified time.
 
@@ -20,7 +20,7 @@ rabbitTemplate.convertAndSend("orders", "payload", message -> {
 You can also use `setDeliveryTime(long)` when the timestamp is already available in milliseconds.
 The header value is encoded as an AMQP `long` and can be read with `getDeliveryTime()` or `getDeliveryTimeEpochMillis()`.
 Ensure that the message is routed to a quorum queue; this feature requires RabbitMQ 4.4 or later and does not apply to classic queues.
-See the https://www.rabbitmq.com/blog/2026/10/20/rabbitmq-4.4-release[RabbitMQ 4.4 release notes] for more details.
+For AMQP 1.0, the `x-opt-delivery-time` message annotation is defined by the https://docs.oasis-open.org/amqp/schdmsg/v1.0/schdmsg-v1.0.html[OASIS scheduling extension].
 
 == Legacy delayed-message-exchange plugin
 
