@@ -899,6 +899,10 @@ public class DirectMessageListenerContainerIntegrationTests {
 			CompletableFuture<Void> adjustment = CompletableFuture.runAsync(() -> container.setConsumersPerQueue(2));
 
 			assertThat(adjustment).succeedsWithin(Duration.ofSeconds(10));
+
+			admin.declareQueue(new Queue(MISSING));
+			await().until(() -> admin.getQueueInfo(MISSING),
+					info -> info != null && info.getConsumerCount() == 2);
 		}
 		finally {
 			// Lets a call that does not return finish.
