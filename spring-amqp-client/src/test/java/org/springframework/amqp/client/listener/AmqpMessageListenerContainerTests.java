@@ -22,6 +22,7 @@ import org.springframework.amqp.client.AmqpClient;
 import org.springframework.amqp.client.AmqpConnectionFactory;
 import org.springframework.amqp.client.SingleAmqpConnectionFactory;
 import org.springframework.amqp.client.config.EnableAmqp;
+import org.springframework.amqp.core.AmqpAcknowledgment;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.junit.AbstractTestContainerTests;
 import org.springframework.amqp.utils.test.TestUtils;
@@ -38,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Artem Bilan
+ * @author WooSeung Kim
  *
  * @since 4.1
  */
@@ -53,6 +55,8 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 
 	static final String TEST_QUEUE_FOR_ERRORS = "/queues/test_queue_for_errors";
 
+	static final String TEST_QUEUE_FOR_REJECT = "/queues/test_queue_for_reject";
+
 	static final String[] QUEUE_NAMES = {
 			TEST_QUEUE1,
 			TEST_QUEUE2
@@ -64,7 +68,8 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 				TEST_QUEUE1,
 				TEST_QUEUE2,
 				TEST_QUEUE_FOR_NATIVE_PROTON,
-				TEST_QUEUE_FOR_ERRORS
+				TEST_QUEUE_FOR_ERRORS,
+				TEST_QUEUE_FOR_REJECT
 		};
 		for (String queue : allQueueNames) {
 			RABBITMQ.execInContainer("rabbitmqadmin", "queues", "declare", "--name", queue.replaceFirst("/queues/", ""));
@@ -172,6 +177,17 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 				.isEqualTo("success".getBytes());
 	}
 
+	@Test
+	void messageIsRejectedWithManualAcknowledgment() throws InterruptedException {
+		assertThat(this.amqpClient.to(TEST_QUEUE_FOR_REJECT).body("reject").send())
+				.succeedsWithin(Duration.ofSeconds(10));
+
+		Message message = this.testConfig.rejectedMessages.poll(10, TimeUnit.SECONDS);
+		assertThat(message)
+				.extracting(Message::getBody)
+				.isEqualTo("reject".getBytes());
+	}
+
 	@Configuration(proxyBeanMethods = false)
 	@EnableAmqp
 	static class TestConfig {
@@ -181,6 +197,8 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 		BlockingQueue<Delivery> receivedDeliveries = new LinkedBlockingQueue<>();
 
 		BlockingQueue<Message> errorTestSuccesses = new LinkedBlockingQueue<>();
+
+		BlockingQueue<Message> rejectedMessages = new LinkedBlockingQueue<>();
 
 		@Bean
 		AmqpConnectionFactory amqpConnectionFactory() {
@@ -228,6 +246,19 @@ public class AmqpMessageListenerContainerTests extends AbstractTestContainerTest
 					throw new IllegalStateException("Simulated listener failure for: " + body);
 				}
 				this.errorTestSuccesses.add(message);
+			});
+			return amqpMessageListenerContainer;
+		}
+
+		@Bean
+		AmqpMessageListenerContainer rejectTestListenerContainer(AmqpConnectionFactory connectionFactory) {
+			var amqpMessageListenerContainer = new AmqpMessageListenerContainer(connectionFactory);
+			amqpMessageListenerContainer.setQueueNames(TEST_QUEUE_FOR_REJECT);
+			amqpMessageListenerContainer.setAutoAccept(false);
+			amqpMessageListenerContainer.setupMessageListener((Message message) -> {
+				// Reached only if the reject does not fail
+				message.getMessageProperties().getAmqpAcknowledgment().acknowledge(AmqpAcknowledgment.Status.REJECT);
+				this.rejectedMessages.add(message);
 			});
 			return amqpMessageListenerContainer;
 		}
