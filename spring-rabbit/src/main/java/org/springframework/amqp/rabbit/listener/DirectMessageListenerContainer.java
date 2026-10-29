@@ -919,6 +919,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		this.logger.debug("Shutting down");
 		if (isForceStop()) {
 			this.stopNow.set(true);
+			// They are closed later, but a stopped consumer must never be scheduled for restart
+			consumers.forEach(consumer -> consumer.setCanceled(true));
 		}
 		else {
 			consumers.forEach(this::cancelConsumer);
