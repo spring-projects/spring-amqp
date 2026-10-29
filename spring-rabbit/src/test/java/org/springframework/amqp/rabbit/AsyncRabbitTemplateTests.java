@@ -253,6 +253,19 @@ public class AsyncRabbitTemplateTests {
 	}
 
 	@Test
+	void returnedDirectReplyToRequestReleasesItsConsumer() {
+		this.asyncDirectTemplate.setMandatory(true);
+		CompletableFuture<String> future =
+				this.asyncDirectTemplate.convertSendAndReceive(this.requests.getName() + "x", "returned");
+
+		assertThat(future).failsWithin(Duration.ofSeconds(10))
+				.withThrowableOfType(ExecutionException.class)
+				.havingCause()
+				.isInstanceOf(AmqpMessageReturnedException.class);
+		waitForZeroInUseConsumers();
+	}
+
+	@Test
 	public void testConvertWithConfirm() {
 		this.asyncTemplate.setEnableConfirms(true);
 		RabbitConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("sleep");
