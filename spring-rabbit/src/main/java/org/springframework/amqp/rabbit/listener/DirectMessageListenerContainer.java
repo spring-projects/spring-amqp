@@ -326,27 +326,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			checkStartState();
 			this.consumersToRestart.clear();
 			for (String queue : getQueueNames()) {
-				while (isActive() &&
-						(this.consumersByQueue.get(queue) == null
-								|| this.consumersByQueue.get(queue).size() < newCount)) { // NOSONAR never null
-					List<SimpleConsumer> cBQ = this.consumersByQueue.get(queue);
-					int index = 0;
-					if (cBQ != null) {
-						// find a gap or set the index to the end
-						List<Integer> indices = cBQ.stream()
-								.filter(Objects::nonNull)
-								.map(SimpleConsumer::getIndex)
-								.sorted()
-								.toList();
-						for (index = 0; index < indices.size(); index++) {
-							if (index < indices.get(index)) {
-								break;
-							}
-						}
-					}
+				// Indices of consumers that failed to start: the monitor restarts them.
+				List<Integer> scheduledIndices = new ArrayList<>();
+				while (isActive() && consumerCount(queue) + scheduledIndices.size() < newCount) {
+					int index = findFreeIndex(queue, scheduledIndices);
 					if (!doConsumeFromQueue(queue, index)) {
-						// The consumer is scheduled for restart: do not retry it in a loop.
-						break;
+						scheduledIndices.add(index);
 					}
 				}
 				reduceConsumersIfIdle(newCount, queue);
@@ -355,6 +340,34 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		finally {
 			this.consumersLock.unlock();
 		}
+	}
+
+	private int consumerCount(String queue) {
+		List<SimpleConsumer> cBQ = this.consumersByQueue.get(queue);
+		return cBQ == null ? 0 : cBQ.size();
+	}
+
+	/**
+	 * Find a gap in the indices of the started and scheduled consumers of the queue or
+	 * return the index after the last one.
+	 */
+	private int findFreeIndex(String queue, List<Integer> scheduledIndices) {
+		List<SimpleConsumer> cBQ = this.consumersByQueue.get(queue);
+		Stream<Integer> startedIndices = cBQ == null
+				? Stream.empty()
+				: cBQ.stream()
+						.filter(Objects::nonNull)
+						.map(SimpleConsumer::getIndex);
+		List<Integer> indices = Stream.concat(startedIndices, scheduledIndices.stream())
+				.sorted()
+				.toList();
+		int index;
+		for (index = 0; index < indices.size(); index++) {
+			if (index < indices.get(index)) {
+				break;
+			}
+		}
+		return index;
 	}
 
 	private void reduceConsumersIfIdle(int newCount, String queue) {
