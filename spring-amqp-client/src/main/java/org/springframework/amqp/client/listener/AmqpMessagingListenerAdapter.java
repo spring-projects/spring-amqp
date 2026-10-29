@@ -10,6 +10,7 @@ import java.lang.reflect.WildcardType;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.qpid.protonj2.client.ConnectionOptions;
 import org.apache.qpid.protonj2.client.Delivery;
@@ -67,6 +68,7 @@ import org.springframework.messaging.MessagingException;
  * are provided as additional arguments so that these can be injected as method arguments if necessary.
  *
  * @author Artem Bilan
+ * @author WooSeung Kim
  *
  * @since 4.1
  */
@@ -287,7 +289,11 @@ public class AmqpMessagingListenerAdapter implements AcknowledgingProtonDelivery
 		}
 	}
 
-	private void handleException(Delivery delivery, Message amqpMessage,
+	/**
+	 * Handle the listener failure.
+	 * @return {@code true} if the request has been settled, {@code false} if a reply has been sent instead.
+	 */
+	private boolean handleException(Delivery delivery, Message amqpMessage,
 			org.springframework.messaging.@Nullable Message<?> message,
 			ListenerExecutionFailedException lefe) throws Exception {
 
@@ -300,18 +306,22 @@ public class AmqpMessagingListenerAdapter implements AcknowledgingProtonDelivery
 							? new InvocationResult(errorResult, null, null, null, null)
 							: this.handlerAdapter.getInvocationResultFor(errorResult, payload);
 					handleResult(delivery, resultArg, amqpMessage, message);
+					return false;
 				}
 				else {
 					LOGGER.trace("Error handler returned no result; acknowledging the message.");
 					settleRequest(delivery, amqpMessage, AmqpAcknowledgment.Status.ACCEPT);
+					return true;
 				}
 			}
 			catch (Exception ex) {
 				returnOrThrow(delivery, amqpMessage, message, ex, ex);
+				return false;
 			}
 		}
 		else {
 			returnOrThrow(delivery, amqpMessage, message, lefe.getCause(), lefe);
+			return false;
 		}
 	}
 
@@ -354,7 +364,13 @@ public class AmqpMessagingListenerAdapter implements AcknowledgingProtonDelivery
 				}
 				completable.whenComplete((result, throwable) -> {
 					if (throwable == null) {
-						asyncSuccess(delivery, resultArg, request, source, result);
+						try {
+							asyncSuccess(delivery, resultArg, request, source, result);
+						}
+						catch (RuntimeException ex) {
+							asyncFailure(delivery, request, ex, source);
+							return;
+						}
 						asyncAck(delivery, request);
 					}
 					else {
@@ -367,10 +383,16 @@ public class AmqpMessagingListenerAdapter implements AcknowledgingProtonDelivery
 					LOGGER.warn("Container AcknowledgeMode must be MANUAL for a Mono<?> return type" +
 							"(or Kotlin suspend function); otherwise the container will ack the message immediately");
 				}
+				AtomicBoolean settled = new AtomicBoolean();
 				MonoHandler.subscribe(Objects.requireNonNull(returnValue),
 						result -> asyncSuccess(delivery, resultArg, request, source, result),
-						throwable -> asyncFailure(delivery, request, throwable, source),
-						() -> asyncAck(delivery, request));
+						throwable -> settled.set(asyncFailure(delivery, request, throwable, source)),
+						// Called even if the success callback has failed
+						() -> {
+							if (!settled.get()) {
+								asyncAck(delivery, request);
+							}
+						});
 			}
 			else {
 				doHandleResult(delivery, resultArg, request, source);
@@ -406,11 +428,10 @@ public class AmqpMessagingListenerAdapter implements AcknowledgingProtonDelivery
 		}
 	}
 
-	private void asyncFailure(Delivery delivery, Message request, Throwable throwable, @Nullable Object source) {
+	private boolean asyncFailure(Delivery delivery, Message request, Throwable throwable, @Nullable Object source) {
 		try {
-			handleException(delivery, request, (org.springframework.messaging.Message<?>) source,
+			return handleException(delivery, request, (org.springframework.messaging.Message<?>) source,
 					new ListenerExecutionFailedException("Async Fail", throwable, request));
-			return;
 		}
 		catch (Exception ex) {
 			// Ignore and reject the message against the original error
@@ -423,6 +444,7 @@ public class AmqpMessagingListenerAdapter implements AcknowledgingProtonDelivery
 						? AmqpAcknowledgment.Status.REQUEUE
 						: AmqpAcknowledgment.Status.REJECT;
 		settleRequest(delivery, request, status);
+		return true;
 	}
 
 	private void doHandleResult(Delivery delivery, InvocationResult resultArg, Message request,
