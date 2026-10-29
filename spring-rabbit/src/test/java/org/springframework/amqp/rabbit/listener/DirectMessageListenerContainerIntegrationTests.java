@@ -915,6 +915,43 @@ public class DirectMessageListenerContainerIntegrationTests {
 	}
 
 	@Test
+	void forceStoppedConsumerIsNotRestartedAfterNextStart() {
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		RabbitAdmin admin = new RabbitAdmin(cf);
+		String queue = "forceStop.DirectMessageListenerContainerIntegrationTests";
+		admin.declareQueue(new Queue(queue));
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
+		container.setQueueNames(queue);
+		container.setBeanName("forceStopRestart");
+		container.setForceStop(true);
+		container.setShutdownTimeout(500);
+		container.setMonitorInterval(250);
+		container.setFailedDeclarationRetryInterval(500);
+		container.setMessageListener(message -> { });
+		container.afterPropertiesSet();
+		container.start();
+		try {
+			await().until(() -> consumerCount(admin, queue) == 1);
+			// The idle consumer is closed when the shutdown timeout expires
+			container.stop();
+			container.start();
+
+			await().during(Duration.ofSeconds(3)).atMost(Duration.ofSeconds(10))
+					.until(() -> consumerCount(admin, queue) == 1);
+		}
+		finally {
+			container.stop();
+			admin.deleteQueue(queue);
+			cf.destroy();
+		}
+	}
+
+	private static int consumerCount(RabbitAdmin admin, String queue) {
+		QueueInformation info = admin.getQueueInfo(queue);
+		return info != null ? info.getConsumerCount() : -1;
+	}
+
+	@Test
 	public void testMessageAckListenerWithSuccessfulAck() throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
