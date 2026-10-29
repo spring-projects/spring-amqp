@@ -20,6 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.aopalliance.aop.Advice;
 import org.apache.qpid.protonj2.client.Delivery;
+import org.apache.qpid.protonj2.client.DeliveryState;
 import org.apache.qpid.protonj2.client.Receiver;
 import org.apache.qpid.protonj2.client.ReceiverOptions;
 import org.apache.qpid.protonj2.client.exceptions.ClientException;
@@ -67,6 +68,7 @@ import org.springframework.util.backoff.FixedBackOff;
  * it is the listener's responsibility to acknowledge the message manually and replenish the link credits.
  *
  * @author Artem Bilan
+ * @author WooSeung Kim
  *
  * @since 4.1
  */
@@ -458,7 +460,7 @@ public class AmqpMessageListenerContainer implements MessageListenerContainer, B
 				try {
 					switch (status) {
 						case ACCEPT -> delivery.accept();
-						case REJECT -> delivery.reject(null, null);
+						case REJECT -> delivery.disposition(DeliveryState.rejected(null, null), true);
 						case REQUEUE -> delivery.release();
 					}
 				}
