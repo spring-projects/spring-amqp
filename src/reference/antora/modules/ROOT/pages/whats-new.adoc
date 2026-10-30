@@ -60,3 +60,9 @@ See xref:amqp/resilience-recovering-from-errors-and-broker-failures.adoc#retry[F
 
 Listener replies now automatically inherit and propagate observation trace context when observation is enabled on the listener container.
 See xref:amqp/receiving-messages/micrometer-observation.adoc[Micrometer Observation] for more information.
+
+[[x42-amqp10-session-recovery]]
+=== AMQP 1.0 Session Recovery
+
+The `SpringAmqpConnectionFactory` is a `SingleAmqpConnectionFactory` extension which replaces a shared session closed by the peer.
+See xref:amqp10-client.adoc#amqp10-client-connection-factory[AMQP 1.0 Connection Factory] for more information.
