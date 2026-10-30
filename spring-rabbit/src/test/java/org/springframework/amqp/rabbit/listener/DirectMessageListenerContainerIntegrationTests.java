@@ -946,7 +946,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.start();
 		try {
 			// A connection failure during the start would retry while holding the consumers lock.
-			await().until(() -> TestUtils.<Boolean>getPropertyValue(container, "started"));
+			await().until(() -> TestUtils.getPropertyValue(container, "started", Boolean.class));
 			connectionFails.set(true);
 			assertThatExceptionOfType(AmqpConnectException.class)
 					.isThrownBy(() -> container.setConsumersPerQueue(2));
@@ -977,7 +977,8 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.setShutdownTimeout(500);
 		container.setMonitorInterval(250);
 		container.setFailedDeclarationRetryInterval(500);
-		container.setMessageListener(message -> { });
+		container.setMessageListener(message -> {
+		});
 		container.afterPropertiesSet();
 		container.start();
 		try {
