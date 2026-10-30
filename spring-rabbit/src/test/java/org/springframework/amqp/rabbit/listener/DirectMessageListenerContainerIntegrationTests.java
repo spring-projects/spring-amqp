@@ -16,6 +16,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -34,9 +35,11 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.AdditionalAnswers;
 import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.AmqpAuthenticationException;
+import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
@@ -914,6 +917,49 @@ public class DirectMessageListenerContainerIntegrationTests {
 			admin.declareQueue(new Queue(MISSING));
 			container.stop();
 			admin.deleteQueue(MISSING);
+			cf.destroy();
+		}
+	}
+
+	@Test
+	void failedConsumersPerQueueChangeKeepsPendingRestarts() {
+		String firstQueue = MISSING + ".first";
+		String secondQueue = MISSING + ".second";
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		RabbitAdmin admin = new RabbitAdmin(cf);
+		admin.deleteQueue(firstQueue);
+		admin.deleteQueue(secondQueue);
+		AtomicBoolean connectionFails = new AtomicBoolean();
+		ConnectionFactory failingCf = mock(ConnectionFactory.class, AdditionalAnswers.delegatesTo(cf));
+		willAnswer(invocation -> {
+			if (connectionFails.get()) {
+				throw new AmqpConnectException(new IOException("connection refused"));
+			}
+			return cf.createConnection();
+		}).given(failingCf).createConnection();
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(failingCf);
+		container.setQueueNames(firstQueue, secondQueue);
+		container.setBeanName("failedConsumersPerQueueChange");
+		container.setMonitorInterval(500);
+		container.setFailedDeclarationRetryInterval(500);
+		container.afterPropertiesSet();
+		container.start();
+		try {
+			// A connection failure during the start would retry while holding the consumers lock.
+			await().until(() -> TestUtils.<Boolean>getPropertyValue(container, "started"));
+			connectionFails.set(true);
+			assertThatExceptionOfType(AmqpConnectException.class)
+					.isThrownBy(() -> container.setConsumersPerQueue(2));
+			connectionFails.set(false);
+
+			admin.declareQueue(new Queue(firstQueue));
+			admin.declareQueue(new Queue(secondQueue));
+			await().until(() -> consumerCount(admin, firstQueue) == 1 && consumerCount(admin, secondQueue) == 1);
+		}
+		finally {
+			container.stop();
+			admin.deleteQueue(firstQueue);
+			admin.deleteQueue(secondQueue);
 			cf.destroy();
 		}
 	}

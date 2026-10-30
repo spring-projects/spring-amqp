@@ -323,22 +323,38 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		this.consumersLock.lock();
 		try {
 			checkStartState();
+			Set<SimpleConsumer> previousRestarts = new LinkedHashSet<>(this.consumersToRestart);
 			this.consumersToRestart.clear();
-			for (String queue : getQueueNames()) {
-				// Indices of consumers that failed to start: the monitor restarts them.
-				List<Integer> scheduledIndices = new ArrayList<>();
-				while (isActive() && consumerCount(queue) + scheduledIndices.size() < newCount) {
-					int index = findFreeIndex(queue, scheduledIndices);
-					if (!doConsumeFromQueue(queue, index)) {
-						scheduledIndices.add(index);
+			try {
+				for (String queue : getQueueNames()) {
+					// Indices of consumers that failed to start: the monitor restarts them.
+					List<Integer> scheduledIndices = new ArrayList<>();
+					while (isActive() && consumerCount(queue) + scheduledIndices.size() < newCount) {
+						int index = findFreeIndex(queue, scheduledIndices);
+						if (!doConsumeFromQueue(queue, index)) {
+							scheduledIndices.add(index);
+						}
 					}
+					reduceConsumersIfIdle(newCount, queue);
 				}
-				reduceConsumersIfIdle(newCount, queue);
+			}
+			catch (AmqpConnectException | AmqpIOException | AmqpTimeoutException ex) {
+				// The configured count did not change: keep recovering its consumers.
+				this.consumersToRestart.clear();
+				previousRestarts.stream()
+						.filter(consumer -> !isStarted(consumer))
+						.forEach(this.consumersToRestart::add);
+				throw ex;
 			}
 		}
 		finally {
 			this.consumersLock.unlock();
 		}
+	}
+
+	private boolean isStarted(SimpleConsumer consumer) {
+		List<SimpleConsumer> cBQ = this.consumersByQueue.get(consumer.getQueue());
+		return cBQ != null && cBQ.contains(consumer);
 	}
 
 	private int consumerCount(String queue) {
