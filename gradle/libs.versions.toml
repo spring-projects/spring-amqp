@@ -60,7 +60,7 @@ org-testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", ver
 tools-jackson-bom = { module = "tools.jackson:jackson-bom", version.ref = "jackson3Version" }
 
 [plugins]
-aggregate-javadoc = { id = "io.freefair.aggregate-javadoc", version = "9.8.2" }
+aggregate-javadoc = { id = "io.freefair.aggregate-javadoc", version = "9.8.3" }
 antora = { id = "org.antora", version = "1.0.0" }
 node-gradle = { id = "com.github.node-gradle.node", version = "7.1.0" }
 nullability = { id = "io.spring.nullability", version = "0.0.18" }
