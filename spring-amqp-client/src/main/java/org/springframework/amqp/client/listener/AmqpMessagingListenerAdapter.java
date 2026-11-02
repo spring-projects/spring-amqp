@@ -69,6 +69,7 @@ import org.springframework.messaging.MessagingException;
  *
  * @author Artem Bilan
  * @author WooSeung Kim
+ * @author Tanishq Choudhary
  *
  * @since 4.1
  */
@@ -581,7 +582,7 @@ public class AmqpMessagingListenerAdapter implements AcknowledgingProtonDelivery
 		org.apache.qpid.protonj2.client.Message<?> protonMessage = ProtonUtils.toProtonMessage(response);
 		Future<Sender> openFuture =
 				delivery.receiver()
-						.connection()
+						.session()
 						.openSender(replyTo)
 						.openFuture();
 		Tracker tracker =
