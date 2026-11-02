@@ -60,7 +60,6 @@ import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -120,17 +119,11 @@ public class MessagingMessageListenerAdapterTests {
 		Channel channel = mock(Channel.class);
 		MessagingMessageListenerAdapter listener = getSimpleInstance("fail", String.class);
 
-		try {
-			listener.onMessage(message, channel);
-			fail("Should have thrown an exception");
-		}
-		catch (ListenerExecutionFailedException ex) {
-			assertThat(ex.getCause().getClass()).isEqualTo(IllegalArgumentException.class);
-			assertThat(ex.getCause().getMessage()).isEqualTo("Expected test exception");
-		}
-		catch (Exception ex) {
-			fail("Should not have thrown an " + ex.getClass().getSimpleName());
-		}
+		assertThatExceptionOfType(ListenerExecutionFailedException.class)
+				.isThrownBy(() -> listener.onMessage(message, channel))
+				.withCauseExactlyInstanceOf(IllegalArgumentException.class)
+				.havingCause()
+				.withMessage("Expected test exception");
 	}
 
 	@Test
@@ -138,17 +131,11 @@ public class MessagingMessageListenerAdapterTests {
 		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage("foo");
 		Channel channel = mock(Channel.class);
 		MessagingMessageListenerAdapter listener = getSimpleInstance("fail", true, String.class);
-		try {
-			listener.onMessage(message, channel);
-			fail("Should have thrown an exception");
-		}
-		catch (ListenerExecutionFailedException ex) {
-			assertThat(ex.getCause().getClass()).isEqualTo(IllegalArgumentException.class);
-			assertThat(ex.getCause().getMessage()).isEqualTo("Expected test exception");
-		}
-		catch (Exception ex) {
-			fail("Should not have thrown an " + ex.getClass().getSimpleName());
-		}
+		assertThatExceptionOfType(ListenerExecutionFailedException.class)
+				.isThrownBy(() -> listener.onMessage(message, channel))
+				.withCauseExactlyInstanceOf(IllegalArgumentException.class)
+				.havingCause()
+				.withMessage("Expected test exception");
 	}
 
 	@Test
@@ -157,29 +144,15 @@ public class MessagingMessageListenerAdapterTests {
 		Channel channel = mock(Channel.class);
 		MessagingMessageListenerAdapter listener = getMultiInstance("fail", "failWithReturn", true, String.class,
 				Integer.class);
-		try {
-			listener.onMessage(message, channel);
-			fail("Should have thrown an exception");
-		}
-		catch (ListenerExecutionFailedException ex) {
-			assertThat(ex.getCause().getClass()).isEqualTo(IllegalArgumentException.class);
-			assertThat(ex.getCause().getMessage()).isEqualTo("Expected test exception");
-		}
-		catch (Exception ex) {
-			ex.printStackTrace();
-			fail("Should not have thrown an " + ex.getClass().getSimpleName());
-		}
-		message = new SimpleMessageConverter().toMessage(42, new MessageProperties());
-		try {
-			listener.onMessage(message, channel);
-			fail("Should have thrown an exception");
-		}
-		catch (ReplyFailureException ex) {
-			assertThat(ex.getMessage()).contains("Failed to send reply");
-		}
-		catch (Exception ex) {
-			fail("Should not have thrown an " + ex.getClass().getSimpleName());
-		}
+		assertThatExceptionOfType(ListenerExecutionFailedException.class)
+				.isThrownBy(() -> listener.onMessage(message, channel))
+				.withCauseExactlyInstanceOf(IllegalArgumentException.class)
+				.havingCause()
+				.withMessage("Expected test exception");
+		final org.springframework.amqp.core.Message replyMsg = new SimpleMessageConverter().toMessage(42, new MessageProperties());
+		assertThatExceptionOfType(ReplyFailureException.class)
+				.isThrownBy(() -> listener.onMessage(replyMsg, channel))
+				.withMessageContaining("Failed to send reply");
 		message.getMessageProperties().setReplyTo("foo/bar");
 		listener.onMessage(message, channel);
 		verify(channel).basicPublish(eq("foo"), eq("bar"), eq(false), any(BasicProperties.class), any(byte[].class));
@@ -191,16 +164,9 @@ public class MessagingMessageListenerAdapterTests {
 		Channel channel = mock(Channel.class);
 		MessagingMessageListenerAdapter listener = getSimpleInstance("wrongParam", Integer.class);
 
-		try {
-			listener.onMessage(message, channel);
-			fail("Should have thrown an exception");
-		}
-		catch (ListenerExecutionFailedException ex) {
-			assertThat(ex.getCause().getClass()).isEqualTo(org.springframework.messaging.converter.MessageConversionException.class);
-		}
-		catch (Exception ex) {
-			fail("Should not have thrown an " + ex.getClass().getSimpleName());
-		}
+		assertThatExceptionOfType(ListenerExecutionFailedException.class)
+				.isThrownBy(() -> listener.onMessage(message, channel))
+				.withCauseExactlyInstanceOf(org.springframework.messaging.converter.MessageConversionException.class);
 	}
 
 	@Test
