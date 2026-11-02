@@ -37,7 +37,7 @@ import org.jspecify.annotations.Nullable;
  *
  * @author Tanishq Choudhary
  *
- * @since 4.2
+ * @since 4.1.3
  *
  * @see SpringAmqpConnectionFactory
  */

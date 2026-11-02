@@ -25,7 +25,7 @@ import org.jspecify.annotations.Nullable;
  *
  * @author Tanishq Choudhary
  *
- * @since 4.2
+ * @since 4.1.3
  */
 public class SpringAmqpConnectionFactory extends SingleAmqpConnectionFactory {
 

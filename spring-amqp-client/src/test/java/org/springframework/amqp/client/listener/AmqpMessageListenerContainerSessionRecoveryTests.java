@@ -34,7 +34,7 @@ import static org.awaitility.Awaitility.await;
  *
  * @author Tanishq Choudhary
  *
- * @since 4.2
+ * @since 4.1.3
  */
 @SpringJUnitConfig
 @DirtiesContext
