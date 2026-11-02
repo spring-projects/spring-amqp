@@ -21,7 +21,7 @@ import tools.jackson.databind.type.TypeFactory;
 import org.springframework.amqp.core.MessageProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.BDDMockito.given;
 
 /**
@@ -99,15 +99,9 @@ public class DefaultJacksonJavaTypeMapperTests {
 	public void shouldThrowAnExceptionWhenContentClassIdIsNotPresentWhenClassIdIsContainerType() {
 		properties.getHeaders().put(javaTypeMapper.getClassIdFieldName(), ArrayList.class.getName());
 
-		try {
-			javaTypeMapper.toJavaType(properties);
-		}
-		catch (MessageConversionException e) {
-			String contentClassIdFieldName = javaTypeMapper.getContentClassIdFieldName();
-			assertThat(e.getMessage()).contains("Could not resolve " + contentClassIdFieldName + " in header");
-			return;
-		}
-		fail("Expected exception");
+		assertThatExceptionOfType(MessageConversionException.class)
+				.isThrownBy(() -> javaTypeMapper.toJavaType(properties))
+				.withMessageContaining("Could not resolve " + javaTypeMapper.getContentClassIdFieldName() + " in header");
 	}
 
 	@Test
@@ -157,15 +151,9 @@ public class DefaultJacksonJavaTypeMapperTests {
 		properties.getHeaders().put(javaTypeMapper.getClassIdFieldName(), HashMap.class.getName());
 		properties.getHeaders().put(javaTypeMapper.getKeyClassIdFieldName(), String.class.getName());
 
-		try {
-			javaTypeMapper.toJavaType(properties);
-		}
-		catch (MessageConversionException e) {
-			String contentClassIdFieldName = javaTypeMapper.getContentClassIdFieldName();
-			assertThat(e.getMessage()).contains("Could not resolve " + contentClassIdFieldName + " in header");
-			return;
-		}
-		fail("Expected exception");
+		assertThatExceptionOfType(MessageConversionException.class)
+				.isThrownBy(() -> javaTypeMapper.toJavaType(properties))
+				.withMessageContaining("Could not resolve " + javaTypeMapper.getContentClassIdFieldName() + " in header");
 	}
 
 	@Test
