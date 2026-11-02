@@ -22,6 +22,7 @@ import org.apache.qpid.protonj2.client.Sender;
 import org.apache.qpid.protonj2.client.SenderOptions;
 import org.apache.qpid.protonj2.client.Tracker;
 import org.apache.qpid.protonj2.client.exceptions.ClientException;
+import org.apache.qpid.protonj2.client.exceptions.ClientIllegalStateException;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.MessageDeliveryMode;
@@ -40,6 +41,7 @@ import org.springframework.util.Assert;
  * An internal, default implementation of {@link AmqpClient}.
  *
  * @author Artem Bilan
+ * @author Tanishq Choudhary
  *
  * @since 4.1
  */
@@ -109,7 +111,7 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 				Assert.state(this.defaultToAddress != null, "The 'to' address is not supplied, and no default");
 				message.to(this.defaultToAddress);
 			}
-			trackerFuture = getSender().send(message).settlementFuture();
+			trackerFuture = doSend(message).settlementFuture();
 		}
 		catch (ClientException ex) {
 			throw ProtonUtils.toAmqpException(ex);
@@ -135,6 +137,32 @@ class DefaultAmqpClient implements AmqpClient, DisposableBean {
 	@Override
 	public ReceiveSpec from(String fromAddress) {
 		return new DefaultReceiveSpec(fromAddress);
+	}
+
+	private Tracker doSend(Message<?> message) throws ClientException {
+		Sender senderToUse = getSender();
+		try {
+			return senderToUse.send(message);
+		}
+		catch (ClientIllegalStateException ex) {
+			// The link or its session has been closed, so nothing has been transferred:
+			// open a new sender instead of failing on the cached one forever.
+			resetSender(senderToUse);
+			return getSender().send(message);
+		}
+	}
+
+	private void resetSender(Sender closedSender) {
+		this.instanceLock.lock();
+		try {
+			if (this.sender == closedSender) {
+				this.sender = null;
+				closedSender.closeAsync();
+			}
+		}
+		finally {
+			this.instanceLock.unlock();
+		}
 	}
 
 	private Sender getSender() throws ClientException {
