@@ -6,12 +6,12 @@ package org.springframework.amqp.client.listener;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.apache.qpid.protonj2.client.Connection;
 import org.apache.qpid.protonj2.client.Delivery;
 import org.apache.qpid.protonj2.client.DeliveryState;
 import org.apache.qpid.protonj2.client.Message;
 import org.apache.qpid.protonj2.client.Receiver;
 import org.apache.qpid.protonj2.client.Sender;
+import org.apache.qpid.protonj2.client.Session;
 import org.apache.qpid.protonj2.client.Tracker;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
@@ -62,11 +62,11 @@ class AmqpMessagingListenerAdapterTests {
 		willReturn(CompletableFuture.completedFuture(sender)).given(sender).openFuture();
 		willReturn(tracker).given(sender).send(any());
 
-		Connection connection = mock();
-		given(connection.openSender(anyString())).willReturn(sender);
+		Session session = mock();
+		given(session.openSender(anyString())).willReturn(sender);
 
 		Receiver receiver = mock();
-		given(receiver.connection()).willReturn(connection);
+		given(receiver.session()).willReturn(session);
 
 		Delivery delivery = mock();
 		given(delivery.receiver()).willReturn(receiver);
@@ -78,7 +78,7 @@ class AmqpMessagingListenerAdapterTests {
 		listenerAdapter.onDelivery(delivery, null);
 		listenerAdapter.onDelivery(delivery, null);
 
-		verify(connection, times(2)).openSender("some_address");
+		verify(session, times(2)).openSender("some_address");
 		verify(sender, times(2)).close();
 	}
 
