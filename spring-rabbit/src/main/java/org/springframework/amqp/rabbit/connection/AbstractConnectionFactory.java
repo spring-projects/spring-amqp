@@ -49,6 +49,7 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.util.backoff.BackOff;
 
@@ -281,8 +282,13 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		try {
 			this.rabbitConnectionFactory.setUri(uri);
 		}
-		catch (URISyntaxException | GeneralSecurityException use) {
-			this.logger.info(BAD_URI, use);
+		catch (Exception ex) {
+			if (ex instanceof URISyntaxException || ex instanceof GeneralSecurityException) {
+				this.logger.info(BAD_URI, ex);
+			}
+			else {
+				ReflectionUtils.rethrowRuntimeException(ex);
+			}
 		}
 	}
 

@@ -45,6 +45,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.util.Assert;
+import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -766,8 +767,16 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 			try {
 				this.connectionFactory.setUri(this.uri);
 			}
-			catch (URISyntaxException | NoSuchAlgorithmException | KeyManagementException e) {
-				throw new IllegalArgumentException("Unable to set uri", e);
+			catch (Exception ex) {
+				if (ex instanceof URISyntaxException
+						|| ex instanceof NoSuchAlgorithmException
+						|| ex instanceof KeyManagementException) {
+
+					throw new IllegalArgumentException("Unable to set uri", ex);
+				}
+				else {
+					ReflectionUtils.rethrowRuntimeException(ex);
+				}
 			}
 		}
 		return this.connectionFactory;

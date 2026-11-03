@@ -110,7 +110,7 @@ public class SSLConnectionTests {
 		fb.afterPropertiesSet();
 		fb.getObject();
 		verify(rabbitCf).useSslProtocol();
-		verify(rabbitCf).useSslProtocol("TLSv1.2");
+		verify(rabbitCf).useSslProtocol("TLSv1.3");
 	}
 
 	@Test
