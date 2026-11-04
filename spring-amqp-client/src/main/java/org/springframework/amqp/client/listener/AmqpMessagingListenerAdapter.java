@@ -9,7 +9,6 @@ import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.qpid.protonj2.client.ConnectionOptions;
@@ -580,17 +579,20 @@ public class AmqpMessagingListenerAdapter implements AcknowledgingProtonDelivery
 
 	private static void sendResponse(Delivery delivery, String replyTo, Message response) throws Exception {
 		org.apache.qpid.protonj2.client.Message<?> protonMessage = ProtonUtils.toProtonMessage(response);
-		Future<Sender> openFuture =
-				delivery.receiver()
-						.session()
-						.openSender(replyTo)
-						.openFuture();
-		Tracker tracker =
-				ProtonUtils.toSupplier(openFuture, ConnectionOptions.DEFAULT_OPEN_TIMEOUT)
-						.get()
-						.send(protonMessage)
-						.settlementFuture()
-						.get();
+		Sender sender = delivery.receiver().session().openSender(replyTo);
+		Tracker tracker;
+		try {
+			tracker =
+					ProtonUtils.toSupplier(sender.openFuture(), ConnectionOptions.DEFAULT_OPEN_TIMEOUT)
+							.get()
+							.send(protonMessage)
+							.settlementFuture()
+							.get();
+		}
+		finally {
+			// The sender is opened for this reply only; the session runs out of links if it stays open
+			sender.closeAsync();
+		}
 
 		DeliveryState.Type deliveryStateType = tracker.remoteState().getType();
 		if (!DeliveryState.Type.ACCEPTED.equals(deliveryStateType)) {

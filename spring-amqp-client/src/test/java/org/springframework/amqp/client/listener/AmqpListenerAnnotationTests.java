@@ -77,11 +77,17 @@ class AmqpListenerAnnotationTests extends AbstractTestContainerTests {
 
 	static final String TEST_REPLY_TO = "/queues/listener_annotation_reply_to";
 
+	static final String TEST_QUEUE4 = "/queues/listener_annotation4";
+
+	static final String TEST_REPLY_TO4 = "/queues/listener_annotation_reply_to4";
+
 	static final String[] QUEUE_NAMES = {
 			TEST_QUEUE1,
 			TEST_QUEUE2,
 			TEST_QUEUE3,
-			TEST_REPLY_TO
+			TEST_REPLY_TO,
+			TEST_QUEUE4,
+			TEST_REPLY_TO4
 	};
 
 	@BeforeAll
@@ -205,6 +211,21 @@ class AmqpListenerAnnotationTests extends AbstractTestContainerTests {
 				.isEqualTo(new DataOut(dataIn.data + "_out"));
 	}
 
+	@Test
+	void repliesDoNotExhaustTheLinksOfTheSession() {
+		// RabbitMQ limits the links of a session, so a reply that left its sender open fails later replies
+		int requests = 300;
+		for (int i = 0; i < requests; i++) {
+			assertThat(this.amqpClient.to(TEST_QUEUE4).body("request").replyTo(TEST_REPLY_TO4).send())
+					.succeedsWithin(Duration.ofSeconds(10));
+		}
+
+		for (int i = 0; i < requests; i++) {
+			assertThat(this.amqpClient.from(TEST_REPLY_TO4).receiveProtonMessage())
+					.succeedsWithin(Duration.ofSeconds(10));
+		}
+	}
+
 	@Configuration(proxyBeanMethods = false)
 	@EnableAmqp
 	static class TestConfig {
@@ -323,6 +344,12 @@ class AmqpListenerAnnotationTests extends AbstractTestContainerTests {
 		Mono<DataOut> requestReplyWithJsonAndOtherAnnotationAttributes(DataIn dataIn) {
 			DataOut dataOut = new DataOut(dataIn.data + "_out");
 			return Mono.just(dataOut);
+		}
+
+		@AmqpListener(addresses = TEST_QUEUE4, containerFactory = "customContainerFactory", autoStartup = "true",
+				concurrency = "1")
+		String reply(Message request) {
+			return "reply";
 		}
 
 	}
