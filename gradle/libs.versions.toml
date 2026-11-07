@@ -27,7 +27,7 @@ mockitoVersion = "5.23.0"
 protonjVersion = "1.1.0"
 rabbitmqAmqpClientVersion = "1.1.0"
 rabbitmqStreamVersion = "1.7.0"
-rabbitmqVersion = "5.37.0"
+rabbitmqVersion = "5.37.1"
 testcontainersVersion = "2.0.5"
 
 [libraries]
