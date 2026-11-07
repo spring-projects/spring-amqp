@@ -328,7 +328,10 @@ project('spring-amqp-client') {
 		api 'org.springframework:spring-context'
 		api 'org.springframework:spring-messaging'
 
-		testImplementation project(':spring-rabbit-junit')
+		testImplementation(project(':spring-rabbit-junit')) {
+			// AMQP 1.0 module must not depend on the RabbitMQ AMQP 0.9.1 driver (and its Netty version)
+			exclude group: 'com.rabbitmq', module: 'amqp-client'
+		}
 		testImplementation 'io.projectreactor:reactor-core'
 		testImplementation libs.kotlinx.coroutines.reactor
 		testImplementation 'org.testcontainers:testcontainers-rabbitmq'
