@@ -46,13 +46,14 @@ import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
 
 /**
- * A {@link RabbitTemplate} that invokes {@code @RabbitListener} s directly.
+ * A {@link RabbitTemplate} that invokes {@code @RabbitListener}s directly.
  * It currently only supports the queue name in the routing key.
  * It does not currently support publisher confirms/returns.
  *
  * @author Gary Russell
  * @author Artem Bilan
  * @author Christian Tzolov
+ * @author Ngoc Nhan
  *
  * @since 2.0
  *

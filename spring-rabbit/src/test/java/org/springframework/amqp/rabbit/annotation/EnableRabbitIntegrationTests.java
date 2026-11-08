@@ -1394,7 +1394,6 @@ public class EnableRabbitIntegrationTests extends NeedsManagementTests {
 
 		@RabbitListener(id = "manual.acks.2", queues = "manual.acks.2",
 				ackMode = "#{T(org.springframework.amqp.core.AcknowledgeMode).MANUAL}")
-
 		public String manual2(String in, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag)
 				throws IOException {
 

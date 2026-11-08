@@ -8,6 +8,7 @@ import java.lang.reflect.AnnotatedElement;
 import java.util.Optional;
 
 import com.rabbitmq.client.ConnectionFactory;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
@@ -27,6 +28,7 @@ import org.springframework.util.Assert;
  * and disables if found the broker is not available.
  *
  * @author Gary Russell
+ * @author Ngoc Nhan
  * @since 2.0.2
  *
  */
@@ -38,7 +40,7 @@ public class RabbitAvailableCondition
 	private static final ConditionEvaluationResult ENABLED = ConditionEvaluationResult.enabled(
 			"@RabbitAvailable is not present");
 
-	private static final ThreadLocal<BrokerRunningSupport> BROKER_RUNNING_HOLDER = new ThreadLocal<>();
+	private static final ThreadLocal<@Nullable BrokerRunningSupport> BROKER_RUNNING_HOLDER = new ThreadLocal<>();
 
 	@Override
 	public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
@@ -125,7 +127,7 @@ public class RabbitAvailableCondition
 		return parent.getStore(Namespace.create(getClass(), parent));
 	}
 
-	public static BrokerRunningSupport getBrokerRunning() {
+	public static @Nullable BrokerRunningSupport getBrokerRunning() {
 		return BROKER_RUNNING_HOLDER.get();
 	}
 

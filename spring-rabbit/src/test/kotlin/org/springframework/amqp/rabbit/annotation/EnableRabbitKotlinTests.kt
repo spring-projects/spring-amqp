@@ -167,7 +167,7 @@ class EnableRabbitKotlinTests {
 			}
 
 		@Bean
-		fun cf() = CachingConnectionFactory(RabbitAvailableCondition.getBrokerRunning().connectionFactory)
+		fun cf() = CachingConnectionFactory(RabbitAvailableCondition.getBrokerRunning()!!.connectionFactory)
 
 		@Bean
 		fun multi() = Multi()
