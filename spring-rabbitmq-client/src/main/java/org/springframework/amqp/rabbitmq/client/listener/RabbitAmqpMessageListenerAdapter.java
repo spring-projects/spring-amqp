@@ -52,6 +52,7 @@ import org.springframework.util.StringUtils;
  * Can be reworked eventually, when this AMQP 1.0 client won't be based on {@code spring-rabbit} dependency.
  *
  * @author Artem Bilan
+ * @author Ngoc Nhan
  *
  * @since 4.0
  */
@@ -89,8 +90,8 @@ public class RabbitAmqpMessageListenerAdapter extends MessagingMessageListenerAd
 	}
 
 	@Override
-	public void onAmqpMessage(com.rabbitmq.client.amqp.Message amqpMessage, Consumer.@Nullable Context context) {
-		org.springframework.amqp.core.Message springMessage = RabbitAmqpUtils.fromAmqpMessage(amqpMessage, context);
+	public void onAmqpMessage(com.rabbitmq.client.amqp.Message amqpMessage, Consumer.@Nullable Context context, String queueName) {
+		org.springframework.amqp.core.Message springMessage = RabbitAmqpUtils.fromAmqpMessage(amqpMessage, context, queueName);
 		if (this.afterReceivePostProcessors != null) {
 			for (MessagePostProcessor processor : this.afterReceivePostProcessors) {
 				springMessage = processor.postProcessMessage(springMessage);

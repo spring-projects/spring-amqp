@@ -45,6 +45,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Artem Bilan
  * @author Robin Collard
+ * @author Ngoc Nhan
  *
  * @since 4.0
  */
@@ -353,7 +354,7 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 						.messageHandler((context, message) -> {
 							if (messageReceived.compareAndSet(false, true)) {
 								context.accept();
-								messageFuture.complete(RabbitAmqpUtils.fromAmqpMessage(message, null));
+								messageFuture.complete(RabbitAmqpUtils.fromAmqpMessage(message, null, queueName));
 							}
 						})
 						.build();
@@ -427,7 +428,7 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 
 		Consumer.MessageHandler consumerHandler =
 				(context, message) -> {
-					Message requestMessage = RabbitAmqpUtils.fromAmqpMessage(message, null);
+					Message requestMessage = RabbitAmqpUtils.fromAmqpMessage(message, null, queueName);
 					try {
 						Object messageId = message.messageId();
 						Assert.notNull(messageId,
@@ -577,7 +578,7 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 					toAmqpMessage(exchange, routingKey, queue, message, rpcClient::message);
 
 			return rpcClient.publish(amqpMessage)
-					.thenApply((reply) -> RabbitAmqpUtils.fromAmqpMessage(reply, null))
+					.thenApply((reply) -> RabbitAmqpUtils.fromAmqpMessage(reply, null, queue))
 					.orTimeout(this.completionTimeout.toMillis(), TimeUnit.MILLISECONDS)
 					.whenComplete((replyMessage, exception) -> rpcClient.close());
 		}
