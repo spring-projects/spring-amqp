@@ -58,6 +58,7 @@ import org.springframework.util.ObjectUtils;
  * A listener container for RabbitMQ AMQP 1.0 Consumer.
  *
  * @author Artem Bilan
+ * @author Seonwoo Jung
  *
  * @since 4.0
  *
@@ -421,7 +422,14 @@ public class RabbitAmqpListenerContainer
 	private void doInvokeListener(Consumer.Context context, com.rabbitmq.client.amqp.Message amqpMessage) {
 		Consumer.Context contextToUse = this.autoSettle ? null : context;
 		if (this.proxy instanceof RabbitAmqpMessageListener amqpMessageListener) {
-			amqpMessageListener.onAmqpMessage(amqpMessage, contextToUse);
+			if (ObjectUtils.isEmpty(this.adviceChain)) {
+				amqpMessageListener.onAmqpMessage(amqpMessage, contextToUse);
+			}
+			else {
+				// Expose the converted message to advices, e.g. a stateless retry 'MessageRecoverer'
+				amqpMessageListener.onAmqpMessage(amqpMessage,
+						RabbitAmqpUtils.fromAmqpMessage(amqpMessage, contextToUse), contextToUse);
+			}
 		}
 		else {
 			Message message = postProcessReceivedMessage(RabbitAmqpUtils.fromAmqpMessage(amqpMessage, contextToUse));
