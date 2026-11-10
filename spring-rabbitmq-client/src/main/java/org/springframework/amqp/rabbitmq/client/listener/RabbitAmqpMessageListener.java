@@ -14,6 +14,7 @@ import org.springframework.amqp.core.MessageListener;
  * A message listener that receives native AMQP 1.0 messages from RabbitMQ.
  *
  * @author Artem Bilan
+ * @author Seonwoo Jung
  *
  * @since 4.0
  */
@@ -26,5 +27,24 @@ public interface RabbitAmqpMessageListener extends MessageListener {
 	 *                Null if container is configured for {@code autoSettle}.
 	 */
 	void onAmqpMessage(Message message, Consumer.@Nullable Context context);
+
+	/**
+	 * Process an AMQP message, which has already been converted to a Spring AMQP message.
+	 * The container calls this method when an advice chain is configured, so advices
+	 * (e.g. a stateless retry interceptor with a
+	 * {@link org.springframework.amqp.rabbit.retry.MessageRecoverer}) can access the
+	 * converted message in the method arguments.
+	 * By default, delegates to {@link #onAmqpMessage(Message, Consumer.Context)}.
+	 * @param message the message to process.
+	 * @param springMessage the {@link org.springframework.amqp.core.Message} converted from the AMQP message.
+	 * @param context the consumer context to settle message.
+	 *                Null if container is configured for {@code autoSettle}.
+	 * @since 4.0.7
+	 */
+	default void onAmqpMessage(Message message, org.springframework.amqp.core.Message springMessage,
+			Consumer.@Nullable Context context) {
+
+		onAmqpMessage(message, context);
+	}
 
 }
