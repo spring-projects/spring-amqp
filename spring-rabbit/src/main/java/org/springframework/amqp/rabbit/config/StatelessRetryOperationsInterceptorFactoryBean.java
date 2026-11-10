@@ -32,6 +32,7 @@ import org.springframework.core.retry.Retryable;
  * @author Gary Russell
  * @author Stephane Nicoll
  * @author Jun Cho
+ * @author Seonwoo Jung
  *
  * @see RetryOperations#execute(Retryable)
  */
@@ -65,7 +66,7 @@ public class StatelessRetryOperationsInterceptorFactoryBean extends AbstractRetr
 	@SuppressWarnings("unchecked")
 	protected @Nullable Object recover(@Nullable Object[] args, Throwable cause) {
 		MessageRecoverer messageRecoverer = getMessageRecoverer();
-		Object arg = args[1];
+		Object arg = findMessageArgument(args);
 		if (messageRecoverer == null) {
 			this.logger.warn("Message(s) dropped on recovery: " + arg, cause);
 		}
@@ -74,6 +75,23 @@ public class StatelessRetryOperationsInterceptorFactoryBean extends AbstractRetr
 		}
 		else if (arg instanceof List && messageRecoverer instanceof MessageBatchRecoverer messageBatchRecoverer) {
 			messageBatchRecoverer.recover((List<Message>) arg, cause);
+		}
+		return null;
+	}
+
+	/**
+	 * Find the first {@link Message} or {@link List} argument of the advised listener method.
+	 * The position depends on the container: the AMQP 0-9-1 containers pass the message after
+	 * the {@code Channel}, but other containers may advise, for example,
+	 * {@link org.springframework.amqp.core.MessageListener#onMessage(Message)} directly.
+	 * @param args the arguments of the advised method.
+	 * @return the message (or list of messages), or null if not found.
+	 */
+	private static @Nullable Object findMessageArgument(@Nullable Object[] args) {
+		for (Object arg : args) {
+			if (arg instanceof Message || arg instanceof List) {
+				return arg;
+			}
 		}
 		return null;
 	}

@@ -12,10 +12,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 import com.rabbitmq.client.amqp.Consumer;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
@@ -27,6 +29,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessageListenerContainer;
 import org.springframework.amqp.core.MessagePostProcessor;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.QueueInformation;
@@ -35,8 +38,11 @@ import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.annotation.RabbitListenerAnnotationBeanPostProcessor;
+import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
+import org.springframework.amqp.rabbit.config.StatelessRetryOperationsInterceptor;
 import org.springframework.amqp.rabbit.listener.ListenerContainerConsumerFailedEvent;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
+import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbitmq.client.AmqpConnectionFactory;
 import org.springframework.amqp.rabbitmq.client.RabbitAmqpTestBase;
 import org.springframework.amqp.rabbitmq.client.config.RabbitAmqpListenerContainerFactory;
@@ -60,6 +66,7 @@ import static org.awaitility.Awaitility.await;
 /**
  * @author Artem Bilan
  * @author Sharang Gupta
+ * @author Seonwoo Jung
  *
  * @since 4.0
  */
@@ -299,6 +306,93 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 		}
 	}
 
+	@Test
+	void statelessRetryRecovererReceivesMessageForPlainListener() {
+		admin.declareQueue(new Queue("retry.recover.plain"));
+		List<Message> recovered = new CopyOnWriteArrayList<>();
+		RabbitAmqpListenerContainer container = new RabbitAmqpListenerContainer(connectionFactory);
+		container.setQueueNames("retry.recover.plain");
+		container.setAdviceChain(statelessRetry((message, cause) -> recovered.add(message)));
+		container.setupMessageListener((MessageListener) (message) -> {
+			throw new IllegalStateException("Always fails");
+		});
+		container.afterPropertiesSet();
+		container.start();
+		try {
+			template.convertAndSend("retry.recover.plain", "plain");
+
+			await().untilAsserted(() ->
+					assertThat(recovered).singleElement()
+							.extracting(Message::getBody)
+							.isEqualTo("plain".getBytes()));
+		}
+		finally {
+			container.stop();
+		}
+	}
+
+	@Test
+	void statelessRetryRecovererReceivesMessageForAmqpMessageListener() {
+		admin.declareQueue(new Queue("retry.recover.amqp"));
+		List<Message> recovered = new CopyOnWriteArrayList<>();
+		RabbitAmqpListenerContainer container = new RabbitAmqpListenerContainer(connectionFactory);
+		container.setQueueNames("retry.recover.amqp");
+		container.setAdviceChain(statelessRetry((message, cause) -> recovered.add(message)));
+		container.setupMessageListener(new RabbitAmqpMessageListener() {
+
+			@Override
+			public void onAmqpMessage(com.rabbitmq.client.amqp.Message message, Consumer.@Nullable Context context) {
+				throw new IllegalStateException("Always fails");
+			}
+
+			@Override
+			public void onMessage(Message message) {
+				throw new UnsupportedOperationException("The 'onAmqpMessage()' is expected");
+			}
+
+		});
+		container.afterPropertiesSet();
+		container.start();
+		try {
+			template.convertAndSend("retry.recover.amqp", "amqp");
+
+			await().untilAsserted(() ->
+					assertThat(recovered).singleElement()
+							.extracting(Message::getBody)
+							.isEqualTo("amqp".getBytes()));
+		}
+		finally {
+			container.stop();
+		}
+	}
+
+	@Test
+	void afterReceivePostProcessorsAreAppliedOncePerRetryAttemptForRabbitListener() {
+		this.template.convertAndSend("retry.recover.post.processed", "data");
+
+		await().untilAsserted(() -> assertThat(this.config.recoveredPostProcessed).hasSize(1));
+		assertThat(this.config.postProcessedCounts).containsExactly(1, 1, 1);
+	}
+
+	@Test
+	void statelessRetryRecovererReceivesMessageForRabbitListener() {
+		this.template.convertAndSend("retry.recover.adapter", "adapter");
+
+		await().untilAsserted(() ->
+				assertThat(this.config.recovered).singleElement()
+						.extracting(Message::getBody)
+						.isEqualTo("adapter".getBytes()));
+		assertThat(this.config.retryAttempts).hasValue(3);
+	}
+
+	private static StatelessRetryOperationsInterceptor statelessRetry(MessageRecoverer recoverer) {
+		return RetryInterceptorBuilder.stateless()
+				.maxRetries(2)
+				.backOffOptions(10, 1.0, 10)
+				.recoverer(recoverer)
+				.build();
+	}
+
 	private static MessagePostProcessor markAsProcessed() {
 		return (message) -> {
 			message.getMessageProperties().setHeader("processed", true);
@@ -442,6 +536,57 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 		@SendTo("e1/k4")
 		String replyViaSendTo(String data) {
 			return "Reply for '%s' via 'e1' and 'k4'".formatted(data);
+		}
+
+		@Bean
+		RabbitAmqpListenerContainerFactory retryRabbitAmqpListenerContainerFactory(
+				AmqpConnectionFactory connectionFactory) {
+
+			RabbitAmqpListenerContainerFactory rabbitAmqpListenerContainerFactory =
+					new RabbitAmqpListenerContainerFactory(connectionFactory);
+			rabbitAmqpListenerContainerFactory.setAdviceChain(
+					statelessRetry((message, cause) -> this.recovered.add(message)));
+			return rabbitAmqpListenerContainerFactory;
+		}
+
+		@Bean
+		RabbitAmqpListenerContainerFactory postProcessedRetryRabbitAmqpListenerContainerFactory(
+				AmqpConnectionFactory connectionFactory) {
+
+			RabbitAmqpListenerContainerFactory rabbitAmqpListenerContainerFactory =
+					new RabbitAmqpListenerContainerFactory(connectionFactory);
+			rabbitAmqpListenerContainerFactory.setAdviceChain(
+					statelessRetry((message, cause) -> this.recoveredPostProcessed.add(message)));
+			rabbitAmqpListenerContainerFactory.setAfterReceivePostProcessors((message) -> {
+				MessageProperties messageProperties = message.getMessageProperties();
+				Integer count = messageProperties.getHeader("postProcessedCount");
+				messageProperties.setHeader("postProcessedCount", count == null ? 1 : count + 1);
+				return message;
+			});
+			return rabbitAmqpListenerContainerFactory;
+		}
+
+		final List<Message> recoveredPostProcessed = new CopyOnWriteArrayList<>();
+
+		final List<Integer> postProcessedCounts = new CopyOnWriteArrayList<>();
+
+		@RabbitListener(
+				queuesToDeclare = @org.springframework.amqp.rabbit.annotation.Queue("retry.recover.post.processed"),
+				containerFactory = "postProcessedRetryRabbitAmqpListenerContainerFactory")
+		void alwaysFailsAfterPostProcessing(Message message) {
+			this.postProcessedCounts.add(message.getMessageProperties().getHeader("postProcessedCount"));
+			throw new IllegalStateException("Always fails");
+		}
+
+		final List<Message> recovered = new CopyOnWriteArrayList<>();
+
+		final AtomicInteger retryAttempts = new AtomicInteger();
+
+		@RabbitListener(queuesToDeclare = @org.springframework.amqp.rabbit.annotation.Queue("retry.recover.adapter"),
+				containerFactory = "retryRabbitAmqpListenerContainerFactory")
+		void alwaysFails(String data) {
+			this.retryAttempts.incrementAndGet();
+			throw new IllegalStateException("Always fails for " + data);
 		}
 
 		@Bean
