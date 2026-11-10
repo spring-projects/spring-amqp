@@ -108,7 +108,6 @@ public class AmqpAppenderTests {
 		verifyDefaultHostProperties(bean);
 		verify(bean).setUseSSL(true);
 		verify(bean).setSslAlgorithm(sslAlgorithm);
-		verify(bean).setEnableHostnameVerification(false);
 	}
 
 	@Test

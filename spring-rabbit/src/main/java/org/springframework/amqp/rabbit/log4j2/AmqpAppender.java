@@ -631,7 +631,6 @@ public class AmqpAppender extends AbstractAppender {
 
 			if (this.useSsl) {
 				factoryBean.setUseSSL(true);
-				factoryBean.setEnableHostnameVerification(this.verifyHostname);
 				if (this.sslAlgorithm != null) {
 					factoryBean.setSslAlgorithm(this.sslAlgorithm);
 				}

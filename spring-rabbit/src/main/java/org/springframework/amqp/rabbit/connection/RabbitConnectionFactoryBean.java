@@ -7,7 +7,6 @@ package org.springframework.amqp.rabbit.connection;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -45,7 +44,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.util.Assert;
-import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -113,7 +111,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private static final String TRUST_STORE_DEFAULT_TYPE = "JKS";
 
-	protected final ConnectionFactory connectionFactory = new ConnectionFactory(); // NOSONAR
+	protected final ConnectionFactory connectionFactory = new ConnectionFactory();
 
 	private final Properties sslProperties = new Properties();
 
@@ -141,13 +139,9 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private String sslAlgorithm = DEFAULT_PROTOCOL;
 
-	private boolean sslAlgorithmSet;
-
 	private @Nullable SecureRandom secureRandom;
 
 	private boolean skipServerCertificateValidation;
-
-	private boolean enableHostnameVerification = true;
 
 	private String keyStoreAlgorithm = SUN_X509;
 
@@ -174,16 +168,17 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * This would be used if useSSL is set to true and should only be used on dev or Qa regions
 	 * skipServerCertificateValidation should <b> never be set to true in production</b>
 	 * @param skipServerCertificateValidation Flag to override Server side certificate checks;
-	 * if set to {@code true} {@link com.rabbitmq.client.TrustEverythingTrustManager} would be used.
+	 * if set to {@code true} {@link com.rabbitmq.client.ConnectionFactory#useTlsWithNoVerification()}
+	 * would be used (in which case {@link #setSslAlgorithm(String) sslAlgorithm} is ignored).
 	 * @since 1.6.6
-	 * @see com.rabbitmq.client.TrustEverythingTrustManager
+	 * @see com.rabbitmq.client.ConnectionFactory#useTlsWithNoVerification()
 	 */
 	public void setSkipServerCertificateValidation(boolean skipServerCertificateValidation) {
 		this.skipServerCertificateValidation = skipServerCertificateValidation;
 	}
 
 	/**
-	 * Whether or not the factory should be configured to use SSL.
+	 * Whether the factory should be configured to use SSL.
 	 * @param useSSL true to use SSL.
 	 */
 	public void setUseSSL(boolean useSSL) {
@@ -204,7 +199,6 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 */
 	public void setSslAlgorithm(String sslAlgorithm) {
 		this.sslAlgorithm = sslAlgorithm;
-		this.sslAlgorithmSet = true;
 	}
 
 	/**
@@ -449,7 +443,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	}
 
 	/**
-	 * Set a credentials provider (e.g. OAUTH2).
+	 * Set a {@link CredentialsProvider} (e.g. OAUTH2).
 	 * @param provider the provider.
 	 * @since 2.3
 	 */
@@ -664,13 +658,17 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * non-blocking IO).
 	 * <p>
 	 * This can be called typically after setting the {@link SSLContext} with one of the
-	 * <code>useSslProtocol</code> methods. Requires amqp-client 5.4.0 or later.
+	 * <code>useSslProtocol</code> methods.
 	 * @param enable false to disable.
 	 * @since 2.0.6
-	 * @see com.rabbitmq.client.ConnectionFactory#enableHostnameVerification()
+	 * @deprecated since 4.1.3 in favor of relying on {@code amqp-client}'s secure-by-default TLS behavior.
+	 * Since {@code amqp-client} 5.33, {@link ConnectionFactory#useSslProtocol()}
+	 * and related methods enable hostname verification automatically, so this property has no effect.
+	 * @see ConnectionFactory#enableHostnameVerification()
 	 */
+	@Deprecated(since = "4.1.3", forRemoval = true)
 	public void setEnableHostnameVerification(boolean enable) {
-		this.enableHostnameVerification = enable;
+		// no-op: amqp-client 5.33+ enables hostname verification in useSslProtocol*
 	}
 
 	/**
@@ -745,8 +743,8 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		try {
 			super.afterPropertiesSet();
 		}
-		catch (Exception e) {
-			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+		catch (Exception ex) {
+			throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
 		}
 	}
 
@@ -767,16 +765,8 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 			try {
 				this.connectionFactory.setUri(this.uri);
 			}
-			catch (Exception ex) {
-				if (ex instanceof URISyntaxException
-						|| ex instanceof NoSuchAlgorithmException
-						|| ex instanceof KeyManagementException) {
-
-					throw new IllegalArgumentException("Unable to set uri", ex);
-				}
-				else {
-					ReflectionUtils.rethrowRuntimeException(ex);
-				}
+			catch (NoSuchAlgorithmException | KeyManagementException ex) {
+				throw new IllegalArgumentException("Unable to set uri", ex);
 			}
 		}
 		return this.connectionFactory;
@@ -788,8 +778,9 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 */
 	protected void setUpSSL() {
 		try {
-			if (this.sslPropertiesLocation == null && this.keyStore == null && this.trustStore == null // NOSONAR boolean complexity
+			if (this.sslPropertiesLocation == null && this.keyStore == null && this.trustStore == null
 					&& this.keyStoreResource == null && this.trustStoreResource == null) {
+
 				setupBasicSSL();
 			}
 			else {
@@ -808,9 +799,6 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 				SSLContext context = createSSLContext();
 				context.init(keyManagers, trustManagers, this.secureRandom);
 				this.connectionFactory.useSslProtocol(context);
-				if (this.enableHostnameVerification) {
-					this.connectionFactory.enableHostnameVerification();
-				}
 			}
 		}
 		catch (Exception e) {
@@ -820,12 +808,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private void setupBasicSSL() throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException {
 		if (this.skipServerCertificateValidation) {
-			if (this.sslAlgorithmSet) {
-				this.connectionFactory.useSslProtocol(this.sslAlgorithm);
-			}
-			else {
-				this.connectionFactory.useSslProtocol();
-			}
+			this.connectionFactory.useTlsWithNoVerification();
 		}
 		else {
 			useDefaultTrustStoreMechanism();
@@ -900,9 +883,6 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		trustManagerFactory.init((KeyStore) null);
 		sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
 		this.connectionFactory.useSslProtocol(sslContext);
-		if (this.enableHostnameVerification) {
-			this.connectionFactory.enableHostnameVerification();
-		}
 	}
 
 }

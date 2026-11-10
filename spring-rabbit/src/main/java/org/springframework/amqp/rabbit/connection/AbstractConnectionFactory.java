@@ -49,7 +49,6 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.util.backoff.BackOff;
 
@@ -282,13 +281,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		try {
 			this.rabbitConnectionFactory.setUri(uri);
 		}
-		catch (Exception ex) {
-			if (ex instanceof URISyntaxException || ex instanceof GeneralSecurityException) {
-				this.logger.info(BAD_URI, ex);
-			}
-			else {
-				ReflectionUtils.rethrowRuntimeException(ex);
-			}
+		catch (GeneralSecurityException use) {
+			this.logger.info(BAD_URI, use);
 		}
 	}
 
@@ -347,6 +341,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		Assert.notEmpty(addresses, "Addresses must not be empty");
 		setAddresses(String.join(",", addresses));
 	}
+
 	/**
 	 * Set addresses for clustering. This property overrides the host+port properties if not empty.
 	 * @param addresses list of addresses with form {@code host1[:port1],host2[:port2],...}.
