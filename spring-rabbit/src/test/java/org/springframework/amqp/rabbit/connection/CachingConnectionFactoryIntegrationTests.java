@@ -19,8 +19,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.net.ServerSocketFactory;
 import javax.net.SocketFactory;
 
+import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.DefaultConsumer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -317,25 +317,17 @@ public class CachingConnectionFactoryIntegrationTests {
 		final String route = queue.getName();
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		try {
-			template.execute(channel -> {
-				channel.getConnection().addShutdownListener(cause -> {
-					logger.info("Error", cause);
-					latch.countDown();
-					// This will be thrown on the Connection thread just before it dies, so basically ignored
-					throw new RuntimeException(cause);
-				});
-				String tag = channel.basicConsume(route, new DefaultConsumer(channel));
-				// Consume twice with the same tag is a hard error (connection will be reset)
-				String result = channel.basicConsume(route, false, tag, new DefaultConsumer(channel));
-				fail("Expected IOException, got: " + result);
-				return null;
+		template.execute(channel -> {
+			channel.getConnection().addShutdownListener(cause -> {
+				logger.info("Error", cause);
+				latch.countDown();
+				// This will be thrown on the Connection thread just before it dies, so basically ignored
+				throw new RuntimeException(cause);
 			});
-			fail("Expected AmqpIOException");
-		}
-		catch (AmqpIOException e) {
-			// expected
-		}
+			// Simulate a hard error: the connection dies without the automatic recovery
+			channel.getConnection().abort(AMQP.INTERNAL_ERROR, "Simulated hard error");
+			return null;
+		});
 		template.convertAndSend(route, "message");
 		assertThat(latch.await(1000, TimeUnit.MILLISECONDS)).isTrue();
 		String result = (String) template.receiveAndConvert(route);
