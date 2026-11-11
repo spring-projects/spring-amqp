@@ -28,7 +28,9 @@ import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.core.QueueBuilder.Overflow;
 import org.springframework.amqp.core.QueueInformation;
+import org.springframework.amqp.rabbit.core.AmqpNackReceivedException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
@@ -316,6 +318,25 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 	}
 
 	@Test
+	void rejectedPublishPreservesFailureCause() {
+		Message acceptedMessage = new Message("accepted".getBytes(StandardCharsets.UTF_8));
+		Message rejectedMessage = new Message("rejected".getBytes(StandardCharsets.UTF_8));
+
+		assertThat(this.rabbitAmqpTemplate.send("reject-publish", acceptedMessage))
+				.succeedsWithin(Duration.ofSeconds(20));
+
+		assertThat(this.rabbitAmqpTemplate.send("reject-publish", rejectedMessage))
+				.failsWithin(Duration.ofSeconds(20))
+				.withThrowableThat()
+				.isInstanceOfSatisfying(ExecutionException.class, (exception) ->
+						assertThat(exception.getCause())
+								.isInstanceOfSatisfying(AmqpNackReceivedException.class, (nack) -> {
+									assertThat(nack.getFailedMessage()).isSameAs(rejectedMessage);
+									assertThat(nack.getCause()).isNotNull();
+								}));
+	}
+
+	@Test
 	void requesterIsClosedWhenRequestCannotBeConverted() {
 		String replyQueue = "rpc.reply";
 		this.admin.declareQueue(new Queue(replyQueue));
@@ -355,6 +376,14 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 		@Bean
 		Queue q1() {
 			return QueueBuilder.durable("q1").deadLetterExchange("dlx1").build();
+		}
+
+		@Bean
+		Queue rejectedPublishQueue() {
+			return QueueBuilder.durable("reject-publish")
+					.maxLength(1L)
+					.overflow(Overflow.rejectPublish)
+					.build();
 		}
 
 		@Bean
