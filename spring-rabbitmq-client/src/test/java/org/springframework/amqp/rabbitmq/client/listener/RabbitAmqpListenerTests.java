@@ -369,7 +369,7 @@ class RabbitAmqpListenerTests extends RabbitAmqpTestBase {
 		container.setupMessageListener(new RabbitAmqpMessageListener() {
 
 			@Override
-			public void onAmqpMessage(com.rabbitmq.client.amqp.Message message, Consumer.@Nullable Context context) {
+			public void onAmqpMessage(com.rabbitmq.client.amqp.Message message, Consumer.@Nullable Context context, @Nullable String queueName) {
 				throw new IllegalStateException("Always fails");
 			}
 

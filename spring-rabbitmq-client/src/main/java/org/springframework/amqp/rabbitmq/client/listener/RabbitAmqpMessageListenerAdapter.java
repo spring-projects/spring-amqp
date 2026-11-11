@@ -90,7 +90,7 @@ public class RabbitAmqpMessageListenerAdapter extends MessagingMessageListenerAd
 	}
 
 	@Override
-	public void onAmqpMessage(com.rabbitmq.client.amqp.Message amqpMessage, Consumer.@Nullable Context context, String queueName) {
+	public void onAmqpMessage(com.rabbitmq.client.amqp.Message amqpMessage, Consumer.@Nullable Context context, @Nullable String queueName) {
 		org.springframework.amqp.core.Message springMessage = RabbitAmqpUtils.fromAmqpMessage(amqpMessage, context, queueName);
 		if (this.afterReceivePostProcessors != null) {
 			for (MessagePostProcessor processor : this.afterReceivePostProcessors) {
