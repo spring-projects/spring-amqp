@@ -28,7 +28,7 @@ public interface RabbitAmqpMessageListener extends MessageListener {
 	 *                {@code null} if container is configured for {@code autoSettle}.
 	 * @param queueName the queue name to be consumed.
 	 */
-	void onAmqpMessage(Message message, Consumer.@Nullable Context context, String queueName);
+	void onAmqpMessage(Message message, Consumer.@Nullable Context context, @Nullable String queueName);
 
 	/**
 	 * Process an AMQP message, which has already been converted to a Spring AMQP message.
@@ -46,7 +46,7 @@ public interface RabbitAmqpMessageListener extends MessageListener {
 	default void onAmqpMessage(Message message, org.springframework.amqp.core.Message springMessage,
 			Consumer.@Nullable Context context) {
 
-		onAmqpMessage(message, context, null);
+		onAmqpMessage(message, context, springMessage.getMessageProperties().getConsumerQueue());
 	}
 
 }
