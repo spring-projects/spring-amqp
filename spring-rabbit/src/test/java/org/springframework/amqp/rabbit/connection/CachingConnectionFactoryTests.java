@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -85,6 +86,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
  * @author Artem Bilan
  * @author Steve Powell
  * @author Alexei Sischin
+ * @author Sparshal Kothari
  */
 public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTests {
 
@@ -461,6 +463,158 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertThat(connection.get()).isSameAs(con2);
 
 		ccf.destroy();
+	}
+
+	@Test
+	void connectionClosedWhileBorrowedDoesNotAllowExtraConnection() throws Exception {
+		List<AtomicBoolean> targets = new CopyOnWriteArrayList<>();
+		CachingConnectionFactory ccf = connectionLimitedFactory(targets);
+		ccf.setChannelCheckoutTimeout(10_000);
+		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections");
+
+		Connection con1 = ccf.createConnection();
+		Connection con2 = ccf.createConnection();
+		// the broker closes the first connection while it is still borrowed
+		targets.get(0).set(false);
+
+		AtomicReference<Connection> con3 = new AtomicReference<>();
+		CountDownLatch obtained = new CountDownLatch(1);
+		ExecutorService exec = Executors.newSingleThreadExecutor();
+		exec.execute(() -> {
+			con3.set(ccf.createConnection());
+			obtained.countDown();
+		});
+
+		assertThat(obtained.await(500, TimeUnit.MILLISECONDS)).isFalse();
+		assertThat(targets).hasSize(2);
+		assertThat(allocatedConnections).hasSize(2);
+
+		con1.close();
+
+		assertThat(obtained.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(con3.get()).isSameAs(con1);
+		assertThat(con3.get().isOpen()).isTrue();
+		assertThat(con2.isOpen()).isTrue();
+		assertThat(openCount(targets)).isEqualTo(2);
+		assertThat(allocatedConnections).hasSize(2);
+
+		exec.shutdownNow();
+		ccf.destroy();
+	}
+
+	@Test
+	void connectionLimitTimesOutWhileClosedProxiesRemainBorrowed() throws Exception {
+		List<AtomicBoolean> targets = new CopyOnWriteArrayList<>();
+		CachingConnectionFactory ccf = connectionLimitedFactory(targets);
+		ccf.setChannelCheckoutTimeout(100);
+		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections");
+
+		ccf.createConnection();
+		ccf.createConnection();
+		targets.forEach(open -> open.set(false));
+
+		assertThatThrownBy(ccf::createConnection)
+				.isInstanceOf(AmqpTimeoutException.class);
+		assertThat(targets).hasSize(2);
+		assertThat(allocatedConnections).hasSize(2);
+
+		ccf.destroy();
+	}
+
+	@Test
+	void closedProxyIsReusedAfterReturnWithoutExceedingConnectionLimit() throws Exception {
+		List<AtomicBoolean> targets = new CopyOnWriteArrayList<>();
+		CachingConnectionFactory ccf = connectionLimitedFactory(targets);
+		ccf.setChannelCheckoutTimeout(100);
+		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections");
+
+		Connection con1 = ccf.createConnection();
+		Connection con2 = ccf.createConnection();
+		targets.get(0).set(false);
+
+		assertThatThrownBy(ccf::createConnection)
+				.isInstanceOf(AmqpTimeoutException.class);
+
+		con1.close();
+		Connection con3 = ccf.createConnection();
+		assertThat(con3).isSameAs(con1);
+		assertThat(con3.isOpen()).isTrue();
+		assertThat(targets).hasSize(3);
+		assertThat(openCount(targets)).isEqualTo(2);
+
+		assertThatThrownBy(ccf::createConnection)
+				.isInstanceOf(AmqpTimeoutException.class);
+
+		// both connections fit into the cache, so returning and borrowing them again
+		// must not close and reopen any physical connection
+		con2.close();
+		con3.close();
+		Connection con4 = ccf.createConnection();
+		Connection con5 = ccf.createConnection();
+		assertThat(List.of(con4, con5)).containsExactlyInAnyOrder(con2, con3);
+		assertThat(targets).hasSize(3);
+		assertThat(openCount(targets)).isEqualTo(2);
+		assertThat(allocatedConnections).hasSize(2);
+
+		ccf.destroy();
+	}
+
+	@Test
+	void borrowedClosedProxyRecoversThroughCreateChannelWithinConnectionLimit() throws Exception {
+		List<AtomicBoolean> targets = new CopyOnWriteArrayList<>();
+		CachingConnectionFactory ccf = connectionLimitedFactory(targets);
+		ccf.setChannelCheckoutTimeout(100);
+		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections");
+
+		Connection con1 = ccf.createConnection();
+		Connection con2 = ccf.createConnection();
+		targets.get(0).set(false);
+
+		Channel channel = con1.createChannel(false);
+		assertThat(channel).isNotNull();
+		assertThat(con1.isOpen()).isTrue();
+		assertThat(con2.isOpen()).isTrue();
+		assertThat(targets).hasSize(3);
+		assertThat(openCount(targets)).isEqualTo(2);
+
+		assertThatThrownBy(ccf::createConnection)
+				.isInstanceOf(AmqpTimeoutException.class);
+		assertThat(targets).hasSize(3);
+		assertThat(allocatedConnections).hasSize(2);
+
+		channel.close();
+		ccf.destroy();
+	}
+
+	private static CachingConnectionFactory connectionLimitedFactory(List<AtomicBoolean> targets) throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock();
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willAnswer(invocation -> {
+			AtomicBoolean open = new AtomicBoolean(true);
+			targets.add(open);
+			com.rabbitmq.client.Connection mockConnection = mock();
+			given(mockConnection.isOpen()).willAnswer(isOpen -> open.get());
+			willAnswer(close -> {
+				open.set(false);
+				return null;
+			}).given(mockConnection).close(anyInt());
+			given(mockConnection.createChannel()).willAnswer(createChannel -> {
+				Channel mockChannel = mock();
+				given(mockChannel.isOpen()).willReturn(true);
+				return mockChannel;
+			});
+			return mockConnection;
+		});
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setExecutor(mock(ExecutorService.class));
+		ccf.setCacheMode(CacheMode.CONNECTION);
+		ccf.setConnectionCacheSize(2);
+		ccf.setConnectionLimit(2);
+		return ccf;
+	}
+
+	private static long openCount(List<AtomicBoolean> targets) {
+		return targets.stream().filter(AtomicBoolean::get).count();
 	}
 
 	@Test
