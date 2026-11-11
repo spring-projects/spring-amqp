@@ -91,6 +91,7 @@ import org.springframework.util.StringUtils;
  * @author Leonardo Ferreira
  * @author Alexei Sischin
  * @author Ngoc Nhan
+ * @author Sparshal Kothari
  */
 @ManagedResource
 public class CachingConnectionFactory extends AbstractConnectionFactory
@@ -755,11 +756,11 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	private Connection connectionFromCache() {
 		ChannelCachingConnectionProxy cachedConnection = findIdleConnection();
 		long now = System.currentTimeMillis();
-		if (cachedConnection == null && countOpenConnections() >= this.connectionLimit) {
+		if (cachedConnection == null && this.allocatedConnections.size() >= this.connectionLimit) {
 			cachedConnection = waitForConnection(now);
 		}
 		if (cachedConnection == null) {
-			if (countOpenConnections() >= this.connectionLimit
+			if (this.allocatedConnections.size() >= this.connectionLimit
 					&& System.currentTimeMillis() - now >= this.channelCheckoutTimeout) {
 				throw new AmqpTimeoutException("Timed out attempting to get a connection");
 			}
@@ -799,7 +800,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	private ChannelCachingConnectionProxy waitForConnection(long now) {
 		ChannelCachingConnectionProxy cachedConnection = null;
 		while (cachedConnection == null && System.currentTimeMillis() - now < this.channelCheckoutTimeout) {
-			if (countOpenConnections() >= this.connectionLimit) {
+			if (this.allocatedConnections.size() >= this.connectionLimit) {
 				try {
 					if (this.connectionAvailableCondition.await(this.channelCheckoutTimeout, TimeUnit.MILLISECONDS)) {
 						cachedConnection = findIdleConnection();
