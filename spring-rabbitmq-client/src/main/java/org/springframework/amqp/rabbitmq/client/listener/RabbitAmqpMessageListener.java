@@ -5,6 +5,7 @@
 package org.springframework.amqp.rabbitmq.client.listener;
 
 import com.rabbitmq.client.amqp.Consumer;
+import com.rabbitmq.client.amqp.Consumer.Context;
 import com.rabbitmq.client.amqp.Message;
 import org.jspecify.annotations.Nullable;
 
@@ -36,7 +37,7 @@ public interface RabbitAmqpMessageListener extends MessageListener {
 	 * (e.g. a stateless retry interceptor with a
 	 * {@link org.springframework.amqp.rabbit.retry.MessageRecoverer}) can access the
 	 * converted message in the method arguments.
-	 * By default, delegates to {@link #onAmqpMessage(Message, Consumer.Context)}.
+	 * By default, delegates to {@link #onAmqpMessage(Message, Context, String)}.
 	 * @param message the message to process.
 	 * @param springMessage the {@link org.springframework.amqp.core.Message} converted from the AMQP message.
 	 * @param context the consumer context to settle message.
