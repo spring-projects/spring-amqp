@@ -6,6 +6,8 @@ package org.springframework.amqp.rabbit.core;
 
 import java.io.Serial;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 
@@ -30,7 +32,18 @@ public class AmqpNackReceivedException extends AmqpException {
 	 * @param failedMessage the failed message.
 	 */
 	public AmqpNackReceivedException(String message, Message failedMessage) {
-		super(message);
+		this(message, failedMessage, null);
+	}
+
+	/**
+	 * Create an instance with the provided message, failed message, and cause.
+	 * @param message the message.
+	 * @param failedMessage the failed message.
+	 * @param cause the cause of the negative acknowledgment, if available.
+	 * @since 4.0.7
+	 */
+	public AmqpNackReceivedException(String message, Message failedMessage, @Nullable Throwable cause) {
+		super(message, cause);
 		this.failedMessage = failedMessage;
 	}
 
