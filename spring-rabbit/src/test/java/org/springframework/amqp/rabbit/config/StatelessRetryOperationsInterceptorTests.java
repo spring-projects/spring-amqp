@@ -9,15 +9,19 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
+import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.retry.MessageBatchRecoverer;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
+import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.core.retry.RetryException;
 import org.springframework.core.retry.RetryListener;
 import org.springframework.core.retry.RetryPolicy;
@@ -38,6 +42,7 @@ import static org.mockito.Mockito.times;
  *
  * @author Stephane Nicoll
  * @author Jun Cho
+ * @author Dongmin Kim
  */
 class StatelessRetryOperationsInterceptorTests {
 
@@ -60,6 +65,31 @@ class StatelessRetryOperationsInterceptorTests {
 				.willThrow(new IllegalStateException("retry-1")).willReturn("hello");
 		assertThat(createInterceptor(retryPolicy).invoke(invocation)).isEqualTo("hello");
 		then(invocation).should(times(3)).proceed();
+		then(this.recoverer).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void invokeWithFailuresInvokesSubsequentAdviceOnEachAttempt() {
+		RetryPolicy retryPolicy = RetryPolicy.builder().maxRetries(2).delay(Duration.ZERO).build();
+		AtomicInteger listenerCalls = new AtomicInteger();
+		MessageListener listener = message -> {
+			if (listenerCalls.incrementAndGet() < 3) {
+				throw new IllegalStateException("failure");
+			}
+		};
+		AtomicInteger adviceCalls = new AtomicInteger();
+		MethodInterceptor countingAdvice = invocation -> {
+			adviceCalls.incrementAndGet();
+			return invocation.proceed();
+		};
+		// The retry interceptor followed by another advice, as in a listener container advice chain
+		ProxyFactory proxyFactory = new ProxyFactory(listener);
+		proxyFactory.addAdvisor(new DefaultPointcutAdvisor(createInterceptor(retryPolicy)));
+		proxyFactory.addAdvisor(new DefaultPointcutAdvisor(countingAdvice));
+		MessageListener proxy = (MessageListener) proxyFactory.getProxy();
+		proxy.onMessage(new Message("payload".getBytes()));
+		assertThat(listenerCalls).hasValue(3);
+		assertThat(adviceCalls).hasValue(3);
 		then(this.recoverer).shouldHaveNoInteractions();
 	}
 
