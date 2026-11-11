@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.rabbitmq.client.Channel;
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Address;
@@ -26,6 +27,8 @@ import org.springframework.util.Assert;
  * (default 60 seconds).
  *
  * @author Gary Russell
+ * @author WooSeung Kim
+ *
  * @since 2.0
  *
  */
@@ -112,6 +115,7 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 		long reduce;
 		this.consumersLock.lock();
 		try {
+			this.consumers.forEach(consumer -> this.whenUsed.putIfAbsent(consumer, now));
 			reduce = this.consumers.stream()
 					.filter(c -> this.whenUsed.containsKey(c) && !this.inUseConsumerChannels.containsValue(c)
 							&& this.whenUsed.get(c) < now - getIdleEventInterval())
@@ -179,6 +183,10 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 					// Possibly No available channels in the cache, so come back to consumers
 					// iteration until existing is available
 					this.consumerCount.decrementAndGet();
+				}
+				catch (AmqpConnectException ex) {
+					this.consumerCount.decrementAndGet();
+					throw ex;
 				}
 			}
 		}
