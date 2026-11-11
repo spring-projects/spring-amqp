@@ -252,7 +252,9 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 					(context) -> {
 						switch (context.status()) {
 							case ACCEPTED -> publishResult.complete(true);
-							case REJECTED, RELEASED -> publishResult.completeExceptionally(
+							case REJECTED -> publishResult.completeExceptionally(new AmqpNackReceivedException(
+									"The message was rejected", message, context.failureCause()));
+							case RELEASED -> publishResult.completeExceptionally(
 									new AmqpNackReceivedException("The message was rejected", message));
 						}
 					});
