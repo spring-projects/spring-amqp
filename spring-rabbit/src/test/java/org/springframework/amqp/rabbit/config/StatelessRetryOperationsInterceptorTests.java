@@ -6,6 +6,7 @@ package org.springframework.amqp.rabbit.config;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
 import org.aopalliance.intercept.MethodInterceptor;
