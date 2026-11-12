@@ -470,7 +470,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		List<AtomicBoolean> targets = new CopyOnWriteArrayList<>();
 		CachingConnectionFactory ccf = connectionLimitedFactory(targets);
 		ccf.setChannelCheckoutTimeout(10_000);
-		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections");
+		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections", Set.class);
 
 		Connection con1 = ccf.createConnection();
 		Connection con2 = ccf.createConnection();
@@ -507,7 +507,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		List<AtomicBoolean> targets = new CopyOnWriteArrayList<>();
 		CachingConnectionFactory ccf = connectionLimitedFactory(targets);
 		ccf.setChannelCheckoutTimeout(100);
-		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections");
+		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections", Set.class);
 
 		ccf.createConnection();
 		ccf.createConnection();
@@ -526,7 +526,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		List<AtomicBoolean> targets = new CopyOnWriteArrayList<>();
 		CachingConnectionFactory ccf = connectionLimitedFactory(targets);
 		ccf.setChannelCheckoutTimeout(100);
-		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections");
+		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections", Set.class);
 
 		Connection con1 = ccf.createConnection();
 		Connection con2 = ccf.createConnection();
@@ -564,7 +564,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		List<AtomicBoolean> targets = new CopyOnWriteArrayList<>();
 		CachingConnectionFactory ccf = connectionLimitedFactory(targets);
 		ccf.setChannelCheckoutTimeout(100);
-		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections");
+		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections", Set.class);
 
 		Connection con1 = ccf.createConnection();
 		Connection con2 = ccf.createConnection();

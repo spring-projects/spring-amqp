@@ -325,10 +325,10 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 				.withThrowableThat()
 				.isInstanceOfSatisfying(ExecutionException.class, (exception) ->
 						assertThat(exception.getCause())
-								.isInstanceOfSatisfying(AmqpNackReceivedException.class, (nack) -> {
-									assertThat(nack.getFailedMessage()).isSameAs(rejectedMessage);
-									assertThat(nack.getCause()).isNotNull();
-								}));
+								.isInstanceOfSatisfying(AmqpNackReceivedException.class, (nack) ->
+										// The 'amqp-client:0.8.x' does not populate 'failureCause()'
+										// for a broker 'rejected' outcome
+										assertThat(nack.getFailedMessage()).isSameAs(rejectedMessage)));
 	}
 
 
