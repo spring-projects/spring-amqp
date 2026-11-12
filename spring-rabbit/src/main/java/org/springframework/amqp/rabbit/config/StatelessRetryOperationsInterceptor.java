@@ -11,6 +11,7 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.aop.ProxyMethodInvocation;
 import org.springframework.core.retry.RetryException;
 import org.springframework.core.retry.RetryListener;
 import org.springframework.core.retry.RetryOperations;
@@ -25,6 +26,7 @@ import org.springframework.core.retry.RetryTemplate;
  * @author Stephane Nicoll
  * @author Artem Bilan
  * @author Jun Cho
+ * @author Dongmin Kim
  *
  * @since 4.0
  */
@@ -55,7 +57,11 @@ public final class StatelessRetryOperationsInterceptor implements MethodIntercep
 	@Override
 	public @Nullable Object invoke(final MethodInvocation invocation) throws Throwable {
 		try {
-			return this.retryTemplate.<@Nullable Object>execute(invocation::proceed);
+			// Proceed on a fresh clone per attempt to invoke the rest of the advice chain again
+			return this.retryTemplate.<@Nullable Object>execute(() ->
+					invocation instanceof ProxyMethodInvocation proxyMethodInvocation
+							? proxyMethodInvocation.invocableClone().proceed()
+							: invocation.proceed());
 		}
 		catch (RetryException ex) {
 			if (this.recoverer != null) {
