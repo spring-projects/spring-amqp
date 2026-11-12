@@ -43,6 +43,7 @@ import org.springframework.util.StringUtils;
  * @author Stephane Nicoll
  * @author Raylax Grey
  * @author Ngoc Nhan
+ *
  * @since 1.4
  */
 public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperties> implements AmqpHeaderMapper {
@@ -64,7 +65,6 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 			AmqpHeaders.MESSAGE_COUNT,
 			AmqpHeaders.MESSAGE_ID,
 			AmqpMessageHeaderAccessor.PRIORITY,
-			AmqpHeaders.RECEIVED_DELAY,
 			AmqpHeaders.RECEIVED_EXCHANGE,
 			AmqpHeaders.RECEIVED_ROUTING_KEY,
 			AmqpHeaders.REDELIVERED,
@@ -81,50 +81,50 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 	@SuppressWarnings("removal")
 	public void fromHeaders(MessageHeaders headers, MessageProperties amqpMessageProperties) {
 		JavaUtils javaUtils = JavaUtils.INSTANCE
-			.acceptIfHasText(getHeaderIfAvailable(headers, AmqpHeaders.APP_ID, String.class),
-					amqpMessageProperties::setAppId)
-			.acceptIfHasText(getHeaderIfAvailable(headers, AmqpHeaders.CLUSTER_ID, String.class),
-					amqpMessageProperties::setClusterId)
-			.acceptIfHasText(getHeaderIfAvailable(headers, AmqpHeaders.CONTENT_ENCODING, String.class),
-					amqpMessageProperties::setContentEncoding)
-			.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.CONTENT_LENGTH, Long.class),
-					amqpMessageProperties::setContentLength)
-			.acceptIfHasText(extractContentTypeAsString(headers), amqpMessageProperties::setContentType);
+				.acceptIfHasText(getHeaderIfAvailable(headers, AmqpHeaders.APP_ID, String.class),
+						amqpMessageProperties::setAppId)
+				.acceptIfHasText(getHeaderIfAvailable(headers, AmqpHeaders.CLUSTER_ID, String.class),
+						amqpMessageProperties::setClusterId)
+				.acceptIfHasText(getHeaderIfAvailable(headers, AmqpHeaders.CONTENT_ENCODING, String.class),
+						amqpMessageProperties::setContentEncoding)
+				.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.CONTENT_LENGTH, Long.class),
+						amqpMessageProperties::setContentLength)
+				.acceptIfHasText(extractContentTypeAsString(headers), amqpMessageProperties::setContentType);
 		Object correlationId = headers.get(AmqpHeaders.CORRELATION_ID);
 		if (correlationId instanceof String string) {
 			amqpMessageProperties.setCorrelationId(string);
 		}
 		javaUtils
-			.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.DELAY, Long.class),
-					amqpMessageProperties::setDelayLong)
-			.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.DELIVERY_MODE, MessageDeliveryMode.class),
-					amqpMessageProperties::setDeliveryMode)
-			.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.DELIVERY_TAG, Long.class),
-					amqpMessageProperties::setDeliveryTag)
-			.acceptIfHasText(getHeaderIfAvailable(headers, AmqpHeaders.EXPIRATION, String.class),
-					amqpMessageProperties::setExpiration)
-			.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.MESSAGE_COUNT, Integer.class),
-					amqpMessageProperties::setMessageCount)
-			.acceptIfHasText(getHeaderIfAvailable(headers, AmqpHeaders.MESSAGE_ID, String.class),
-					amqpMessageProperties::setMessageId)
-			.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpMessageHeaderAccessor.PRIORITY, Integer.class),
-					amqpMessageProperties::setPriority)
-			.acceptIfHasText(getHeaderIfAvailable(headers, AmqpHeaders.RECEIVED_EXCHANGE, String.class),
-					amqpMessageProperties::setReceivedExchange)
-			.acceptIfHasText(getHeaderIfAvailable(headers, AmqpHeaders.RECEIVED_ROUTING_KEY, String.class),
-					amqpMessageProperties::setReceivedRoutingKey)
-			.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.REDELIVERED, Boolean.class),
-					amqpMessageProperties::setRedelivered)
-			.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.REPLY_TO, String.class),
-					amqpMessageProperties::setReplyTo)
-			.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.TIMESTAMP, Date.class),
-					amqpMessageProperties::setTimestamp)
-			.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.TYPE, String.class),
-					amqpMessageProperties::setType)
-			.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.RETRY_COUNT, Long.class),
-					amqpMessageProperties::setRetryCount)
-			.acceptIfHasText(getHeaderIfAvailable(headers, AmqpHeaders.USER_ID, String.class),
-					amqpMessageProperties::setUserId);
+				.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.DELAY, Long.class),
+						amqpMessageProperties::setDelayLong)
+				.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.DELIVERY_MODE, MessageDeliveryMode.class),
+						amqpMessageProperties::setDeliveryMode)
+				.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.DELIVERY_TAG, Long.class),
+						amqpMessageProperties::setDeliveryTag)
+				.acceptIfHasText(getHeaderIfAvailable(headers, AmqpHeaders.EXPIRATION, String.class),
+						amqpMessageProperties::setExpiration)
+				.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.MESSAGE_COUNT, Integer.class),
+						amqpMessageProperties::setMessageCount)
+				.acceptIfHasText(getHeaderIfAvailable(headers, AmqpHeaders.MESSAGE_ID, String.class),
+						amqpMessageProperties::setMessageId)
+				.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpMessageHeaderAccessor.PRIORITY, Integer.class),
+						amqpMessageProperties::setPriority)
+				.acceptIfHasText(getHeaderIfAvailable(headers, AmqpHeaders.RECEIVED_EXCHANGE, String.class),
+						amqpMessageProperties::setReceivedExchange)
+				.acceptIfHasText(getHeaderIfAvailable(headers, AmqpHeaders.RECEIVED_ROUTING_KEY, String.class),
+						amqpMessageProperties::setReceivedRoutingKey)
+				.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.REDELIVERED, Boolean.class),
+						amqpMessageProperties::setRedelivered)
+				.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.REPLY_TO, String.class),
+						amqpMessageProperties::setReplyTo)
+				.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.TIMESTAMP, Date.class),
+						amqpMessageProperties::setTimestamp)
+				.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.TYPE, String.class),
+						amqpMessageProperties::setType)
+				.acceptIfNotNull(getHeaderIfAvailable(headers, AmqpHeaders.RETRY_COUNT, Long.class),
+						amqpMessageProperties::setRetryCount)
+				.acceptIfHasText(getHeaderIfAvailable(headers, AmqpHeaders.USER_ID, String.class),
+						amqpMessageProperties::setUserId);
 
 		String replyCorrelation = getHeaderIfAvailable(headers, AmqpHeaders.SPRING_REPLY_CORRELATION, String.class);
 		if (StringUtils.hasLength(replyCorrelation)) {
