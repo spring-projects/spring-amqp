@@ -21,6 +21,7 @@ import com.rabbitmq.client.amqp.Resource;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.AmqpIllegalStateException;
+import org.springframework.amqp.core.AmqpMessageReturnedException;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.AsyncAmqpTemplate;
 import org.springframework.amqp.core.Message;
@@ -28,6 +29,7 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
 import org.springframework.amqp.core.ReceiveAndReplyMessageCallback;
+import org.springframework.amqp.core.ReturnedMessage;
 import org.springframework.amqp.rabbit.core.AmqpNackReceivedException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
@@ -45,6 +47,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Artem Bilan
  * @author Robin Collard
+ * @author Davidson Linhares
  *
  * @since 4.0
  */
@@ -255,7 +258,11 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 							case REJECTED -> publishResult.completeExceptionally(new AmqpNackReceivedException(
 									"The message was rejected", message, context.failureCause()));
 							case RELEASED -> publishResult.completeExceptionally(
-									new AmqpNackReceivedException("The message was rejected", message));
+									new AmqpMessageReturnedException("The message was released",
+											new ReturnedMessage(message, 0, "",
+													Objects.requireNonNullElse(exchange, ""),
+													Objects.requireNonNullElse(routingKey,
+															Objects.requireNonNullElse(queue, "")))));
 						}
 					});
 		}
