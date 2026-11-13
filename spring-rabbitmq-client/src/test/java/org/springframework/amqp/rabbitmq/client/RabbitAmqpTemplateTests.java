@@ -20,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.AmqpIllegalStateException;
+import org.springframework.amqp.core.AmqpMessageReturnedException;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
@@ -45,6 +46,7 @@ import static org.awaitility.Awaitility.await;
  * @author Artem Bilan
  * @author Jan Mohr
  * @author Sharang Gupta
+ * @author Davidson Linhares
  *
  * @since 4.0
  */
@@ -333,6 +335,23 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 								.isInstanceOfSatisfying(AmqpNackReceivedException.class, (nack) -> {
 									assertThat(nack.getFailedMessage()).isSameAs(rejectedMessage);
 									assertThat(nack.getCause()).isNotNull();
+								}));
+	}
+
+	@Test
+	void releasedPublishCompletesWithMessageReturnedException() {
+		Message unroutableMessage = new Message("released".getBytes(StandardCharsets.UTF_8));
+
+		assertThat(this.rabbitAmqpTemplate.send("e1", "no-route", unroutableMessage))
+				.failsWithin(Duration.ofSeconds(20))
+				.withThrowableThat()
+				.isInstanceOfSatisfying(ExecutionException.class, (exception) ->
+						assertThat(exception.getCause())
+								.isInstanceOfSatisfying(AmqpMessageReturnedException.class, (returned) -> {
+									assertThat(returned.getMessage()).isEqualTo("The message was released");
+									assertThat(returned.getReturnedMessage()).isSameAs(unroutableMessage);
+									assertThat(returned.getExchange()).isEqualTo("e1");
+									assertThat(returned.getRoutingKey()).isEqualTo("no-route");
 								}));
 	}
 
