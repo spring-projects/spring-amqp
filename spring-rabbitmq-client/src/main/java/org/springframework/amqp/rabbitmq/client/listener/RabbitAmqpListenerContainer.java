@@ -59,6 +59,7 @@ import org.springframework.util.ObjectUtils;
  *
  * @author Artem Bilan
  * @author Seonwoo Jung
+ * @author Ngoc Nhan
  *
  * @since 4.0
  *
@@ -381,7 +382,7 @@ public class RabbitAmqpListenerContainer
 									.priority(this.priority)
 									.initialCredits(this.initialCredits)
 									.listeners(this.stateListeners)
-									.messageHandler(new ConsumerMessageHandler())
+									.messageHandler(new ConsumerMessageHandler(queue))
 									.build();
 					consumers.add(queue, consumer);
 				}
@@ -406,9 +407,9 @@ public class RabbitAmqpListenerContainer
 		}
 	}
 
-	private void invokeListener(Consumer.Context context, com.rabbitmq.client.amqp.Message amqpMessage) {
+	private void invokeListener(Consumer.Context context, com.rabbitmq.client.amqp.Message amqpMessage, String queueName) {
 		try {
-			doInvokeListener(context, amqpMessage);
+			doInvokeListener(context, amqpMessage, queueName);
 			if (this.autoSettle) {
 				context.accept();
 			}
@@ -419,20 +420,20 @@ public class RabbitAmqpListenerContainer
 	}
 
 	@SuppressWarnings("NullAway") // Dataflow analysis limitation
-	private void doInvokeListener(Consumer.Context context, com.rabbitmq.client.amqp.Message amqpMessage) {
+	private void doInvokeListener(Consumer.Context context, com.rabbitmq.client.amqp.Message amqpMessage, String queueName) {
 		Consumer.Context contextToUse = this.autoSettle ? null : context;
 		if (this.proxy instanceof RabbitAmqpMessageListener amqpMessageListener) {
 			if (ObjectUtils.isEmpty(this.adviceChain)) {
-				amqpMessageListener.onAmqpMessage(amqpMessage, contextToUse);
+				amqpMessageListener.onAmqpMessage(amqpMessage, contextToUse, queueName);
 			}
 			else {
 				// Expose the converted message to advices, e.g. a stateless retry 'MessageRecoverer'
 				amqpMessageListener.onAmqpMessage(amqpMessage,
-						RabbitAmqpUtils.fromAmqpMessage(amqpMessage, contextToUse), contextToUse);
+						RabbitAmqpUtils.fromAmqpMessage(amqpMessage, contextToUse, queueName), contextToUse);
 			}
 		}
 		else {
-			Message message = postProcessReceivedMessage(RabbitAmqpUtils.fromAmqpMessage(amqpMessage, contextToUse));
+			Message message = postProcessReceivedMessage(RabbitAmqpUtils.fromAmqpMessage(amqpMessage, contextToUse, queueName));
 			this.proxy.onMessage(message);
 		}
 	}
@@ -447,12 +448,12 @@ public class RabbitAmqpListenerContainer
 		return messageToUse;
 	}
 
-	private void invokeBatchListener(Consumer.Context context, List<com.rabbitmq.client.amqp.Message> batch) {
+	private void invokeBatchListener(Consumer.Context context, List<com.rabbitmq.client.amqp.Message> batch, String queueName) {
 		Consumer.Context contextToUse = this.autoSettle ? null : context;
 		List<Message> messages =
 				batch.stream()
 						.map((amqpMessage) ->
-								postProcessReceivedMessage(RabbitAmqpUtils.fromAmqpMessage(amqpMessage, contextToUse)))
+								postProcessReceivedMessage(RabbitAmqpUtils.fromAmqpMessage(amqpMessage, contextToUse, queueName)))
 						.toList();
 		try {
 			doInvokeBatchListener(messages);
@@ -620,7 +621,10 @@ public class RabbitAmqpListenerContainer
 
 		private @Nullable ConsumerBatch consumerBatch;
 
-		ConsumerMessageHandler() {
+		private final String queueName;
+
+		ConsumerMessageHandler(String queueName) {
+			this.queueName = queueName;
 		}
 
 		@Override
@@ -632,7 +636,7 @@ public class RabbitAmqpListenerContainer
 					if (currentBatch == null) {
 						currentBatch =
 								new ConsumerBatch(RabbitAmqpListenerContainer.this.batchSize,
-										context.batch(RabbitAmqpListenerContainer.this.batchSize));
+										context.batch(RabbitAmqpListenerContainer.this.batchSize), this.queueName);
 						this.consumerBatch = currentBatch;
 					}
 					currentBatch.add(context, message);
@@ -646,7 +650,7 @@ public class RabbitAmqpListenerContainer
 				}
 			}
 			else {
-				invokeListener(context, message);
+				invokeListener(context, message, this.queueName);
 			}
 		}
 
@@ -656,13 +660,16 @@ public class RabbitAmqpListenerContainer
 
 			private final Consumer.BatchContext batchContext;
 
+			private final String queueName;
+
 			private @Nullable ScheduledFuture<?> batchReleaseFuture;
 
 			private boolean released;
 
-			ConsumerBatch(int batchSize, Consumer.BatchContext batchContext) {
+			ConsumerBatch(int batchSize, Consumer.BatchContext batchContext, String queueName) {
 				this.batchContext = batchContext;
 				this.batch = new ArrayList<>(batchSize);
+				this.queueName = queueName;
 			}
 
 			void add(Consumer.Context context, com.rabbitmq.client.amqp.Message message) {
@@ -699,7 +706,7 @@ public class RabbitAmqpListenerContainer
 			private void releaseInternal() {
 				if (!this.released) {
 					this.released = true;
-					invokeBatchListener(this.batchContext, this.batch);
+					invokeBatchListener(this.batchContext, this.batch, this.queueName);
 				}
 			}
 

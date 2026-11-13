@@ -6,17 +6,22 @@ package org.springframework.amqp.rabbitmq.client;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import com.rabbitmq.client.amqp.Consumer;
+import com.rabbitmq.qpid.protonj2.types.Symbol;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.utils.JavaUtils;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -30,10 +35,13 @@ public final class RabbitAmqpUtils {
 	 * Convert {@link com.rabbitmq.client.amqp.Message} into {@link Message}.
 	 * @param amqpMessage the {@link com.rabbitmq.client.amqp.Message} convert from.
 	 * @param context the {@link Consumer.Context} for manual message settlement.
+	 * @param queueName the queue name to be consumed.
 	 * @return the {@link Message} mapped from a {@link com.rabbitmq.client.amqp.Message}.
 	 */
+	@SuppressWarnings("unchecked")
 	public static Message fromAmqpMessage(com.rabbitmq.client.amqp.Message amqpMessage,
-			Consumer.@Nullable Context context) {
+			Consumer.@Nullable Context context,
+			@Nullable String queueName) {
 
 		MessageProperties messageProperties = new MessageProperties();
 
@@ -50,7 +58,31 @@ public final class RabbitAmqpUtils {
 				.acceptIfNotNull(amqpMessage.annotation("x-exchange"),
 						(exchange) -> messageProperties.setReceivedExchange(exchange.toString()))
 				.acceptIfNotNull(amqpMessage.annotation("x-routing-key"),
-						(routingKey) -> messageProperties.setReceivedRoutingKey(routingKey.toString()));
+						(routingKey) -> messageProperties.setReceivedRoutingKey(routingKey.toString()))
+				.acceptIfHasText(queueName, messageProperties::setConsumerQueue);
+
+		amqpMessage.forEachAnnotation((key, value) -> {
+
+			if (key.startsWith("x-first-death-") || key.startsWith("x-last-death-")) {
+				messageProperties.setHeader(key, value);
+			}
+
+			if (key.equals("x-opt-deaths")
+					&& !ObjectUtils.isEmpty((Map<Symbol, ?>[]) value)) {
+
+				List<Map<String, ?>> messagePropertiesXDeathHeader = new ArrayList<>();
+				for (Map<Symbol, ?> xDeath : (Map<Symbol, ?>[]) value) {
+
+					Map<String, ?> messagePropertiesXDeathMap = xDeath.entrySet().stream()
+							.collect(Collectors.toUnmodifiableMap(
+									e -> e.getKey().toString(),
+									Map.Entry::getValue));
+					messagePropertiesXDeathHeader.add(messagePropertiesXDeathMap);
+				}
+				messageProperties.setHeader(MessageProperties.X_DEATH, messagePropertiesXDeathHeader);
+			}
+
+		});
 
 		messageProperties.setPriority(Byte.valueOf(amqpMessage.priority()).intValue());
 		messageProperties.setDeliveryMode(amqpMessage.durable()
