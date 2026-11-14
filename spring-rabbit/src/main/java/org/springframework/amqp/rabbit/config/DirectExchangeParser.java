@@ -28,7 +28,7 @@ public class DirectExchangeParser extends AbstractExchangeParser {
 
 	@Override
 	protected BeanDefinitionBuilder parseBinding(String exchangeName, Element binding,
-												 ParserContext parserContext) {
+			ParserContext parserContext) {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(BindingFactoryBean.class);
 		parseDestination(binding, parserContext, builder);
 		builder.addPropertyValue("exchange", new TypedStringValue(exchangeName));
@@ -36,7 +36,7 @@ public class DirectExchangeParser extends AbstractExchangeParser {
 		String exchangeId = binding.getAttribute(BINDING_EXCHANGE_ATTR);
 
 		String bindingKey = binding.hasAttribute(BINDING_KEY_ATTR) ? binding.getAttribute(BINDING_KEY_ATTR) :
-				"#{@'" + (StringUtils.hasText(queueId) ? queueId : exchangeId)  + "'.name}";
+				"#{@'" + (StringUtils.hasText(queueId) ? queueId : exchangeId) + "'.name}";
 
 		builder.addPropertyValue("routingKey", new TypedStringValue(bindingKey));
 		return builder;

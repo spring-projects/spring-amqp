@@ -13,6 +13,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.jspecify.annotations.Nullable;
 
@@ -700,16 +701,16 @@ public class MessageProperties implements Serializable {
 	 */
 	@SuppressWarnings("unchecked")
 	public @Nullable List<Map<String, ?>> getXDeathHeader() {
-			Object xDeathValue = this.headers.get(X_DEATH);
+		Object xDeathValue = this.headers.get(X_DEATH);
 
-			if (xDeathValue instanceof List<?> xDeath
-					&& !CollectionUtils.isEmpty(xDeath)
-					&& xDeath.get(0) instanceof Map<?, ?>) {
+		if (xDeathValue instanceof List<?> xDeath
+				&& !CollectionUtils.isEmpty(xDeath)
+				&& xDeath.get(0) instanceof Map<?, ?>) {
 
-				return (List<Map<String, ?>>) xDeath;
-			}
+			return (List<Map<String, ?>>) xDeath;
+		}
 
-			return null;
+		return null;
 	}
 
 	/**
@@ -758,146 +759,38 @@ public class MessageProperties implements Serializable {
 		return result;
 	}
 
-	@Override // NOSONAR complexity
-	public boolean equals(Object obj) { // NOSONAR line count
+	@Override
+	public boolean equals(Object obj) {
+
 		if (this == obj) {
 			return true;
 		}
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		MessageProperties other = (MessageProperties) obj;
-		if (this.appId == null) {
-			if (other.appId != null) {
-				return false;
-			}
-		}
-		else if (!this.appId.equals(other.appId)) {
-			return false;
-		}
-		if (this.clusterId == null) {
-			if (other.clusterId != null) {
-				return false;
-			}
-		}
-		else if (!this.clusterId.equals(other.clusterId)) {
-			return false;
-		}
-		if (this.contentEncoding == null) {
-			if (other.contentEncoding != null) {
-				return false;
-			}
-		}
-		else if (!this.contentEncoding.equals(other.contentEncoding)) {
-			return false;
-		}
-		if (this.contentLength != other.contentLength) {
-			return false;
-		}
-		if (!this.contentType.equals(other.contentType)) {
-			return false;
+
+		if (obj instanceof MessageProperties other) {
+
+			return Objects.equals(this.appId, other.appId)
+					&& Objects.equals(this.clusterId, other.clusterId)
+					&& Objects.equals(this.contentEncoding, other.contentEncoding)
+					&& this.contentLength == other.contentLength
+					&& this.contentType.equals(other.contentType)
+					&& Objects.equals(this.correlationId, other.correlationId)
+					&& this.deliveryMode == other.deliveryMode
+					&& this.deliveryTag == other.deliveryTag
+					&& Objects.equals(this.expiration, other.expiration)
+					&& this.headers.equals(other.headers)
+					&& Objects.equals(this.messageCount, other.messageCount)
+					&& Objects.equals(this.messageId, other.messageId)
+					&& this.priority.equals(other.priority)
+					&& Objects.equals(this.receivedExchange, other.receivedExchange)
+					&& Objects.equals(this.receivedRoutingKey, other.receivedRoutingKey)
+					&& Objects.equals(this.redelivered, other.redelivered)
+					&& Objects.equals(this.replyTo, other.replyTo)
+					&& Objects.equals(this.timestamp, other.timestamp)
+					&& Objects.equals(this.type, other.type)
+					&& Objects.equals(this.userId, other.userId);
 		}
 
-		if (this.correlationId == null) {
-			if (other.correlationId != null) {
-				return false;
-			}
-		}
-		else if (!this.correlationId.equals(other.correlationId)) {
-			return false;
-		}
-
-		if (this.deliveryMode != other.deliveryMode) {
-			return false;
-		}
-		if (this.deliveryTag != other.deliveryTag) {
-			return false;
-		}
-		if (this.expiration == null) {
-			if (other.expiration != null) {
-				return false;
-			}
-		}
-		else if (!this.expiration.equals(other.expiration)) {
-			return false;
-		}
-		if (!this.headers.equals(other.headers)) {
-			return false;
-		}
-		if (this.messageCount == null) {
-			if (other.messageCount != null) {
-				return false;
-			}
-		}
-		else if (!this.messageCount.equals(other.messageCount)) {
-			return false;
-		}
-		if (this.messageId == null) {
-			if (other.messageId != null) {
-				return false;
-			}
-		}
-		else if (!this.messageId.equals(other.messageId)) {
-			return false;
-		}
-		if (!this.priority.equals(other.priority)) {
-			return false;
-		}
-		if (this.receivedExchange == null) {
-			if (other.receivedExchange != null) {
-				return false;
-			}
-		}
-		else if (!this.receivedExchange.equals(other.receivedExchange)) {
-			return false;
-		}
-		if (this.receivedRoutingKey == null) {
-			if (other.receivedRoutingKey != null) {
-				return false;
-			}
-		}
-		else if (!this.receivedRoutingKey.equals(other.receivedRoutingKey)) {
-			return false;
-		}
-		if (this.redelivered == null) {
-			if (other.redelivered != null) {
-				return false;
-			}
-		}
-		else if (!this.redelivered.equals(other.redelivered)) {
-			return false;
-		}
-		if (this.replyTo == null) {
-			if (other.replyTo != null) {
-				return false;
-			}
-		}
-		else if (!this.replyTo.equals(other.replyTo)) {
-			return false;
-		}
-		if (this.timestamp == null) {
-			if (other.timestamp != null) {
-				return false;
-			}
-		}
-		else if (!this.timestamp.equals(other.timestamp)) {
-			return false;
-		}
-		if (this.type == null) {
-			if (other.type != null) {
-				return false;
-			}
-		}
-		else if (!this.type.equals(other.type)) {
-			return false;
-		}
-		if (this.userId == null) {
-			return other.userId == null;
-		}
-		return this.userId.equals(other.userId);
+		return false;
 	}
 
 	@Override // NOSONAR complexity

@@ -236,9 +236,9 @@ public class FixedReplyQueueDeadLetterTests extends NeedsManagementTests {
 		@Bean
 		public Queue replyQueue() {
 			return QueueBuilder.durable("dlx.test.replyQ")
-				    .autoDelete()
-				    .withArgument("x-dead-letter-exchange", "reply.dlx")
-				    .build();
+					.autoDelete()
+					.withArgument("x-dead-letter-exchange", "reply.dlx")
+					.build();
 		}
 
 		/**
