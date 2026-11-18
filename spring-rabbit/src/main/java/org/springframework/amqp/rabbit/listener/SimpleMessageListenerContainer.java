@@ -1083,6 +1083,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				throw (Exception) e.getCause();
 			}
 			finally {
+				ConsumerChannelRegistry.releaseConsumerChannelClaim();
 				ConnectionFactoryUtils.checkAfterCompletion();
 			}
 		}
