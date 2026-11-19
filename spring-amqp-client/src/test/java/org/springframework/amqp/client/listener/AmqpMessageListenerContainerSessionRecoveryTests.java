@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.client.AmqpClient;
 import org.springframework.amqp.client.AmqpConnectionFactory;
-import org.springframework.amqp.client.SpringAmqpConnectionFactory;
+import org.springframework.amqp.client.SingleAmqpConnectionFactory;
 import org.springframework.amqp.client.config.EnableAmqp;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.junit.AbstractTestContainerTests;
@@ -117,7 +117,7 @@ class AmqpMessageListenerContainerSessionRecoveryTests extends AbstractTestConta
 
 		@Bean
 		AmqpConnectionFactory amqpConnectionFactory() {
-			return new SpringAmqpConnectionFactory()
+			return new SingleAmqpConnectionFactory()
 					.setPort(amqpPort())
 					.setReconnectOptions(new ReconnectOptions().reconnectEnabled(true));
 		}
