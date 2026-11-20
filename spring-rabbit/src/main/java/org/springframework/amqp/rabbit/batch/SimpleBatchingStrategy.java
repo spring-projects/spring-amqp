@@ -181,7 +181,7 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 			// Caveat - shared MessageProperties, except for last
 			Message fragment;
 			if (byteBuffer.hasRemaining()) {
-				 fragment = new Message(body, messageProperties);
+				fragment = new Message(body, messageProperties);
 			}
 			else {
 				MessageProperties lastProperties = new MessageProperties();
