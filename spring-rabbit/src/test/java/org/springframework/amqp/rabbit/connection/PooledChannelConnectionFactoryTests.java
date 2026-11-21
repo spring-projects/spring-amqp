@@ -5,20 +5,25 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.ShutdownSignalException;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,10 +34,19 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 /**
  * @author Gary Russell
  * @author Leonardo Ferreira
+ * @author WooSeung Kim
  * @since 2.3
  *
  */
@@ -254,6 +268,170 @@ public class PooledChannelConnectionFactoryTests {
 		}
 
 		connection.close();
+	}
+
+	@Test
+	void physicalCloseReleasesPoolSlot() throws Exception {
+		AtomicReference<GenericObjectPool<Channel>> pool = new AtomicReference<>();
+		PooledChannelConnectionFactory pcf = mockFactory(pool, null, 1);
+		try {
+			Connection connection = pcf.createConnection();
+			Channel channel = connection.createChannel(false);
+			Channel target = ((ChannelProxy) channel).getTargetChannel();
+			RabbitUtils.setPhysicalCloseRequired(channel, true);
+			channel.close();
+			assertThat(target.isOpen()).isFalse();
+			assertThat(pool.get().getNumActive()).as("borrowed slots after physical close").isZero();
+			connection.createChannel(false).close();
+		}
+		finally {
+			pcf.destroy();
+		}
+	}
+
+	@Test
+	void physicalCloseReleasesPoolSlotWhenCloseFails() throws Exception {
+		AtomicReference<GenericObjectPool<Channel>> pool = new AtomicReference<>();
+		PooledChannelConnectionFactory pcf = mockFactory(pool, null, 1);
+		try {
+			Connection connection = pcf.createConnection();
+			Channel channel = connection.createChannel(false);
+			Channel target = ((ChannelProxy) channel).getTargetChannel();
+			ShutdownSignalException failure = new ShutdownSignalException(false, false, null, target);
+			willThrow(failure).given(target).close();
+			RabbitUtils.setPhysicalCloseRequired(channel, true);
+			assertThatThrownBy(channel::close).isSameAs(failure);
+			verify(target).close();
+			assertThat(pool.get().getNumActive()).as("borrowed slots after failed physical close").isZero();
+			assertThat(RabbitUtils.isPhysicalCloseRequired()).isFalse();
+			connection.createChannel(false).close();
+		}
+		finally {
+			RabbitUtils.clearPhysicalCloseRequired();
+			pcf.destroy();
+		}
+	}
+
+	@Test
+	void transactionalPhysicalCloseReleasesPoolSlot() throws Exception {
+		AtomicReference<GenericObjectPool<Channel>> pool = new AtomicReference<>();
+		AtomicReference<GenericObjectPool<Channel>> txPool = new AtomicReference<>();
+		PooledChannelConnectionFactory pcf = mockFactory(pool, txPool, 1);
+		try {
+			Connection connection = pcf.createConnection();
+			Channel channel = connection.createChannel(true);
+			RabbitUtils.setPhysicalCloseRequired(channel, true);
+			channel.close();
+			assertThat(txPool.get().getNumActive()).as("borrowed transactional slots after physical close").isZero();
+			Channel next = connection.createChannel(true);
+			assertThat(next).isNotSameAs(channel);
+			next.close();
+		}
+		finally {
+			pcf.destroy();
+		}
+	}
+
+	@Test
+	void repeatedPhysicalCloseDoesNotLeakFlag() throws Exception {
+		AtomicReference<GenericObjectPool<Channel>> pool = new AtomicReference<>();
+		PooledChannelConnectionFactory pcf = mockFactory(pool, null, 2);
+		try {
+			Connection connection = pcf.createConnection();
+			Channel channel = connection.createChannel(false);
+			RabbitUtils.setPhysicalCloseRequired(channel, true);
+			channel.close();
+			RabbitUtils.setPhysicalCloseRequired(channel, true);
+			RabbitUtils.closeChannel(channel);
+			assertThat(RabbitUtils.isPhysicalCloseRequired()).isFalse();
+			Channel next = connection.createChannel(false);
+			next.close();
+			assertThat(next.isOpen()).isTrue();
+			assertThat(pool.get().getNumActive()).as("borrowed slots after repeated physical close").isZero();
+		}
+		finally {
+			RabbitUtils.clearPhysicalCloseRequired();
+			pcf.destroy();
+		}
+	}
+
+	@Test
+	void sequentialInvokeDoesNotExhaustPool(ConnectionFactory rabbitConnectionFactory) {
+		PooledChannelConnectionFactory pcf = new PooledChannelConnectionFactory(rabbitConnectionFactory);
+		pcf.setPoolConfigurer((pool, transactional) -> pool.setMaxWait(Duration.ofMillis(500)));
+		try {
+			RabbitTemplate template = new RabbitTemplate(pcf);
+			for (int i = 0; i < 9; i++) {
+				template.invoke(operations -> null);
+			}
+		}
+		finally {
+			pcf.destroy();
+		}
+	}
+
+	@Test
+	void receiveTimeoutOnBrokerReleasesPoolSlot(ConnectionFactory rabbitConnectionFactory) throws Exception {
+		PooledChannelConnectionFactory pcf = new PooledChannelConnectionFactory(rabbitConnectionFactory);
+		AtomicReference<GenericObjectPool<Channel>> pool = new AtomicReference<>();
+		pcf.setPoolConfigurer((candidate, transactional) -> {
+			candidate.setMaxTotal(1);
+			candidate.setMaxWait(Duration.ofMillis(500));
+			if (!transactional) {
+				pool.set(candidate);
+			}
+		});
+		CachingConnectionFactory adminConnectionFactory = new CachingConnectionFactory(rabbitConnectionFactory);
+		RabbitAdmin admin = new RabbitAdmin(adminConnectionFactory);
+		String queue = "pooled-receive-" + UUID.randomUUID();
+		try {
+			admin.declareQueue(new Queue(queue));
+			RabbitTemplate template = new RabbitTemplate(pcf);
+			assertThat(template.receive(queue, 100)).isNull();
+			assertThat(pool.get().getNumActive()).as("borrowed slots after receive timeout").isZero();
+			assertThat(template.receive(queue, 100)).isNull();
+		}
+		finally {
+			admin.deleteQueue(queue);
+			adminConnectionFactory.destroy();
+			pcf.destroy();
+		}
+	}
+
+	private static PooledChannelConnectionFactory mockFactory(AtomicReference<GenericObjectPool<Channel>> pool,
+			@Nullable AtomicReference<GenericObjectPool<Channel>> txPool, int maxTotal) throws Exception {
+
+		ConnectionFactory rabbitConnectionFactory = mock();
+		com.rabbitmq.client.Connection rabbitConnection = mock();
+		given(rabbitConnectionFactory.newConnection(nullable(ExecutorService.class), anyString()))
+				.willReturn(rabbitConnection);
+		given(rabbitConnection.isOpen()).willReturn(true);
+		willAnswer(invocation -> newMockChannel()).given(rabbitConnection).createChannel();
+		PooledChannelConnectionFactory pcf = new PooledChannelConnectionFactory(rabbitConnectionFactory);
+		pcf.setPoolConfigurer((candidate, transactional) -> {
+			candidate.setMaxTotal(maxTotal);
+			candidate.setMaxWait(Duration.ofMillis(300));
+			if (transactional) {
+				if (txPool != null) {
+					txPool.set(candidate);
+				}
+			}
+			else {
+				pool.set(candidate);
+			}
+		});
+		return pcf;
+	}
+
+	private static Channel newMockChannel() throws Exception {
+		Channel channel = mock();
+		AtomicBoolean open = new AtomicBoolean(true);
+		willAnswer(invocation -> open.get()).given(channel).isOpen();
+		willAnswer(invocation -> {
+			open.set(false);
+			return null;
+		}).given(channel).close();
+		return channel;
 	}
 
 	@Configuration

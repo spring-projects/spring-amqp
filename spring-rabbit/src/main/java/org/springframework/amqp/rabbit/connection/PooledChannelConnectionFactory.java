@@ -45,6 +45,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Ngoc Nhan
  * @author Artem Bilan
+ * @author WooSeung Kim
  *
  * @since 2.3
  *
@@ -260,7 +261,7 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory
 						String method = invocation.getMethod().getName();
 						return switch (method) {
 							case "close" -> {
-								handleClose(channel, transacted, proxy);
+								handleClose(transacted, proxy);
 								yield null;
 							}
 							case "getTargetChannel" -> channel;
@@ -287,19 +288,18 @@ public class PooledChannelConnectionFactory extends AbstractConnectionFactory
 			return proxy.get();
 		}
 
-		private void handleClose(Channel channel, boolean transacted, AtomicReference<Channel> proxy)
+		private void handleClose(boolean transacted, AtomicReference<Channel> proxy)
 				throws Exception { // NOSONAR returnObject() throws it
 
+			ObjectPool<Channel> pool = transacted
+					? ConnectionWrapper.this.txChannels
+					: ConnectionWrapper.this.channels;
 			if (!RabbitUtils.isPhysicalCloseRequired()) {
-				if (transacted) {
-					ConnectionWrapper.this.txChannels.returnObject(proxy.get());
-				}
-				else {
-					ConnectionWrapper.this.channels.returnObject(proxy.get());
-				}
+				pool.returnObject(proxy.get());
 			}
 			else {
-				physicalClose(channel);
+				RabbitUtils.clearPhysicalCloseRequired();
+				pool.invalidateObject(proxy.get());
 			}
 		}
 
