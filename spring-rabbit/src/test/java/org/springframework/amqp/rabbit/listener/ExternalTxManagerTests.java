@@ -40,6 +40,7 @@ import org.springframework.transaction.interceptor.RollbackRuleAttribute;
 import org.springframework.transaction.interceptor.RuleBasedTransactionAttribute;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 import org.springframework.transaction.support.DefaultTransactionStatus;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -51,6 +52,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -212,6 +214,87 @@ public abstract class ExternalTxManagerTests {
 		assertThat(transactionManager.committed).isTrue();
 		verify(onlyChannel, times(3)).basicAck(anyLong(), anyBoolean());
 		verify(onlyChannel, times(5)).txCommit();
+
+		container.stop();
+	}
+
+	/**
+	 * A channel transacted RabbitTemplate used within a
+	 * {@code PROPAGATION_REQUIRES_NEW} transaction must neither commit nor close the
+	 * consumer channel.
+	 */
+	@Test
+	public void testMessageListenerRequiresNewTxDoesNotUseConsumerChannel() throws Exception {
+		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
+		Connection mockConnection = mock(Connection.class);
+		final Channel consumerChannel = mock(Channel.class);
+		given(consumerChannel.isOpen()).willReturn(true);
+		final Channel innerChannel = mock(Channel.class);
+		given(innerChannel.isOpen()).willReturn(true);
+
+		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(mockConnectionFactory);
+		cachingConnectionFactory.setExecutor(mock(ExecutorService.class));
+		cachingConnectionFactory.setChannelCacheSize(1);
+
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
+		given(mockConnection.isOpen()).willReturn(true);
+		given(mockConnection.createChannel()).willReturn(consumerChannel, innerChannel);
+
+		final AtomicReference<Consumer> consumer = new AtomicReference<>();
+		final CountDownLatch consumerLatch = new CountDownLatch(1);
+
+		willAnswer(invocation -> {
+			consumer.set(invocation.getArgument(6));
+			consumerLatch.countDown();
+			return "consumerTag";
+		}).given(consumerChannel)
+				.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
+						any(Consumer.class));
+
+		final CountDownLatch commitLatch = new CountDownLatch(1);
+		willAnswer(invocation -> {
+			commitLatch.countDown();
+			return null;
+		}).given(consumerChannel).txCommit();
+
+		DummyTxManager transactionManager = new DummyTxManager();
+		TransactionTemplate requiresNew = new TransactionTemplate(transactionManager);
+		requiresNew.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+
+		final CountDownLatch latch = new CountDownLatch(1);
+		AbstractMessageListenerContainer container = createContainer(cachingConnectionFactory);
+		container.setMessageListener((MessageListener) message -> {
+			RabbitTemplate rabbitTemplate = new RabbitTemplate(cachingConnectionFactory);
+			rabbitTemplate.setChannelTransacted(true);
+			requiresNew.executeWithoutResult(
+					status -> rabbitTemplate.convertAndSend("exchange", "routingKey", "payload"));
+			latch.countDown();
+		});
+		container.setQueueNames("queue");
+		container.setChannelTransacted(true);
+		container.setShutdownTimeout(100);
+		container.setTransactionManager(transactionManager);
+		container.afterPropertiesSet();
+		container.start();
+		assertThat(consumerLatch.await(10, TimeUnit.SECONDS)).isTrue();
+
+		consumer.get().handleDelivery("consumerTag", new Envelope(1, false, "exchange", "routingKey"),
+				new BasicProperties(), new byte[] { 0 });
+
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(commitLatch.await(10, TimeUnit.SECONDS)).isTrue();
+
+		// the inner transaction used its own channel...
+		verify(mockConnection, times(2)).createChannel();
+		verify(innerChannel).basicPublish(anyString(), anyString(), anyBoolean(),
+				any(BasicProperties.class), any(byte[].class));
+		verify(innerChannel).txCommit();
+		// ...and did not touch the consumer channel
+		verify(consumerChannel, never()).basicPublish(anyString(), anyString(), anyBoolean(),
+				any(BasicProperties.class), any(byte[].class));
+		verify(consumerChannel).basicAck(anyLong(), anyBoolean());
+		verify(consumerChannel, times(1)).txCommit(); // only the one for the listener's own transaction
+		verify(consumerChannel, never()).close();
 
 		container.stop();
 	}
