@@ -563,10 +563,9 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 
 		// The default reply-to queue, or the one supplied in the message.
 		// Otherwise, the Requester generates one as exclusive and auto-delete.
-		String replyToQueue = this.defaultReplyToQueue;
-		if (StringUtils.hasText(replyTo)) {
-			replyToQueue = replyTo;
-		}
+		String replyToQueue = StringUtils.hasText(replyTo)
+				? replyTo
+				: this.defaultReplyToQueue;
 
 		Requester rpcClient =
 				this.connectionFactory.getConnection()
@@ -581,7 +580,7 @@ public class RabbitAmqpTemplate implements AsyncAmqpTemplate, DisposableBean {
 					toAmqpMessage(exchange, routingKey, queue, message, rpcClient::message);
 
 			return rpcClient.publish(amqpMessage)
-					.thenApply((reply) -> RabbitAmqpUtils.fromAmqpMessage(reply, null, queue))
+					.thenApply((reply) -> RabbitAmqpUtils.fromAmqpMessage(reply, null, replyToQueue))
 					.orTimeout(this.completionTimeout.toMillis(), TimeUnit.MILLISECONDS)
 					.whenComplete((replyMessage, exception) -> rpcClient.close());
 		}
