@@ -124,7 +124,7 @@ public class MessagePropertiesTests {
 	}
 
 	@Test
-	public void comparingDifferentClasses() {
+	public void compareWithInstanceOfSubclass() {
 
 		MessageProperties original = new MessageProperties();
 		MessageProperties child = new TaggedProperties();
