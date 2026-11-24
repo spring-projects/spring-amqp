@@ -87,26 +87,26 @@ public class MessagePropertiesTests {
 	public void equalsAndHashCodeCompareTheSameProperties() {
 
 		Map<String, Consumer<MessageProperties>> changes = Map.ofEntries(
-			Map.entry("appId", properties -> properties.setAppId("application")),
-			Map.entry("clusterId", properties -> properties.setClusterId("cluster")),
-			Map.entry("contentEncoding", properties -> properties.setContentEncoding("utf-8")),
-			Map.entry("contentLength", properties -> properties.setContentLength(1)),
-			Map.entry("contentType", properties -> properties.setContentType("text/plain")),
-			Map.entry("correlationId", properties -> properties.setCorrelationId("correlation")),
-			Map.entry("deliveryMode", properties -> properties.setDeliveryMode(MessageDeliveryMode.NON_PERSISTENT)),
-			Map.entry("deliveryTag", properties -> properties.setDeliveryTag(1)),
-			Map.entry("expiration", properties -> properties.setExpiration("1000")),
-			Map.entry("headers", properties -> properties.setHeader("header", "value")),
-			Map.entry("messageCount", properties -> properties.setMessageCount(1)),
-			Map.entry("messageId", properties -> properties.setMessageId("message")),
-			Map.entry("priority", properties -> properties.setPriority(1)),
-			Map.entry("receivedExchange", properties -> properties.setReceivedExchange("exchange")),
-			Map.entry("receivedRoutingKey", properties -> properties.setReceivedRoutingKey("routing-key")),
-			Map.entry("redelivered", properties -> properties.setRedelivered(true)),
-			Map.entry("replyTo", properties -> properties.setReplyTo("reply")),
-			Map.entry("timestamp", properties -> properties.setTimestamp(new Date(1))),
-			Map.entry("type", properties -> properties.setType("type")),
-			Map.entry("userId", properties -> properties.setUserId("user"))
+				Map.entry("appId", properties -> properties.setAppId("application")),
+				Map.entry("clusterId", properties -> properties.setClusterId("cluster")),
+				Map.entry("contentEncoding", properties -> properties.setContentEncoding("utf-8")),
+				Map.entry("contentLength", properties -> properties.setContentLength(1)),
+				Map.entry("contentType", properties -> properties.setContentType("text/plain")),
+				Map.entry("correlationId", properties -> properties.setCorrelationId("correlation")),
+				Map.entry("deliveryMode", properties -> properties.setDeliveryMode(MessageDeliveryMode.NON_PERSISTENT)),
+				Map.entry("deliveryTag", properties -> properties.setDeliveryTag(1)),
+				Map.entry("expiration", properties -> properties.setExpiration("1000")),
+				Map.entry("headers", properties -> properties.setHeader("header", "value")),
+				Map.entry("messageCount", properties -> properties.setMessageCount(1)),
+				Map.entry("messageId", properties -> properties.setMessageId("message")),
+				Map.entry("priority", properties -> properties.setPriority(1)),
+				Map.entry("receivedExchange", properties -> properties.setReceivedExchange("exchange")),
+				Map.entry("receivedRoutingKey", properties -> properties.setReceivedRoutingKey("routing-key")),
+				Map.entry("redelivered", properties -> properties.setRedelivered(true)),
+				Map.entry("replyTo", properties -> properties.setReplyTo("reply")),
+				Map.entry("timestamp", properties -> properties.setTimestamp(new Date(1))),
+				Map.entry("type", properties -> properties.setType("type")),
+				Map.entry("userId", properties -> properties.setUserId("user"))
 		);
 
 		changes.forEach((field, change) -> {
@@ -121,6 +121,30 @@ public class MessagePropertiesTests {
 			assertThat(changed.equals(original)).as(field).isTrue();
 			assertThat(original.hashCode()).as(field).isEqualTo(changed.hashCode());
 		});
+	}
+
+	@Test
+	public void comparingDifferentClasses() {
+
+		MessageProperties original = new MessageProperties();
+		MessageProperties child = new TaggedProperties();
+
+		assertThat(original.equals(child)).isFalse();
+		assertThat(child.equals(original)).isFalse();
+	}
+
+	static class TaggedProperties extends MessageProperties {
+
+		@Override
+		public boolean equals(Object other) {
+			return other instanceof TaggedProperties && super.equals(other);
+		}
+
+		@Override
+		public int hashCode() {
+			return super.hashCode();
+		}
+
 	}
 
 }

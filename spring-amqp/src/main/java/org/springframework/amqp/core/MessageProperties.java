@@ -766,7 +766,7 @@ public class MessageProperties implements Serializable {
 			return true;
 		}
 
-		if (obj instanceof MessageProperties other) {
+		if (obj instanceof MessageProperties other && this.getClass().equals(other.getClass())) {
 
 			return Objects.equals(this.appId, other.appId)
 					&& Objects.equals(this.clusterId, other.clusterId)
