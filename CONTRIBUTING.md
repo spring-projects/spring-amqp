@@ -208,7 +208,7 @@ Kotlin code targets JVM 17, and all Kotlin warnings are treated as errors.
 
 ## Add the copyright header to all new classes
 
-The Apache License text lives only in `LICENSE.txt` (packaged into every jar); source files carry just the copyright line:
+The Apache License text lives only in `LICENSE` (packaged into every jar); source files carry just the copyright line:
 
 ```java
 /*
