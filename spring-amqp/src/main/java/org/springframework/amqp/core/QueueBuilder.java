@@ -13,6 +13,7 @@ import java.util.Map;
  * @author Maciej Walkowiak
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Ngoc Nhan
  *
  * @since 1.6
  *
@@ -320,8 +321,6 @@ public final class QueueBuilder extends AbstractBuilder {
 
 		/**
 		 * Deploy on the node with the fewest queue leaders.
-		 /**
-		 * Deploy on a random node.
 		 * @deprecated in favor of {@link #balanced}
 		 */
 		@Deprecated(since = "3.2.11", forRemoval = true)
