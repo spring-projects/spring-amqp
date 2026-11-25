@@ -4,6 +4,7 @@
 
 package org.springframework.amqp.core;
 
+import java.io.Serial;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashSet;
@@ -134,6 +135,9 @@ public class MessagePropertiesTests {
 	}
 
 	static class TaggedProperties extends MessageProperties {
+
+		@Serial
+		private static final long serialVersionUID = 1874787856271656475L;
 
 		@Override
 		public boolean equals(Object other) {
