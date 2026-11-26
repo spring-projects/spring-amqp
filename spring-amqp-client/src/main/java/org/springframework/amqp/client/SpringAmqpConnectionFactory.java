@@ -27,7 +27,10 @@ import org.jspecify.annotations.Nullable;
  * @author Tanishq Choudhary
  *
  * @since 4.1.3
+ * @deprecated Since 4.2.1, for removal: ProtonJ 1.5.0 recovers the default session itself,
+ * so use {@link SingleAmqpConnectionFactory} instead.
  */
+@Deprecated(since = "4.2.1", forRemoval = true)
 public class SpringAmqpConnectionFactory extends SingleAmqpConnectionFactory {
 
 	private final Lock instanceLock = new ReentrantLock();

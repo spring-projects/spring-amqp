@@ -75,9 +75,11 @@ NOTE: The `Client` injection can be omitted for the `SingleAmqpConnectionFactory
 
 Starting with version 4.1.3, the `SpringAmqpConnectionFactory` extension is available for a shared session recovery.
 All the links of a `Connection` live on one session, and a peer may end that session while the connection stays open, for example, on an authorization error.
-ProtonJ does not replace a closed default session, so the links on that session are lost and new ones cannot be opened.
+ProtonJ before version 1.5.0 does not replace a closed default session, so the links on that session are lost and new ones cannot be opened.
 The `SpringAmqpConnectionFactory` opens links on a session it manages itself, and replaces that session when it is found closed.
-This factory is a workaround until ProtonJ recovers the default session itself.
+
+NOTE: Starting with version 4.2.1, the `SpringAmqpConnectionFactory` is deprecated for removal, since ProtonJ 1.5.0 recovers the default session itself.
+Use the `SingleAmqpConnectionFactory` instead.
 
 [[amqp10-client-api]]
 == `AmqpClient`
