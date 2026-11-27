@@ -237,6 +237,12 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 	}
 
 	@Override
+	public void restart() {
+		this.contextRefreshed = false;
+		start();
+	}
+
+	@Override
 	public void stop() {
 		this.contextRefreshed = false;
 		for (MessageListenerContainer listenerContainer : getListenerContainers()) {
