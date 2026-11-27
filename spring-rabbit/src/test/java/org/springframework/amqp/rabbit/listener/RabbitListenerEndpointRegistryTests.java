@@ -73,6 +73,17 @@ public class RabbitListenerEndpointRegistryTests {
 	}
 
 	@Test
+	public void restartAfterRefreshWithoutStopHonorsAutoStartupFalse() {
+		GenericApplicationContext context = new GenericApplicationContext();
+		context.refresh();
+		registry.setApplicationContext(context);
+		MessageListenerContainer container = registerAutoStartupFalseContainer("listener");
+		registry.onApplicationEvent(new ContextRefreshedEvent(context));
+		registry.restart();
+		verify(container, never()).start();
+	}
+
+	@Test
 	public void startAfterRefreshWithoutStopStartsContainerRegardlessOfAutoStartup() {
 		GenericApplicationContext context = new GenericApplicationContext();
 		context.refresh();
