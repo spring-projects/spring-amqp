@@ -30,6 +30,7 @@ import org.springframework.util.ClassUtils;
  * @author Dave Syer
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Norbert Wirges
  */
 public final class ConnectionFactoryUtils {
 
@@ -122,8 +123,9 @@ public final class ConnectionFactoryUtils {
 			/*
 			 * If we are in a listener container, first see if there's a channel registered
 			 * for this consumer and the consumer is using the same connection factory.
+			 * Skip it if another (for example, suspended) transaction uses it already.
 			 */
-			channel = ConsumerChannelRegistry.getConsumerChannel(connectionFactory);
+			channel = ConsumerChannelRegistry.claimConsumerChannel(connectionFactory);
 			if (channel == null && connection == null) {
 				connection = resourceFactory.createConnection();
 				if (resourceHolder == null) {
@@ -164,7 +166,11 @@ public final class ConnectionFactoryUtils {
 		if (resourceHolder == null || resourceHolder.isSynchronizedWithTransaction()) {
 			return;
 		}
-		RabbitUtils.closeChannel(resourceHolder.getChannel());
+		Channel channel = resourceHolder.getChannel();
+		// The consumer channel is managed by the listener container
+		if (channel != ConsumerChannelRegistry.getConsumerChannel()) {
+			RabbitUtils.closeChannel(channel);
+		}
 		RabbitUtils.closeConnection(resourceHolder.getConnection());
 	}
 
@@ -177,6 +183,7 @@ public final class ConnectionFactoryUtils {
 		}
 		TransactionSynchronizationManager.bindResource(connectionFactory, resourceHolder);
 		resourceHolder.setSynchronizedWithTransaction(true);
+		ConsumerChannelRegistry.claimIfConsumerChannel(resourceHolder.getChannel());
 		if (TransactionSynchronizationManager.isSynchronizationActive()) {
 			TransactionSynchronizationManager.registerSynchronization(new RabbitResourceSynchronization(resourceHolder,
 					connectionFactory, ConnectionFactoryUtils::completionFailed));

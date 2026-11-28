@@ -19,6 +19,7 @@ import org.jspecify.annotations.Nullable;
  *
  * @author Gary Russell
  * @author Ngoc Nhan
+ * @author Norbert Wirges
  * @since 1.2
  *
  */
@@ -70,7 +71,7 @@ public final class ConsumerChannelRegistry {
 	public static @Nullable Channel getConsumerChannel() {
 		ChannelHolder channelHolder = CONSUMER_CHANNEL.get();
 		return channelHolder != null
-				? channelHolder.channel()
+				? channelHolder.channel
 				: null;
 	}
 
@@ -84,13 +85,73 @@ public final class ConsumerChannelRegistry {
 	public static @Nullable Channel getConsumerChannel(ConnectionFactory connectionFactory) {
 		ChannelHolder channelHolder = CONSUMER_CHANNEL.get();
 		Channel channel = null;
-		if (channelHolder != null && channelHolder.connectionFactory().equals(connectionFactory)) {
-			channel = channelHolder.channel();
+		if (channelHolder != null && channelHolder.connectionFactory.equals(connectionFactory)) {
+			channel = channelHolder.channel;
 		}
 		return channel;
 	}
 
-	private record ChannelHolder(Channel channel, ConnectionFactory connectionFactory) {
+	/**
+	 * Release the claim on the consumer channel when the transaction of the listener
+	 * container has completed.
+	 * @since 4.2
+	 * @see #claimConsumerChannel(ConnectionFactory)
+	 */
+	public static void releaseConsumerChannelClaim() {
+		ChannelHolder channelHolder = CONSUMER_CHANNEL.get();
+		if (channelHolder != null) {
+			channelHolder.claimed = false;
+		}
+	}
+
+	/**
+	 * Return the channel for this consumer if the connection factory matches and no
+	 * transaction uses it yet; the channel is then marked as used. This prevents a new
+	 * transaction (for example, {@code PROPAGATION_REQUIRES_NEW}) from taking over the
+	 * channel of the suspended container transaction.
+	 * @param connectionFactory The connection factory.
+	 * @return The channel or null.
+	 */
+	static @Nullable Channel claimConsumerChannel(ConnectionFactory connectionFactory) {
+		ChannelHolder channelHolder = CONSUMER_CHANNEL.get();
+		if (channelHolder != null && !channelHolder.claimed
+				&& channelHolder.connectionFactory.equals(connectionFactory)) {
+
+			channelHolder.claimed = true;
+			return channelHolder.channel;
+		}
+		return null;
+	}
+
+	/**
+	 * Mark the consumer channel as used if the provided channel is the consumer channel.
+	 * @param channel the channel bound to a transaction.
+	 */
+	static void claimIfConsumerChannel(@Nullable Channel channel) {
+		ChannelHolder channelHolder = CONSUMER_CHANNEL.get();
+		if (channel != null && channelHolder != null && channelHolder.channel == channel) {
+			channelHolder.claimed = true;
+		}
+	}
+
+	private static final class ChannelHolder {
+
+		private final Channel channel;
+
+		private final ConnectionFactory connectionFactory;
+
+		private boolean claimed;
+
+		ChannelHolder(Channel channel, ConnectionFactory connectionFactory) {
+			this.channel = channel;
+			this.connectionFactory = connectionFactory;
+		}
+
+		@Override
+		public String toString() {
+			return "ChannelHolder [channel=" + this.channel + ", connectionFactory=" + this.connectionFactory
+					+ ", claimed=" + this.claimed + "]";
+		}
 
 	}
 
