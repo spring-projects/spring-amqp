@@ -45,7 +45,7 @@ public class RabbitAmqpMessageListenerAdapterTests {
 	void listenerErrorHandlerIsInvokedForSynchronousFailure() throws Exception {
 		RabbitAmqpMessageListenerAdapter adapter = createAdapter(AcknowledgeMode.AUTO);
 
-		adapter.onAmqpMessage(amqpMessage(), null);
+		adapter.onAmqpMessage(amqpMessage(), null, "queueName");
 
 		verify(this.errorHandler)
 				.handleError(any(), isNull(), any(), any(ListenerExecutionFailedException.class));
@@ -55,7 +55,7 @@ public class RabbitAmqpMessageListenerAdapterTests {
 	void listenerErrorHandlerCanAcknowledgeSynchronousFailure() throws Exception {
 		RabbitAmqpMessageListenerAdapter adapter = createAdapter(AcknowledgeMode.MANUAL);
 
-		adapter.onAmqpMessage(amqpMessage(), this.context);
+		adapter.onAmqpMessage(amqpMessage(), this.context, "queueName");
 
 		verify(this.errorHandler)
 				.handleError(any(), isNull(), any(), any(ListenerExecutionFailedException.class));
@@ -69,7 +69,7 @@ public class RabbitAmqpMessageListenerAdapterTests {
 		RabbitAmqpMessageListenerAdapter adapter = createAdapter(AcknowledgeMode.MANUAL);
 
 		assertThatExceptionOfType(IllegalArgumentException.class)
-				.isThrownBy(() -> adapter.onAmqpMessage(amqpMessage(), this.context))
+				.isThrownBy(() -> adapter.onAmqpMessage(amqpMessage(), this.context, "queueName"))
 				.withMessage("from the error handler");
 		verify(this.context, never()).accept();
 	}

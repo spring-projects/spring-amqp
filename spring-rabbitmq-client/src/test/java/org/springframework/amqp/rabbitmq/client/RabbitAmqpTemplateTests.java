@@ -27,10 +27,12 @@ import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageDeliveryMode;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.QueueBuilder.Overflow;
 import org.springframework.amqp.core.QueueInformation;
+import org.springframework.amqp.core.ReceiveAndReplyMessageCallback;
 import org.springframework.amqp.rabbit.core.AmqpNackReceivedException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -46,7 +48,7 @@ import static org.awaitility.Awaitility.await;
  * @author Artem Bilan
  * @author Jan Mohr
  * @author Sharang Gupta
- *
+ * @author Ngoc Nhan
  * @since 4.0
  */
 @ContextConfiguration
@@ -354,6 +356,48 @@ public class RabbitAmqpTemplateTests extends RabbitAmqpTestBase {
 				assertThat(this.admin.getQueueInfo(replyQueue))
 						.extracting(QueueInformation::getConsumerCount)
 						.isEqualTo(0));
+	}
+
+	@Test
+	void verifyRequestAndReplyMessageProperties() {
+
+		String replyQueue = "rpc.reply";
+		this.admin.declareQueue(new Queue(replyQueue));
+
+		Message request = MessageBuilder.withBody("request".getBytes(StandardCharsets.UTF_8))
+				.setMessageId(UUID.randomUUID().toString())
+				.setReplyTo("rpc.reply")
+				.build();
+
+		AtomicReference<Message> serverRequest = new AtomicReference<>();
+
+		CompletableFuture<Message> rpcClientResult = this.template.sendAndReceive("e1", "k1", request);
+		CompletableFuture<Boolean> rpcServerResult = this.rabbitAmqpTemplate.receiveAndReply(
+				"q1",
+				(ReceiveAndReplyMessageCallback) message -> {
+					serverRequest.set(message);
+					return message;
+				});
+
+		assertThat(rpcServerResult).succeedsWithin(Duration.ofSeconds(20))
+				.isEqualTo(true);
+
+		MessageProperties requestProperties = serverRequest.get().getMessageProperties();
+		assertThat(requestProperties.getReceivedExchange()).isEqualTo("e1");
+		assertThat(requestProperties.getReceivedRoutingKey()).isEqualTo("k1");
+		assertThat(requestProperties.getConsumerQueue()).isEqualTo("q1");
+		assertThat(requestProperties.getReplyTo()).isEqualTo("/queues/rpc.reply");
+
+		assertThat(rpcClientResult)
+				.succeedsWithin(Duration.ofSeconds(20))
+				.satisfies((received) -> {
+
+					MessageProperties properties = received.getMessageProperties();
+					assertThat(properties.getReceivedExchange()).isEqualTo("");
+					assertThat(properties.getReceivedRoutingKey()).isEqualTo("rpc.reply");
+					assertThat(properties.getConsumerQueue()).isEqualTo("rpc.reply");
+					assertThat(properties.getReplyTo()).isEqualTo("/queues/rpc.reply");
+				});
 	}
 
 	@Configuration
