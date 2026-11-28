@@ -48,6 +48,7 @@ import static org.awaitility.Awaitility.await;
  * @author Artem Bilan
  * @author Jan Mohr
  * @author Sharang Gupta
+ * @author Ngoc Nhan
  * @since 4.0
  */
 @ContextConfiguration
